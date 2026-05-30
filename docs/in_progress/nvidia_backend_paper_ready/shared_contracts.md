@@ -44,6 +44,11 @@ Each result record must include:
 - `raw_artifact`: tmp path for JSON, CSV, log, or report input;
 - `correctness`: pass, fail, skipped, or not applicable with reason.
 
+The viewer must render these review-critical fields, not only validate them in
+JSON. At minimum it shows `run.inputs`, method `category`, method
+`launch_model`, result hardware, result statistic sample count, correctness,
+and raw artifact path.
+
 Each paper-baseline record must include:
 
 - `paper_baseline_id`: stable identifier for MPK, VDCores, or a baseline used

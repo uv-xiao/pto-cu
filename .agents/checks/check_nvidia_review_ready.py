@@ -48,6 +48,9 @@ def check_evaluation_docs() -> None:
     require_file(DOC_ROOT / "changelog" / "index.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-review-readiness.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-ultimate-goal.md")
+    require_file(
+        DOC_ROOT / "changelog" / "2026-05-31-benchmark-viewer-contract.md"
+    )
 
 
 def require_text(path: Path, needles: list[str]) -> None:
@@ -129,6 +132,19 @@ def check_viewer_data() -> None:
     require_file(VIEWER_ROOT / "index.html")
     require_file(VIEWER_ROOT / "styles.css")
     require_file(VIEWER_ROOT / "viewer.js")
+    viewer_script = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
+    for needle in [
+        "run.inputs.shape",
+        "run.inputs.dtype",
+        "run.inputs.repeat_policy",
+        "method.category",
+        "method.launch_model",
+        "result_records",
+        "raw_artifact",
+        "correctness",
+    ]:
+        if needle not in viewer_script:
+            fail(f"viewer.js does not render contract field: {needle}")
 
     benchmarks = load_json(VIEWER_ROOT / "data" / "benchmarks.json")
     methods = load_json(VIEWER_ROOT / "data" / "methods.json")

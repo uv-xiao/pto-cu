@@ -30,6 +30,37 @@ function metric(label, value) {
   return item;
 }
 
+function paragraph(label, value) {
+  const item = document.createElement("p");
+  const strong = document.createElement("strong");
+  strong.append(text(`${label}: `));
+  item.append(strong, text(value));
+  return item;
+}
+
+function fieldList(fields) {
+  const list = document.createElement("dl");
+  list.className = "meta-list";
+  fields.forEach(([label, value]) => {
+    const term = document.createElement("dt");
+    term.append(text(label));
+    const detail = document.createElement("dd");
+    detail.append(text(value));
+    list.append(term, detail);
+  });
+  return list;
+}
+
+function benchmarkTitle(id) {
+  const benchmark = state.benchmarks.benchmarks.find((item) => item.id === id);
+  return benchmark ? benchmark.title : id;
+}
+
+function methodName(id) {
+  const method = state.methods.methods.find((item) => item.id === id);
+  return method ? method.name : id;
+}
+
 function renderSnapshot() {
   const snapshot = state.results.snapshot;
   const root = document.getElementById("snapshot");
@@ -84,8 +115,12 @@ function renderBenchmarks() {
     summary.append(text(benchmark.title));
     const desc = document.createElement("p");
     desc.append(text(benchmark.description));
-    const math = document.createElement("p");
-    math.innerHTML = `<strong>Math:</strong> ${benchmark.math}`;
+    const inputs = fieldList([
+      ["Shape", benchmark.run.inputs.shape],
+      ["Dtype", benchmark.run.inputs.dtype],
+      ["Repeat policy", benchmark.run.inputs.repeat_policy],
+    ]);
+    const math = paragraph("Math", benchmark.math);
     const code = document.createElement("pre");
     const codeText = document.createElement("code");
     codeText.append(text(benchmark.code));
@@ -97,6 +132,7 @@ function renderBenchmarks() {
     details.append(
       summary,
       desc,
+      inputs,
       math,
       code,
       run,
@@ -114,11 +150,19 @@ function renderMethods() {
     const details = document.createElement("details");
     const summary = document.createElement("summary");
     summary.append(text(method.name));
-    const runtime = document.createElement("p");
-    runtime.innerHTML = `<strong>Runtime flow:</strong> ${method.runtime_flow}`;
-    const lifecycle = document.createElement("p");
-    lifecycle.innerHTML = `<strong>Lifecycle mapping:</strong> ${method.lifecycle}`;
-    details.append(summary, runtime, lifecycle, evidenceList(method.evidence_refs));
+    const metadata = fieldList([
+      ["Category", method.category],
+      ["Launch model", method.launch_model],
+    ]);
+    const runtime = paragraph("Runtime flow", method.runtime_flow);
+    const lifecycle = paragraph("Lifecycle mapping", method.lifecycle);
+    details.append(
+      summary,
+      metadata,
+      runtime,
+      lifecycle,
+      evidenceList(method.evidence_refs),
+    );
     return details;
   }));
 }
@@ -174,15 +218,27 @@ function table(headers, rows) {
 function renderResults() {
   const root = document.getElementById("result-table");
   root.replaceChildren(table(
-    ["GPU", "Machine", "Method", "N", "Tasks", "Host ns", "Device ns"],
-    state.results.selected_rows.map((row) => [
-      row.gpu,
-      row.machine,
-      row.method,
-      row.n,
-      row.task_count,
-      row.host_wall_ns,
-      row.device_wall_ns,
+    [
+      "GPU",
+      "Benchmark",
+      "Method",
+      "Inputs",
+      "Samples",
+      "Host ns",
+      "Device ns",
+      "Correctness",
+      "Raw artifact",
+    ],
+    state.results.result_records.map((row) => [
+      `${row.hardware.gpu} / ${row.hardware.machine} / ${row.hardware.compute_target}`,
+      benchmarkTitle(row.benchmark_id),
+      methodName(row.method_id),
+      `${row.inputs.shape}; ${row.inputs.dtype}; ${row.inputs.repeat_policy}`,
+      row.statistic.sample_count,
+      row.statistic.host_wall_ns,
+      row.statistic.device_wall_ns,
+      row.correctness,
+      row.raw_artifact,
     ]),
   ));
 }

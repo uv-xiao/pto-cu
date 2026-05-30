@@ -54,6 +54,18 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "styles.css").is_file()
     assert (VIEWER_ROOT / "viewer.js").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baselines.json").is_file()
+    viewer_js = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
+    for required in [
+        "run.inputs.shape",
+        "run.inputs.dtype",
+        "run.inputs.repeat_policy",
+        "method.category",
+        "method.launch_model",
+        "result_records",
+        "raw_artifact",
+        "correctness",
+    ]:
+        assert required in viewer_js
 
     benchmarks = json.loads(
         (VIEWER_ROOT / "data" / "benchmarks.json").read_text(encoding="utf-8")
@@ -142,6 +154,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-ultimate-goal.md"
+    ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-benchmark-viewer-contract.md"
     ).is_file()
 
     example_root = ROOT / "examples" / "cuda"

@@ -128,6 +128,22 @@ details {
   padding: 14px 16px;
 }
 
+.meta-list {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) minmax(0, 1fr);
+  gap: 6px 14px;
+  margin: 14px 0;
+}
+
+.meta-list dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.meta-list dd {
+  margin: 0;
+}
+
 summary {
   cursor: pointer;
   font-weight: 700;

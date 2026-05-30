@@ -153,3 +153,29 @@ Each entry must include:
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: future result-importer work should emit
   `result_records` that satisfy this schema before changing viewer tables.
+
+### 2026-05-31 - Benchmark Viewer Contract Rendering
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned viewer
+  rendering hardening.
+- Exact Codex command or script invocation: not applicable because no worker
+  was launched in this entry.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, viewer expansion slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: `docs/nvidia-backend/benchmark-viewer/`,
+  `.agents/checks/`, `tests/ut/py/test_nvidia_review_artifacts.py`, shared
+  contracts, and changelog docs.
+- Dependencies and blocked assumptions: viewer rendering now exposes the
+  schema fields required for human review, but it still depends on future
+  result importers for full paper-grade statistics.
+- Verification commands and results: passed `check_nvidia_review_ready.py`,
+  focused review artifact pytest, `validate_benchmark_viewer_data.py`,
+  `node --check` on the viewer, and `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future viewer work should add filters,
+  richer statistic breakdowns, and imported MPK/VDCores result rows once raw
+  artifacts exist.
