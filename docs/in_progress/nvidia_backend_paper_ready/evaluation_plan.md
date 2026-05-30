@@ -43,6 +43,15 @@ targets, required metrics, current evidence, missing evidence, and promotion
 gate. A claim is not paper-ready until the matrix status and raw artifacts
 show complete baseline coverage.
 
+The generated readiness audit in
+`docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json` is the
+human-reviewable summary of that matrix. It is produced by
+`.agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py` and folds
+matrix gaps, paper-baseline run statuses, readiness-probe statuses, and missing
+viewer-result evidence into one blocker list per claim. The audit must stay
+`not_paper_ready` until every claim has a ready matrix status and no generated
+blockers.
+
 Paper-baseline reproduction commands are tracked in
 `docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json`. Those
 records name the setup commands, run commands, expected tmp artifacts, required

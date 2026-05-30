@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "source_files": [
+    "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix.json",
+    "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
+    "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
+    "docs/nvidia-backend/benchmark-viewer/data/results.json"
+  ],
+  "overall_status": "not_paper_ready",
+  "ready_claims": 0,
+  "blocked_claims": 4,
+  "claim_audits": [
+    {
+      "id": "host_schedule_launch_overhead",
+      "title": "Host-Schedule Launch Overhead",
+      "matrix_status": "partial_current_capture",
+      "ready_for_paper_claim": false,
+      "evidence_ref_counts": {
+        "raw_artifact": 1,
+        "viewer_data": 1,
+        "viewer_result": 2
+      },
+      "missing_evidence_count": 3,
+      "missing_viewer_results": [],
+      "paper_baseline_run_statuses": [],
+      "probe_statuses": [],
+      "blockers": [
+        "Direct CUDA Runtime API rows for the same host-schedule vector shapes.",
+        "Direct CUDA Driver graph rows for all selected launch shapes.",
+        "Stream-count and graph-replay sweeps with sample distributions instead of selected medians."
+      ],
+      "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts."
+    },
+    {
+      "id": "persistent_device_scheduler_overhead",
+      "title": "Persistent-Device Scheduler Overhead",
+      "matrix_status": "partial_current_capture",
+      "ready_for_paper_claim": false,
+      "evidence_ref_counts": {
+        "stable_doc": 1,
+        "viewer_result": 2
+      },
+      "missing_evidence_count": 3,
+      "missing_viewer_results": [],
+      "paper_baseline_run_statuses": [],
+      "probe_statuses": [
+        {
+          "paper_baseline_id": "mpk",
+          "latest_status": "pass",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        },
+        {
+          "paper_baseline_id": "vdcores",
+          "latest_status": "pass",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        }
+      ],
+      "blockers": [
+        "MPK persistent-kernel run with matching workload metadata.",
+        "VDCores run with matching queue/resource-policy metadata.",
+        "Scheduler-overhead breakdown that separates ready-queue work, worker execution, and host synchronization.",
+        "No paper baseline run record is attached to this claim for mpk.",
+        "No paper baseline run record is attached to this claim for vdcores."
+      ],
+      "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
+    },
+    {
+      "id": "tensor_core_tile_baselines",
+      "title": "Tensor-Core Tile Baselines",
+      "matrix_status": "partial_current_capture",
+      "ready_for_paper_claim": false,
+      "evidence_ref_counts": {
+        "viewer_result": 3
+      },
+      "missing_evidence_count": 4,
+      "missing_viewer_results": [],
+      "paper_baseline_run_statuses": [
+        {
+          "id": "thunderkittens_tile_kernel",
+          "paper_baseline_id": "thunderkittens",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [
+            "vdcores_offline_decode"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/build.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/quick-smoke.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/capture.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/viewer-result-records.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/correctness.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/benchmark.json"
+          ]
+        }
+      ],
+      "probe_statuses": [
+        {
+          "paper_baseline_id": "thunderkittens",
+          "latest_status": "pass",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        }
+      ],
+      "blockers": [
+        "PTO tensor-core result row for the same 16x16x16 tile shape.",
+        "CUTLASS or CuTe baseline for the same shape.",
+        "Triton or torch.compile generated-kernel baseline.",
+        "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture."
+      ],
+      "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
+    },
+    {
+      "id": "llm_serving_paper_baselines",
+      "title": "LLM Serving Paper Baselines",
+      "matrix_status": "planned_no_results",
+      "ready_for_paper_claim": false,
+      "evidence_ref_counts": {
+        "baseline_survey": 1,
+        "viewer_data": 2
+      },
+      "missing_evidence_count": 2,
+      "missing_viewer_results": [],
+      "paper_baseline_run_statuses": [
+        {
+          "id": "mpk_qwen3_native_vs_persistent",
+          "paper_baseline_id": "mpk",
+          "status": "planned_not_run",
+          "serving_workload_ids": [
+            "mpk_offline_decode"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
+            "tmp/baselines/mirage-mpk command log",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-native.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-mpk.json"
+          ]
+        },
+        {
+          "id": "vdcores_llama_decode_correctness",
+          "paper_baseline_id": "vdcores",
+          "status": "planned_not_run",
+          "serving_workload_ids": [
+            "vdcores_offline_decode"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
+            "tmp/baselines/vdcores command log",
+            "tmp/cuda-backend/paper-baselines/vdcores/llama-decode.json",
+            "tmp/cuda-backend/paper-baselines/vdcores/correctness.json"
+          ]
+        },
+        {
+          "id": "vllm_serving_and_throughput",
+          "paper_baseline_id": "vllm",
+          "status": "planned_not_run",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
+            "tmp/cuda-backend/paper-baselines/vllm/bench-serve.json",
+            "tmp/cuda-backend/paper-baselines/vllm/bench-throughput.json"
+          ]
+        },
+        {
+          "id": "sglang_serving_and_offline",
+          "paper_baseline_id": "sglang",
+          "status": "planned_not_run",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
+            "tmp/cuda-backend/paper-baselines/sglang/bench-serving.json",
+            "tmp/cuda-backend/paper-baselines/sglang/offline-throughput.json",
+            "tmp/cuda-backend/paper-baselines/sglang/one-batch.json"
+          ]
+        }
+      ],
+      "probe_statuses": [
+        {
+          "paper_baseline_id": "mpk",
+          "latest_status": "pass",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        },
+        {
+          "paper_baseline_id": "vdcores",
+          "latest_status": "pass",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        },
+        {
+          "paper_baseline_id": "vllm",
+          "latest_status": "partial",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "partial",
+              "blocking_gaps": [
+                "python_module failed: vllm"
+              ]
+            },
+            {
+              "gpu": "H200",
+              "status": "partial",
+              "blocking_gaps": [
+                "python_module failed: vllm"
+              ]
+            }
+          ]
+        },
+        {
+          "paper_baseline_id": "sglang",
+          "latest_status": "partial",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "partial",
+              "blocking_gaps": [
+                "python_import failed: sglang.bench_serving",
+                "python_import failed: sglang.bench_offline_throughput",
+                "python_import failed: sglang.bench_one_batch"
+              ]
+            },
+            {
+              "gpu": "H200",
+              "status": "partial",
+              "blocking_gaps": [
+                "python_module failed: sglang",
+                "python_import failed: sglang.bench_serving",
+                "python_import failed: sglang.bench_offline_throughput",
+                "python_import failed: sglang.bench_one_batch"
+              ]
+            }
+          ]
+        },
+        {
+          "paper_baseline_id": "thunderkittens",
+          "latest_status": "pass",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        }
+      ],
+      "blockers": [
+        "PTO CUDA serving workload or controlled serving-equivalent workload.",
+        "MPK, VDCores, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records.",
+        "Paper baseline run mpk_qwen3_native_vs_persistent is planned_not_run, not imported_to_viewer.",
+        "Paper baseline run vdcores_llama_decode_correctness is planned_not_run, not imported_to_viewer.",
+        "Paper baseline run vllm_serving_and_throughput is planned_not_run, not imported_to_viewer.",
+        "Paper baseline run sglang_serving_and_offline is planned_not_run, not imported_to_viewer.",
+        "No paper baseline run record is attached to this claim for thunderkittens.",
+        "Readiness probe for vllm is partial.",
+        "Readiness probe for sglang is partial."
+      ],
+      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
+    }
+  ]
+}

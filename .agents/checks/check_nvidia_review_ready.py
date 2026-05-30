@@ -172,6 +172,9 @@ def check_viewer_data() -> None:
         "latest_machine_status",
         "paperEvaluation",
         "paper_evaluation_matrix",
+        "paperReadinessAudit",
+        "paper_readiness_audit",
+        "ready_for_paper_claim",
         "result_records",
         "raw_artifact",
         "correctness",
@@ -192,6 +195,9 @@ def check_viewer_data() -> None:
     serving_workloads = load_json(VIEWER_ROOT / "data" / "serving_workloads.json")
     paper_evaluation = load_json(
         VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
+    )
+    paper_readiness_audit = load_json(
+        VIEWER_ROOT / "data" / "paper_readiness_audit.json"
     )
     results = load_json(VIEWER_ROOT / "data" / "results.json")
 
@@ -307,6 +313,13 @@ def check_viewer_data() -> None:
     if not required_matrix_ids <= matrix_ids:
         missing = sorted(required_matrix_ids - matrix_ids)
         fail(f"missing paper evaluation matrix ids: {missing}")
+    if paper_readiness_audit.get("overall_status") != "not_paper_ready":
+        fail("paper readiness audit must not claim paper-ready status yet")
+    claim_audits = paper_readiness_audit.get("claim_audits", [])
+    if not isinstance(claim_audits, list) or not claim_audits:
+        fail("paper readiness audit has no claim audits")
+    if not any(item.get("blockers") for item in claim_audits):
+        fail("paper readiness audit must expose blockers")
     matrix_baselines = {
         baseline_id
         for item in paper_evaluation["paper_evaluation_matrix"]
@@ -408,6 +421,7 @@ def check_examples_and_rules() -> None:
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py",
+        ".agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py",
         ".agents/checks/validate_nvidia_changelog.py",
         ".agents/skills/git-commit/SKILL.md",
         ".agents/skills/github-pr/SKILL.md",

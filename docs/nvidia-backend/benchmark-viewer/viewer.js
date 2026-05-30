@@ -6,6 +6,7 @@ const DATA_FILES = {
   paperBaselineProbes: "data/paper_baseline_probes.json",
   servingWorkloads: "data/serving_workloads.json",
   paperEvaluation: "data/paper_evaluation_matrix.json",
+  paperReadinessAudit: "data/paper_readiness_audit.json",
   results: "data/results.json",
 };
 
@@ -328,6 +329,7 @@ function renderPaperBaselines() {
 }
 
 function renderPaperEvaluation() {
+  renderPaperReadinessAudit();
   const root = document.getElementById("paper-evaluation-list");
   root.replaceChildren(...state.paperEvaluation.paper_evaluation_matrix.map((claim) => {
     const details = document.createElement("details");
@@ -363,6 +365,61 @@ function renderPaperEvaluation() {
     );
     return details;
   }));
+}
+
+function renderPaperReadinessAudit() {
+  const audit = state.paperReadinessAudit;
+  const root = document.getElementById("paper-readiness-audit");
+  const summary = fieldList([
+    ["Overall status", audit.overall_status],
+    ["Ready claims", audit.ready_claims],
+    ["Blocked claims", audit.blocked_claims],
+    ["Source files", audit.source_files.join(", ")],
+  ]);
+  const claimRows = audit.claim_audits.map((claim) => [
+    claim.title,
+    claim.matrix_status,
+    claim.ready_for_paper_claim ? "yes" : "no",
+    claim.missing_evidence_count,
+    claim.blockers.length,
+  ]);
+  const details = audit.claim_audits.map((claim) => {
+    const item = document.createElement("details");
+    const summaryLine = document.createElement("summary");
+    summaryLine.append(text(`${claim.title}: ${claim.blockers.length} blockers`));
+    const runStatuses = claim.paper_baseline_run_statuses.map((run) => (
+      `${run.paper_baseline_id}/${run.id}: ${run.status}`
+    ));
+    const probeStatuses = claim.probe_statuses.map((probe) => {
+      const machines = probe.machines.map((machine) => (
+        `${machine.gpu}=${machine.status}`
+      )).join(", ");
+      return `${probe.paper_baseline_id}: ${probe.latest_status} (${machines})`;
+    });
+    item.append(
+      summaryLine,
+      fieldList([
+        ["Matrix status", claim.matrix_status],
+        ["Evidence refs", Object.entries(claim.evidence_ref_counts)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(", ") || "none"],
+        ["Missing viewer results", claim.missing_viewer_results.join(", ") || "none"],
+      ]),
+      ...namedList("Paper Baseline Runs", runStatuses.length ? runStatuses : ["none"]),
+      ...namedList("Probe Status", probeStatuses.length ? probeStatuses : ["none"]),
+      ...namedList("Blockers", claim.blockers),
+      paragraph("Promotion gate", claim.promotion_gate),
+    );
+    return item;
+  });
+  root.replaceChildren(
+    summary,
+    table(
+      ["Claim", "Matrix Status", "Paper Ready", "Missing Items", "Blockers"],
+      claimRows,
+    ),
+    ...details,
+  );
 }
 
 function table(headers, rows) {
@@ -440,6 +497,7 @@ async function main() {
       paperBaselineProbes,
       servingWorkloads,
       paperEvaluation,
+      paperReadinessAudit,
       results,
     ] = await Promise.all([
       loadJson(DATA_FILES.benchmarks),
@@ -449,6 +507,7 @@ async function main() {
       loadJson(DATA_FILES.paperBaselineProbes),
       loadJson(DATA_FILES.servingWorkloads),
       loadJson(DATA_FILES.paperEvaluation),
+      loadJson(DATA_FILES.paperReadinessAudit),
       loadJson(DATA_FILES.results),
     ]);
     Object.assign(state, {
@@ -459,6 +518,7 @@ async function main() {
       paperBaselineProbes,
       servingWorkloads,
       paperEvaluation,
+      paperReadinessAudit,
       results,
     });
     renderSnapshot();

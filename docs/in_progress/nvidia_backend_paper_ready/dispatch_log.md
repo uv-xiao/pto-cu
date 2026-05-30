@@ -800,3 +800,36 @@ Each entry must include:
 - Handoff summary and remaining gaps: future paired probe reruns should call
   the updater before committing viewer data, then run the viewer-data
   validator to prove the committed summary matches raw artifacts.
+
+### 2026-05-31 - Paper Readiness Audit
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  human-reviewable paper-readiness status slice.
+- Exact Codex command or script invocation: no worker invocation. Added
+  `.agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py` and
+  generated `docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, benchmark viewer and
+  paper-ready evaluation guard slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation skill script, benchmark viewer
+  data/rendering, viewer-data validator, focused tests, shared contracts,
+  evaluation plan, dispatch log, changelog docs, and skill instructions. No
+  upstream repositories were edited.
+- Dependencies and blocked assumptions: the audit is derived from committed
+  viewer JSON; it does not replace raw benchmark captures.
+- Verification commands and results: `paper_readiness_audit.py` regenerated
+  the committed `paper_readiness_audit.json` with no diff. Passed
+  `check_nvidia_review_ready.py`, `validate_benchmark_viewer_data.py`,
+  `validate_nvidia_changelog.py`, `validate_cuda_examples.py`,
+  `validate_remote_evaluation.py`, focused review artifact pytest with 19
+  tests, Python compile for touched guard scripts, JSON syntax checks,
+  `node --check` on the viewer, and `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the audit currently reports
+  `not_paper_ready`, zero ready claims, and four blocked claims. Future
+  matrix, run, probe, or result changes must regenerate the audit before
+  review.

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import re
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,14 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 ID_RE = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)*$")
+READINESS_AUDIT_SCRIPT = (
+    ROOT
+    / ".agents"
+    / "skills"
+    / "cuda-backend-eval"
+    / "scripts"
+    / "paper_readiness_audit.py"
+)
 
 
 def fail(message: str) -> None:
@@ -97,6 +106,18 @@ def load_current_json_artifact(root: Path, relpath: str, owner: str) -> dict[str
     if not isinstance(data, dict):
         fail(f"{owner} current artifact JSON is not an object: {relpath}")
     return data
+
+
+def load_readiness_audit_builder():
+    spec = importlib.util.spec_from_file_location(
+        "paper_readiness_audit",
+        READINESS_AUDIT_SCRIPT,
+    )
+    if spec is None or spec.loader is None:
+        fail("could not load paper_readiness_audit.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.build_readiness_audit
 
 
 def check_evidence_refs(record: dict[str, Any], owner: str, root: Path) -> None:
@@ -682,6 +703,68 @@ def validate_paper_evaluation_matrix(
     return matrix_ids
 
 
+def validate_paper_readiness_audit(
+    audit: dict[str, Any],
+    *,
+    matrix: dict[str, Any],
+    runs: dict[str, Any],
+    probes: dict[str, Any],
+    results: dict[str, Any],
+) -> None:
+    if audit.get("schema_version") != 1:
+        fail("paper readiness audit schema_version must be 1")
+    required_sources = {
+        "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix.json",
+        "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
+        "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
+        "docs/nvidia-backend/benchmark-viewer/data/results.json",
+    }
+    sources = audit.get("source_files")
+    if not isinstance(sources, list) or set(sources) != required_sources:
+        fail("paper readiness audit source_files are stale")
+    claim_audits = audit.get("claim_audits")
+    if not isinstance(claim_audits, list) or not claim_audits:
+        fail("paper readiness audit has no claim_audits")
+    for claim in claim_audits:
+        if not isinstance(claim, dict):
+            fail("paper readiness audit contains non-object claim")
+        owner = f"paper readiness audit {claim.get('id', '<missing>')}"
+        for key in (
+            "id",
+            "title",
+            "matrix_status",
+            "promotion_gate",
+        ):
+            require_string(claim, key, owner)
+        if not isinstance(claim.get("ready_for_paper_claim"), bool):
+            fail(f"{owner} ready_for_paper_claim is not boolean")
+        if not isinstance(claim.get("evidence_ref_counts"), dict):
+            fail(f"{owner} missing evidence_ref_counts")
+        for key in (
+            "missing_viewer_results",
+            "paper_baseline_run_statuses",
+            "probe_statuses",
+            "blockers",
+        ):
+            value = claim.get(key)
+            if not isinstance(value, list):
+                fail(f"{owner} {key} is not a list")
+        missing_count = claim.get("missing_evidence_count")
+        if isinstance(missing_count, bool) or not isinstance(missing_count, int):
+            fail(f"{owner} missing_evidence_count is not an integer")
+        if not claim["ready_for_paper_claim"] and not claim["blockers"]:
+            fail(f"{owner} is blocked but has no blockers")
+
+    generated = load_readiness_audit_builder()(
+        matrix=matrix,
+        runs=runs,
+        probes=probes,
+        results=results,
+    )
+    if audit != generated:
+        fail("paper readiness audit is stale; regenerate paper_readiness_audit.json")
+
+
 def validate_viewer_data(root: Path = ROOT) -> None:
     benchmarks = load_json(root, "benchmarks.json")
     methods = load_json(root, "methods.json")
@@ -690,6 +773,7 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     paper_baseline_probes = load_json(root, "paper_baseline_probes.json")
     serving_workloads = load_json(root, "serving_workloads.json")
     paper_evaluation_matrix = load_json(root, "paper_evaluation_matrix.json")
+    paper_readiness_audit = load_json(root, "paper_readiness_audit.json")
     capture_imports = load_json(root, "capture_imports.json")
     results = load_json(root, "results.json")
     benchmark_ids = validate_benchmarks(benchmarks, root)
@@ -712,6 +796,13 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         baseline_ids,
         paper_evaluation_ids,
         serving_workload_ids,
+    )
+    validate_paper_readiness_audit(
+        paper_readiness_audit,
+        matrix=paper_evaluation_matrix,
+        runs=paper_baseline_runs,
+        probes=paper_baseline_probes,
+        results=results,
     )
     validate_serving_workload_run_refs(
         serving_workloads,

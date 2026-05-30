@@ -660,6 +660,48 @@ def test_paper_probe_status_update_materializes_machine_status(tmp_path):
     ]
 
 
+def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
+    output_path = tmp_path / "paper-readiness-audit.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/"
+            "paper_readiness_audit.py",
+            "--output",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+
+    generated = json.loads(output_path.read_text(encoding="utf-8"))
+    committed = json.loads(
+        (VIEWER_ROOT / "data" / "paper_readiness_audit.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert generated == committed
+    assert committed["overall_status"] == "not_paper_ready"
+    assert committed["ready_claims"] == 0
+    assert committed["blocked_claims"] == 4
+
+    by_id = {claim["id"]: claim for claim in committed["claim_audits"]}
+    llm_claim = by_id["llm_serving_paper_baselines"]
+    assert not llm_claim["ready_for_paper_claim"]
+    assert any(
+        "mpk_qwen3_native_vs_persistent is planned_not_run" in blocker
+        for blocker in llm_claim["blockers"]
+    )
+    assert any(
+        "Readiness probe for sglang is partial" in blocker
+        for blocker in llm_claim["blockers"]
+    )
+
+
 def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
     output_path = tmp_path / "serving-plan.json"
     result = subprocess.run(
@@ -822,6 +864,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "data" / "paper_baseline_probes.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_workloads.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").is_file()
+    assert (VIEWER_ROOT / "data" / "paper_readiness_audit.json").is_file()
     assert (VIEWER_ROOT / "data" / "capture_imports.json").is_file()
     viewer_js = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
     for required in [
@@ -841,6 +884,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "latest_machine_status",
         "paperEvaluation",
         "paper_evaluation_matrix",
+        "paperReadinessAudit",
+        "paper_readiness_audit",
+        "ready_for_paper_claim",
         "result_records",
         "raw_artifact",
         "correctness",
@@ -875,6 +921,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     paper_evaluation = json.loads(
         (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    paper_readiness_audit = json.loads(
+        (VIEWER_ROOT / "data" / "paper_readiness_audit.json").read_text(
             encoding="utf-8"
         )
     )
@@ -1098,6 +1149,15 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 == "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json"
                 for ref in item["current_evidence_refs"]
             )
+
+    assert paper_readiness_audit["overall_status"] == "not_paper_ready"
+    assert paper_readiness_audit["blocked_claims"] == 4
+    assert paper_readiness_audit["claim_audits"]
+    for item in paper_readiness_audit["claim_audits"]:
+        assert item["matrix_status"]
+        assert item["ready_for_paper_claim"] is False
+        assert item["blockers"]
+        assert item["promotion_gate"]
 
     assert results["snapshot"]["commit"] == "743709f3"
     assert results["snapshot"]["full_capture"]["samples"] == 1350

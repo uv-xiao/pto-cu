@@ -388,6 +388,18 @@ PYTHONPATH=$PWD:$PWD/python \
     --output docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json
 ```
 
+Use `paper_readiness_audit.py` after changing paper-evaluation matrix rows,
+paper-baseline run records, probe status, or viewer result records. The script
+regenerates `paper_readiness_audit.json`, which folds current matrix gaps,
+baseline-run status, probe readiness, and missing viewer-result evidence into
+one blocker list per paper claim:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py \
+    --output docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json
+```
+
 Use `cuda_scheduler_scaling.py` to summarize a scheduler-block sweep after
 capturing the individual paired smokes. Its ratio column is shape-aware:
 each row is compared with the one-scheduler row for the same artifact, DAG
