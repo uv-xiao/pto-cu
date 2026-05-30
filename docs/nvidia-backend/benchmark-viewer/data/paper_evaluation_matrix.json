@@ -148,13 +148,19 @@
           "benchmark_id": "tensor_core_tile",
           "method_id": "cublas_sgemm_graph",
           "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "thunderkittens",
+          "gpu": "H200"
         }
       ],
       "missing_evidence": [
         "PTO tensor-core result row for the same 16x16x16 tile shape.",
         "CUTLASS or CuTe baseline for the same shape.",
         "Triton or torch.compile generated-kernel baseline.",
-        "ThunderKittens kernel result mapped into the viewer schema."
+        "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture."
       ],
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
     },

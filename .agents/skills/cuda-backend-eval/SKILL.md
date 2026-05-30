@@ -314,6 +314,24 @@ PYTHONPATH=$PWD:$PWD/python \
     --output tmp/cuda-backend/paper-baselines/vllm/viewer-result-records.json
 ```
 
+Use `thunderkittens_mha_capture.py` for bounded ThunderKittens H200 MHA
+captures before attempting the full upstream `test_correctness.py` and
+`benchmark.py` sweeps. The script imports the already-built
+`kernels/attention/mha_h100` PyTorch extension, compares output with PyTorch
+scaled-dot-product attention, records CUDA-event repeat statistics, and emits
+the normalized paper-baseline raw JSON consumed by
+`paper_baseline_viewer_export.py`:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py \
+    --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 \
+    --output tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/capture.json \
+    --machine <h200-host> --pto-commit 5915346e --cuda-toolkit 12.8 \
+    --shape 1,1,768,64 --shape 1,4,1536,64 \
+    --warmup 5 --repeats 20 --causal
+```
+
 Use `paper_baseline_probe.py` before expensive baseline builds to capture
 source-checkout, entrypoint, syntax, module, CUDA toolkit, and GPU readiness.
 The probe configuration is committed in

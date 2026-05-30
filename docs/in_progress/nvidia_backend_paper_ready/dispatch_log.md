@@ -501,3 +501,41 @@ Each entry must include:
   `test_correctness.py` and `benchmark.py` or a scripted equivalent that
   captures repeat statistics before promoting this baseline beyond
   setup-ready.
+
+### 2026-05-31 - ThunderKittens Bounded H200 MHA Capture
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned bounded
+  ThunderKittens MHA capture for repeat statistics and viewer import.
+- Exact Codex command or script invocation:
+  `.agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py
+  --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100
+  --output
+  tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/capture.json
+  --machine <h200-host> --pto-commit 5915346e --cuda-toolkit 12.8 --shape
+  1,1,768,64 --shape 1,4,1536,64 --warmup 5 --repeats 20 --causal`, followed
+  by `paper_baseline_viewer_export.py` for viewer-result import.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: local and remote `tmp/` artifacts, CUDA evaluation
+  scripts, benchmark viewer data, focused review artifact tests, evaluation
+  plan, dispatch log, and changelog docs.
+- Dependencies and blocked assumptions: this capture uses the existing
+  ThunderKittens H200 build and remote project venv dependencies. It is a
+  bounded capture because the upstream default scripts sweep larger shapes
+  and remain future paper-evaluation work.
+- Verification commands and results: the capture wrote
+  `tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/capture.json`
+  and `viewer-result-records.json`. Both shapes passed correctness against
+  PyTorch scaled-dot-product attention. The imported viewer rows have twenty
+  CUDA-event samples each, with p50 device time `36864 ns` for
+  `b=1,h=1,n=768,d=64` and `49279 ns` for `b=1,h=4,n=1536,d=64`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: ThunderKittens now has imported H200
+  repeat evidence, but paper-ready promotion still requires full upstream
+  correctness and benchmark sweeps plus shape alignment with PTO tensor-core
+  workloads.

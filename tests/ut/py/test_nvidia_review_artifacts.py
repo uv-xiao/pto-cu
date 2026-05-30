@@ -636,8 +636,15 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert item["expected_artifacts"]
         assert item["import_target"]["viewer_file"].endswith("results.json")
         if item["id"] == "thunderkittens_tile_kernel":
-            assert item["status"] == "setup_ready"
-            assert any("quick-smoke.json" in path for path in item["expected_artifacts"])
+            assert item["status"] == "imported_to_viewer"
+            assert any(
+                "quick-smoke.json" in path for path in item["expected_artifacts"]
+            )
+            assert any("capture.json" in path for path in item["expected_artifacts"])
+            assert any(
+                "thunderkittens_mha_capture.py" in command
+                for command in item["run_commands"]
+            )
 
     probe_baselines = {
         item["paper_baseline_id"]
@@ -715,6 +722,26 @@ def test_benchmark_viewer_has_json_backed_review_data():
         == "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/"
         for record in results["result_records"]
     )
+    thunderkittens_capture_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "tensor_core_tile"
+        and record["method_id"] == "thunderkittens"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/"
+    ]
+    assert len(thunderkittens_capture_records) == 2
+    assert {
+        record["statistic"]["sample_count"]
+        for record in thunderkittens_capture_records
+    } == {20}
+    assert {
+        record["inputs"]["shape"] for record in thunderkittens_capture_records
+    } == {
+        "mha_h100,b=1,h=1,n=768,d=64,causal=True",
+        "mha_h100,b=1,h=4,n=1536,d=64,causal=True",
+    }
     for record in results["result_records"]:
         assert record["benchmark_id"] in benchmark_ids
         assert record["method_id"] in method_ids
@@ -758,6 +785,14 @@ def test_review_policy_changelog_and_examples_exist():
         / "cuda-backend-eval"
         / "scripts"
         / "paper_baseline_viewer_export.py"
+    ).is_file()
+    assert (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "thunderkittens_mha_capture.py"
     ).is_file()
     assert (
         ROOT
@@ -813,6 +848,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-paired-probe.md"
+    ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-thunderkittens-bounded-capture.md"
     ).is_file()
 
     example_root = ROOT / "examples" / "cuda"

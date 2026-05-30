@@ -93,7 +93,7 @@
         "self-contained kernel benchmark",
         "attention or GEMM tile benchmark"
       ],
-      "next_action": "Select the ThunderKittens attention or GEMM kernel that matches the VDCores workload, build its local Makefile target on Hopper, and record correctness plus benchmark output."
+      "next_action": "Extend the bounded H200 MHA capture into full upstream correctness and benchmark sweeps, then align the selected attention shape with the PTO tensor-core comparison."
     }
   ]
 }

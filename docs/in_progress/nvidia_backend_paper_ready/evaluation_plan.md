@@ -151,6 +151,14 @@ dependencies (`torch`, `pybind11`, `numpy`, `pandas`, `matplotlib`, and
 the H200 project venv, the current H200 probe is ready for the selected
 ThunderKittens setup path, but full correctness and benchmark sweeps remain
 future paper-evaluation work.
+The first bounded ThunderKittens MHA capture is recorded under
+`tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/`. It
+uses `.agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py`
+to run two H200 causal BF16 MHA shapes with five warmups and twenty timed
+CUDA-event repeats, compare against PyTorch scaled-dot-product attention, and
+export viewer-compatible paper-baseline records. This promotes the selected
+ThunderKittens row from setup-ready to imported viewer evidence, but it does
+not replace the future full upstream correctness and benchmark sweeps.
 
 Remote H200 runs should prefer Git refresh when available and use SSH
 tree-sync fallback when remote Git fails. The selected path is part of the
