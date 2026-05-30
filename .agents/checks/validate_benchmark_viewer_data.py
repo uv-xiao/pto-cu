@@ -247,6 +247,7 @@ def validate_paper_baseline_probes(
             fail(f"{owner} references unknown paper_baseline_id: {baseline_id}")
         covered_baselines.add(baseline_id)
         checks = require_list(record, "checks", owner)
+        modules: set[str] = set()
         for check in checks:
             if not isinstance(check, dict):
                 fail(f"{owner} check is not an object")
@@ -257,7 +258,19 @@ def validate_paper_baseline_probes(
             if kind in {"path_exists", "py_compile"}:
                 require_string(check, "path", owner)
             if kind == "python_module":
-                require_string(check, "module", owner)
+                modules.add(require_string(check, "module", owner))
+        if baseline_id == "thunderkittens":
+            required_modules = {
+                "torch",
+                "pybind11",
+                "numpy",
+                "pandas",
+                "matplotlib",
+                "tqdm",
+            }
+            if not required_modules <= modules:
+                missing = sorted(required_modules - modules)
+                fail(f"{owner} missing ThunderKittens modules: {missing}")
     required_baselines = {"mpk", "vdcores", "vllm", "sglang", "thunderkittens"}
     if not required_baselines <= covered_baselines:
         missing = sorted(required_baselines - covered_baselines)

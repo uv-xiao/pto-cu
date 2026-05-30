@@ -40,10 +40,10 @@ PYTHONPATH=$PWD:$PWD/python \
 
 It wrote `a100-probe.json`, `h200-probe.json`, and
 `paired-probe-summary.json` under
-`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-948dfdcb/`. A100
+`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-bdec348b/`. A100
 passed MPK, VDCores, SGLang, and ThunderKittens and remained partial for vLLM.
-H200 passed ThunderKittens and remained partial for MPK, VDCores, vLLM, and
-SGLang because the required runtime Python packages are not installed there.
+H200 remained partial for MPK, VDCores, vLLM, SGLang, and ThunderKittens
+because the required runtime Python packages are not installed there.
 
 ## Remaining Gaps
 

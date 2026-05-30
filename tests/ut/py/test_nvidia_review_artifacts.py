@@ -651,6 +651,20 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert item["latest_artifact_root"].startswith("tmp/")
         assert item["checks"]
         assert item["next_action"]
+        if item["paper_baseline_id"] == "thunderkittens":
+            probed_modules = {
+                check["module"]
+                for check in item["checks"]
+                if check["kind"] == "python_module"
+            }
+            assert {
+                "torch",
+                "pybind11",
+                "numpy",
+                "pandas",
+                "matplotlib",
+                "tqdm",
+            } <= probed_modules
 
     matrix_ids = {
         item["id"] for item in paper_evaluation["paper_evaluation_matrix"]

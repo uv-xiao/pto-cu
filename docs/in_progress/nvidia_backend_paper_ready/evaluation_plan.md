@@ -136,7 +136,7 @@ with `.agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py`. The
 probe checks pinned source commits, selected entrypoint paths, Python syntax,
 required Python modules, CUDA toolkit availability, and visible GPUs. The
 latest paired readiness artifact is recorded at
-`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-948dfdcb/`.
+`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-bdec348b/`.
 Use `.agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py`
 for paired A100/H200 readiness. In `--sync-remote-tree` mode it copies the
 local checkout to the H200 host, skips remote Git, runs the remote probe with
@@ -145,6 +145,10 @@ local `a100-probe.json`. The paired runner also syncs `tmp/baselines/`
 separately, because those source checkouts are required probe inputs but
 generated `tmp/cuda-backend/` outputs should not be copied as part of the repo
 tree sync.
+ThunderKittens readiness must include the selected PyTorch-extension
+dependencies (`torch`, `pybind11`, `numpy`, `pandas`, `matplotlib`, and
+`tqdm`), not just source-file existence. The current H200 probe is partial
+until those modules are available on the remote evaluation environment.
 
 Remote H200 runs should prefer Git refresh when available and use SSH
 tree-sync fallback when remote Git fails. The selected path is part of the
