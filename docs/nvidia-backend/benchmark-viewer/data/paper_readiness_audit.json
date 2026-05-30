@@ -42,7 +42,28 @@
       },
       "missing_evidence_count": 3,
       "missing_viewer_results": [],
-      "paper_baseline_run_statuses": [],
+      "paper_baseline_run_statuses": [
+        {
+          "id": "mpk_persistent_scheduler_trace",
+          "paper_baseline_id": "mpk",
+          "status": "planned_not_run",
+          "serving_workload_ids": [],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-trace.json",
+            "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-profile.log"
+          ]
+        },
+        {
+          "id": "vdcores_resource_policy_trace",
+          "paper_baseline_id": "vdcores",
+          "status": "planned_not_run",
+          "serving_workload_ids": [],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-trace.json",
+            "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-profile.log"
+          ]
+        }
+      ],
       "probe_statuses": [
         {
           "paper_baseline_id": "mpk",
@@ -81,8 +102,8 @@
         "MPK persistent-kernel run with matching workload metadata.",
         "VDCores run with matching queue/resource-policy metadata.",
         "Scheduler-overhead breakdown that separates ready-queue work, worker execution, and host synchronization.",
-        "No paper baseline run record is attached to this claim for mpk.",
-        "No paper baseline run record is attached to this claim for vdcores."
+        "Paper baseline run mpk_persistent_scheduler_trace is planned_not_run, not imported_to_viewer.",
+        "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer."
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },

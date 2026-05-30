@@ -44,6 +44,13 @@ importer after the long baseline runs complete. SGLang commands in the plan
 prefix `PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH` so benchmark
 modules resolve from the pinned source checkout.
 
+The persistent-device scheduler comparison has separate run contracts in
+`paper_baseline_runs.json`: `mpk_persistent_scheduler_trace` and
+`vdcores_resource_policy_trace`. These are not serving throughput rows; they
+name the planned MPK and VDCores artifacts needed to compare generated
+persistent kernels, virtual-core queue/resource policy, dispatch traces, and
+scheduler overhead against PTO CUDA persistent-device captures.
+
 ## MPK Notes
 
 MPK is sourced from `https://github.com/mirage-project/mirage/tree/mpk`.

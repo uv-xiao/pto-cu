@@ -700,6 +700,18 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "Readiness probe for sglang is partial" in blocker
         for blocker in llm_claim["blockers"]
     )
+    persistent_claim = by_id["persistent_device_scheduler_overhead"]
+    persistent_run_ids = {
+        run["id"] for run in persistent_claim["paper_baseline_run_statuses"]
+    }
+    assert {
+        "mpk_persistent_scheduler_trace",
+        "vdcores_resource_policy_trace",
+    } <= persistent_run_ids
+    assert not any(
+        "No paper baseline run record is attached" in blocker
+        for blocker in persistent_claim["blockers"]
+    )
 
 
 def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
@@ -1005,6 +1017,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert {
         "mpk_qwen3_native_vs_persistent",
         "vdcores_llama_decode_correctness",
+        "mpk_persistent_scheduler_trace",
+        "vdcores_resource_policy_trace",
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
         "thunderkittens_tile_kernel",

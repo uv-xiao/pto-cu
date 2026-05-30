@@ -833,3 +833,33 @@ Each entry must include:
   `not_paper_ready`, zero ready claims, and four blocked claims. Future
   matrix, run, probe, or result changes must regenerate the audit before
   review.
+
+### 2026-05-31 - Persistent Baseline Run Contracts
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  paper-baseline run contract slice.
+- Exact Codex command or script invocation: no worker invocation. Added
+  `mpk_persistent_scheduler_trace` and `vdcores_resource_policy_trace` to
+  `paper_baseline_runs.json`, then regenerated `paper_readiness_audit.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready evaluation
+  planning and benchmark viewer guard slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer data, viewer-data validator,
+  focused tests, baseline survey, evaluation plan, dispatch log, and
+  changelog docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: these records are planned H200-class
+  runs; no MPK or VDCores raw scheduler traces were captured in this slice.
+- Verification commands and results: `paper_readiness_audit.py` regenerated
+  the committed `paper_readiness_audit.json` with no diff. Passed
+  `check_nvidia_review_ready.py`, `validate_benchmark_viewer_data.py`,
+  `validate_nvidia_changelog.py`, focused review artifact pytest with 19
+  tests, Python compile for touched guard scripts, JSON syntax checks,
+  `node --check` on the viewer, and `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the persistent-device paper claim now
+  has explicit MPK and VDCores run records. The next evaluation slice should
+  execute them, normalize raw JSON, and import viewer result rows.

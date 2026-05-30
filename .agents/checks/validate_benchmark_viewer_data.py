@@ -201,6 +201,8 @@ def validate_paper_baseline_runs(
     required_runs = {
         "mpk_qwen3_native_vs_persistent",
         "vdcores_llama_decode_correctness",
+        "mpk_persistent_scheduler_trace",
+        "vdcores_resource_policy_trace",
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
         "thunderkittens_tile_kernel",

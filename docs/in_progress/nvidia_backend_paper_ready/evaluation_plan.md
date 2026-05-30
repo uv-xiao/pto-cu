@@ -57,6 +57,11 @@ Paper-baseline reproduction commands are tracked in
 records name the setup commands, run commands, expected tmp artifacts, required
 metrics, and viewer import target for MPK, VDCores, vLLM, SGLang, and
 ThunderKittens.
+The persistent-device scheduler claim now has explicit MPK and VDCores run
+records, `mpk_persistent_scheduler_trace` and
+`vdcores_resource_policy_trace`, so reviewers can see the planned artifact
+paths and required scheduler/resource-policy fields before those long runs
+are captured.
 
 Shared LLM-serving workload policies are tracked in
 `docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json`. The first
