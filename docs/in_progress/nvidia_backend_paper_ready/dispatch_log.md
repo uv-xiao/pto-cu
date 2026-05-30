@@ -256,3 +256,30 @@ Each entry must include:
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: future CUDA examples should update
   `examples/cuda/manifest.json` and README in the same slice.
+
+### 2026-05-31 - Paper Evaluation Matrix
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned evaluation
+  matrix slice.
+- Exact Codex command or script invocation: not applicable because no worker
+  was launched in this entry.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready evaluation
+  slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer data and UI,
+  `.agents/checks/`, focused review artifact tests, shared contracts,
+  evaluation plan, and changelog docs.
+- Dependencies and blocked assumptions: the matrix records paper-readiness
+  gaps but does not itself reproduce MPK, VDCores, vLLM, SGLang, or
+  ThunderKittens results.
+- Verification commands and results: passed `validate_benchmark_viewer_data.py`,
+  `check_nvidia_review_ready.py`, focused review artifact pytest,
+  `validate_nvidia_changelog.py`, `node --check`, JSON syntax checks, and
+  `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future evaluation importers should turn
+  missing matrix evidence into viewer result records backed by raw artifacts.

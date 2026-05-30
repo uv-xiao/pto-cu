@@ -36,6 +36,13 @@ the planned source-capture state for vLLM, SGLang, and ThunderKittens. The
 benchmark viewer loads the same baseline readiness data from
 `docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json`.
 
+Paper claim readiness is tracked in
+`docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix.json`.
+That matrix names each claim's workloads, methods, paper baselines, hardware
+targets, required metrics, current evidence, missing evidence, and promotion
+gate. A claim is not paper-ready until the matrix status and raw artifacts
+show complete baseline coverage.
+
 ## Workloads
 
 The workload ladder should grow from controlled kernels to paper-level systems:

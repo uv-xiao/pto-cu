@@ -229,17 +229,144 @@ def validate_results(
             fail(f"{owner} has invalid correctness: {record['correctness']}")
 
 
+def validate_paper_evaluation_matrix(
+    data: dict[str, Any],
+    benchmark_ids: set[str],
+    method_ids: set[str],
+    baseline_ids: set[str],
+    results: dict[str, Any],
+    root: Path,
+) -> None:
+    records = require_list(
+        data, "paper_evaluation_matrix", "paper evaluation matrix"
+    )
+    matrix_ids = check_unique_ids(records, "paper evaluation matrix")
+    required_claims = {
+        "host_schedule_launch_overhead",
+        "persistent_device_scheduler_overhead",
+        "tensor_core_tile_baselines",
+        "llm_serving_paper_baselines",
+    }
+    if not required_claims <= matrix_ids:
+        missing = sorted(required_claims - matrix_ids)
+        fail(f"missing paper evaluation matrix claims: {missing}")
+
+    result_index = {
+        (
+            result["benchmark_id"],
+            result["method_id"],
+            result["hardware"]["gpu"],
+        )
+        for result in results["result_records"]
+    }
+    baseline_coverage: set[str] = set()
+    method_coverage: set[str] = set()
+    hardware_coverage: set[str] = set()
+    allowed_status = {
+        "planned_no_results",
+        "partial_current_capture",
+        "ready_for_paper_claim",
+    }
+    required_metrics = {"correctness", "raw_artifacts"}
+
+    for record in records:
+        owner = f"paper evaluation matrix {record['id']}"
+        for key in ("title", "claim", "status", "promotion_gate"):
+            require_string(record, key, owner)
+        if record["status"] not in allowed_status:
+            fail(f"{owner} has invalid status: {record['status']}")
+
+        workloads = require_list(record, "workload_ids", owner)
+        methods = require_list(record, "method_ids", owner)
+        baselines = record.get("paper_baseline_ids", [])
+        if not isinstance(baselines, list):
+            fail(f"{owner} paper_baseline_ids is not a list")
+        hardware_targets = require_list(record, "hardware_targets", owner)
+        metrics = set(require_list(record, "required_metrics", owner))
+        evidence_refs = require_list(record, "current_evidence_refs", owner)
+        require_list(record, "missing_evidence", owner)
+
+        for workload_id in workloads:
+            if workload_id not in benchmark_ids:
+                fail(f"{owner} references unknown workload_id: {workload_id}")
+        for method_id in methods:
+            if method_id not in method_ids:
+                fail(f"{owner} references unknown method_id: {method_id}")
+            method_coverage.add(method_id)
+        for baseline_id in baselines:
+            if baseline_id not in baseline_ids:
+                fail(f"{owner} references unknown paper_baseline_id: {baseline_id}")
+            baseline_coverage.add(baseline_id)
+        for hardware in hardware_targets:
+            if not isinstance(hardware, str) or not hardware:
+                fail(f"{owner} has invalid hardware target")
+            hardware_coverage.add(hardware)
+        for metric in metrics:
+            if not isinstance(metric, str) or not metric:
+                fail(f"{owner} has invalid required metric")
+        if not required_metrics <= metrics:
+            missing = sorted(required_metrics - metrics)
+            fail(f"{owner} missing required metrics: {missing}")
+
+        for ref in evidence_refs:
+            if not isinstance(ref, dict):
+                fail(f"{owner} current evidence ref is not an object")
+            kind = require_string(ref, "kind", owner)
+            if kind == "viewer_result":
+                key = (
+                    require_string(ref, "benchmark_id", owner),
+                    require_string(ref, "method_id", owner),
+                    require_string(ref, "gpu", owner),
+                )
+                if key not in result_index:
+                    fail(f"{owner} viewer_result evidence is missing: {key}")
+            elif kind in {
+                "viewer_data",
+                "stable_doc",
+                "baseline_survey",
+            }:
+                path = require_string(ref, "path", owner)
+                if not (root / path).is_file():
+                    fail(f"{owner} evidence path missing: {path}")
+            elif kind == "raw_artifact":
+                path = require_string(ref, "path", owner)
+                if not path.startswith("tmp/"):
+                    fail(f"{owner} raw artifact evidence must be under tmp/: {path}")
+            else:
+                fail(f"{owner} has unknown evidence kind: {kind}")
+
+    required_baselines = {"mpk", "vdcores", "vllm", "sglang", "thunderkittens"}
+    if not required_baselines <= baseline_coverage:
+        missing = sorted(required_baselines - baseline_coverage)
+        fail(f"paper evaluation matrix missing baseline coverage: {missing}")
+    required_methods = {"pto_host_schedule", "pto_persistent_device"}
+    if not required_methods <= method_coverage:
+        missing = sorted(required_methods - method_coverage)
+        fail(f"paper evaluation matrix missing PTO method coverage: {missing}")
+    if not {"A100", "H200"} <= hardware_coverage:
+        fail("paper evaluation matrix must cover A100 and H200")
+
+
 def validate_viewer_data(root: Path = ROOT) -> None:
     benchmarks = load_json(root, "benchmarks.json")
     methods = load_json(root, "methods.json")
     paper_baselines = load_json(root, "paper_baselines.json")
+    paper_evaluation_matrix = load_json(root, "paper_evaluation_matrix.json")
     capture_imports = load_json(root, "capture_imports.json")
     results = load_json(root, "results.json")
     benchmark_ids = validate_benchmarks(benchmarks, root)
     method_ids = validate_methods(methods, root)
-    validate_paper_baselines(paper_baselines)
+    baseline_ids = validate_paper_baselines(paper_baselines)
     validate_capture_imports(capture_imports, benchmark_ids, method_ids)
     validate_results(results, benchmark_ids, method_ids)
+    validate_paper_evaluation_matrix(
+        paper_evaluation_matrix,
+        benchmark_ids,
+        method_ids,
+        baseline_ids,
+        results,
+        root,
+    )
 
 
 def main() -> None:

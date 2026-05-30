@@ -157,6 +157,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "styles.css").is_file()
     assert (VIEWER_ROOT / "viewer.js").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baselines.json").is_file()
+    assert (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").is_file()
     assert (VIEWER_ROOT / "data" / "capture_imports.json").is_file()
     viewer_js = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
     for required in [
@@ -165,6 +166,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "run.inputs.repeat_policy",
         "method.category",
         "method.launch_model",
+        "paperEvaluation",
+        "paper_evaluation_matrix",
         "result_records",
         "raw_artifact",
         "correctness",
@@ -179,6 +182,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     paper_baselines = json.loads(
         (VIEWER_ROOT / "data" / "paper_baselines.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    paper_evaluation = json.loads(
+        (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").read_text(
             encoding="utf-8"
         )
     )
@@ -220,6 +228,39 @@ def test_benchmark_viewer_has_json_backed_review_data():
         baseline = by_id[baseline_id]
         assert baseline["status"] == "source_cloned_for_survey"
         assert len(baseline["source"]["commit"]) == 40
+
+    matrix_ids = {
+        item["id"] for item in paper_evaluation["paper_evaluation_matrix"]
+    }
+    assert {
+        "host_schedule_launch_overhead",
+        "persistent_device_scheduler_overhead",
+        "tensor_core_tile_baselines",
+        "llm_serving_paper_baselines",
+    } <= matrix_ids
+    covered_baselines = {
+        baseline_id
+        for item in paper_evaluation["paper_evaluation_matrix"]
+        for baseline_id in item["paper_baseline_ids"]
+    }
+    assert {
+        "mpk",
+        "vdcores",
+        "vllm",
+        "sglang",
+        "thunderkittens",
+    } <= covered_baselines
+    for item in paper_evaluation["paper_evaluation_matrix"]:
+        assert item["claim"]
+        assert item["status"]
+        assert item["workload_ids"]
+        assert item["method_ids"]
+        assert item["hardware_targets"]
+        assert "correctness" in item["required_metrics"]
+        assert "raw_artifacts" in item["required_metrics"]
+        assert item["current_evidence_refs"]
+        assert item["missing_evidence"]
+        assert item["promotion_gate"]
 
     assert results["snapshot"]["commit"] == "743709f3"
     assert results["snapshot"]["full_capture"]["samples"] == 1350
@@ -280,6 +321,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-cuda-example-contract.md"
+    ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-paper-evaluation-matrix.md"
     ).is_file()
 
     example_root = ROOT / "examples" / "cuda"

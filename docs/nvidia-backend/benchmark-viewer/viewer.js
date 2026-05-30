@@ -2,6 +2,7 @@ const DATA_FILES = {
   benchmarks: "data/benchmarks.json",
   methods: "data/methods.json",
   paperBaselines: "data/paper_baselines.json",
+  paperEvaluation: "data/paper_evaluation_matrix.json",
   results: "data/results.json",
 };
 
@@ -61,6 +62,13 @@ function methodName(id) {
   return method ? method.name : id;
 }
 
+function paperBaselineName(id) {
+  const baseline = state.paperBaselines.paper_baselines.find(
+    (item) => item.id === id,
+  );
+  return baseline ? baseline.name : id;
+}
+
 function renderSnapshot() {
   const snapshot = state.results.snapshot;
   const root = document.getElementById("snapshot");
@@ -97,6 +105,22 @@ function evidenceList(refs) {
     list.append(item);
   });
   return list;
+}
+
+function textList(items) {
+  const list = document.createElement("ul");
+  items.forEach((value) => {
+    const item = document.createElement("li");
+    item.append(text(value));
+    list.append(item);
+  });
+  return list;
+}
+
+function namedList(title, items) {
+  const heading = document.createElement("h3");
+  heading.append(text(title));
+  return [heading, textList(items)];
 }
 
 function commandBlock(command) {
@@ -190,6 +214,44 @@ function renderPaperBaselines() {
   }));
 }
 
+function renderPaperEvaluation() {
+  const root = document.getElementById("paper-evaluation-list");
+  root.replaceChildren(...state.paperEvaluation.paper_evaluation_matrix.map((claim) => {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.append(text(`${claim.title} (${claim.status})`));
+    const claimText = paragraph("Claim", claim.claim);
+    const metadata = fieldList([
+      ["Workloads", claim.workload_ids.map(benchmarkTitle).join(", ")],
+      ["Methods", claim.method_ids.map(methodName).join(", ")],
+      [
+        "Paper baselines",
+        claim.paper_baseline_ids.map(paperBaselineName).join(", ") || "None",
+      ],
+      ["Hardware targets", claim.hardware_targets.join(", ")],
+      ["Required metrics", claim.required_metrics.join(", ")],
+    ]);
+    const promotion = paragraph("Promotion gate", claim.promotion_gate);
+    const evidence = claim.current_evidence_refs.map((ref) => {
+      if (ref.kind === "viewer_result") {
+        const benchmark = benchmarkTitle(ref.benchmark_id);
+        const method = methodName(ref.method_id);
+        return `${ref.kind}: ${benchmark} / ${method} / ${ref.gpu}`;
+      }
+      return `${ref.kind}: ${ref.path}`;
+    });
+    details.append(
+      summary,
+      claimText,
+      metadata,
+      ...namedList("Current Evidence", evidence),
+      ...namedList("Missing Evidence", claim.missing_evidence),
+      promotion,
+    );
+    return details;
+  }));
+}
+
 function table(headers, rows) {
   const tableEl = document.createElement("table");
   const thead = document.createElement("thead");
@@ -257,18 +319,32 @@ function wireTabs() {
 async function main() {
   wireTabs();
   try {
-    const [benchmarks, methods, paperBaselines, results] = await Promise.all([
+    const [
+      benchmarks,
+      methods,
+      paperBaselines,
+      paperEvaluation,
+      results,
+    ] = await Promise.all([
       loadJson(DATA_FILES.benchmarks),
       loadJson(DATA_FILES.methods),
       loadJson(DATA_FILES.paperBaselines),
+      loadJson(DATA_FILES.paperEvaluation),
       loadJson(DATA_FILES.results),
     ]);
-    Object.assign(state, {benchmarks, methods, paperBaselines, results});
+    Object.assign(state, {
+      benchmarks,
+      methods,
+      paperBaselines,
+      paperEvaluation,
+      results,
+    });
     renderSnapshot();
     renderHeadlineResults();
     renderBenchmarks();
     renderMethods();
     renderPaperBaselines();
+    renderPaperEvaluation();
     renderResults();
   } catch (error) {
     const errorBox = document.getElementById("load-error");

@@ -54,6 +54,7 @@ def check_evaluation_docs() -> None:
     require_file(DOC_ROOT / "changelog" / "2026-05-31-viewer-result-export.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-changelog-contract.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-cuda-example-contract.md")
+    require_file(DOC_ROOT / "changelog" / "2026-05-31-paper-evaluation-matrix.md")
 
 
 def require_text(path: Path, needles: list[str]) -> None:
@@ -142,6 +143,8 @@ def check_viewer_data() -> None:
         "run.inputs.repeat_policy",
         "method.category",
         "method.launch_model",
+        "paperEvaluation",
+        "paper_evaluation_matrix",
         "result_records",
         "raw_artifact",
         "correctness",
@@ -153,6 +156,9 @@ def check_viewer_data() -> None:
     methods = load_json(VIEWER_ROOT / "data" / "methods.json")
     capture_imports = load_json(VIEWER_ROOT / "data" / "capture_imports.json")
     paper_baselines = load_json(VIEWER_ROOT / "data" / "paper_baselines.json")
+    paper_evaluation = load_json(
+        VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
+    )
     results = load_json(VIEWER_ROOT / "data" / "results.json")
 
     benchmark_ids = {item["id"] for item in benchmarks.get("benchmarks", [])}
@@ -217,6 +223,27 @@ def check_viewer_data() -> None:
             fail(f"paper baseline {baseline['id']} is not cloned for survey")
         if len(source.get("commit", "")) != 40:
             fail(f"paper baseline {baseline['id']} has no pinned commit")
+
+    matrix_ids = {
+        item["id"] for item in paper_evaluation.get("paper_evaluation_matrix", [])
+    }
+    required_matrix_ids = {
+        "host_schedule_launch_overhead",
+        "persistent_device_scheduler_overhead",
+        "tensor_core_tile_baselines",
+        "llm_serving_paper_baselines",
+    }
+    if not required_matrix_ids <= matrix_ids:
+        missing = sorted(required_matrix_ids - matrix_ids)
+        fail(f"missing paper evaluation matrix ids: {missing}")
+    matrix_baselines = {
+        baseline_id
+        for item in paper_evaluation["paper_evaluation_matrix"]
+        for baseline_id in item.get("paper_baseline_ids", [])
+    }
+    if not required_paper_baselines <= matrix_baselines:
+        missing = sorted(required_paper_baselines - matrix_baselines)
+        fail(f"paper evaluation matrix missing baseline ids: {missing}")
 
     snapshot = results.get("snapshot", {})
     if snapshot.get("commit") != "743709f3":

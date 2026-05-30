@@ -69,6 +69,23 @@ Each paper-baseline record must include:
   source paper;
 - `next_action`: concrete next command or setup step.
 
+Each paper-evaluation matrix claim must include:
+
+- `id`: stable claim identifier;
+- `claim`: the paper claim or comparison being prepared;
+- `status`: planned, partially captured, or ready for paper claim;
+- `workload_ids`: benchmark records that define the workload;
+- `method_ids`: PTO, vendor, framework, or diagnostic methods in scope;
+- `paper_baseline_ids`: MPK, VDCores, or paper-baseline systems in scope;
+- `hardware_targets`: required GPU classes;
+- `required_metrics`: correctness, timing, throughput, scheduler, resource,
+  and artifact fields needed before promotion;
+- `current_evidence_refs`: viewer rows, stable docs, or tmp artifact roots
+  that support the current status;
+- `missing_evidence`: explicit gaps before the claim is paper-ready;
+- `promotion_gate`: condition for moving from planned or partial to
+  paper-ready.
+
 ## Code Evidence Contract
 
 Docs may describe implemented behavior only when one of these is true:
