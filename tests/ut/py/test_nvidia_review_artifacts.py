@@ -750,6 +750,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     } <= probe_baselines
     for item in paper_baseline_probes["paper_baseline_probes"]:
         assert item["latest_artifact_root"].startswith("tmp/")
+        assert (
+            item["latest_artifact_root"]
+            == "tmp/cuda-backend/paper-baselines/probes/"
+            "paired-a100-h200-57de1a6b/"
+        )
         assert item["checks"]
         assert item["next_action"]
         if item["paper_baseline_id"] == "thunderkittens":
@@ -766,6 +771,13 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 "matplotlib",
                 "tqdm",
             } <= probed_modules
+        if item["paper_baseline_id"] in {"mpk", "vdcores"}:
+            probed_modules = {
+                check["module"]
+                for check in item["checks"]
+                if check["kind"] == "python_module"
+            }
+            assert "transformers" in probed_modules
 
     matrix_ids = {
         item["id"] for item in paper_evaluation["paper_evaluation_matrix"]
@@ -964,6 +976,9 @@ def test_review_policy_changelog_and_examples_exist():
     assert (DOC_ROOT / "changelog" / "2026-05-31-serving-policy.md").is_file()
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-serving-command-plan.md"
+    ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-paired-probe-dependencies.md"
     ).is_file()
 
     example_root = ROOT / "examples" / "cuda"

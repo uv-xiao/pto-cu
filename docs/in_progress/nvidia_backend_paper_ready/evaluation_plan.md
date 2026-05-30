@@ -160,7 +160,7 @@ with `.agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py`. The
 probe checks pinned source commits, selected entrypoint paths, Python syntax,
 required Python modules, CUDA toolkit availability, and visible GPUs. The
 latest paired readiness artifact is recorded at
-`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-67c5c655/`.
+`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/`.
 Use `.agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py`
 for paired A100/H200 readiness. In `--sync-remote-tree` mode it copies the
 local checkout to the H200 host, skips remote Git, runs the remote probe with
@@ -169,6 +169,10 @@ local `a100-probe.json`. The paired runner also syncs `tmp/baselines/`
 separately, because those source checkouts are required probe inputs but
 generated `tmp/cuda-backend/` outputs should not be copied as part of the repo
 tree sync.
+The 57de1a6b paired probe also checks the `transformers` module for MPK and
+VDCores, matching the selected Qwen3 and Llama entrypoint imports. The H200
+project venv now has `transformers` installed, so MPK, VDCores, and
+ThunderKittens remain setup-ready on H200 while vLLM and SGLang remain partial.
 ThunderKittens readiness must include the selected PyTorch-extension
 dependencies (`torch`, `pybind11`, `numpy`, `pandas`, `matplotlib`, and
 `tqdm`), not just source-file existence. After installing those modules in

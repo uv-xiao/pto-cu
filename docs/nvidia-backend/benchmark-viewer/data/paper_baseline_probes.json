@@ -5,7 +5,7 @@
       "paper_baseline_id": "mpk",
       "title": "MPK Source Entrypoints",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-67c5c655/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/",
       "checks": [
         {
           "kind": "path_exists",
@@ -24,6 +24,11 @@
         },
         {
           "kind": "python_module",
+          "module": "transformers",
+          "why": "MPK Qwen3 demo imports AutoTokenizer and AutoConfig from Transformers."
+        },
+        {
+          "kind": "python_module",
           "module": "triton",
           "why": "The MPK paper compares against Triton-style operator paths."
         }
@@ -35,7 +40,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Source Entrypoints",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-67c5c655/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/",
       "checks": [
         {
           "kind": "path_exists",
@@ -51,6 +56,11 @@
           "kind": "python_module",
           "module": "torch",
           "why": "VDCores Llama materialization and correctness paths depend on PyTorch."
+        },
+        {
+          "kind": "python_module",
+          "module": "transformers",
+          "why": "VDCores sched.py imports AutoModelForCausalLM, AutoTokenizer, and AutoConfig from Transformers."
         }
       ],
       "next_action": "Build the VDCores extension on H200/H100-class hardware and run the Llama decode correctness and benchmark commands."
@@ -60,7 +70,7 @@
       "paper_baseline_id": "vllm",
       "title": "vLLM Source Entrypoints",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-67c5c655/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/",
       "checks": [
         {
           "kind": "path_exists",
@@ -95,7 +105,7 @@
       "paper_baseline_id": "sglang",
       "title": "SGLang Source Entrypoints",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-67c5c655/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/",
       "checks": [
         {
           "kind": "path_exists",
@@ -130,7 +140,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Source Entrypoints",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-67c5c655/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/",
       "checks": [
         {
           "kind": "path_exists",

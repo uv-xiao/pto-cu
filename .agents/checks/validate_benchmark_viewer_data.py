@@ -363,6 +363,8 @@ def validate_paper_baseline_probes(
             if not required_modules <= modules:
                 missing = sorted(required_modules - modules)
                 fail(f"{owner} missing ThunderKittens modules: {missing}")
+        if baseline_id in {"mpk", "vdcores"} and "transformers" not in modules:
+            fail(f"{owner} missing Transformers module probe")
     required_baselines = {"mpk", "vdcores", "vllm", "sglang", "thunderkittens"}
     if not required_baselines <= covered_baselines:
         missing = sorted(required_baselines - covered_baselines)

@@ -606,3 +606,36 @@ Each entry must include:
 - Handoff summary and remaining gaps: baseline owners should execute the
   generated commands, preserve the raw artifacts named in each command row,
   then import normalized raw JSON through `paper_baseline_viewer_export.py`.
+
+### 2026-05-31 - Paired Probe Dependency Tightening
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned readiness
+  correction for MPK/VDCores model-stack dependencies.
+- Exact Codex command or script invocation: installed `transformers` in the
+  H200 project venv, then ran
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py
+  --sync-remote-tree`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer probe data, review validators and
+  tests, evaluation plan, dispatch log, changelog docs, and generated `tmp/`
+  paired probe artifacts. No upstream repositories were edited.
+- Dependencies and blocked assumptions: MPK and VDCores import Transformers
+  in their selected model entrypoints, so readiness must check that module
+  explicitly. vLLM and SGLang remain partial on H200 because their packages
+  are not installed in the project venv.
+- Verification commands and results: the paired probe wrote
+  `tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/`.
+  A100 reports MPK, VDCores, SGLang, and ThunderKittens pass with vLLM
+  partial. H200 reports MPK, VDCores, and ThunderKittens pass with vLLM and
+  SGLang partial.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: next setup work should install or build
+  vLLM and SGLang in the H200 project venv, rerun the paired probe, and then
+  execute the generated serving command plan.
