@@ -71,10 +71,23 @@ def check_ultimate_goal_contract() -> None:
     require_file(GOAL_ROOT / "dispatch_log.md")
     require_file(GOAL_ROOT / "work_preparation.md")
     require_text(
+        GOAL_ROOT / "baseline_survey.md",
+        [
+            "mirage-project/mirage",
+            "vdcores/vdcores",
+            "vLLM",
+            "SGLang",
+            "ThunderKittens",
+            "tmp/baselines/mirage-mpk",
+            "tmp/baselines/vdcores",
+        ],
+    )
+    require_text(
         GOAL_ROOT / "shared_contracts.md",
         [
             "benchmark_id",
             "method_id",
+            "paper_baseline_id",
             "evidence_refs",
             "changelog report",
             "source notes",
@@ -112,6 +125,7 @@ def check_viewer_data() -> None:
 
     benchmarks = load_json(VIEWER_ROOT / "data" / "benchmarks.json")
     methods = load_json(VIEWER_ROOT / "data" / "methods.json")
+    paper_baselines = load_json(VIEWER_ROOT / "data" / "paper_baselines.json")
     results = load_json(VIEWER_ROOT / "data" / "results.json")
 
     benchmark_ids = {item["id"] for item in benchmarks.get("benchmarks", [])}
@@ -140,6 +154,27 @@ def check_viewer_data() -> None:
     if not required_methods <= method_ids:
         fail(f"missing method ids: {sorted(required_methods - method_ids)}")
     check_evidence_refs(methods["methods"], "method")
+
+    paper_baseline_ids = {
+        item["id"] for item in paper_baselines.get("paper_baselines", [])
+    }
+    required_paper_baselines = {
+        "mpk",
+        "vdcores",
+        "vllm",
+        "sglang",
+        "thunderkittens",
+    }
+    if not required_paper_baselines <= paper_baseline_ids:
+        missing = sorted(required_paper_baselines - paper_baseline_ids)
+        fail(f"missing paper baseline ids: {missing}")
+    for baseline in paper_baselines["paper_baselines"]:
+        for key in ("status", "paper_role", "next_action"):
+            if not baseline.get(key):
+                fail(f"paper baseline {baseline['id']} has empty {key}")
+        source = baseline.get("source", {})
+        if not source.get("upstream_url") or not source.get("local_tmp_path"):
+            fail(f"paper baseline {baseline['id']} has incomplete source")
 
     snapshot = results.get("snapshot", {})
     if snapshot.get("commit") != "743709f3":

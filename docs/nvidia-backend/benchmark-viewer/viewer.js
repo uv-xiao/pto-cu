@@ -1,6 +1,7 @@
 const DATA_FILES = {
   benchmarks: "data/benchmarks.json",
   methods: "data/methods.json",
+  paperBaselines: "data/paper_baselines.json",
   results: "data/results.json",
 };
 
@@ -122,6 +123,29 @@ function renderMethods() {
   }));
 }
 
+function renderPaperBaselines() {
+  const root = document.getElementById("baseline-list");
+  root.replaceChildren(...state.paperBaselines.paper_baselines.map((baseline) => {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.append(text(`${baseline.name} (${baseline.status})`));
+
+    const role = document.createElement("p");
+    role.innerHTML = `<strong>Paper role:</strong> ${baseline.paper_role}`;
+    const source = document.createElement("p");
+    source.innerHTML = `<strong>Source:</strong> ${baseline.source.upstream_url} at ${baseline.source.commit}`;
+    const local = document.createElement("p");
+    local.innerHTML = `<strong>Local note:</strong> ${baseline.source.local_tmp_path}`;
+    const reproduce = document.createElement("p");
+    reproduce.innerHTML = `<strong>Paper baselines:</strong> ${baseline.paper_baselines_to_reproduce.join(", ")}`;
+    const next = document.createElement("p");
+    next.innerHTML = `<strong>Next action:</strong> ${baseline.next_action}`;
+
+    details.append(summary, role, source, local, reproduce, next);
+    return details;
+  }));
+}
+
 function table(headers, rows) {
   const tableEl = document.createElement("table");
   const thead = document.createElement("thead");
@@ -177,16 +201,18 @@ function wireTabs() {
 async function main() {
   wireTabs();
   try {
-    const [benchmarks, methods, results] = await Promise.all([
+    const [benchmarks, methods, paperBaselines, results] = await Promise.all([
       loadJson(DATA_FILES.benchmarks),
       loadJson(DATA_FILES.methods),
+      loadJson(DATA_FILES.paperBaselines),
       loadJson(DATA_FILES.results),
     ]);
-    Object.assign(state, {benchmarks, methods, results});
+    Object.assign(state, {benchmarks, methods, paperBaselines, results});
     renderSnapshot();
     renderHeadlineResults();
     renderBenchmarks();
     renderMethods();
+    renderPaperBaselines();
     renderResults();
   } catch (error) {
     const errorBox = document.getElementById("load-error");

@@ -16,6 +16,7 @@
         <button type="button" class="tab active" data-view="summary">Summary</button>
         <button type="button" class="tab" data-view="benchmarks">Benchmarks</button>
         <button type="button" class="tab" data-view="methods">Methods</button>
+        <button type="button" class="tab" data-view="baselines">Baselines</button>
         <button type="button" class="tab" data-view="results">Results</button>
       </nav>
     </header>
@@ -37,6 +38,11 @@
       <section id="methods" class="view" aria-labelledby="methods-title">
         <h2 id="methods-title">Methods And Runtimes</h2>
         <div id="method-list" class="stack"></div>
+      </section>
+
+      <section id="baselines" class="view" aria-labelledby="baselines-title">
+        <h2 id="baselines-title">Paper Baseline Readiness</h2>
+        <div id="baseline-list" class="stack"></div>
       </section>
 
       <section id="results" class="view" aria-labelledby="results-title">

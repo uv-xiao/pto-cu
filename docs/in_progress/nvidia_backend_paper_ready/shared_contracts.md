@@ -39,6 +39,19 @@ Each result record must include:
 - `raw_artifact`: tmp path for JSON, CSV, log, or report input;
 - `correctness`: pass, fail, skipped, or not applicable with reason.
 
+Each paper-baseline record must include:
+
+- `paper_baseline_id`: stable identifier for MPK, VDCores, or a baseline used
+  by their papers;
+- `paper_role`: why the baseline is required for paper readiness;
+- `status`: source cloned, planned, build-ready, evaluated, or blocked;
+- `source.upstream_url`: canonical repository or paper URL;
+- `source.local_tmp_path`: local inspection path under `tmp/`;
+- `source.commit`: commit, tag, release, or pending marker;
+- `paper_baselines_to_reproduce`: named baselines or configurations from the
+  source paper;
+- `next_action`: concrete next command or setup step.
+
 ## Code Evidence Contract
 
 Docs may describe implemented behavior only when one of these is true:

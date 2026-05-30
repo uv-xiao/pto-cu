@@ -31,6 +31,11 @@ Local source notes already include extracted MPK and VDCores paper text under
 `tmp/sources/`. Future baseline clones and command logs should stay under
 `tmp/baselines/` and `tmp/cuda-backend/`.
 
+`baseline_survey.md` records the current source state for MPK and VDCores and
+the planned source-capture state for vLLM, SGLang, and ThunderKittens. The
+benchmark viewer loads the same baseline readiness data from
+`docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json`.
+
 ## Workloads
 
 The workload ladder should grow from controlled kernels to paper-level systems:

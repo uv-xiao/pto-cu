@@ -1,0 +1,91 @@
+{
+  "paper_baselines": [
+    {
+      "id": "mpk",
+      "name": "Mirage Persistent Kernel",
+      "paper_role": "Required mega-kernel baseline and comparison system for the persistent-device runtime.",
+      "status": "source_cloned_for_survey",
+      "source": {
+        "upstream_url": "https://github.com/mirage-project/mirage/tree/mpk",
+        "local_tmp_path": "tmp/baselines/mirage-mpk",
+        "commit": "bde2dec1736d612f7a2e4c89e6182560a863072f"
+      },
+      "paper_baselines_to_reproduce": [
+        "vLLM",
+        "SGLang",
+        "FlashInfer or FlashAttention",
+        "cuBLAS or cuTLASS",
+        "CUDA operator path",
+        "Triton operator path"
+      ],
+      "next_action": "Build the MPK branch on Hopper-class hardware, run the Qwen3 demo with native Triton/FlashInfer and MPK, then export the run metadata into viewer results."
+    },
+    {
+      "id": "vdcores",
+      "name": "VDCores",
+      "paper_role": "Required decoupled-resource runtime baseline for persistent-device scheduling and asynchronous memory/compute decomposition.",
+      "status": "source_cloned_for_survey",
+      "source": {
+        "upstream_url": "https://github.com/vdcores/vdcores",
+        "local_tmp_path": "tmp/baselines/vdcores",
+        "commit": "5247328cf3f893ed9df95f9f38e7e9a97f0cbfb1"
+      },
+      "paper_baselines_to_reproduce": [
+        "vLLM",
+        "SGLang",
+        "Mirage",
+        "ThunderKittens variants",
+        "Torch plus ThunderKittens"
+      ],
+      "next_action": "Build the CUDA 13 sm_90a extension on H100/H200-class hardware and run the Llama decode demo plus correctness path before comparing against PTO persistent-device workloads."
+    },
+    {
+      "id": "vllm",
+      "name": "vLLM",
+      "paper_role": "Framework serving baseline used by MPK and VDCores papers.",
+      "status": "planned_source_capture",
+      "source": {
+        "upstream_url": "https://github.com/vllm-project/vllm",
+        "local_tmp_path": "tmp/baselines/vllm",
+        "commit": "pending"
+      },
+      "paper_baselines_to_reproduce": [
+        "MPK paper serving comparison",
+        "VDCores paper decode comparison"
+      ],
+      "next_action": "Capture the exact release or commit compatible with the selected CUDA and model stack, then record serving commands and output JSON."
+    },
+    {
+      "id": "sglang",
+      "name": "SGLang",
+      "paper_role": "Framework serving baseline used by MPK and VDCores papers.",
+      "status": "planned_source_capture",
+      "source": {
+        "upstream_url": "https://github.com/sgl-project/sglang",
+        "local_tmp_path": "tmp/baselines/sglang",
+        "commit": "pending"
+      },
+      "paper_baselines_to_reproduce": [
+        "MPK paper serving comparison",
+        "VDCores paper decode comparison"
+      ],
+      "next_action": "Capture a compatible release or commit and run the same prompt/decode workload as the PTO and MPK/VDCores evaluations."
+    },
+    {
+      "id": "thunderkittens",
+      "name": "ThunderKittens",
+      "paper_role": "Kernel-programming baseline family used by the VDCores paper.",
+      "status": "planned_source_capture",
+      "source": {
+        "upstream_url": "https://github.com/HazyResearch/ThunderKittens",
+        "local_tmp_path": "tmp/baselines/thunderkittens",
+        "commit": "pending"
+      },
+      "paper_baselines_to_reproduce": [
+        "VDCores ThunderKittens variants",
+        "Torch plus ThunderKittens"
+      ],
+      "next_action": "Capture source and identify the exact kernels or examples that correspond to the VDCores paper baselines."
+    }
+  ]
+}

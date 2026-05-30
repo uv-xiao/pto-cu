@@ -6,6 +6,8 @@
   `docs/in_progress/`.
 - Added dispatcher preparation, shared benchmark/evidence contracts, and a
   paper-ready evaluation plan.
+- Added a baseline source survey and paper-baseline viewer data for MPK,
+  VDCores, vLLM, SGLang, and ThunderKittens.
 - Extended the NVIDIA review artifact test to require the ultimate-goal docs.
 - The review guard now checks the new goal artifacts.
 
@@ -18,6 +20,11 @@ JSON owns benchmark status, and changelog reports own human-readable deltas.
 The goal also records the key CUDA architecture constraint: the
 persistent-device runtime cannot rely on an AICPU launcher, so its scheduler
 must be compiled into the CUDA device binary with the task implementations.
+
+The baseline survey separates source readiness from result readiness. MPK and
+VDCores are now recorded as cloned-for-survey systems, while their paper
+baselines are explicitly listed as planned source captures instead of silently
+appearing as measured methods.
 
 ## Evaluation Run
 

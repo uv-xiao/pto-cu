@@ -41,12 +41,18 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "index.html").is_file()
     assert (VIEWER_ROOT / "styles.css").is_file()
     assert (VIEWER_ROOT / "viewer.js").is_file()
+    assert (VIEWER_ROOT / "data" / "paper_baselines.json").is_file()
 
     benchmarks = json.loads(
         (VIEWER_ROOT / "data" / "benchmarks.json").read_text(encoding="utf-8")
     )
     methods = json.loads(
         (VIEWER_ROOT / "data" / "methods.json").read_text(encoding="utf-8")
+    )
+    paper_baselines = json.loads(
+        (VIEWER_ROOT / "data" / "paper_baselines.json").read_text(
+            encoding="utf-8"
+        )
     )
     results = json.loads(
         (VIEWER_ROOT / "data" / "results.json").read_text(encoding="utf-8")
@@ -64,6 +70,18 @@ def test_benchmark_viewer_has_json_backed_review_data():
 
     method_ids = {item["id"] for item in methods["methods"]}
     assert {"pto_host_schedule", "pto_persistent_device", "cublas_sgemm_graph"} <= method_ids
+
+    paper_baseline_ids = {
+        item["id"] for item in paper_baselines["paper_baselines"]
+    }
+    assert {"mpk", "vdcores"} <= paper_baseline_ids
+    assert "vllm" in paper_baseline_ids
+    assert "sglang" in paper_baseline_ids
+    for baseline in paper_baselines["paper_baselines"]:
+        assert baseline["status"]
+        assert baseline["source"]["upstream_url"]
+        assert baseline["paper_role"]
+        assert baseline["next_action"]
 
     assert results["snapshot"]["commit"] == "743709f3"
     assert results["snapshot"]["full_capture"]["samples"] == 1350
@@ -127,6 +145,7 @@ def test_ultimate_goal_artifacts_define_paper_ready_cuda_path():
     assert (goal_root / "work_preparation.md").is_file()
     assert (goal_root / "shared_contracts.md").is_file()
     assert (goal_root / "evaluation_plan.md").is_file()
+    assert (goal_root / "baseline_survey.md").is_file()
 
     goal_text = goal_file.read_text(encoding="utf-8")
     for required in [
@@ -159,8 +178,23 @@ def test_ultimate_goal_artifacts_define_paper_ready_cuda_path():
     for required in [
         "benchmark_id",
         "method_id",
+        "paper_baseline_id",
         "evidence_refs",
         "changelog report",
         "source notes",
     ]:
         assert required in contracts_text
+
+    baseline_text = (goal_root / "baseline_survey.md").read_text(
+        encoding="utf-8"
+    )
+    for required in [
+        "mirage-project/mirage",
+        "vdcores/vdcores",
+        "vLLM",
+        "SGLang",
+        "ThunderKittens",
+        "tmp/baselines/mirage-mpk",
+        "tmp/baselines/vdcores",
+    ]:
+        assert required in baseline_text

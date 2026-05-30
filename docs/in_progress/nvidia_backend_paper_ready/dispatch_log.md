@@ -47,3 +47,28 @@ Each entry must include:
   preparation PR, then dispatch child slices for viewer data expansion,
   evidence guard hardening, CUDA runtime maturity, examples, remote evaluation,
   and paper-ready baseline reproduction.
+
+### 2026-05-31 - Baseline Source Survey
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned baseline
+  source survey and viewer data expansion.
+- Exact Codex command or script invocation: not applicable because no worker
+  was launched in this entry.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, baseline readiness slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: `docs/in_progress/nvidia_backend_paper_ready/`,
+  `docs/nvidia-backend/benchmark-viewer/`, `.agents/checks/`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`, and local `tmp/` notes.
+- Dependencies and blocked assumptions: MPK and VDCores source clones are
+  survey inputs only; full builds and benchmark runs remain child slices.
+- Verification commands and results: the focused artifact test was run before
+  implementation and failed because `paper_baselines.json` and
+  `baseline_survey.md` did not exist.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: next baseline worker should capture vLLM,
+  SGLang, and ThunderKittens sources, then attempt MPK and VDCores build/run
+  reproduction on compatible GPU hosts.
