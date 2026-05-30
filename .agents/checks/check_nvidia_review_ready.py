@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 DOC_ROOT = ROOT / "docs" / "nvidia-backend"
 VIEWER_ROOT = DOC_ROOT / "benchmark-viewer"
+GOAL_ROOT = ROOT / "docs" / "in_progress" / "nvidia_backend_paper_ready"
 
 
 def fail(message: str) -> None:
@@ -44,6 +45,53 @@ def check_evaluation_docs() -> None:
     require_file(DOC_ROOT / "history" / "captures" / "legacy-captures.md")
     require_file(DOC_ROOT / "changelog" / "index.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-review-readiness.md")
+    require_file(DOC_ROOT / "changelog" / "2026-05-31-ultimate-goal.md")
+
+
+def require_text(path: Path, needles: list[str]) -> None:
+    require_file(path)
+    text = path.read_text(encoding="utf-8")
+    for needle in needles:
+        if needle not in text:
+            fail(f"{path.relative_to(ROOT)} missing required text: {needle}")
+
+
+def check_ultimate_goal_contract() -> None:
+    require_text(
+        ROOT / "docs" / "in_progress" / "nvidia_backend_paper_ready.md",
+        [
+            "standalone pto-cu",
+            "human-reviewable benchmark viewer",
+            "MPK",
+            "VDCores",
+            "remote evaluation fallback",
+            "code evidence",
+        ],
+    )
+    require_file(GOAL_ROOT / "dispatch_log.md")
+    require_file(GOAL_ROOT / "work_preparation.md")
+    require_text(
+        GOAL_ROOT / "shared_contracts.md",
+        [
+            "benchmark_id",
+            "method_id",
+            "evidence_refs",
+            "changelog report",
+            "source notes",
+        ],
+    )
+    require_text(
+        GOAL_ROOT / "evaluation_plan.md",
+        [
+            "paper-ready",
+            "Mirage Persistent Kernel",
+            "VDCores",
+            "CUDA Graph",
+            "cuBLAS",
+            "A100",
+            "H200",
+        ],
+    )
 
 
 def check_evidence_refs(records: list[dict], owner: str) -> None:
@@ -129,6 +177,7 @@ def check_examples_and_rules() -> None:
 
 def main() -> None:
     check_evaluation_docs()
+    check_ultimate_goal_contract()
     check_viewer_data()
     check_examples_and_rules()
     print("nvidia review guard passed")

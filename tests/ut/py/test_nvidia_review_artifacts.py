@@ -92,6 +92,9 @@ def test_review_policy_changelog_and_examples_exist():
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-review-readiness.md"
     ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-ultimate-goal.md"
+    ).is_file()
 
     example_root = ROOT / "examples" / "cuda"
     assert (example_root / "README.md").is_file()
@@ -113,3 +116,51 @@ def test_nvidia_branch_ci_avoids_ascend_jobs():
     assert "runs-on: [self-hosted, a5]" not in workflow
     assert "--platform a2a3" not in workflow
     assert "--platform a5" not in workflow
+
+
+def test_ultimate_goal_artifacts_define_paper_ready_cuda_path():
+    goal_root = ROOT / "docs" / "in_progress" / "nvidia_backend_paper_ready"
+    goal_file = ROOT / "docs" / "in_progress" / "nvidia_backend_paper_ready.md"
+
+    assert goal_file.is_file()
+    assert (goal_root / "dispatch_log.md").is_file()
+    assert (goal_root / "work_preparation.md").is_file()
+    assert (goal_root / "shared_contracts.md").is_file()
+    assert (goal_root / "evaluation_plan.md").is_file()
+
+    goal_text = goal_file.read_text(encoding="utf-8")
+    for required in [
+        "standalone pto-cu",
+        "human-reviewable benchmark viewer",
+        "MPK",
+        "VDCores",
+        "remote evaluation fallback",
+        "code evidence",
+    ]:
+        assert required in goal_text
+
+    evaluation_text = (goal_root / "evaluation_plan.md").read_text(
+        encoding="utf-8"
+    )
+    for required in [
+        "paper-ready",
+        "Mirage Persistent Kernel",
+        "VDCores",
+        "CUDA Graph",
+        "cuBLAS",
+        "A100",
+        "H200",
+    ]:
+        assert required in evaluation_text
+
+    contracts_text = (goal_root / "shared_contracts.md").read_text(
+        encoding="utf-8"
+    )
+    for required in [
+        "benchmark_id",
+        "method_id",
+        "evidence_refs",
+        "changelog report",
+        "source notes",
+    ]:
+        assert required in contracts_text
