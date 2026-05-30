@@ -11644,9 +11644,10 @@ def test_run_benchmark_uses_in_process_samples(monkeypatch):
         ("pto_host_schedule_quad", 3, 1024, 128, "compute_80"),
         ("pto_host_schedule_generic_args", 3, 1024, 128, "compute_80"),
         ("direct_driver", 3, 1024, 128, "compute_80"),
+        ("direct_runtime", 3, 1024, 128, "compute_80"),
         ("direct_driver_graph", 3, 1024, 128, "compute_80"),
     ]
-    assert len(payload["results"]) == 7
+    assert len(payload["results"]) == 8
 
 
 def test_run_benchmark_records_source_paper_metadata(monkeypatch):
@@ -11845,6 +11846,87 @@ def test_compile_unary_square_host_schedule_artifact_uses_unary_abi(tmp_path, mo
     assert "ctx->a[i] * ctx->a[i]" in Path(seen["source_path"]).read_text()
 
 
+def test_compile_runtime_api_vector_add_library_uses_nvcc_shared(tmp_path, monkeypatch):
+    cuda_benchmark = _load_benchmark_module()
+    seen = {}
+
+    def fake_run(command, check, capture_output, text):
+        seen["command"] = command
+        seen["check"] = check
+        seen["capture_output"] = capture_output
+        seen["text"] = text
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(cuda_benchmark, "_find_nvcc", lambda: "/usr/local/cuda/bin/nvcc")
+    monkeypatch.setattr(cuda_benchmark.subprocess, "run", fake_run)
+
+    library_path, source_kind = cuda_benchmark._compile_runtime_api_vector_add_library(
+        tmp_path,
+        "compute_90",
+    )
+
+    source_text = (tmp_path / "runtime_vector_add.cu").read_text()
+    assert source_kind == "nvcc-runtime-api-compute_90"
+    assert library_path == tmp_path / "runtime_vector_add.so"
+    assert "cudaLaunchKernel" in source_text
+    assert "pto_runtime_vector_add_once" in source_text
+    assert seen["command"] == [
+        "/usr/local/cuda/bin/nvcc",
+        "-shared",
+        "-Xcompiler",
+        "-fPIC",
+        "-std=c++17",
+        "-arch=compute_90",
+        str(tmp_path / "runtime_vector_add.cu"),
+        "-o",
+        str(tmp_path / "runtime_vector_add.so"),
+    ]
+    assert seen["check"] is False
+    assert seen["capture_output"] is True
+    assert seen["text"] is True
+
+
+def test_run_single_sample_dispatches_direct_runtime(monkeypatch):
+    cuda_benchmark = _load_benchmark_module()
+    seen = {}
+
+    def fake_compile_runtime_api_vector_add_library(work_dir, arch):
+        seen["compile"] = (Path(work_dir).name, arch)
+        return Path(work_dir) / "runtime_vector_add.so", f"fake-runtime-{arch}"
+
+    def fake_run_direct_runtime_sample(device, n, block_dim, library_path):
+        seen["run"] = (device, n, block_dim, Path(library_path).name)
+        return {
+            "baseline": "direct_runtime",
+            "n": n,
+            "block_dim": block_dim,
+            "host_wall_ns": 20,
+            "device_wall_ns": 10,
+            "status": "pass",
+        }
+
+    monkeypatch.setattr(
+        cuda_benchmark,
+        "_compile_runtime_api_vector_add_library",
+        fake_compile_runtime_api_vector_add_library,
+    )
+    monkeypatch.setattr(cuda_benchmark, "run_direct_runtime_sample", fake_run_direct_runtime_sample)
+
+    result = cuda_benchmark.run_single_sample(
+        baseline="direct_runtime",
+        device=3,
+        n=1024,
+        block_dim=128,
+        arch="compute_90",
+    )
+
+    assert seen["compile"][0].startswith("pto_cuda_runtime_")
+    assert seen["compile"][1] == "compute_90"
+    assert seen["run"] == (3, 1024, 128, "runtime_vector_add.so")
+    assert result["baseline"] == "direct_runtime"
+    assert result["ptx_source"] == "fake-runtime-compute_90"
+
+
 def test_run_benchmark_can_include_persistent_device_modes(monkeypatch):
     cuda_benchmark = _load_benchmark_module()
     seen = []
@@ -11883,6 +11965,7 @@ def test_run_benchmark_can_include_persistent_device_modes(monkeypatch):
         "pto_host_schedule_quad",
         "pto_host_schedule_generic_args",
         "direct_driver",
+        "direct_runtime",
         "direct_driver_graph",
         "pto_persistent_device",
         "pto_persistent_queue",
@@ -11932,7 +12015,7 @@ def test_run_benchmark_can_include_persistent_device_modes(monkeypatch):
         "cublas_sgemm",
         "cublas_sgemm_graph",
     ]
-    assert len(payload["results"]) == 54
+    assert len(payload["results"]) == 55
     assert any(result["baseline"] == "pto_persistent_dag_graph_reordered" for result in payload["results"])
 
 
@@ -14897,6 +14980,7 @@ def test_run_benchmark_can_include_same_work_batch_modes(monkeypatch):
         ("pto_host_schedule_quad", 1),
         ("pto_host_schedule_generic_args", 1),
         ("direct_driver", 1),
+        ("direct_runtime", 1),
         ("direct_driver_graph", 1),
         ("pto_persistent_device", 1),
         ("pto_persistent_queue", 1),
@@ -14950,7 +15034,7 @@ def test_run_benchmark_can_include_same_work_batch_modes(monkeypatch):
         ("pto_persistent_queue_batch", 6),
     ]
     assert payload["metadata"]["batch_tasks"] == 6
-    assert len(payload["results"]) == 57
+    assert len(payload["results"]) == 58
 
 
 def test_run_benchmark_can_include_worker_grid_batch_mode(monkeypatch):

@@ -188,6 +188,167 @@ extern "C" __global__ void pto_vector_add_f32(
     return ptx_path.read_bytes(), f"nvcc-slow-{arch}"
 
 
+def _compile_runtime_api_vector_add_library(work_dir: Path, arch: str) -> tuple[Path, str]:
+    nvcc = _find_nvcc()
+    if nvcc is None:
+        raise RuntimeError("nvcc is required for direct_runtime")
+
+    source_path = work_dir / "runtime_vector_add.cu"
+    source_path.write_text(
+        r"""
+#include <cuda_runtime_api.h>
+
+#include <chrono>
+#include <cstdint>
+#include <cstdlib>
+
+extern "C" __global__ void pto_runtime_vector_add_f32(
+    const float *a,
+    const float *b,
+    float *out,
+    unsigned long long n) {
+    unsigned long long i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) {
+        out[i] = a[i] + b[i];
+    }
+}
+
+extern "C" int pto_runtime_vector_add_once(
+    int device,
+    unsigned long long n,
+    int block_dim,
+    unsigned long long *host_wall_ns,
+    unsigned long long *device_wall_ns) {
+    if (host_wall_ns == nullptr || device_wall_ns == nullptr || n == 0 || block_dim <= 0) {
+        return 10001;
+    }
+
+    float *host_a = nullptr;
+    float *host_b = nullptr;
+    float *host_out = nullptr;
+    float *dev_a = nullptr;
+    float *dev_b = nullptr;
+    float *dev_out = nullptr;
+    cudaEvent_t start_event = nullptr;
+    cudaEvent_t stop_event = nullptr;
+    const size_t nbytes = static_cast<size_t>(n) * sizeof(float);
+    int status = 0;
+
+    auto cleanup = [&]() {
+        if (start_event != nullptr) {
+            cudaEventDestroy(start_event);
+        }
+        if (stop_event != nullptr) {
+            cudaEventDestroy(stop_event);
+        }
+        if (dev_a != nullptr) {
+            cudaFree(dev_a);
+        }
+        if (dev_b != nullptr) {
+            cudaFree(dev_b);
+        }
+        if (dev_out != nullptr) {
+            cudaFree(dev_out);
+        }
+        std::free(host_a);
+        std::free(host_b);
+        std::free(host_out);
+    };
+
+    host_a = static_cast<float *>(std::malloc(nbytes));
+    host_b = static_cast<float *>(std::malloc(nbytes));
+    host_out = static_cast<float *>(std::malloc(nbytes));
+    if (host_a == nullptr || host_b == nullptr || host_out == nullptr) {
+        cleanup();
+        return 10002;
+    }
+    for (unsigned long long i = 0; i < n; ++i) {
+        host_a[i] = static_cast<float>(i);
+        host_b[i] = static_cast<float>(2 * i);
+        host_out[i] = 0.0f;
+    }
+
+#define PTO_RUNTIME_CHECK(expr)                    \
+    do {                                           \
+        cudaError_t err__ = (expr);                \
+        if (err__ != cudaSuccess) {                \
+            status = static_cast<int>(err__);      \
+            cleanup();                             \
+            return status;                         \
+        }                                          \
+    } while (0)
+
+    PTO_RUNTIME_CHECK(cudaSetDevice(device));
+    PTO_RUNTIME_CHECK(cudaMalloc(reinterpret_cast<void **>(&dev_a), nbytes));
+    PTO_RUNTIME_CHECK(cudaMalloc(reinterpret_cast<void **>(&dev_b), nbytes));
+    PTO_RUNTIME_CHECK(cudaMalloc(reinterpret_cast<void **>(&dev_out), nbytes));
+    PTO_RUNTIME_CHECK(cudaMemcpy(dev_a, host_a, nbytes, cudaMemcpyHostToDevice));
+    PTO_RUNTIME_CHECK(cudaMemcpy(dev_b, host_b, nbytes, cudaMemcpyHostToDevice));
+    PTO_RUNTIME_CHECK(cudaEventCreate(&start_event));
+    PTO_RUNTIME_CHECK(cudaEventCreate(&stop_event));
+
+    unsigned int grid_dim =
+        static_cast<unsigned int>((n + static_cast<unsigned long long>(block_dim) - 1) /
+                                  static_cast<unsigned long long>(block_dim));
+    void *kernel_args[] = {&dev_a, &dev_b, &dev_out, &n};
+
+    auto host_start = std::chrono::steady_clock::now();
+    PTO_RUNTIME_CHECK(cudaEventRecord(start_event, nullptr));
+    PTO_RUNTIME_CHECK(cudaLaunchKernel(
+        reinterpret_cast<const void *>(pto_runtime_vector_add_f32),
+        dim3(grid_dim),
+        dim3(static_cast<unsigned int>(block_dim)),
+        kernel_args,
+        0,
+        nullptr));
+    PTO_RUNTIME_CHECK(cudaEventRecord(stop_event, nullptr));
+    PTO_RUNTIME_CHECK(cudaEventSynchronize(stop_event));
+    auto host_stop = std::chrono::steady_clock::now();
+
+    float elapsed_ms = 0.0f;
+    PTO_RUNTIME_CHECK(cudaEventElapsedTime(&elapsed_ms, start_event, stop_event));
+    PTO_RUNTIME_CHECK(cudaMemcpy(host_out, dev_out, nbytes, cudaMemcpyDeviceToHost));
+
+#undef PTO_RUNTIME_CHECK
+
+    for (unsigned long long i = 0; i < n; ++i) {
+        if (host_out[i] != static_cast<float>(3 * i)) {
+            cleanup();
+            return 10003;
+        }
+    }
+
+    *host_wall_ns = static_cast<unsigned long long>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(host_stop - host_start).count());
+    *device_wall_ns = static_cast<unsigned long long>(elapsed_ms * 1000000.0f);
+    cleanup();
+    return 0;
+}
+""".lstrip(),
+        encoding="utf-8",
+    )
+    shared_path = work_dir / "runtime_vector_add.so"
+    result = subprocess.run(
+        [
+            nvcc,
+            "-shared",
+            "-Xcompiler",
+            "-fPIC",
+            "-std=c++17",
+            f"-arch={arch}",
+            str(source_path),
+            "-o",
+            str(shared_path),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"nvcc Runtime API shared-library compile failed:\n{result.stderr}")
+    return shared_path, f"nvcc-runtime-api-{arch}"
+
+
 def _check_cuda(rc: int, op: str) -> None:
     if rc != 0:
         raise RuntimeError(f"{op} failed with CUDA driver code {rc}")
@@ -450,6 +611,43 @@ class DirectCudaDriver:
             "block_dim": block_dim,
             "host_wall_ns": host_wall_ns,
             "device_wall_ns": int(elapsed_ms.value * 1_000_000),
+            "status": "pass",
+        }
+
+
+class DirectCudaRuntime:
+    """Minimal CUDA Runtime API wrapper used as a direct launch baseline."""
+
+    def __init__(self, library_path: Path):
+        self.lib = ctypes.CDLL(str(library_path))
+        self.lib.pto_runtime_vector_add_once.argtypes = [
+            ctypes.c_int,
+            ctypes.c_ulonglong,
+            ctypes.c_int,
+            ctypes.POINTER(ctypes.c_ulonglong),
+            ctypes.POINTER(ctypes.c_ulonglong),
+        ]
+        self.lib.pto_runtime_vector_add_once.restype = ctypes.c_int
+
+    def run_vector_add(self, device: int, n: int, block_dim: int) -> dict[str, Any]:
+        host_wall_ns = ctypes.c_ulonglong()
+        device_wall_ns = ctypes.c_ulonglong()
+        rc = self.lib.pto_runtime_vector_add_once(
+            device,
+            n,
+            block_dim,
+            ctypes.byref(host_wall_ns),
+            ctypes.byref(device_wall_ns),
+        )
+        if rc != 0:
+            raise RuntimeError(f"direct Runtime API vector-add failed with code {rc}")
+        return {
+            "baseline": "direct_runtime",
+            "n": n,
+            "task_count": 1,
+            "block_dim": block_dim,
+            "host_wall_ns": int(host_wall_ns.value),
+            "device_wall_ns": int(device_wall_ns.value),
             "status": "pass",
         }
 
@@ -1485,6 +1683,15 @@ def run_direct_sample(
         return result
 
 
+def run_direct_runtime_sample(
+    device: int,
+    n: int,
+    block_dim: int,
+    library_path: Path,
+) -> dict[str, Any]:
+    return DirectCudaRuntime(library_path).run_vector_add(device=device, n=n, block_dim=block_dim)
+
+
 def run_persistent_sample(
     device: int,
     n: int,
@@ -1602,6 +1809,17 @@ def run_single_sample(  # noqa: PLR0912
             ptx, ptx_source = _compile_ptx(Path(td), arch)
         result = run_direct_sample(device=device, n=n, block_dim=block_dim, ptx=ptx)
         result["ptx_source"] = ptx_source
+        return result
+    if baseline == "direct_runtime":
+        with tempfile.TemporaryDirectory(prefix="pto_cuda_runtime_") as td:
+            library_path, runtime_source = _compile_runtime_api_vector_add_library(Path(td), arch)
+            result = run_direct_runtime_sample(
+                device=device,
+                n=n,
+                block_dim=block_dim,
+                library_path=library_path,
+            )
+        result["ptx_source"] = runtime_source
         return result
     if baseline == "direct_driver_graph":
         with tempfile.TemporaryDirectory(prefix="pto_cuda_bench_") as td:
@@ -2152,6 +2370,16 @@ def run_benchmark(
             direct = run_single_sample(baseline="direct_driver", device=device, n=n, block_dim=block_dim, arch=arch)
             direct.update({"machine": metadata["machine"], "repeat": repeat})
             results.append(direct)
+
+            runtime_direct = run_single_sample(
+                baseline="direct_runtime",
+                device=device,
+                n=n,
+                block_dim=block_dim,
+                arch=arch,
+            )
+            runtime_direct.update({"machine": metadata["machine"], "repeat": repeat})
+            results.append(runtime_direct)
 
             graph = run_single_sample(
                 baseline="direct_driver_graph",
@@ -2867,6 +3095,7 @@ def render_svg(summary: dict[tuple[str, str, int, int, int], dict[str, Any]]) ->
         "pto_host_schedule_generic_args": "#c6dbef",
         "pto_host_schedule_batch": "#1f4e89",
         "direct_driver": "#2a9d65",
+        "direct_runtime": "#52b788",
         "direct_driver_graph": "#8ab17d",
         "pto_persistent_dag": "#d62728",
         "pto_persistent_dag_chain": "#8c1d1d",
@@ -3289,6 +3518,8 @@ def render_markdown_report(payload: dict[str, Any]) -> str:
             "",
             "- `direct_driver` measures a thin CUDA Driver API launch path for the same",
             "  vector-add PTX kernel.",
+            "- `direct_runtime` measures a CUDA Runtime API `cudaLaunchKernel` path",
+            "  from an nvcc-built shared library for the same vector-add workload.",
             "- `direct_driver_graph` measures a CUDA Graph replay path for the same",
             "  Driver API vector-add kernel, with graph instantiation outside the",
             "  timed interval.",
@@ -3524,6 +3755,7 @@ def main() -> None:
             "pto_host_schedule_quad",
             "pto_host_schedule_generic_args",
             "direct_driver",
+            "direct_runtime",
             "direct_driver_graph",
             "pto_persistent_device",
             "pto_persistent_queue",
