@@ -389,6 +389,23 @@ def test_review_policy_changelog_and_examples_exist():
 
 
 def test_ultimate_goal_ci_is_manual_only_and_avoids_ascend_jobs():
+    workflow_paths = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
+    workflow_paths += sorted((ROOT / ".github" / "workflows").glob("*.yaml"))
+    assert workflow_paths
+
+    for workflow_path in workflow_paths:
+        workflow = workflow_path.read_text(encoding="utf-8")
+        assert "workflow_dispatch:" in workflow
+        assert "pull_request:" not in workflow
+        assert "pull_request_target:" not in workflow
+        assert "merge_group:" not in workflow
+        assert "schedule:" not in workflow
+        assert "push:" not in workflow
+        assert "runs-on: [self-hosted, a2a3]" not in workflow
+        assert "runs-on: [self-hosted, a5]" not in workflow
+        assert "--platform a2a3" not in workflow
+        assert "--platform a5" not in workflow
+
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
         encoding="utf-8"
     )
@@ -399,10 +416,11 @@ def test_ultimate_goal_ci_is_manual_only_and_avoids_ascend_jobs():
     assert "push:" not in workflow
     assert "schedule:" not in workflow
     assert "nvidia-manual-review:" in workflow
-    assert "runs-on: [self-hosted, a2a3]" not in workflow
-    assert "runs-on: [self-hosted, a5]" not in workflow
-    assert "--platform a2a3" not in workflow
-    assert "--platform a5" not in workflow
+
+    ci_doc = (ROOT / "docs" / "ci.md").read_text(encoding="utf-8")
+    assert "manual-only" in ci_doc
+    assert "must not register automatic" in ci_doc
+    assert "a2a3/a5 CI" in ci_doc
 
 
 def test_ultimate_goal_artifacts_define_paper_ready_cuda_path():

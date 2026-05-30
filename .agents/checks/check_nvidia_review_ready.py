@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 DOC_ROOT = ROOT / "docs" / "nvidia-backend"
 VIEWER_ROOT = DOC_ROOT / "benchmark-viewer"
 GOAL_ROOT = ROOT / "docs" / "in_progress" / "nvidia_backend_paper_ready"
-WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
+WORKFLOW_ROOT = ROOT / ".github" / "workflows"
+WORKFLOW = WORKFLOW_ROOT / "ci.yml"
 
 
 def fail(message: str) -> None:
@@ -366,27 +367,46 @@ def check_examples_and_rules() -> None:
 
 
 def check_manual_ci_policy() -> None:
-    require_file(WORKFLOW)
+    require_text(
+        ROOT / "docs" / "ci.md",
+        [
+            "manual-only",
+            "must not register automatic",
+            "a2a3/a5 CI",
+        ],
+    )
+    workflow_paths = sorted(WORKFLOW_ROOT.glob("*.yml")) + sorted(
+        WORKFLOW_ROOT.glob("*.yaml")
+    )
+    if not workflow_paths:
+        fail("missing GitHub workflow files")
+    for workflow_path in workflow_paths:
+        workflow = workflow_path.read_text(encoding="utf-8")
+        relpath = workflow_path.relative_to(ROOT)
+        if "workflow_dispatch:" not in workflow:
+            fail(f"{relpath} must be manual-only and include workflow_dispatch")
+        forbidden_text = [
+            "pull_request:",
+            "pull_request_target:",
+            "merge_group:",
+            "schedule:",
+            "push:",
+            "runs-on: [self-hosted, a2a3]",
+            "runs-on: [self-hosted, a5]",
+            "--platform a2a3",
+            "--platform a5",
+        ]
+        for needle in forbidden_text:
+            if needle in workflow:
+                fail(f"{relpath} must not contain: {needle}")
     workflow = WORKFLOW.read_text(encoding="utf-8")
     required_text = [
         "NVIDIA Manual Review",
-        "workflow_dispatch:",
         "nvidia-manual-review:",
     ]
     for needle in required_text:
         if needle not in workflow:
             fail(f".github/workflows/ci.yml missing required text: {needle}")
-    forbidden_text = [
-        "pull_request:",
-        "push:",
-        "runs-on: [self-hosted, a2a3]",
-        "runs-on: [self-hosted, a5]",
-        "--platform a2a3",
-        "--platform a5",
-    ]
-    for needle in forbidden_text:
-        if needle in workflow:
-            fail(f".github/workflows/ci.yml must not contain: {needle}")
 
 
 def main() -> None:

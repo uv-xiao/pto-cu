@@ -92,7 +92,10 @@ Editing Python is instant (editable install). Editing C++ requires re-running `p
 
 **Other supported paths:** `pip install .` (non-editable), `pip install --no-build-isolation .`, `pip install -e .`, and `cmake + PYTHONPATH` (no pip). Full comparison of all 5 paths — what lands where, which entry points work under each, trade-offs — lives in [`docs/python-packaging.md`](python-packaging.md).
 
-**Verifying an install:** the single source of truth is `tools/verify_packaging.sh`, which exercises all 5 install paths × 4 entry points from a fully clean state. CI runs the same script on macOS + Ubuntu (see the `packaging-matrix` job in `.github/workflows/ci.yml`).
+**Verifying an install:** the single source of truth is
+`tools/verify_packaging.sh`, which exercises all 5 install paths × 4 entry
+points from a fully clean state. During the NVIDIA backend ultimate goal,
+repository CI is manual-only, so run this script locally for packaging changes.
 
 ## Build Process
 

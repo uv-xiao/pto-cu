@@ -96,7 +96,10 @@ Plus one build-time entry point invoked by CMake during `pip install`:
 
 ## Install modes
 
-Five install paths × two entry points = the verification matrix. CI enforces the matrix on macOS and Ubuntu via `.github/workflows/ci.yml::packaging-matrix`.
+Five install paths × two entry points = the verification matrix. During the
+NVIDIA backend ultimate goal, repository CI is manual-only, so package-structure
+changes must run the local verification command below instead of relying on an
+automatic packaging matrix.
 
 ### Mode-by-mode
 
@@ -146,16 +149,19 @@ Any change that touches:
 - `simpler_setup/build_runtimes.py` (the pre-install bootstrap)
 - `python/bindings/CMakeLists.txt` (nanobind module placement)
 
-…must keep the **5 install modes × 2 entry points = 10 combinations** green. CI enforces this on macOS + Ubuntu via the `packaging-matrix` job in `.github/workflows/ci.yml`, which calls a single shared script:
+…must keep the **5 install modes × 2 entry points = 10 combinations** green.
+Run the shared packaging verifier locally when touching these files:
 
 ```bash
-# Locally — same script CI runs.
 source .venv/bin/activate
 pip install scikit-build-core nanobind cmake pytest torch  # one-time
 bash tools/verify_packaging.sh
 ```
 
-The script wipes `build/`, uninstalls `simpler`, and re-runs the install + smoke check from scratch for every mode, so a previous mode's cached binaries cannot mask a regression in the next. Slow (~25–45 min for all 5 modes) but reliable. Both CI and the local invocation use the same script — there's no second source of truth that can drift.
+The script wipes `build/`, uninstalls `simpler`, and re-runs the install +
+smoke check from scratch for every mode, so a previous mode's cached binaries
+cannot mask a regression in the next. Slow (~25–45 min for all 5 modes) but
+reliable.
 
 The smoke check itself only verifies imports and each entry point's `--help`. Functional tests (real runtime compilation, scene tests) live in `ut-py`, `ut-cpp`, `st-sim-*`, and the hardware self-hosted jobs.
 

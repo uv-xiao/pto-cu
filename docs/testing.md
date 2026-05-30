@@ -659,7 +659,9 @@ If similar coverage exists in both `examples/` and `tests/st/`, collapse it into
 
 ## CI Pipeline
 
-See [ci.md](ci.md) for the full CI pipeline documentation, including the job matrix, runner constraints, and marker scheme.
+See [ci.md](ci.md) for the current repository CI policy. During the NVIDIA
+backend ultimate goal, GitHub Actions are manual-only and local verification is
+the required progress gate.
 
 ## Runtime Isolation Constraint (Onboard)
 
