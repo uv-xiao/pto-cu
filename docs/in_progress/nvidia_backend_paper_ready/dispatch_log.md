@@ -707,3 +707,33 @@ Each entry must include:
 - Handoff summary and remaining gaps: next evaluation slices should promote
   MPK, VDCores, vLLM, SGLang, or full ThunderKittens outputs to current
   evidence only after their raw JSON artifacts exist under `tmp/`.
+
+### 2026-05-31 - Paired Probe Machine Status
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned benchmark
+  viewer readiness-status slice.
+- Exact Codex command or script invocation: no worker invocation. Read
+  `tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/` and
+  added A100/H200 `latest_machine_status` entries to
+  `paper_baseline_probes.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, human-reviewable
+  benchmark status slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer probe data and rendering,
+  viewer-data validators, focused tests, shared contracts, dispatch log, and
+  changelog docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: the machine statuses are setup
+  readiness only; benchmark results still require raw run captures.
+- Verification commands and results: passed `check_nvidia_review_ready.py`,
+  `validate_benchmark_viewer_data.py`, `validate_nvidia_changelog.py`,
+  `validate_cuda_examples.py`, `validate_remote_evaluation.py`, focused
+  review artifact pytest, Python compile for touched guard scripts, JSON
+  syntax checks, `node --check` on the viewer, and `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future paired probes should refresh both
+  the aggregate `latest_status` and the per-machine A100/H200 status entries
+  before claiming a baseline is setup-ready on either GPU class.

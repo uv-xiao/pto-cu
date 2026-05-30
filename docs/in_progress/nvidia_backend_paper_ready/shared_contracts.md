@@ -97,6 +97,8 @@ Each paper-baseline probe record must include:
 - `paper_baseline_id`: the MPK, VDCores, or paper-baseline system;
 - `latest_status`: not captured, pass, partial, or fail;
 - `latest_artifact_root`: raw probe JSON directory under `tmp/`;
+- `latest_machine_status`: A100 and H200 status entries with the raw probe
+  JSON file and blocking gaps for each machine;
 - `checks`: safe readiness checks such as source path existence, Python syntax
   compilation, or required Python module availability;
 - `next_action`: the next build, run, or dependency step after the probe.

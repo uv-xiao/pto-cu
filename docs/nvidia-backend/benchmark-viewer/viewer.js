@@ -298,9 +298,16 @@ function renderPaperBaselines() {
       const checks = probe.checks.map((check) => (
         check.path ? `${check.kind}: ${check.path}` : `${check.kind}: ${check.module}`
       ));
+      const machines = probe.latest_machine_status.map((item) => {
+        const gaps = item.blocking_gaps.length
+          ? `; gaps: ${item.blocking_gaps.join(", ")}`
+          : "";
+        return `${item.gpu}: ${item.status}${gaps}; artifact: ${item.artifact}`;
+      });
       return [
         `${probe.title} (${probe.latest_status})`,
         `Artifact: ${probe.latest_artifact_root}`,
+        `Machines: ${machines.join(" | ")}`,
         `Checks: ${checks.join(" | ")}`,
         `Next: ${probe.next_action}`,
       ].join("\n");

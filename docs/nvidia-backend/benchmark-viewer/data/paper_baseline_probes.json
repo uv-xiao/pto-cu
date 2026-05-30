@@ -33,7 +33,21 @@
           "why": "The MPK paper compares against Triton-style operator paths."
         }
       ],
-      "next_action": "Install MPK dependencies, run the Qwen3 native and --use-mirage commands, then export raw latency and throughput JSON."
+      "next_action": "Install MPK dependencies, run the Qwen3 native and --use-mirage commands, then export raw latency and throughput JSON.",
+      "latest_machine_status": [
+        {
+          "gpu": "A100",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/a100-probe.json",
+          "blocking_gaps": []
+        },
+        {
+          "gpu": "H200",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/h200-probe.json",
+          "blocking_gaps": []
+        }
+      ]
     },
     {
       "id": "vdcores_source_entrypoints",
@@ -63,7 +77,21 @@
           "why": "VDCores sched.py imports AutoModelForCausalLM, AutoTokenizer, and AutoConfig from Transformers."
         }
       ],
-      "next_action": "Build the VDCores extension on H200/H100-class hardware and run the Llama decode correctness and benchmark commands."
+      "next_action": "Build the VDCores extension on H200/H100-class hardware and run the Llama decode correctness and benchmark commands.",
+      "latest_machine_status": [
+        {
+          "gpu": "A100",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/a100-probe.json",
+          "blocking_gaps": []
+        },
+        {
+          "gpu": "H200",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/h200-probe.json",
+          "blocking_gaps": []
+        }
+      ]
     },
     {
       "id": "vllm_source_entrypoints",
@@ -98,7 +126,25 @@
           "why": "Installed vLLM module is required before actual serving runs."
         }
       ],
-      "next_action": "Install vLLM from the pinned source checkout, start a server, and run bench serve plus throughput with shared prompt/decode settings."
+      "next_action": "Install vLLM from the pinned source checkout, start a server, and run bench serve plus throughput with shared prompt/decode settings.",
+      "latest_machine_status": [
+        {
+          "gpu": "A100",
+          "status": "partial",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/a100-probe.json",
+          "blocking_gaps": [
+            "python_module failed: vllm"
+          ]
+        },
+        {
+          "gpu": "H200",
+          "status": "partial",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/h200-probe.json",
+          "blocking_gaps": [
+            "python_module failed: vllm"
+          ]
+        }
+      ]
     },
     {
       "id": "sglang_source_entrypoints",
@@ -151,7 +197,30 @@
           "why": "The selected one-batch benchmark module must import from the pinned source checkout."
         }
       ],
-      "next_action": "Run SGLang launch_server, bench_serving, offline throughput, and one-batch commands under the shared workload policy."
+      "next_action": "Run SGLang launch_server, bench_serving, offline throughput, and one-batch commands under the shared workload policy.",
+      "latest_machine_status": [
+        {
+          "gpu": "A100",
+          "status": "partial",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/a100-probe.json",
+          "blocking_gaps": [
+            "python_import failed: sglang.bench_serving",
+            "python_import failed: sglang.bench_offline_throughput",
+            "python_import failed: sglang.bench_one_batch"
+          ]
+        },
+        {
+          "gpu": "H200",
+          "status": "partial",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/h200-probe.json",
+          "blocking_gaps": [
+            "python_module failed: sglang",
+            "python_import failed: sglang.bench_serving",
+            "python_import failed: sglang.bench_offline_throughput",
+            "python_import failed: sglang.bench_one_batch"
+          ]
+        }
+      ]
     },
     {
       "id": "thunderkittens_source_entrypoints",
@@ -216,7 +285,21 @@
           "why": "test_correctness.py imports tqdm for correctness sweep progress."
         }
       ],
-      "next_action": "Build the selected ThunderKittens kernel on H200/H100-class hardware and capture correctness plus benchmark JSON."
+      "next_action": "Build the selected ThunderKittens kernel on H200/H100-class hardware and capture correctness plus benchmark JSON.",
+      "latest_machine_status": [
+        {
+          "gpu": "A100",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/a100-probe.json",
+          "blocking_gaps": []
+        },
+        {
+          "gpu": "H200",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/h200-probe.json",
+          "blocking_gaps": []
+        }
+      ]
     }
   ]
 }

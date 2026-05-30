@@ -338,6 +338,10 @@ def test_paper_baseline_probe_collects_source_readiness(tmp_path):
         text=True,
     ).strip()
 
+    baselines_path = tmp_path / "paper_baselines.json"
+    probes_path = tmp_path / "paper_baseline_probes.json"
+    output_path = tmp_path / "probe.json"
+
     baselines = {
         "paper_baselines": [
             {
@@ -363,6 +367,20 @@ def test_paper_baseline_probe_collects_source_readiness(tmp_path):
                 "title": "MPK source entrypoints",
                 "latest_status": "not_captured",
                 "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/",
+                "latest_machine_status": [
+                    {
+                        "gpu": "A100",
+                        "status": "pass",
+                        "artifact": str(output_path),
+                        "blocking_gaps": [],
+                    },
+                    {
+                        "gpu": "H200",
+                        "status": "partial",
+                        "artifact": str(output_path),
+                        "blocking_gaps": ["fixture gap"],
+                    },
+                ],
                 "checks": [
                     {
                         "kind": "path_exists",
@@ -385,9 +403,6 @@ def test_paper_baseline_probe_collects_source_readiness(tmp_path):
             }
         ]
     }
-    baselines_path = tmp_path / "paper_baselines.json"
-    probes_path = tmp_path / "paper_baseline_probes.json"
-    output_path = tmp_path / "probe.json"
     baselines_path.write_text(json.dumps(baselines), encoding="utf-8")
     probes_path.write_text(json.dumps(probes), encoding="utf-8")
 
@@ -604,6 +619,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "serving_workloads",
         "Serving policies",
         "latest_artifact_root",
+        "latest_machine_status",
         "paperEvaluation",
         "paper_evaluation_matrix",
         "result_records",
@@ -778,6 +794,16 @@ def test_benchmark_viewer_has_json_backed_review_data():
         )
         assert item["checks"]
         assert item["next_action"]
+        machine_status = {
+            status["gpu"]: status for status in item["latest_machine_status"]
+        }
+        assert set(machine_status) == {"A100", "H200"}
+        for status in machine_status.values():
+            assert status["status"] in {"pass", "partial", "fail", "not_captured"}
+            artifact = ROOT / status["artifact"]
+            assert artifact.is_file()
+            assert artifact.suffix == ".json"
+            assert isinstance(status["blocking_gaps"], list)
         if item["paper_baseline_id"] == "thunderkittens":
             probed_modules = {
                 check["module"]

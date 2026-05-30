@@ -365,6 +365,33 @@ def validate_paper_baseline_probes(
             fail(f"{owner} references unknown paper_baseline_id: {baseline_id}")
         covered_baselines.add(baseline_id)
         checks = require_list(record, "checks", owner)
+        machine_status = require_list(record, "latest_machine_status", owner)
+        machine_gpus: set[str] = set()
+        for status_record in machine_status:
+            if not isinstance(status_record, dict):
+                fail(f"{owner} latest_machine_status entry is not an object")
+            gpu = require_string(status_record, "gpu", owner)
+            if gpu not in {"A100", "H200"}:
+                fail(f"{owner} has invalid machine status GPU: {gpu}")
+            if gpu in machine_gpus:
+                fail(f"{owner} has duplicate machine status for {gpu}")
+            machine_gpus.add(gpu)
+            status = require_string(status_record, "status", owner)
+            if status not in allowed_status:
+                fail(f"{owner} has invalid machine status: {status}")
+            require_current_artifact_path(
+                root,
+                require_string(status_record, "artifact", owner),
+                owner,
+            )
+            gaps = status_record.get("blocking_gaps", [])
+            if not isinstance(gaps, list):
+                fail(f"{owner} machine blocking_gaps is not a list")
+            for gap in gaps:
+                if not isinstance(gap, str) or not gap:
+                    fail(f"{owner} has invalid machine blocking gap")
+        if {"A100", "H200"} != machine_gpus:
+            fail(f"{owner} must include A100 and H200 machine status")
         modules: set[str] = set()
         for check in checks:
             if not isinstance(check, dict):

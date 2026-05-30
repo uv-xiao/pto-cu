@@ -169,6 +169,7 @@ def check_viewer_data() -> None:
         "servingWorkloads",
         "serving_workloads",
         "latest_artifact_root",
+        "latest_machine_status",
         "paperEvaluation",
         "paper_evaluation_matrix",
         "result_records",
