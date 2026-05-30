@@ -282,6 +282,22 @@ in addition to `scheduler_loop_count=2`, `scheduler_processed_count=5`,
 `9,2,1,2,1`, graph topology, scalar/tensor arg metadata, and zero scheduler
 errors. Device times were `97280 ns` on A100 and `71136 ns` on H200 for
 `N=1024`.
+
+Use `cuda_viewer_export.py` to convert raw combined benchmark captures into
+benchmark-viewer `result_records`. The script reads the committed import
+mapping in `docs/nvidia-backend/benchmark-viewer/data/capture_imports.json`,
+groups repeated rows by machine, baseline, size, and task count, and emits the
+viewer schema with hardware, inputs, median timing, sample count, correctness,
+and raw artifact path:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py \
+    tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/cuda-benchmark.json \
+    --artifact-root tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/ \
+    --output tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/viewer-result-records.json
+```
+
 Use `cuda_scheduler_scaling.py` to summarize a scheduler-block sweep after
 capturing the individual paired smokes. Its ratio column is shape-aware:
 each row is compared with the one-scheduler row for the same artifact, DAG

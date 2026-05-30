@@ -136,6 +136,46 @@ def validate_paper_baselines(data: dict[str, Any]) -> set[str]:
     return baseline_ids
 
 
+def validate_capture_imports(
+    data: dict[str, Any],
+    benchmark_ids: set[str],
+    method_ids: set[str],
+) -> None:
+    hardware = require_dict(data, "hardware", "capture imports")
+    for machine, record in hardware.items():
+        if not isinstance(machine, str) or not machine:
+            fail("capture imports hardware machine is empty")
+        if not isinstance(record, dict):
+            fail(f"capture imports hardware {machine} is not an object")
+        for key in ("gpu", "compute_target"):
+            require_string(record, key, f"capture imports hardware {machine}")
+
+    records = require_list(data, "capture_imports", "capture imports")
+    baselines: set[str] = set()
+    for record in records:
+        if not isinstance(record, dict):
+            fail("capture import rule is not an object")
+        owner = f"capture import {record.get('baseline', '<missing>')}"
+        baseline = require_string(record, "baseline", owner)
+        validate_id(baseline, owner)
+        if baseline in baselines:
+            fail(f"duplicate capture import baseline: {baseline}")
+        baselines.add(baseline)
+        benchmark_id = require_string(record, "benchmark_id", owner)
+        method_id = require_string(record, "method_id", owner)
+        if benchmark_id not in benchmark_ids:
+            fail(f"{owner} references unknown benchmark_id: {benchmark_id}")
+        if method_id not in method_ids:
+            fail(f"{owner} references unknown method_id: {method_id}")
+        for key in ("n", "task_count"):
+            value = record.get(key)
+            if not isinstance(value, int) or value <= 0:
+                fail(f"{owner} has invalid {key}")
+        inputs = require_dict(record, "inputs", owner)
+        for key in ("shape", "dtype", "repeat_policy"):
+            require_string(inputs, key, owner)
+
+
 def validate_results(
     data: dict[str, Any], benchmark_ids: set[str], method_ids: set[str]
 ) -> None:
@@ -170,6 +210,7 @@ def validate_results(
         for key in ("shape", "dtype", "repeat_policy"):
             require_string(inputs, key, owner)
         statistic = require_dict(record, "statistic", owner)
+        require_string(statistic, "kind", owner)
         sample_count = statistic.get("sample_count")
         if not isinstance(sample_count, int) or sample_count <= 0:
             fail(f"{owner} has invalid statistic.sample_count")
@@ -192,10 +233,12 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     benchmarks = load_json(root, "benchmarks.json")
     methods = load_json(root, "methods.json")
     paper_baselines = load_json(root, "paper_baselines.json")
+    capture_imports = load_json(root, "capture_imports.json")
     results = load_json(root, "results.json")
     benchmark_ids = validate_benchmarks(benchmarks, root)
     method_ids = validate_methods(methods, root)
     validate_paper_baselines(paper_baselines)
+    validate_capture_imports(capture_imports, benchmark_ids, method_ids)
     validate_results(results, benchmark_ids, method_ids)
 
 

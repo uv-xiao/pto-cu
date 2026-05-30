@@ -33,6 +33,85 @@ def test_benchmark_viewer_schema_validator_passes():
     assert result.returncode == 0, result.stdout
 
 
+def test_cuda_viewer_export_generates_contract_records(tmp_path):
+    capture = {
+        "metadata": {
+            "git_commit": "abc1234",
+            "label": "fixture-capture",
+        },
+        "results": [
+            {
+                "machine": "hina",
+                "baseline": "pto_host_schedule",
+                "n": 1024,
+                "task_count": 1,
+                "host_wall_ns": 120,
+                "device_wall_ns": 80,
+                "status": "pass",
+            },
+            {
+                "machine": "hina",
+                "baseline": "pto_host_schedule",
+                "n": 1024,
+                "task_count": 1,
+                "host_wall_ns": 160,
+                "device_wall_ns": 100,
+                "status": "pass",
+            },
+            {
+                "machine": "dasys-h200x8",
+                "baseline": "cublas_sgemm_graph",
+                "n": 1024,
+                "task_count": 1,
+                "host_wall_ns": 60,
+                "device_wall_ns": 40,
+                "status": "pass",
+            },
+        ],
+    }
+    capture_path = tmp_path / "cuda-benchmark.json"
+    output_path = tmp_path / "viewer-records.json"
+    capture_path.write_text(json.dumps(capture), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py",
+            str(capture_path),
+            "--artifact-root",
+            "tmp/cuda-backend/fixture/",
+            "--output",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    records = json.loads(output_path.read_text(encoding="utf-8"))
+
+    host_record = next(
+        record for record in records if record["method_id"] == "pto_host_schedule"
+    )
+    assert host_record["benchmark_id"] == "host_schedule_vector_ops"
+    assert host_record["hardware"]["gpu"] == "A100"
+    assert host_record["hardware"]["compute_target"] == "compute_80"
+    assert host_record["statistic"]["sample_count"] == 2
+    assert host_record["statistic"]["host_wall_ns"] == 140
+    assert host_record["statistic"]["device_wall_ns"] == 90
+    assert host_record["raw_artifact"] == "tmp/cuda-backend/fixture/"
+    assert host_record["correctness"] == "pass"
+
+    assert any(
+        record["benchmark_id"] == "tensor_core_tile"
+        and record["method_id"] == "cublas_sgemm_graph"
+        and record["hardware"]["gpu"] == "H200"
+        for record in records
+    )
+
+
 def test_evaluation_docs_are_split_for_review():
     root_evaluation_docs = sorted(DOC_ROOT.glob("evaluation*.md"))
     assert {path.name for path in root_evaluation_docs} == {
@@ -54,6 +133,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "styles.css").is_file()
     assert (VIEWER_ROOT / "viewer.js").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baselines.json").is_file()
+    assert (VIEWER_ROOT / "data" / "capture_imports.json").is_file()
     viewer_js = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
     for required in [
         "run.inputs.shape",
@@ -146,6 +226,14 @@ def test_review_policy_changelog_and_examples_exist():
     assert (ROOT / ".agents" / "agents" / "documentation-sync" / "AGENT.md").is_file()
     assert (ROOT / ".agents" / "agents" / "testing" / "AGENT.md").is_file()
     assert (ROOT / ".agents" / "checks" / "validate_benchmark_viewer_data.py").is_file()
+    assert (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "cuda_viewer_export.py"
+    ).is_file()
     assert (ROOT / ".agents" / "skills" / "git-commit" / "SKILL.md").is_file()
     assert (ROOT / ".agents" / "skills" / "github-pr" / "SKILL.md").is_file()
     assert (DOC_ROOT / "changelog" / "index.md").is_file()
@@ -157,6 +245,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-benchmark-viewer-contract.md"
+    ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-viewer-result-export.md"
     ).is_file()
 
     example_root = ROOT / "examples" / "cuda"

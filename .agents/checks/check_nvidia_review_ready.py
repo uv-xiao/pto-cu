@@ -51,6 +51,7 @@ def check_evaluation_docs() -> None:
     require_file(
         DOC_ROOT / "changelog" / "2026-05-31-benchmark-viewer-contract.md"
     )
+    require_file(DOC_ROOT / "changelog" / "2026-05-31-viewer-result-export.md")
 
 
 def require_text(path: Path, needles: list[str]) -> None:
@@ -148,6 +149,7 @@ def check_viewer_data() -> None:
 
     benchmarks = load_json(VIEWER_ROOT / "data" / "benchmarks.json")
     methods = load_json(VIEWER_ROOT / "data" / "methods.json")
+    capture_imports = load_json(VIEWER_ROOT / "data" / "capture_imports.json")
     paper_baselines = load_json(VIEWER_ROOT / "data" / "paper_baselines.json")
     results = load_json(VIEWER_ROOT / "data" / "results.json")
 
@@ -177,6 +179,17 @@ def check_viewer_data() -> None:
     if not required_methods <= method_ids:
         fail(f"missing method ids: {sorted(required_methods - method_ids)}")
     check_evidence_refs(methods["methods"], "method")
+
+    import_rules = capture_imports.get("capture_imports", [])
+    import_baselines = {item["baseline"] for item in import_rules}
+    required_import_baselines = {
+        "pto_host_schedule",
+        "pto_persistent_dag_graph_layered_cross",
+        "cublas_sgemm_graph",
+    }
+    if not required_import_baselines <= import_baselines:
+        missing = sorted(required_import_baselines - import_baselines)
+        fail(f"missing capture import baselines: {missing}")
 
     paper_baseline_ids = {
         item["id"] for item in paper_baselines.get("paper_baselines", [])
@@ -244,6 +257,7 @@ def check_examples_and_rules() -> None:
         ".agents/agents/code-review/AGENT.md",
         ".agents/agents/documentation-sync/AGENT.md",
         ".agents/agents/testing/AGENT.md",
+        ".agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py",
         ".agents/skills/git-commit/SKILL.md",
         ".agents/skills/github-pr/SKILL.md",
         "examples/cuda/README.md",

@@ -150,7 +150,7 @@
         "repeat_policy": "selected row from compact capture"
       },
       "statistic": {
-        "kind": "selected_row",
+        "kind": "median_capture_group",
         "sample_count": 1,
         "host_wall_ns": 55538,
         "device_wall_ns": 32768
@@ -176,7 +176,7 @@
         "repeat_policy": "selected row from compact capture"
       },
       "statistic": {
-        "kind": "selected_row",
+        "kind": "median_capture_group",
         "sample_count": 1,
         "host_wall_ns": 87266,
         "device_wall_ns": 74752
@@ -202,7 +202,7 @@
         "repeat_policy": "selected row from compact capture"
       },
       "statistic": {
-        "kind": "selected_row",
+        "kind": "median_capture_group",
         "sample_count": 1,
         "host_wall_ns": 22728,
         "device_wall_ns": 10239
@@ -228,7 +228,7 @@
         "repeat_policy": "selected row from compact capture"
       },
       "statistic": {
-        "kind": "selected_row",
+        "kind": "median_capture_group",
         "sample_count": 1,
         "host_wall_ns": 23330,
         "device_wall_ns": 13632
@@ -254,7 +254,7 @@
         "repeat_policy": "selected row from compact capture"
       },
       "statistic": {
-        "kind": "selected_row",
+        "kind": "median_capture_group",
         "sample_count": 1,
         "host_wall_ns": 78521,
         "device_wall_ns": 69664
@@ -280,7 +280,7 @@
         "repeat_policy": "selected row from compact capture"
       },
       "statistic": {
-        "kind": "selected_row",
+        "kind": "median_capture_group",
         "sample_count": 1,
         "host_wall_ns": 20277,
         "device_wall_ns": 9727

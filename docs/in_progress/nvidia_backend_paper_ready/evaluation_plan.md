@@ -105,6 +105,11 @@ into the viewer data. A paper result is not accepted unless it records:
 - raw output path;
 - validation command.
 
+Current PTO microbenchmark captures can be converted to viewer result records
+with `.agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py`. The
+script uses `docs/nvidia-backend/benchmark-viewer/data/capture_imports.json`
+to map raw capture baselines onto viewer benchmark and method IDs.
+
 Remote H200 runs should prefer Git refresh when available and use SSH
 tree-sync fallback when remote Git fails. The selected path is part of the
 artifact metadata.
@@ -132,7 +137,8 @@ Target review artifacts:
 3. Create a baseline source index under `tmp/` for MPK, VDCores, and paper
    baselines.
 4. Clone or inspect MPK and VDCores repositories under `tmp/baselines/`.
-5. Add scripts that can export viewer-ready JSON from benchmark captures.
+5. Extend viewer export scripts as new benchmark families and paper baselines
+   produce raw JSON.
 6. Run A100 and H200 paired captures for the current PTO workloads.
 7. Add controlled CUDA Graph, cuBLAS, and direct launch baselines.
 8. Decide which LLM-serving workload is the first credible paper target.

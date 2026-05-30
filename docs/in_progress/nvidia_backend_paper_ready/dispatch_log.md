@@ -179,3 +179,31 @@ Each entry must include:
 - Handoff summary and remaining gaps: future viewer work should add filters,
   richer statistic breakdowns, and imported MPK/VDCores result rows once raw
   artifacts exist.
+
+### 2026-05-31 - Viewer Result Export Path
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned evaluation
+  importer slice.
+- Exact Codex command or script invocation: not applicable because no worker
+  was launched in this entry.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, evaluation structure
+  slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files:
+  `.agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py`,
+  `docs/nvidia-backend/benchmark-viewer/data/`, review guards, focused tests,
+  shared contracts, evaluation plan, and changelog docs.
+- Dependencies and blocked assumptions: the exporter covers current PTO compact
+  capture rows only; future paper baseline importers must extend the mapping
+  for MPK, VDCores, vLLM, SGLang, and ThunderKittens.
+- Verification commands and results: passed `check_nvidia_review_ready.py`,
+  focused review artifact pytest, `validate_benchmark_viewer_data.py`, Python
+  compile checks, JSON syntax checks, `node --check`, `git diff --check`, and
+  local export regeneration against the current compact capture.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future evaluation slices should generate
+  viewer result records from raw captures instead of hand-editing result rows.

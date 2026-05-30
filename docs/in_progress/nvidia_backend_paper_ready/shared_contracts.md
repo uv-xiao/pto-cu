@@ -49,6 +49,13 @@ JSON. At minimum it shows `run.inputs`, method `category`, method
 `launch_model`, result hardware, result statistic sample count, correctness,
 and raw artifact path.
 
+Raw CUDA benchmark captures should flow into viewer result records through
+`.agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py`, using
+`docs/nvidia-backend/benchmark-viewer/data/capture_imports.json` as the
+committed mapping between raw capture baselines and viewer benchmark/method
+IDs. Hand-edited result rows must match this schema and identify the raw
+artifact directory under `tmp/`.
+
 Each paper-baseline record must include:
 
 - `paper_baseline_id`: stable identifier for MPK, VDCores, or a baseline used
