@@ -23,6 +23,18 @@
       }
     },
     {
+      "baseline": "direct_driver_graph",
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_driver_graph",
+      "n": 1024,
+      "task_count": 1,
+      "inputs": {
+        "shape": "n=1024 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat local A100 host-launch capture"
+      }
+    },
+    {
       "baseline": "pto_persistent_dag_graph_layered_cross",
       "benchmark_id": "graph_layered_cross",
       "method_id": "pto_persistent_device",

@@ -149,6 +149,11 @@ Current PTO microbenchmark captures can be converted to viewer result records
 with `.agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py`. The
 script uses `docs/nvidia-backend/benchmark-viewer/data/capture_imports.json`
 to map raw capture baselines onto viewer benchmark and method IDs.
+The host-launch A100 capture at
+`tmp/cuda-backend/host-launch-a100-8b6cdaee/` now imports its 10-repeat
+`direct_driver_graph` row into `results.json`, giving the host-schedule launch
+claim explicit CUDA Driver graph evidence on A100 while H200 and tensor-shape
+graph rows remain open.
 
 Paper-baseline raw captures can be converted with
 `.agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py`.

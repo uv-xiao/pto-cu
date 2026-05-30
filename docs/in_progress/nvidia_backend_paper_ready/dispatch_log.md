@@ -865,3 +865,38 @@ Each entry must include:
 - Handoff summary and remaining gaps: the persistent-device paper claim now
   has explicit MPK and VDCores run records. The next evaluation slice should
   execute them, normalize raw JSON, and import viewer result rows.
+
+### 2026-05-31 - A100 Driver Graph Viewer Evidence
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  host-schedule baseline evidence slice.
+- Exact Codex command or script invocation: no worker invocation. Extended
+  `capture_imports.json` for `direct_driver_graph`, exported
+  `tmp/cuda-backend/host-launch-a100-8b6cdaee/cuda-benchmark.json` with
+  `cuda_viewer_export.py`, imported the A100 graph row into `results.json`,
+  and regenerated `paper_readiness_audit.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, benchmark viewer and
+  paper-ready evaluation evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer data, CUDA evaluation raw
+  artifacts under `tmp/`, focused tests, evaluation plan, dispatch log, and
+  changelog docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: this is a local A100 host-launch
+  microbenchmark capture from commit `8b6cdaee`; it does not cover H200,
+  tensor-shape graph launches, or full launch-statistic sweeps.
+- Verification commands and results: passed `check_nvidia_review_ready.py`,
+  `validate_benchmark_viewer_data.py`, `validate_nvidia_changelog.py`,
+  `validate_cuda_examples.py`, `validate_remote_evaluation.py`, focused
+  review artifact pytest with 19 tests, paper-readiness audit regeneration
+  plus diff check, Python compile checks for touched guard/import scripts,
+  JSON syntax checks for viewer/example/import artifacts, `node --check` on
+  the viewer, and `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the host-schedule launch-overhead claim
+  now has viewer evidence for A100 `direct_driver_graph`. The remaining gaps
+  are direct runtime rows, H200 graph rows, selected tensor launch shapes, and
+  p50/p90/p99 distribution-ready captures.

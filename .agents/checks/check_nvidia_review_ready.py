@@ -238,6 +238,7 @@ def check_viewer_data() -> None:
     import_baselines = {item["baseline"] for item in import_rules}
     required_import_baselines = {
         "pto_host_schedule",
+        "direct_driver_graph",
         "pto_persistent_dag_graph_layered_cross",
         "cublas_sgemm_graph",
     }
