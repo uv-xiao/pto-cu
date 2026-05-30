@@ -131,6 +131,13 @@ viewer `result_records` for MPK, VDCores, vLLM, SGLang, or ThunderKittens.
 This keeps paper-baseline rows generated from raw artifacts instead of
 hand-edited tables.
 
+Before full baseline builds, paper-baseline readiness probes can be captured
+with `.agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py`. The
+probe checks pinned source commits, selected entrypoint paths, Python syntax,
+required Python modules, CUDA toolkit availability, and visible GPUs. The
+latest local A100 probe artifact is recorded at
+`tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/`.
+
 Remote H200 runs should prefer Git refresh when available and use SSH
 tree-sync fallback when remote Git fails. The selected path is part of the
 artifact metadata.

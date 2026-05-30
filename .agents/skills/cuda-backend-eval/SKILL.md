@@ -314,6 +314,19 @@ PYTHONPATH=$PWD:$PWD/python \
     --output tmp/cuda-backend/paper-baselines/vllm/viewer-result-records.json
 ```
 
+Use `paper_baseline_probe.py` before expensive baseline builds to capture
+source-checkout, entrypoint, syntax, module, CUDA toolkit, and GPU readiness.
+The probe configuration is committed in
+`docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json`, while
+raw probe output stays under `tmp/`:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py \
+    --output tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/probe.json \
+    --artifact-root tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/
+```
+
 Use `cuda_scheduler_scaling.py` to summarize a scheduler-block sweep after
 capturing the individual paired smokes. Its ratio column is shape-aware:
 each row is compared with the one-scheduler row for the same artifact, DAG

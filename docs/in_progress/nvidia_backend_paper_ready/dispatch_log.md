@@ -366,3 +366,33 @@ Each entry must include:
   baseline commands, write raw artifacts under
   `tmp/cuda-backend/paper-baselines/`, import viewer result rows, and update
   the paper-evaluation matrix only with measured evidence.
+
+### 2026-05-31 - Paper Baseline Readiness Probes
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  paper-baseline probe slice.
+- Exact Codex command or script invocation:
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer data and UI,
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py`,
+  `.agents/checks/`, focused review artifact tests, shared contracts,
+  evaluation plan, evaluation skill docs, and changelog docs.
+- Dependencies and blocked assumptions: probes are safe readiness checks, not
+  full baseline builds or benchmark runs. The local probe found A100 CUDA
+  readiness and source-entrypoint readiness; it also found vLLM is not
+  installed in the current environment.
+- Verification commands and results: passed the focused paper-baseline probe
+  pytest selector, `validate_benchmark_viewer_data.py`,
+  `check_nvidia_review_ready.py`, `node --check`, JSON syntax check, and
+  Python compile check for the probe script.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future slices should run the H200 probe
+  through the remote fallback path, install/build vLLM, and turn readiness
+  probes into real raw benchmark captures.

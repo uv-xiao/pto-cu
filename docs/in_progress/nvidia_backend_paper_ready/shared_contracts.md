@@ -88,6 +88,15 @@ Each paper-baseline run record must include:
 - `required_metrics`: metrics needed before import;
 - `import_target`: viewer result file and importer notes.
 
+Each paper-baseline probe record must include:
+
+- `paper_baseline_id`: the MPK, VDCores, or paper-baseline system;
+- `latest_status`: not captured, pass, partial, or fail;
+- `latest_artifact_root`: raw probe JSON directory under `tmp/`;
+- `checks`: safe readiness checks such as source path existence, Python syntax
+  compilation, or required Python module availability;
+- `next_action`: the next build, run, or dependency step after the probe.
+
 Each paper-evaluation matrix claim must include:
 
 - `id`: stable claim identifier;

@@ -7,6 +7,7 @@ what evaluation ran, and what evidence proves the claim.
 ## Reports
 
 - [2026-05-31 ultimate goal setup](2026-05-31-ultimate-goal.md)
+- [2026-05-31 paper baseline probes](2026-05-31-paper-baseline-probes.md)
 - [2026-05-31 paper baseline importer](2026-05-31-paper-baseline-importer.md)
 - [2026-05-31 paper baseline runs](2026-05-31-paper-baseline-runs.md)
 - [2026-05-31 remote evaluation contract](2026-05-31-remote-evaluation-contract.md)

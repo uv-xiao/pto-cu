@@ -225,6 +225,45 @@ def validate_paper_baseline_runs(
         fail(f"paper baseline runs missing baseline coverage: {missing}")
 
 
+def validate_paper_baseline_probes(
+    data: dict[str, Any],
+    baseline_ids: set[str],
+) -> None:
+    records = require_list(data, "paper_baseline_probes", "paper baseline probes")
+    check_unique_ids(records, "paper baseline probe")
+    allowed_status = {"not_captured", "pass", "partial", "fail"}
+    allowed_kinds = {"path_exists", "py_compile", "python_module"}
+    covered_baselines: set[str] = set()
+    for record in records:
+        owner = f"paper baseline probe {record['id']}"
+        for key in ("title", "latest_status", "latest_artifact_root", "next_action"):
+            require_string(record, key, owner)
+        if record["latest_status"] not in allowed_status:
+            fail(f"{owner} has invalid latest_status: {record['latest_status']}")
+        if not record["latest_artifact_root"].startswith("tmp/"):
+            fail(f"{owner} latest_artifact_root must be under tmp/")
+        baseline_id = require_string(record, "paper_baseline_id", owner)
+        if baseline_id not in baseline_ids:
+            fail(f"{owner} references unknown paper_baseline_id: {baseline_id}")
+        covered_baselines.add(baseline_id)
+        checks = require_list(record, "checks", owner)
+        for check in checks:
+            if not isinstance(check, dict):
+                fail(f"{owner} check is not an object")
+            kind = require_string(check, "kind", owner)
+            if kind not in allowed_kinds:
+                fail(f"{owner} has invalid check kind: {kind}")
+            require_string(check, "why", owner)
+            if kind in {"path_exists", "py_compile"}:
+                require_string(check, "path", owner)
+            if kind == "python_module":
+                require_string(check, "module", owner)
+    required_baselines = {"mpk", "vdcores", "vllm", "sglang", "thunderkittens"}
+    if not required_baselines <= covered_baselines:
+        missing = sorted(required_baselines - covered_baselines)
+        fail(f"paper baseline probes missing baseline coverage: {missing}")
+
+
 def validate_capture_imports(
     data: dict[str, Any],
     benchmark_ids: set[str],
@@ -442,12 +481,14 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     methods = load_json(root, "methods.json")
     paper_baselines = load_json(root, "paper_baselines.json")
     paper_baseline_runs = load_json(root, "paper_baseline_runs.json")
+    paper_baseline_probes = load_json(root, "paper_baseline_probes.json")
     paper_evaluation_matrix = load_json(root, "paper_evaluation_matrix.json")
     capture_imports = load_json(root, "capture_imports.json")
     results = load_json(root, "results.json")
     benchmark_ids = validate_benchmarks(benchmarks, root)
     method_ids = validate_methods(methods, root)
     baseline_ids = validate_paper_baselines(paper_baselines)
+    validate_paper_baseline_probes(paper_baseline_probes, baseline_ids)
     validate_capture_imports(capture_imports, benchmark_ids, method_ids)
     validate_results(results, benchmark_ids, method_ids)
     paper_evaluation_ids = validate_paper_evaluation_matrix(

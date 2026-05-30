@@ -3,6 +3,7 @@ const DATA_FILES = {
   methods: "data/methods.json",
   paperBaselines: "data/paper_baselines.json",
   paperBaselineRuns: "data/paper_baseline_runs.json",
+  paperBaselineProbes: "data/paper_baseline_probes.json",
   paperEvaluation: "data/paper_evaluation_matrix.json",
   results: "data/results.json",
 };
@@ -198,6 +199,9 @@ function renderPaperBaselines() {
     const runs = state.paperBaselineRuns.paper_baseline_runs.filter(
       (run) => run.paper_baseline_id === baseline.id,
     );
+    const probes = state.paperBaselineProbes.paper_baseline_probes.filter(
+      (probe) => probe.paper_baseline_id === baseline.id,
+    );
     const details = document.createElement("details");
     const summary = document.createElement("summary");
     summary.append(text(`${baseline.name} (${baseline.status})`));
@@ -222,6 +226,17 @@ function renderPaperBaselines() {
       ];
       return lines.join("\n");
     });
+    const probeItems = probes.map((probe) => {
+      const checks = probe.checks.map((check) => (
+        check.path ? `${check.kind}: ${check.path}` : `${check.kind}: ${check.module}`
+      ));
+      return [
+        `${probe.title} (${probe.latest_status})`,
+        `Artifact: ${probe.latest_artifact_root}`,
+        `Checks: ${checks.join(" | ")}`,
+        `Next: ${probe.next_action}`,
+      ].join("\n");
+    });
 
     details.append(
       summary,
@@ -231,6 +246,7 @@ function renderPaperBaselines() {
       reproduce,
       next,
       ...namedList("Reproduction Runs", runItems),
+      ...namedList("Readiness Probes", probeItems),
     );
     return details;
   }));
@@ -346,6 +362,7 @@ async function main() {
       methods,
       paperBaselines,
       paperBaselineRuns,
+      paperBaselineProbes,
       paperEvaluation,
       results,
     ] = await Promise.all([
@@ -353,6 +370,7 @@ async function main() {
       loadJson(DATA_FILES.methods),
       loadJson(DATA_FILES.paperBaselines),
       loadJson(DATA_FILES.paperBaselineRuns),
+      loadJson(DATA_FILES.paperBaselineProbes),
       loadJson(DATA_FILES.paperEvaluation),
       loadJson(DATA_FILES.results),
     ]);
@@ -361,6 +379,7 @@ async function main() {
       methods,
       paperBaselines,
       paperBaselineRuns,
+      paperBaselineProbes,
       paperEvaluation,
       results,
     });

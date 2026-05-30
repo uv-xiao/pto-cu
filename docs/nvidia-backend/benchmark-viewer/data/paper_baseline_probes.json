@@ -1,0 +1,164 @@
+{
+  "paper_baseline_probes": [
+    {
+      "id": "mpk_source_entrypoints",
+      "paper_baseline_id": "mpk",
+      "title": "MPK Source Entrypoints",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/",
+      "checks": [
+        {
+          "kind": "path_exists",
+          "path": "demo/qwen3/demo.py",
+          "why": "MPK Qwen3 native and persistent-kernel demo command."
+        },
+        {
+          "kind": "py_compile",
+          "path": "demo/qwen3/demo.py",
+          "why": "The selected MPK demo entrypoint must at least parse before setup or model-loading runs."
+        },
+        {
+          "kind": "python_module",
+          "module": "torch",
+          "why": "MPK native and persistent paths depend on PyTorch model execution."
+        },
+        {
+          "kind": "python_module",
+          "module": "triton",
+          "why": "The MPK paper compares against Triton-style operator paths."
+        }
+      ],
+      "next_action": "Install MPK dependencies, run the Qwen3 native and --use-mirage commands, then export raw latency and throughput JSON."
+    },
+    {
+      "id": "vdcores_source_entrypoints",
+      "paper_baseline_id": "vdcores",
+      "title": "VDCores Source Entrypoints",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/",
+      "checks": [
+        {
+          "kind": "path_exists",
+          "path": "app/python/llama3/sched.py",
+          "why": "Primary VDCores Llama decode and correctness entrypoint."
+        },
+        {
+          "kind": "py_compile",
+          "path": "app/python/llama3/sched.py",
+          "why": "The selected scheduler entrypoint must parse before model-loading runs."
+        },
+        {
+          "kind": "python_module",
+          "module": "torch",
+          "why": "VDCores Llama materialization and correctness paths depend on PyTorch."
+        }
+      ],
+      "next_action": "Build the VDCores extension on H200/H100-class hardware and run the Llama decode correctness and benchmark commands."
+    },
+    {
+      "id": "vllm_source_entrypoints",
+      "paper_baseline_id": "vllm",
+      "title": "vLLM Source Entrypoints",
+      "latest_status": "partial",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/",
+      "checks": [
+        {
+          "kind": "path_exists",
+          "path": "benchmarks/benchmark_serving.py",
+          "why": "vLLM serving benchmark entrypoint."
+        },
+        {
+          "kind": "py_compile",
+          "path": "benchmarks/benchmark_serving.py",
+          "why": "The serving benchmark script must parse before package installation runs."
+        },
+        {
+          "kind": "path_exists",
+          "path": "benchmarks/benchmark_throughput.py",
+          "why": "vLLM offline throughput benchmark entrypoint."
+        },
+        {
+          "kind": "py_compile",
+          "path": "benchmarks/benchmark_throughput.py",
+          "why": "The throughput benchmark script must parse before package installation runs."
+        },
+        {
+          "kind": "python_module",
+          "module": "vllm",
+          "why": "Installed vLLM module is required before actual serving runs."
+        }
+      ],
+      "next_action": "Install vLLM from the pinned source checkout, start a server, and run bench serve plus throughput with shared prompt/decode settings."
+    },
+    {
+      "id": "sglang_source_entrypoints",
+      "paper_baseline_id": "sglang",
+      "title": "SGLang Source Entrypoints",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/",
+      "checks": [
+        {
+          "kind": "path_exists",
+          "path": "python/sglang/bench_serving.py",
+          "why": "SGLang serving benchmark entrypoint."
+        },
+        {
+          "kind": "py_compile",
+          "path": "python/sglang/bench_serving.py",
+          "why": "The serving benchmark script must parse before server runs."
+        },
+        {
+          "kind": "path_exists",
+          "path": "python/sglang/bench_offline_throughput.py",
+          "why": "SGLang offline throughput benchmark entrypoint."
+        },
+        {
+          "kind": "py_compile",
+          "path": "python/sglang/bench_offline_throughput.py",
+          "why": "The offline throughput script must parse before package setup."
+        },
+        {
+          "kind": "python_module",
+          "module": "sglang",
+          "why": "Installed SGLang module is required before actual serving runs."
+        }
+      ],
+      "next_action": "Run SGLang launch_server, bench_serving, offline throughput, and one-batch commands under the shared workload policy."
+    },
+    {
+      "id": "thunderkittens_source_entrypoints",
+      "paper_baseline_id": "thunderkittens",
+      "title": "ThunderKittens Source Entrypoints",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/",
+      "checks": [
+        {
+          "kind": "path_exists",
+          "path": "kernels/attention/mha_h100/Makefile",
+          "why": "Selected attention-kernel build target for Hopper-class comparison."
+        },
+        {
+          "kind": "path_exists",
+          "path": "kernels/attention/mha_h100/benchmark.py",
+          "why": "Selected attention-kernel benchmark script."
+        },
+        {
+          "kind": "py_compile",
+          "path": "kernels/attention/mha_h100/benchmark.py",
+          "why": "The selected benchmark script must parse before make or CUDA execution."
+        },
+        {
+          "kind": "path_exists",
+          "path": "kernels/attention/mha_h100/test_correctness.py",
+          "why": "Selected attention-kernel correctness script."
+        },
+        {
+          "kind": "py_compile",
+          "path": "kernels/attention/mha_h100/test_correctness.py",
+          "why": "The selected correctness script must parse before make or CUDA execution."
+        }
+      ],
+      "next_action": "Build the selected ThunderKittens kernel on H200/H100-class hardware and capture correctness plus benchmark JSON."
+    }
+  ]
+}

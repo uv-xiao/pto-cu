@@ -288,6 +288,131 @@ def test_paper_baseline_viewer_export_rejects_bool_sample_count(tmp_path):
     assert "invalid sample_count" in result.stdout
 
 
+def test_paper_baseline_probe_collects_source_readiness(tmp_path):
+    baseline_root = tmp_path / "fake-mpk"
+    (baseline_root / "demo" / "qwen3").mkdir(parents=True)
+    (baseline_root / "demo" / "qwen3" / "demo.py").write_text(
+        "print('fixture')\n",
+        encoding="utf-8",
+    )
+    subprocess.run(
+        ["git", "init"],
+        cwd=baseline_root,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Fixture"],
+        cwd=baseline_root,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "fixture@example.invalid"],
+        cwd=baseline_root,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "add", "."],
+        cwd=baseline_root,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "fixture"],
+        cwd=baseline_root,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    commit = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"],
+        cwd=baseline_root,
+        text=True,
+    ).strip()
+
+    baselines = {
+        "paper_baselines": [
+            {
+                "id": "mpk",
+                "name": "Mirage Persistent Kernel",
+                "paper_role": "fixture",
+                "status": "source_cloned_for_survey",
+                "source": {
+                    "upstream_url": "https://example.invalid/mpk",
+                    "local_tmp_path": str(baseline_root),
+                    "commit": commit,
+                },
+                "paper_baselines_to_reproduce": ["fixture"],
+                "next_action": "fixture",
+            }
+        ]
+    }
+    probes = {
+        "paper_baseline_probes": [
+            {
+                "id": "mpk_source_entrypoints",
+                "paper_baseline_id": "mpk",
+                "title": "MPK source entrypoints",
+                "latest_status": "not_captured",
+                "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/",
+                "checks": [
+                    {
+                        "kind": "path_exists",
+                        "path": "demo/qwen3/demo.py",
+                        "why": "fixture entrypoint",
+                    },
+                    {
+                        "kind": "py_compile",
+                        "path": "demo/qwen3/demo.py",
+                        "why": "fixture syntax",
+                    },
+                ],
+                "next_action": "fixture",
+            }
+        ]
+    }
+    baselines_path = tmp_path / "paper_baselines.json"
+    probes_path = tmp_path / "paper_baseline_probes.json"
+    output_path = tmp_path / "probe.json"
+    baselines_path.write_text(json.dumps(baselines), encoding="utf-8")
+    probes_path.write_text(json.dumps(probes), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py",
+            "--baselines",
+            str(baselines_path),
+            "--probes",
+            str(probes_path),
+            "--output",
+            str(output_path),
+            "--artifact-root",
+            "tmp/cuda-backend/paper-baselines/probes/fixture/",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert payload["metadata"]["artifact_root"] == (
+        "tmp/cuda-backend/paper-baselines/probes/fixture/"
+    )
+    assert payload["probes"][0]["paper_baseline_id"] == "mpk"
+    assert payload["probes"][0]["status"] == "pass"
+    assert payload["probes"][0]["source_commit_actual"] == commit
+    assert [check["status"] for check in payload["probes"][0]["checks"]] == [
+        "pass",
+        "pass",
+    ]
+
+
 def test_evaluation_docs_are_split_for_review():
     root_evaluation_docs = sorted(DOC_ROOT.glob("evaluation*.md"))
     assert {path.name for path in root_evaluation_docs} == {
@@ -310,6 +435,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "viewer.js").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baselines.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_runs.json").is_file()
+    assert (VIEWER_ROOT / "data" / "paper_baseline_probes.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").is_file()
     assert (VIEWER_ROOT / "data" / "capture_imports.json").is_file()
     viewer_js = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
@@ -321,6 +447,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "method.launch_model",
         "paperBaselineRuns",
         "paper_baseline_runs",
+        "paperBaselineProbes",
+        "paper_baseline_probes",
+        "latest_artifact_root",
         "paperEvaluation",
         "paper_evaluation_matrix",
         "result_records",
@@ -342,6 +471,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     paper_baseline_runs = json.loads(
         (VIEWER_ROOT / "data" / "paper_baseline_runs.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    paper_baseline_probes = json.loads(
+        (VIEWER_ROOT / "data" / "paper_baseline_probes.json").read_text(
             encoding="utf-8"
         )
     )
@@ -427,6 +561,22 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert item["expected_artifacts"]
         assert item["import_target"]["viewer_file"].endswith("results.json")
 
+    probe_baselines = {
+        item["paper_baseline_id"]
+        for item in paper_baseline_probes["paper_baseline_probes"]
+    }
+    assert {
+        "mpk",
+        "vdcores",
+        "vllm",
+        "sglang",
+        "thunderkittens",
+    } <= probe_baselines
+    for item in paper_baseline_probes["paper_baseline_probes"]:
+        assert item["latest_artifact_root"].startswith("tmp/")
+        assert item["checks"]
+        assert item["next_action"]
+
     matrix_ids = {
         item["id"] for item in paper_evaluation["paper_evaluation_matrix"]
     }
@@ -508,6 +658,14 @@ def test_review_policy_changelog_and_examples_exist():
         / "scripts"
         / "paper_baseline_viewer_export.py"
     ).is_file()
+    assert (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "paper_baseline_probe.py"
+    ).is_file()
     assert (ROOT / ".agents" / "skills" / "git-commit" / "SKILL.md").is_file()
     assert (ROOT / ".agents" / "skills" / "github-pr" / "SKILL.md").is_file()
     assert (DOC_ROOT / "changelog" / "index.md").is_file()
@@ -540,6 +698,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-importer.md"
+    ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-probes.md"
     ).is_file()
 
     example_root = ROOT / "examples" / "cuda"

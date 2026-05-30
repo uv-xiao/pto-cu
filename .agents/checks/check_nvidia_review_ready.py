@@ -59,6 +59,7 @@ def check_evaluation_docs() -> None:
     require_file(DOC_ROOT / "changelog" / "2026-05-31-remote-evaluation-contract.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-runs.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-importer.md")
+    require_file(DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-probes.md")
 
 
 def require_text(path: Path, needles: list[str]) -> None:
@@ -149,6 +150,9 @@ def check_viewer_data() -> None:
         "method.launch_model",
         "paperBaselineRuns",
         "paper_baseline_runs",
+        "paperBaselineProbes",
+        "paper_baseline_probes",
+        "latest_artifact_root",
         "paperEvaluation",
         "paper_evaluation_matrix",
         "result_records",
@@ -164,6 +168,9 @@ def check_viewer_data() -> None:
     paper_baselines = load_json(VIEWER_ROOT / "data" / "paper_baselines.json")
     paper_baseline_runs = load_json(
         VIEWER_ROOT / "data" / "paper_baseline_runs.json"
+    )
+    paper_baseline_probes = load_json(
+        VIEWER_ROOT / "data" / "paper_baseline_probes.json"
     )
     paper_evaluation = load_json(
         VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
@@ -252,6 +259,14 @@ def check_viewer_data() -> None:
     if not required_run_ids <= run_ids:
         missing = sorted(required_run_ids - run_ids)
         fail(f"missing paper baseline run ids: {missing}")
+
+    probe_baseline_ids = {
+        item["paper_baseline_id"]
+        for item in paper_baseline_probes.get("paper_baseline_probes", [])
+    }
+    if not required_paper_baselines <= probe_baseline_ids:
+        missing = sorted(required_paper_baselines - probe_baseline_ids)
+        fail(f"missing paper baseline probe coverage: {missing}")
 
     matrix_ids = {
         item["id"] for item in paper_evaluation.get("paper_evaluation_matrix", [])
@@ -363,6 +378,7 @@ def check_examples_and_rules() -> None:
         ".agents/checks/validate_remote_evaluation.py",
         ".agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py",
+        ".agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py",
         ".agents/checks/validate_nvidia_changelog.py",
         ".agents/skills/git-commit/SKILL.md",
         ".agents/skills/github-pr/SKILL.md",
