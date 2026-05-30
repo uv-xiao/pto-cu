@@ -283,3 +283,29 @@ Each entry must include:
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: future evaluation importers should turn
   missing matrix evidence into viewer result records backed by raw artifacts.
+
+### 2026-05-31 - Remote Evaluation Contract
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned remote
+  evaluation guard slice.
+- Exact Codex command or script invocation: not applicable because no worker
+  was launched in this entry.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, remote evaluation fallback
+  slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: `.agents/checks/`, CUDA evaluation scripts as
+  imported evidence, focused review artifact tests, shared contracts,
+  work-preparation docs, and changelog docs.
+- Dependencies and blocked assumptions: the validator checks command
+  construction and policy coverage; it does not run H200 jobs.
+- Verification commands and results: passed
+  `validate_remote_evaluation.py`, `check_nvidia_review_ready.py`, focused
+  review artifact pytest, `validate_nvidia_changelog.py`, Python compile
+  checks, and `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future remote captures should record
+  whether Git refresh or tree-sync fallback produced each raw artifact.

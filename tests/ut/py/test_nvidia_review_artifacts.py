@@ -57,6 +57,18 @@ def test_cuda_example_validator_passes():
     assert result.returncode == 0, result.stdout
 
 
+def test_remote_evaluation_validator_passes():
+    result = subprocess.run(
+        [sys.executable, ".agents/checks/validate_remote_evaluation.py"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+
+
 def test_cuda_viewer_export_generates_contract_records(tmp_path):
     capture = {
         "metadata": {
@@ -292,6 +304,7 @@ def test_review_policy_changelog_and_examples_exist():
     assert (ROOT / ".agents" / "agents" / "testing" / "AGENT.md").is_file()
     assert (ROOT / ".agents" / "checks" / "validate_benchmark_viewer_data.py").is_file()
     assert (ROOT / ".agents" / "checks" / "validate_cuda_examples.py").is_file()
+    assert (ROOT / ".agents" / "checks" / "validate_remote_evaluation.py").is_file()
     assert (ROOT / ".agents" / "checks" / "validate_nvidia_changelog.py").is_file()
     assert (
         ROOT
@@ -324,6 +337,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-paper-evaluation-matrix.md"
+    ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-remote-evaluation-contract.md"
     ).is_file()
 
     example_root = ROOT / "examples" / "cuda"

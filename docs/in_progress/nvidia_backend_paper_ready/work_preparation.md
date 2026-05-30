@@ -42,9 +42,10 @@ Remote evaluation has two allowed refresh paths:
 - Tree-sync fallback: copy the local checkout to the remote host through SSH
   when remote Git credentials, network, or HTTPS transport fail.
 
-Any remote run must record which path was used, the local commit, remote
-directory, CUDA toolkit path, GPU model, command, output JSON path, and whether
-raw artifacts were copied back under `tmp/`.
+Any remote run must record which path was used, the local commit, remote commit
+or tree-sync source commit, remote directory, CUDA toolkit path, GPU model,
+command, output JSON path, and whether raw artifacts were copied back under
+`tmp/`.
 
 ## Source Notes
 

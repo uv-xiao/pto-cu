@@ -130,3 +130,17 @@ which evaluation contract it informs.
 
 Raw source clones are not committed. Stable docs can name the source and the
 local tmp note that captured the details.
+
+## Remote Evaluation Contract
+
+Paired CUDA evaluation scripts must support two refresh paths:
+
+- remote Git refresh by default, using low-speed and timeout guards;
+- explicit SSH tree-sync fallback when remote Git credentials or network
+  transport fail.
+
+Tree sync must exclude local virtualenvs, build outputs, raw tmp artifacts,
+Python caches, and pytest caches. Remote commands must set CUDA and
+`PYTHONPATH` explicitly and must not run `git fetch` or `git checkout` after a
+tree sync. This contract is checked by
+`.agents/checks/validate_remote_evaluation.py`.
