@@ -116,16 +116,18 @@ Each entry must include:
   `.agents/checks/check_nvidia_review_ready.py`,
   `tests/ut/py/test_nvidia_review_artifacts.py`, and goal/changelog docs.
 - Dependencies and blocked assumptions: local verification remains mandatory;
-  GitHub Actions are manual-only so automatic checks do not block exploratory
-  ultimate-goal progress.
+  repository GitHub Actions are disabled and checked-in workflows are
+  manual-only so automatic checks do not block exploratory ultimate-goal
+  progress.
 - Verification commands and results: passed `check_nvidia_review_ready.py`,
   `validate_benchmark_viewer_data.py`, focused review artifact pytest, Python
   compile checks, JSON syntax checks, `node --check` on the viewer, and
   `git diff --check`.
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: future slices should rely on the local
-  guard/test commands recorded in work preparation and may manually dispatch
-  the workflow when a branch is ready for external review.
+  guard/test commands recorded in work preparation. A reviewer who needs the
+  manual workflow must deliberately re-enable repository Actions, dispatch it,
+  disable Actions again, and record that run here.
 
 ### 2026-05-31 - Benchmark Viewer Schema Guard
 

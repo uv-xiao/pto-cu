@@ -31,5 +31,6 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-05-31 viewer result export](2026-05-31-viewer-result-export.md)
 - [2026-05-31 benchmark viewer contract](2026-05-31-benchmark-viewer-contract.md)
 - [2026-05-31 NVIDIA branch CI](2026-05-31-nvidia-branch-ci.md)
+- [2026-05-31 repository Actions disabled](2026-05-31-repo-actions-disabled.md)
 - [2026-05-31 agent policy completion](2026-05-31-agent-policy-completion.md)
 - [2026-05-31 review readiness](2026-05-31-review-readiness.md)

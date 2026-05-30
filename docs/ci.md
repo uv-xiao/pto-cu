@@ -2,22 +2,25 @@
 
 ## Current Mode
 
-This standalone pto-cu repository keeps GitHub Actions manual-only while the
-NVIDIA backend ultimate goal is active. Workflow files under
-`.github/workflows/` must not register automatic `push`, `pull_request`,
-`pull_request_target`, `merge_group`, or `schedule` triggers.
+This standalone pto-cu repository keeps GitHub Actions disabled at the
+repository settings level while the NVIDIA backend ultimate goal is active.
+Workflow files under `.github/workflows/` must also stay manual-only. They
+must not register automatic `push`, `pull_request`, `pull_request_target`,
+`merge_group`, or `schedule` triggers.
 
 The purpose is to keep exploratory NVIDIA backend slices moving without being
-blocked by inherited Ascend a2a3/a5 CI. Local verification, dispatch-log
-evidence, and changelog reports are the required gates before a slice is pushed
-for human review.
+blocked by inherited Ascend a2a3/a5 CI or repository-level check status.
+Local verification, dispatch-log evidence, and changelog reports are the
+required gates before a slice is pushed for human review.
 
 ## Workflow
 
 The only workflow currently kept in the repository is
-`.github/workflows/ci.yml`, named `NVIDIA Manual Review`. It is available
-through `workflow_dispatch` for explicit reviewer use and runs the lightweight
-NVIDIA review checks:
+`.github/workflows/ci.yml`, named `NVIDIA Manual Review`. The file is kept as
+the future manual review recipe, but it cannot run while repository GitHub
+Actions are disabled. After Actions are explicitly reopened, the workflow is
+available through `workflow_dispatch` for explicit reviewer use and runs the
+lightweight NVIDIA review checks:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
@@ -61,12 +64,17 @@ temporary convention.
 
 ## Reopening CI
 
-Automatic CI may be reopened only after the NVIDIA backend reaches a stable
-review boundary and the workflow jobs match this standalone repository. That
-change must include:
+Repository GitHub Actions and automatic CI may be reopened only after the
+NVIDIA backend reaches a stable review boundary and the workflow jobs match
+this standalone repository. That change must include:
 
 - a changelog report under `docs/nvidia-backend/changelog/`;
 - an update to this document;
 - an update to `.agents/checks/check_nvidia_review_ready.py`;
 - human-readable evidence that the new jobs do not require inherited upstream
   a2a3/a5 infrastructure unless the branch deliberately opts into it.
+
+If a reviewer needs to run the manual workflow before automatic CI is reopened,
+temporarily enable repository GitHub Actions, dispatch `NVIDIA Manual Review`,
+then disable Actions again and record the run in
+`docs/in_progress/nvidia_backend_paper_ready/dispatch_log.md`.
