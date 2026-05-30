@@ -324,7 +324,12 @@ def validate_paper_baseline_probes(
     records = require_list(data, "paper_baseline_probes", "paper baseline probes")
     check_unique_ids(records, "paper baseline probe")
     allowed_status = {"not_captured", "pass", "partial", "fail"}
-    allowed_kinds = {"path_exists", "py_compile", "python_module"}
+    allowed_kinds = {
+        "path_exists",
+        "py_compile",
+        "python_import",
+        "python_module",
+    }
     covered_baselines: set[str] = set()
     for record in records:
         owner = f"paper baseline probe {record['id']}"
@@ -349,8 +354,10 @@ def validate_paper_baseline_probes(
             require_string(check, "why", owner)
             if kind in {"path_exists", "py_compile"}:
                 require_string(check, "path", owner)
-            if kind == "python_module":
+            if kind in {"python_import", "python_module"}:
                 modules.add(require_string(check, "module", owner))
+            if kind == "python_import" and "pythonpath" in check:
+                require_string(check, "pythonpath", owner)
         if baseline_id == "thunderkittens":
             required_modules = {
                 "torch",

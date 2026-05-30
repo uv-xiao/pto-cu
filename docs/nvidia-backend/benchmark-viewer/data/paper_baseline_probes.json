@@ -5,7 +5,7 @@
       "paper_baseline_id": "mpk",
       "title": "MPK Source Entrypoints",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/",
       "checks": [
         {
           "kind": "path_exists",
@@ -40,7 +40,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Source Entrypoints",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/",
       "checks": [
         {
           "kind": "path_exists",
@@ -70,7 +70,7 @@
       "paper_baseline_id": "vllm",
       "title": "vLLM Source Entrypoints",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/",
       "checks": [
         {
           "kind": "path_exists",
@@ -105,7 +105,7 @@
       "paper_baseline_id": "sglang",
       "title": "SGLang Source Entrypoints",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/",
       "checks": [
         {
           "kind": "path_exists",
@@ -130,7 +130,25 @@
         {
           "kind": "python_module",
           "module": "sglang",
-          "why": "Installed SGLang module is required before actual serving runs."
+          "why": "SGLang module resolution is required before actual serving runs."
+        },
+        {
+          "kind": "python_import",
+          "module": "sglang.bench_serving",
+          "pythonpath": "python",
+          "why": "The selected serving benchmark module must import from the pinned source checkout."
+        },
+        {
+          "kind": "python_import",
+          "module": "sglang.bench_offline_throughput",
+          "pythonpath": "python",
+          "why": "The selected offline throughput benchmark module must import from the pinned source checkout."
+        },
+        {
+          "kind": "python_import",
+          "module": "sglang.bench_one_batch",
+          "pythonpath": "python",
+          "why": "The selected one-batch benchmark module must import from the pinned source checkout."
         }
       ],
       "next_action": "Run SGLang launch_server, bench_serving, offline throughput, and one-batch commands under the shared workload policy."
@@ -140,7 +158,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Source Entrypoints",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/",
       "checks": [
         {
           "kind": "path_exists",

@@ -639,3 +639,41 @@ Each entry must include:
 - Handoff summary and remaining gaps: next setup work should install or build
   vLLM and SGLang in the H200 project venv, rerun the paired probe, and then
   execute the generated serving command plan.
+
+### 2026-05-31 - SGLang Source Import Probe
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned readiness
+  correction for SGLang source execution.
+- Exact Codex command or script invocation: regenerated the serving command
+  plan with `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py
+  --output
+  tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json`,
+  then reran `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py
+  --sync-remote-tree`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer run/probe data, probe and command
+  scripts, review validators, focused tests, evaluation docs, changelog docs,
+  and generated `tmp/` artifacts. No upstream repositories were edited.
+- Dependencies and blocked assumptions: SGLang source-file existence is not
+  enough; selected benchmark modules must import from the pinned checkout
+  before long H200 serving runs are meaningful.
+- Verification commands and results: the paired probe wrote
+  `tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/`.
+  A100 reports MPK, VDCores, and ThunderKittens pass, vLLM partial, and
+  SGLang partial because SGLang benchmark imports hit a torch/torchvision
+  operator-registration mismatch. H200 reports MPK, VDCores, and
+  ThunderKittens pass, vLLM partial, and SGLang partial because SGLang source
+  imports require the missing `orjson` dependency.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: install or build SGLang's runtime
+  dependency stack in the H200 project venv, resolve the local
+  torch/torchvision mismatch before A100 SGLang serving capture, then run the
+  source-path command plan and import raw serving results into the viewer.

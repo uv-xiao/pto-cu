@@ -8,6 +8,7 @@ what evaluation ran, and what evidence proves the claim.
 
 - [2026-05-31 ultimate goal setup](2026-05-31-ultimate-goal.md)
 - [2026-05-31 serving command plan](2026-05-31-serving-command-plan.md)
+- [2026-05-31 SGLang source import probe](2026-05-31-sglang-source-import-probe.md)
 - [2026-05-31 serving policy](2026-05-31-serving-policy.md)
 - [2026-05-31 paired probe dependencies](2026-05-31-paired-probe-dependencies.md)
 - [2026-05-31 ThunderKittens bounded capture](2026-05-31-thunderkittens-bounded-capture.md)

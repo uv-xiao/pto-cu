@@ -296,6 +296,11 @@ def test_paper_baseline_probe_collects_source_readiness(tmp_path):
         "print('fixture')\n",
         encoding="utf-8",
     )
+    (baseline_root / "python" / "fixture_pkg").mkdir(parents=True)
+    (baseline_root / "python" / "fixture_pkg" / "__init__.py").write_text(
+        "VALUE = 1\n",
+        encoding="utf-8",
+    )
     subprocess.run(
         ["git", "init"],
         cwd=baseline_root,
@@ -369,6 +374,12 @@ def test_paper_baseline_probe_collects_source_readiness(tmp_path):
                         "path": "demo/qwen3/demo.py",
                         "why": "fixture syntax",
                     },
+                    {
+                        "kind": "python_import",
+                        "module": "fixture_pkg",
+                        "pythonpath": "python",
+                        "why": "fixture import through source path",
+                    },
                 ],
                 "next_action": "fixture",
             }
@@ -409,6 +420,7 @@ def test_paper_baseline_probe_collects_source_readiness(tmp_path):
     assert payload["probes"][0]["status"] == "pass"
     assert payload["probes"][0]["source_commit_actual"] == commit
     assert [check["status"] for check in payload["probes"][0]["checks"]] == [
+        "pass",
         "pass",
         "pass",
     ]
@@ -459,6 +471,12 @@ def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
     assert any(
         "--random-input-len 128" in command["command"]
         and "--random-output-len 64" in command["command"]
+        for command in sglang_vdcores["commands"]
+    )
+    assert all(
+        command["command"].startswith(
+            "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH "
+        )
         for command in sglang_vdcores["commands"]
     )
     assert all(
@@ -753,7 +771,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert (
             item["latest_artifact_root"]
             == "tmp/cuda-backend/paper-baselines/probes/"
-            "paired-a100-h200-57de1a6b/"
+            "paired-a100-h200-43b927ed/"
         )
         assert item["checks"]
         assert item["next_action"]
@@ -778,6 +796,17 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if check["kind"] == "python_module"
             }
             assert "transformers" in probed_modules
+        if item["paper_baseline_id"] == "sglang":
+            imported_modules = {
+                check["module"]
+                for check in item["checks"]
+                if check["kind"] == "python_import"
+            }
+            assert {
+                "sglang.bench_serving",
+                "sglang.bench_offline_throughput",
+                "sglang.bench_one_batch",
+            } <= imported_modules
 
     matrix_ids = {
         item["id"] for item in paper_evaluation["paper_evaluation_matrix"]

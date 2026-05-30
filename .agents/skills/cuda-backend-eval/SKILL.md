@@ -319,7 +319,9 @@ serving runs. It reads the committed `serving_workloads.json` and
 `paper_baseline_runs.json` contracts, then writes an inspectable command plan
 with one row per baseline, policy, and batch size. The output stays under
 `tmp/` and records the intended raw artifact paths that later feed
-`paper_baseline_viewer_export.py`:
+`paper_baseline_viewer_export.py`. SGLang rows prepend the pinned
+`tmp/baselines/sglang/python` checkout to `PYTHONPATH`, so command plans do not
+silently use a globally installed SGLang package:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

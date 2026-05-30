@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -137,6 +138,37 @@ def check_python_module(check: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def check_python_import(source_root: Path, check: dict[str, Any]) -> dict[str, Any]:
+    module = str(check["module"])
+    pythonpath = check.get("pythonpath")
+    env = os.environ.copy()
+    if pythonpath:
+        path = source_root / str(pythonpath)
+        env["PYTHONPATH"] = (
+            f"{path}{os.pathsep}{env['PYTHONPATH']}"
+            if env.get("PYTHONPATH")
+            else str(path)
+        )
+    result = subprocess.run(
+        [sys.executable, "-c", f"import importlib; importlib.import_module({module!r})"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        timeout=30,
+        check=False,
+        env=env,
+    )
+    return {
+        "kind": "python_import",
+        "module": module,
+        "pythonpath": pythonpath,
+        "why": check["why"],
+        "status": "pass" if result.returncode == 0 else "fail",
+        "returncode": result.returncode,
+        "output": result.stdout[-4000:],
+    }
+
+
 def collect_check(source_root: Path, check: dict[str, Any]) -> dict[str, Any]:
     kind = check.get("kind")
     if kind == "path_exists":
@@ -145,6 +177,8 @@ def collect_check(source_root: Path, check: dict[str, Any]) -> dict[str, Any]:
         return check_py_compile(source_root, check)
     if kind == "python_module":
         return check_python_module(check)
+    if kind == "python_import":
+        return check_python_import(source_root, check)
     fail(f"unknown probe check kind: {kind}")
 
 

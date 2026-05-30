@@ -36,11 +36,13 @@ universal serving row:
   4, 8, and 16.
 
 The current primary-model launch plan for those policies is materialized at
-`tmp/cuda-backend/paper-baselines/serving-runs/plan-7cad653c.json` by
+`tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json` by
 `.agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py`.
 It expands the two policy IDs into MPK, VDCores, vLLM, and SGLang command rows
 for each batch size, including the raw artifact paths expected by the viewer
-importer after the long baseline runs complete.
+importer after the long baseline runs complete. SGLang commands in the plan
+prefix `PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH` so benchmark
+modules resolve from the pinned source checkout.
 
 ## MPK Notes
 

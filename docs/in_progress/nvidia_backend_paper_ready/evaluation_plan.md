@@ -149,18 +149,20 @@ Serving baseline commands can be materialized with
 The script reads `serving_workloads.json` plus `paper_baseline_runs.json` and
 emits one command-plan row per baseline, policy, and batch size. The current
 primary-model command plan is recorded at
-`tmp/cuda-backend/paper-baselines/serving-runs/plan-7cad653c.json`. It has 30
+`tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json`. It has 30
 rows covering MPK, VDCores, vLLM, and SGLang over the MPK/VDCores policy batch
 ladders. This is not a performance result; it is the reproducible launch
 contract that long H200 runs must execute before their raw JSON can be
-imported into the viewer.
+imported into the viewer. SGLang launch rows explicitly prepend the pinned
+source checkout to `PYTHONPATH`, so generated commands do not accidentally use
+a globally installed SGLang package.
 
 Before full baseline builds, paper-baseline readiness probes can be captured
 with `.agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py`. The
 probe checks pinned source commits, selected entrypoint paths, Python syntax,
 required Python modules, CUDA toolkit availability, and visible GPUs. The
 latest paired readiness artifact is recorded at
-`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-57de1a6b/`.
+`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/`.
 Use `.agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py`
 for paired A100/H200 readiness. In `--sync-remote-tree` mode it copies the
 local checkout to the H200 host, skips remote Git, runs the remote probe with
@@ -169,10 +171,14 @@ local `a100-probe.json`. The paired runner also syncs `tmp/baselines/`
 separately, because those source checkouts are required probe inputs but
 generated `tmp/cuda-backend/` outputs should not be copied as part of the repo
 tree sync.
-The 57de1a6b paired probe also checks the `transformers` module for MPK and
-VDCores, matching the selected Qwen3 and Llama entrypoint imports. The H200
-project venv now has `transformers` installed, so MPK, VDCores, and
-ThunderKittens remain setup-ready on H200 while vLLM and SGLang remain partial.
+The 43b927ed paired probe checks the `transformers` module for MPK and
+VDCores, matching the selected Qwen3 and Llama entrypoint imports. It also
+checks that the selected SGLang benchmark modules import from the pinned
+source checkout, not only that the source files exist. The H200 project venv
+has `transformers` installed, so MPK, VDCores, and ThunderKittens remain
+setup-ready on H200 while vLLM and SGLang remain partial. SGLang is partial
+because H200 is missing `orjson`, while the local A100 import path currently
+hits a torch/torchvision operator-registration mismatch.
 ThunderKittens readiness must include the selected PyTorch-extension
 dependencies (`torch`, `pybind11`, `numpy`, `pandas`, `matplotlib`, and
 `tqdm`), not just source-file existence. After installing those modules in

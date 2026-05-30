@@ -52,7 +52,7 @@ def shell_join(parts: list[str]) -> str:
         safe = set(
             "abcdefghijklmnopqrstuvwxyz"
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            "0123456789_+-=.,:/@%"
+            "0123456789_+-=.,:/@%$"
         )
         if all(char in safe for char in part):
             return part
@@ -190,11 +190,14 @@ def sglang_commands(
     serving_json = f"{out_dir}/sglang-serving-batch{batch_size}.jsonl"
     offline_json = f"{out_dir}/sglang-offline-batch{batch_size}.json"
     one_batch_json = f"{out_dir}/sglang-one-batch{batch_size}.json"
+    source_env = "PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH"
     return [
         {
             "kind": "server",
             "command": shell_join(
                 [
+                    "env",
+                    source_env,
                     "python",
                     "-m",
                     "sglang.launch_server",
@@ -211,6 +214,8 @@ def sglang_commands(
             "kind": "online_serving",
             "command": shell_join(
                 [
+                    "env",
+                    source_env,
                     "python",
                     "-m",
                     "sglang.bench_serving",
@@ -246,6 +251,8 @@ def sglang_commands(
             "kind": "offline_throughput",
             "command": shell_join(
                 [
+                    "env",
+                    source_env,
                     "python",
                     "-m",
                     "sglang.bench_offline_throughput",
@@ -271,6 +278,8 @@ def sglang_commands(
             "kind": "one_batch",
             "command": shell_join(
                 [
+                    "env",
+                    source_env,
                     "python",
                     "-m",
                     "sglang.bench_one_batch",
