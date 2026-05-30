@@ -396,3 +396,38 @@ Each entry must include:
 - Handoff summary and remaining gaps: future slices should run the H200 probe
   through the remote fallback path, install/build vLLM, and turn readiness
   probes into real raw benchmark captures.
+
+### 2026-05-31 - Paired Paper Baseline Probe Harness
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned paired
+  paper-baseline probe harness.
+- Exact Codex command or script invocation:
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py
+  --sync-remote-tree`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready remote
+  baseline evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: paired probe script, remote-evaluation validator,
+  focused review artifact tests, CUDA evaluation skill docs, shared contracts,
+  evaluation plan, dispatch log, and changelog docs.
+- Dependencies and blocked assumptions: the harness proves command
+  construction and artifact structure for paired readiness probes. Full
+  baseline builds and benchmark runs still depend on per-baseline setup.
+- Verification commands and results: TDD red checks failed before
+  implementation because the paired probe script, changelog report, and
+  baseline-source sync command were missing. The paired `--sync-remote-tree`
+  probe wrote `a100-probe.json`, `h200-probe.json`, and
+  `paired-probe-summary.json` under
+  `tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-948dfdcb/`.
+  Local A100 reported MPK, VDCores, SGLang, and ThunderKittens as pass and
+  vLLM as partial. Remote H200 reported ThunderKittens as pass and MPK,
+  VDCores, vLLM, and SGLang as partial because runtime Python dependencies
+  are not installed there yet.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: run the paired probe with
+  `--sync-remote-tree` to capture A100/H200 readiness under `tmp/`, then use
+  the results to decide the first H200 paper-baseline build slice.

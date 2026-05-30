@@ -97,6 +97,17 @@ Each paper-baseline probe record must include:
   compilation, or required Python module availability;
 - `next_action`: the next build, run, or dependency step after the probe.
 
+Paired A100/H200 probe artifacts must also record:
+
+- local `a100-probe.json` and copied-back remote `h200-probe.json` paths;
+- remote host, remote checkout directory, CUDA toolkit path, and source
+  commit used for the artifact directory;
+- command examples for local probe, remote probe, remote copy-back, and
+  tree-sync fallback when that path is used;
+- a separate `tmp/baselines/` source sync command for remote probes, because
+  baseline sources are intentionally local tmp artifacts and the repo tree-sync
+  excludes generated `tmp/` outputs.
+
 Each paper-evaluation matrix claim must include:
 
 - `id`: stable claim identifier;

@@ -140,6 +140,25 @@ def check_lifecycle_examples() -> None:
         fail("lifecycle matrix sync example must use rsync")
 
 
+def check_paper_baseline_pair_source_sync() -> None:
+    module = load_module("paper_baseline_pair_probe")
+    config = module.PairedPaperBaselineProbeConfig(
+        remote="h200-box",
+        remote_workdir="/remote/pto-cu",
+        branch="goal/nvidia-paper-ready",
+        local_python=".venv/bin/python",
+        remote_python=".venv/bin/python",
+        sync_remote_tree=True,
+    )
+    command = module.build_remote_baseline_source_sync_command(config)
+    if command[:3] != ["rsync", "-a", "--delete"]:
+        fail("paper baseline source sync command must start with rsync -a --delete")
+    if command[-2] != "tmp/baselines/":
+        fail("paper baseline source sync must copy only tmp/baselines")
+    if command[-1] != "h200-box:/remote/pto-cu/tmp/baselines/":
+        fail(f"paper baseline source sync destination is unstable: {command[-1]}")
+
+
 def validate_remote_evaluation(root: Path = ROOT) -> None:
     check_pair_script(
         module_name="cuda_pair_smoke",
@@ -165,6 +184,13 @@ def validate_remote_evaluation(root: Path = ROOT) -> None:
         remote_builder_name="build_remote_benchmark_command",
         remote_builder_arg="abc123",
     )
+    check_pair_script(
+        module_name="paper_baseline_pair_probe",
+        config_name="PairedPaperBaselineProbeConfig",
+        remote_builder_name="build_remote_probe_command",
+        remote_builder_arg="abc123",
+    )
+    check_paper_baseline_pair_source_sync()
     check_lifecycle_examples()
     require_text(
         root / ".agents" / "rules" / "remote-evaluation.md",

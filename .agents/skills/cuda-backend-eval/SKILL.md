@@ -327,6 +327,22 @@ PYTHONPATH=$PWD:$PWD/python \
     --artifact-root tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/
 ```
 
+Use `paper_baseline_pair_probe.py` when the same readiness checks must be
+captured on local A100 and remote H200 before full baseline builds. Prefer
+`--sync-remote-tree` when remote Git credentials or HTTPS fetch are unhealthy;
+this copies the local checkout to `bizhaoh200`, skips remote Git, runs the
+H200 probe with the explicit CUDA toolkit path, copies `h200-probe.json` back,
+and writes a paired summary under `tmp/`. Because the paper-baseline source
+checkouts live under `tmp/baselines/`, the paired runner separately syncs only
+that source directory before the remote probe while still leaving generated
+`tmp/cuda-backend/` artifacts out of the repo tree sync:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py \
+    --sync-remote-tree
+```
+
 Use `cuda_scheduler_scaling.py` to summarize a scheduler-block sweep after
 capturing the individual paired smokes. Its ratio column is shape-aware:
 each row is compared with the one-scheduler row for the same artifact, DAG

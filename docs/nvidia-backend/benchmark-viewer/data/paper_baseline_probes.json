@@ -4,8 +4,8 @@
       "id": "mpk_source_entrypoints",
       "paper_baseline_id": "mpk",
       "title": "MPK Source Entrypoints",
-      "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/",
+      "latest_status": "partial",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-948dfdcb/",
       "checks": [
         {
           "kind": "path_exists",
@@ -34,8 +34,8 @@
       "id": "vdcores_source_entrypoints",
       "paper_baseline_id": "vdcores",
       "title": "VDCores Source Entrypoints",
-      "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/",
+      "latest_status": "partial",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-948dfdcb/",
       "checks": [
         {
           "kind": "path_exists",
@@ -60,7 +60,7 @@
       "paper_baseline_id": "vllm",
       "title": "vLLM Source Entrypoints",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-948dfdcb/",
       "checks": [
         {
           "kind": "path_exists",
@@ -94,8 +94,8 @@
       "id": "sglang_source_entrypoints",
       "paper_baseline_id": "sglang",
       "title": "SGLang Source Entrypoints",
-      "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/",
+      "latest_status": "partial",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-948dfdcb/",
       "checks": [
         {
           "kind": "path_exists",
@@ -130,7 +130,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Source Entrypoints",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-948dfdcb/",
       "checks": [
         {
           "kind": "path_exists",

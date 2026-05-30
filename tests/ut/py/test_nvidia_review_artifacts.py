@@ -1,4 +1,5 @@
 import json
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
@@ -413,6 +414,80 @@ def test_paper_baseline_probe_collects_source_readiness(tmp_path):
     ]
 
 
+def test_paper_baseline_pair_probe_uses_remote_fallback_contract():
+    script_path = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "paper_baseline_pair_probe.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "paper_baseline_pair_probe",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    config = module.PairedPaperBaselineProbeConfig(
+        remote="h200-box",
+        remote_workdir="/remote/pto-cu",
+        branch="goal/nvidia-paper-ready",
+        output_root=Path("tmp/cuda-backend/paper-baselines/probes"),
+        local_python=".venv/bin/python",
+        remote_python=".venv/bin/python",
+        refresh_remote=False,
+        sync_remote_tree=True,
+    )
+
+    sync_command = module.build_remote_sync_command(config)
+    assert sync_command[:3] == ["rsync", "-a", "--delete"]
+    assert "--exclude=.venv" in sync_command
+    assert "--exclude=build" in sync_command
+    assert "--exclude=tmp" in sync_command
+    assert sync_command[-1] == "h200-box:/remote/pto-cu/"
+
+    source_sync_command = module.build_remote_baseline_source_sync_command(config)
+    assert source_sync_command[:3] == ["rsync", "-a", "--delete"]
+    assert source_sync_command[-2] == "tmp/baselines/"
+    assert source_sync_command[-1] == "h200-box:/remote/pto-cu/tmp/baselines/"
+
+    remote_command = module.build_remote_probe_command(config, "abc123")
+    assert remote_command[:5] == [
+        "ssh",
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=8",
+    ]
+    assert remote_command[5] == "h200-box"
+    shell = remote_command[-1]
+    assert "cd /remote/pto-cu" in shell
+    assert "CUDA_HOME=" in shell
+    assert "PATH=" in shell
+    assert "PYTHONPATH=$PWD:$PWD/python" in shell
+    assert "paper_baseline_probe.py" in shell
+    assert "--output" in shell
+    assert "h200-probe.json" in shell
+    assert "git fetch" not in shell
+    assert "git checkout" not in shell
+
+    default_config = module.PairedPaperBaselineProbeConfig(
+        remote="h200-box",
+        remote_workdir="/remote/pto-cu",
+        branch="goal/nvidia-paper-ready",
+        local_python=".venv/bin/python",
+        remote_python=".venv/bin/python",
+    )
+    default_shell = module.build_remote_probe_command(default_config, "abc123")[-1]
+    assert "fetch origin goal/nvidia-paper-ready" in default_shell
+    assert "git checkout -B goal/nvidia-paper-ready FETCH_HEAD" in default_shell
+
+
 def test_evaluation_docs_are_split_for_review():
     root_evaluation_docs = sorted(DOC_ROOT.glob("evaluation*.md"))
     assert {path.name for path in root_evaluation_docs} == {
@@ -666,6 +741,14 @@ def test_review_policy_changelog_and_examples_exist():
         / "scripts"
         / "paper_baseline_probe.py"
     ).is_file()
+    assert (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "paper_baseline_pair_probe.py"
+    ).is_file()
     assert (ROOT / ".agents" / "skills" / "git-commit" / "SKILL.md").is_file()
     assert (ROOT / ".agents" / "skills" / "github-pr" / "SKILL.md").is_file()
     assert (DOC_ROOT / "changelog" / "index.md").is_file()
@@ -701,6 +784,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-probes.md"
+    ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-paired-probe.md"
     ).is_file()
 
     example_root = ROOT / "examples" / "cuda"

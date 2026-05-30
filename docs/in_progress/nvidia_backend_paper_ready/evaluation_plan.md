@@ -135,8 +135,16 @@ Before full baseline builds, paper-baseline readiness probes can be captured
 with `.agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py`. The
 probe checks pinned source commits, selected entrypoint paths, Python syntax,
 required Python modules, CUDA toolkit availability, and visible GPUs. The
-latest local A100 probe artifact is recorded at
-`tmp/cuda-backend/paper-baselines/probes/local-a100-source-entrypoints/`.
+latest paired readiness artifact is recorded at
+`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-948dfdcb/`.
+Use `.agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py`
+for paired A100/H200 readiness. In `--sync-remote-tree` mode it copies the
+local checkout to the H200 host, skips remote Git, runs the remote probe with
+the explicit CUDA toolkit path, and copies `h200-probe.json` back beside the
+local `a100-probe.json`. The paired runner also syncs `tmp/baselines/`
+separately, because those source checkouts are required probe inputs but
+generated `tmp/cuda-backend/` outputs should not be copied as part of the repo
+tree sync.
 
 Remote H200 runs should prefer Git refresh when available and use SSH
 tree-sync fallback when remote Git fails. The selected path is part of the

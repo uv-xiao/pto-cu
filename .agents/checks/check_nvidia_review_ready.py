@@ -60,6 +60,9 @@ def check_evaluation_docs() -> None:
     require_file(DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-runs.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-importer.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-probes.md")
+    require_file(
+        DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-paired-probe.md"
+    )
 
 
 def require_text(path: Path, needles: list[str]) -> None:
@@ -379,6 +382,7 @@ def check_examples_and_rules() -> None:
         ".agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py",
+        ".agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py",
         ".agents/checks/validate_nvidia_changelog.py",
         ".agents/skills/git-commit/SKILL.md",
         ".agents/skills/github-pr/SKILL.md",
