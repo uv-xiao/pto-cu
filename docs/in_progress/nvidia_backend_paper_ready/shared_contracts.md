@@ -106,6 +106,9 @@ Each paper-baseline probe record must include:
 Committed `latest_machine_status` entries must match the referenced raw probe
 JSON. A status or blocking-gap mismatch means the viewer data is stale and
 must be regenerated from the paired probe artifact before review.
+Use `.agents/skills/cuda-backend-eval/scripts/paper_probe_status_update.py`
+after each paired probe refresh to update these committed fields from the raw
+A100/H200 artifacts.
 
 Paired A100/H200 probe artifacts must also record:
 

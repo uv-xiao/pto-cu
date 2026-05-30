@@ -376,6 +376,18 @@ PYTHONPATH=$PWD:$PWD/python \
     --sync-remote-tree
 ```
 
+After a paired probe refresh, use `paper_probe_status_update.py` to regenerate
+the committed viewer probe status from the raw A100/H200 JSON artifacts. This
+keeps `latest_status` and `latest_machine_status` mechanically tied to the
+raw probe files:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_probe_status_update.py \
+    --paired-artifact-root tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-$(git rev-parse --short HEAD) \
+    --output docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json
+```
+
 Use `cuda_scheduler_scaling.py` to summarize a scheduler-block sweep after
 capturing the individual paired smokes. Its ratio column is shape-aware:
 each row is compared with the one-scheduler row for the same artifact, DAG

@@ -577,6 +577,89 @@ def test_paper_baseline_probe_collects_source_readiness(tmp_path):
     ]
 
 
+def test_paper_probe_status_update_materializes_machine_status(tmp_path):
+    paired_root = tmp_path / "tmp" / "paired-probe"
+    paired_root.mkdir(parents=True)
+    for filename, status, gaps in [
+        ("a100-probe.json", "pass", []),
+        ("h200-probe.json", "partial", ["python_module failed: fixture"]),
+    ]:
+        (paired_root / filename).write_text(
+            json.dumps(
+                {
+                    "probes": [
+                        {
+                            "paper_baseline_id": "fixture",
+                            "status": status,
+                            "blocking_gaps": gaps,
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+    probes_path = tmp_path / "paper_baseline_probes.json"
+    output_path = tmp_path / "updated-probes.json"
+    probes_path.write_text(
+        json.dumps(
+            {
+                "paper_baseline_probes": [
+                    {
+                        "id": "fixture_source_entrypoints",
+                        "paper_baseline_id": "fixture",
+                        "title": "Fixture Source Entrypoints",
+                        "latest_status": "pass",
+                        "latest_artifact_root": "tmp/old/",
+                        "latest_machine_status": [],
+                        "checks": [],
+                        "next_action": "fixture",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/"
+            "paper_probe_status_update.py",
+            "--probes",
+            str(probes_path),
+            "--paired-artifact-root",
+            str(paired_root),
+            "--output",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    record = payload["paper_baseline_probes"][0]
+
+    assert record["latest_status"] == "partial"
+    assert record["latest_artifact_root"].endswith("tmp/paired-probe/")
+    assert record["latest_machine_status"] == [
+        {
+            "gpu": "A100",
+            "status": "pass",
+            "artifact": record["latest_artifact_root"] + "a100-probe.json",
+            "blocking_gaps": [],
+        },
+        {
+            "gpu": "H200",
+            "status": "partial",
+            "artifact": record["latest_artifact_root"] + "h200-probe.json",
+            "blocking_gaps": ["python_module failed: fixture"],
+        },
+    ]
+
+
 def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
     output_path = tmp_path / "serving-plan.json"
     result = subprocess.run(

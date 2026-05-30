@@ -768,3 +768,35 @@ Each entry must include:
 - Handoff summary and remaining gaps: future probe refreshes must update
   committed status summaries and raw artifacts together, or the validator will
   reject the branch before review.
+
+### 2026-05-31 - Probe Status Updater
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned probe status
+  refresh workflow slice.
+- Exact Codex command or script invocation: no worker invocation. Added
+  `.agents/skills/cuda-backend-eval/scripts/paper_probe_status_update.py` to
+  materialize committed probe status from paired A100/H200 probe artifacts.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, benchmark viewer
+  readiness-status workflow slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation skill script, focused tests,
+  shared contracts, dispatch log, changelog docs, and skill instructions. No
+  upstream repositories were edited.
+- Dependencies and blocked assumptions: the updater requires both
+  `a100-probe.json` and `h200-probe.json` in the paired artifact directory.
+- Verification commands and results: `paper_probe_status_update.py` reproduced
+  the committed `paper_baseline_probes.json` from
+  `tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-43b927ed/` with no
+  diff. Passed `check_nvidia_review_ready.py`,
+  `validate_benchmark_viewer_data.py`, `validate_nvidia_changelog.py`,
+  `validate_cuda_examples.py`, `validate_remote_evaluation.py`, focused
+  review artifact pytest with 18 tests, Python compile for the updater, JSON
+  syntax checks, `node --check` on the viewer, and `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future paired probe reruns should call
+  the updater before committing viewer data, then run the viewer-data
+  validator to prove the committed summary matches raw artifacts.
