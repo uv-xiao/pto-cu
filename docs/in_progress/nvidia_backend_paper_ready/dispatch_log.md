@@ -462,3 +462,42 @@ Each entry must include:
 - Handoff summary and remaining gaps: install the missing H200 dependencies
   before attempting the ThunderKittens `make`, correctness, and benchmark
   capture.
+
+### 2026-05-31 - ThunderKittens H200 Setup And Quick Smoke
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  ThunderKittens H200 setup and first raw capture.
+- Exact Codex command or script invocation:
+  `ssh bizhaoh200 ... .venv/bin/python -m pip install pybind11 tqdm`,
+  `ssh bizhaoh200 ... .venv/bin/python -m pip install torch==2.8.0+cu128
+  --index-url https://download.pytorch.org/whl/cu128`,
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py
+  --sync-remote-tree`, and an H200 Python here-doc that imports
+  `tmp/baselines/thunderkittens/kernels/attention/mha_h100/_C`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: remote project venv under `/data/.../pto-cu/.venv`,
+  local and remote `tmp/` artifacts, benchmark viewer data, focused review
+  artifact tests, evaluation plan, dispatch log, and changelog docs.
+- Dependencies and blocked assumptions: this installs dependencies only in the
+  remote pto-cu venv and does not modify upstream repositories. The quick smoke
+  is a controlled setup artifact, not the full ThunderKittens paper benchmark.
+- Verification commands and results: H200 import check reported
+  `torch 2.8.0+cu128`, CUDA available, H200 device visible, and required
+  modules present. The paired probe under
+  `tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-67c5c655/`
+  reports MPK, VDCores, and ThunderKittens as pass on H200 and vLLM/SGLang as
+  partial. The selected ThunderKittens `mha_h100` extension built on H200, and
+  the quick smoke wrote
+  `tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/quick-smoke.json`
+  with correctness pass against PyTorch SDPA.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: run the full ThunderKittens
+  `test_correctness.py` and `benchmark.py` or a scripted equivalent that
+  captures repeat statistics before promoting this baseline beyond
+  setup-ready.

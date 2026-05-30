@@ -26,14 +26,15 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
     -q -k benchmark_viewer_has_json_backed_review_data
 ```
 
-The H200 environment probe showed `torch`, `pybind11`, and `tqdm` are missing
-for the selected ThunderKittens run path, while `numpy`, `pandas`, and
-`matplotlib` are present. The paired probe artifact is refreshed under
-`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-bdec348b/`.
+The initial H200 environment probe showed `torch`, `pybind11`, and `tqdm`
+were missing for the selected ThunderKittens run path, while `numpy`,
+`pandas`, and `matplotlib` were present. Those missing modules were then
+installed into the remote pto-cu project venv and the paired probe artifact was
+refreshed under
+`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-67c5c655/`.
 
 ## Remaining Gaps
 
-ThunderKittens is still not a captured performance baseline. The next step is
-to install the missing H200 Python dependencies, build
-`kernels/attention/mha_h100`, run correctness plus benchmark commands, and
-export raw metrics into the viewer result schema.
+ThunderKittens is still not a full captured performance baseline. The next
+step is to run the full correctness plus benchmark commands and export repeat
+statistics into the viewer result schema.

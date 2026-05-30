@@ -40,10 +40,10 @@ PYTHONPATH=$PWD:$PWD/python \
 
 It wrote `a100-probe.json`, `h200-probe.json`, and
 `paired-probe-summary.json` under
-`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-bdec348b/`. A100
+`tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-67c5c655/`. A100
 passed MPK, VDCores, SGLang, and ThunderKittens and remained partial for vLLM.
-H200 remained partial for MPK, VDCores, vLLM, SGLang, and ThunderKittens
-because the required runtime Python packages are not installed there.
+After installing the remote H200 project-venv dependencies, H200 passed MPK,
+VDCores, and ThunderKittens readiness and remained partial for vLLM and SGLang.
 
 ## Remaining Gaps
 

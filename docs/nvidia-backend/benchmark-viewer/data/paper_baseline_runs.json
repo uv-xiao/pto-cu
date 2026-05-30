@@ -178,7 +178,7 @@
       "paper_baseline_id": "thunderkittens",
       "paper_evaluation_id": "tensor_core_tile_baselines",
       "title": "ThunderKittens Tile Kernel",
-      "status": "planned_not_run",
+      "status": "setup_ready",
       "hardware_targets": [
         "H200"
       ],
@@ -196,6 +196,8 @@
         "cd tmp/baselines/thunderkittens/kernels/<selected-kernel> && python benchmark.py"
       ],
       "expected_artifacts": [
+        "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/build.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/quick-smoke.json",
         "tmp/cuda-backend/paper-baselines/thunderkittens/correctness.json",
         "tmp/cuda-backend/paper-baselines/thunderkittens/benchmark.json"
       ],

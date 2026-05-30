@@ -635,6 +635,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert item["run_commands"]
         assert item["expected_artifacts"]
         assert item["import_target"]["viewer_file"].endswith("results.json")
+        if item["id"] == "thunderkittens_tile_kernel":
+            assert item["status"] == "setup_ready"
+            assert any("quick-smoke.json" in path for path in item["expected_artifacts"])
 
     probe_baselines = {
         item["paper_baseline_id"]
@@ -703,6 +706,15 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert results["snapshot"]["full_capture"]["samples"] == 1350
     assert results["snapshot"]["compact_capture"]["samples"] == 108
     assert results["result_records"]
+    assert any(
+        record["benchmark_id"] == "tensor_core_tile"
+        and record["method_id"] == "thunderkittens"
+        and record["hardware"]["gpu"] == "H200"
+        and record["correctness"] == "pass"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/"
+        for record in results["result_records"]
+    )
     for record in results["result_records"]:
         assert record["benchmark_id"] in benchmark_ids
         assert record["method_id"] in method_ids

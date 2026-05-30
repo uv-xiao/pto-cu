@@ -66,6 +66,7 @@ def check_evaluation_docs() -> None:
     require_file(
         DOC_ROOT / "changelog" / "2026-05-31-thunderkittens-dependency-probe.md"
     )
+    require_file(DOC_ROOT / "changelog" / "2026-05-31-thunderkittens-quick-smoke.md")
 
 
 def require_text(path: Path, needles: list[str]) -> None:
