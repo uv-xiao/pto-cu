@@ -966,6 +966,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert {
         "pto_host_schedule",
         "pto_persistent_device",
+        "direct_driver",
+        "direct_driver_graph",
         "cublas_sgemm_graph",
         "mpk",
         "vdcores",
@@ -980,6 +982,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     import_baselines = {
         item["baseline"] for item in capture_imports["capture_imports"]
     }
+    assert "direct_driver" in import_baselines
     assert "direct_driver_graph" in import_baselines
 
     paper_baseline_ids = {
@@ -1234,6 +1237,17 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert len(driver_graph_records) == 1
     assert driver_graph_records[0]["statistic"]["sample_count"] == 10
     assert driver_graph_records[0]["correctness"] == "pass"
+    driver_launch_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "host_schedule_vector_ops"
+        and record["method_id"] == "direct_driver"
+        and record["hardware"]["gpu"] == "A100"
+        and record["raw_artifact"] == "tmp/cuda-backend/host-launch-a100-8b6cdaee/"
+    ]
+    assert len(driver_launch_records) == 1
+    assert driver_launch_records[0]["statistic"]["sample_count"] == 10
+    assert driver_launch_records[0]["correctness"] == "pass"
     for record in results["result_records"]:
         assert record["benchmark_id"] in benchmark_ids
         assert record["method_id"] in method_ids

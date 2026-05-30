@@ -18,6 +18,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-05-31 paper readiness audit](2026-05-31-paper-readiness-audit.md)
 - [2026-05-31 persistent baseline run contracts](2026-05-31-persistent-baseline-run-contracts.md)
 - [2026-05-31 A100 driver graph viewer evidence](2026-05-31-a100-driver-graph-viewer-evidence.md)
+- [2026-05-31 A100 driver launch viewer evidence](2026-05-31-a100-driver-launch-viewer-evidence.md)
 - [2026-05-31 ThunderKittens bounded capture](2026-05-31-thunderkittens-bounded-capture.md)
 - [2026-05-31 ThunderKittens quick smoke](2026-05-31-thunderkittens-quick-smoke.md)
 - [2026-05-31 ThunderKittens dependency probe](2026-05-31-thunderkittens-dependency-probe.md)

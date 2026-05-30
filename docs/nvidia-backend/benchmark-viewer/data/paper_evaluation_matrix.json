@@ -11,6 +11,7 @@
       ],
       "method_ids": [
         "pto_host_schedule",
+        "direct_driver",
         "direct_driver_graph",
         "cublas_sgemm_graph"
       ],
@@ -47,6 +48,12 @@
           "gpu": "A100"
         },
         {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "direct_driver",
+          "gpu": "A100"
+        },
+        {
           "kind": "viewer_data",
           "path": "docs/nvidia-backend/benchmark-viewer/data/results.json"
         },
@@ -61,7 +68,7 @@
       ],
       "missing_evidence": [
         "Direct CUDA Runtime API rows for the same host-schedule vector shapes.",
-        "H200 CUDA Driver graph rows and selected tensor launch shapes.",
+        "H200 CUDA Driver launch and graph rows plus selected tensor launch shapes.",
         "Stream-count and graph-replay sweeps with sample distributions instead of selected medians."
       ],
       "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts."

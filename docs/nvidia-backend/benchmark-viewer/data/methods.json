@@ -47,6 +47,24 @@
       ]
     },
     {
+      "id": "direct_driver",
+      "name": "CUDA Driver launch baseline",
+      "category": "diagnostic_baseline",
+      "launch_model": "CUDA Driver API direct kernel launch",
+      "runtime_flow": "The benchmark loads the vector-add module through the CUDA Driver API and measures a direct cuLaunchKernel path for the same input shape.",
+      "lifecycle": "The host owns context, module, allocation, launch, and synchronization; this baseline isolates raw Driver API kernel-launch overhead from PTO runtime behavior.",
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py",
+          "symbols": [
+            "run_direct_sample",
+            "direct_driver",
+            "cuLaunchKernel"
+          ]
+        }
+      ]
+    },
+    {
       "id": "direct_driver_graph",
       "name": "CUDA Driver Graph baseline",
       "category": "diagnostic_baseline",
