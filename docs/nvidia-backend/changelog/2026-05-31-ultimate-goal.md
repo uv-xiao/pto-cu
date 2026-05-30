@@ -10,6 +10,10 @@
   VDCores, vLLM, SGLang, and ThunderKittens.
 - Promoted vLLM, SGLang, and ThunderKittens from planned source capture to
   cloned-for-survey status with pinned commits and first reproduction commands.
+- Added a benchmark-viewer schema validator for benchmark, method,
+  paper-baseline, and result records.
+- Added explicit workload inputs, method categories, method launch models, and
+  canonical `result_records` to the viewer JSON data.
 - Changed the GitHub Actions workflow to manual-only during ultimate-goal work
   so automatic repository CI does not block exploratory child slices.
 - Extended the NVIDIA review artifact test to require the ultimate-goal docs.
@@ -30,6 +34,11 @@ VDCores, vLLM, SGLang, and ThunderKittens are now recorded as
 cloned-for-survey systems, while measured performance remains a future child
 slice that must produce raw artifacts before appearing in result tables.
 
+The viewer data contract is now machine-checkable. Benchmarks describe input
+shape, dtype, and repeat policy; methods declare their runtime category and
+launch model; result records reference benchmark and method IDs with hardware,
+statistic, correctness, and raw-artifact fields.
+
 CI policy is now explicit: local guard/test evidence is the required progress
 gate during the ultimate goal, and the GitHub workflow remains available only
 as a manual review command.
@@ -45,6 +54,8 @@ PYTHONPATH=$PWD:$PWD/python \
 
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q
+
+.venv/bin/python .agents/checks/validate_benchmark_viewer_data.py
 
 git diff --check
 ```

@@ -92,7 +92,9 @@ Each entry must include:
 - Dependencies and blocked assumptions: vLLM, SGLang, and ThunderKittens were
   cloned for source survey only; no framework builds or GPU evaluations were
   attempted in this slice.
-- Verification commands and results: pending for this entry.
+- Verification commands and results: passed `check_nvidia_review_ready.py`,
+  focused review artifact pytest, Python compile checks, JSON syntax checks,
+  `node --check` on the viewer, and `git diff --check`.
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: all required paper baseline families now
   have source commits and inspected entry points. Next child slices should
@@ -116,8 +118,38 @@ Each entry must include:
 - Dependencies and blocked assumptions: local verification remains mandatory;
   GitHub Actions are manual-only so automatic checks do not block exploratory
   ultimate-goal progress.
-- Verification commands and results: pending for this entry.
+- Verification commands and results: passed `check_nvidia_review_ready.py`,
+  `validate_benchmark_viewer_data.py`, focused review artifact pytest, Python
+  compile checks, JSON syntax checks, `node --check` on the viewer, and
+  `git diff --check`.
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: future slices should rely on the local
   guard/test commands recorded in work preparation and may manually dispatch
   the workflow when a branch is ready for external review.
+
+### 2026-05-31 - Benchmark Viewer Schema Guard
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned viewer
+  contract hardening.
+- Exact Codex command or script invocation: not applicable because no worker
+  was launched in this entry.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, review-data slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: `.agents/checks/`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`,
+  `docs/nvidia-backend/benchmark-viewer/data/`, goal docs, and changelog
+  docs.
+- Dependencies and blocked assumptions: the validator checks schema and
+  evidence references; it does not prove raw benchmark artifacts are complete
+  or paper-ready.
+- Verification commands and results: passed `check_nvidia_review_ready.py`,
+  `validate_benchmark_viewer_data.py`, focused review artifact pytest, Python
+  compile checks, JSON syntax checks, `node --check` on the viewer, and
+  `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future result-importer work should emit
+  `result_records` that satisfy this schema before changing viewer tables.

@@ -4,7 +4,12 @@
 
 Benchmark data lives under
 `docs/nvidia-backend/benchmark-viewer/data/`. Viewer records must be readable
-without private context.
+without private context and pass
+`.agents/checks/validate_benchmark_viewer_data.py`.
+
+Benchmark, method, and paper-baseline records store their stable identifier in
+the JSON `id` field. Result rows reference those identifiers as
+`benchmark_id`, `method_id`, and `paper_baseline_id` when applicable.
 
 Each benchmark record must include:
 

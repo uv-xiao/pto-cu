@@ -21,6 +21,18 @@ def test_nvidia_review_guard_passes():
     assert result.returncode == 0, result.stdout
 
 
+def test_benchmark_viewer_schema_validator_passes():
+    result = subprocess.run(
+        [sys.executable, ".agents/checks/validate_benchmark_viewer_data.py"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+
+
 def test_evaluation_docs_are_split_for_review():
     root_evaluation_docs = sorted(DOC_ROOT.glob("evaluation*.md"))
     assert {path.name for path in root_evaluation_docs} == {
@@ -66,10 +78,14 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert benchmark["math"]
         assert benchmark["code"]
         assert benchmark["run"]["command"]
+        assert benchmark["run"]["inputs"]
         assert benchmark["evidence_refs"]
 
     method_ids = {item["id"] for item in methods["methods"]}
     assert {"pto_host_schedule", "pto_persistent_device", "cublas_sgemm_graph"} <= method_ids
+    for method in methods["methods"]:
+        assert method["category"]
+        assert method["launch_model"]
 
     paper_baseline_ids = {
         item["id"] for item in paper_baselines["paper_baselines"]
@@ -92,6 +108,13 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert results["snapshot"]["commit"] == "743709f3"
     assert results["snapshot"]["full_capture"]["samples"] == 1350
     assert results["snapshot"]["compact_capture"]["samples"] == 108
+    assert results["result_records"]
+    for record in results["result_records"]:
+        assert record["benchmark_id"] in benchmark_ids
+        assert record["method_id"] in method_ids
+        assert record["hardware"]["gpu"]
+        assert record["statistic"]["sample_count"] > 0
+        assert record["raw_artifact"].startswith("tmp/")
     assert {"A100", "H200"} <= {
         item["gpu"] for item in results["headline_results"]
     }
@@ -110,6 +133,7 @@ def test_review_policy_changelog_and_examples_exist():
     assert (ROOT / ".agents" / "agents" / "code-review" / "AGENT.md").is_file()
     assert (ROOT / ".agents" / "agents" / "documentation-sync" / "AGENT.md").is_file()
     assert (ROOT / ".agents" / "agents" / "testing" / "AGENT.md").is_file()
+    assert (ROOT / ".agents" / "checks" / "validate_benchmark_viewer_data.py").is_file()
     assert (ROOT / ".agents" / "skills" / "git-commit" / "SKILL.md").is_file()
     assert (ROOT / ".agents" / "skills" / "github-pr" / "SKILL.md").is_file()
     assert (DOC_ROOT / "changelog" / "index.md").is_file()

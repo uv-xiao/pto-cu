@@ -3,6 +3,8 @@
     {
       "id": "pto_host_schedule",
       "name": "PTO host_schedule",
+      "category": "pto_runtime",
+      "launch_model": "host CUDA async API launch",
       "runtime_flow": "Python ChipWorker prepares a CUDA callable, the host runtime owns CUDA allocation and stream launch, and CUDA async APIs launch work from the host.",
       "lifecycle": "Callable metadata is prepared once, TaskArgs are mapped to CUDA argument packets per run, buffers are copied by the host runtime, and completion is synchronized through the selected CUDA stream.",
       "evidence_refs": [
@@ -24,6 +26,8 @@
     {
       "id": "pto_persistent_device",
       "name": "PTO persistent_device",
+      "category": "pto_runtime",
+      "launch_model": "persistent device scheduler",
       "runtime_flow": "The host launches one persistent CUDA kernel; scheduler blocks and worker blocks inside that device binary execute task descriptors because CUDA has no Ascend-style AICPU scheduler.",
       "lifecycle": "Graph descriptors and task argument metadata are copied before launch, scheduler blocks release fan-in counters, worker blocks run device task bodies, and report fields expose dispatch and scheduler counters.",
       "evidence_refs": [
@@ -45,6 +49,8 @@
     {
       "id": "direct_driver_graph",
       "name": "CUDA Driver Graph baseline",
+      "category": "diagnostic_baseline",
+      "launch_model": "CUDA Driver API graph replay",
       "runtime_flow": "The benchmark captures a CUDA Driver API vector kernel into a CUDA Graph outside the measured interval and measures replay.",
       "lifecycle": "The host still owns graph construction and replay; this baseline isolates host-launch amortization from PTO runtime behavior.",
       "evidence_refs": [
@@ -60,6 +66,8 @@
     {
       "id": "cublas_sgemm_graph",
       "name": "cuBLAS SGEMM Graph baseline",
+      "category": "vendor_baseline",
+      "launch_model": "cuBLAS SGEMM captured into CUDA Graph",
       "runtime_flow": "The benchmark warms a cuBLAS SGEMM descriptor, captures it into a CUDA Graph, and measures graph replay for a library-backed tensor row.",
       "lifecycle": "The host owns cuBLAS handle setup and graph instantiation; device execution is a library baseline rather than PTO task scheduling.",
       "evidence_refs": [
