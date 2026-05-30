@@ -9,8 +9,8 @@ local A100 runs, and remote H200 runs.
 ## Current Evidence
 
 The latest full paired A100/H200 benchmark capture was taken at commit
-`5d84690d`, and the latest compact current-head paired graph-shape gate before
-that full refresh uses artifact label `a540a014`. Supplemental tensor-shape and
+`61d73b65`, and the latest compact current-head paired graph-shape gate before
+that full refresh uses artifact label `c1c5f765`. Supplemental tensor-shape and
 tensor-core captures were
 taken at commits `c0ada3ad` and `0879aa9e`. The first cuBLAS library baseline
 capture uses the `343924df` artifact label, and the first cuBLAS CUDA Graph
@@ -98,9 +98,21 @@ latest current-head multi-size tensor baseline sweep uses `76422250`:
   paired gate that promotes the seven-task wide-fanout graph descriptor into
   the selected A100/H200 benchmark matrix with 104 non-batch validated
   samples.
-- [Current capture](evaluation-current.md) records the full `5d84690d`
-  paired-current gate that promotes the seven-task wide-fanout graph
-  descriptor into the three-size A100/H200 benchmark matrix with 1314
+- [Current capture](evaluation-current.md) records the compact `c1c5f765`
+  paired gate that promotes the four-task multi-fan-in graph descriptor into
+  the selected A100/H200 benchmark matrix with 106 non-batch validated
+  samples.
+- [Current capture](evaluation-current.md) records the compact `743709f3`
+  paired gate that promotes the nine-task layered-cross graph descriptor into
+  the selected A100/H200 benchmark matrix with 108 non-batch validated
+  samples.
+- [Current capture](evaluation-current.md) records the full `61d73b65`
+  paired-current gate that promotes the four-task multi-fan-in graph
+  descriptor into the three-size A100/H200 benchmark matrix with 1332
+  validated samples.
+- [Current capture](evaluation-current.md) records the historical full
+  `5d84690d` paired-current gate that promoted the seven-task wide-fanout
+  graph descriptor into the three-size A100/H200 benchmark matrix with 1314
   validated samples.
 - [Current capture](evaluation-current.md) records the historical full
   `4e81fbff` paired-current gate that promoted the nine-task parallel-chains
@@ -495,14 +507,17 @@ PYTHONPATH=$PWD:$PWD/python \
 ```
 
 The compact-current preset expects the current selected persistent graph
-matrix. For no-batch graph-row gates, the paired runner should validate `106`
+matrix. For no-batch graph-row gates, the paired runner should validate `108`
 samples across A100 and H200, including
 `pto_persistent_dag_graph_reordered` with dispatch `1,9,2`, graph fan-in
 `2,0,0`, and dependents `0,0`, plus
 `pto_persistent_dag_graph_role_map_inout` with dispatch `1,1,1`, graph fan-in
 `0,1,1`, dependents `1,2`, and `graph_task_arg_key=role_map`. It also
 requires `pto_persistent_dag_graph_multi_fanin` with dispatch `1,2,11,6`,
-graph fan-in `0,0,0,3`, and dependents `3,3,3`.
+graph fan-in `0,0,0,3`, and dependents `3,3,3`, plus
+`pto_persistent_dag_graph_layered_cross` with dispatch
+`1,2,11,1,2,1,6,1,1`, graph fan-in `0,0,0,2,3,1,2,3,2`,
+dependents `3,3,4,4,5,4,6,7,6,7,7,8,8`, `scalar0=2.0`, and `c=a`.
 
 The default full paired benchmark shape uses:
 

@@ -1,10 +1,10 @@
 # CUDA Current Evaluation Capture
 
 This page summarizes the latest full paired A100/H200 CUDA backend capture
-from commit `5d84690d`, plus compact current-head validation captures. The
+from commit `743709f3`, plus compact current-head validation captures. The
 full current-head capture is under
-`tmp/cuda-backend/current-head-full-wide-fanout-5d84690d-working/`
-`combined-current-5d84690d/`.
+`tmp/cuda-backend/current-head-full-layered-cross-fixed/`
+`combined-current-743709f3/`.
 The previous compact current-head gate remains the submit-groups capture under
 `tmp/cuda-backend/submit-groups-selected-benchmark-working/`
 `combined-current-193ccc4d/`, which validates the selected compact benchmark
@@ -16,9 +16,14 @@ The latest compact current-head gate is under
 matrix after the nine-task parallel-chains graph descriptor joined the
 selected graph rows.
 The newest compact gate for the selected graph-shape matrix is under
-`tmp/cuda-backend/wide-fanout-selected-current-working/`
-`combined-current-a540a014/`, which validates the selected compact benchmark
-matrix after the seven-task wide-fanout graph descriptor joined the selected
+`tmp/cuda-backend/layered-cross-selected-current-fixed/`
+`combined-current-743709f3/`, which validates the selected compact benchmark
+matrix after the nine-task layered-cross graph descriptor joined the selected
+graph rows.
+The previous compact graph-shape gate is under
+`tmp/cuda-backend/multi-fanin-selected-current-working/`
+`combined-current-c1c5f765/`, which validates the selected compact benchmark
+matrix after the four-task multi-fan-in graph descriptor joined the selected
 graph rows.
 The raw
 JSON, Markdown, and SVG reports are generated locally under
@@ -33,16 +38,24 @@ The capture uses `nvcc` for target-specific PTX on both machines:
 - repeats: `3`
 - batch tasks: `2,6,12`
 - worker blocks per task: `32,64,128,256`
-- samples in combined JSON: `1314` in the latest full capture
+- samples in combined JSON: `1350` in the latest full capture
 
-The latest full capture validated `1314` samples after the wide-fanout graph
-row joined the selected matrix. It preserves the same three-size,
-three-repeat paired A100/H200 shape as the previous `4e81fbff` full capture.
+The latest full capture validated `1350` samples after the layered-cross
+graph row joined the selected matrix. It preserves the same three-size,
+three-repeat paired A100/H200 shape as the previous full captures.
+The compact `743709f3` gate validates `108` samples after
+`pto_persistent_dag_graph_layered_cross` joined the selected compact matrix.
+The previous `61d73b65` full capture remains useful as historical evidence,
+but it validated `1332` samples before the layered-cross row was included.
+The compact `c1c5f765` gate validates `106` samples after
+`pto_persistent_dag_graph_multi_fanin` joined the selected compact matrix.
 The compact `a540a014` gate validates `104` samples after
 `pto_persistent_dag_graph_wide_fanout` joined the selected compact matrix.
 The compact `c3274430` gate remains useful historical evidence with `102`
 samples after `pto_persistent_dag_graph_parallel_chains` joined the selected
 compact matrix.
+The previous `5d84690d` full capture remains useful as historical evidence,
+but it validated `1314` samples before the multi-fan-in row was included.
 The previous `4e81fbff` full capture remains useful as historical evidence,
 but it validated `1296` samples before the wide-fanout row was included.
 The previous `c183d1ad` full capture remains useful as historical evidence,
@@ -99,6 +112,28 @@ node-link graph row joined the selected matrix.
 - `tmp/cuda-backend/current-head-full-wide-fanout-5d84690d-working/combined-current-5d84690d/cuda-benchmark-ratios.svg`
 - `tmp/cuda-backend/current-head-full-wide-fanout-5d84690d-working/combined-current-5d84690d/cuda-benchmark-dag-deltas.svg`
 - `tmp/cuda-backend/current-head-full-wide-fanout-5d84690d-working/combined-current-5d84690d/cuda-benchmark-throughput.svg`
+- `tmp/cuda-backend/current-head-full-multi-fanin-working/a100-current-61d73b65/cuda-benchmark.json`
+- `tmp/cuda-backend/current-head-full-multi-fanin-working/a100-current-61d73b65/cuda-benchmark.md`
+- `tmp/cuda-backend/current-head-full-multi-fanin-working/h200-current-61d73b65/cuda-benchmark.json`
+- `tmp/cuda-backend/current-head-full-multi-fanin-working/h200-current-61d73b65/cuda-benchmark.md`
+- `tmp/cuda-backend/current-head-full-multi-fanin-working/combined-current-61d73b65/cuda-benchmark.json`
+- `tmp/cuda-backend/current-head-full-layered-cross-fixed/combined-current-743709f3/cuda-benchmark.md`
+- `tmp/cuda-backend/current-head-full-layered-cross-fixed/combined-current-743709f3/cuda-benchmark.svg`
+- `tmp/cuda-backend/current-head-full-layered-cross-fixed/combined-current-743709f3/cuda-benchmark-ratios.svg`
+- `tmp/cuda-backend/current-head-full-layered-cross-fixed/combined-current-743709f3/cuda-benchmark-dag-deltas.svg`
+- `tmp/cuda-backend/current-head-full-layered-cross-fixed/combined-current-743709f3/cuda-benchmark-throughput.svg`
+- `tmp/cuda-backend/layered-cross-working/persistent-graph_descriptor_layered_cross-sched3-repeat2-smoke-743709f3/a100.json`
+- `tmp/cuda-backend/layered-cross-working/persistent-graph_descriptor_layered_cross-sched3-repeat2-smoke-743709f3/h200.json`
+- `tmp/cuda-backend/layered-cross-working/persistent-graph_descriptor_layered_cross-sched3-repeat2-smoke-743709f3/cuda-smoke-report.md`
+- `tmp/cuda-backend/layered-cross-working/persistent-graph_descriptor_layered_cross-sched3-repeat2-smoke-743709f3/cuda-smoke-report.svg`
+- `tmp/cuda-backend/layered-cross-selected-current-fixed/a100-current-743709f3/cuda-benchmark.json`
+- `tmp/cuda-backend/layered-cross-selected-current-fixed/h200-current-743709f3/cuda-benchmark.json`
+- `tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/cuda-benchmark.json`
+- `tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/cuda-benchmark.md`
+- `tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/cuda-benchmark.svg`
+- `tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/cuda-benchmark-ratios.svg`
+- `tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/cuda-benchmark-dag-deltas.svg`
+- `tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/cuda-benchmark-throughput.svg`
 - `tmp/cuda-backend/current-head-full-role-map-working/a100-current-f99dc6b0/cuda-benchmark.json`
 - `tmp/cuda-backend/current-head-full-role-map-working/a100-current-f99dc6b0/cuda-benchmark.md`
 - `tmp/cuda-backend/current-head-full-role-map-working/h200-current-f99dc6b0/cuda-benchmark.json`
@@ -439,66 +474,66 @@ node-link graph row joined the selected matrix.
 
 ## Latest Full Current-Head Capture
 
-The full paired capture at artifact label `5d84690d` refreshes the broad
+The full paired capture at artifact label `61d73b65` refreshes the broad
 A100/H200 benchmark matrix on the current branch head. It uses `compute_80`
 on A100, `compute_90` on H200, the default `16x16x16` tensor descriptor,
 three vector sizes, three repeats, same-work task counts `2,6,12`, and worker
 grid values `32,64,128,256`. This is the first full three-size capture after
-`pto_persistent_dag_graph_wide_fanout` joined the selected benchmark matrix.
+`pto_persistent_dag_graph_multi_fanin` joined the selected benchmark matrix.
 
 Validation command:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_validate_capture.py \
-    tmp/cuda-backend/current-head-full-wide-fanout-5d84690d-working/combined-current-5d84690d/cuda-benchmark.json \
+    tmp/cuda-backend/current-head-full-multi-fanin-working/combined-current-61d73b65/cuda-benchmark.json \
     --preset paired-current
 ```
 
 The paired runner generated this validator with explicit required baselines,
 generated-dispatch IDs, tensor descriptors, graph fan-in/dependent arrays,
 TaskArgs-like graph metadata, graph node attrs/ops, named-callable metadata,
-scratch-reuse metadata, parallel-chain graph metadata, and tensor/core/cuBLAS
-report requirements. It accepted the combined JSON, Markdown, and SVG
-artifacts with `1314` samples after the wide-fanout graph row joined the
-selected matrix.
+scratch-reuse metadata, parallel-chain, wide-fanout, and multi-fan-in graph
+metadata, and tensor/core/cuBLAS report requirements. It accepted the combined
+JSON, Markdown, and SVG artifacts with `1332` samples after the multi-fan-in
+graph row joined the selected matrix.
 
 Launch baseline comparison from the same raw JSON:
 
 | GPU | N | PTO host ns | Compiler ns | Driver ns | Graph ns | Compiler/PTO | Graph/PTO |
 | --- | - | ----------- | ----------- | --------- | -------- | ------------ | --------- |
-| A100 | 1024 | 39936 | 36864 | 38911 | 23552 | 0.92x | 0.59x |
-| A100 | 65536 | 26496 | 26880 | 38047 | 24447 | 1.01x | 0.92x |
-| A100 | 1048576 | 22176 | 21344 | 25151 | 21215 | 0.96x | 0.96x |
-| H200 | 1024 | 31008 | 30944 | 23776 | 16640 | 1.00x | 0.54x |
-| H200 | 65536 | 17376 | 20320 | 25567 | 18592 | 1.17x | 1.07x |
-| H200 | 1048576 | 25600 | 18464 | 24159 | 17311 | 0.72x | 0.68x |
+| A100 | 1024 | 40960 | 34816 | 38911 | 26623 | 0.85x | 0.65x |
+| A100 | 65536 | 33664 | 32159 | 49920 | 28928 | 0.96x | 0.86x |
+| A100 | 1048576 | 27712 | 32768 | 35199 | 34047 | 1.18x | 1.23x |
+| H200 | 1024 | 30976 | 30240 | 22463 | 17247 | 0.98x | 0.56x |
+| H200 | 65536 | 15424 | 23360 | 24607 | 19200 | 1.51x | 1.24x |
+| H200 | 1048576 | 19808 | 20992 | 25216 | 22592 | 1.06x | 1.14x |
 
 Selected tensor throughput from the same raw JSON:
 
 | GPU | N | Shape | Scalar ns | Graph ns | Tensor-core ns | Graph tensor-core ns | cuBLAS ns | cuBLAS graph ns |
 | --- | - | ----- | --------- | -------- | -------------- | -------------------- | --------- | --------------- |
-| A100 | 1024 | 16x16x16 | 44032 | 44032 | 46080 | 47104 | 34816 | 11264 |
-| A100 | 65536 | 16x16x16 | 425408 | 423392 | 566112 | 567872 | 17408 | 9216 |
-| A100 | 1048576 | 16x16x16 | 6533824 | 6582336 | 8826944 | 8923904 | 55296 | 46080 |
-| H200 | 1024 | 16x16x16 | 42240 | 42816 | 43360 | 41600 | 24703 | 9407 |
-| H200 | 65536 | 16x16x16 | 419264 | 427008 | 341440 | 341152 | 26143 | 10944 |
-| H200 | 1048576 | 16x16x16 | 6214400 | 6272288 | 4998240 | 4991808 | 28928 | 18751 |
+| A100 | 1024 | 16x16x16 | 47104 | 47104 | 50176 | 49152 | 25599 | 10239 |
+| A100 | 65536 | 16x16x16 | 442240 | 433376 | 581184 | 584736 | 32767 | 12288 |
+| A100 | 1048576 | 16x16x16 | 6653472 | 6708992 | 8944448 | 8913600 | 54271 | 45056 |
+| H200 | 1024 | 16x16x16 | 41760 | 42592 | 41408 | 42144 | 23199 | 8799 |
+| H200 | 65536 | 16x16x16 | 422048 | 418464 | 339232 | 336576 | 30815 | 11071 |
+| H200 | 1048576 | 16x16x16 | 6302400 | 6276416 | 4986112 | 4989376 | 29472 | 18656 |
 
 Graph task-argument spelling medians:
 
 | GPU | N | Tag ns | Role ns | Compact ns | Pair ns | Role-map ns |
 | --- | - | ------ | ------- | ---------- | ------- | ----------- |
-| A100 | 1024 | 38912 | 37888 | 38912 | 37888 | 37888 |
-| A100 | 65536 | 227552 | 226048 | 223136 | 233440 | 223680 |
-| A100 | 1048576 | 3254784 | 3131680 | 3125504 | 3227232 | 3227136 |
-| H200 | 1024 | 35488 | 35328 | 34560 | 34880 | 34656 |
-| H200 | 65536 | 193792 | 192736 | 194176 | 192064 | 193024 |
-| H200 | 1048576 | 2695744 | 2671584 | 2694688 | 2670080 | 2697472 |
+| A100 | 1024 | 41984 | 40960 | 40960 | 39936 | 40960 |
+| A100 | 65536 | 194208 | 229344 | 240000 | 232256 | 236992 |
+| A100 | 1048576 | 2632640 | 3225280 | 3236576 | 3224000 | 3123040 |
+| H200 | 1024 | 31744 | 35584 | 34912 | 35072 | 35072 |
+| H200 | 65536 | 155744 | 192064 | 193952 | 192000 | 193504 |
+| H200 | 1048576 | 1905760 | 2668704 | 2689184 | 2672960 | 2690688 |
 
 Interpretation:
 
-- The host-schedule compiler path stays within roughly `0.72x-1.17x` of the
+- The host-schedule compiler path stays within roughly `0.85x-1.51x` of the
   hand-written host-schedule row, depending on GPU and vector size.
 - CUDA Graph replay is best for the tiny launch-dominated row, but is not a
   replacement for the persistent-device scheduler path because the host still
@@ -1191,7 +1226,9 @@ The selected benchmark path now includes
 `pto_persistent_dag_graph_wide_fanout`, a seven-task explicit graph where one
 root completion releases three ready children before two joins and a final
 join. The full paired A100/H200 gate at artifact label `5d84690d` validates
-the row across the three selected vector sizes in the 1314-row matrix. The
+the row across the three selected vector sizes in the first 1314-row matrix
+that included this shape. The latest full `61d73b65` gate validates the same
+row in the current 1332-row matrix after the multi-fan-in shape joined. The
 compact `a540a014` gate remains the quick `N=1024` no-batch validation path.
 
 Artifacts:
@@ -1212,6 +1249,9 @@ Artifacts:
 - `tmp/cuda-backend/current-head-full-wide-fanout-5d84690d-working/combined-current-5d84690d/cuda-benchmark-ratios.svg`
 - `tmp/cuda-backend/current-head-full-wide-fanout-5d84690d-working/combined-current-5d84690d/cuda-benchmark-dag-deltas.svg`
 - `tmp/cuda-backend/current-head-full-wide-fanout-5d84690d-working/combined-current-5d84690d/cuda-benchmark-throughput.svg`
+- `tmp/cuda-backend/current-head-full-multi-fanin-working/combined-current-61d73b65/cuda-benchmark.json`
+- `tmp/cuda-backend/current-head-full-multi-fanin-working/combined-current-61d73b65/cuda-benchmark.md`
+- `tmp/cuda-backend/current-head-full-multi-fanin-working/combined-current-61d73b65/cuda-benchmark.svg`
 - `tmp/cuda-backend/wide-fanout-smoke-a540a014/a100.json`
 - `tmp/cuda-backend/wide-fanout-smoke-a540a014/h200.json`
 - `tmp/cuda-backend/wide-fanout-smoke-a540a014/cuda-smoke-report.md`
@@ -1221,20 +1261,20 @@ Selected full-gate rows:
 
 | GPU | N | PTX arch | Device ns | Host ns | Queue | Tasks | Dispatch |
 | --- | - | -------- | --------- | ------- | ----- | ----- | -------- |
-| A100 | 1024 | `compute_80` | 59392 | 72024 | 7 | 7 | `1,1,2,1,1,2,1` |
-| A100 | 65536 | `compute_80` | 275040 | 285277 | 7 | 7 | `1,1,2,1,1,2,1` |
-| A100 | 1048576 | `compute_80` | 4225504 | 4237032 | 7 | 7 | `1,1,2,1,1,2,1` |
-| H200 | 1024 | `compute_90` | 55232 | 64613 | 7 | 7 | `1,1,2,1,1,2,1` |
-| H200 | 65536 | `compute_90` | 259168 | 268853 | 7 | 7 | `1,1,2,1,1,2,1` |
-| H200 | 1048576 | `compute_90` | 3492544 | 3503310 | 7 | 7 | `1,1,2,1,1,2,1` |
+| A100 | 1024 | `compute_80` | 61440 | 72788 | 7 | 7 | `1,1,2,1,1,2,1` |
+| A100 | 65536 | `compute_80` | 288064 | 299891 | 7 | 7 | `1,1,2,1,1,2,1` |
+| A100 | 1048576 | `compute_80` | 4105472 | 4117162 | 7 | 7 | `1,1,2,1,1,2,1` |
+| H200 | 1024 | `compute_90` | 55008 | 63690 | 7 | 7 | `1,1,2,1,1,2,1` |
+| H200 | 65536 | `compute_90` | 257248 | 266390 | 7 | 7 | `1,1,2,1,1,2,1` |
+| H200 | 1048576 | `compute_90` | 3480128 | 3490895 | 7 | 7 | `1,1,2,1,1,2,1` |
 
 The full report validated source-paper provenance, sanitized local/remote
 command examples, Markdown/SVG report files, report-visible graph topology,
 tensor throughput rows, expected generated-dispatch sequences, graph
 fan-in/dependent arrays, and zero scheduler errors. The wide-fanout row
 reports fan-in `0,1,1,1,2,2,2` and dependents
-`1,2,3,4,4,5,5,6,6`. In the DAG-shape summary it is `1.57x`, `1.75x`, and
-`1.77x` the base DAG on A100, and `1.55x`, `1.80x`, and `1.82x` on H200 for
+`1,2,3,4,4,5,5,6,6`. In the DAG-shape summary it is `1.36x`, `1.65x`, and
+`1.70x` the base DAG on A100, and `1.65x`, `1.82x`, and `1.81x` on H200 for
 the three sizes. The paired smoke separately validated two repeat runs with
 launch device times `63488/48128 ns` on A100 and `48448/41152 ns` on H200;
 scheduler completions were split `[3,4]` on A100 and `[4,3]` on H200.
@@ -3226,23 +3266,73 @@ The compact selected-matrix capture under
 validated `100` non-batch rows at size `1024`, one repeat, and the same
 submit-groups metadata before the full `c183d1ad` refresh.
 
+## Current Layered-Cross Graph Row
+
+The compact paired gate at artifact label `743709f3` adds
+`pto_persistent_dag_graph_layered_cross` to the selected benchmark and
+validator presets. The row is a nine-task explicit graph descriptor with
+three roots, cross-layer joins, one side branch, one triad penultimate task,
+and one final join. It is intended to exercise scheduler behavior on a
+layered DAG with both independent ready work and cross-layer dependencies.
+
+The first large-`N` test run exposed dataflow issues in the descriptor: ready
+tasks could overwrite `tmp0` and `tmp2` while peer tasks still needed those
+scratch buffers as inputs. The final shape adds lifetime edges for those
+scratch reuses and records the triad tensor metadata as `c=a`, which keeps
+that input stable for the whole DAG.
+
+The paired A100/H200 smoke under
+`tmp/cuda-backend/layered-cross-working/`
+`persistent-graph_descriptor_layered_cross-sched3-repeat2-smoke-743709f3/`
+validates two repeat launches with `scheduler_blocks=3`, `worker_blocks=4`,
+dispatch `1,2,11,1,2,1,6,1,1`, fan-in
+`0,0,0,2,3,1,2,3,2`, dependents `3,3,4,4,5,4,6,7,6,7,7,8,8`,
+scalar metadata `scalar0=2.0`, tensor metadata `c=a`, report-visible graph
+topology and argument metadata, and zero scheduler errors.
+
+| Machine | Device ns | Host ns | Scheduler split |
+| ------- | --------- | ------- | --------------- |
+| A100 | 106496 | 140911 | `2,3,4` |
+| H200 | 89216 | 106733 | `2,4,3` |
+
+The compact selected-matrix capture under
+`tmp/cuda-backend/layered-cross-selected-current-fixed/`
+`combined-current-743709f3/` validates `108` non-batch rows at size `1024`,
+one repeat, source-paper provenance, command examples, Markdown/SVG reports,
+graph topology/task-argument metadata, tensor-throughput rows, and zero
+scheduler errors. The layered-cross benchmark row reports:
+
+| Machine | Device ns | Host ns | Layered-cross/DAG |
+| ------- | --------- | ------- | ----------------- |
+| A100 | 74752 | 87266 | 1.80x |
+| H200 | 69664 | 78521 | 1.48x |
+
+The full three-size paired-current capture under
+`tmp/cuda-backend/current-head-full-layered-cross-fixed/`
+`combined-current-743709f3/` validates `1350` rows after this baseline is
+included. Layered-cross median device times are
+`76800/366336/6703936 ns` on A100 and `65408/333920/4474816 ns` on H200 for
+`N=1024,65536,1048576`.
+
 ## Current Multi-Fan-In Graph Row
 
-The compact paired gate at artifact label `c1c5f765` adds
-`pto_persistent_dag_graph_multi_fanin` to the selected benchmark and compact
-validator presets. The row is a four-task explicit graph descriptor with
+The full paired gate at artifact label `61d73b65` adds
+`pto_persistent_dag_graph_multi_fanin` to the selected three-size benchmark
+and validator presets. The row is a four-task explicit graph descriptor with
 three independent producer tasks and one final join. It exercises fan-in
 greater than two in the persistent-device scheduler without introducing a new
 task-body ABI: the producers dispatch add, multiply, and scalar-scale task
-bodies, and the final task dispatches the existing triad body over
-`tmp0`, `tmp1`, and `tmp2`.
+bodies, and the final task dispatches the existing triad body over `tmp0`,
+`tmp1`, and `tmp2`.
 
-The compact A100/H200 gate validates `106` non-batch rows at size `1024`, one
-repeat, source-paper provenance, command examples, Markdown/SVG reports,
-graph topology/task-argument metadata, tensor-throughput rows, and zero
-scheduler errors. The multi-fan-in row specifically validates dispatch
-`1,2,11,6`, graph fan-in `0,0,0,3`, dependents `3,3,3`, scalar metadata
-`scalar0=2.0`, and tensor metadata `c=tmp2`.
+The full A100/H200 gate validates `1332` rows across sizes
+`1024,65536,1048576`, three repeats, source-paper provenance, command
+examples, Markdown/SVG reports, graph topology/task-argument metadata,
+tensor-throughput rows, and zero scheduler errors. The multi-fan-in row
+specifically validates dispatch `1,2,11,6`, graph fan-in `0,0,0,3`,
+dependents `3,3,3`, scalar metadata `scalar0=2.0`, and tensor metadata
+`c=tmp2`. The compact `c1c5f765` gate remains the quick `N=1024` no-batch
+validation path with `106` rows.
 
 Artifacts:
 
@@ -3252,6 +3342,9 @@ Artifacts:
 - Compact benchmark:
   root `tmp/cuda-backend/multi-fanin-selected-current-working/`, label
   `combined-current-c1c5f765`.
+- Full benchmark:
+  root `tmp/cuda-backend/current-head-full-multi-fanin-working/`, label
+  `combined-current-61d73b65`.
 
 Validation commands:
 
@@ -3268,22 +3361,31 @@ PYTHONPATH=$PWD:$PWD/python \
     --sizes 1024 --repeats 1 --batch-tasks 0 \
     --worker-blocks-per-task 1 --sync-remote-tree \
     --output-root tmp/cuda-backend/multi-fanin-selected-current-working
+
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_pair_benchmark.py \
+    --sync-remote-tree \
+    --output-root tmp/cuda-backend/current-head-full-multi-fanin-working
 ```
 
-Measured rows:
+Full-gate measured rows:
 
-| Machine | Device ns | Host ns | Dispatch | Fan-in | Dependents |
-| ------- | --------- | ------- | -------- | ------ | ---------- |
-| A100 | 51200 | 63645 | `1,2,11,6` | `0,0,0,3` | `3,3,3` |
-| H200 | 46656 | 59014 | `1,2,11,6` | `0,0,0,3` | `3,3,3` |
+| Machine | N | Device ns | Host ns | Dispatch | Fan-in | Dependents |
+| ------- | - | --------- | ------- | -------- | ------ | ---------- |
+| A100 | 1024 | 44032 | 56912 | `1,2,11,6` | `0,0,0,3` | `3,3,3` |
+| A100 | 65536 | 178240 | 192487 | `1,2,11,6` | `0,0,0,3` | `3,3,3` |
+| A100 | 1048576 | 2373216 | 2383776 | `1,2,11,6` | `0,0,0,3` | `3,3,3` |
+| H200 | 1024 | 36608 | 46716 | `1,2,11,6` | `0,0,0,3` | `3,3,3` |
+| H200 | 65536 | 145504 | 154315 | `1,2,11,6` | `0,0,0,3` | `3,3,3` |
+| H200 | 1048576 | 1844736 | 1855567 | `1,2,11,6` | `0,0,0,3` | `3,3,3` |
 
 The paired smoke for the same graph used two scheduler blocks and three
 worker blocks, with repeat completions `[4,4]` on both GPUs. The smoke
 reported `90112 ns` on A100 and `60544 ns` on H200 for the combined
 two-launch capture, with scheduler completions split `[3,1]` and `[1,3]`.
-This is a current compact gate, not a replacement for the older full
-three-size `5d84690d` capture. A full paired-current refresh after adding
-this row should validate `1332` samples.
+The full `61d73b65` refresh replaces `5d84690d` as the latest full
+three-size current-head capture; `5d84690d` remains historical wide-fanout
+evidence.
 
 ## Reproduction Commands
 
