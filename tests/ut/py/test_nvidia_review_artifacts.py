@@ -414,6 +414,63 @@ def test_paper_baseline_probe_collects_source_readiness(tmp_path):
     ]
 
 
+def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
+    output_path = tmp_path / "serving-plan.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/"
+            "paper_serving_command_plan.py",
+            "--output",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    records = payload["serving_command_plans"]
+
+    assert payload["metadata"]["model_tier"] == "primary"
+    assert len(records) == 30
+    by_id = {record["id"]: record for record in records}
+    vllm_mpk = by_id[
+        "vllm_serving_and_throughput:mpk_offline_decode:batch16"
+    ]
+    assert vllm_mpk["model"] == "Qwen/Qwen3-8B"
+    assert vllm_mpk["prompt_tokens"] == 64
+    assert vllm_mpk["decode_tokens"] == 1024
+    assert vllm_mpk["batch_size"] == 16
+    assert any(
+        "--max-concurrency 16" in command["command"]
+        and "--input-len 64" in command["command"]
+        and "--output-len 1024" in command["command"]
+        for command in vllm_mpk["commands"]
+    )
+
+    sglang_vdcores = by_id[
+        "sglang_serving_and_offline:vdcores_offline_decode:batch8"
+    ]
+    assert sglang_vdcores["prompt_tokens"] == 128
+    assert sglang_vdcores["decode_tokens"] == 64
+    assert any(
+        "--random-input-len 128" in command["command"]
+        and "--random-output-len 64" in command["command"]
+        for command in sglang_vdcores["commands"]
+    )
+    assert all(
+        command.get("raw_artifact", "").startswith(
+            "tmp/cuda-backend/paper-baselines/serving-runs"
+        )
+        for record in records
+        for command in record["commands"]
+        if command["kind"] != "server"
+    )
+
+
 def test_paper_baseline_pair_probe_uses_remote_fallback_contract():
     script_path = (
         ROOT
@@ -854,6 +911,14 @@ def test_review_policy_changelog_and_examples_exist():
         / "scripts"
         / "paper_baseline_pair_probe.py"
     ).is_file()
+    assert (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "paper_serving_command_plan.py"
+    ).is_file()
     assert (ROOT / ".agents" / "skills" / "git-commit" / "SKILL.md").is_file()
     assert (ROOT / ".agents" / "skills" / "github-pr" / "SKILL.md").is_file()
     assert (DOC_ROOT / "changelog" / "index.md").is_file()
@@ -897,6 +962,9 @@ def test_review_policy_changelog_and_examples_exist():
         DOC_ROOT / "changelog" / "2026-05-31-thunderkittens-bounded-capture.md"
     ).is_file()
     assert (DOC_ROOT / "changelog" / "2026-05-31-serving-policy.md").is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-serving-command-plan.md"
+    ).is_file()
 
     example_root = ROOT / "examples" / "cuda"
     assert (example_root / "README.md").is_file()

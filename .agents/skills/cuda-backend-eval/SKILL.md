@@ -314,6 +314,19 @@ PYTHONPATH=$PWD:$PWD/python \
     --output tmp/cuda-backend/paper-baselines/vllm/viewer-result-records.json
 ```
 
+Use `paper_serving_command_plan.py` before long MPK, VDCores, vLLM, or SGLang
+serving runs. It reads the committed `serving_workloads.json` and
+`paper_baseline_runs.json` contracts, then writes an inspectable command plan
+with one row per baseline, policy, and batch size. The output stays under
+`tmp/` and records the intended raw artifact paths that later feed
+`paper_baseline_viewer_export.py`:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py \
+    --output tmp/cuda-backend/paper-baselines/serving-runs/plan-$(git rev-parse --short HEAD).json
+```
+
 Use `thunderkittens_mha_capture.py` for bounded ThunderKittens H200 MHA
 captures before attempting the full upstream `test_correctness.py` and
 `benchmark.py` sweeps. The script imports the already-built

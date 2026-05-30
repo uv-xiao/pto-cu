@@ -575,3 +575,34 @@ Each entry must include:
   hardware, baseline-run, and metric policy. The next slices must run MPK,
   VDCores, vLLM, SGLang, and PTO serving-equivalent commands against those
   policies and import raw results.
+
+### 2026-05-31 - Serving Command Plan Materialization
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned command
+  materialization for the MPK/VDCores serving policies.
+- Exact Codex command or script invocation:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py
+  --output
+  tmp/cuda-backend/paper-baselines/serving-runs/plan-7cad653c.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation helper script, review tests and
+  guards, evaluation docs, changelog docs, and generated `tmp/` command-plan
+  artifact. No upstream repositories were edited.
+- Dependencies and blocked assumptions: the generated plan is launch evidence,
+  not performance evidence. Long H200 runs still need installed MPK, VDCores,
+  vLLM, and SGLang runtime dependencies and model access.
+- Verification commands and results: the plan was generated successfully and
+  JSON syntax-checked. It contains 30 rows across MPK, VDCores, vLLM, and
+  SGLang: five batch sizes for each single-policy baseline and ten rows each
+  for vLLM/SGLang across both serving policies.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: baseline owners should execute the
+  generated commands, preserve the raw artifacts named in each command row,
+  then import normalized raw JSON through `paper_baseline_viewer_export.py`.

@@ -7,6 +7,7 @@ what evaluation ran, and what evidence proves the claim.
 ## Reports
 
 - [2026-05-31 ultimate goal setup](2026-05-31-ultimate-goal.md)
+- [2026-05-31 serving command plan](2026-05-31-serving-command-plan.md)
 - [2026-05-31 serving policy](2026-05-31-serving-policy.md)
 - [2026-05-31 ThunderKittens bounded capture](2026-05-31-thunderkittens-bounded-capture.md)
 - [2026-05-31 ThunderKittens quick smoke](2026-05-31-thunderkittens-quick-smoke.md)

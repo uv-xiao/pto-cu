@@ -406,6 +406,7 @@ def check_examples_and_rules() -> None:
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py",
+        ".agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py",
         ".agents/checks/validate_nvidia_changelog.py",
         ".agents/skills/git-commit/SKILL.md",
         ".agents/skills/github-pr/SKILL.md",

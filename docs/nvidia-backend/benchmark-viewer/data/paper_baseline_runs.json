@@ -29,6 +29,7 @@
         "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --use-mirage --profiling"
       ],
       "expected_artifacts": [
+        "tmp/cuda-backend/paper-baselines/serving-runs/plan-7cad653c.json",
         "tmp/baselines/mirage-mpk command log",
         "tmp/cuda-backend/paper-baselines/mpk/qwen3-native.json",
         "tmp/cuda-backend/paper-baselines/mpk/qwen3-mpk.json"
@@ -75,6 +76,7 @@
         "cd tmp/baselines/vdcores && python app/python/llama3/sched.py --correctness"
       ],
       "expected_artifacts": [
+        "tmp/cuda-backend/paper-baselines/serving-runs/plan-7cad653c.json",
         "tmp/baselines/vdcores command log",
         "tmp/cuda-backend/paper-baselines/vdcores/llama-decode.json",
         "tmp/cuda-backend/paper-baselines/vdcores/correctness.json"
@@ -121,6 +123,7 @@
         "vllm bench throughput --model <model>"
       ],
       "expected_artifacts": [
+        "tmp/cuda-backend/paper-baselines/serving-runs/plan-7cad653c.json",
         "tmp/cuda-backend/paper-baselines/vllm/bench-serve.json",
         "tmp/cuda-backend/paper-baselines/vllm/bench-throughput.json"
       ],
@@ -168,6 +171,7 @@
         "python -m sglang.bench_one_batch --model-path <model>"
       ],
       "expected_artifacts": [
+        "tmp/cuda-backend/paper-baselines/serving-runs/plan-7cad653c.json",
         "tmp/cuda-backend/paper-baselines/sglang/bench-serving.json",
         "tmp/cuda-backend/paper-baselines/sglang/offline-throughput.json",
         "tmp/cuda-backend/paper-baselines/sglang/one-batch.json"

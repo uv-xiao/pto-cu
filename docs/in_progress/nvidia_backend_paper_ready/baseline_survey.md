@@ -35,6 +35,13 @@ universal serving row:
   VDCores demo path, context target 128, decode 64, offline batch sizes 1, 2,
   4, 8, and 16.
 
+The current primary-model launch plan for those policies is materialized at
+`tmp/cuda-backend/paper-baselines/serving-runs/plan-7cad653c.json` by
+`.agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py`.
+It expands the two policy IDs into MPK, VDCores, vLLM, and SGLang command rows
+for each batch size, including the raw artifact paths expected by the viewer
+importer after the long baseline runs complete.
+
 ## MPK Notes
 
 MPK is sourced from `https://github.com/mirage-project/mirage/tree/mpk`.
@@ -191,9 +198,9 @@ python test_correctness.py
 ## Next Dispatcher Actions
 
 1. Build MPK on a compatible GPU host and record Qwen3 native versus MPK
-   command outputs.
+   command outputs from the generated serving command plan.
 2. Build VDCores on H100/H200-class hardware and record correctness plus
-   decode benchmark outputs.
+   decode benchmark outputs from the generated serving command plan.
 3. Build the selected ThunderKittens kernel baseline and capture Torch plus
    ThunderKittens comparison data.
 4. Add baseline-result import scripts so raw JSON can feed the benchmark

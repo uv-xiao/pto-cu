@@ -144,6 +144,17 @@ viewer `result_records` for MPK, VDCores, vLLM, SGLang, or ThunderKittens.
 This keeps paper-baseline rows generated from raw artifacts instead of
 hand-edited tables.
 
+Serving baseline commands can be materialized with
+`.agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py`.
+The script reads `serving_workloads.json` plus `paper_baseline_runs.json` and
+emits one command-plan row per baseline, policy, and batch size. The current
+primary-model command plan is recorded at
+`tmp/cuda-backend/paper-baselines/serving-runs/plan-7cad653c.json`. It has 30
+rows covering MPK, VDCores, vLLM, and SGLang over the MPK/VDCores policy batch
+ladders. This is not a performance result; it is the reproducible launch
+contract that long H200 runs must execute before their raw JSON can be
+imported into the viewer.
+
 Before full baseline builds, paper-baseline readiness probes can be captured
 with `.agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py`. The
 probe checks pinned source commits, selected entrypoint paths, Python syntax,

@@ -93,7 +93,7 @@
       "math": "For each serving policy, a fixed model, prompt-token target, decode length, and offline batch size define the comparison row. Each method reports correctness, TTFT, inter-token latency, end-to-end latency, and throughput.",
       "code": "serving_policy_ids = [\"mpk_offline_decode\", \"vdcores_offline_decode\"]\nrequired_row = {\"model\": \"Qwen/Qwen3-8B\", \"batch_sizes\": [1, 2, 4, 8, 16], \"metrics\": [\"TTFT\", \"ITL\", \"throughput\"]}",
       "run": {
-        "command": "See docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json and paper_baseline_runs.json for policy-specific serving commands.",
+        "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py --output tmp/cuda-backend/paper-baselines/serving-runs/plan-$(git rev-parse --short HEAD).json",
         "inputs": {
           "shape": "Qwen3-8B primary policy; MPK target prompt/decode 64/1024 and VDCores target prompt/decode 128/64",
           "dtype": "model-defined",
@@ -113,6 +113,13 @@
           "symbols": [
             "mpk_offline_decode",
             "vdcores_offline_decode"
+          ]
+        },
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py",
+          "symbols": [
+            "vllm_commands",
+            "sglang.bench_offline_throughput"
           ]
         }
       ]
