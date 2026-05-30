@@ -85,6 +85,20 @@ def require_current_artifact_path(root: Path, relpath: str, owner: str) -> None:
         fail(f"{owner} current artifact directory has no JSON evidence: {relpath}")
 
 
+def load_current_json_artifact(root: Path, relpath: str, owner: str) -> dict[str, Any]:
+    require_current_artifact_path(root, relpath, owner)
+    path = root / relpath
+    if not path.is_file() or path.suffix != ".json":
+        fail(f"{owner} current artifact must be a JSON file: {relpath}")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"{owner} invalid current artifact JSON {relpath}: {exc}")
+    if not isinstance(data, dict):
+        fail(f"{owner} current artifact JSON is not an object: {relpath}")
+    return data
+
+
 def check_evidence_refs(record: dict[str, Any], owner: str, root: Path) -> None:
     refs = require_list(record, "evidence_refs", owner)
     for ref in refs:
@@ -367,6 +381,7 @@ def validate_paper_baseline_probes(
         checks = require_list(record, "checks", owner)
         machine_status = require_list(record, "latest_machine_status", owner)
         machine_gpus: set[str] = set()
+        machine_statuses: set[str] = set()
         for status_record in machine_status:
             if not isinstance(status_record, dict):
                 fail(f"{owner} latest_machine_status entry is not an object")
@@ -379,9 +394,11 @@ def validate_paper_baseline_probes(
             status = require_string(status_record, "status", owner)
             if status not in allowed_status:
                 fail(f"{owner} has invalid machine status: {status}")
-            require_current_artifact_path(
+            machine_statuses.add(status)
+            artifact = require_string(status_record, "artifact", owner)
+            artifact_payload = load_current_json_artifact(
                 root,
-                require_string(status_record, "artifact", owner),
+                artifact,
                 owner,
             )
             gaps = status_record.get("blocking_gaps", [])
@@ -390,8 +407,30 @@ def validate_paper_baseline_probes(
             for gap in gaps:
                 if not isinstance(gap, str) or not gap:
                     fail(f"{owner} has invalid machine blocking gap")
+            artifact_probes = {
+                item.get("paper_baseline_id"): item
+                for item in artifact_payload.get("probes", [])
+                if isinstance(item, dict)
+            }
+            artifact_probe = artifact_probes.get(baseline_id)
+            if not artifact_probe:
+                fail(f"{owner} artifact {artifact} missing baseline {baseline_id}")
+            if artifact_probe.get("status") != status:
+                fail(
+                    f"{owner} machine status for {gpu} does not match "
+                    f"{artifact}: {status} != {artifact_probe.get('status')}"
+                )
+            if artifact_probe.get("blocking_gaps", []) != gaps:
+                fail(
+                    f"{owner} blocking gaps for {gpu} do not match "
+                    f"{artifact}"
+                )
         if {"A100", "H200"} != machine_gpus:
             fail(f"{owner} must include A100 and H200 machine status")
+        if record["latest_status"] == "pass" and machine_statuses != {"pass"}:
+            fail(f"{owner} latest_status pass disagrees with machine statuses")
+        if record["latest_status"] == "partial" and "partial" not in machine_statuses:
+            fail(f"{owner} latest_status partial disagrees with machine statuses")
         modules: set[str] = set()
         for check in checks:
             if not isinstance(check, dict):

@@ -34,6 +34,142 @@ def test_benchmark_viewer_schema_validator_passes():
     assert result.returncode == 0, result.stdout
 
 
+def test_probe_machine_status_must_match_raw_artifact(tmp_path):
+    script_path = ROOT / ".agents" / "checks" / "validate_benchmark_viewer_data.py"
+    spec = importlib.util.spec_from_file_location(
+        "validate_benchmark_viewer_data",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    artifact = tmp_path / "tmp" / "probes" / "a100-probe.json"
+    artifact.parent.mkdir(parents=True)
+    artifact.write_text(
+        json.dumps(
+            {
+                "probes": [
+                    {
+                        "paper_baseline_id": baseline_id,
+                        "status": "pass",
+                        "blocking_gaps": [],
+                    }
+                    for baseline_id in [
+                        "mpk",
+                        "vdcores",
+                        "vllm",
+                        "sglang",
+                        "thunderkittens",
+                    ]
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    def probe_record(baseline_id, checks):
+        return {
+            "id": f"{baseline_id}_source_entrypoints",
+            "paper_baseline_id": baseline_id,
+            "title": f"{baseline_id} source entrypoints",
+            "latest_status": "pass",
+            "latest_artifact_root": "tmp/probes/",
+            "latest_machine_status": [
+                {
+                    "gpu": "A100",
+                    "status": "pass",
+                    "artifact": "tmp/probes/a100-probe.json",
+                    "blocking_gaps": [],
+                },
+                {
+                    "gpu": "H200",
+                    "status": "pass",
+                    "artifact": "tmp/probes/a100-probe.json",
+                    "blocking_gaps": [],
+                },
+            ],
+            "checks": checks,
+            "next_action": "fixture",
+        }
+
+    data = {
+        "paper_baseline_probes": [
+            probe_record(
+                "mpk",
+                [
+                    {
+                        "kind": "python_module",
+                        "module": "transformers",
+                        "why": "fixture",
+                    }
+                ],
+            ),
+            probe_record(
+                "vdcores",
+                [
+                    {
+                        "kind": "python_module",
+                        "module": "transformers",
+                        "why": "fixture",
+                    }
+                ],
+            ),
+            probe_record(
+                "vllm",
+                [
+                    {
+                        "kind": "python_module",
+                        "module": "vllm",
+                        "why": "fixture",
+                    }
+                ],
+            ),
+            probe_record(
+                "sglang",
+                [
+                    {
+                        "kind": "python_module",
+                        "module": "sglang",
+                        "why": "fixture",
+                    }
+                ],
+            ),
+            probe_record(
+                "thunderkittens",
+                [
+                    {
+                        "kind": "python_module",
+                        "module": module_name,
+                        "why": "fixture",
+                    }
+                    for module_name in [
+                        "torch",
+                        "pybind11",
+                        "numpy",
+                        "pandas",
+                        "matplotlib",
+                        "tqdm",
+                    ]
+                ],
+            ),
+        ]
+    }
+
+    baseline_ids = {"mpk", "vdcores", "vllm", "sglang", "thunderkittens"}
+    module.validate_paper_baseline_probes(data, baseline_ids, tmp_path)
+    data["paper_baseline_probes"][0]["latest_machine_status"][1][
+        "status"
+    ] = "partial"
+    try:
+        module.validate_paper_baseline_probes(data, baseline_ids, tmp_path)
+    except SystemExit as exc:
+        assert "does not match" in str(exc)
+    else:
+        raise AssertionError("machine status drift was not rejected")
+
+
 def test_nvidia_changelog_validator_passes():
     result = subprocess.run(
         [sys.executable, ".agents/checks/validate_nvidia_changelog.py"],

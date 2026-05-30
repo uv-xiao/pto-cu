@@ -103,6 +103,10 @@ Each paper-baseline probe record must include:
   compilation, or required Python module availability;
 - `next_action`: the next build, run, or dependency step after the probe.
 
+Committed `latest_machine_status` entries must match the referenced raw probe
+JSON. A status or blocking-gap mismatch means the viewer data is stale and
+must be regenerated from the paired probe artifact before review.
+
 Paired A100/H200 probe artifacts must also record:
 
 - local `a100-probe.json` and copied-back remote `h200-probe.json` paths;

@@ -737,3 +737,34 @@ Each entry must include:
 - Handoff summary and remaining gaps: future paired probes should refresh both
   the aggregate `latest_status` and the per-machine A100/H200 status entries
   before claiming a baseline is setup-ready on either GPU class.
+
+### 2026-05-31 - Probe Status Artifact Consistency
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  evidence-consistency guard slice.
+- Exact Codex command or script invocation: no worker invocation. Updated
+  `validate_benchmark_viewer_data.py` to load the raw A100/H200 probe JSON
+  referenced by `latest_machine_status` and compare status plus blocking gaps.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, code-document evidence
+  guard slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer validator, focused tests, shared
+  contracts, dispatch log, and changelog docs. No upstream repositories were
+  edited.
+- Dependencies and blocked assumptions: the guard assumes the raw probe JSON
+  artifacts named in committed viewer data remain under local `tmp/` for human
+  review.
+- Verification commands and results: passed `check_nvidia_review_ready.py`,
+  `validate_benchmark_viewer_data.py`, `validate_nvidia_changelog.py`,
+  `validate_cuda_examples.py`, `validate_remote_evaluation.py`, focused
+  review artifact pytest with 17 tests, Python compile for the viewer-data
+  validator, JSON syntax checks, `node --check` on the viewer, and
+  `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future probe refreshes must update
+  committed status summaries and raw artifacts together, or the validator will
+  reject the branch before review.
