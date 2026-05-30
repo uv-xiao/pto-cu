@@ -96,6 +96,7 @@ Each changelog report must state:
 - which gaps remain.
 
 The index must link every report.
+The report set must pass `.agents/checks/validate_nvidia_changelog.py`.
 
 ## Example Contract
 

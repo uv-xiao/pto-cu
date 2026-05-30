@@ -1,6 +1,6 @@
 # 2026-05-31 NVIDIA Branch CI
 
-## What Changed
+## Code And Data Changed
 
 - Replaced the branch CI workflow with a focused NVIDIA review job.
 - Closed the repository base-branch PR trigger for the NVIDIA ultimate goal by
@@ -9,17 +9,24 @@
   backend PR does not schedule a2a3/a5 CI.
 - Added a review-artifact test that guards this branch-specific CI shape.
 
-## Current CI Scope
+## Architecture Quality
 
-The branch CI now runs:
+The branch CI is scoped to NVIDIA review evidence and avoids Ascend-specific
+hardware queues while this standalone branch is in ultimate-goal mode. The
+manual review workflow runs:
 
 - `.agents/checks/check_nvidia_review_ready.py`
 - `tests/ut/py/test_nvidia_review_artifacts.py`
 - Python syntax checks for the review guard and CUDA example wrappers
 
-## Verification
+## Evaluation Run
 
 ```bash
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q
 ```
+
+## Remaining Gaps
+
+- Automatic GitHub Actions remain closed during the ultimate goal. Reviewers
+  should rely on local guard/test evidence or manually dispatch the workflow.

@@ -1,6 +1,6 @@
 # 2026-05-31 Review Readiness
 
-## Code And Architecture
+## Code And Data Changed
 
 - Kept `cuda/host_schedule` as the host-scheduled runtime for CUDA async API
   launch experiments.
@@ -10,6 +10,13 @@
   docs, viewer data, examples, and evidence references stay synchronized.
 - Added CUDA examples under `examples/cuda/` that wrap the evaluated smoke
   paths instead of introducing a second example framework.
+
+## Architecture Quality
+
+The branch separates stable review entry points from historical evaluation
+logs. Current docs, examples, viewer data, and guards now form a compact path
+for reviewers to inspect the NVIDIA backend without reading the full status
+archive.
 
 ## Documentation
 
@@ -21,14 +28,12 @@
 - Added `.agents/` policies for NVIDIA review evidence and remote evaluation
   fallback behavior.
 
-## Evaluation Evidence
+## Evaluation Run
 
 - Current full paired capture: `743709f3`, `1350` samples.
 - Current compact selected gate: `743709f3`, `108` samples.
 - Raw artifacts remain under `tmp/cuda-backend/`.
 - Source papers and extracted text remain under `tmp/sources/`.
-
-## Verification
 
 The review guard is:
 
@@ -43,3 +48,8 @@ The focused pytest wrapper is:
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q
 ```
+
+## Remaining Gaps
+
+- The current captures are review gates, not final paper-grade results.
+  Future slices still need richer statistics and paper-baseline reproduction.

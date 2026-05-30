@@ -52,6 +52,7 @@ def check_evaluation_docs() -> None:
         DOC_ROOT / "changelog" / "2026-05-31-benchmark-viewer-contract.md"
     )
     require_file(DOC_ROOT / "changelog" / "2026-05-31-viewer-result-export.md")
+    require_file(DOC_ROOT / "changelog" / "2026-05-31-changelog-contract.md")
 
 
 def require_text(path: Path, needles: list[str]) -> None:
@@ -241,6 +242,22 @@ def check_viewer_schema_contract() -> None:
     module.validate_viewer_data(ROOT)
 
 
+def check_changelog_contract() -> None:
+    validator_path = (
+        ROOT / ".agents" / "checks" / "validate_nvidia_changelog.py"
+    )
+    require_file(validator_path)
+    spec = importlib.util.spec_from_file_location(
+        "validate_nvidia_changelog", validator_path
+    )
+    if spec is None or spec.loader is None:
+        fail("could not load NVIDIA changelog validator")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    module.validate_changelog(ROOT)
+
+
 def check_examples_and_rules() -> None:
     for relpath in [
         ".agents/AGENT.md",
@@ -258,6 +275,7 @@ def check_examples_and_rules() -> None:
         ".agents/agents/documentation-sync/AGENT.md",
         ".agents/agents/testing/AGENT.md",
         ".agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py",
+        ".agents/checks/validate_nvidia_changelog.py",
         ".agents/skills/git-commit/SKILL.md",
         ".agents/skills/github-pr/SKILL.md",
         "examples/cuda/README.md",
@@ -296,6 +314,7 @@ def main() -> None:
     check_ultimate_goal_contract()
     check_viewer_data()
     check_viewer_schema_contract()
+    check_changelog_contract()
     check_examples_and_rules()
     check_manual_ci_policy()
     print("nvidia review guard passed")

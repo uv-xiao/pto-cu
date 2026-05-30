@@ -1,6 +1,6 @@
 # 2026-05-31 Agent Policy Completion
 
-## What Changed
+## Code And Data Changed
 
 - Added the missing Spine-style `.agents/` structure for this repository:
   specialized agents, GitHub workflow skills, shared GitHub procedures, and
@@ -10,13 +10,13 @@
 - Extended the review-readiness guard so future changes must keep ultimate
   goal mode, GitHub PR workflows, and specialized review agents present.
 
-## Review Impact
+## Architecture Quality
 
 The NVIDIA backend branch now has the same operating pattern as the referenced
 `.agents/` layout: PR-sized mode for ordinary work, ultimate-goal dispatcher
 mode for multi-session work, and worker mode for child slices.
 
-## Verification
+## Evaluation Run
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
@@ -27,3 +27,8 @@ PYTHONPATH=$PWD:$PWD/python \
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q
 ```
+
+## Remaining Gaps
+
+- These policies define review workflow only. They do not complete CUDA runtime
+  implementation, remote evaluation, or paper-baseline reproduction.

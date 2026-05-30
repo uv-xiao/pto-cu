@@ -33,6 +33,18 @@ def test_benchmark_viewer_schema_validator_passes():
     assert result.returncode == 0, result.stdout
 
 
+def test_nvidia_changelog_validator_passes():
+    result = subprocess.run(
+        [sys.executable, ".agents/checks/validate_nvidia_changelog.py"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+
+
 def test_cuda_viewer_export_generates_contract_records(tmp_path):
     capture = {
         "metadata": {
@@ -226,6 +238,7 @@ def test_review_policy_changelog_and_examples_exist():
     assert (ROOT / ".agents" / "agents" / "documentation-sync" / "AGENT.md").is_file()
     assert (ROOT / ".agents" / "agents" / "testing" / "AGENT.md").is_file()
     assert (ROOT / ".agents" / "checks" / "validate_benchmark_viewer_data.py").is_file()
+    assert (ROOT / ".agents" / "checks" / "validate_nvidia_changelog.py").is_file()
     assert (
         ROOT
         / ".agents"
@@ -248,6 +261,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-viewer-result-export.md"
+    ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-changelog-contract.md"
     ).is_file()
 
     example_root = ROOT / "examples" / "cuda"

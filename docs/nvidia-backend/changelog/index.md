@@ -7,6 +7,7 @@ what evaluation ran, and what evidence proves the claim.
 ## Reports
 
 - [2026-05-31 ultimate goal setup](2026-05-31-ultimate-goal.md)
+- [2026-05-31 changelog contract](2026-05-31-changelog-contract.md)
 - [2026-05-31 viewer result export](2026-05-31-viewer-result-export.md)
 - [2026-05-31 benchmark viewer contract](2026-05-31-benchmark-viewer-contract.md)
 - [2026-05-31 NVIDIA branch CI](2026-05-31-nvidia-branch-ci.md)

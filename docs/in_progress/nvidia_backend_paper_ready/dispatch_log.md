@@ -207,3 +207,27 @@ Each entry must include:
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: future evaluation slices should generate
   viewer result records from raw captures instead of hand-editing result rows.
+
+### 2026-05-31 - Changelog Contract Guard
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned reporting
+  guard slice.
+- Exact Codex command or script invocation: not applicable because no worker
+  was launched in this entry.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, changelog/reporting slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: `.agents/checks/`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`,
+  `docs/nvidia-backend/changelog/`, and shared contracts.
+- Dependencies and blocked assumptions: the validator checks report structure
+  and index coverage, not whether every described runtime behavior is complete.
+- Verification commands and results: passed `validate_nvidia_changelog.py`,
+  `check_nvidia_review_ready.py`, focused review artifact pytest, Python
+  compile checks, and `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future child PRs that add changelog
+  reports must keep the index and four-section report contract passing.
