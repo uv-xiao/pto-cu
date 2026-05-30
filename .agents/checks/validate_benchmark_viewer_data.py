@@ -66,6 +66,25 @@ def check_unique_ids(records: list[dict[str, Any]], owner: str) -> set[str]:
     return ids
 
 
+def require_current_artifact_path(root: Path, relpath: str, owner: str) -> None:
+    if not relpath.startswith("tmp/"):
+        fail(f"{owner} current artifact must be under tmp/: {relpath}")
+    path = root / relpath
+    if not path.exists():
+        fail(f"{owner} current artifact path missing: {relpath}")
+    if path.is_file():
+        if path.suffix != ".json":
+            fail(f"{owner} current artifact file must be JSON: {relpath}")
+        return
+    if not path.is_dir():
+        fail(f"{owner} current artifact path is not file or directory: {relpath}")
+    files = [child for child in path.iterdir() if child.is_file()]
+    if not files:
+        fail(f"{owner} current artifact directory is empty: {relpath}")
+    if not any(child.suffix == ".json" for child in files):
+        fail(f"{owner} current artifact directory has no JSON evidence: {relpath}")
+
+
 def check_evidence_refs(record: dict[str, Any], owner: str, root: Path) -> None:
     refs = require_list(record, "evidence_refs", owner)
     for ref in refs:
@@ -320,6 +339,7 @@ def validate_serving_workload_run_refs(
 def validate_paper_baseline_probes(
     data: dict[str, Any],
     baseline_ids: set[str],
+    root: Path,
 ) -> None:
     records = require_list(data, "paper_baseline_probes", "paper baseline probes")
     check_unique_ids(records, "paper baseline probe")
@@ -339,6 +359,7 @@ def validate_paper_baseline_probes(
             fail(f"{owner} has invalid latest_status: {record['latest_status']}")
         if not record["latest_artifact_root"].startswith("tmp/"):
             fail(f"{owner} latest_artifact_root must be under tmp/")
+        require_current_artifact_path(root, record["latest_artifact_root"], owner)
         baseline_id = require_string(record, "paper_baseline_id", owner)
         if baseline_id not in baseline_ids:
             fail(f"{owner} references unknown paper_baseline_id: {baseline_id}")
@@ -419,7 +440,10 @@ def validate_capture_imports(
 
 
 def validate_results(
-    data: dict[str, Any], benchmark_ids: set[str], method_ids: set[str]
+    data: dict[str, Any],
+    benchmark_ids: set[str],
+    method_ids: set[str],
+    root: Path,
 ) -> None:
     snapshot = require_dict(data, "snapshot", "results")
     require_string(snapshot, "commit", "results snapshot")
@@ -429,7 +453,11 @@ def validate_results(
         capture = require_dict(snapshot, key, "results snapshot")
         if not isinstance(capture.get("samples"), int) or capture["samples"] <= 0:
             fail(f"results snapshot {key} has invalid sample count")
-        require_string(capture, "artifact_root", "results snapshot")
+        require_current_artifact_path(
+            root,
+            require_string(capture, "artifact_root", "results snapshot"),
+            f"results snapshot {key}",
+        )
 
     for key in ("headline_results", "selected_rows", "result_records"):
         require_list(data, key, "results")
@@ -460,8 +488,7 @@ def validate_results(
             if not isinstance(statistic.get(key), int) or statistic[key] < 0:
                 fail(f"{owner} has invalid statistic.{key}")
         raw_artifact = require_string(record, "raw_artifact", owner)
-        if not raw_artifact.startswith("tmp/"):
-            fail(f"{owner} raw_artifact must be under tmp/: {raw_artifact}")
+        require_current_artifact_path(root, raw_artifact, owner)
         if require_string(record, "correctness", owner) not in {
             "pass",
             "fail",
@@ -572,8 +599,7 @@ def validate_paper_evaluation_matrix(
                     fail(f"{owner} evidence path missing: {path}")
             elif kind == "raw_artifact":
                 path = require_string(ref, "path", owner)
-                if not path.startswith("tmp/"):
-                    fail(f"{owner} raw artifact evidence must be under tmp/: {path}")
+                require_current_artifact_path(root, path, owner)
             else:
                 fail(f"{owner} has unknown evidence kind: {kind}")
 
@@ -604,9 +630,9 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     method_ids = validate_methods(methods, root)
     baseline_ids = validate_paper_baselines(paper_baselines)
     serving_workload_ids = validate_serving_workloads(serving_workloads, root)
-    validate_paper_baseline_probes(paper_baseline_probes, baseline_ids)
+    validate_paper_baseline_probes(paper_baseline_probes, baseline_ids, root)
     validate_capture_imports(capture_imports, benchmark_ids, method_ids)
-    validate_results(results, benchmark_ids, method_ids)
+    validate_results(results, benchmark_ids, method_ids, root)
     paper_evaluation_ids = validate_paper_evaluation_matrix(
         paper_evaluation_matrix,
         benchmark_ids,

@@ -768,6 +768,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
     } <= probe_baselines
     for item in paper_baseline_probes["paper_baseline_probes"]:
         assert item["latest_artifact_root"].startswith("tmp/")
+        probe_root = ROOT / item["latest_artifact_root"]
+        assert probe_root.is_dir()
+        assert any(path.suffix == ".json" for path in probe_root.iterdir())
         assert (
             item["latest_artifact_root"]
             == "tmp/cuda-backend/paper-baselines/probes/"
@@ -854,6 +857,13 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert results["snapshot"]["commit"] == "743709f3"
     assert results["snapshot"]["full_capture"]["samples"] == 1350
     assert results["snapshot"]["compact_capture"]["samples"] == 108
+    for capture in [
+        results["snapshot"]["full_capture"],
+        results["snapshot"]["compact_capture"],
+    ]:
+        artifact_root = ROOT / capture["artifact_root"]
+        assert artifact_root.is_dir()
+        assert any(path.suffix == ".json" for path in artifact_root.iterdir())
     assert results["result_records"]
     assert any(
         record["benchmark_id"] == "tensor_core_tile"
@@ -890,6 +900,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert record["hardware"]["gpu"]
         assert record["statistic"]["sample_count"] > 0
         assert record["raw_artifact"].startswith("tmp/")
+        raw_artifact = ROOT / record["raw_artifact"]
+        assert raw_artifact.exists()
+        if raw_artifact.is_dir():
+            assert any(path.suffix == ".json" for path in raw_artifact.iterdir())
+        else:
+            assert raw_artifact.suffix == ".json"
     assert {"A100", "H200"} <= {
         item["gpu"] for item in results["headline_results"]
     }

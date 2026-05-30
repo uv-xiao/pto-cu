@@ -55,6 +55,10 @@ Raw CUDA benchmark captures should flow into viewer result records through
 committed mapping between raw capture baselines and viewer benchmark/method
 IDs. Hand-edited result rows must match this schema and identify the raw
 artifact directory under `tmp/`.
+Current result artifacts and current matrix `raw_artifact` evidence must also
+resolve to an existing `tmp/` file or directory with JSON evidence in the
+local review workspace. Planned future artifacts belong in
+`expected_artifacts`, not in `current_evidence_refs`.
 
 Raw paper-baseline captures should flow into viewer result records through
 `.agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py`.

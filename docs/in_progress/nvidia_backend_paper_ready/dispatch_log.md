@@ -677,3 +677,33 @@ Each entry must include:
   dependency stack in the H200 project venv, resolve the local
   torch/torchvision mismatch before A100 SGLang serving capture, then run the
   source-path command plan and import raw serving results into the viewer.
+
+### 2026-05-31 - Current Artifact Evidence Guard
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned evidence
+  guard tightening.
+- Exact Codex command or script invocation: no worker invocation. Updated
+  `.agents/checks/validate_benchmark_viewer_data.py` and focused tests so
+  current result artifacts, current paper-matrix raw artifacts, and latest
+  paired probe roots must resolve to local `tmp/` JSON evidence.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, code-document evidence
+  guard slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer validator, focused review tests,
+  shared contracts, dispatch log, and changelog docs. No upstream
+  repositories were edited.
+- Dependencies and blocked assumptions: planned future artifacts remain
+  allowed in `expected_artifacts`; only current evidence paths must exist.
+- Verification commands and results: passed `check_nvidia_review_ready.py`,
+  `validate_benchmark_viewer_data.py`, `validate_nvidia_changelog.py`,
+  `validate_cuda_examples.py`, `validate_remote_evaluation.py`, focused
+  review artifact pytest, Python compile for the benchmark-viewer validator,
+  JSON syntax checks, `node --check` on the viewer, and `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: next evaluation slices should promote
+  MPK, VDCores, vLLM, SGLang, or full ThunderKittens outputs to current
+  evidence only after their raw JSON artifacts exist under `tmp/`.
