@@ -83,6 +83,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert baseline["paper_role"]
         assert baseline["next_action"]
 
+    by_id = {item["id"]: item for item in paper_baselines["paper_baselines"]}
+    for baseline_id in ["mpk", "vdcores", "vllm", "sglang", "thunderkittens"]:
+        baseline = by_id[baseline_id]
+        assert baseline["status"] == "source_cloned_for_survey"
+        assert len(baseline["source"]["commit"]) == 40
+
     assert results["snapshot"]["commit"] == "743709f3"
     assert results["snapshot"]["full_capture"]["samples"] == 1350
     assert results["snapshot"]["compact_capture"]["samples"] == 108
@@ -196,5 +202,10 @@ def test_ultimate_goal_artifacts_define_paper_ready_cuda_path():
         "ThunderKittens",
         "tmp/baselines/mirage-mpk",
         "tmp/baselines/vdcores",
+        "tmp/baselines/vllm",
+        "tmp/baselines/sglang",
+        "tmp/baselines/thunderkittens",
+        "bench_serving",
+        "bench throughput",
     ]:
         assert required in baseline_text

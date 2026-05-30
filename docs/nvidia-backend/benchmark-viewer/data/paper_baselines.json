@@ -43,49 +43,57 @@
       "id": "vllm",
       "name": "vLLM",
       "paper_role": "Framework serving baseline used by MPK and VDCores papers.",
-      "status": "planned_source_capture",
+      "status": "source_cloned_for_survey",
       "source": {
         "upstream_url": "https://github.com/vllm-project/vllm",
         "local_tmp_path": "tmp/baselines/vllm",
-        "commit": "pending"
+        "commit": "27fa5aa3b952a6108de127423397e50364a95fcb"
       },
       "paper_baselines_to_reproduce": [
         "MPK paper serving comparison",
-        "VDCores paper decode comparison"
+        "VDCores paper decode comparison",
+        "OpenAI-compatible serving benchmark",
+        "Offline throughput benchmark",
+        "CUDA Graph serving path"
       ],
-      "next_action": "Capture the exact release or commit compatible with the selected CUDA and model stack, then record serving commands and output JSON."
+      "next_action": "Run vLLM serve plus vLLM bench serve/throughput for the selected model and prompt/decode lengths, then export benchmark JSON into the viewer result schema."
     },
     {
       "id": "sglang",
       "name": "SGLang",
       "paper_role": "Framework serving baseline used by MPK and VDCores papers.",
-      "status": "planned_source_capture",
+      "status": "source_cloned_for_survey",
       "source": {
         "upstream_url": "https://github.com/sgl-project/sglang",
         "local_tmp_path": "tmp/baselines/sglang",
-        "commit": "pending"
+        "commit": "7ed53d15f357ea4d722c1980c2cb35e8367d8bb0"
       },
       "paper_baselines_to_reproduce": [
         "MPK paper serving comparison",
-        "VDCores paper decode comparison"
+        "VDCores paper decode comparison",
+        "SGLang bench_serving",
+        "SGLang bench_offline_throughput",
+        "SGLang bench_one_batch"
       ],
-      "next_action": "Capture a compatible release or commit and run the same prompt/decode workload as the PTO and MPK/VDCores evaluations."
+      "next_action": "Launch an SGLang server and run bench_serving plus offline throughput on the same model, input length, output length, and concurrency policy as PTO/MPK/VDCores."
     },
     {
       "id": "thunderkittens",
       "name": "ThunderKittens",
       "paper_role": "Kernel-programming baseline family used by the VDCores paper.",
-      "status": "planned_source_capture",
+      "status": "source_cloned_for_survey",
       "source": {
         "upstream_url": "https://github.com/HazyResearch/ThunderKittens",
         "local_tmp_path": "tmp/baselines/thunderkittens",
-        "commit": "pending"
+        "commit": "34b15f7e7012de25ae162c8d9dc85296dd342676"
       },
       "paper_baselines_to_reproduce": [
         "VDCores ThunderKittens variants",
-        "Torch plus ThunderKittens"
+        "Torch plus ThunderKittens",
+        "self-contained kernel benchmark",
+        "attention or GEMM tile benchmark"
       ],
-      "next_action": "Capture source and identify the exact kernels or examples that correspond to the VDCores paper baselines."
+      "next_action": "Select the ThunderKittens attention or GEMM kernel that matches the VDCores workload, build its local Makefile target on Hopper, and record correctness plus benchmark output."
     }
   ]
 }

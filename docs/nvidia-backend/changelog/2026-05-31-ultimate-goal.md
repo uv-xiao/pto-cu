@@ -8,6 +8,8 @@
   paper-ready evaluation plan.
 - Added a baseline source survey and paper-baseline viewer data for MPK,
   VDCores, vLLM, SGLang, and ThunderKittens.
+- Promoted vLLM, SGLang, and ThunderKittens from planned source capture to
+  cloned-for-survey status with pinned commits and first reproduction commands.
 - Extended the NVIDIA review artifact test to require the ultimate-goal docs.
 - The review guard now checks the new goal artifacts.
 
@@ -21,10 +23,10 @@ The goal also records the key CUDA architecture constraint: the
 persistent-device runtime cannot rely on an AICPU launcher, so its scheduler
 must be compiled into the CUDA device binary with the task implementations.
 
-The baseline survey separates source readiness from result readiness. MPK and
-VDCores are now recorded as cloned-for-survey systems, while their paper
-baselines are explicitly listed as planned source captures instead of silently
-appearing as measured methods.
+The baseline survey separates source readiness from result readiness. MPK,
+VDCores, vLLM, SGLang, and ThunderKittens are now recorded as
+cloned-for-survey systems, while measured performance remains a future child
+slice that must produce raw artifacts before appearing in result tables.
 
 ## Evaluation Run
 

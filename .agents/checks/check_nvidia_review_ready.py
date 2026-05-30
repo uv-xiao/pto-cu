@@ -80,6 +80,11 @@ def check_ultimate_goal_contract() -> None:
             "ThunderKittens",
             "tmp/baselines/mirage-mpk",
             "tmp/baselines/vdcores",
+            "tmp/baselines/vllm",
+            "tmp/baselines/sglang",
+            "tmp/baselines/thunderkittens",
+            "bench_serving",
+            "bench throughput",
         ],
     )
     require_text(
@@ -175,6 +180,10 @@ def check_viewer_data() -> None:
         source = baseline.get("source", {})
         if not source.get("upstream_url") or not source.get("local_tmp_path"):
             fail(f"paper baseline {baseline['id']} has incomplete source")
+        if baseline["status"] != "source_cloned_for_survey":
+            fail(f"paper baseline {baseline['id']} is not cloned for survey")
+        if len(source.get("commit", "")) != 40:
+            fail(f"paper baseline {baseline['id']} has no pinned commit")
 
     snapshot = results.get("snapshot", {})
     if snapshot.get("commit") != "743709f3":

@@ -12,9 +12,9 @@ copies live under `tmp/`, and what each child evaluation slice must reproduce.
 | --- | --- | --- | --- | --- |
 | MPK | `mirage-project/mirage` branch `mpk` | `tmp/baselines/mirage-mpk` | `bde2dec1736d612f7a2e4c89e6182560a863072f` | cloned for survey |
 | VDCores | `vdcores/vdcores` branch `main` | `tmp/baselines/vdcores` | `5247328cf3f893ed9df95f9f38e7e9a97f0cbfb1` | cloned for survey |
-| vLLM | `vllm-project/vllm` | `tmp/baselines/vllm` | pending | planned |
-| SGLang | `sgl-project/sglang` | `tmp/baselines/sglang` | pending | planned |
-| ThunderKittens | `HazyResearch/ThunderKittens` | `tmp/baselines/thunderkittens` | pending | planned |
+| vLLM | `vllm-project/vllm` branch `main` | `tmp/baselines/vllm` | `27fa5aa3b952a6108de127423397e50364a95fcb` | cloned for survey |
+| SGLang | `sgl-project/sglang` branch `main` | `tmp/baselines/sglang` | `7ed53d15f357ea4d722c1980c2cb35e8367d8bb0` | cloned for survey |
+| ThunderKittens | `HazyResearch/ThunderKittens` branch `main` | `tmp/baselines/thunderkittens` | `34b15f7e7012de25ae162c8d9dc85296dd342676` | cloned for survey |
 
 The committed viewer data mirrors this table in
 `docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json` so the
@@ -87,6 +87,82 @@ python app/python/llama3/sched.py -N 256 "Write a hello world in Python."
 python app/python/llama3/sched.py --correctness
 ```
 
+## vLLM Notes
+
+vLLM is sourced from `https://github.com/vllm-project/vllm`.
+The local clone at `tmp/baselines/vllm` is on commit
+`27fa5aa3b952a6108de127423397e50364a95fcb`.
+
+Observed entry points:
+
+- `README.md`: serving features, PagedAttention, CUDA/HIP graphs, and
+  optimized attention backends.
+- `benchmarks/README.md`: benchmark categories and CLI documentation links.
+- `benchmarks/benchmark_serving.py`: online serving latency/throughput harness.
+- `benchmarks/benchmark_throughput.py`: offline throughput harness.
+- `benchmarks/backend_request_func.py`: OpenAI-compatible request adapters,
+  including vLLM and SGLang backend labels.
+- `csrc/`: CUDA kernels and launch utilities.
+
+First reproduction command candidates:
+
+```bash
+vllm serve <model> --port 8000
+vllm bench serve --backend vllm --model <model> --host 127.0.0.1 --port 8000
+vllm bench throughput --model <model>
+```
+
+## SGLang Notes
+
+SGLang is sourced from `https://github.com/sgl-project/sglang`.
+The local clone at `tmp/baselines/sglang` is on commit
+`7ed53d15f357ea4d722c1980c2cb35e8367d8bb0`.
+
+Observed entry points:
+
+- `README.md`: runtime features such as RadixAttention, continuous batching,
+  paged attention, prefill/decode disaggregation, and OpenAI API support.
+- `docs/developer_guide/benchmark_and_profiling.md`: benchmark tool taxonomy.
+- `python/sglang/check_env.py`: package checks for FlashInfer and Triton.
+- `sgl-kernel/CMakeLists.txt`: FlashInfer, FlashAttention, Triton, and custom
+  CUDA kernel integration.
+- `benchmark/`: model, serving, and task benchmark scripts.
+
+First reproduction command candidates:
+
+```bash
+python -m sglang.launch_server --model-path <model> --port 30000
+python -m sglang.bench_serving --backend sglang --model <model> --port 30000
+python -m sglang.bench_offline_throughput --model-path <model>
+python -m sglang.bench_one_batch --model-path <model>
+```
+
+## ThunderKittens Notes
+
+ThunderKittens is sourced from `https://github.com/HazyResearch/ThunderKittens`.
+The local clone at `tmp/baselines/thunderkittens` is on commit
+`34b15f7e7012de25ae162c8d9dc85296dd342676`.
+
+Observed entry points:
+
+- `README.md`: tile DSL overview, CUDA 12.8+ requirement, Hopper/Blackwell
+  focus, and pre-implemented kernel workflow.
+- `include/kittens.cuh`: top-level header-only library entry point.
+- `kernels/`: self-contained kernel directories with Makefiles, tests, and
+  benchmarks.
+- `kernels/layernorm/benchmark.py`: example benchmark structure with Torch and
+  Triton references.
+- `demos/`: Llama, Qwen, LoLCATS, and Based demos.
+
+First reproduction command candidates:
+
+```bash
+cd tmp/baselines/thunderkittens/kernels/<selected-kernel>
+make
+python benchmark.py
+python test_correctness.py
+```
+
 ## PTO Comparison Mapping
 
 | Baseline concept | PTO comparison target | Required evidence |
@@ -100,13 +176,13 @@ python app/python/llama3/sched.py --correctness
 
 ## Next Dispatcher Actions
 
-1. Capture source notes for vLLM, SGLang, and ThunderKittens under
-   `tmp/baselines/`.
-2. Convert each baseline source state into viewer data with commit, status,
-   compatible hardware, and run commands.
-3. Build MPK on a compatible GPU host and record Qwen3 native versus MPK
+1. Choose the first common model, prompt length, decode length, and batch or
+   concurrency policy shared by PTO, MPK, VDCores, vLLM, and SGLang.
+2. Build MPK on a compatible GPU host and record Qwen3 native versus MPK
    command outputs.
-4. Build VDCores on H100/H200-class hardware and record correctness plus
+3. Build VDCores on H100/H200-class hardware and record correctness plus
    decode benchmark outputs.
+4. Build the selected ThunderKittens kernel baseline and capture Torch plus
+   ThunderKittens comparison data.
 5. Add baseline-result import scripts so raw JSON can feed the benchmark
    viewer without hand editing.
