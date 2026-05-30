@@ -19,7 +19,10 @@ copies live under `tmp/`, and what each child evaluation slice must reproduce.
 The committed viewer data mirrors this table in
 `docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json` so the
 human-reviewable benchmark viewer can show baseline readiness without relying
-on private terminal history.
+on private terminal history. Reproduction commands for these systems live in
+`docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json` so the
+viewer can show which setup/run commands and tmp artifacts are expected before
+a baseline can be imported as paper evidence.
 
 ## MPK Notes
 

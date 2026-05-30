@@ -69,6 +69,17 @@ Each paper-baseline record must include:
   source paper;
 - `next_action`: concrete next command or setup step.
 
+Each paper-baseline run record must include:
+
+- `paper_baseline_id`: the MPK, VDCores, or paper-baseline system;
+- `paper_evaluation_id`: the matrix claim this run would satisfy;
+- `hardware_targets`: required GPU class for the run;
+- `workload`: model, input, output, and batch or concurrency policy;
+- `setup_commands` and `run_commands`: exact commands to execute;
+- `expected_artifacts`: raw outputs under `tmp/`;
+- `required_metrics`: metrics needed before import;
+- `import_target`: viewer result file and importer notes.
+
 Each paper-evaluation matrix claim must include:
 
 - `id`: stable claim identifier;

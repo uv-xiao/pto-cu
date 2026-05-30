@@ -43,6 +43,12 @@ targets, required metrics, current evidence, missing evidence, and promotion
 gate. A claim is not paper-ready until the matrix status and raw artifacts
 show complete baseline coverage.
 
+Paper-baseline reproduction commands are tracked in
+`docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json`. Those
+records name the setup commands, run commands, expected tmp artifacts, required
+metrics, and viewer import target for MPK, VDCores, vLLM, SGLang, and
+ThunderKittens.
+
 ## Workloads
 
 The workload ladder should grow from controlled kernels to paper-level systems:

@@ -1,0 +1,216 @@
+{
+  "paper_baseline_runs": [
+    {
+      "id": "mpk_qwen3_native_vs_persistent",
+      "paper_baseline_id": "mpk",
+      "paper_evaluation_id": "llm_serving_paper_baselines",
+      "title": "MPK Qwen3 Native Versus Persistent Kernel",
+      "status": "planned_not_run",
+      "hardware_targets": [
+        "H200"
+      ],
+      "workload": {
+        "model": "Qwen3 demo model from the MPK repository",
+        "input_policy": "MPK demo prompt policy until a shared serving policy is selected",
+        "output_policy": "MPK demo decode policy until a shared serving policy is selected",
+        "batch_or_concurrency": "single demo run plus profiling variant"
+      },
+      "setup_commands": [
+        "cd tmp/baselines/mirage-mpk",
+        "python -m pip install -r requirements.txt",
+        "python setup.py develop"
+      ],
+      "run_commands": [
+        "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py",
+        "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --use-mirage",
+        "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --use-mirage --profiling"
+      ],
+      "expected_artifacts": [
+        "tmp/baselines/mirage-mpk command log",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-native.json",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-mpk.json"
+      ],
+      "required_metrics": [
+        "correctness",
+        "end_to_end_latency",
+        "time_to_first_token",
+        "inter_token_latency",
+        "throughput",
+        "model_and_prompt_shape",
+        "raw_artifacts"
+      ],
+      "import_target": {
+        "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+        "result_kind": "paper_baseline_result_record",
+        "notes": "Importer must normalize MPK native and persistent-kernel outputs into the shared LLM serving result schema."
+      }
+    },
+    {
+      "id": "vdcores_llama_decode_correctness",
+      "paper_baseline_id": "vdcores",
+      "paper_evaluation_id": "llm_serving_paper_baselines",
+      "title": "VDCores Llama Decode Correctness And Benchmark",
+      "status": "planned_not_run",
+      "hardware_targets": [
+        "H200"
+      ],
+      "workload": {
+        "model": "Llama 3.1 decode demo from the VDCores repository",
+        "input_policy": "VDCores demo prompt until a shared serving policy is selected",
+        "output_policy": "decode length from selected VDCores command",
+        "batch_or_concurrency": "single decode request and correctness path"
+      },
+      "setup_commands": [
+        "cd tmp/baselines/vdcores && make pyext"
+      ],
+      "run_commands": [
+        "cd tmp/baselines/vdcores && python app/python/llama3/sched.py -w",
+        "cd tmp/baselines/vdcores && python app/python/llama3/sched.py -N 256 \"Write a hello world in Python.\"",
+        "cd tmp/baselines/vdcores && python app/python/llama3/sched.py --correctness"
+      ],
+      "expected_artifacts": [
+        "tmp/baselines/vdcores command log",
+        "tmp/cuda-backend/paper-baselines/vdcores/llama-decode.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/correctness.json"
+      ],
+      "required_metrics": [
+        "correctness",
+        "end_to_end_latency",
+        "inter_token_latency",
+        "throughput",
+        "resource_policy",
+        "raw_artifacts"
+      ],
+      "import_target": {
+        "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+        "result_kind": "paper_baseline_result_record",
+        "notes": "Importer must preserve VDCores queue/resource metadata so it can be compared with PTO persistent-device resource policy."
+      }
+    },
+    {
+      "id": "vllm_serving_and_throughput",
+      "paper_baseline_id": "vllm",
+      "paper_evaluation_id": "llm_serving_paper_baselines",
+      "title": "vLLM Serving And Offline Throughput",
+      "status": "planned_not_run",
+      "hardware_targets": [
+        "H200"
+      ],
+      "workload": {
+        "model": "shared model selected for MPK/VDCores/PTO comparison",
+        "input_policy": "shared prompt length and request distribution",
+        "output_policy": "shared decode length",
+        "batch_or_concurrency": "shared request rate or concurrency policy"
+      },
+      "setup_commands": [
+        "cd tmp/baselines/vllm && python -m pip install -e ."
+      ],
+      "run_commands": [
+        "vllm serve <model> --port 8000",
+        "vllm bench serve --backend vllm --model <model> --host 127.0.0.1 --port 8000",
+        "vllm bench throughput --model <model>"
+      ],
+      "expected_artifacts": [
+        "tmp/cuda-backend/paper-baselines/vllm/bench-serve.json",
+        "tmp/cuda-backend/paper-baselines/vllm/bench-throughput.json"
+      ],
+      "required_metrics": [
+        "correctness",
+        "end_to_end_latency",
+        "time_to_first_token",
+        "inter_token_latency",
+        "throughput",
+        "batch_or_concurrency_policy",
+        "raw_artifacts"
+      ],
+      "import_target": {
+        "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+        "result_kind": "paper_baseline_result_record",
+        "notes": "Importer must preserve the vLLM server command, benchmark command, model, prompt shape, output length, and concurrency policy."
+      }
+    },
+    {
+      "id": "sglang_serving_and_offline",
+      "paper_baseline_id": "sglang",
+      "paper_evaluation_id": "llm_serving_paper_baselines",
+      "title": "SGLang Serving And Offline Throughput",
+      "status": "planned_not_run",
+      "hardware_targets": [
+        "H200"
+      ],
+      "workload": {
+        "model": "shared model selected for MPK/VDCores/PTO comparison",
+        "input_policy": "shared prompt length and request distribution",
+        "output_policy": "shared decode length",
+        "batch_or_concurrency": "shared request rate or concurrency policy"
+      },
+      "setup_commands": [
+        "cd tmp/baselines/sglang && python -m pip install -e \"python[all]\""
+      ],
+      "run_commands": [
+        "python -m sglang.launch_server --model-path <model> --port 30000",
+        "python -m sglang.bench_serving --backend sglang --model <model> --port 30000",
+        "python -m sglang.bench_offline_throughput --model-path <model>",
+        "python -m sglang.bench_one_batch --model-path <model>"
+      ],
+      "expected_artifacts": [
+        "tmp/cuda-backend/paper-baselines/sglang/bench-serving.json",
+        "tmp/cuda-backend/paper-baselines/sglang/offline-throughput.json",
+        "tmp/cuda-backend/paper-baselines/sglang/one-batch.json"
+      ],
+      "required_metrics": [
+        "correctness",
+        "end_to_end_latency",
+        "time_to_first_token",
+        "inter_token_latency",
+        "throughput",
+        "batch_or_concurrency_policy",
+        "raw_artifacts"
+      ],
+      "import_target": {
+        "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+        "result_kind": "paper_baseline_result_record",
+        "notes": "Importer must preserve the SGLang server command, model, prompt shape, output length, and concurrency policy."
+      }
+    },
+    {
+      "id": "thunderkittens_tile_kernel",
+      "paper_baseline_id": "thunderkittens",
+      "paper_evaluation_id": "tensor_core_tile_baselines",
+      "title": "ThunderKittens Tile Kernel",
+      "status": "planned_not_run",
+      "hardware_targets": [
+        "H200"
+      ],
+      "workload": {
+        "model": "not applicable",
+        "input_policy": "selected attention or GEMM tile matching VDCores/PTO tensor shape",
+        "output_policy": "kernel correctness output",
+        "batch_or_concurrency": "single-kernel benchmark sweep"
+      },
+      "setup_commands": [
+        "cd tmp/baselines/thunderkittens/kernels/<selected-kernel> && make"
+      ],
+      "run_commands": [
+        "cd tmp/baselines/thunderkittens/kernels/<selected-kernel> && python test_correctness.py",
+        "cd tmp/baselines/thunderkittens/kernels/<selected-kernel> && python benchmark.py"
+      ],
+      "expected_artifacts": [
+        "tmp/cuda-backend/paper-baselines/thunderkittens/correctness.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/benchmark.json"
+      ],
+      "required_metrics": [
+        "correctness",
+        "device_elapsed_time",
+        "throughput",
+        "tensor_shape",
+        "raw_artifacts"
+      ],
+      "import_target": {
+        "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+        "result_kind": "paper_baseline_result_record",
+        "notes": "Importer must map ThunderKittens output onto the tensor-core tile baseline claim with the selected tensor shape."
+      }
+    }
+  ]
+}

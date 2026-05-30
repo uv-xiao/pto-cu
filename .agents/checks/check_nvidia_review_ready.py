@@ -56,6 +56,7 @@ def check_evaluation_docs() -> None:
     require_file(DOC_ROOT / "changelog" / "2026-05-31-cuda-example-contract.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-paper-evaluation-matrix.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-remote-evaluation-contract.md")
+    require_file(DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-runs.md")
 
 
 def require_text(path: Path, needles: list[str]) -> None:
@@ -144,6 +145,8 @@ def check_viewer_data() -> None:
         "run.inputs.repeat_policy",
         "method.category",
         "method.launch_model",
+        "paperBaselineRuns",
+        "paper_baseline_runs",
         "paperEvaluation",
         "paper_evaluation_matrix",
         "result_records",
@@ -157,6 +160,9 @@ def check_viewer_data() -> None:
     methods = load_json(VIEWER_ROOT / "data" / "methods.json")
     capture_imports = load_json(VIEWER_ROOT / "data" / "capture_imports.json")
     paper_baselines = load_json(VIEWER_ROOT / "data" / "paper_baselines.json")
+    paper_baseline_runs = load_json(
+        VIEWER_ROOT / "data" / "paper_baseline_runs.json"
+    )
     paper_evaluation = load_json(
         VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
     )
@@ -224,6 +230,20 @@ def check_viewer_data() -> None:
             fail(f"paper baseline {baseline['id']} is not cloned for survey")
         if len(source.get("commit", "")) != 40:
             fail(f"paper baseline {baseline['id']} has no pinned commit")
+
+    run_ids = {
+        item["id"] for item in paper_baseline_runs.get("paper_baseline_runs", [])
+    }
+    required_run_ids = {
+        "mpk_qwen3_native_vs_persistent",
+        "vdcores_llama_decode_correctness",
+        "vllm_serving_and_throughput",
+        "sglang_serving_and_offline",
+        "thunderkittens_tile_kernel",
+    }
+    if not required_run_ids <= run_ids:
+        missing = sorted(required_run_ids - run_ids)
+        fail(f"missing paper baseline run ids: {missing}")
 
     matrix_ids = {
         item["id"] for item in paper_evaluation.get("paper_evaluation_matrix", [])

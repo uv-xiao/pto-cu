@@ -169,6 +169,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "styles.css").is_file()
     assert (VIEWER_ROOT / "viewer.js").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baselines.json").is_file()
+    assert (VIEWER_ROOT / "data" / "paper_baseline_runs.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").is_file()
     assert (VIEWER_ROOT / "data" / "capture_imports.json").is_file()
     viewer_js = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
@@ -178,6 +179,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "run.inputs.repeat_policy",
         "method.category",
         "method.launch_model",
+        "paperBaselineRuns",
+        "paper_baseline_runs",
         "paperEvaluation",
         "paper_evaluation_matrix",
         "result_records",
@@ -194,6 +197,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     paper_baselines = json.loads(
         (VIEWER_ROOT / "data" / "paper_baselines.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    paper_baseline_runs = json.loads(
+        (VIEWER_ROOT / "data" / "paper_baseline_runs.json").read_text(
             encoding="utf-8"
         )
     )
@@ -240,6 +248,34 @@ def test_benchmark_viewer_has_json_backed_review_data():
         baseline = by_id[baseline_id]
         assert baseline["status"] == "source_cloned_for_survey"
         assert len(baseline["source"]["commit"]) == 40
+
+    run_ids = {item["id"] for item in paper_baseline_runs["paper_baseline_runs"]}
+    assert {
+        "mpk_qwen3_native_vs_persistent",
+        "vdcores_llama_decode_correctness",
+        "vllm_serving_and_throughput",
+        "sglang_serving_and_offline",
+        "thunderkittens_tile_kernel",
+    } <= run_ids
+    run_baselines = {
+        item["paper_baseline_id"]
+        for item in paper_baseline_runs["paper_baseline_runs"]
+    }
+    assert {
+        "mpk",
+        "vdcores",
+        "vllm",
+        "sglang",
+        "thunderkittens",
+    } <= run_baselines
+    for item in paper_baseline_runs["paper_baseline_runs"]:
+        assert item["paper_baseline_id"] in paper_baseline_ids
+        assert item["paper_evaluation_id"]
+        assert item["hardware_targets"]
+        assert item["setup_commands"]
+        assert item["run_commands"]
+        assert item["expected_artifacts"]
+        assert item["import_target"]["viewer_file"].endswith("results.json")
 
     matrix_ids = {
         item["id"] for item in paper_evaluation["paper_evaluation_matrix"]
@@ -340,6 +376,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-remote-evaluation-contract.md"
+    ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-runs.md"
     ).is_file()
 
     example_root = ROOT / "examples" / "cuda"

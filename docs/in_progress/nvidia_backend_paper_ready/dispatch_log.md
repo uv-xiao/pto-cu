@@ -309,3 +309,30 @@ Each entry must include:
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: future remote captures should record
   whether Git refresh or tree-sync fallback produced each raw artifact.
+
+### 2026-05-31 - Paper Baseline Runs
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned paper
+  baseline reproduction contract slice.
+- Exact Codex command or script invocation: not applicable because no worker
+  was launched in this entry.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer data and UI,
+  `.agents/checks/`, focused review artifact tests, shared contracts,
+  evaluation plan, baseline survey, and changelog docs.
+- Dependencies and blocked assumptions: the run records define reproduction
+  commands and expected artifacts; they do not execute MPK, VDCores, vLLM,
+  SGLang, or ThunderKittens.
+- Verification commands and results: passed `validate_benchmark_viewer_data.py`,
+  `check_nvidia_review_ready.py`, focused review artifact pytest,
+  `validate_nvidia_changelog.py`, `node --check`, JSON syntax checks, and
+  `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future baseline importer slices should
+  turn these expected artifacts into viewer result rows.

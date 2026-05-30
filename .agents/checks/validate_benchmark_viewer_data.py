@@ -136,6 +136,95 @@ def validate_paper_baselines(data: dict[str, Any]) -> set[str]:
     return baseline_ids
 
 
+def validate_paper_baseline_runs(
+    data: dict[str, Any],
+    baseline_ids: set[str],
+    paper_evaluation_ids: set[str],
+) -> None:
+    records = require_list(data, "paper_baseline_runs", "paper baseline runs")
+    run_ids = check_unique_ids(records, "paper baseline run")
+    required_runs = {
+        "mpk_qwen3_native_vs_persistent",
+        "vdcores_llama_decode_correctness",
+        "vllm_serving_and_throughput",
+        "sglang_serving_and_offline",
+        "thunderkittens_tile_kernel",
+    }
+    if not required_runs <= run_ids:
+        missing = sorted(required_runs - run_ids)
+        fail(f"missing paper baseline runs: {missing}")
+
+    allowed_status = {
+        "planned_not_run",
+        "setup_ready",
+        "captured_raw",
+        "imported_to_viewer",
+    }
+    required_baseline_coverage = {
+        "mpk",
+        "vdcores",
+        "vllm",
+        "sglang",
+        "thunderkittens",
+    }
+    covered_baselines: set[str] = set()
+
+    for record in records:
+        owner = f"paper baseline run {record['id']}"
+        for key in ("title", "status"):
+            require_string(record, key, owner)
+        if record["status"] not in allowed_status:
+            fail(f"{owner} has invalid status: {record['status']}")
+        baseline_id = require_string(record, "paper_baseline_id", owner)
+        if baseline_id not in baseline_ids:
+            fail(f"{owner} references unknown paper_baseline_id: {baseline_id}")
+        covered_baselines.add(baseline_id)
+        paper_evaluation_id = require_string(record, "paper_evaluation_id", owner)
+        if paper_evaluation_id not in paper_evaluation_ids:
+            fail(f"{owner} references unknown paper_evaluation_id: {paper_evaluation_id}")
+
+        for key in (
+            "hardware_targets",
+            "setup_commands",
+            "run_commands",
+            "expected_artifacts",
+            "required_metrics",
+        ):
+            values = require_list(record, key, owner)
+            for value in values:
+                if not isinstance(value, str) or not value.strip():
+                    fail(f"{owner} has invalid {key} entry")
+
+        workload = require_dict(record, "workload", owner)
+        for key in (
+            "model",
+            "input_policy",
+            "output_policy",
+            "batch_or_concurrency",
+        ):
+            require_string(workload, key, owner)
+
+        metrics = set(record["required_metrics"])
+        if not {"correctness", "raw_artifacts"} <= metrics:
+            fail(f"{owner} must require correctness and raw_artifacts")
+        for artifact in record["expected_artifacts"]:
+            if not artifact.startswith("tmp/"):
+                fail(f"{owner} expected artifact must be under tmp/: {artifact}")
+
+        import_target = require_dict(record, "import_target", owner)
+        if (
+            require_string(import_target, "viewer_file", owner)
+            != "docs/nvidia-backend/benchmark-viewer/data/results.json"
+        ):
+            fail(f"{owner} import target must be viewer results.json")
+        for key in ("result_kind", "notes"):
+            require_string(import_target, key, owner)
+
+    if not required_baseline_coverage <= covered_baselines:
+        missing = sorted(required_baseline_coverage - covered_baselines)
+        fail(f"paper baseline runs missing baseline coverage: {missing}")
+
+
 def validate_capture_imports(
     data: dict[str, Any],
     benchmark_ids: set[str],
@@ -236,7 +325,7 @@ def validate_paper_evaluation_matrix(
     baseline_ids: set[str],
     results: dict[str, Any],
     root: Path,
-) -> None:
+) -> set[str]:
     records = require_list(
         data, "paper_evaluation_matrix", "paper evaluation matrix"
     )
@@ -345,12 +434,14 @@ def validate_paper_evaluation_matrix(
         fail(f"paper evaluation matrix missing PTO method coverage: {missing}")
     if not {"A100", "H200"} <= hardware_coverage:
         fail("paper evaluation matrix must cover A100 and H200")
+    return matrix_ids
 
 
 def validate_viewer_data(root: Path = ROOT) -> None:
     benchmarks = load_json(root, "benchmarks.json")
     methods = load_json(root, "methods.json")
     paper_baselines = load_json(root, "paper_baselines.json")
+    paper_baseline_runs = load_json(root, "paper_baseline_runs.json")
     paper_evaluation_matrix = load_json(root, "paper_evaluation_matrix.json")
     capture_imports = load_json(root, "capture_imports.json")
     results = load_json(root, "results.json")
@@ -359,13 +450,18 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     baseline_ids = validate_paper_baselines(paper_baselines)
     validate_capture_imports(capture_imports, benchmark_ids, method_ids)
     validate_results(results, benchmark_ids, method_ids)
-    validate_paper_evaluation_matrix(
+    paper_evaluation_ids = validate_paper_evaluation_matrix(
         paper_evaluation_matrix,
         benchmark_ids,
         method_ids,
         baseline_ids,
         results,
         root,
+    )
+    validate_paper_baseline_runs(
+        paper_baseline_runs,
+        baseline_ids,
+        paper_evaluation_ids,
     )
 
 

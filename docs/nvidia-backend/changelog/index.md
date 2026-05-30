@@ -7,6 +7,7 @@ what evaluation ran, and what evidence proves the claim.
 ## Reports
 
 - [2026-05-31 ultimate goal setup](2026-05-31-ultimate-goal.md)
+- [2026-05-31 paper baseline runs](2026-05-31-paper-baseline-runs.md)
 - [2026-05-31 remote evaluation contract](2026-05-31-remote-evaluation-contract.md)
 - [2026-05-31 paper evaluation matrix](2026-05-31-paper-evaluation-matrix.md)
 - [2026-05-31 CUDA example contract](2026-05-31-cuda-example-contract.md)

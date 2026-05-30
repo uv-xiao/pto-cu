@@ -2,6 +2,7 @@ const DATA_FILES = {
   benchmarks: "data/benchmarks.json",
   methods: "data/methods.json",
   paperBaselines: "data/paper_baselines.json",
+  paperBaselineRuns: "data/paper_baseline_runs.json",
   paperEvaluation: "data/paper_evaluation_matrix.json",
   results: "data/results.json",
 };
@@ -194,6 +195,9 @@ function renderMethods() {
 function renderPaperBaselines() {
   const root = document.getElementById("baseline-list");
   root.replaceChildren(...state.paperBaselines.paper_baselines.map((baseline) => {
+    const runs = state.paperBaselineRuns.paper_baseline_runs.filter(
+      (run) => run.paper_baseline_id === baseline.id,
+    );
     const details = document.createElement("details");
     const summary = document.createElement("summary");
     summary.append(text(`${baseline.name} (${baseline.status})`));
@@ -208,8 +212,26 @@ function renderPaperBaselines() {
     reproduce.innerHTML = `<strong>Paper baselines:</strong> ${baseline.paper_baselines_to_reproduce.join(", ")}`;
     const next = document.createElement("p");
     next.innerHTML = `<strong>Next action:</strong> ${baseline.next_action}`;
+    const runItems = runs.map((run) => {
+      const lines = [
+        `${run.title} (${run.status})`,
+        `Hardware: ${run.hardware_targets.join(", ")}`,
+        `Claim: ${run.paper_evaluation_id}`,
+        `Run: ${run.run_commands.join(" | ")}`,
+        `Artifacts: ${run.expected_artifacts.join(", ")}`,
+      ];
+      return lines.join("\n");
+    });
 
-    details.append(summary, role, source, local, reproduce, next);
+    details.append(
+      summary,
+      role,
+      source,
+      local,
+      reproduce,
+      next,
+      ...namedList("Reproduction Runs", runItems),
+    );
     return details;
   }));
 }
@@ -323,12 +345,14 @@ async function main() {
       benchmarks,
       methods,
       paperBaselines,
+      paperBaselineRuns,
       paperEvaluation,
       results,
     ] = await Promise.all([
       loadJson(DATA_FILES.benchmarks),
       loadJson(DATA_FILES.methods),
       loadJson(DATA_FILES.paperBaselines),
+      loadJson(DATA_FILES.paperBaselineRuns),
       loadJson(DATA_FILES.paperEvaluation),
       loadJson(DATA_FILES.results),
     ]);
@@ -336,6 +360,7 @@ async function main() {
       benchmarks,
       methods,
       paperBaselines,
+      paperBaselineRuns,
       paperEvaluation,
       results,
     });
