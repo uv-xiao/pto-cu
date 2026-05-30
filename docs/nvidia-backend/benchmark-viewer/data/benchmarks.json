@@ -85,6 +85,30 @@
           ]
         }
       ]
+    },
+    {
+      "id": "llm_serving_decode",
+      "title": "LLM Serving Decode",
+      "description": "Paper-baseline serving workload for comparing PTO CUDA against MPK, VDCores, vLLM, SGLang, and related kernel systems on a shared model, prompt, decode, and concurrency policy.",
+      "math": "For a fixed prompt and decode length, each method produces the same token sequence or correctness signal while reporting end-to-end latency, time-to-first-token, inter-token latency, and throughput.",
+      "code": "serving_row = {\"model\": \"<shared-model>\", \"prompt_tokens\": \"<shared>\", \"decode_tokens\": \"<shared>\", \"concurrency\": \"<shared>\"}",
+      "run": {
+        "command": "See docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json for baseline-specific serving commands.",
+        "inputs": {
+          "shape": "shared model, prompt length, decode length, and concurrency policy",
+          "dtype": "model-defined",
+          "repeat_policy": "paper-baseline run records define warmup and repeat policy before import"
+        }
+      },
+      "evidence_refs": [
+        {
+          "path": "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
+          "symbols": [
+            "mpk_qwen3_native_vs_persistent",
+            "vllm_serving_and_throughput"
+          ]
+        }
+      ]
     }
   ]
 }

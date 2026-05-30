@@ -298,6 +298,22 @@ PYTHONPATH=$PWD:$PWD/python \
     --output tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/viewer-result-records.json
 ```
 
+Use `paper_baseline_viewer_export.py` after MPK, VDCores, vLLM, SGLang, or
+ThunderKittens commands write normalized raw JSON under
+`tmp/cuda-backend/paper-baselines/`. Each raw row names the
+`paper_baseline_run_id`, viewer `benchmark_id`, hardware, workload inputs,
+metrics, and correctness. The importer looks up the run in
+`paper_baseline_runs.json`, maps it to the matching paper-baseline method ID,
+and emits the same `result_records` schema used by the HTML viewer:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py \
+    tmp/cuda-backend/paper-baselines/vllm/bench-serve.json \
+    --artifact-root tmp/cuda-backend/paper-baselines/vllm/ \
+    --output tmp/cuda-backend/paper-baselines/vllm/viewer-result-records.json
+```
+
 Use `cuda_scheduler_scaling.py` to summarize a scheduler-block sweep after
 capturing the individual paired smokes. Its ratio column is shape-aware:
 each row is compared with the one-scheduler row for the same artifact, DAG

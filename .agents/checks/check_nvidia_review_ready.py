@@ -58,6 +58,7 @@ def check_evaluation_docs() -> None:
     require_file(DOC_ROOT / "changelog" / "2026-05-31-paper-evaluation-matrix.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-remote-evaluation-contract.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-runs.md")
+    require_file(DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-importer.md")
 
 
 def require_text(path: Path, needles: list[str]) -> None:
@@ -174,6 +175,7 @@ def check_viewer_data() -> None:
         "host_schedule_vector_ops",
         "graph_layered_cross",
         "tensor_core_tile",
+        "llm_serving_decode",
     }
     if not required_benchmarks <= benchmark_ids:
         fail(f"missing benchmark ids: {sorted(required_benchmarks - benchmark_ids)}")
@@ -191,6 +193,11 @@ def check_viewer_data() -> None:
         "pto_persistent_device",
         "direct_driver_graph",
         "cublas_sgemm_graph",
+        "mpk",
+        "vdcores",
+        "vllm",
+        "sglang",
+        "thunderkittens",
     }
     if not required_methods <= method_ids:
         fail(f"missing method ids: {sorted(required_methods - method_ids)}")
@@ -355,6 +362,7 @@ def check_examples_and_rules() -> None:
         ".agents/checks/validate_cuda_examples.py",
         ".agents/checks/validate_remote_evaluation.py",
         ".agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py",
+        ".agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py",
         ".agents/checks/validate_nvidia_changelog.py",
         ".agents/skills/git-commit/SKILL.md",
         ".agents/skills/github-pr/SKILL.md",

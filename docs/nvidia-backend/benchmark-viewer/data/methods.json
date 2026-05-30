@@ -79,6 +79,91 @@
           ]
         }
       ]
+    },
+    {
+      "id": "mpk",
+      "name": "Mirage Persistent Kernel",
+      "category": "paper_baseline",
+      "launch_model": "paper baseline persistent kernel runtime",
+      "runtime_flow": "MPK runs the Mirage persistent-kernel path and records serving or profiling output for import into the shared viewer result schema.",
+      "lifecycle": "Baseline source, setup commands, run commands, raw artifacts, and import target are tracked by paper_baseline_runs.json.",
+      "evidence_refs": [
+        {
+          "path": "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
+          "symbols": [
+            "\"id\": \"mpk\"",
+            "Mirage Persistent Kernel"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vdcores",
+      "name": "VDCores",
+      "category": "paper_baseline",
+      "launch_model": "paper baseline virtual-core runtime",
+      "runtime_flow": "VDCores runs its decoupled-resource runtime or torch binding and records decode or correctness output for import into the shared viewer result schema.",
+      "lifecycle": "Baseline source, setup commands, run commands, raw artifacts, and import target are tracked by paper_baseline_runs.json.",
+      "evidence_refs": [
+        {
+          "path": "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
+          "symbols": [
+            "\"id\": \"vdcores\"",
+            "VDCores"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vllm",
+      "name": "vLLM",
+      "category": "paper_baseline",
+      "launch_model": "framework serving baseline",
+      "runtime_flow": "vLLM serves the selected model and runs serving or throughput benchmarks under the shared serving policy.",
+      "lifecycle": "Baseline source, setup commands, run commands, raw artifacts, and import target are tracked by paper_baseline_runs.json.",
+      "evidence_refs": [
+        {
+          "path": "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
+          "symbols": [
+            "\"id\": \"vllm\"",
+            "vLLM"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sglang",
+      "name": "SGLang",
+      "category": "paper_baseline",
+      "launch_model": "framework serving baseline",
+      "runtime_flow": "SGLang serves the selected model and runs serving, offline-throughput, or one-batch benchmarks under the shared serving policy.",
+      "lifecycle": "Baseline source, setup commands, run commands, raw artifacts, and import target are tracked by paper_baseline_runs.json.",
+      "evidence_refs": [
+        {
+          "path": "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
+          "symbols": [
+            "\"id\": \"sglang\"",
+            "SGLang"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "thunderkittens",
+      "name": "ThunderKittens",
+      "category": "paper_baseline",
+      "launch_model": "kernel-programming paper baseline",
+      "runtime_flow": "ThunderKittens builds and runs a selected attention or GEMM tile kernel that maps to the tensor-core tile baseline claim.",
+      "lifecycle": "Baseline source, setup commands, run commands, raw artifacts, and import target are tracked by paper_baseline_runs.json.",
+      "evidence_refs": [
+        {
+          "path": "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
+          "symbols": [
+            "\"id\": \"thunderkittens\"",
+            "ThunderKittens"
+          ]
+        }
+      ]
     }
   ]
 }

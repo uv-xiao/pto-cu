@@ -56,6 +56,14 @@ committed mapping between raw capture baselines and viewer benchmark/method
 IDs. Hand-edited result rows must match this schema and identify the raw
 artifact directory under `tmp/`.
 
+Raw paper-baseline captures should flow into viewer result records through
+`.agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py`.
+Each raw row must include `paper_baseline_run_id`, `benchmark_id`, `hardware`,
+`inputs`, `metrics`, and `correctness`. The importer uses
+`paper_baseline_runs.json` to map the run to the matching paper-baseline
+method ID, then writes viewer-compatible records with the raw artifact path
+kept under `tmp/`.
+
 Each paper-baseline record must include:
 
 - `paper_baseline_id`: stable identifier for MPK, VDCores, or a baseline used

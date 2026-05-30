@@ -123,6 +123,14 @@ with `.agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py`. The
 script uses `docs/nvidia-backend/benchmark-viewer/data/capture_imports.json`
 to map raw capture baselines onto viewer benchmark and method IDs.
 
+Paper-baseline raw captures can be converted with
+`.agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py`.
+The script reads `paper_baseline_runs.json`, maps each raw
+`paper_baseline_run_id` to the corresponding paper-baseline method, and emits
+viewer `result_records` for MPK, VDCores, vLLM, SGLang, or ThunderKittens.
+This keeps paper-baseline rows generated from raw artifacts instead of
+hand-edited tables.
+
 Remote H200 runs should prefer Git refresh when available and use SSH
 tree-sync fallback when remote Git fails. The selected path is part of the
 artifact metadata.

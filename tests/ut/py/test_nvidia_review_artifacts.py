@@ -148,6 +148,146 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
     )
 
 
+def test_paper_baseline_viewer_export_generates_contract_records(tmp_path):
+    raw = {
+        "metadata": {
+            "pto_commit": "abc1234",
+        },
+        "results": [
+            {
+                "paper_baseline_run_id": "vllm_serving_and_throughput",
+                "benchmark_id": "llm_serving_decode",
+                "hardware": {
+                    "gpu": "H200",
+                    "machine": "dasys-h200x8",
+                    "compute_target": "compute_90",
+                    "driver": "570.86.15",
+                    "cuda_toolkit": "12.8",
+                    "clock_policy": "application clocks locked",
+                },
+                "inputs": {
+                    "shape": "model=fixture,prompt_tokens=128,decode_tokens=32",
+                    "dtype": "bfloat16",
+                    "repeat_policy": "warmup=1,repeat=3",
+                },
+                "metrics": {
+                    "kind": "paper_baseline_capture",
+                    "sample_count": 3,
+                    "end_to_end_latency_ns": 1000000,
+                    "time_to_first_token_ns": 250000,
+                    "inter_token_latency_ns": 50000,
+                    "throughput_tokens_per_s": 640.0,
+                },
+                "correctness": "pass",
+            }
+        ],
+    }
+    raw_path = tmp_path / "paper-baseline.json"
+    output_path = tmp_path / "viewer-records.json"
+    raw_path.write_text(json.dumps(raw), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py",
+            str(raw_path),
+            "--artifact-root",
+            "tmp/cuda-backend/paper-baselines/vllm/",
+            "--output",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    records = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert records == [
+        {
+            "benchmark_id": "llm_serving_decode",
+            "method_id": "vllm",
+            "hardware": {
+                "gpu": "H200",
+                "machine": "dasys-h200x8",
+                "compute_target": "compute_90",
+                "driver": "570.86.15",
+                "cuda_toolkit": "12.8",
+                "clock_policy": "application clocks locked",
+            },
+            "commit": "abc1234",
+            "inputs": {
+                "shape": "model=fixture,prompt_tokens=128,decode_tokens=32",
+                "dtype": "bfloat16",
+                "repeat_policy": "warmup=1,repeat=3",
+            },
+            "statistic": {
+                "kind": "paper_baseline_capture",
+                "sample_count": 3,
+                "host_wall_ns": 1000000,
+                "device_wall_ns": 0,
+                "end_to_end_latency_ns": 1000000,
+                "time_to_first_token_ns": 250000,
+                "inter_token_latency_ns": 50000,
+                "throughput_tokens_per_s": 640.0,
+            },
+            "raw_artifact": "tmp/cuda-backend/paper-baselines/vllm/",
+            "correctness": "pass",
+        }
+    ]
+
+
+def test_paper_baseline_viewer_export_rejects_bool_sample_count(tmp_path):
+    raw = {
+        "metadata": {
+            "pto_commit": "abc1234",
+        },
+        "results": [
+            {
+                "paper_baseline_run_id": "vllm_serving_and_throughput",
+                "benchmark_id": "llm_serving_decode",
+                "hardware": {
+                    "gpu": "H200",
+                    "machine": "dasys-h200x8",
+                    "compute_target": "compute_90",
+                },
+                "inputs": {
+                    "shape": "model=fixture",
+                    "dtype": "bfloat16",
+                    "repeat_policy": "warmup=1,repeat=3",
+                },
+                "metrics": {
+                    "kind": "paper_baseline_capture",
+                    "sample_count": True,
+                },
+                "correctness": "pass",
+            }
+        ],
+    }
+    raw_path = tmp_path / "paper-baseline-invalid.json"
+    raw_path.write_text(json.dumps(raw), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py",
+            str(raw_path),
+            "--artifact-root",
+            "tmp/cuda-backend/paper-baselines/vllm/",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "invalid sample_count" in result.stdout
+
+
 def test_evaluation_docs_are_split_for_review():
     root_evaluation_docs = sorted(DOC_ROOT.glob("evaluation*.md"))
     assert {path.name for path in root_evaluation_docs} == {
@@ -215,6 +355,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
 
     benchmark_ids = {item["id"] for item in benchmarks["benchmarks"]}
+    assert "llm_serving_decode" in benchmark_ids
     assert "graph_layered_cross" in benchmark_ids
     assert "tensor_core_tile" in benchmark_ids
     for benchmark in benchmarks["benchmarks"]:
@@ -226,7 +367,16 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert benchmark["evidence_refs"]
 
     method_ids = {item["id"] for item in methods["methods"]}
-    assert {"pto_host_schedule", "pto_persistent_device", "cublas_sgemm_graph"} <= method_ids
+    assert {
+        "pto_host_schedule",
+        "pto_persistent_device",
+        "cublas_sgemm_graph",
+        "mpk",
+        "vdcores",
+        "vllm",
+        "sglang",
+        "thunderkittens",
+    } <= method_ids
     for method in methods["methods"]:
         assert method["category"]
         assert method["launch_model"]
@@ -350,6 +500,14 @@ def test_review_policy_changelog_and_examples_exist():
         / "scripts"
         / "cuda_viewer_export.py"
     ).is_file()
+    assert (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "paper_baseline_viewer_export.py"
+    ).is_file()
     assert (ROOT / ".agents" / "skills" / "git-commit" / "SKILL.md").is_file()
     assert (ROOT / ".agents" / "skills" / "github-pr" / "SKILL.md").is_file()
     assert (DOC_ROOT / "changelog" / "index.md").is_file()
@@ -379,6 +537,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-runs.md"
+    ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-paper-baseline-importer.md"
     ).is_file()
 
     example_root = ROOT / "examples" / "cuda"

@@ -336,3 +336,33 @@ Each entry must include:
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: future baseline importer slices should
   turn these expected artifacts into viewer result rows.
+
+### 2026-05-31 - Paper Baseline Result Importer
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  paper-baseline importer slice.
+- Exact Codex command or script invocation: not applicable because no worker
+  was launched in this entry.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer data,
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py`,
+  `.agents/checks/`, focused review artifact tests, shared contracts,
+  evaluation plan, evaluation skill docs, and changelog docs.
+- Dependencies and blocked assumptions: the importer defines a stable path
+  from raw paper-baseline JSON to viewer rows; it does not run MPK, VDCores,
+  vLLM, SGLang, or ThunderKittens.
+- Verification commands and results: passed `check_nvidia_review_ready.py`,
+  focused review artifact pytest, `validate_benchmark_viewer_data.py`,
+  `validate_nvidia_changelog.py`, Python compile checks, JSON syntax checks,
+  `node --check` on the viewer, and `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future evaluation slices should run the
+  baseline commands, write raw artifacts under
+  `tmp/cuda-backend/paper-baselines/`, import viewer result rows, and update
+  the paper-evaluation matrix only with measured evidence.
