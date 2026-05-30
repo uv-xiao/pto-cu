@@ -49,6 +49,19 @@ records name the setup commands, run commands, expected tmp artifacts, required
 metrics, and viewer import target for MPK, VDCores, vLLM, SGLang, and
 ThunderKittens.
 
+Shared LLM-serving workload policies are tracked in
+`docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json`. The first
+two policies are `mpk_offline_decode` and `vdcores_offline_decode`, because
+the MPK and VDCores papers use different decode lengths and context policies.
+The MPK-comparable policy uses Qwen3-8B as the primary model, Qwen3-1.7B for
+bring-up, target prompt length 64, decode length 1024, and offline batch sizes
+1, 2, 4, 8, and 16. The VDCores-comparable policy also uses Qwen3-8B as the
+cross-paper target, keeps Llama-3.1-8B as the current VDCores demo path, uses
+target context length 128, decode length 64, and the same batch-size ladder.
+Every imported serving baseline row must reference one of these policy IDs and
+record actual tokenizer counts, model identity, decode count, and batch size in
+raw JSON.
+
 ## Workloads
 
 The workload ladder should grow from controlled kernels to paper-level systems:
@@ -187,8 +200,9 @@ Target review artifacts:
 3. Create a baseline source index under `tmp/` for MPK, VDCores, and paper
    baselines.
 4. Clone or inspect MPK and VDCores repositories under `tmp/baselines/`.
-5. Extend viewer export scripts as new benchmark families and paper baselines
+5. Use `serving_workloads.json` to run MPK, VDCores, vLLM, and SGLang with
+   comparable model, prompt, decode, and batch-size policies.
+6. Extend viewer export scripts as new benchmark families and paper baselines
    produce raw JSON.
-6. Run A100 and H200 paired captures for the current PTO workloads.
-7. Add controlled CUDA Graph, cuBLAS, and direct launch baselines.
-8. Decide which LLM-serving workload is the first credible paper target.
+7. Run A100 and H200 paired captures for the current PTO workloads.
+8. Add controlled CUDA Graph, cuBLAS, and direct launch baselines.

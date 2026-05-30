@@ -205,10 +205,13 @@
         {
           "kind": "viewer_data",
           "path": "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
+        },
+        {
+          "kind": "viewer_data",
+          "path": "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json"
         }
       ],
       "missing_evidence": [
-        "Selected shared model, prompt length, decode length, and concurrency policy.",
         "PTO CUDA serving workload or controlled serving-equivalent workload.",
         "MPK, VDCores, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records."
       ],

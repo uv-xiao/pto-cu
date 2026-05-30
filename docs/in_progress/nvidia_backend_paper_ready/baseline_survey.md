@@ -23,6 +23,17 @@ on private terminal history. Reproduction commands for these systems live in
 `docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json` so the
 viewer can show which setup/run commands and tmp artifacts are expected before
 a baseline can be imported as paper evidence.
+Serving workload policies live in
+`docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json`. The MPK
+and VDCores papers use different context and decode lengths, so the current
+survey records two comparable policy IDs instead of pretending there is one
+universal serving row:
+
+- `mpk_offline_decode`: Qwen3-8B primary, prompt target 64, decode 1024,
+  offline batch sizes 1, 2, 4, 8, and 16.
+- `vdcores_offline_decode`: Qwen3-8B cross-paper target, Llama-3.1-8B current
+  VDCores demo path, context target 128, decode 64, offline batch sizes 1, 2,
+  4, 8, and 16.
 
 ## MPK Notes
 
@@ -179,13 +190,11 @@ python test_correctness.py
 
 ## Next Dispatcher Actions
 
-1. Choose the first common model, prompt length, decode length, and batch or
-   concurrency policy shared by PTO, MPK, VDCores, vLLM, and SGLang.
-2. Build MPK on a compatible GPU host and record Qwen3 native versus MPK
+1. Build MPK on a compatible GPU host and record Qwen3 native versus MPK
    command outputs.
-3. Build VDCores on H100/H200-class hardware and record correctness plus
+2. Build VDCores on H100/H200-class hardware and record correctness plus
    decode benchmark outputs.
-4. Build the selected ThunderKittens kernel baseline and capture Torch plus
+3. Build the selected ThunderKittens kernel baseline and capture Torch plus
    ThunderKittens comparison data.
-5. Add baseline-result import scripts so raw JSON can feed the benchmark
+4. Add baseline-result import scripts so raw JSON can feed the benchmark
    viewer without hand editing.

@@ -511,6 +511,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "data" / "paper_baselines.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_runs.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_probes.json").is_file()
+    assert (VIEWER_ROOT / "data" / "serving_workloads.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").is_file()
     assert (VIEWER_ROOT / "data" / "capture_imports.json").is_file()
     viewer_js = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
@@ -524,6 +525,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paper_baseline_runs",
         "paperBaselineProbes",
         "paper_baseline_probes",
+        "servingWorkloads",
+        "serving_workloads",
+        "Serving policies",
         "latest_artifact_root",
         "paperEvaluation",
         "paper_evaluation_matrix",
@@ -551,6 +555,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     paper_baseline_probes = json.loads(
         (VIEWER_ROOT / "data" / "paper_baseline_probes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    serving_workloads = json.loads(
+        (VIEWER_ROOT / "data" / "serving_workloads.json").read_text(
             encoding="utf-8"
         )
     )
@@ -608,6 +617,29 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert baseline["status"] == "source_cloned_for_survey"
         assert len(baseline["source"]["commit"]) == 40
 
+    serving_by_id = {
+        item["id"]: item for item in serving_workloads["serving_workloads"]
+    }
+    assert {"mpk_offline_decode", "vdcores_offline_decode"} <= set(serving_by_id)
+    assert serving_by_id["mpk_offline_decode"]["model_policy"]["primary_model"] == (
+        "Qwen/Qwen3-8B"
+    )
+    assert (
+        serving_by_id["mpk_offline_decode"]["prompt_policy"][
+            "target_prompt_tokens"
+        ]
+        == 64
+    )
+    assert serving_by_id["mpk_offline_decode"]["decode_policy"]["decode_tokens"] == 1024
+    assert serving_by_id["vdcores_offline_decode"]["decode_policy"]["decode_tokens"] == 64
+    assert serving_by_id["vdcores_offline_decode"]["prompt_policy"][
+        "target_prompt_tokens"
+    ] == 128
+    for workload in serving_workloads["serving_workloads"]:
+        assert workload["baseline_run_ids"]
+        assert workload["required_metrics"]
+        assert workload["evidence_refs"]
+
     run_ids = {item["id"] for item in paper_baseline_runs["paper_baseline_runs"]}
     assert {
         "mpk_qwen3_native_vs_persistent",
@@ -635,6 +667,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert item["run_commands"]
         assert item["expected_artifacts"]
         assert item["import_target"]["viewer_file"].endswith("results.json")
+        if item["paper_evaluation_id"] == "llm_serving_paper_baselines":
+            assert item["serving_workload_ids"]
         if item["id"] == "thunderkittens_tile_kernel":
             assert item["status"] == "imported_to_viewer"
             assert any(
@@ -708,6 +742,16 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert item["current_evidence_refs"]
         assert item["missing_evidence"]
         assert item["promotion_gate"]
+        if item["id"] == "llm_serving_paper_baselines":
+            assert not any(
+                "Selected shared model" in gap
+                for gap in item["missing_evidence"]
+            )
+            assert any(
+                ref.get("path")
+                == "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json"
+                for ref in item["current_evidence_refs"]
+            )
 
     assert results["snapshot"]["commit"] == "743709f3"
     assert results["snapshot"]["full_capture"]["samples"] == 1350
@@ -852,6 +896,7 @@ def test_review_policy_changelog_and_examples_exist():
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-thunderkittens-bounded-capture.md"
     ).is_file()
+    assert (DOC_ROOT / "changelog" / "2026-05-31-serving-policy.md").is_file()
 
     example_root = ROOT / "examples" / "cuda"
     assert (example_root / "README.md").is_file()

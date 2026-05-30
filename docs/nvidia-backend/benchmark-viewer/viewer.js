@@ -4,6 +4,7 @@ const DATA_FILES = {
   paperBaselines: "data/paper_baselines.json",
   paperBaselineRuns: "data/paper_baseline_runs.json",
   paperBaselineProbes: "data/paper_baseline_probes.json",
+  servingWorkloads: "data/serving_workloads.json",
   paperEvaluation: "data/paper_evaluation_matrix.json",
   results: "data/results.json",
 };
@@ -69,6 +70,13 @@ function paperBaselineName(id) {
     (item) => item.id === id,
   );
   return baseline ? baseline.name : id;
+}
+
+function servingWorkloadTitle(id) {
+  const workload = state.servingWorkloads.serving_workloads.find(
+    (item) => item.id === id,
+  );
+  return workload ? workload.title : id;
 }
 
 function renderSnapshot() {
@@ -193,6 +201,62 @@ function renderMethods() {
   }));
 }
 
+function renderServingWorkloads() {
+  const root = document.getElementById("serving-list");
+  root.replaceChildren(...state.servingWorkloads.serving_workloads.map((workload) => {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.append(text(`${workload.title} (${workload.status})`));
+    const metadata = fieldList([
+      ["Paper source", workload.paper_source.paper],
+      ["Primary model", workload.model_policy.primary_model],
+      ["Bring-up model", workload.model_policy.bringup_model],
+      ["Fallback model", workload.model_policy.fallback_model],
+      ["Prompt target", workload.prompt_policy.target_prompt_tokens],
+      ["Decode tokens", workload.decode_policy.decode_tokens],
+      ["Batch sizes", workload.decode_policy.batch_sizes.join(", ")],
+      ["Traffic mode", workload.decode_policy.traffic_mode],
+      ["Hardware", workload.hardware_targets.join(", ")],
+      [
+        "Baseline runs",
+        workload.baseline_run_ids
+          .map((id) => {
+            const run = state.paperBaselineRuns.paper_baseline_runs.find(
+              (item) => item.id === id,
+            );
+            return run ? run.title : id;
+          })
+          .join(", "),
+      ],
+    ]);
+    const notes = paragraph("Notes", workload.paper_source.notes);
+    const reason = paragraph("Selection reason", workload.model_policy.selection_reason);
+    const tokenizer = paragraph(
+      "Tokenization rule",
+      workload.prompt_policy.tokenization_rule,
+    );
+    const generation = paragraph(
+      "Generation mode",
+      workload.decode_policy.generation_mode,
+    );
+    const evidence = workload.evidence_refs.map((ref) => (
+      `${ref.path}: ${ref.symbols.join(", ")}`
+    ));
+    details.append(
+      summary,
+      metadata,
+      notes,
+      reason,
+      tokenizer,
+      generation,
+      ...namedList("Required Metrics", workload.required_metrics),
+      ...namedList("Current Blockers", workload.current_blockers),
+      ...namedList("Evidence", evidence),
+    );
+    return details;
+  }));
+}
+
 function renderPaperBaselines() {
   const root = document.getElementById("baseline-list");
   root.replaceChildren(...state.paperBaselines.paper_baselines.map((baseline) => {
@@ -217,10 +281,14 @@ function renderPaperBaselines() {
     const next = document.createElement("p");
     next.innerHTML = `<strong>Next action:</strong> ${baseline.next_action}`;
     const runItems = runs.map((run) => {
+      const serving = (run.serving_workload_ids || [])
+        .map(servingWorkloadTitle)
+        .join(", ");
       const lines = [
         `${run.title} (${run.status})`,
         `Hardware: ${run.hardware_targets.join(", ")}`,
         `Claim: ${run.paper_evaluation_id}`,
+        `Serving policies: ${serving || "not applicable"}`,
         `Run: ${run.run_commands.join(" | ")}`,
         `Artifacts: ${run.expected_artifacts.join(", ")}`,
       ];
@@ -363,6 +431,7 @@ async function main() {
       paperBaselines,
       paperBaselineRuns,
       paperBaselineProbes,
+      servingWorkloads,
       paperEvaluation,
       results,
     ] = await Promise.all([
@@ -371,6 +440,7 @@ async function main() {
       loadJson(DATA_FILES.paperBaselines),
       loadJson(DATA_FILES.paperBaselineRuns),
       loadJson(DATA_FILES.paperBaselineProbes),
+      loadJson(DATA_FILES.servingWorkloads),
       loadJson(DATA_FILES.paperEvaluation),
       loadJson(DATA_FILES.results),
     ]);
@@ -380,6 +450,7 @@ async function main() {
       paperBaselines,
       paperBaselineRuns,
       paperBaselineProbes,
+      servingWorkloads,
       paperEvaluation,
       results,
     });
@@ -387,6 +458,7 @@ async function main() {
     renderHeadlineResults();
     renderBenchmarks();
     renderMethods();
+    renderServingWorkloads();
     renderPaperBaselines();
     renderPaperEvaluation();
     renderResults();

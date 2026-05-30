@@ -70,6 +70,7 @@ def check_evaluation_docs() -> None:
     require_file(
         DOC_ROOT / "changelog" / "2026-05-31-thunderkittens-bounded-capture.md"
     )
+    require_file(DOC_ROOT / "changelog" / "2026-05-31-serving-policy.md")
 
 
 def require_text(path: Path, needles: list[str]) -> None:
@@ -102,6 +103,9 @@ def check_ultimate_goal_contract() -> None:
             "vLLM",
             "SGLang",
             "ThunderKittens",
+            "serving_workloads.json",
+            "mpk_offline_decode",
+            "vdcores_offline_decode",
             "tmp/baselines/mirage-mpk",
             "tmp/baselines/vdcores",
             "tmp/baselines/vllm",
@@ -162,6 +166,8 @@ def check_viewer_data() -> None:
         "paper_baseline_runs",
         "paperBaselineProbes",
         "paper_baseline_probes",
+        "servingWorkloads",
+        "serving_workloads",
         "latest_artifact_root",
         "paperEvaluation",
         "paper_evaluation_matrix",
@@ -182,6 +188,7 @@ def check_viewer_data() -> None:
     paper_baseline_probes = load_json(
         VIEWER_ROOT / "data" / "paper_baseline_probes.json"
     )
+    serving_workloads = load_json(VIEWER_ROOT / "data" / "serving_workloads.json")
     paper_evaluation = load_json(
         VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
     )
@@ -255,6 +262,15 @@ def check_viewer_data() -> None:
             fail(f"paper baseline {baseline['id']} is not cloned for survey")
         if len(source.get("commit", "")) != 40:
             fail(f"paper baseline {baseline['id']} has no pinned commit")
+
+    serving_workload_ids = {
+        item["id"] for item in serving_workloads.get("serving_workloads", [])
+    }
+    required_serving_workloads = {"mpk_offline_decode", "vdcores_offline_decode"}
+    if not required_serving_workloads <= serving_workload_ids:
+        missing = sorted(required_serving_workloads - serving_workload_ids)
+        fail(f"missing serving workload ids: {missing}")
+    check_evidence_refs(serving_workloads["serving_workloads"], "serving workload")
 
     run_ids = {
         item["id"] for item in paper_baseline_runs.get("paper_baseline_runs", [])

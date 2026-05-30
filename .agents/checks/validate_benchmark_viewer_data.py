@@ -140,6 +140,7 @@ def validate_paper_baseline_runs(
     data: dict[str, Any],
     baseline_ids: set[str],
     paper_evaluation_ids: set[str],
+    serving_workload_ids: set[str],
 ) -> None:
     records = require_list(data, "paper_baseline_runs", "paper baseline runs")
     run_ids = check_unique_ids(records, "paper baseline run")
@@ -182,6 +183,14 @@ def validate_paper_baseline_runs(
         paper_evaluation_id = require_string(record, "paper_evaluation_id", owner)
         if paper_evaluation_id not in paper_evaluation_ids:
             fail(f"{owner} references unknown paper_evaluation_id: {paper_evaluation_id}")
+        serving_ids = record.get("serving_workload_ids", [])
+        if not isinstance(serving_ids, list):
+            fail(f"{owner} serving_workload_ids is not a list")
+        if paper_evaluation_id == "llm_serving_paper_baselines" and not serving_ids:
+            fail(f"{owner} must reference at least one serving workload")
+        for serving_id in serving_ids:
+            if serving_id not in serving_workload_ids:
+                fail(f"{owner} references unknown serving_workload_id: {serving_id}")
 
         for key in (
             "hardware_targets",
@@ -223,6 +232,89 @@ def validate_paper_baseline_runs(
     if not required_baseline_coverage <= covered_baselines:
         missing = sorted(required_baseline_coverage - covered_baselines)
         fail(f"paper baseline runs missing baseline coverage: {missing}")
+
+
+def validate_serving_workloads(data: dict[str, Any], root: Path) -> set[str]:
+    records = require_list(data, "serving_workloads", "serving workloads")
+    serving_ids = check_unique_ids(records, "serving workload")
+    required_workloads = {"mpk_offline_decode", "vdcores_offline_decode"}
+    if not required_workloads <= serving_ids:
+        missing = sorted(required_workloads - serving_ids)
+        fail(f"missing serving workloads: {missing}")
+
+    allowed_status = {
+        "policy_selected_no_results",
+        "captured_raw",
+        "imported_to_viewer",
+    }
+    required_metrics = {"correctness", "raw_artifacts"}
+    required_hardware: set[str] = set()
+    for record in records:
+        owner = f"serving workload {record['id']}"
+        for key in ("title", "status"):
+            require_string(record, key, owner)
+        if record["status"] not in allowed_status:
+            fail(f"{owner} has invalid status: {record['status']}")
+        source = require_dict(record, "paper_source", owner)
+        for key in ("paper", "evidence", "notes"):
+            require_string(source, key, owner)
+        if not (root / source["evidence"]).is_file():
+            fail(f"{owner} source evidence missing: {source['evidence']}")
+
+        model_policy = require_dict(record, "model_policy", owner)
+        for key in (
+            "primary_model",
+            "bringup_model",
+            "fallback_model",
+            "selection_reason",
+        ):
+            require_string(model_policy, key, owner)
+
+        prompt_policy = require_dict(record, "prompt_policy", owner)
+        for key in ("prompt_text", "tokenization_rule"):
+            require_string(prompt_policy, key, owner)
+        prompt_tokens = prompt_policy.get("target_prompt_tokens")
+        if not isinstance(prompt_tokens, int) or prompt_tokens <= 0:
+            fail(f"{owner} has invalid prompt target")
+
+        decode_policy = require_dict(record, "decode_policy", owner)
+        for key in ("traffic_mode", "generation_mode"):
+            require_string(decode_policy, key, owner)
+        decode_tokens = decode_policy.get("decode_tokens")
+        if not isinstance(decode_tokens, int) or decode_tokens <= 0:
+            fail(f"{owner} has invalid decode token count")
+        batch_sizes = require_list(decode_policy, "batch_sizes", owner)
+        for batch_size in batch_sizes:
+            if not isinstance(batch_size, int) or batch_size <= 0:
+                fail(f"{owner} has invalid batch size")
+
+        hardware_targets = require_list(record, "hardware_targets", owner)
+        for hardware in hardware_targets:
+            if not isinstance(hardware, str) or not hardware:
+                fail(f"{owner} has invalid hardware target")
+            required_hardware.add(hardware)
+        require_list(record, "baseline_run_ids", owner)
+        metrics = set(require_list(record, "required_metrics", owner))
+        if not required_metrics <= metrics:
+            missing = sorted(required_metrics - metrics)
+            fail(f"{owner} missing required metrics: {missing}")
+        require_list(record, "current_blockers", owner)
+        check_evidence_refs(record, owner, root)
+
+    if "H200" not in required_hardware:
+        fail("serving workloads must include H200")
+    return serving_ids
+
+
+def validate_serving_workload_run_refs(
+    data: dict[str, Any],
+    baseline_run_ids: set[str],
+) -> None:
+    for record in data["serving_workloads"]:
+        owner = f"serving workload {record['id']}"
+        for run_id in record["baseline_run_ids"]:
+            if run_id not in baseline_run_ids:
+                fail(f"{owner} references unknown baseline run: {run_id}")
 
 
 def validate_paper_baseline_probes(
@@ -495,12 +587,14 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     paper_baselines = load_json(root, "paper_baselines.json")
     paper_baseline_runs = load_json(root, "paper_baseline_runs.json")
     paper_baseline_probes = load_json(root, "paper_baseline_probes.json")
+    serving_workloads = load_json(root, "serving_workloads.json")
     paper_evaluation_matrix = load_json(root, "paper_evaluation_matrix.json")
     capture_imports = load_json(root, "capture_imports.json")
     results = load_json(root, "results.json")
     benchmark_ids = validate_benchmarks(benchmarks, root)
     method_ids = validate_methods(methods, root)
     baseline_ids = validate_paper_baselines(paper_baselines)
+    serving_workload_ids = validate_serving_workloads(serving_workloads, root)
     validate_paper_baseline_probes(paper_baseline_probes, baseline_ids)
     validate_capture_imports(capture_imports, benchmark_ids, method_ids)
     validate_results(results, benchmark_ids, method_ids)
@@ -516,6 +610,14 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         paper_baseline_runs,
         baseline_ids,
         paper_evaluation_ids,
+        serving_workload_ids,
+    )
+    validate_serving_workload_run_refs(
+        serving_workloads,
+        {
+            record["id"]
+            for record in paper_baseline_runs["paper_baseline_runs"]
+        },
     )
 
 

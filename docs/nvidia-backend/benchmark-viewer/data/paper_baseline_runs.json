@@ -9,11 +9,14 @@
       "hardware_targets": [
         "H200"
       ],
+      "serving_workload_ids": [
+        "mpk_offline_decode"
+      ],
       "workload": {
-        "model": "Qwen3 demo model from the MPK repository",
-        "input_policy": "MPK demo prompt policy until a shared serving policy is selected",
-        "output_policy": "MPK demo decode policy until a shared serving policy is selected",
-        "batch_or_concurrency": "single demo run plus profiling variant"
+        "model": "Qwen/Qwen3-8B primary, Qwen/Qwen3-1.7B bring-up",
+        "input_policy": "mpk_offline_decode prompt policy: target 64 prompt tokens with actual tokenizer count recorded",
+        "output_policy": "mpk_offline_decode output policy: deterministic greedy decode up to 1024 tokens",
+        "batch_or_concurrency": "offline batched inference; maximum batch sizes 1,2,4,8,16"
       },
       "setup_commands": [
         "cd tmp/baselines/mirage-mpk",
@@ -54,11 +57,14 @@
       "hardware_targets": [
         "H200"
       ],
+      "serving_workload_ids": [
+        "vdcores_offline_decode"
+      ],
       "workload": {
-        "model": "Llama 3.1 decode demo from the VDCores repository",
-        "input_policy": "VDCores demo prompt until a shared serving policy is selected",
-        "output_policy": "decode length from selected VDCores command",
-        "batch_or_concurrency": "single decode request and correctness path"
+        "model": "Qwen/Qwen3-8B policy target; current VDCores demo uses meta-llama/Llama-3.1-8B-Instruct",
+        "input_policy": "vdcores_offline_decode prompt policy: target 128 prompt tokens with actual tokenizer count recorded",
+        "output_policy": "vdcores_offline_decode output policy: 64 decode tokens, adjusted only when VDCores KV-block scheduling requires rounding",
+        "batch_or_concurrency": "offline fixed batch; batch sizes 1,2,4,8,16"
       },
       "setup_commands": [
         "cd tmp/baselines/vdcores && make pyext"
@@ -96,11 +102,15 @@
       "hardware_targets": [
         "H200"
       ],
+      "serving_workload_ids": [
+        "mpk_offline_decode",
+        "vdcores_offline_decode"
+      ],
       "workload": {
-        "model": "shared model selected for MPK/VDCores/PTO comparison",
-        "input_policy": "shared prompt length and request distribution",
-        "output_policy": "shared decode length",
-        "batch_or_concurrency": "shared request rate or concurrency policy"
+        "model": "Qwen/Qwen3-8B primary, Qwen/Qwen3-1.7B bring-up",
+        "input_policy": "mpk_offline_decode and vdcores_offline_decode prompt policies",
+        "output_policy": "1024-token MPK-comparable decode and 64-token VDCores-comparable decode",
+        "batch_or_concurrency": "offline batch sizes 1,2,4,8,16"
       },
       "setup_commands": [
         "cd tmp/baselines/vllm && python -m pip install -e ."
@@ -138,11 +148,15 @@
       "hardware_targets": [
         "H200"
       ],
+      "serving_workload_ids": [
+        "mpk_offline_decode",
+        "vdcores_offline_decode"
+      ],
       "workload": {
-        "model": "shared model selected for MPK/VDCores/PTO comparison",
-        "input_policy": "shared prompt length and request distribution",
-        "output_policy": "shared decode length",
-        "batch_or_concurrency": "shared request rate or concurrency policy"
+        "model": "Qwen/Qwen3-8B primary, Qwen/Qwen3-1.7B bring-up",
+        "input_policy": "mpk_offline_decode and vdcores_offline_decode prompt policies",
+        "output_policy": "1024-token MPK-comparable decode and 64-token VDCores-comparable decode",
+        "batch_or_concurrency": "offline batch sizes 1,2,4,8,16"
       },
       "setup_commands": [
         "cd tmp/baselines/sglang && python -m pip install -e \"python[all]\""
@@ -181,6 +195,9 @@
       "status": "imported_to_viewer",
       "hardware_targets": [
         "H200"
+      ],
+      "serving_workload_ids": [
+        "vdcores_offline_decode"
       ],
       "workload": {
         "model": "not applicable",

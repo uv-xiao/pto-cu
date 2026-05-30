@@ -539,3 +539,39 @@ Each entry must include:
   repeat evidence, but paper-ready promotion still requires full upstream
   correctness and benchmark sweeps plus shape alignment with PTO tensor-core
   workloads.
+
+### 2026-05-31 - Shared Serving Policy Contract
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned paper
+  serving policy extraction and viewer contract update.
+- Exact Codex command or script invocation: local `rg`/`sed` inspection of
+  `tmp/sources/arxiv-2512.22219v1-mirage-persistent-kernel.txt`,
+  `tmp/sources/arxiv-2605.03190-vdcores.txt`,
+  `tmp/baselines/mirage-mpk/demo/qwen3/demo.py`,
+  `tmp/baselines/vdcores/app/python/llama3/sched.py`, and VDCores scheduling
+  notes.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer data and renderer, review
+  validators/tests, evaluation plan, baseline survey, dispatch log, and
+  changelog docs.
+- Dependencies and blocked assumptions: no upstream repositories were edited.
+  The policy uses existing paper text and cloned source as evidence. It
+  records two serving policies because MPK and VDCores paper workloads are not
+  identical.
+- Verification commands and results: `check_nvidia_review_ready.py`,
+  `validate_benchmark_viewer_data.py`, `validate_nvidia_changelog.py`,
+  `validate_cuda_examples.py`, `validate_remote_evaluation.py`, focused
+  `test_nvidia_review_artifacts.py`, Python compile checks, JSON syntax
+  checks, `node --check`, and `git diff --check` passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: `mpk_offline_decode` and
+  `vdcores_offline_decode` now define comparable model, prompt, decode, batch,
+  hardware, baseline-run, and metric policy. The next slices must run MPK,
+  VDCores, vLLM, SGLang, and PTO serving-equivalent commands against those
+  policies and import raw results.
