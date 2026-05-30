@@ -103,6 +103,11 @@ def test_nvidia_branch_ci_avoids_ascend_jobs():
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
         encoding="utf-8"
     )
+    assert "workflow_dispatch:" in workflow
+    assert "pull_request:" not in workflow
+    assert "pull_request_target:" not in workflow
+    assert "push:" not in workflow
+    assert "schedule:" not in workflow
     assert "nvidia-review:" in workflow
     assert "runs-on: [self-hosted, a2a3]" not in workflow
     assert "runs-on: [self-hosted, a5]" not in workflow

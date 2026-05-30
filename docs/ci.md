@@ -1,5 +1,21 @@
 # CI Pipeline
 
+## Current Mode
+
+This standalone pto-cu repository keeps GitHub Actions manual-only while the
+NVIDIA backend ultimate goal is active. Workflow files under
+`.github/workflows/` must not register automatic `push`, `pull_request`,
+`pull_request_target`, `merge_group`, or `schedule` triggers during this mode.
+
+The purpose is to keep exploratory NVIDIA backend slices moving without being
+blocked by inherited Ascend a2a3/a5 CI. Local verification, dispatch-log
+evidence, and changelog reports are the required gates before a slice is pushed
+for human review.
+
+The inherited CI design below is retained as historical context, but it is not
+the active repository workflow until the NVIDIA backend reaches a stable review
+boundary and CI is deliberately reopened.
+
 ## Overview
 
 The CI pipeline maps test categories (st, ut-py, ut-cpp) × hardware tiers to GitHub Actions jobs. See [testing.md](testing.md) for full test organization and hardware classification.

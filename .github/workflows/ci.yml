@@ -1,8 +1,7 @@
-name: NVIDIA Branch Review
+name: NVIDIA Manual Review
 
 on:
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

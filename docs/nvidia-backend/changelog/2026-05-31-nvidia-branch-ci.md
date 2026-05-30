@@ -3,6 +3,8 @@
 ## What Changed
 
 - Replaced the branch CI workflow with a focused NVIDIA review job.
+- Closed the repository base-branch PR trigger for the NVIDIA ultimate goal by
+  keeping the workflow available through manual `workflow_dispatch` only.
 - Removed Ascend sim and hardware jobs from this branch workflow so the NVIDIA
   backend PR does not schedule a2a3/a5 CI.
 - Added a review-artifact test that guards this branch-specific CI shape.
