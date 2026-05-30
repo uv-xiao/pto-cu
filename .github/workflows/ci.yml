@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  nvidia-review:
+  nvidia-manual-review:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

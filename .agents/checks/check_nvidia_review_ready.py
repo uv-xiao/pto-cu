@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DOC_ROOT = ROOT / "docs" / "nvidia-backend"
 VIEWER_ROOT = DOC_ROOT / "benchmark-viewer"
 GOAL_ROOT = ROOT / "docs" / "in_progress" / "nvidia_backend_paper_ready"
+WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 
 
 def fail(message: str) -> None:
@@ -219,11 +220,36 @@ def check_examples_and_rules() -> None:
         require_file(ROOT / relpath)
 
 
+def check_manual_ci_policy() -> None:
+    require_file(WORKFLOW)
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    required_text = [
+        "NVIDIA Manual Review",
+        "workflow_dispatch:",
+        "nvidia-manual-review:",
+    ]
+    for needle in required_text:
+        if needle not in workflow:
+            fail(f".github/workflows/ci.yml missing required text: {needle}")
+    forbidden_text = [
+        "pull_request:",
+        "push:",
+        "runs-on: [self-hosted, a2a3]",
+        "runs-on: [self-hosted, a5]",
+        "--platform a2a3",
+        "--platform a5",
+    ]
+    for needle in forbidden_text:
+        if needle in workflow:
+            fail(f".github/workflows/ci.yml must not contain: {needle}")
+
+
 def main() -> None:
     check_evaluation_docs()
     check_ultimate_goal_contract()
     check_viewer_data()
     check_examples_and_rules()
+    check_manual_ci_policy()
     print("nvidia review guard passed")
 
 

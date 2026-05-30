@@ -10,6 +10,8 @@
   VDCores, vLLM, SGLang, and ThunderKittens.
 - Promoted vLLM, SGLang, and ThunderKittens from planned source capture to
   cloned-for-survey status with pinned commits and first reproduction commands.
+- Changed the GitHub Actions workflow to manual-only during ultimate-goal work
+  so automatic repository CI does not block exploratory child slices.
 - Extended the NVIDIA review artifact test to require the ultimate-goal docs.
 - The review guard now checks the new goal artifacts.
 
@@ -27,6 +29,10 @@ The baseline survey separates source readiness from result readiness. MPK,
 VDCores, vLLM, SGLang, and ThunderKittens are now recorded as
 cloned-for-survey systems, while measured performance remains a future child
 slice that must produce raw artifacts before appearing in result tables.
+
+CI policy is now explicit: local guard/test evidence is the required progress
+gate during the ultimate goal, and the GitHub workflow remains available only
+as a manual review command.
 
 ## Evaluation Run
 

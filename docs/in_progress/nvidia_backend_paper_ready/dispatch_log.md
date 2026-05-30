@@ -97,3 +97,27 @@ Each entry must include:
 - Handoff summary and remaining gaps: all required paper baseline families now
   have source commits and inspected entry points. Next child slices should
   build and run each baseline, then write importers for raw benchmark JSON.
+
+### 2026-05-31 - Automatic CI Disabled During Ultimate Goal
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned CI policy
+  update.
+- Exact Codex command or script invocation: not applicable because no worker
+  was launched in this entry.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, review-flow slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: `.github/workflows/ci.yml`,
+  `.agents/checks/check_nvidia_review_ready.py`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`, and goal/changelog docs.
+- Dependencies and blocked assumptions: local verification remains mandatory;
+  GitHub Actions are manual-only so automatic checks do not block exploratory
+  ultimate-goal progress.
+- Verification commands and results: pending for this entry.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future slices should rely on the local
+  guard/test commands recorded in work preparation and may manually dispatch
+  the workflow when a branch is ready for external review.

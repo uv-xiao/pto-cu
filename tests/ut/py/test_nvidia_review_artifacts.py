@@ -126,16 +126,17 @@ def test_review_policy_changelog_and_examples_exist():
     assert (example_root / "persistent_layered_cross.py").is_file()
 
 
-def test_nvidia_branch_ci_avoids_ascend_jobs():
+def test_ultimate_goal_ci_is_manual_only_and_avoids_ascend_jobs():
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
         encoding="utf-8"
     )
+    assert "NVIDIA Manual Review" in workflow
     assert "workflow_dispatch:" in workflow
     assert "pull_request:" not in workflow
     assert "pull_request_target:" not in workflow
     assert "push:" not in workflow
     assert "schedule:" not in workflow
-    assert "nvidia-review:" in workflow
+    assert "nvidia-manual-review:" in workflow
     assert "runs-on: [self-hosted, a2a3]" not in workflow
     assert "runs-on: [self-hosted, a5]" not in workflow
     assert "--platform a2a3" not in workflow
