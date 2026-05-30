@@ -103,6 +103,7 @@ The report set must pass `.agents/checks/validate_nvidia_changelog.py`.
 `examples/cuda/` contains runnable examples that match evaluated workloads.
 An example is reviewable only when its README entry names the matching
 benchmark, command, expected output, and runtime it exercises.
+The example manifest must pass `.agents/checks/validate_cuda_examples.py`.
 
 ## Source Notes Contract
 

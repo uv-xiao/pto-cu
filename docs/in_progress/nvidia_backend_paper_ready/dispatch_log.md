@@ -231,3 +231,28 @@ Each entry must include:
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: future child PRs that add changelog
   reports must keep the index and four-section report contract passing.
+
+### 2026-05-31 - CUDA Example Contract Guard
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned example
+  guard slice.
+- Exact Codex command or script invocation: not applicable because no worker
+  was launched in this entry.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, examples slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: `.agents/checks/`, `examples/cuda/`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`, shared contracts, and
+  changelog docs.
+- Dependencies and blocked assumptions: the validator checks that examples map
+  to committed benchmark and method IDs; it does not run GPU examples.
+- Verification commands and results: passed `validate_cuda_examples.py`,
+  `check_nvidia_review_ready.py`, focused review artifact pytest, Python
+  compile checks, JSON syntax checks, `validate_nvidia_changelog.py`, and
+  `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future CUDA examples should update
+  `examples/cuda/manifest.json` and README in the same slice.

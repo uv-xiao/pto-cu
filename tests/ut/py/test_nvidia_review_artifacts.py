@@ -45,6 +45,18 @@ def test_nvidia_changelog_validator_passes():
     assert result.returncode == 0, result.stdout
 
 
+def test_cuda_example_validator_passes():
+    result = subprocess.run(
+        [sys.executable, ".agents/checks/validate_cuda_examples.py"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+
+
 def test_cuda_viewer_export_generates_contract_records(tmp_path):
     capture = {
         "metadata": {
@@ -238,6 +250,7 @@ def test_review_policy_changelog_and_examples_exist():
     assert (ROOT / ".agents" / "agents" / "documentation-sync" / "AGENT.md").is_file()
     assert (ROOT / ".agents" / "agents" / "testing" / "AGENT.md").is_file()
     assert (ROOT / ".agents" / "checks" / "validate_benchmark_viewer_data.py").is_file()
+    assert (ROOT / ".agents" / "checks" / "validate_cuda_examples.py").is_file()
     assert (ROOT / ".agents" / "checks" / "validate_nvidia_changelog.py").is_file()
     assert (
         ROOT
@@ -265,9 +278,13 @@ def test_review_policy_changelog_and_examples_exist():
     assert (
         DOC_ROOT / "changelog" / "2026-05-31-changelog-contract.md"
     ).is_file()
+    assert (
+        DOC_ROOT / "changelog" / "2026-05-31-cuda-example-contract.md"
+    ).is_file()
 
     example_root = ROOT / "examples" / "cuda"
     assert (example_root / "README.md").is_file()
+    assert (example_root / "manifest.json").is_file()
     assert (example_root / "host_schedule_vector_ops.py").is_file()
     assert (example_root / "persistent_layered_cross.py").is_file()
 

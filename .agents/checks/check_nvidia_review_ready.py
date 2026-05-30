@@ -53,6 +53,7 @@ def check_evaluation_docs() -> None:
     )
     require_file(DOC_ROOT / "changelog" / "2026-05-31-viewer-result-export.md")
     require_file(DOC_ROOT / "changelog" / "2026-05-31-changelog-contract.md")
+    require_file(DOC_ROOT / "changelog" / "2026-05-31-cuda-example-contract.md")
 
 
 def require_text(path: Path, needles: list[str]) -> None:
@@ -258,6 +259,20 @@ def check_changelog_contract() -> None:
     module.validate_changelog(ROOT)
 
 
+def check_cuda_example_contract() -> None:
+    validator_path = ROOT / ".agents" / "checks" / "validate_cuda_examples.py"
+    require_file(validator_path)
+    spec = importlib.util.spec_from_file_location(
+        "validate_cuda_examples", validator_path
+    )
+    if spec is None or spec.loader is None:
+        fail("could not load CUDA example validator")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    module.validate_examples(ROOT)
+
+
 def check_examples_and_rules() -> None:
     for relpath in [
         ".agents/AGENT.md",
@@ -274,11 +289,13 @@ def check_examples_and_rules() -> None:
         ".agents/agents/code-review/AGENT.md",
         ".agents/agents/documentation-sync/AGENT.md",
         ".agents/agents/testing/AGENT.md",
+        ".agents/checks/validate_cuda_examples.py",
         ".agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py",
         ".agents/checks/validate_nvidia_changelog.py",
         ".agents/skills/git-commit/SKILL.md",
         ".agents/skills/github-pr/SKILL.md",
         "examples/cuda/README.md",
+        "examples/cuda/manifest.json",
         "examples/cuda/host_schedule_vector_ops.py",
         "examples/cuda/persistent_layered_cross.py",
     ]:
@@ -315,6 +332,7 @@ def main() -> None:
     check_viewer_data()
     check_viewer_schema_contract()
     check_changelog_contract()
+    check_cuda_example_contract()
     check_examples_and_rules()
     check_manual_ci_policy()
     print("nvidia review guard passed")

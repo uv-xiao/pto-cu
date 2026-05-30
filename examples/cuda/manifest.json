@@ -1,0 +1,36 @@
+{
+  "examples": [
+    {
+      "id": "host_schedule_vector_ops",
+      "title": "Host-Schedule Vector Ops",
+      "script": "examples/cuda/host_schedule_vector_ops.py",
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "pto_host_schedule",
+      "runtime": "cuda/host_schedule",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/host_schedule_vector_ops.py --op add --n 1024 --arch compute_80",
+      "expected_output": "command exits 0; optional output JSON records status=pass for the selected host-schedule vector operation.",
+      "evidence_symbols": [
+        "cuda_smoke.py",
+        "--runner",
+        "worker",
+        "--op"
+      ]
+    },
+    {
+      "id": "persistent_layered_cross",
+      "title": "Persistent Layered-Cross Graph",
+      "script": "examples/cuda/persistent_layered_cross.py",
+      "benchmark_id": "graph_layered_cross",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/persistent_layered_cross.py --n 1024 --arch compute_80 --scheduler-blocks 3",
+      "expected_output": "command exits 0; optional output JSON records status=pass and the graph_descriptor_layered_cross DAG shape.",
+      "evidence_symbols": [
+        "cuda_persistent_smoke.py",
+        "graph_descriptor_layered_cross",
+        "--scheduler-blocks",
+        "--worker-blocks"
+      ]
+    }
+  ]
+}
