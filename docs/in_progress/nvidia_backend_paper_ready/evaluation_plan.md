@@ -187,11 +187,13 @@ After a capture is accepted for committed viewer evidence,
 `.agents/skills/cuda-backend-eval/scripts/paper_baseline_results_update.py`
 updates the viewer results, marks the matching run imported, and regenerates
 the paper-readiness audit from the same inputs.
-Before executing the MPK/VDCores scheduler runs, refresh
-`paper_baseline_run_readiness.json` with
-`.agents/skills/cuda-backend-eval/scripts/paper_baseline_run_readiness.py` so
-the viewer shows whether model access, entrypoints, expected artifacts, and the
-VDCores `dae.runtime` build are ready.
+Before executing planned MPK, VDCores, vLLM, or SGLang paper-baseline runs,
+refresh `paper_baseline_run_readiness.json` with
+`.agents/skills/cuda-backend-eval/scripts/paper_baseline_run_readiness.py`.
+The viewer then shows whether model access, entrypoints, reproduction-command
+contracts, expected artifacts, paired probe status, and the VDCores
+`dae.runtime` build are ready. Readiness rows are pre-run evidence only; the
+paper claim remains blocked until measured raw JSON is imported.
 
 Serving baseline commands can be materialized with
 `.agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py`.

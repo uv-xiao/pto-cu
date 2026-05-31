@@ -1147,3 +1147,34 @@ Each entry must include:
   partial due to missing `HF_TOKEN` plus missing `dae.runtime` build output.
   Remaining blockers are still the measured MPK/VDCores scheduler imports,
   broader ThunderKittens sweeps, and serving baseline captures.
+
+### 2026-05-31 - Planned Run Readiness Coverage
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  paper-baseline visibility slice.
+- Exact Codex command or script invocation: no worker invocation. Generalized
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_run_readiness.py`
+  and regenerated:
+  `tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/run-readiness.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready evaluation
+  visibility and strict evidence guardrail slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, benchmark-viewer data,
+  validators, focused tests, goal docs, dispatch log, and changelog docs. No
+  upstream repositories were edited.
+- Dependencies and blocked assumptions: readiness records remain pre-run
+  evidence only. They expose blockers for planned runs, but measured raw JSON
+  still has to be imported before any paper claim can be promoted.
+- Verification commands and results: focused TDD fixture first failed because
+  `--probes` was unsupported and only scheduler-run readiness was emitted.
+  After implementation, the focused test, benchmark-viewer data validator, and
+  review guard passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the viewer now has run-readiness rows
+  for pending MPK, VDCores, vLLM, and SGLang runs. MPK/VDCores are blocked by
+  model access and VDCores extension build state; vLLM/SGLang are blocked by
+  paired-probe dependency/import gaps. These are still not measured results.

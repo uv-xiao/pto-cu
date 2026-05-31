@@ -317,13 +317,14 @@ def check_viewer_data() -> None:
             "paper_baseline_run_readiness", []
         )
     }
-    required_scheduler_readiness = {
-        "mpk_persistent_scheduler_trace",
-        "vdcores_resource_policy_trace",
+    required_run_readiness = {
+        item["id"]
+        for item in paper_baseline_runs.get("paper_baseline_runs", [])
+        if item.get("status", "planned_not_run") != "imported_to_viewer"
     }
-    if not required_scheduler_readiness <= readiness_run_ids:
-        missing = sorted(required_scheduler_readiness - readiness_run_ids)
-        fail(f"missing scheduler run readiness coverage: {missing}")
+    if not required_run_readiness <= readiness_run_ids:
+        missing = sorted(required_run_readiness - readiness_run_ids)
+        fail(f"missing paper baseline run readiness coverage: {missing}")
 
     matrix_ids = {
         item["id"] for item in paper_evaluation.get("paper_evaluation_matrix", [])

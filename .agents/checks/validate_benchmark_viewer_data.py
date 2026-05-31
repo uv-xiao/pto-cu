@@ -294,6 +294,7 @@ def validate_paper_baseline_runs(
 def validate_paper_baseline_run_readiness(
     data: dict[str, Any],
     run_ids: set[str],
+    required_run_ids: set[str],
     baseline_ids: set[str],
     root: Path,
 ) -> None:
@@ -303,10 +304,7 @@ def validate_paper_baseline_run_readiness(
         "paper baseline run readiness",
     )
     readiness_ids = check_unique_ids(records, "paper baseline run readiness")
-    required_readiness = {
-        "mpk_persistent_scheduler_trace_readiness",
-        "vdcores_resource_policy_trace_readiness",
-    }
+    required_readiness = {f"{run_id}_readiness" for run_id in required_run_ids}
     if not required_readiness <= readiness_ids:
         missing = sorted(required_readiness - readiness_ids)
         fail(f"missing paper baseline run readiness records: {missing}")
@@ -342,10 +340,6 @@ def validate_paper_baseline_run_readiness(
             fail(f"{owner} blocking_gaps is not a list of strings")
         if record["latest_status"] != "pass" and not gaps:
             fail(f"{owner} is not pass but has no blocking_gaps")
-    required_run_ids = {
-        "mpk_persistent_scheduler_trace",
-        "vdcores_resource_policy_trace",
-    }
     if not required_run_ids <= covered_runs:
         missing = sorted(required_run_ids - covered_runs)
         fail(f"missing run readiness coverage: {missing}")
@@ -877,9 +871,15 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         record["id"]
         for record in paper_baseline_runs["paper_baseline_runs"]
     }
+    planned_run_ids = {
+        record["id"]
+        for record in paper_baseline_runs["paper_baseline_runs"]
+        if record.get("status", "planned_not_run") != "imported_to_viewer"
+    }
     validate_paper_baseline_run_readiness(
         paper_baseline_run_readiness,
         run_ids,
+        planned_run_ids,
         baseline_ids,
         root,
     )

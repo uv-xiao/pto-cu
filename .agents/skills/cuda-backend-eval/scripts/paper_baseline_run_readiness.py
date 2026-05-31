@@ -16,14 +16,11 @@ ROOT = Path(__file__).resolve().parents[4]
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 DEFAULT_BASELINES = VIEWER_DATA / "paper_baselines.json"
 DEFAULT_RUNS = VIEWER_DATA / "paper_baseline_runs.json"
+DEFAULT_PROBES = VIEWER_DATA / "paper_baseline_probes.json"
 DEFAULT_OUTPUT_ROOT = (
     ROOT / "tmp" / "cuda-backend" / "paper-baselines" / "run-readiness"
 )
 DEFAULT_VIEWER_OUTPUT = VIEWER_DATA / "paper_baseline_run_readiness.json"
-TARGET_RUN_IDS = {
-    "mpk_persistent_scheduler_trace",
-    "vdcores_resource_policy_trace",
-}
 
 
 def fail(message: str) -> None:
@@ -90,6 +87,19 @@ def source_by_baseline(baselines: dict[str, Any]) -> dict[str, Path]:
     return by_id
 
 
+def probe_by_baseline(probes: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    by_id: dict[str, dict[str, Any]] = {}
+    for probe in require_records(probes, "paper_baseline_probes"):
+        baseline_id = probe.get("paper_baseline_id")
+        if isinstance(baseline_id, str):
+            by_id[baseline_id] = probe
+    return by_id
+
+
+def is_planned_run(run: dict[str, Any]) -> bool:
+    return run.get("status", "planned_not_run") != "imported_to_viewer"
+
+
 def python_entrypoints(command: str) -> list[str]:
     try:
         tokens = shlex.split(command)
@@ -129,6 +139,22 @@ def check_entrypoints(run: dict[str, Any], source_root: Path) -> list[dict[str, 
     return checks
 
 
+def command_checks(run: dict[str, Any]) -> list[dict[str, str]]:
+    commands = run.get("run_commands", [])
+    status = (
+        "pass"
+        if commands and all(isinstance(item, str) for item in commands)
+        else "fail"
+    )
+    return [
+        {
+            "kind": "run_command_contract",
+            "status": status,
+            "why": "Run readiness must be tied to explicit reproduction commands.",
+        }
+    ]
+
+
 def artifact_checks(run: dict[str, Any]) -> list[dict[str, str]]:
     checks: list[dict[str, str]] = []
     for artifact in run.get("expected_artifacts", []):
@@ -143,6 +169,44 @@ def artifact_checks(run: dict[str, Any]) -> list[dict[str, str]]:
             }
         )
     return checks
+
+
+def probe_checks(
+    baseline_id: str,
+    probes: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    probe = probes.get(baseline_id)
+    if probe is None:
+        return [
+            {
+                "kind": "baseline_probe",
+                "name": baseline_id,
+                "status": "partial",
+                "why": "Each long paper-baseline run should reference a source and dependency readiness probe.",
+                "blocking_gaps": [
+                    f"No paper-baseline readiness probe exists for {baseline_id}."
+                ],
+            }
+        ]
+
+    machine_gaps: list[str] = []
+    for machine in probe.get("latest_machine_status", []):
+        if not isinstance(machine, dict):
+            continue
+        gpu = machine.get("gpu", "unknown")
+        for gap in machine.get("blocking_gaps", []):
+            if isinstance(gap, str):
+                machine_gaps.append(f"{gpu}: {gap}")
+
+    return [
+        {
+            "kind": "baseline_probe",
+            "name": probe.get("id", baseline_id),
+            "status": probe.get("latest_status", "partial"),
+            "why": "Latest committed source/dependency probe status for this baseline.",
+            "blocking_gaps": machine_gaps,
+        }
+    ]
 
 
 def metric_checks(run: dict[str, Any]) -> list[dict[str, str]]:
@@ -185,7 +249,7 @@ def environment_checks(baseline_id: str, source_root: Path) -> list[dict[str, st
     return checks
 
 
-def blocking_gaps(checks: list[dict[str, str]]) -> list[str]:
+def blocking_gaps(checks: list[dict[str, Any]]) -> list[str]:
     gaps: list[str] = []
     for check in checks:
         if check["status"] == "pass":
@@ -194,6 +258,14 @@ def blocking_gaps(checks: list[dict[str, str]]) -> list[str]:
             gaps.append(f"{check['name']} is not available for this run.")
         elif check["kind"] == "compiled_extension":
             gaps.append(f"Missing dae.runtime compiled extension at {check['path']}.")
+        elif check["kind"] == "baseline_probe":
+            detail = "; ".join(check.get("blocking_gaps", []))
+            if detail:
+                gaps.append(
+                    f"Readiness probe {check['name']} is {check['status']}: {detail}."
+                )
+            else:
+                gaps.append(f"Readiness probe {check['name']} is {check['status']}.")
         else:
             subject = check.get("path", check.get("metric", check["kind"]))
             gaps.append(f"{check['kind']} check failed for {subject}.")
@@ -213,14 +285,16 @@ def build_run_readiness(
     *,
     baselines: dict[str, Any],
     runs: dict[str, Any],
+    probes: dict[str, Any],
     output_root: Path,
     commit: str,
 ) -> dict[str, Any]:
     sources = source_by_baseline(baselines)
+    probes_by_baseline = probe_by_baseline(probes)
     records: list[dict[str, Any]] = []
     for run in require_records(runs, "paper_baseline_runs"):
         run_id = run.get("id")
-        if run_id not in TARGET_RUN_IDS:
+        if not is_planned_run(run):
             continue
         baseline_id = run.get("paper_baseline_id")
         if not isinstance(baseline_id, str):
@@ -236,9 +310,11 @@ def build_run_readiness(
                 "status": "pass" if source_root.is_dir() else "fail",
                 "why": "Baseline source checkout used by run_commands.",
             },
+            *command_checks(run),
             *check_entrypoints(run, source_root),
             *artifact_checks(run),
             *metric_checks(run),
+            *probe_checks(baseline_id, probes_by_baseline),
             *environment_checks(baseline_id, source_root),
         ]
         gaps = blocking_gaps(checks)
@@ -262,6 +338,7 @@ def build_run_readiness(
             "source_files": [
                 "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
                 "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
+                "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
             ],
         },
         "paper_baseline_run_readiness": records,
@@ -272,6 +349,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baselines", type=Path, default=DEFAULT_BASELINES)
     parser.add_argument("--runs", type=Path, default=DEFAULT_RUNS)
+    parser.add_argument("--probes", type=Path, default=DEFAULT_PROBES)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--viewer-output", type=Path, default=DEFAULT_VIEWER_OUTPUT)
     parser.add_argument("--commit", default=None)
@@ -284,6 +362,7 @@ def main() -> None:
     payload = build_run_readiness(
         baselines=load_json(args.baselines),
         runs=load_json(args.runs),
+        probes=load_json(args.probes),
         output_root=args.output_root,
         commit=commit,
     )

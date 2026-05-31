@@ -363,11 +363,12 @@ PYTHONPATH=$PWD:$PWD/python \
     --viewer-output tmp/cuda-backend/paper-baselines/mpk/viewer-result-records.json
 ```
 
-Use `paper_baseline_run_readiness.py` before spending H200 time on the planned
-MPK and VDCores scheduler runs. It does not execute long baselines; it records
-source path, Python entrypoint, expected artifact, required metric, model-access,
+Use `paper_baseline_run_readiness.py` before spending H200 time on planned
+paper-baseline runs. It does not execute long baselines; it records source
+path, reproduction-command presence, Python entrypoints, expected artifact,
+required metric, latest paired probe status, MPK/VDCores model-access state,
 and VDCores extension-build readiness under `tmp/`, then updates the viewer's
-run-readiness data:
+run-readiness data for every run that is not already `imported_to_viewer`:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

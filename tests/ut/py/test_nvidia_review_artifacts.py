@@ -816,6 +816,8 @@ def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
     baseline_root = tmp_path / "baselines"
     mpk_root = baseline_root / "mirage-mpk"
     vdcores_root = baseline_root / "vdcores"
+    vllm_root = baseline_root / "vllm"
+    sglang_root = baseline_root / "sglang"
     (mpk_root / "demo" / "qwen3").mkdir(parents=True)
     (mpk_root / "demo" / "qwen3" / "demo.py").write_text(
         "print('mpk fixture')\n",
@@ -827,6 +829,8 @@ def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
         "print('vdcores fixture')\n",
         encoding="utf-8",
     )
+    vllm_root.mkdir(parents=True)
+    sglang_root.mkdir(parents=True)
 
     baselines = {
         "paper_baselines": [
@@ -840,6 +844,18 @@ def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
                 "id": "vdcores",
                 "source": {
                     "local_tmp_path": str(vdcores_root),
+                },
+            },
+            {
+                "id": "vllm",
+                "source": {
+                    "local_tmp_path": str(vllm_root),
+                },
+            },
+            {
+                "id": "sglang",
+                "source": {
+                    "local_tmp_path": str(sglang_root),
                 },
             },
         ]
@@ -870,14 +886,88 @@ def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
                 ],
                 "required_metrics": ["correctness", "raw_artifacts"],
             },
+            {
+                "id": "vllm_serving_and_throughput",
+                "paper_baseline_id": "vllm",
+                "title": "vLLM Serving And Throughput",
+                "status": "planned_not_run",
+                "run_commands": [
+                    "vllm bench serve --backend vllm --model <model>",
+                    "vllm bench throughput --model <model>",
+                ],
+                "expected_artifacts": [
+                    "tmp/cuda-backend/paper-baselines/vllm/bench-serve.json",
+                    "tmp/cuda-backend/paper-baselines/vllm/bench-throughput.json",
+                ],
+                "required_metrics": ["correctness", "raw_artifacts"],
+            },
+            {
+                "id": "sglang_serving_and_offline",
+                "paper_baseline_id": "sglang",
+                "title": "SGLang Serving And Offline",
+                "status": "planned_not_run",
+                "run_commands": [
+                    "python -m sglang.bench_serving --backend sglang",
+                    "python -m sglang.bench_offline_throughput --model-path <model>",
+                ],
+                "expected_artifacts": [
+                    "tmp/cuda-backend/paper-baselines/sglang/bench-serving.json",
+                    "tmp/cuda-backend/paper-baselines/sglang/offline-throughput.json",
+                ],
+                "required_metrics": ["correctness", "raw_artifacts"],
+            },
+        ]
+    }
+    probes = {
+        "paper_baseline_probes": [
+            {
+                "id": "mpk_source_entrypoints",
+                "paper_baseline_id": "mpk",
+                "latest_status": "pass",
+                "latest_machine_status": [],
+            },
+            {
+                "id": "vdcores_source_entrypoints",
+                "paper_baseline_id": "vdcores",
+                "latest_status": "pass",
+                "latest_machine_status": [],
+            },
+            {
+                "id": "vllm_source_entrypoints",
+                "paper_baseline_id": "vllm",
+                "latest_status": "partial",
+                "latest_machine_status": [
+                    {
+                        "gpu": "H200",
+                        "status": "partial",
+                        "blocking_gaps": ["python_module failed: vllm"],
+                    }
+                ],
+            },
+            {
+                "id": "sglang_source_entrypoints",
+                "paper_baseline_id": "sglang",
+                "latest_status": "partial",
+                "latest_machine_status": [
+                    {
+                        "gpu": "H200",
+                        "status": "partial",
+                        "blocking_gaps": [
+                            "python_import failed: sglang.bench_serving"
+                        ],
+                    }
+                ],
+            },
         ]
     }
     baselines_path = tmp_path / "paper_baselines.json"
     runs_path = tmp_path / "paper_baseline_runs.json"
+    probes_path = tmp_path / "paper_baseline_probes.json"
     output_root = tmp_path / "run-readiness"
     viewer_output = tmp_path / "paper_baseline_run_readiness.json"
     baselines_path.write_text(json.dumps(baselines), encoding="utf-8")
     runs_path.write_text(json.dumps(runs), encoding="utf-8")
+    probes_path.write_text(json.dumps(probes), encoding="utf-8")
 
     result = subprocess.run(
         [
@@ -887,6 +977,8 @@ def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
             str(runs_path),
             "--baselines",
             str(baselines_path),
+            "--probes",
+            str(probes_path),
             "--output-root",
             str(output_root),
             "--viewer-output",
@@ -906,6 +998,12 @@ def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
         item["paper_baseline_run_id"]: item
         for item in status["paper_baseline_run_readiness"]
     }
+    assert {
+        "mpk_persistent_scheduler_trace",
+        "vdcores_resource_policy_trace",
+        "vllm_serving_and_throughput",
+        "sglang_serving_and_offline",
+    } <= set(records)
 
     assert records["mpk_persistent_scheduler_trace"]["latest_status"] == "partial"
     assert any(
@@ -915,6 +1013,16 @@ def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
     vdcores = records["vdcores_resource_policy_trace"]
     assert vdcores["latest_status"] == "partial"
     assert any("dae.runtime" in gap for gap in vdcores["blocking_gaps"])
+    assert records["vllm_serving_and_throughput"]["latest_status"] == "partial"
+    assert any(
+        "python_module failed: vllm" in gap
+        for gap in records["vllm_serving_and_throughput"]["blocking_gaps"]
+    )
+    assert records["sglang_serving_and_offline"]["latest_status"] == "partial"
+    assert any(
+        "sglang.bench_serving" in gap
+        for gap in records["sglang_serving_and_offline"]["blocking_gaps"]
+    )
     assert (output_root / "run-readiness.json").is_file()
     artifact = json.loads((output_root / "run-readiness.json").read_text())
     assert artifact["metadata"]["pto_commit"] == "abc1234"
@@ -1705,10 +1813,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
         item["paper_baseline_run_id"]: item
         for item in paper_baseline_run_readiness["paper_baseline_run_readiness"]
     }
-    assert {
-        "mpk_persistent_scheduler_trace",
-        "vdcores_resource_policy_trace",
-    } <= set(readiness_by_run)
+    planned_run_ids = {
+        item["id"]
+        for item in paper_baseline_runs["paper_baseline_runs"]
+        if item.get("status", "planned_not_run") != "imported_to_viewer"
+    }
+    assert planned_run_ids <= set(readiness_by_run)
     for item in readiness_by_run.values():
         assert item["latest_artifact_root"].startswith("tmp/")
         assert (ROOT / item["latest_artifact_root"]).is_dir()
@@ -1727,6 +1837,18 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "dae.runtime" in gap
         for gap in readiness_by_run[
             "vdcores_resource_policy_trace"
+        ]["blocking_gaps"]
+    )
+    assert any(
+        "python_module failed: vllm" in gap
+        for gap in readiness_by_run[
+            "vllm_serving_and_throughput"
+        ]["blocking_gaps"]
+    )
+    assert any(
+        "sglang.bench_serving" in gap
+        for gap in readiness_by_run[
+            "sglang_serving_and_offline"
         ]["blocking_gaps"]
     )
 
