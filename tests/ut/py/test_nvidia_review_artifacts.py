@@ -2655,6 +2655,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200",
         "vdcores_qwen3_1p7b_correctness_rebuilt_illegal_memory_h200",
         "vdcores_qwen3_1p7b_stage_launch_sweep_h200",
+        "vdcores_qwen3_1p7b_final_rms_memcheck_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -2738,6 +2739,24 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "failed_after_kernel_launch"
     }
     assert "first launched VDCores stage" in vdcores_stage_sweep["blocker"]
+    vdcores_memcheck = attempts_by_id[
+        "vdcores_qwen3_1p7b_final_rms_memcheck_h200"
+    ]
+    assert vdcores_memcheck["status"] == "failed_after_kernel_launch"
+    assert vdcores_memcheck["summary"]["tool"] == "compute-sanitizer memcheck"
+    assert vdcores_memcheck["summary"]["debug_stop_after"] == "final_rms"
+    assert vdcores_memcheck["summary"]["sanitizer_exit_status"] == 99
+    assert vdcores_memcheck["summary"]["error_summary_count"] == 130
+    assert vdcores_memcheck["summary"]["invalid_read_size_bytes"] == 4096
+    first_invalid = vdcores_memcheck["summary"]["first_invalid_read"]
+    assert first_invalid["device_source"] == "ldwarp.cuh:52"
+    assert first_invalid["kernel_source"] == "dae2.cuh:167"
+    assert "cp_async_bulk" in first_invalid["function"]
+    assert (
+        vdcores_memcheck["summary"]["warp_illegal_address"]["device_source"]
+        == "ldwarp.cuh:113"
+    )
+    assert "invalid 4096-byte global reads" in vdcores_memcheck["blocker"]
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
