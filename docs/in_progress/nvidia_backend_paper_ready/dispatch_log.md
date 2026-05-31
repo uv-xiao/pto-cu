@@ -2093,3 +2093,39 @@ Each entry must include:
   values `1`, `2`, and `3` fail before launch on VDCores auto-folding
   placement assertions, so they are not simple launchable workarounds. VDCores
   still lacks correctness and queue/resource-policy timing.
+
+### 2026-06-01 - Repository CI Closed For Ultimate Goal
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned repository
+  gate policy update after user direction to keep repo CI closed during the
+  NVIDIA backend ultimate goal.
+- Exact Codex command or script invocation: queried
+  `gh api repos/uv-xiao/pto-cu/actions/permissions`, disabled workflow
+  `286106490` with
+  `gh api --method PUT repos/uv-xiao/pto-cu/actions/workflows/286106490/disable`,
+  attempted to disable GitHub's synthetic dependency-graph workflow
+  `286106506`, then re-queried workflow states and PR checks.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, dispatcher policy and
+  review-gate hygiene.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: own repository settings for `uv-xiao/pto-cu`,
+  goal work-preparation policy, changelog index, and changelog report. No
+  upstream repositories were edited, pushed, or reconfigured.
+- Dependencies and blocked assumptions: GitHub rejects disabling the synthetic
+  `Dependency Graph` workflow with HTTP 422. Repository Actions remain disabled
+  at the settings level, so no Actions workflow should run as a PR gate.
+- Verification commands and results:
+  `gh api repos/uv-xiao/pto-cu/actions/permissions` ->
+  `{"enabled":false,"sha_pinning_required":false}`;
+  `gh api repos/uv-xiao/pto-cu/actions/workflows` ->
+  `NVIDIA Manual Review: disabled_manually`, `Dependency Graph: active`;
+  `gh pr checks 1 --repo uv-xiao/pto-cu` ->
+  `no checks reported on the 'main' branch`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: repo CI is closed for the active
+  ultimate goal. Local review guards, benchmark artifacts, changelog reports,
+  and dispatch-log evidence remain the required progress gates.

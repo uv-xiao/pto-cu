@@ -26,10 +26,13 @@ settings for this work.
 - Use one child branch per reviewable slice.
 - Keep child PRs small enough for a human to review code, docs, evidence, and
   verification together.
-- During this ultimate goal, GitHub Actions are manual-only so repository CI
-  does not block exploratory child slices. Every workflow under
-  `.github/workflows/` must avoid automatic triggers. Local verification and
-  dispatch-log evidence are the required gates before pushing a slice.
+- During this ultimate goal, GitHub Actions for `uv-xiao/pto-cu` must remain
+  disabled at the repository settings level so repository CI cannot block
+  exploratory child slices. Local verification and dispatch-log evidence are
+  the required gates before pushing a slice.
+- If repository Actions are deliberately reopened later, every workflow under
+  `.github/workflows/` must avoid automatic triggers until a reviewer updates
+  this policy, `docs/ci.md`, and the matching changelog report.
 - Update the dispatch log before launching a worker and after reviewing its
   result.
 - A child PR is not ready until code, docs, examples, viewer data, and
