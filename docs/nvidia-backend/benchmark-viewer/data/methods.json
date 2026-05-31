@@ -24,6 +24,40 @@
       ]
     },
     {
+      "id": "pto_stream_serial",
+      "name": "PTO host_schedule serial streams",
+      "category": "pto_runtime",
+      "launch_model": "host CUDA async API serial stream launches",
+      "runtime_flow": "The benchmark prepares two host_schedule callables and launches them sequentially through the CUDA host runtime stream pool.",
+      "lifecycle": "Callable metadata is prepared once for stream IDs 0 and 1; each repeat runs both callables serially, validates copied-back data, and records wall-time distribution.",
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py",
+          "symbols": [
+            "pto_stream_serial",
+            "run_stream_concurrency_benchmark"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pto_stream_parallel",
+      "name": "PTO host_schedule parallel streams",
+      "category": "pto_runtime",
+      "launch_model": "host CUDA async API parallel stream launches",
+      "runtime_flow": "The benchmark launches two prepared host_schedule callables from host threads onto separate CUDA streams to test independent callable concurrency.",
+      "lifecycle": "Callable metadata is prepared once for stream IDs 0 and 1; each repeat runs both callables concurrently, validates copied-back data, and records wall-time distribution.",
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py",
+          "symbols": [
+            "pto_stream_parallel",
+            "_run_parallel_pair"
+          ]
+        }
+      ]
+    },
+    {
       "id": "pto_persistent_device",
       "name": "PTO persistent_device",
       "category": "pto_runtime",

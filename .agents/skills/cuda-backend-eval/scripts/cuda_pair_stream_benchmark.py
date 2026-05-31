@@ -41,6 +41,7 @@ class PairedStreamBenchmarkConfig:
     remote_machine: str = "dasys-h200x8"
     local_python: str = sys.executable
     remote_python: str = ".venv/bin/python"
+    remote_cuda_home: str = "/usr/local/cuda-12.8"
     ssh_connect_timeout: int = 8
     remote_git_low_speed_limit: int = 1
     remote_git_low_speed_time: int = 30
@@ -160,7 +161,14 @@ def _remote_shell_command(config: PairedStreamBenchmarkConfig, commit: str) -> s
             config=config,
         ),
     ]
-    remote_env = "CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH PYTHONPATH=$PWD:$PWD/python"
+    remote_env_parts = [
+        f"CUDA_HOME={shlex.quote(config.remote_cuda_home)}",
+        f"PATH={shlex.quote(config.remote_cuda_home)}/bin:$PATH",
+        "PYTHONPATH=$PWD:$PWD/python",
+    ]
+    if config.sync_remote_tree:
+        remote_env_parts.append(f"PTO_SOURCE_COMMIT={shlex.quote(commit)}")
+    remote_env = " ".join(remote_env_parts)
     fetch_command = (
         f"timeout {config.remote_git_fetch_timeout} "
         "git "
@@ -335,6 +343,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--remote-machine", default="dasys-h200x8")
     parser.add_argument("--local-python", default=sys.executable)
     parser.add_argument("--remote-python", default=".venv/bin/python")
+    parser.add_argument("--remote-cuda-home", default="/usr/local/cuda-12.8")
     parser.add_argument("--ssh-connect-timeout", type=int, default=8)
     parser.add_argument("--remote-git-low-speed-limit", type=int, default=1)
     parser.add_argument("--remote-git-low-speed-time", type=int, default=30)
@@ -362,6 +371,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         remote_machine=args.remote_machine,
         local_python=args.local_python,
         remote_python=args.remote_python,
+        remote_cuda_home=args.remote_cuda_home,
         ssh_connect_timeout=args.ssh_connect_timeout,
         remote_git_low_speed_limit=args.remote_git_low_speed_limit,
         remote_git_low_speed_time=args.remote_git_low_speed_time,

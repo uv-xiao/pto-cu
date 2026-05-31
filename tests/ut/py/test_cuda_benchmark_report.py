@@ -5150,7 +5150,10 @@ def test_cuda_pair_stream_benchmark_builds_a100_h200_workflow(tmp_path):
     assert "cd /remote/pto-cu" in remote_shell
     assert "fetch origin design/nvidia-backend" in remote_shell
     assert "git checkout -B design/nvidia-backend FETCH_HEAD >/dev/null" in remote_shell
-    assert "CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH PYTHONPATH=$PWD:$PWD/python" in remote_shell
+    assert (
+        "CUDA_HOME=/usr/local/cuda-12.8 PATH=/usr/local/cuda-12.8/bin:$PATH "
+        "PYTHONPATH=$PWD:$PWD/python"
+    ) in remote_shell
     assert "--stream-concurrency" in remote_shell
     assert "--stream-pool-size 6" in remote_shell
     assert "--repeats 2" in remote_shell
@@ -5207,6 +5210,20 @@ def test_cuda_pair_stream_benchmark_merge_command_records_sanitized_examples(tmp
     assert any(example.startswith("local_sample=env PYTHONPATH=$PWD:$PWD/python") for example in examples)
     assert any(example.startswith("remote_sample=ssh") and "--stream-concurrency" in example for example in examples)
     assert any(example.startswith("sync_remote_tree=rsync") for example in examples)
+
+
+def test_cuda_pair_stream_benchmark_sync_remote_tree_records_source_commit():
+    cuda_pair_stream_benchmark = _load_pair_stream_benchmark_module()
+    config = cuda_pair_stream_benchmark.PairedStreamBenchmarkConfig(
+        sync_remote_tree=True,
+    )
+
+    remote_shell = cuda_pair_stream_benchmark.build_remote_benchmark_command(
+        config,
+        "abc123",
+    )[-1]
+
+    assert "PTO_SOURCE_COMMIT=abc123" in remote_shell
 
 
 def test_cuda_tensor_shape_sweep_builds_single_baseline_commands(tmp_path):

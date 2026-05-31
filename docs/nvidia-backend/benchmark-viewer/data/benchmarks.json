@@ -32,6 +32,36 @@
       ]
     },
     {
+      "id": "host_schedule_stream_concurrency",
+      "title": "Host-Schedule Stream Concurrency",
+      "description": "Runs two independent host_schedule callables serially and from host threads onto separate CUDA streams to measure stream-pool concurrency behavior.",
+      "math": "Each callable runs out[i] = a[i] + b[i] for one slow vector element. The comparison is wall-time ratio: parallel / serial for the same two-callable work.",
+      "code": "stream_ids = [0, 1]\nserial = run(callable0); run(callable1)\nparallel = thread(run(callable0)) + thread(run(callable1))",
+      "run": {
+        "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py --stream-concurrency --device 0 --repeats 10 --arch compute_80 --stream-pool-size 6",
+        "inputs": {
+          "shape": "two independent n=1 vector kernels",
+          "dtype": "float32",
+          "repeat_policy": "10-repeat stream-concurrency capture"
+        }
+      },
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py",
+          "symbols": [
+            "run_stream_concurrency_benchmark",
+            "pto_stream_parallel"
+          ]
+        },
+        {
+          "path": "tests/ut/py/test_cuda_backend.py",
+          "symbols": [
+            "independent_callables_on_multiple_streams"
+          ]
+        }
+      ]
+    },
+    {
       "id": "graph_layered_cross",
       "title": "Persistent Layered-Cross Graph",
       "description": "Runs a nine-task explicit graph descriptor through the CUDA persistent-device runtime to validate multi-root, multi-fan-in, and scratch-lifetime behavior.",

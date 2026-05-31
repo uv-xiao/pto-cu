@@ -258,6 +258,24 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
                 "device_wall_ns": 70,
                 "status": "pass",
             },
+            {
+                "machine": "hina",
+                "baseline": "pto_stream_serial",
+                "n": 2,
+                "task_count": 1,
+                "host_wall_ns": 300,
+                "device_wall_ns": 300,
+                "status": "pass",
+            },
+            {
+                "machine": "hina",
+                "baseline": "pto_stream_parallel",
+                "n": 2,
+                "task_count": 1,
+                "host_wall_ns": 160,
+                "device_wall_ns": 160,
+                "status": "pass",
+            },
         ],
     }
     capture_path = tmp_path / "cuda-benchmark.json"
@@ -320,6 +338,18 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
         and record["method_id"] == "direct_runtime"
         and record["hardware"]["gpu"] == "A100"
         and record["inputs"]["dtype"] == "float32 naive SGEMM"
+        for record in records
+    )
+    assert any(
+        record["benchmark_id"] == "host_schedule_stream_concurrency"
+        and record["method_id"] == "pto_stream_serial"
+        and record["inputs"]["shape"] == "two independent n=1 vector kernels"
+        for record in records
+    )
+    assert any(
+        record["benchmark_id"] == "host_schedule_stream_concurrency"
+        and record["method_id"] == "pto_stream_parallel"
+        and record["inputs"]["shape"] == "two independent n=1 vector kernels"
         for record in records
     )
 
