@@ -1,0 +1,63 @@
+diff --git a/include/mirage/persistent_kernel/profiler.h b/include/mirage/persistent_kernel/profiler.h
+index cc04646..c4f5fb4 100644
+--- a/include/mirage/persistent_kernel/profiler.h
++++ b/include/mirage/persistent_kernel/profiler.h
+@@ -104,57 +104,17 @@ struct ProfilerEntry {
+ #define TB_SLEEP_MS(ms) tb::sleep_cycles((ms)*1000000)
+ #define TB_SLEEP_US(us) tb::sleep_cycles((us)*1000)
+
+-#define PROFILER_CLOSURE_PARAMS_DECL                                           \
+-  volatile tb::ProfilerEntry entry;                                            \
+-  uint64_t *profiler_write_ptr;                                                \
+-  uint32_t profiler_write_stride;                                              \
+-  uint32_t profiler_entry_tag_base;                                            \
+-  bool profiler_write_thread_predicate;
++#define PROFILER_CLOSURE_PARAMS_DECL
+
+ // #define PROFILER_PARAMS_DECL uint64_t *profiler_buffer;
+
+ #define PROFILER_INIT(                                                         \
+     profiler_buffer, group_idx, num_groups, write_thread_predicate)            \
+-  if (tb::get_block_idx() == 0 && tb::get_thread_idx() == 0) {                 \
+-    entry.nblocks = tb::get_num_blocks();                                      \
+-    entry.ngroups = num_groups;                                                \
+-    profiler_buffer[0] = entry.raw;                                            \
+-  }                                                                            \
+-  profiler_write_ptr =                                                         \
+-      profiler_buffer + 1 + tb::get_block_idx() * num_groups + group_idx;      \
+-  profiler_write_stride = tb::get_num_blocks() * num_groups;                   \
+-  profiler_entry_tag_base =                                                    \
+-      tb::encode_tag(tb::get_block_idx() * num_groups + group_idx, 0, 0);      \
+-  profiler_write_thread_predicate = write_thread_predicate;
+
+ #define PROFILER_EVENT_START(event, event_no)                                  \
+-  if (profiler_write_thread_predicate) {                                       \
+-    entry.tag =                                                                \
+-        tb::make_event_tag_start(profiler_entry_tag_base, event, event_no);    \
+-    entry.delta_time = tb::get_timestamp();                                    \
+-    *profiler_write_ptr = entry.raw;                                           \
+-    profiler_write_ptr += profiler_write_stride;                               \
+-  }                                                                            \
+-  __threadfence_block();
+
+ #define PROFILER_EVENT_END(event, event_no)                                    \
+-  __threadfence_block();                                                       \
+-  if (profiler_write_thread_predicate) {                                       \
+-    entry.tag =                                                                \
+-        tb::make_event_tag_end(profiler_entry_tag_base, event, event_no);      \
+-    entry.delta_time = tb::get_timestamp();                                    \
+-    *profiler_write_ptr = entry.raw;                                           \
+-    profiler_write_ptr += profiler_write_stride;                               \
+-  }
+
+ #define PROFILER_EVENT_INSTANT(event, event_no)                                \
+-  __threadfence_block();                                                       \
+-  if (profiler_write_thread_predicate) {                                       \
+-    entry.tag =                                                                \
+-        tb::make_event_tag_instant(profiler_entry_tag_base, event, event_no);  \
+-    entry.delta_time = tb::get_timestamp();                                    \
+-    *profiler_write_ptr = entry.raw;                                           \
+-  }                                                                            \
+-  __threadfence_block();
+
+ } // namespace tb

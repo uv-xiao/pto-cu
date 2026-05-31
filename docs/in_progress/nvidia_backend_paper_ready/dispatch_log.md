@@ -1806,3 +1806,40 @@ Each entry must include:
   yet coexist. The next MPK slice should explain why `--profiling` changes
   persistent token/step state before importing scheduler, resource-policy, or
   latency rows.
+
+### 2026-06-01 - MPK Profile No-Op Diagnostic
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned MPK
+  profile-mode diagnostic.
+- Exact Codex command or script invocation: ran the H200 patched MPK Qwen3
+  0.6B persistent demo with `--max-new-tokens 2 --max-seq-length 41`,
+  offline Hugging Face cache, one request, one batched token, `--ignore-eos`,
+  `--use-mirage`, `--profiling`, and Perfetto trace export under
+  `tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/profile-write-diagnostic-034bada3/`.
+  The first variant no-oped profiler event writes while keeping profiler init;
+  the second variant no-oped `PROFILER_CLOSURE_PARAMS_DECL`, `PROFILER_INIT`,
+  and all event macros.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready MPK baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, committed baseline patch files, and local
+  `tmp/` raw artifacts. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the diagnostic uses carried local MPK
+  baseline patches. Both no-op variants exit 0 but report predecode `step=1`
+  and saved `generate_length=0`, so they are not paper-grade evidence.
+- Verification commands and results: the focused TDD test first failed because
+  `mpk_qwen3_0p6b_profile_noop_diagnostic_h200` was absent from viewer data
+  and the derived readiness files still referenced the bounded-profile
+  attempt.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: profiler event writes and Perfetto
+  export are no longer sufficient root-cause explanations. The next MPK slice
+  should identify why `-DMPK_ENABLE_PROFILING` or profile mode corrupts
+  token/step state before importing scheduler, resource-policy, or latency
+  rows.

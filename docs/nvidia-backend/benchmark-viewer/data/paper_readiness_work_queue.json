@@ -52,9 +52,9 @@
       "owner": "mpk_persistent_scheduler_trace",
       "paper_baseline_id": "mpk",
       "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
-      "execution_attempt_id": "mpk_qwen3_0p6b_bounded_profile_diagnostic_h200",
+      "execution_attempt_id": "mpk_qwen3_0p6b_profile_noop_diagnostic_h200",
       "status": "partial",
-      "action": "Resolve latest execution attempt mpk_qwen3_0p6b_bounded_profile_diagnostic_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: MPK profiling and correctness do not yet coexist for the bounded-decode workload. Do not import paper-grade MPK scheduler/resource/latency rows until the profiling path can export a trace while preserving the same prompt/decode token state as the non-profiled bounded run.",
+      "action": "Resolve latest execution attempt mpk_qwen3_0p6b_profile_noop_diagnostic_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: The MPK profile compile path still corrupts token progress even when profiler event writes and init macros are no-oped. Do not import paper-grade MPK scheduler/resource/latency rows until --profiling preserves the same bounded-decode prompt/decode token state as the non-profiled run.",
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },
     {
