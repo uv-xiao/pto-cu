@@ -131,7 +131,8 @@
       "current_blockers": [
         "VDCores extension and model path still need captured H200 run artifacts.",
         "vLLM and SGLang packages are not yet installed for H200 serving capture.",
-        "ThunderKittens has a bounded decode-attention command contract, but not the full Llama/Qwen serving-family sweep."
+        "ThunderKittens has a bounded decode-attention command contract, but not the full Llama/Qwen serving-family sweep.",
+        "PTO persistent_device has an imported controlled attention-tile proxy; a full Llama/Qwen serving-family PTO sweep remains absent."
       ],
       "evidence_refs": [
         {
@@ -155,6 +156,13 @@
           "symbols": [
             "Qwen/Qwen3-1.7B",
             "HF_TOKEN"
+          ]
+        },
+        {
+          "path": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+          "symbols": [
+            "pto_controlled_serving_equivalent",
+            "vdcores_offline_decode attention tile proxy"
           ]
         }
       ]

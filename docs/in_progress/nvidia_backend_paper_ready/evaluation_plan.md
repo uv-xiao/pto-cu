@@ -226,6 +226,14 @@ accidentally use a globally installed SGLang package. ThunderKittens rows use
 the bounded MHA capture wrapper as a controlled serving-family kernel baseline
 for the VDCores decode policy.
 
+The viewer also includes one PTO `persistent_device` controlled
+serving-equivalent row for `vdcores_offline_decode`: a H200 tensor-core
+persistent DAG capture mapped to batch 4, 128 prompt tokens, and 64 decode
+tokens. This proves the PTO side has a reviewable serving-policy-shaped row,
+but it is still only an attention-tile proxy. Full MPK, VDCores, vLLM, SGLang,
+ThunderKittens-family, and end-to-end PTO serving artifacts remain required
+before the LLM serving claim can be paper-ready.
+
 Before full baseline builds, paper-baseline readiness probes can be captured
 with `.agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py`. The
 probe checks pinned source commits, selected entrypoint paths, Python syntax,

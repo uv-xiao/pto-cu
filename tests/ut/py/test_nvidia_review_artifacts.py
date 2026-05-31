@@ -2272,6 +2272,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert serving_by_id["vdcores_offline_decode"]["prompt_policy"][
         "target_prompt_tokens"
     ] == 128
+    assert any(
+        ref["path"] == "docs/nvidia-backend/benchmark-viewer/data/results.json"
+        and "pto_controlled_serving_equivalent" in ref["symbols"]
+        for ref in serving_by_id["vdcores_offline_decode"]["evidence_refs"]
+    )
     for workload in serving_workloads["serving_workloads"]:
         assert workload["baseline_run_ids"]
         assert workload["required_metrics"]
@@ -2594,6 +2599,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 "Selected shared model" in gap
                 for gap in item["missing_evidence"]
             )
+            assert not any(
+                "PTO CUDA serving workload" in gap
+                for gap in item["missing_evidence"]
+            )
             assert any(
                 ref.get("path")
                 == "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json"
@@ -2602,6 +2611,13 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert any(
                 ref.get("path")
                 == "docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json"
+                for ref in item["current_evidence_refs"]
+            )
+            assert any(
+                ref.get("kind") == "viewer_result"
+                and ref.get("benchmark_id") == "llm_serving_decode"
+                and ref.get("method_id") == "pto_persistent_device"
+                and ref.get("gpu") == "H200"
                 for ref in item["current_evidence_refs"]
             )
 
@@ -2977,6 +2993,23 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert any(path.suffix == ".json" for path in raw_artifact.iterdir())
         else:
             assert raw_artifact.suffix == ".json"
+    pto_serving_equivalent = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "pto_persistent_device"
+        and record["hardware"]["gpu"] == "H200"
+    ]
+    assert len(pto_serving_equivalent) == 1
+    assert (
+        pto_serving_equivalent[0]["inputs"]["shape"]
+        == "controlled serving-equivalent: vdcores_offline_decode attention tile proxy, batch=4, prompt_tokens=128, decode_tokens=64"
+    )
+    assert (
+        pto_serving_equivalent[0]["statistic"]["kind"]
+        == "pto_controlled_serving_equivalent"
+    )
+    assert pto_serving_equivalent[0]["statistic"]["throughput_tokens_per_s"] > 0
     assert {"A100", "H200"} <= {
         item["gpu"] for item in results["headline_results"]
     }

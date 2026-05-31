@@ -1487,3 +1487,39 @@ Each entry must include:
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: generated review artifacts now have one
   refresh command. The paper-readiness audit still has 13 queued actions.
+
+### 2026-05-31 - PTO Serving-Equivalent Evidence
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  LLM-serving paper-readiness evidence slice.
+- Exact Codex command or script invocation:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest
+  tests/ut/py/test_nvidia_review_artifacts.py::test_benchmark_viewer_has_json_backed_review_data
+  -q` first failed after adding the expected PTO serving-equivalent contract.
+  `.agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py`
+  then regenerated the derived audit, work queue, and goal progress JSON after
+  the data update.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, benchmark-viewer evidence
+  and paper-ready evaluation planning slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, focused review tests, goal
+  docs, dispatch log, and changelog docs. No upstream repositories were
+  edited.
+- Dependencies and blocked assumptions: the PTO result is a controlled H200
+  attention-tile proxy for `vdcores_offline_decode`, not an end-to-end LLM
+  serving run. Full paper-grade serving still needs MPK, VDCores, vLLM,
+  SGLang, ThunderKittens-family, and PTO serving artifacts imported from raw
+  H200 runs.
+- Verification commands and results: the focused TDD test failed before the
+  data update and passed afterward. Broader guard results are recorded in the
+  commit summary for this slice.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the LLM serving matrix now has PTO
+  `persistent_device` H200 controlled serving-equivalent evidence. The
+  work queue drops the LLM serving blocker count from 13 to 12 and keeps the
+  remaining raw-baseline import action visible.

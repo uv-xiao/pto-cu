@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-05-31 PTO serving-equivalent evidence](2026-05-31-pto-serving-equivalent-evidence.md)
 - [2026-05-31 ultimate goal setup](2026-05-31-ultimate-goal.md)
 - [2026-05-31 review artifact refresh](2026-05-31-review-artifact-refresh.md)
 - [2026-05-31 goal progress audit](2026-05-31-goal-progress-audit.md)

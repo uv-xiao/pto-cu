@@ -246,9 +246,11 @@
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
         "baseline_survey": 1,
-        "viewer_data": 3
+        "raw_artifact": 1,
+        "viewer_data": 3,
+        "viewer_result": 1
       },
-      "missing_evidence_count": 2,
+      "missing_evidence_count": 1,
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {
@@ -477,7 +479,6 @@
         }
       ],
       "blockers": [
-        "PTO CUDA serving workload or controlled serving-equivalent workload.",
         "MPK, VDCores, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records.",
         "Paper baseline run mpk_qwen3_native_vs_persistent is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vdcores_llama_decode_correctness is planned_not_run, not imported_to_viewer.",
@@ -495,7 +496,7 @@
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
-          "action": "PTO CUDA serving workload or controlled serving-equivalent workload."
+          "action": "MPK, VDCores, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records."
         },
         {
           "source": "run_readiness",

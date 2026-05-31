@@ -337,6 +337,7 @@
       "claim": "Paper-level PTO CUDA claims require a shared serving workload against MPK, VDCores, vLLM, SGLang, and ThunderKittens-family baselines.",
       "status": "planned_no_results",
       "workload_ids": [
+        "llm_serving_decode",
         "graph_layered_cross",
         "tensor_core_tile"
       ],
@@ -373,17 +374,26 @@
           "kind": "viewer_data",
           "path": "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
         },
-      {
-        "kind": "viewer_data",
-        "path": "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json"
-      },
-      {
-        "kind": "viewer_data",
-        "path": "docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json"
-      }
-    ],
+        {
+          "kind": "viewer_data",
+          "path": "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json"
+        },
+        {
+          "kind": "viewer_data",
+          "path": "docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "pto_persistent_device",
+          "gpu": "H200"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/graph-tensor-core-compact-current-working/combined-current-493ce832/"
+        }
+      ],
       "missing_evidence": [
-        "PTO CUDA serving workload or controlled serving-equivalent workload.",
         "MPK, VDCores, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records."
       ],
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
