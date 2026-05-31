@@ -16,6 +16,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-05-31 MPK reproducibility patches](2026-05-31-mpk-reproducibility-patches.md)
 - [2026-05-31 MPK workload metadata sweep](2026-05-31-mpk-workload-metadata-sweep.md)
 - [2026-05-31 MPK bounded decode](2026-05-31-mpk-bounded-decode.md)
+- [2026-06-01 MPK bounded profile diagnostic](2026-06-01-mpk-bounded-profile-diagnostic.md)
 - [2026-05-31 VDCores Qwen resource contract](2026-05-31-vdcores-qwen-resource-contract.md)
 - [2026-05-31 VDCores Qwen correctness fetch blocker](2026-05-31-vdcores-qwen-correctness-fetch-blocker.md)
 - [2026-05-31 VDCores Qwen runtime rebuild](2026-05-31-vdcores-qwen-runtime-rebuild.md)

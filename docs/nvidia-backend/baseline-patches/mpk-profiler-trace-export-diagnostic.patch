@@ -1,0 +1,63 @@
+diff --git a/demo/qwen3/demo.py b/demo/qwen3/demo.py
+index 1b7c7d3..eccaf2e 100644
+--- a/demo/qwen3/demo.py
++++ b/demo/qwen3/demo.py
+@@ -284,7 +284,7 @@ if __name__ == "__main__":
+
+         if args.profiling:
+             profiler_tensor = torch.zeros(
+-                3000 * 128, dtype=torch.uint64, device="cuda"
++                30000 * 256, dtype=torch.uint64, device="cuda"
+             ).contiguous()
+         else:
+             profiler_tensor = None
+diff --git a/python/mirage/mpk/persistent_kernel.py b/python/mirage/mpk/persistent_kernel.py
+index faeafc1..83cf338 100644
+--- a/python/mirage/mpk/persistent_kernel.py
++++ b/python/mirage/mpk/persistent_kernel.py
+@@ -2699,6 +2699,7 @@ class PersistentKernel:
+         self.launch_func(stream_ptr)
+         if self.profiler_tensor is not None:
+             from .profiler_persistent import export_to_perfetto_trace
++            torch.cuda.synchronize()
+
+             if self.trace_name:
+                 trace_name = self.trace_name + ".perfetto-trace"
+diff --git a/python/mirage/mpk/profiler_persistent.py b/python/mirage/mpk/profiler_persistent.py
+index 764f4e2..97e8005 100644
+--- a/python/mirage/mpk/profiler_persistent.py
++++ b/python/mirage/mpk/profiler_persistent.py
+@@ -134,14 +134,24 @@ def export_to_perfetto_trace(
+
+     tgen = TraceGenerator(file_name)
+
++    block_map = {}
+     tid_map = {}
+     track_map = {}
+     for block_idx in range(num_blocks):
+         pid = tgen.create_group(f"block_{block_idx}")
++        block_map[block_idx] = pid
+         for group_idx in range(num_groups):
+             tid = pid.create_group(f"group_{group_idx}")
+             tid_map[(block_idx, group_idx)] = tid
+
++    def get_tid(block_idx, group_idx):
++        if block_idx not in block_map:
++            block_map[block_idx] = tgen.create_group(f"block_{block_idx}")
++        key = (block_idx, group_idx)
++        if key not in tid_map:
++            tid_map[key] = block_map[block_idx].create_group(f"group_{group_idx}")
++        return tid_map[key]
++
+     for i in range(1, len(profiler_buffer_host)):
+         if profiler_buffer_host[i] == 0:
+             continue
+@@ -154,7 +164,7 @@ def export_to_perfetto_trace(
+         )
+
+         event = event_name_list[event_idx] + f"_{event_no}"
+-        tid = tid_map[(block_idx, group_idx)]
++        tid = get_tid(block_idx, group_idx)
+
+         if (block_idx, group_idx, event_idx) in track_map:
+             track = track_map[(block_idx, group_idx, event_idx)]

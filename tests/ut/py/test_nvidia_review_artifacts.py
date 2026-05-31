@@ -1871,8 +1871,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     }
     assert persistent_attempts["mpk_persistent_scheduler_trace"][
         "execution_attempt_id"
-    ] == "mpk_qwen3_0p6b_bounded_decode_h200"
-    assert "scheduler/resource/latency" in persistent_attempts[
+    ] == "mpk_qwen3_0p6b_bounded_profile_diagnostic_h200"
+    assert "profiling and correctness do not yet coexist" in persistent_attempts[
         "mpk_persistent_scheduler_trace"
     ]["blocker"]
     assert persistent_attempts["vdcores_resource_policy_trace"][
@@ -1883,7 +1883,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     ]["blocker"]
     assert any(
         "Latest execution attempt "
-        "mpk_qwen3_0p6b_bounded_decode_h200"
+        "mpk_qwen3_0p6b_bounded_profile_diagnostic_h200"
         in blocker
         for blocker in persistent_claim["blockers"]
     )
@@ -1891,8 +1891,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         action["source"] == "execution_attempt"
         and action["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
         and action["execution_attempt_id"]
-        == "mpk_qwen3_0p6b_bounded_decode_h200"
-        and "scheduler/resource/latency" in action["action"]
+        == "mpk_qwen3_0p6b_bounded_profile_diagnostic_h200"
+        and "profiling and correctness do not yet coexist" in action["action"]
         for action in persistent_claim["next_actions"]
     )
     assert not any(
@@ -2014,8 +2014,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
         and item["execution_attempt_id"]
-        == "mpk_qwen3_0p6b_bounded_decode_h200"
-        and "scheduler/resource/latency" in item["action"]
+        == "mpk_qwen3_0p6b_bounded_profile_diagnostic_h200"
+        and "profiling and correctness do not yet coexist" in item["action"]
         for item in work_items
     )
     assert any(
@@ -2706,6 +2706,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200",
         "mpk_qwen3_0p6b_workload_metadata_sweep_h200",
         "mpk_qwen3_0p6b_bounded_decode_h200",
+        "mpk_qwen3_0p6b_bounded_profile_diagnostic_h200",
         "vdcores_qwen3_1p7b_dry_build_h200",
         "vdcores_qwen3_1p7b_correctness_hf_timeout_h200",
         "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200",
@@ -2858,6 +2859,35 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert not mpk_bounded["summary"]["resource_policy_measured"]
     assert "bounded-decode-summary.json" in " ".join(mpk_bounded["artifacts"])
     assert "scheduler/resource/latency" in mpk_bounded["blocker"]
+    mpk_profile = attempts_by_id[
+        "mpk_qwen3_0p6b_bounded_profile_diagnostic_h200"
+    ]
+    profile_patch = (
+        "docs/nvidia-backend/baseline-patches/"
+        "mpk-profiler-trace-export-diagnostic.patch"
+    )
+    assert mpk_profile["status"] == "partial"
+    assert mpk_profile["summary"]["mode"] == (
+        "mpk_qwen3_0p6b_bounded_profile_diagnostic"
+    )
+    assert mpk_profile["summary"]["profile_export_without_patch_status"] == 1
+    assert mpk_profile["summary"]["profile_export_key_error"] == "KeyError: (16, 0)"
+    assert mpk_profile["summary"]["profile_export_patch_status"] == 0
+    assert mpk_profile["summary"]["large_buffer_status"] == 0
+    assert mpk_profile["summary"]["perfetto_trace_exported"]
+    assert mpk_profile["summary"]["perfetto_trace_bytes"] > 400000
+    assert mpk_profile["summary"]["profiled_run_generated_length"] == 0
+    assert mpk_profile["summary"]["profiled_predecode_step"] == 1
+    assert not mpk_profile["summary"]["profiling_preserves_correctness"]
+    assert "mpk_bounded_decode.perfetto-trace" in " ".join(
+        mpk_profile["artifacts"]
+    )
+    assert profile_patch in mpk_profile["reproducibility_patches"]
+    profile_patch_text = (ROOT / profile_patch).read_text(encoding="utf-8")
+    assert "get_tid" in profile_patch_text
+    assert "torch.cuda.synchronize" in profile_patch_text
+    assert "30000 * 256" in profile_patch_text
+    assert "profiling and correctness do not yet coexist" in mpk_profile["blocker"]
     vdcores_attempt = attempts_by_id["vdcores_qwen3_1p7b_dry_build_h200"]
     assert vdcores_attempt["status"] == "partial"
     assert vdcores_attempt["summary"]["layers"] == 28

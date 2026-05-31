@@ -1764,3 +1764,45 @@ Each entry must include:
   moves from decode-length matching to scheduler/resource/latency import for
   the bounded-decode workload. Paper-grade MPK scheduler evidence remains
   partial until those metrics are captured and imported.
+
+### 2026-06-01 - MPK Bounded Profile Diagnostic
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned MPK
+  scheduler-trace diagnostic.
+- Exact Codex command or script invocation: ran the H200 patched MPK Qwen3
+  0.6B persistent demo with `--max-new-tokens 2 --max-seq-length 41`,
+  offline Hugging Face cache, one request, one batched token, `--ignore-eos`,
+  `--use-mirage`, `--profiling`, and Perfetto trace export under
+  `tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-profile-9668bcef/`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready MPK baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, committed baseline patch files, and local
+  `tmp/` raw artifacts. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the diagnostic uses carried local MPK
+  baseline patches. The unpatched profiler exporter reaches kernel launch but
+  fails with `KeyError: (16, 0)`. The profiler diagnostic patch exports a
+  Perfetto trace, but the profiled run reports predecode `step=1` and saved
+  `generate_length=0`, so it is not paper-grade evidence.
+- Verification commands and results: the focused TDD test first failed because
+  `mpk_qwen3_0p6b_bounded_profile_diagnostic_h200` was absent from viewer
+  data. After adding the execution attempt and refreshing derived artifacts,
+  the focused tests passed:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest
+  tests/ut/py/test_nvidia_review_artifacts.py::test_benchmark_viewer_has_json_backed_review_data
+  tests/ut/py/test_nvidia_review_artifacts.py::test_paper_readiness_audit_matches_current_viewer_data
+  tests/ut/py/test_nvidia_review_artifacts.py::test_paper_readiness_work_queue_matches_current_audit
+  -q` -> `3 passed`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: MPK profiling trace export can now be
+  diagnosed with a reproducible patch, but profiling and correctness do not
+  yet coexist. The next MPK slice should explain why `--profiling` changes
+  persistent token/step state before importing scheduler, resource-policy, or
+  latency rows.
