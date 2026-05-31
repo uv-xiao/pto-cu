@@ -62,6 +62,8 @@ class GraphReplaySweepConfig:
     output_root: Path = Path("tmp/cuda-backend")
     local_device: int = 0
     remote_device: int = 0
+    local_machine: str = "hina"
+    remote_machine: str = "dasys-h200x8"
     sizes: tuple[int, ...] = (1024, 4096, 65536)
     repeats: int = 10
     baselines: tuple[str, ...] = GRAPH_REPLAY_BASELINES
@@ -277,6 +279,7 @@ def _tensor_tile(config: GraphReplaySweepConfig) -> dict[str, int]:
 def _dry_run_sample(
     *,
     artifact: str,
+    machine: str,
     baseline: str,
     n: int,
     repeat: int,
@@ -284,7 +287,7 @@ def _dry_run_sample(
 ) -> dict[str, Any]:
     row: dict[str, Any] = {
         "artifact": artifact,
-        "machine": artifact,
+        "machine": machine,
         "baseline": baseline,
         "n": n,
         "task_count": 1,
@@ -304,6 +307,7 @@ def _run_sample(
     command: list[str],
     *,
     artifact: str,
+    machine: str,
     baseline: str,
     n: int,
     repeat: int,
@@ -315,6 +319,7 @@ def _run_sample(
     if dry_run:
         return _dry_run_sample(
             artifact=artifact,
+            machine=machine,
             baseline=baseline,
             n=n,
             repeat=repeat,
@@ -323,7 +328,7 @@ def _run_sample(
     result = runner(command, check=True, capture_output=True, text=True)
     sample = _sample_from_stdout(result.stdout)
     sample["artifact"] = artifact
-    sample.setdefault("machine", artifact)
+    sample["machine"] = machine
     sample.setdefault("baseline", baseline)
     sample.setdefault("n", n)
     sample["repeat"] = repeat
@@ -388,9 +393,9 @@ def build_validate_command(
         ".agents/skills/cuda-backend-eval/scripts/cuda_validate_capture.py",
         str(output_dir_for(config, commit) / "cuda-benchmark.json"),
         "--require-machine",
-        "hina",
+        config.local_machine,
         "--require-machine",
-        "dasys-h200x8",
+        config.remote_machine,
         "--require-size",
         _csv(config.sizes),
         "--expected-repeats",
@@ -429,6 +434,7 @@ def run_graph_replay_sweep(
                     _run_sample(
                         build_local_sample_command(config, baseline=baseline, n=n),
                         artifact="a100",
+                        machine=config.local_machine,
                         baseline=baseline,
                         n=n,
                         repeat=repeat,
@@ -446,6 +452,7 @@ def run_graph_replay_sweep(
                             commit=commit,
                         ),
                         artifact="h200",
+                        machine=config.remote_machine,
                         baseline=baseline,
                         n=n,
                         repeat=repeat,
@@ -489,6 +496,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output-root", type=Path, default=Path("tmp/cuda-backend"))
     parser.add_argument("--local-device", type=int, default=0)
     parser.add_argument("--remote-device", type=int, default=0)
+    parser.add_argument("--local-machine", default="hina")
+    parser.add_argument("--remote-machine", default="dasys-h200x8")
     parser.add_argument("--sizes", type=_parse_int_tuple, default=(1024, 4096, 65536))
     parser.add_argument("--repeats", type=int, default=10)
     parser.add_argument("--baselines", type=_parse_baselines, default=GRAPH_REPLAY_BASELINES)
@@ -519,6 +528,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         output_root=args.output_root,
         local_device=args.local_device,
         remote_device=args.remote_device,
+        local_machine=args.local_machine,
+        remote_machine=args.remote_machine,
         sizes=args.sizes,
         repeats=args.repeats,
         baselines=args.baselines,

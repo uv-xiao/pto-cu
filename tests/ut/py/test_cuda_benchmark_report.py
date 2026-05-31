@@ -5328,6 +5328,10 @@ def test_cuda_graph_replay_sweep_dry_run_records_source_papers(tmp_path):
     assert {
         row["baseline"] for row in payload["results"]
     } == {"direct_driver_graph", "direct_driver_graph_sgemm"}
+    assert {row["machine"] for row in payload["results"]} == {
+        "hina",
+        "dasys-h200x8",
+    }
     assert len(payload["results"]) == 16
     assert payload["metadata"]["source_papers"]
     assert "sync_remote_tree" in payload["metadata"]["command_examples"]
