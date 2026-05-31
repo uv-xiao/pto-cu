@@ -78,7 +78,7 @@
     {
       "id": "vdcores_offline_decode",
       "title": "VDCores-Comparable Offline Decode",
-      "status": "policy_selected_no_results",
+      "status": "partial_controlled_results",
       "paper_source": {
         "paper": "VDCores",
         "evidence": "tmp/sources/arxiv-2605.03190-vdcores.txt",
@@ -131,7 +131,7 @@
       "current_blockers": [
         "VDCores extension and model path still need captured H200 run artifacts.",
         "vLLM and SGLang packages are not yet installed for H200 serving capture.",
-        "ThunderKittens has a bounded decode-attention command contract, but not the full Llama/Qwen serving-family sweep.",
+        "ThunderKittens has imported padded H100 MHA decode-attention tile rows for the policy batch ladder, but not the full Llama/Qwen serving-family sweep.",
         "PTO persistent_device has an imported controlled attention-tile proxy; a full Llama/Qwen serving-family PTO sweep remains absent."
       ],
       "evidence_refs": [
@@ -162,6 +162,7 @@
           "path": "docs/nvidia-backend/benchmark-viewer/data/results.json",
           "symbols": [
             "pto_controlled_serving_equivalent",
+            "paper_baseline_serving_tile_capture",
             "vdcores_offline_decode attention tile proxy"
           ]
         }

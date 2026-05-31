@@ -400,7 +400,10 @@ prepend the pinned
 `tmp/baselines/sglang/python` checkout to `PYTHONPATH`, so command plans do not
 silently use a globally installed SGLang package. ThunderKittens rows use the
 bounded MHA capture wrapper as a controlled serving-equivalent kernel baseline
-for the VDCores decode policy:
+for the VDCores decode policy. The H100 MHA wrapper needs `n>=256` to produce
+a nonzero kernel grid, so the VDCores 64-token decode policy is captured as
+`B,1,256,64` while `--prompt-tokens 128` and `--decode-tokens 64` preserve
+the serving-policy metadata in the imported viewer row:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

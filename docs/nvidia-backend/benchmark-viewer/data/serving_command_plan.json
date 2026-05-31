@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at_utc": "2026-05-31T05:41:25.331861+00:00",
-    "pto_commit": "8916b5a2",
+    "generated_at_utc": "2026-05-31T07:13:59.825975+00:00",
+    "pto_commit": "f7662782",
     "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs",
     "model_tier": "primary",
     "source_files": [
@@ -854,9 +854,9 @@
       "commands": [
         {
           "kind": "decode_attention_tile",
-          "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch1.json --machine '<h200-host>' --pto-commit '<pto-commit>' --cuda-toolkit 12.8 --shape 1,1,64,64 --warmup 5 --repeats 20 --causal",
+          "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch1.json --machine '<h200-host>' --pto-commit '<pto-commit>' --cuda-toolkit 12.8 --paper-baseline-run-id thunderkittens_decode_attention_tile --benchmark-id llm_serving_decode --serving-workload-id vdcores_offline_decode --prompt-tokens 128 --decode-tokens 64 --shape 1,1,256,64 --warmup 5 --repeats 20 --causal",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch1.json",
-          "note": "ThunderKittens is a serving-family kernel baseline here; the capture records decode-attention tile latency and throughput for the VDCores policy batch ladder."
+          "note": "ThunderKittens is a serving-family kernel baseline here; the H100 MHA wrapper pads the 64-token decode policy to n=256 so the kernel launch grid is nonzero while preserving prompt/decode metadata for the VDCores policy batch ladder."
         }
       ]
     },
@@ -874,9 +874,9 @@
       "commands": [
         {
           "kind": "decode_attention_tile",
-          "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch2.json --machine '<h200-host>' --pto-commit '<pto-commit>' --cuda-toolkit 12.8 --shape 2,1,64,64 --warmup 5 --repeats 20 --causal",
+          "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch2.json --machine '<h200-host>' --pto-commit '<pto-commit>' --cuda-toolkit 12.8 --paper-baseline-run-id thunderkittens_decode_attention_tile --benchmark-id llm_serving_decode --serving-workload-id vdcores_offline_decode --prompt-tokens 128 --decode-tokens 64 --shape 2,1,256,64 --warmup 5 --repeats 20 --causal",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch2.json",
-          "note": "ThunderKittens is a serving-family kernel baseline here; the capture records decode-attention tile latency and throughput for the VDCores policy batch ladder."
+          "note": "ThunderKittens is a serving-family kernel baseline here; the H100 MHA wrapper pads the 64-token decode policy to n=256 so the kernel launch grid is nonzero while preserving prompt/decode metadata for the VDCores policy batch ladder."
         }
       ]
     },
@@ -894,9 +894,9 @@
       "commands": [
         {
           "kind": "decode_attention_tile",
-          "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch4.json --machine '<h200-host>' --pto-commit '<pto-commit>' --cuda-toolkit 12.8 --shape 4,1,64,64 --warmup 5 --repeats 20 --causal",
+          "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch4.json --machine '<h200-host>' --pto-commit '<pto-commit>' --cuda-toolkit 12.8 --paper-baseline-run-id thunderkittens_decode_attention_tile --benchmark-id llm_serving_decode --serving-workload-id vdcores_offline_decode --prompt-tokens 128 --decode-tokens 64 --shape 4,1,256,64 --warmup 5 --repeats 20 --causal",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch4.json",
-          "note": "ThunderKittens is a serving-family kernel baseline here; the capture records decode-attention tile latency and throughput for the VDCores policy batch ladder."
+          "note": "ThunderKittens is a serving-family kernel baseline here; the H100 MHA wrapper pads the 64-token decode policy to n=256 so the kernel launch grid is nonzero while preserving prompt/decode metadata for the VDCores policy batch ladder."
         }
       ]
     },
@@ -914,9 +914,9 @@
       "commands": [
         {
           "kind": "decode_attention_tile",
-          "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch8.json --machine '<h200-host>' --pto-commit '<pto-commit>' --cuda-toolkit 12.8 --shape 8,1,64,64 --warmup 5 --repeats 20 --causal",
+          "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch8.json --machine '<h200-host>' --pto-commit '<pto-commit>' --cuda-toolkit 12.8 --paper-baseline-run-id thunderkittens_decode_attention_tile --benchmark-id llm_serving_decode --serving-workload-id vdcores_offline_decode --prompt-tokens 128 --decode-tokens 64 --shape 8,1,256,64 --warmup 5 --repeats 20 --causal",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch8.json",
-          "note": "ThunderKittens is a serving-family kernel baseline here; the capture records decode-attention tile latency and throughput for the VDCores policy batch ladder."
+          "note": "ThunderKittens is a serving-family kernel baseline here; the H100 MHA wrapper pads the 64-token decode policy to n=256 so the kernel launch grid is nonzero while preserving prompt/decode metadata for the VDCores policy batch ladder."
         }
       ]
     },
@@ -934,9 +934,9 @@
       "commands": [
         {
           "kind": "decode_attention_tile",
-          "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch16.json --machine '<h200-host>' --pto-commit '<pto-commit>' --cuda-toolkit 12.8 --shape 16,1,64,64 --warmup 5 --repeats 20 --causal",
+          "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch16.json --machine '<h200-host>' --pto-commit '<pto-commit>' --cuda-toolkit 12.8 --paper-baseline-run-id thunderkittens_decode_attention_tile --benchmark-id llm_serving_decode --serving-workload-id vdcores_offline_decode --prompt-tokens 128 --decode-tokens 64 --shape 16,1,256,64 --warmup 5 --repeats 20 --causal",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch16.json",
-          "note": "ThunderKittens is a serving-family kernel baseline here; the capture records decode-attention tile latency and throughput for the VDCores policy batch ladder."
+          "note": "ThunderKittens is a serving-family kernel baseline here; the H100 MHA wrapper pads the 64-token decode policy to n=256 so the kernel launch grid is nonzero while preserving prompt/decode metadata for the VDCores policy batch ladder."
         }
       ]
     }

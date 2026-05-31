@@ -410,6 +410,7 @@ def validate_serving_workloads(data: dict[str, Any], root: Path) -> set[str]:
 
     allowed_status = {
         "policy_selected_no_results",
+        "partial_controlled_results",
         "captured_raw",
         "imported_to_viewer",
     }

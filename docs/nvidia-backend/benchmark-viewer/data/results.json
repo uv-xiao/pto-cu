@@ -3184,6 +3184,171 @@
       },
       "raw_artifact": "tmp/cuda-backend/graph-tensor-core-compact-current-working/combined-current-493ce832/",
       "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "thunderkittens",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded"
+      },
+      "commit": "f7662782",
+      "inputs": {
+        "shape": "vdcores_offline_decode,mha_h100,b=1,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
+        "dtype": "bfloat16",
+        "repeat_policy": "5 warmup, 20 timed CUDA-event repeats"
+      },
+      "statistic": {
+        "kind": "paper_baseline_serving_tile_capture",
+        "sample_count": 20,
+        "host_wall_ns": 32127,
+        "device_wall_ns": 32127,
+        "end_to_end_latency_ns": 32127,
+        "time_to_first_token_ns": 32127,
+        "inter_token_latency_ns": 501,
+        "throughput_tokens_per_s": 1992093,
+        "batch_size": 1,
+        "prompt_tokens": 128,
+        "decode_tokens": 64
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "thunderkittens",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded"
+      },
+      "commit": "f7662782",
+      "inputs": {
+        "shape": "vdcores_offline_decode,mha_h100,b=2,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
+        "dtype": "bfloat16",
+        "repeat_policy": "5 warmup, 20 timed CUDA-event repeats"
+      },
+      "statistic": {
+        "kind": "paper_baseline_serving_tile_capture",
+        "sample_count": 20,
+        "host_wall_ns": 28767,
+        "device_wall_ns": 28767,
+        "end_to_end_latency_ns": 28767,
+        "time_to_first_token_ns": 28767,
+        "inter_token_latency_ns": 449,
+        "throughput_tokens_per_s": 4449542,
+        "batch_size": 2,
+        "prompt_tokens": 128,
+        "decode_tokens": 64
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "thunderkittens",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded"
+      },
+      "commit": "f7662782",
+      "inputs": {
+        "shape": "vdcores_offline_decode,mha_h100,b=4,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
+        "dtype": "bfloat16",
+        "repeat_policy": "5 warmup, 20 timed CUDA-event repeats"
+      },
+      "statistic": {
+        "kind": "paper_baseline_serving_tile_capture",
+        "sample_count": 20,
+        "host_wall_ns": 32384,
+        "device_wall_ns": 32384,
+        "end_to_end_latency_ns": 32384,
+        "time_to_first_token_ns": 32384,
+        "inter_token_latency_ns": 506,
+        "throughput_tokens_per_s": 7905138,
+        "batch_size": 4,
+        "prompt_tokens": 128,
+        "decode_tokens": 64
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "thunderkittens",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded"
+      },
+      "commit": "f7662782",
+      "inputs": {
+        "shape": "vdcores_offline_decode,mha_h100,b=8,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
+        "dtype": "bfloat16",
+        "repeat_policy": "5 warmup, 20 timed CUDA-event repeats"
+      },
+      "statistic": {
+        "kind": "paper_baseline_serving_tile_capture",
+        "sample_count": 20,
+        "host_wall_ns": 32320,
+        "device_wall_ns": 32320,
+        "end_to_end_latency_ns": 32320,
+        "time_to_first_token_ns": 32320,
+        "inter_token_latency_ns": 505,
+        "throughput_tokens_per_s": 15841584,
+        "batch_size": 8,
+        "prompt_tokens": 128,
+        "decode_tokens": 64
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "thunderkittens",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded"
+      },
+      "commit": "f7662782",
+      "inputs": {
+        "shape": "vdcores_offline_decode,mha_h100,b=16,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
+        "dtype": "bfloat16",
+        "repeat_policy": "5 warmup, 20 timed CUDA-event repeats"
+      },
+      "statistic": {
+        "kind": "paper_baseline_serving_tile_capture",
+        "sample_count": 20,
+        "host_wall_ns": 28799,
+        "device_wall_ns": 28799,
+        "end_to_end_latency_ns": 28799,
+        "time_to_first_token_ns": 28799,
+        "inter_token_latency_ns": 449,
+        "throughput_tokens_per_s": 35556790,
+        "batch_size": 16,
+        "prompt_tokens": 128,
+        "decode_tokens": 64
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/",
+      "correctness": "pass"
     }
   ]
 }

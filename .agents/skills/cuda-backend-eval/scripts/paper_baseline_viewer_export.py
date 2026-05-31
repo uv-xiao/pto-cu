@@ -26,6 +26,9 @@ OPTIONAL_NUMERIC_METRICS = (
     "scheduler_count",
     "worker_count",
     "max_abs_error",
+    "batch_size",
+    "prompt_tokens",
+    "decode_tokens",
 )
 OPTIONAL_STRUCTURED_METRICS = (
     "dispatch_trace",

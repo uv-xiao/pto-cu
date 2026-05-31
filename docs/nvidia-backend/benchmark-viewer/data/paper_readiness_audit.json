@@ -313,7 +313,7 @@
         {
           "id": "thunderkittens_decode_attention_tile",
           "paper_baseline_id": "thunderkittens",
-          "status": "planned_not_run",
+          "status": "imported_to_viewer",
           "serving_workload_ids": [
             "vdcores_offline_decode"
           ],
@@ -367,14 +367,6 @@
           "blocking_gaps": [
             "Readiness probe sglang_source_entrypoints is partial: A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ],
-          "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
-        },
-        {
-          "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
-          "paper_baseline_id": "thunderkittens",
-          "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-112a881d/",
-          "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }
       ],
@@ -484,7 +476,6 @@
         "Paper baseline run vdcores_llama_decode_correctness is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vllm_serving_and_throughput is planned_not_run, not imported_to_viewer.",
         "Paper baseline run sglang_serving_and_offline is planned_not_run, not imported_to_viewer.",
-        "Paper baseline run thunderkittens_decode_attention_tile is planned_not_run, not imported_to_viewer.",
         "Readiness probe for vllm is partial.",
         "Readiness probe for sglang is partial.",
         "Run readiness mpk_qwen3_native_vs_persistent is partial: HF_TOKEN is not available for this run.",
@@ -524,13 +515,6 @@
           "paper_baseline_id": "sglang",
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "status": "partial",
-          "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
-        },
-        {
-          "source": "run_readiness",
-          "paper_baseline_id": "thunderkittens",
-          "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
-          "status": "pass",
           "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
         {

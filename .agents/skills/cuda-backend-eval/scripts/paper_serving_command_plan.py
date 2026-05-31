@@ -397,9 +397,11 @@ def thunderkittens_commands(
     out_dir: str,
 ) -> list[dict[str, str]]:
     del model
+    prompt_tokens = policy["prompt_policy"]["target_prompt_tokens"]
     decode_tokens = policy["decode_policy"]["decode_tokens"]
     raw_json = f"{out_dir}/thunderkittens-mha-batch{batch_size}.json"
-    shape = f"{batch_size},1,{decode_tokens},64"
+    kernel_sequence_tokens = max(int(decode_tokens), 256)
+    shape = f"{batch_size},1,{kernel_sequence_tokens},64"
     command = shell_join(
         [
             ".venv/bin/python",
@@ -415,6 +417,16 @@ def thunderkittens_commands(
             "<pto-commit>",
             "--cuda-toolkit",
             "12.8",
+            "--paper-baseline-run-id",
+            "thunderkittens_decode_attention_tile",
+            "--benchmark-id",
+            "llm_serving_decode",
+            "--serving-workload-id",
+            policy["id"],
+            "--prompt-tokens",
+            str(prompt_tokens),
+            "--decode-tokens",
+            str(decode_tokens),
             "--shape",
             shape,
             "--warmup",
@@ -431,8 +443,9 @@ def thunderkittens_commands(
             "raw_artifact": raw_json,
             "note": (
                 "ThunderKittens is a serving-family kernel baseline here; "
-                "the capture records decode-attention tile latency and "
-                "throughput for the VDCores policy batch ladder."
+                "the H100 MHA wrapper pads the 64-token decode policy to "
+                "n=256 so the kernel launch grid is nonzero while preserving "
+                "prompt/decode metadata for the VDCores policy batch ladder."
             ),
         }
     ]

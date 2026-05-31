@@ -266,7 +266,11 @@ The LLM-serving claim also has a planned ThunderKittens
 `thunderkittens_decode_attention_tile` run record. Its readiness is generated
 from the selected source tree, repo-local capture wrapper, expected tmp
 artifact paths, required metrics, and paired ThunderKittens probe status, so
-the audit no longer hides ThunderKittens behind a missing-run blocker.
+the audit no longer hides ThunderKittens behind a missing-run blocker. The
+current H200 capture imports five VDCores-policy batch rows. The H100 MHA
+wrapper pads the 64-token decode policy to `n=256` so the kernel launch grid
+is nonzero; the raw and viewer rows still preserve `prompt_tokens=128` and
+`decode_tokens=64` for the serving comparison.
 The first bounded ThunderKittens MHA capture is recorded under
 `tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/`. It
 uses `.agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py`

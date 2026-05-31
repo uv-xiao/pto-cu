@@ -964,6 +964,68 @@ def test_paper_baseline_viewer_export_preserves_scheduler_trace_metadata(tmp_pat
     assert vdcores_statistic["resource_policy"]["virtual_cores"] == 8
 
 
+def test_thunderkittens_capture_builds_serving_decode_result():
+    import importlib.util
+
+    script = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "thunderkittens_mha_capture.py"
+    )
+    spec = importlib.util.spec_from_file_location("thunderkittens_mha_capture", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    result = module.build_raw_result_record(
+        paper_baseline_run_id="thunderkittens_decode_attention_tile",
+        benchmark_id="llm_serving_decode",
+        machine="dasys-h200x8",
+        cuda_toolkit="12.8",
+        clock_policy="not recorded",
+        gpu_metadata={
+            "gpu": "NVIDIA H200 NVL",
+            "driver": "580.126.20",
+            "compute_target": "compute_90",
+        },
+        shape={
+            "b": 4,
+            "h": 1,
+            "n": 256,
+            "d": 64,
+            "causal": True,
+            "dtype": "bfloat16",
+        },
+        latency={
+            "warmup": 5,
+            "repeats": 20,
+            "sample_count": 20,
+            "p50_ns": 32000,
+        },
+        correctness={"status": "pass"},
+        serving_workload_id="vdcores_offline_decode",
+        prompt_tokens=128,
+        decode_tokens=64,
+    )
+
+    assert result["paper_baseline_run_id"] == "thunderkittens_decode_attention_tile"
+    assert result["benchmark_id"] == "llm_serving_decode"
+    assert result["hardware"]["gpu"] == "H200"
+    assert (
+        result["inputs"]["shape"]
+        == "vdcores_offline_decode,mha_h100,b=4,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64"
+    )
+    assert result["metrics"]["kind"] == "paper_baseline_serving_tile_capture"
+    assert result["metrics"]["end_to_end_latency_ns"] == 32000
+    assert result["metrics"]["time_to_first_token_ns"] == 32000
+    assert result["metrics"]["inter_token_latency_ns"] == 500
+    assert result["metrics"]["throughput_tokens_per_s"] == 8000000
+    assert result["correctness"] == "pass"
+
+
 def test_paper_baseline_results_update_marks_imported_run(tmp_path):
     raw = {
         "metadata": {
@@ -1723,8 +1785,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "vdcores_llama_decode_correctness",
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
-        "thunderkittens_decode_attention_tile",
     } <= llm_readiness_ids
+    assert "thunderkittens_decode_attention_tile" not in llm_readiness_ids
     assert not any(
         "No paper baseline run record is attached to this claim for thunderkittens"
         in blocker
@@ -1809,11 +1871,11 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 13
+    assert committed["summary"]["total_work_items"] == 12
     assert committed["summary"]["work_items_by_source"] == {
         "matrix_missing_evidence": 3,
         "probe": 2,
-        "run_readiness": 8,
+        "run_readiness": 7,
     }
     work_items = committed["work_items"]
     assert all(not item["ready_for_paper_claim"] for item in work_items)
@@ -1862,7 +1924,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 13
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 12
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -1965,7 +2027,13 @@ def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
     assert any(
         command["kind"] == "decode_attention_tile"
         and "thunderkittens_mha_capture.py" in command["command"]
-        and "--shape 4,1,64,64" in command["command"]
+        and "--paper-baseline-run-id thunderkittens_decode_attention_tile"
+        in command["command"]
+        and "--benchmark-id llm_serving_decode" in command["command"]
+        and "--serving-workload-id vdcores_offline_decode" in command["command"]
+        and "--prompt-tokens 128" in command["command"]
+        and "--decode-tokens 64" in command["command"]
+        and "--shape 4,1,256,64" in command["command"]
         for command in thunderkittens_decode["commands"]
     )
     assert all(
@@ -2269,6 +2337,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     assert serving_by_id["mpk_offline_decode"]["decode_policy"]["decode_tokens"] == 1024
     assert serving_by_id["vdcores_offline_decode"]["decode_policy"]["decode_tokens"] == 64
+    assert serving_by_id["vdcores_offline_decode"]["status"] == (
+        "partial_controlled_results"
+    )
     assert serving_by_id["vdcores_offline_decode"]["prompt_policy"][
         "target_prompt_tokens"
     ] == 128
@@ -2346,10 +2417,13 @@ def test_benchmark_viewer_has_json_backed_review_data():
             )
         if item["id"] == "thunderkittens_decode_attention_tile":
             assert item["paper_evaluation_id"] == "llm_serving_paper_baselines"
-            assert item["status"] == "planned_not_run"
+            assert item["status"] == "imported_to_viewer"
             assert item["serving_workload_ids"] == ["vdcores_offline_decode"]
             assert any(
                 "thunderkittens_mha_capture.py" in command
+                and "--shape <batch>,1,256,64" in command
+                and "--prompt-tokens 128" in command
+                and "--decode-tokens 64" in command
                 for command in item["run_commands"]
             )
 
@@ -2677,6 +2751,53 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mha_h100,b=1,h=1,n=768,d=64,causal=True",
         "mha_h100,b=1,h=4,n=1536,d=64,causal=True",
     }
+    thunderkittens_serving_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "thunderkittens"
+        and record["hardware"]["gpu"] == "H200"
+    ]
+    assert len(thunderkittens_serving_records) == 5
+    assert {
+        record["statistic"]["kind"] for record in thunderkittens_serving_records
+    } == {"paper_baseline_serving_tile_capture"}
+    assert {
+        record["statistic"]["sample_count"]
+        for record in thunderkittens_serving_records
+    } == {20}
+    assert {
+        record["statistic"]["batch_size"]
+        for record in thunderkittens_serving_records
+    } == {1, 2, 4, 8, 16}
+    assert {
+        record["statistic"]["prompt_tokens"]
+        for record in thunderkittens_serving_records
+    } == {128}
+    assert {
+        record["statistic"]["decode_tokens"]
+        for record in thunderkittens_serving_records
+    } == {64}
+    assert {
+        record["raw_artifact"] for record in thunderkittens_serving_records
+    } == {
+        "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/"
+        "vdcores_offline_decode/"
+    }
+    assert {
+        record["inputs"]["shape"] for record in thunderkittens_serving_records
+    } == {
+        "vdcores_offline_decode,mha_h100,b=1,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
+        "vdcores_offline_decode,mha_h100,b=2,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
+        "vdcores_offline_decode,mha_h100,b=4,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
+        "vdcores_offline_decode,mha_h100,b=8,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
+        "vdcores_offline_decode,mha_h100,b=16,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
+    }
+    assert all(
+        record["statistic"]["throughput_tokens_per_s"] > 0
+        and record["correctness"] == "pass"
+        for record in thunderkittens_serving_records
+    )
     driver_graph_records = [
         record
         for record in results["result_records"]
