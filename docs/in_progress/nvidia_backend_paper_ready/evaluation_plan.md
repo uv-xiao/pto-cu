@@ -250,8 +250,13 @@ uses `.agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py`
 to run two H200 causal BF16 MHA shapes with five warmups and twenty timed
 CUDA-event repeats, compare against PyTorch scaled-dot-product attention, and
 export viewer-compatible paper-baseline records. This promotes the selected
-ThunderKittens row from setup-ready to imported viewer evidence, but it does
-not replace the future full upstream correctness and benchmark sweeps.
+ThunderKittens bounded-capture row from setup-ready to imported viewer
+evidence. The full upstream correctness and benchmark sweeps are tracked as
+the separate planned `thunderkittens_full_sweep` run, whose expected artifacts
+are `tmp/cuda-backend/paper-baselines/thunderkittens/correctness.json` and
+`tmp/cuda-backend/paper-baselines/thunderkittens/benchmark.json`. Imported
+paper-baseline run records are not allowed to keep missing future artifacts in
+their `expected_artifacts` lists.
 
 Remote H200 runs should prefer Git refresh when available and use SSH
 tree-sync fallback when remote Git fails. The selected path is part of the

@@ -355,6 +355,9 @@ paper-baseline importer, rejects raw rows that do not satisfy the run's
 updates `docs/nvidia-backend/benchmark-viewer/data/results.json`, marks the
 referenced `paper_baseline_runs.json` rows as `imported_to_viewer`, and
 regenerates `paper_readiness_audit.json` from the updated data:
+After a run is marked `imported_to_viewer`, its committed
+`expected_artifacts` must all exist under `tmp/`; future artifacts belong in a
+separate planned run record.
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

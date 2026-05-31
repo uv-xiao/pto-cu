@@ -1267,3 +1267,34 @@ Each entry must include:
   attached ThunderKittens planned run and readiness record. Actual H200
   captures for MPK, VDCores, vLLM, SGLang, and ThunderKittens serving-family
   rows remain required before the claim can be promoted.
+
+### 2026-05-31 - Imported Baseline Artifact Guard
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned strict
+  evidence guardrail slice.
+- Exact Codex command or script invocation:
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_run_readiness.py`
+  regenerated run-readiness data with output root
+  `tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/`,
+  then `paper_readiness_audit.py` regenerated the committed audit.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, strict code/document
+  evidence guardrail and paper-ready evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation validators, benchmark-viewer JSON
+  contracts, focused review tests, goal docs, dispatch log, and changelog
+  docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: this separates imported bounded
+  ThunderKittens MHA evidence from the planned full upstream correctness and
+  benchmark sweeps. It does not create new measured performance data.
+- Verification commands and results: focused TDD test first failed because
+  missing expected artifacts on `imported_to_viewer` runs were accepted. After
+  implementation and data split, focused tests and viewer-data validation
+  passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: imported paper-baseline runs now need
+  existing `expected_artifacts`. The tensor-core claim still needs the planned
+  `thunderkittens_full_sweep` raw captures before paper promotion.

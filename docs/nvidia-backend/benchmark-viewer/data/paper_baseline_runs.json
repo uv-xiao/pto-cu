@@ -305,7 +305,45 @@
         "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/build.log",
         "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/quick-smoke.json",
         "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/capture.json",
-        "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/viewer-result-records.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/viewer-result-records.json"
+      ],
+      "required_metrics": [
+        "correctness",
+        "device_elapsed_time",
+        "throughput",
+        "tensor_shape",
+        "raw_artifacts"
+      ],
+      "import_target": {
+        "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+        "result_kind": "paper_baseline_result_record",
+        "notes": "Importer must map ThunderKittens output onto the tensor-core tile baseline claim with the selected tensor shape."
+      }
+    },
+    {
+      "id": "thunderkittens_full_sweep",
+      "paper_baseline_id": "thunderkittens",
+      "paper_evaluation_id": "tensor_core_tile_baselines",
+      "title": "ThunderKittens Full Correctness And Benchmark Sweep",
+      "status": "planned_not_run",
+      "hardware_targets": [
+        "H200"
+      ],
+      "serving_workload_ids": [],
+      "workload": {
+        "model": "not applicable",
+        "input_policy": "full selected attention/GEMM tile shape sweep matching VDCores and PTO tensor-core workloads",
+        "output_policy": "upstream correctness suite plus benchmark timing JSON",
+        "batch_or_concurrency": "single-kernel benchmark sweep over selected tensor shapes"
+      },
+      "setup_commands": [
+        "cd tmp/baselines/thunderkittens && make -C kernels/attention/mha_h100"
+      ],
+      "run_commands": [
+        "cd tmp/baselines/thunderkittens && python kernels/attention/mha_h100/test_correctness.py",
+        "cd tmp/baselines/thunderkittens && python kernels/attention/mha_h100/benchmark.py"
+      ],
+      "expected_artifacts": [
         "tmp/cuda-backend/paper-baselines/thunderkittens/correctness.json",
         "tmp/cuda-backend/paper-baselines/thunderkittens/benchmark.json"
       ],
@@ -319,7 +357,7 @@
       "import_target": {
         "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
         "result_kind": "paper_baseline_result_record",
-        "notes": "Importer must map ThunderKittens output onto the tensor-core tile baseline claim with the selected tensor shape."
+        "notes": "Importer must map full ThunderKittens correctness and benchmark sweeps onto the tensor-core tile baseline claim after the upstream runs produce JSON artifacts."
       }
     },
     {

@@ -170,6 +170,131 @@ def test_probe_machine_status_must_match_raw_artifact(tmp_path):
         raise AssertionError("machine status drift was not rejected")
 
 
+def test_imported_paper_baseline_run_rejects_missing_expected_artifact(tmp_path):
+    script_path = ROOT / ".agents" / "checks" / "validate_benchmark_viewer_data.py"
+    spec = importlib.util.spec_from_file_location(
+        "validate_benchmark_viewer_data",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    (tmp_path / "tmp" / "paper").mkdir(parents=True)
+    (tmp_path / "tmp" / "paper" / "present.json").write_text(
+        "{}\n",
+        encoding="utf-8",
+    )
+
+    def run_record(run_id, baseline_id, paper_evaluation_id, serving_ids=None):
+        return {
+            "id": run_id,
+            "paper_baseline_id": baseline_id,
+            "paper_evaluation_id": paper_evaluation_id,
+            "title": run_id,
+            "status": "planned_not_run",
+            "hardware_targets": ["H200"],
+            "serving_workload_ids": serving_ids or [],
+            "workload": {
+                "model": "fixture",
+                "input_policy": "fixture",
+                "output_policy": "fixture",
+                "batch_or_concurrency": "fixture",
+            },
+            "setup_commands": ["true"],
+            "run_commands": ["true"],
+            "expected_artifacts": ["tmp/paper/future.json"],
+            "required_metrics": ["correctness", "raw_artifacts"],
+            "import_target": {
+                "viewer_file": (
+                    "docs/nvidia-backend/benchmark-viewer/data/results.json"
+                ),
+                "result_kind": "paper_baseline_result_record",
+                "notes": "fixture",
+            },
+        }
+
+    imported = run_record(
+        "mpk_qwen3_native_vs_persistent",
+        "mpk",
+        "llm_serving_paper_baselines",
+        ["mpk_offline_decode"],
+    )
+    imported["status"] = "imported_to_viewer"
+    imported["expected_artifacts"] = [
+        "tmp/paper/present.json",
+        "tmp/paper/missing.json",
+    ]
+    data = {
+        "paper_baseline_runs": [
+            imported,
+            run_record(
+                "vdcores_llama_decode_correctness",
+                "vdcores",
+                "llm_serving_paper_baselines",
+                ["vdcores_offline_decode"],
+            ),
+            run_record(
+                "mpk_persistent_scheduler_trace",
+                "mpk",
+                "persistent_device_scheduler_overhead",
+            ),
+            run_record(
+                "vdcores_resource_policy_trace",
+                "vdcores",
+                "persistent_device_scheduler_overhead",
+            ),
+            run_record(
+                "vllm_serving_and_throughput",
+                "vllm",
+                "llm_serving_paper_baselines",
+                ["mpk_offline_decode"],
+            ),
+            run_record(
+                "sglang_serving_and_offline",
+                "sglang",
+                "llm_serving_paper_baselines",
+                ["mpk_offline_decode"],
+            ),
+            run_record(
+                "thunderkittens_tile_kernel",
+                "thunderkittens",
+                "tensor_core_tile_baselines",
+            ),
+            run_record(
+                "thunderkittens_full_sweep",
+                "thunderkittens",
+                "tensor_core_tile_baselines",
+            ),
+            run_record(
+                "thunderkittens_decode_attention_tile",
+                "thunderkittens",
+                "llm_serving_paper_baselines",
+                ["vdcores_offline_decode"],
+            ),
+        ]
+    }
+
+    try:
+        module.validate_paper_baseline_runs(
+            data,
+            {"mpk", "vdcores", "vllm", "sglang", "thunderkittens"},
+            {
+                "llm_serving_paper_baselines",
+                "persistent_device_scheduler_overhead",
+                "tensor_core_tile_baselines",
+            },
+            {"mpk_offline_decode", "vdcores_offline_decode"},
+            root=tmp_path,
+        )
+    except SystemExit as exc:
+        assert "expected artifact path missing" in str(exc)
+    else:
+        raise AssertionError("missing expected artifact was accepted")
+
+
 def test_nvidia_changelog_validator_passes():
     result = subprocess.run(
         [sys.executable, ".agents/checks/validate_nvidia_changelog.py"],
@@ -1484,6 +1609,18 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "No paper baseline run record is attached" in blocker
         for blocker in persistent_claim["blockers"]
     )
+    tensor_claim = by_id["tensor_core_tile_baselines"]
+    tensor_run_ids = {
+        run["id"] for run in tensor_claim["paper_baseline_run_statuses"]
+    }
+    assert {
+        "thunderkittens_tile_kernel",
+        "thunderkittens_full_sweep",
+    } <= tensor_run_ids
+    assert any(
+        "thunderkittens_full_sweep is planned_not_run" in blocker
+        for blocker in tensor_claim["blockers"]
+    )
 
 
 def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
@@ -1836,6 +1973,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
         "thunderkittens_tile_kernel",
+        "thunderkittens_full_sweep",
         "thunderkittens_decode_attention_tile",
     } <= run_ids
     run_baselines = {
@@ -1868,6 +2006,21 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert any(
                 "thunderkittens_mha_capture.py" in command
                 for command in item["run_commands"]
+            )
+            assert not any(
+                path.endswith("correctness.json") or path.endswith("benchmark.json")
+                for path in item["expected_artifacts"]
+            )
+        if item["id"] == "thunderkittens_full_sweep":
+            assert item["paper_evaluation_id"] == "tensor_core_tile_baselines"
+            assert item["status"] == "planned_not_run"
+            assert item["serving_workload_ids"] == []
+            assert any(
+                path.endswith("correctness.json")
+                for path in item["expected_artifacts"]
+            )
+            assert any(
+                path.endswith("benchmark.json") for path in item["expected_artifacts"]
             )
         if item["id"] == "thunderkittens_decode_attention_tile":
             assert item["paper_evaluation_id"] == "llm_serving_paper_baselines"

@@ -68,7 +68,7 @@
           "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
           "paper_baseline_id": "mpk",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ]
@@ -77,7 +77,7 @@
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run.",
             "Missing dae.runtime compiled extension at python/dae/runtime*.so."
@@ -150,13 +150,29 @@
             "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/build.log",
             "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/quick-smoke.json",
             "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/capture.json",
-            "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/viewer-result-records.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/viewer-result-records.json"
+          ]
+        },
+        {
+          "id": "thunderkittens_full_sweep",
+          "paper_baseline_id": "thunderkittens",
+          "status": "planned_not_run",
+          "serving_workload_ids": [],
+          "expected_artifacts": [
             "tmp/cuda-backend/paper-baselines/thunderkittens/correctness.json",
             "tmp/cuda-backend/paper-baselines/thunderkittens/benchmark.json"
           ]
         }
       ],
-      "paper_baseline_run_readiness_statuses": [],
+      "paper_baseline_run_readiness_statuses": [
+        {
+          "paper_baseline_run_id": "thunderkittens_full_sweep",
+          "paper_baseline_id": "thunderkittens",
+          "latest_status": "pass",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
+          "blocking_gaps": []
+        }
+      ],
       "probe_statuses": [
         {
           "paper_baseline_id": "thunderkittens",
@@ -176,7 +192,8 @@
         }
       ],
       "blockers": [
-        "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture."
+        "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture.",
+        "Paper baseline run thunderkittens_full_sweep is planned_not_run, not imported_to_viewer."
       ],
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
     },
@@ -271,7 +288,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ]
@@ -280,7 +297,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run.",
             "Missing dae.runtime compiled extension at python/dae/runtime*.so."
@@ -290,7 +307,7 @@
           "paper_baseline_run_id": "vllm_serving_and_throughput",
           "paper_baseline_id": "vllm",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
           "blocking_gaps": [
             "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; H200: python_module failed: vllm."
           ]
@@ -299,7 +316,7 @@
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "paper_baseline_id": "sglang",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
           "blocking_gaps": [
             "Readiness probe sglang_source_entrypoints is partial: A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ]
@@ -308,7 +325,7 @@
           "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
           "paper_baseline_id": "thunderkittens",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
           "blocking_gaps": []
         }
       ],

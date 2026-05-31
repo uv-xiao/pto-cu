@@ -196,6 +196,7 @@ def validate_paper_baseline_runs(
     baseline_ids: set[str],
     paper_evaluation_ids: set[str],
     serving_workload_ids: set[str],
+    root: Path,
 ) -> None:
     records = require_list(data, "paper_baseline_runs", "paper baseline runs")
     run_ids = check_unique_ids(records, "paper baseline run")
@@ -207,6 +208,7 @@ def validate_paper_baseline_runs(
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
         "thunderkittens_tile_kernel",
+        "thunderkittens_full_sweep",
         "thunderkittens_decode_attention_tile",
     }
     if not required_runs <= run_ids:
@@ -277,6 +279,10 @@ def validate_paper_baseline_runs(
         for artifact in record["expected_artifacts"]:
             if not artifact.startswith("tmp/"):
                 fail(f"{owner} expected artifact must be under tmp/: {artifact}")
+            if record["status"] == "imported_to_viewer" and not (
+                root / artifact
+            ).exists():
+                fail(f"{owner} expected artifact path missing: {artifact}")
 
         import_target = require_dict(record, "import_target", owner)
         if (
@@ -903,6 +909,7 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         baseline_ids,
         paper_evaluation_ids,
         serving_workload_ids,
+        root,
     )
     validate_paper_readiness_audit(
         paper_readiness_audit,

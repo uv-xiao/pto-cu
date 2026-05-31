@@ -21,6 +21,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-05-31 paper baseline scheduler metadata](2026-05-31-paper-baseline-scheduler-metadata.md)
 - [2026-05-31 paper baseline results update](2026-05-31-paper-baseline-results-update.md)
 - [2026-05-31 paper baseline required metric gate](2026-05-31-paper-baseline-required-metric-gate.md)
+- [2026-05-31 imported baseline artifact guard](2026-05-31-imported-baseline-artifact-guard.md)
 - [2026-05-31 paper baseline run readiness](2026-05-31-paper-baseline-run-readiness.md)
 - [2026-05-31 planned run readiness coverage](2026-05-31-planned-run-readiness-coverage.md)
 - [2026-05-31 readiness audit run readiness](2026-05-31-readiness-audit-run-readiness.md)

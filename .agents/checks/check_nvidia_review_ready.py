@@ -300,6 +300,7 @@ def check_viewer_data() -> None:
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
         "thunderkittens_tile_kernel",
+        "thunderkittens_full_sweep",
         "thunderkittens_decode_attention_tile",
     }
     if not required_run_ids <= run_ids:
