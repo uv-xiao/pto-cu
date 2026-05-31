@@ -82,6 +82,11 @@ def build_remote_baseline_source_sync_command(
         "rsync",
         "-a",
         "--delete",
+        "--exclude=build/",
+        "--exclude=*.egg-info/",
+        "--exclude=__pycache__/",
+        "--exclude=*.pyc",
+        "--exclude=*.cpython-*.so",
         "tmp/baselines/",
         f"{config.remote}:{config.remote_workdir}/tmp/baselines/",
     ]

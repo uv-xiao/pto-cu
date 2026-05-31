@@ -410,6 +410,24 @@ mismatched native `mirage.core`. Re-run the paired probe after any MPK setup
 change and do not execute/import MPK raw results until the `mpk_source_entrypoints`
 probe passes on the target host.
 
+When preparing MPK from source, initialize its submodules and build the editable
+package on each evaluation host rather than copying generated native outputs
+between hosts. `paper_baseline_pair_probe.py` excludes baseline `build/`,
+egg-info, Python caches, and `*.cpython-*.so` files during remote baseline
+source sync so A100 and H200 keep separate CMake caches and Python ABI-specific
+`mirage.core` extensions. A minimal local/H200 setup sequence is:
+
+```bash
+git -C tmp/baselines/mirage-mpk submodule update --init --recursive
+.venv/bin/python -m pip install z3-solver==4.16 graphviz 'Cython>=0.28' cuda-python
+CUDA_HOME=/usr/local/cuda-12.8 \
+PATH=$HOME/.cargo/bin:$PWD/.venv/bin:/usr/local/cuda-12.8/bin:$PATH \
+LD_LIBRARY_PATH=$PWD/tmp/lib:${LD_LIBRARY_PATH:-} \
+CMAKE_BUILD_TYPE=Release \
+  .venv/bin/python -m pip install --no-build-isolation --no-deps \
+    -e tmp/baselines/mirage-mpk -v
+```
+
 Use `paper_serving_command_plan.py` before long MPK, VDCores, vLLM, SGLang,
 or ThunderKittens serving-family runs. It reads the committed
 `serving_workloads.json` and

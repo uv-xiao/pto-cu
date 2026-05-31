@@ -68,18 +68,16 @@
         {
           "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
           "paper_baseline_id": "mpk",
-          "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-04dc762d/",
-          "blocking_gaps": [
-            "Readiness probe mpk_source_entrypoints is partial: A100: python_import failed: mirage.mpk.base_dynamic_shard_loader; H200: python_import failed: mirage.mpk.base_dynamic_shard_loader."
-          ],
+          "latest_status": "pass",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
+          "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
         {
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-04dc762d/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -89,22 +87,18 @@
       "probe_statuses": [
         {
           "paper_baseline_id": "mpk",
-          "latest_status": "partial",
+          "latest_status": "pass",
           "next_action": "Install MPK dependencies, run the Qwen3 native and --use-mirage commands, then export raw latency and throughput JSON.",
           "machines": [
             {
               "gpu": "A100",
-              "status": "partial",
-              "blocking_gaps": [
-                "python_import failed: mirage.mpk.base_dynamic_shard_loader"
-              ]
+              "status": "pass",
+              "blocking_gaps": []
             },
             {
               "gpu": "H200",
-              "status": "partial",
-              "blocking_gaps": [
-                "python_import failed: mirage.mpk.base_dynamic_shard_loader"
-              ]
+              "status": "pass",
+              "blocking_gaps": []
             }
           ]
         },
@@ -131,8 +125,6 @@
         "VDCores run with matching queue/resource-policy metadata.",
         "Paper baseline run mpk_persistent_scheduler_trace is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
-        "Readiness probe for mpk is partial.",
-        "Run readiness mpk_persistent_scheduler_trace is partial: Readiness probe mpk_source_entrypoints is partial: A100: python_import failed: mirage.mpk.base_dynamic_shard_loader; H200: python_import failed: mirage.mpk.base_dynamic_shard_loader.",
         "Run readiness vdcores_resource_policy_trace is partial: HF_TOKEN is not available for this run."
       ],
       "next_actions": [
@@ -143,23 +135,10 @@
         },
         {
           "source": "run_readiness",
-          "paper_baseline_id": "mpk",
-          "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
-          "status": "partial",
-          "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
-        },
-        {
-          "source": "run_readiness",
           "paper_baseline_id": "vdcores",
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "status": "partial",
           "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
-        },
-        {
-          "source": "probe",
-          "paper_baseline_id": "mpk",
-          "status": "partial",
-          "action": "Install MPK dependencies, run the Qwen3 native and --use-mirage commands, then export raw latency and throughput JSON."
         }
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
@@ -324,18 +303,16 @@
         {
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
-          "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-04dc762d/",
-          "blocking_gaps": [
-            "Readiness probe mpk_source_entrypoints is partial: A100: python_import failed: mirage.mpk.base_dynamic_shard_loader; H200: python_import failed: mirage.mpk.base_dynamic_shard_loader."
-          ],
+          "latest_status": "pass",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
+          "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
         {
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-04dc762d/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -345,7 +322,7 @@
           "paper_baseline_run_id": "vllm_serving_and_throughput",
           "paper_baseline_id": "vllm",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-04dc762d/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
           "blocking_gaps": [
             "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; H200: python_module failed: vllm."
           ],
@@ -355,7 +332,7 @@
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "paper_baseline_id": "sglang",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-04dc762d/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
           "blocking_gaps": [
             "Readiness probe sglang_source_entrypoints is partial: A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ],
@@ -365,22 +342,18 @@
       "probe_statuses": [
         {
           "paper_baseline_id": "mpk",
-          "latest_status": "partial",
+          "latest_status": "pass",
           "next_action": "Install MPK dependencies, run the Qwen3 native and --use-mirage commands, then export raw latency and throughput JSON.",
           "machines": [
             {
               "gpu": "A100",
-              "status": "partial",
-              "blocking_gaps": [
-                "python_import failed: mirage.mpk.base_dynamic_shard_loader"
-              ]
+              "status": "pass",
+              "blocking_gaps": []
             },
             {
               "gpu": "H200",
-              "status": "partial",
-              "blocking_gaps": [
-                "python_import failed: mirage.mpk.base_dynamic_shard_loader"
-              ]
+              "status": "pass",
+              "blocking_gaps": []
             }
           ]
         },
@@ -472,10 +445,8 @@
         "Paper baseline run vdcores_llama_decode_correctness is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vllm_serving_and_throughput is planned_not_run, not imported_to_viewer.",
         "Paper baseline run sglang_serving_and_offline is planned_not_run, not imported_to_viewer.",
-        "Readiness probe for mpk is partial.",
         "Readiness probe for vllm is partial.",
         "Readiness probe for sglang is partial.",
-        "Run readiness mpk_qwen3_native_vs_persistent is partial: Readiness probe mpk_source_entrypoints is partial: A100: python_import failed: mirage.mpk.base_dynamic_shard_loader; H200: python_import failed: mirage.mpk.base_dynamic_shard_loader.",
         "Run readiness vdcores_llama_decode_correctness is partial: HF_TOKEN is not available for this run.",
         "Run readiness vllm_serving_and_throughput is partial: Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; H200: python_module failed: vllm.",
         "Run readiness sglang_serving_and_offline is partial: Readiness probe sglang_source_entrypoints is partial: A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
@@ -485,13 +456,6 @@
           "source": "matrix_missing_evidence",
           "status": "missing",
           "action": "MPK, VDCores, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records."
-        },
-        {
-          "source": "run_readiness",
-          "paper_baseline_id": "mpk",
-          "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
-          "status": "partial",
-          "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
         {
           "source": "run_readiness",
@@ -513,12 +477,6 @@
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "status": "partial",
           "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
-        },
-        {
-          "source": "probe",
-          "paper_baseline_id": "mpk",
-          "status": "partial",
-          "action": "Install MPK dependencies, run the Qwen3 native and --use-mirage commands, then export raw latency and throughput JSON."
         },
         {
           "source": "probe",

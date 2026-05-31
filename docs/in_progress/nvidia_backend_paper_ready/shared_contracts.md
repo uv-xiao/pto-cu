@@ -147,7 +147,11 @@ Paired A100/H200 probe artifacts must also record:
   tree-sync fallback when that path is used;
 - a separate `tmp/baselines/` source sync command for remote probes, because
   baseline sources are intentionally local tmp artifacts and the repo tree-sync
-  excludes generated `tmp/` outputs.
+  excludes generated `tmp/` outputs;
+- remote baseline source sync must exclude generated build directories,
+  Python cache files, egg-info metadata, and CPython extension modules so
+  host-specific native artifacts such as CMake caches or `core.cpython-*.so`
+  files are rebuilt on the target evaluation host.
 
 Each paper-evaluation matrix claim must include:
 

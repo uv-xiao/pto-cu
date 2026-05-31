@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "04dc762d",
+    "pto_commit": "b138cfc5",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
       "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
@@ -14,8 +14,8 @@
       "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
       "paper_baseline_id": "mpk",
       "title": "MPK Qwen3 Native Versus Persistent Kernel Readiness",
-      "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-04dc762d/",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
       "checks": [
         {
           "kind": "source_path",
@@ -73,12 +73,9 @@
         {
           "kind": "baseline_probe",
           "name": "mpk_source_entrypoints",
-          "status": "partial",
+          "status": "pass",
           "why": "Latest committed source/dependency probe status for this baseline.",
-          "blocking_gaps": [
-            "A100: python_import failed: mirage.mpk.base_dynamic_shard_loader",
-            "H200: python_import failed: mirage.mpk.base_dynamic_shard_loader"
-          ]
+          "blocking_gaps": []
         },
         {
           "kind": "environment",
@@ -87,9 +84,7 @@
           "why": "MPK Qwen3 runs use public Qwen model artifacts; unauthenticated Hugging Face API snapshots are stored under tmp/sources/huggingface/."
         }
       ],
-      "blocking_gaps": [
-        "Readiness probe mpk_source_entrypoints is partial: A100: python_import failed: mirage.mpk.base_dynamic_shard_loader; H200: python_import failed: mirage.mpk.base_dynamic_shard_loader."
-      ],
+      "blocking_gaps": [],
       "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
     },
     {
@@ -98,7 +93,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Llama Decode Correctness And Benchmark Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-04dc762d/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
       "checks": [
         {
           "kind": "source_path",
@@ -183,8 +178,8 @@
       "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
       "paper_baseline_id": "mpk",
       "title": "MPK Persistent Scheduler Trace Readiness",
-      "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-04dc762d/",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
       "checks": [
         {
           "kind": "source_path",
@@ -230,12 +225,9 @@
         {
           "kind": "baseline_probe",
           "name": "mpk_source_entrypoints",
-          "status": "partial",
+          "status": "pass",
           "why": "Latest committed source/dependency probe status for this baseline.",
-          "blocking_gaps": [
-            "A100: python_import failed: mirage.mpk.base_dynamic_shard_loader",
-            "H200: python_import failed: mirage.mpk.base_dynamic_shard_loader"
-          ]
+          "blocking_gaps": []
         },
         {
           "kind": "environment",
@@ -244,9 +236,7 @@
           "why": "MPK persistent-scheduler bring-up uses public Qwen model artifacts; unauthenticated Hugging Face API snapshots are stored under tmp/sources/huggingface/."
         }
       ],
-      "blocking_gaps": [
-        "Readiness probe mpk_source_entrypoints is partial: A100: python_import failed: mirage.mpk.base_dynamic_shard_loader; H200: python_import failed: mirage.mpk.base_dynamic_shard_loader."
-      ],
+      "blocking_gaps": [],
       "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
     },
     {
@@ -255,7 +245,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Resource Policy Trace Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-04dc762d/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
       "checks": [
         {
           "kind": "source_path",
@@ -329,7 +319,7 @@
       "paper_baseline_id": "vllm",
       "title": "vLLM Serving And Offline Throughput Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-04dc762d/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
       "checks": [
         {
           "kind": "source_path",
@@ -394,7 +384,7 @@
       "paper_baseline_id": "sglang",
       "title": "SGLang Serving And Offline Throughput Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-04dc762d/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
       "checks": [
         {
           "kind": "source_path",

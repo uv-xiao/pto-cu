@@ -4,8 +4,8 @@
       "id": "mpk_source_entrypoints",
       "paper_baseline_id": "mpk",
       "title": "MPK Source Entrypoints",
-      "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/",
       "checks": [
         {
           "kind": "path_exists",
@@ -43,19 +43,15 @@
       "latest_machine_status": [
         {
           "gpu": "A100",
-          "status": "partial",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/a100-probe.json",
-          "blocking_gaps": [
-            "python_import failed: mirage.mpk.base_dynamic_shard_loader"
-          ]
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/a100-probe.json",
+          "blocking_gaps": []
         },
         {
           "gpu": "H200",
-          "status": "partial",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/h200-probe.json",
-          "blocking_gaps": [
-            "python_import failed: mirage.mpk.base_dynamic_shard_loader"
-          ]
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/h200-probe.json",
+          "blocking_gaps": []
         }
       ]
     },
@@ -64,7 +60,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Source Entrypoints",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/",
       "checks": [
         {
           "kind": "path_exists",
@@ -92,13 +88,13 @@
         {
           "gpu": "A100",
           "status": "pass",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/a100-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/a100-probe.json",
           "blocking_gaps": []
         },
         {
           "gpu": "H200",
           "status": "pass",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/h200-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/h200-probe.json",
           "blocking_gaps": []
         }
       ]
@@ -108,7 +104,7 @@
       "paper_baseline_id": "vllm",
       "title": "vLLM Source Entrypoints",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/",
       "checks": [
         {
           "kind": "path_exists",
@@ -141,7 +137,7 @@
         {
           "gpu": "A100",
           "status": "partial",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/a100-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/a100-probe.json",
           "blocking_gaps": [
             "python_module failed: vllm"
           ]
@@ -149,7 +145,7 @@
         {
           "gpu": "H200",
           "status": "partial",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/h200-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/h200-probe.json",
           "blocking_gaps": [
             "python_module failed: vllm"
           ]
@@ -161,7 +157,7 @@
       "paper_baseline_id": "sglang",
       "title": "SGLang Source Entrypoints",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/",
       "checks": [
         {
           "kind": "path_exists",
@@ -212,7 +208,7 @@
         {
           "gpu": "A100",
           "status": "partial",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/a100-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/a100-probe.json",
           "blocking_gaps": [
             "python_import failed: sglang.bench_serving",
             "python_import failed: sglang.bench_offline_throughput",
@@ -222,7 +218,7 @@
         {
           "gpu": "H200",
           "status": "partial",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/h200-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/h200-probe.json",
           "blocking_gaps": [
             "python_module failed: sglang",
             "python_import failed: sglang.bench_serving",
@@ -237,7 +233,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Source Entrypoints",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/",
       "checks": [
         {
           "kind": "path_exists",
@@ -300,13 +296,13 @@
         {
           "gpu": "A100",
           "status": "pass",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/a100-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/a100-probe.json",
           "blocking_gaps": []
         },
         {
           "gpu": "H200",
           "status": "pass",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-04dc762d/h200-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/h200-probe.json",
           "blocking_gaps": []
         }
       ]
