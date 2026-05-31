@@ -419,7 +419,10 @@ source sync so A100 and H200 keep separate CMake caches and Python ABI-specific
 
 ```bash
 git -C tmp/baselines/mirage-mpk submodule update --init --recursive
-.venv/bin/python -m pip install z3-solver==4.16 graphviz 'Cython>=0.28' cuda-python
+.venv/bin/python -m pip install \
+  z3-solver==4.16 graphviz 'Cython>=0.28' cuda-python \
+  accelerate==1.8.0 transformers==4.57.1 protobuf fastapi uvicorn \
+  'tg4perfetto @ git+https://github.com/flashinfer-ai/tg4perfetto.git'
 CUDA_HOME=/usr/local/cuda-12.8 \
 PATH=$HOME/.cargo/bin:$PWD/.venv/bin:/usr/local/cuda-12.8/bin:$PATH \
 LD_LIBRARY_PATH=$PWD/tmp/lib:${LD_LIBRARY_PATH:-} \
@@ -427,6 +430,11 @@ CMAKE_BUILD_TYPE=Release \
   .venv/bin/python -m pip install --no-build-isolation --no-deps \
     -e tmp/baselines/mirage-mpk -v
 ```
+
+On H200, prefer a local model cache for MPK execution attempts when
+`huggingface.co` is unreachable from non-interactive SSH. For example, use
+`HF_HOME=<shared-hf-cache> HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1`
+with a shared Qwen3 cache rather than relying on live model downloads.
 
 Use `paper_serving_command_plan.py` before long MPK, VDCores, vLLM, SGLang,
 or ThunderKittens serving-family runs. It reads the committed

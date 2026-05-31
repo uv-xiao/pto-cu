@@ -2234,6 +2234,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "data" / "paper_baseline_runs.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_probes.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json").is_file()
+    assert (VIEWER_ROOT / "data" / "paper_baseline_execution_attempts.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_command_plan.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_workloads.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").is_file()
@@ -2255,6 +2256,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paperBaselineRunReadiness",
         "paper_baseline_run_readiness",
         "Run Readiness",
+        "paperBaselineExecutionAttempts",
+        "paper_baseline_execution_attempts",
+        "Execution Attempts",
         "next_actions",
         "Next Actions",
         "servingCommandPlan",
@@ -2311,6 +2315,13 @@ def test_benchmark_viewer_has_json_backed_review_data():
         (VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json").read_text(
             encoding="utf-8"
         )
+    )
+    paper_baseline_execution_attempts = json.loads(
+        (
+            VIEWER_ROOT
+            / "data"
+            / "paper_baseline_execution_attempts.json"
+        ).read_text(encoding="utf-8")
     )
     serving_command_plan = json.loads(
         (VIEWER_ROOT / "data" / "serving_command_plan.json").read_text(
@@ -2614,6 +2625,42 @@ def test_benchmark_viewer_has_json_backed_review_data():
         item["paper_baseline_run_id"]: item
         for item in paper_baseline_run_readiness["paper_baseline_run_readiness"]
     }
+    execution_attempts = paper_baseline_execution_attempts[
+        "paper_baseline_execution_attempts"
+    ]
+    attempts_by_id = {item["id"]: item for item in execution_attempts}
+    assert {
+        "mpk_qwen3_0p6b_native_token2_h200",
+        "mpk_qwen3_0p6b_persistent_profile_token2_h200",
+        "mpk_qwen3_0p6b_persistent_noprofile_token2_h200",
+        "mpk_qwen3_0p6b_persistent_token8_h200",
+    } <= set(attempts_by_id)
+    assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
+    assert (
+        attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["summary"][
+            "generate_length"
+        ]
+        == 2
+    )
+    profile_attempt = attempts_by_id[
+        "mpk_qwen3_0p6b_persistent_profile_token2_h200"
+    ]
+    assert profile_attempt["status"] == "failed_after_kernel_launch"
+    assert "KeyError: (16, 0)" in profile_attempt["blocker"]
+    assert profile_attempt["summary"]["compiled"]
+    assert profile_attempt["summary"]["launched"]
+    assert profile_attempt["summary"]["total_tasks"] == 7261
+    assert "illegal memory access" in attempts_by_id[
+        "mpk_qwen3_0p6b_persistent_noprofile_token2_h200"
+    ]["blocker"]
+    for attempt in execution_attempts:
+        assert attempt["artifact_root"].startswith("tmp/")
+        assert (ROOT / attempt["artifact_root"]).is_dir()
+        assert attempt["artifacts"]
+        assert any(path.endswith(".json") for path in attempt["artifacts"])
+        for path in attempt["artifacts"]:
+            assert path.startswith("tmp/")
+            assert (ROOT / path).is_file()
     command_plan_records = serving_command_plan["serving_command_plans"]
     assert serving_command_plan["metadata"]["model_tier"] == "primary"
     assert len(command_plan_records) == 35

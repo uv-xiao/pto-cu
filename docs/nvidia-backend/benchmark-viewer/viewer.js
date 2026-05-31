@@ -5,6 +5,7 @@ const DATA_FILES = {
   paperBaselineRuns: "data/paper_baseline_runs.json",
   paperBaselineProbes: "data/paper_baseline_probes.json",
   paperBaselineRunReadiness: "data/paper_baseline_run_readiness.json",
+  paperBaselineExecutionAttempts: "data/paper_baseline_execution_attempts.json",
   servingCommandPlan: "data/serving_command_plan.json",
   servingWorkloads: "data/serving_workloads.json",
   paperEvaluation: "data/paper_evaluation_matrix.json",
@@ -322,6 +323,9 @@ function renderPaperBaselines() {
     const probes = state.paperBaselineProbes.paper_baseline_probes.filter(
       (probe) => probe.paper_baseline_id === baseline.id,
     );
+    const executionAttempts = state.paperBaselineExecutionAttempts
+      .paper_baseline_execution_attempts
+      .filter((attempt) => attempt.paper_baseline_id === baseline.id);
     const details = document.createElement("details");
     const summary = document.createElement("summary");
     summary.append(text(`${baseline.name} (${baseline.status})`));
@@ -385,6 +389,21 @@ function renderPaperBaselines() {
         `Next: ${probe.next_action}`,
       ].join("\n");
     });
+    const executionItems = executionAttempts.map((attempt) => {
+      const evidence = attempt.artifacts.join(", ");
+      const blocker = attempt.blocker || "none";
+      const observation = attempt.observation || "none";
+      return [
+        `${attempt.title} (${attempt.status})`,
+        `Run ID: ${attempt.paper_baseline_run_id}`,
+        `Hardware: ${attempt.hardware.gpu} ${attempt.hardware.compute_target}`,
+        `Artifact root: ${attempt.artifact_root}`,
+        `Command: ${attempt.command}`,
+        `Observation: ${observation}`,
+        `Blocker: ${blocker}`,
+        `Artifacts: ${evidence}`,
+      ].join("\n");
+    });
 
     details.append(
       summary,
@@ -396,6 +415,7 @@ function renderPaperBaselines() {
       ...namedList("Reproduction Runs", runItems),
       ...namedList("Run Readiness", readinessItems),
       ...namedList("Readiness Probes", probeItems),
+      ...namedList("Execution Attempts", executionItems),
     );
     return details;
   }));
@@ -671,6 +691,7 @@ async function main() {
       paperBaselineRuns,
       paperBaselineProbes,
       paperBaselineRunReadiness,
+      paperBaselineExecutionAttempts,
       servingCommandPlan,
       servingWorkloads,
       paperEvaluation,
@@ -685,6 +706,7 @@ async function main() {
       loadJson(DATA_FILES.paperBaselineRuns),
       loadJson(DATA_FILES.paperBaselineProbes),
       loadJson(DATA_FILES.paperBaselineRunReadiness),
+      loadJson(DATA_FILES.paperBaselineExecutionAttempts),
       loadJson(DATA_FILES.servingCommandPlan),
       loadJson(DATA_FILES.servingWorkloads),
       loadJson(DATA_FILES.paperEvaluation),
@@ -700,6 +722,7 @@ async function main() {
       paperBaselineRuns,
       paperBaselineProbes,
       paperBaselineRunReadiness,
+      paperBaselineExecutionAttempts,
       servingCommandPlan,
       servingWorkloads,
       paperEvaluation,

@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "paper_baseline_execution_attempts": [
+    {
+      "id": "mpk_qwen3_0p6b_native_token2_h200",
+      "paper_baseline_id": "mpk",
+      "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
+      "title": "MPK Qwen3 0.6B Native Bring-Up",
+      "status": "pass",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 2 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --save-tokens ../../cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json",
+      "observation": "Native torch path loaded Qwen/Qwen3-0.6B from the shared H200 Hugging Face cache and saved a two-token output JSON.",
+      "blocker": "",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.log"
+      ],
+      "summary": {
+        "mode": "torch",
+        "prompt_length": 39,
+        "generate_length": 2,
+        "latency_ms_per_token": 238.19888305664062
+      }
+    },
+    {
+      "id": "mpk_qwen3_0p6b_persistent_profile_token2_h200",
+      "paper_baseline_id": "mpk",
+      "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+      "title": "MPK Qwen3 0.6B Persistent Profile Bring-Up",
+      "status": "failed_after_kernel_launch",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 2 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --use-mirage --profiling --trace-name qwen3_0p6b_token2 --output-dir ../../cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build --save-tokens ../../cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/persistent-token2.json",
+      "observation": "MPK generated 7261 tasks, compiled an sm_90a megakernel, saved the rank-0 launcher, and launched the persistent kernel asynchronously.",
+      "blocker": "Profiler export failed with KeyError: (16, 0) in mirage.mpk.profiler_persistent.export_to_perfetto_trace.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/persistent-token2.log",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build/kernel_metadata_rank0.json",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build/task_graph_rank0.json",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build/test_rank0.cu"
+      ],
+      "summary": {
+        "mode": "mpk",
+        "total_tasks": 7261,
+        "total_events": 1870,
+        "compiled": true,
+        "launched": true
+      }
+    },
+    {
+      "id": "mpk_qwen3_0p6b_persistent_noprofile_token2_h200",
+      "paper_baseline_id": "mpk",
+      "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+      "title": "MPK Qwen3 0.6B Persistent No-Profile Bring-Up",
+      "status": "failed_after_kernel_launch",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 2 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --use-mirage --output-dir ../../cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build-noprofile --save-tokens ../../cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/persistent-token2-noprofile.json",
+      "observation": "MPK generated 7261 tasks, compiled an sm_90a megakernel, saved the rank-0 launcher, and launched the persistent kernel asynchronously without profiler export.",
+      "blocker": "CUDA synchronize reported illegal memory access after persistent-kernel launch.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/persistent-token2-noprofile.log",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build-noprofile/kernel_metadata_rank0.json",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build-noprofile/task_graph_rank0.json",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build-noprofile/test_rank0.cu"
+      ],
+      "summary": {
+        "mode": "mpk",
+        "total_tasks": 7261,
+        "total_events": 1870,
+        "compiled": true,
+        "launched": true
+      }
+    },
+    {
+      "id": "mpk_qwen3_0p6b_persistent_token8_h200",
+      "paper_baseline_id": "mpk",
+      "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+      "title": "MPK Qwen3 0.6B Persistent Token-Batch-8 Bring-Up",
+      "status": "failed_after_kernel_launch",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 2 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 8 --ignore-eos --use-mirage --output-dir ../../cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build-token8 --save-tokens ../../cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/persistent-token2-token8.json",
+      "observation": "Using the upstream default max_num_batched_tokens=8 generated 7660 tasks, compiled an sm_90a megakernel, saved the rank-0 launcher, and launched the persistent kernel asynchronously.",
+      "blocker": "CUDA synchronize reported illegal memory access after persistent-kernel launch.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/persistent-token2-token8.log",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build-token8/kernel_metadata_rank0.json",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build-token8/task_graph_rank0.json",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build-token8/test_rank0.cu"
+      ],
+      "summary": {
+        "mode": "mpk",
+        "total_tasks": 7660,
+        "total_events": 1870,
+        "compiled": true,
+        "launched": true
+      }
+    }
+  ]
+}

@@ -400,6 +400,59 @@ def validate_paper_baseline_run_readiness(
         fail(f"missing run readiness coverage: {missing}")
 
 
+def validate_paper_baseline_execution_attempts(
+    data: dict[str, Any],
+    baseline_ids: set[str],
+    run_ids: set[str],
+    root: Path,
+) -> None:
+    records = require_list(
+        data,
+        "paper_baseline_execution_attempts",
+        "paper baseline execution attempts",
+    )
+    check_unique_ids(records, "paper baseline execution attempt")
+    allowed_status = {
+        "pass",
+        "partial",
+        "fail",
+        "failed_after_kernel_launch",
+        "blocked",
+    }
+    for record in records:
+        owner = f"paper baseline execution attempt {record['id']}"
+        for key in ("title", "status", "artifact_root", "command", "observation"):
+            require_string(record, key, owner)
+        if record["status"] not in allowed_status:
+            fail(f"{owner} has invalid status: {record['status']}")
+        baseline_id = require_string(record, "paper_baseline_id", owner)
+        if baseline_id not in baseline_ids:
+            fail(f"{owner} references unknown paper_baseline_id: {baseline_id}")
+        run_id = require_string(record, "paper_baseline_run_id", owner)
+        if run_id not in run_ids:
+            fail(f"{owner} references unknown paper_baseline_run_id: {run_id}")
+        artifact_root = require_string(record, "artifact_root", owner)
+        if not artifact_root.startswith("tmp/"):
+            fail(f"{owner} artifact_root must be under tmp/: {artifact_root}")
+        if not (root / artifact_root).is_dir():
+            fail(f"{owner} artifact_root is missing: {artifact_root}")
+        hardware = require_dict(record, "hardware", owner)
+        for key in ("gpu", "machine", "compute_target"):
+            require_string(hardware, key, owner)
+        artifacts = require_list(record, "artifacts", owner)
+        has_json_artifact = False
+        for artifact in artifacts:
+            if not isinstance(artifact, str) or not artifact.startswith("tmp/"):
+                fail(f"{owner} artifact must be under tmp/: {artifact}")
+            path = root / artifact
+            if not path.is_file():
+                fail(f"{owner} artifact path missing: {artifact}")
+            has_json_artifact = has_json_artifact or path.suffix == ".json"
+        if not has_json_artifact:
+            fail(f"{owner} must include at least one JSON artifact")
+        require_dict(record, "summary", owner)
+
+
 def validate_serving_workloads(data: dict[str, Any], root: Path) -> set[str]:
     records = require_list(data, "serving_workloads", "serving workloads")
     serving_ids = check_unique_ids(records, "serving workload")
@@ -1207,6 +1260,9 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     paper_baseline_run_readiness = load_json(
         root, "paper_baseline_run_readiness.json"
     )
+    paper_baseline_execution_attempts = load_json(
+        root, "paper_baseline_execution_attempts.json"
+    )
     serving_command_plan = load_json(root, "serving_command_plan.json")
     serving_workloads = load_json(root, "serving_workloads.json")
     paper_evaluation_matrix = load_json(root, "paper_evaluation_matrix.json")
@@ -1236,6 +1292,12 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         run_ids,
         planned_run_ids,
         baseline_ids,
+        root,
+    )
+    validate_paper_baseline_execution_attempts(
+        paper_baseline_execution_attempts,
+        baseline_ids,
+        run_ids,
         root,
     )
     validate_serving_command_plan(
