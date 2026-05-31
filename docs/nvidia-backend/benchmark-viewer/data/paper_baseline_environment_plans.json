@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "a4f5eabf",
-    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-a4f5eabf/",
+    "pto_commit": "ef065acd",
+    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-ef065acd/",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
     ]
@@ -95,7 +95,7 @@
         "Editable installation is kept in the isolated environment because the installed vllm module and console script are required before server and throughput runs."
       ],
       "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-a4f5eabf/environment-plans.json"
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-ef065acd/environment-plans.json"
     },
     {
       "id": "sglang_runtime_environment",
@@ -176,7 +176,7 @@
         "The pinned source declares torch==2.11.0 and CUDA 13 packages; installing it into the project venv would make PTO tests non-reproducible."
       ],
       "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-a4f5eabf/environment-plans.json"
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-ef065acd/environment-plans.json"
     }
   ]
 }

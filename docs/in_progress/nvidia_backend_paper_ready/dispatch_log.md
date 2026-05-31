@@ -2592,3 +2592,41 @@ Each entry must include:
   isolated-environment recipes in the benchmark viewer. The next execution
   slice should materialize those venvs on the evaluation host, run the
   validation commands, then capture serving benchmark raw JSON.
+
+### 2026-06-01 - Serving Baseline Environment Attempt
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned bounded
+  execution evidence for the vLLM isolated environment plan.
+- Exact Codex command or script invocation: added
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py`,
+  updated the benchmark viewer, validator, tests, changelog docs, and ran
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py --baseline vllm --max-steps 3 --timeout-seconds 300`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready serving
+  baseline environment materialization evidence.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, benchmark-viewer data and
+  rendering, validator/tests, dispatch log, changelog docs, and local `tmp/`
+  environment-attempt artifacts. No upstream repositories were edited or
+  pushed.
+- Dependencies and blocked assumptions: the vLLM attempt intentionally stopped
+  after three of nine plan steps to avoid pulling the full torch/vLLM stack in
+  this slice. It created the dedicated `tmp/` venv, upgraded build tools, and
+  installed explicit `uvloop`; remaining requirement and validation steps are
+  still pending.
+- Verification commands and results:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py --baseline vllm --max-steps 3 --timeout-seconds 300`
+  -> wrote
+  `tmp/cuda-backend/paper-baselines/environment-attempts/vllm-ef065acd/environment-attempt.json`;
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q -k 'environment_attempt_captures_bounded_steps or benchmark_viewer_has_json_backed_review_data'`
+  -> `2 passed`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/checks/validate_benchmark_viewer_data.py`
+  -> `benchmark viewer data validation passed`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: continue vLLM from step 4
+  (`requirements/common.txt` and `requirements/cuda.txt`), then editable
+  install and validation imports. Start a matching SGLang environment attempt
+  after vLLM setup is either complete or blocked with concrete install logs.

@@ -477,6 +477,22 @@ PYTHONPATH=$PWD:$PWD/python \
     --output docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json
 ```
 
+Use `paper_baseline_environment_plan.py` and
+`paper_baseline_environment_attempt.py` for vLLM/SGLang setup. The planner
+exports the full isolated `tmp/` venv recipe; the attempt runner executes a
+bounded prefix of that recipe and writes reviewable logs plus JSON evidence.
+Do not install serving-framework dependencies into the project `.venv` or user
+site:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_plan.py
+
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py \
+    --baseline vllm --max-steps 3 --timeout-seconds 300
+```
+
 Use `thunderkittens_mha_capture.py` for bounded ThunderKittens H200 MHA
 captures before attempting the full upstream `test_correctness.py` and
 `benchmark.py` sweeps. The script imports the already-built

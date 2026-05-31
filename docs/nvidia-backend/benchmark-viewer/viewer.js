@@ -5,6 +5,7 @@ const DATA_FILES = {
   paperBaselineRuns: "data/paper_baseline_runs.json",
   paperBaselineProbes: "data/paper_baseline_probes.json",
   paperBaselineEnvironmentPlans: "data/paper_baseline_environment_plans.json",
+  paperBaselineEnvironmentAttempts: "data/paper_baseline_environment_attempts.json",
   paperBaselineRunReadiness: "data/paper_baseline_run_readiness.json",
   paperBaselineExecutionAttempts: "data/paper_baseline_execution_attempts.json",
   servingCommandPlan: "data/serving_command_plan.json",
@@ -327,6 +328,9 @@ function renderPaperBaselines() {
     const environmentPlans = state.paperBaselineEnvironmentPlans
       .paper_baseline_environment_plans
       .filter((plan) => plan.paper_baseline_id === baseline.id);
+    const environmentAttempts = state.paperBaselineEnvironmentAttempts
+      .paper_baseline_environment_attempts
+      .filter((attempt) => attempt.paper_baseline_id === baseline.id);
     const executionAttempts = state.paperBaselineExecutionAttempts
       .paper_baseline_execution_attempts
       .filter((attempt) => attempt.paper_baseline_id === baseline.id);
@@ -413,6 +417,22 @@ function renderPaperBaselines() {
         `Next: ${plan.next_action}`,
       ].join("\n");
     });
+    const environmentAttemptItems = environmentAttempts.map((attempt) => {
+      const steps = attempt.steps.map((step) => (
+        `${step.index}. ${step.kind}: ${step.status}; log: ${step.log}`
+      ));
+      const blocker = attempt.blocker || "none";
+      return [
+        `${attempt.title} (${attempt.status})`,
+        `Environment: ${attempt.environment_path}`,
+        `Progress: ${attempt.steps_completed}/${attempt.steps_total}`,
+        `Artifact root: ${attempt.artifact_root}`,
+        `Steps: ${steps.join(" | ")}`,
+        `Observation: ${attempt.observation}`,
+        `Blocker: ${blocker}`,
+        `Next: ${attempt.next_action}`,
+      ].join("\n");
+    });
     const executionItems = executionAttempts.map((attempt) => {
       const evidence = attempt.artifacts.join(", ");
       const blocker = attempt.blocker || "none";
@@ -440,6 +460,7 @@ function renderPaperBaselines() {
       ...namedList("Run Readiness", readinessItems),
       ...namedList("Readiness Probes", probeItems),
       ...namedList("Environment Plans", environmentItems),
+      ...namedList("Environment Attempts", environmentAttemptItems),
       ...namedList("Execution Attempts", executionItems),
     );
     return details;

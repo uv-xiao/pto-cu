@@ -880,6 +880,113 @@ def validate_paper_baseline_environment_plans(
         fail(f"environment plans missing baseline coverage: {missing}")
 
 
+def validate_paper_baseline_environment_attempts(
+    data: dict[str, Any],
+    baseline_ids: set[str],
+    environment_plan_ids: set[str],
+    root: Path,
+) -> None:
+    if data.get("schema_version") != 1:
+        fail("paper baseline environment attempts schema_version must be 1")
+    metadata = require_dict(data, "metadata", "paper baseline environment attempts")
+    artifact_root = require_string(
+        metadata,
+        "artifact_root",
+        "paper baseline environment attempt metadata",
+    )
+    require_current_artifact_path(root, artifact_root, "environment attempt metadata")
+    source_files = set(
+        require_list(metadata, "source_files", "environment attempt metadata")
+    )
+    if source_files != {
+        "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_environment_plans.json",
+    }:
+        fail("paper baseline environment attempt source_files are stale")
+
+    records = require_list(
+        data,
+        "paper_baseline_environment_attempts",
+        "paper baseline environment attempts",
+    )
+    check_unique_ids(records, "paper baseline environment attempt")
+    allowed_status = {"pass", "partial", "fail"}
+    allowed_step_status = {"pass", "fail", "timeout"}
+    allowed_step_kind = {"install", "validation"}
+    for record in records:
+        owner = f"paper baseline environment attempt {record['id']}"
+        for key in (
+            "title",
+            "status",
+            "environment_path",
+            "artifact_root",
+            "observation",
+            "next_action",
+        ):
+            require_string(record, key, owner)
+        if record["status"] not in allowed_status:
+            fail(f"{owner} has invalid status: {record['status']}")
+        baseline_id = require_string(record, "paper_baseline_id", owner)
+        if baseline_id not in baseline_ids:
+            fail(f"{owner} references unknown paper_baseline_id: {baseline_id}")
+        plan_id = require_string(record, "environment_plan_id", owner)
+        if plan_id not in environment_plan_ids:
+            fail(f"{owner} references unknown environment_plan_id: {plan_id}")
+        if not record["environment_path"].startswith("tmp/"):
+            fail(f"{owner} environment_path must be under tmp/")
+        attempt_root = require_string(record, "artifact_root", owner)
+        if not attempt_root.startswith("tmp/"):
+            fail(f"{owner} artifact_root must be under tmp/: {attempt_root}")
+        if not (root / attempt_root).is_dir():
+            fail(f"{owner} artifact_root is missing: {attempt_root}")
+        for key in ("steps_completed", "steps_total"):
+            value = record.get(key)
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+                fail(f"{owner} has invalid {key}")
+        if record["steps_completed"] > record["steps_total"]:
+            fail(f"{owner} completed more steps than total")
+        steps = require_list(record, "steps", owner)
+        if len(steps) != record["steps_completed"]:
+            fail(f"{owner} steps_completed does not match steps length")
+        blocker = record.get("blocker", "")
+        if not isinstance(blocker, str):
+            fail(f"{owner} blocker is not a string")
+        if record["status"] != "pass" and not blocker:
+            fail(f"{owner} is not pass but has no blocker")
+        if record["status"] == "partial" and not (
+            record["steps_completed"] < record["steps_total"]
+        ):
+            fail(f"{owner} partial status must leave remaining steps")
+        for step in steps:
+            if not isinstance(step, dict):
+                fail(f"{owner} step is not an object")
+            for key in ("kind", "status", "command", "log"):
+                require_string(step, key, owner)
+            if step["kind"] not in allowed_step_kind:
+                fail(f"{owner} has invalid step kind: {step['kind']}")
+            if step["status"] not in allowed_step_status:
+                fail(f"{owner} has invalid step status: {step['status']}")
+            command = step["command"]
+            if ".venv" in command or "--user" in command:
+                fail(f"{owner} step command escapes environment policy")
+            log = step["log"]
+            if not log.startswith("tmp/") or not (root / log).is_file():
+                fail(f"{owner} step log is missing: {log}")
+            duration = step.get("duration_seconds")
+            if not isinstance(duration, (int, float)) or isinstance(duration, bool):
+                fail(f"{owner} step duration is invalid")
+        artifacts = require_list(record, "artifacts", owner)
+        has_json = False
+        for artifact in artifacts:
+            if not isinstance(artifact, str) or not artifact.startswith("tmp/"):
+                fail(f"{owner} artifact must be under tmp/: {artifact}")
+            path = root / artifact
+            if not path.is_file():
+                fail(f"{owner} artifact is missing: {artifact}")
+            has_json = has_json or path.suffix == ".json"
+        if not has_json:
+            fail(f"{owner} needs at least one JSON artifact")
+
+
 def validate_capture_imports(
     data: dict[str, Any],
     benchmark_ids: set[str],
@@ -1384,6 +1491,9 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     paper_baseline_environment_plans = load_json(
         root, "paper_baseline_environment_plans.json"
     )
+    paper_baseline_environment_attempts = load_json(
+        root, "paper_baseline_environment_attempts.json"
+    )
     paper_baseline_run_readiness = load_json(
         root, "paper_baseline_run_readiness.json"
     )
@@ -1408,6 +1518,18 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     validate_paper_baseline_environment_plans(
         paper_baseline_environment_plans,
         baseline_ids,
+        root,
+    )
+    environment_plan_ids = {
+        record["id"]
+        for record in paper_baseline_environment_plans[
+            "paper_baseline_environment_plans"
+        ]
+    }
+    validate_paper_baseline_environment_attempts(
+        paper_baseline_environment_attempts,
+        baseline_ids,
+        environment_plan_ids,
         root,
     )
     run_ids = {

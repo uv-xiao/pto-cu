@@ -1704,6 +1704,96 @@ dependencies = [
     assert (output_root / "environment-plans.json").is_file()
 
 
+def test_paper_baseline_environment_attempt_captures_bounded_steps(tmp_path):
+    env_path = tmp_path / "tmp" / "envs" / "vllm-fixture"
+    marker = env_path / "marker.txt"
+    plans_path = tmp_path / "paper_baseline_environment_plans.json"
+    viewer_output = tmp_path / "paper_baseline_environment_attempts.json"
+    output_root = tmp_path / "attempts"
+    plans_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "metadata": {
+                    "pto_commit": "abc1234",
+                    "artifact_root": "tmp/environment-plans/",
+                    "source_files": [
+                        "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
+                    ],
+                },
+                "paper_baseline_environment_plans": [
+                    {
+                        "id": "vllm_runtime_environment",
+                        "paper_baseline_id": "vllm",
+                        "title": "vLLM fixture env",
+                        "status": "plan_ready",
+                        "source_path": "tmp/baselines/vllm",
+                        "source_commit": "1234567890abcdef",
+                        "environment_path": str(env_path),
+                        "python_policy": "fixture policy",
+                        "dependency_sources": ["pyproject.toml"],
+                        "critical_packages": [],
+                        "manual_packages": [],
+                        "install_commands": [
+                            f"python3 -c \"import pathlib; pathlib.Path(r'{env_path}').mkdir(parents=True, exist_ok=True)\"",
+                            f"python3 -c \"import pathlib; pathlib.Path(r'{marker}').write_text('installed')\"",
+                        ],
+                        "validation_commands": [
+                            f"python3 -c \"import pathlib; assert pathlib.Path(r'{marker}').read_text() == 'installed'\""
+                        ],
+                        "execution_gaps": ["fixture gap"],
+                        "notes": ["fixture note"],
+                        "next_action": "fixture next",
+                        "raw_artifact": "tmp/environment-plans/environment-plans.json",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py",
+            "--plans",
+            str(plans_path),
+            "--baseline",
+            "vllm",
+            "--output-root",
+            str(output_root),
+            "--viewer-output",
+            str(viewer_output),
+            "--commit",
+            "abc1234",
+            "--max-steps",
+            "2",
+            "--timeout-seconds",
+            "10",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(viewer_output.read_text(encoding="utf-8"))
+    [attempt] = payload["paper_baseline_environment_attempts"]
+    assert attempt["paper_baseline_id"] == "vllm"
+    assert attempt["environment_plan_id"] == "vllm_runtime_environment"
+    assert attempt["status"] == "partial"
+    assert attempt["steps_completed"] == 2
+    assert attempt["steps_total"] == 3
+    assert attempt["environment_path"] == str(env_path)
+    assert all(step["status"] == "pass" for step in attempt["steps"])
+    assert all(".venv" not in step["command"] for step in attempt["steps"])
+    assert (output_root / "environment-attempt.json").is_file()
+    assert (output_root / "step-01.log").is_file()
+    assert marker.read_text(encoding="utf-8") == "installed"
+
+
 def test_paper_baseline_viewer_export_rejects_bool_sample_count(tmp_path):
     raw = {
         "metadata": {
@@ -2487,6 +2577,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (
         VIEWER_ROOT / "data" / "paper_baseline_environment_plans.json"
     ).is_file()
+    assert (
+        VIEWER_ROOT / "data" / "paper_baseline_environment_attempts.json"
+    ).is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_execution_attempts.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_command_plan.json").is_file()
@@ -2510,6 +2603,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paperBaselineEnvironmentPlans",
         "paper_baseline_environment_plans",
         "Environment Plans",
+        "paperBaselineEnvironmentAttempts",
+        "paper_baseline_environment_attempts",
+        "Environment Attempts",
         "paperBaselineRunReadiness",
         "paper_baseline_run_readiness",
         "Run Readiness",
