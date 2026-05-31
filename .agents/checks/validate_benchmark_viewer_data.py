@@ -848,6 +848,16 @@ def validate_paper_baseline_environment_plans(
             "notes",
         ):
             require_list(record, key, owner)
+        if not isinstance(record.get("preflight_commands"), list):
+            fail(f"{owner} preflight_commands is not a list")
+        preflight_after = record.get("preflight_after_install_steps")
+        if (
+            not isinstance(preflight_after, int)
+            or isinstance(preflight_after, bool)
+            or preflight_after < 0
+            or preflight_after > len(record["install_commands"])
+        ):
+            fail(f"{owner} has invalid preflight_after_install_steps")
         if ".venv" in " ".join(record["install_commands"]):
             fail(f"{owner} must not install into the project .venv")
         if "--user" in " ".join(record["install_commands"]):
@@ -916,7 +926,7 @@ def validate_paper_baseline_environment_attempts(
     check_unique_ids(records, "paper baseline environment attempt")
     allowed_status = {"pass", "partial", "fail"}
     allowed_step_status = {"pass", "fail", "timeout"}
-    allowed_step_kind = {"install", "validation"}
+    allowed_step_kind = {"install", "preflight", "validation"}
     for record in records:
         owner = f"paper baseline environment attempt {record['id']}"
         for key in (

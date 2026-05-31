@@ -411,6 +411,7 @@ function renderPaperBaselines() {
         `Critical packages: ${critical.join(" | ")}`,
         `Manual packages: ${manual.length ? manual.join(" | ") : "none"}`,
         `Install: ${plan.install_commands.join(" | ")}`,
+        `Preflight: ${plan.preflight_commands.length ? plan.preflight_commands.join(" | ") : "none"}`,
         `Validate: ${plan.validation_commands.join(" | ")}`,
         `Execution gaps: ${plan.execution_gaps.join(" | ")}`,
         `Raw artifact: ${plan.raw_artifact}`,

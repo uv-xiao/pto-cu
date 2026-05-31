@@ -500,6 +500,13 @@ PYTHONPATH=$PWD:$PWD/python \
     --timeout-seconds 900
 ```
 
+The vLLM plan includes a spinloop preflight before editable install. On
+Python 3.10 environments it currently fails fast when the pinned source builds
+`spinloop` with `USE_SABI 3.11` while `spinloop.cpp` uses `Py_buffer` and
+`PyBuffer_Release`. Resolve that by using a Python 3.11+ baseline environment
+or by adding a reviewed local reproducibility patch/build flag; do not patch
+the upstream checkout in place.
+
 Use `thunderkittens_mha_capture.py` for bounded ThunderKittens H200 MHA
 captures before attempting the full upstream `test_correctness.py` and
 `benchmark.py` sweeps. The script imports the already-built

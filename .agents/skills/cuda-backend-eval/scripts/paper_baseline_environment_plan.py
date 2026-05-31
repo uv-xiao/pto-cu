@@ -71,6 +71,13 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
             "env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/{env_bin}:$PATH "
             "$REPO_ROOT/{env_python} -m pip install "
             "-r requirements/build/cuda.txt",
+        ],
+        "preflight_steps": [
+            "{env_python} "
+            ".agents/skills/cuda-backend-eval/scripts/vllm_spinloop_preflight.py "
+            "--source {source_path} --env-python {env_python}",
+        ],
+        "install_after_preflight_steps": [
             "REPO_ROOT=$PWD && cd {source_path} && "
             "env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/{env_bin}:$PATH "
             "$REPO_ROOT/{env_python} -m pip install --no-build-isolation -e .",
@@ -107,6 +114,9 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
         "install_steps": [
             "env PYTHONNOUSERSITE=1 PATH={env_bin}:$PATH "
             "{env_python} -m pip install --upgrade pip setuptools wheel",
+        ],
+        "preflight_steps": [],
+        "install_after_preflight_steps": [
             "REPO_ROOT=$PWD && cd {source_path} && "
             "env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/{env_bin}:$PATH "
             "$REPO_ROOT/{env_python} -m pip install --no-build-isolation -e \"python[all]\"",
@@ -324,6 +334,15 @@ def build_environment_plan(
         step.format(source_path=source_path, env_python=env_python, env_bin=env_bin)
         for step in spec["install_steps"]
     )
+    preflight_after_install_steps = len(install_commands)
+    preflight_commands = [
+        step.format(source_path=source_path, env_python=env_python, env_bin=env_bin)
+        for step in spec.get("preflight_steps", [])
+    ]
+    install_commands.extend(
+        step.format(source_path=source_path, env_python=env_python, env_bin=env_bin)
+        for step in spec.get("install_after_preflight_steps", [])
+    )
     validation_commands = [
         (
             "env PYTHONNOUSERSITE=1 "
@@ -355,6 +374,8 @@ def build_environment_plan(
         "critical_packages": critical_packages,
         "manual_packages": list(spec.get("manual_packages", [])),
         "install_commands": install_commands,
+        "preflight_commands": preflight_commands,
+        "preflight_after_install_steps": preflight_after_install_steps,
         "validation_commands": validation_commands,
         "execution_gaps": [
             "Environment has not been materialized by this planner artifact.",

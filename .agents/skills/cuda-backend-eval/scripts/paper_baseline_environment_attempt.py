@@ -144,14 +144,34 @@ def build_attempt(
 
     plan = plan_for_baseline(plans, baseline_id)
     install_commands = list(plan.get("install_commands", []))
+    preflight_commands = list(plan.get("preflight_commands", []))
     validation_commands = list(plan.get("validation_commands", []))
     if not install_commands:
         fail(f"{plan.get('id', baseline_id)} has no install_commands")
     if not validation_commands:
         fail(f"{plan.get('id', baseline_id)} has no validation_commands")
+    preflight_after_install_steps = plan.get(
+        "preflight_after_install_steps",
+        len(install_commands),
+    )
+    if (
+        not isinstance(preflight_after_install_steps, int)
+        or isinstance(preflight_after_install_steps, bool)
+        or preflight_after_install_steps < 0
+        or preflight_after_install_steps > len(install_commands)
+    ):
+        fail(f"{plan.get('id', baseline_id)} has invalid preflight_after_install_steps")
 
     commands: list[tuple[str, str]] = [
-        *[("install", command) for command in install_commands],
+        *[
+            ("install", command)
+            for command in install_commands[:preflight_after_install_steps]
+        ],
+        *[("preflight", command) for command in preflight_commands],
+        *[
+            ("install", command)
+            for command in install_commands[preflight_after_install_steps:]
+        ],
         *[("validation", command) for command in validation_commands],
     ]
     steps_total = len(commands)

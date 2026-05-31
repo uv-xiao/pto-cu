@@ -289,7 +289,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1d3242de/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-94ba2e06/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -297,7 +297,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1d3242de/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-94ba2e06/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -307,7 +307,7 @@
           "paper_baseline_run_id": "vllm_serving_and_throughput",
           "paper_baseline_id": "vllm",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1d3242de/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-94ba2e06/",
           "blocking_gaps": [
             "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; A100: python_import failed: vllm.entrypoints.openai.api_server; A100: python_import failed: vllm.engine.arg_utils; H200: python_module failed: vllm; H200: python_import failed: vllm.entrypoints.openai.api_server; H200: python_import failed: vllm.engine.arg_utils."
           ],
@@ -317,7 +317,7 @@
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "paper_baseline_id": "sglang",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1d3242de/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-94ba2e06/",
           "blocking_gaps": [
             "Readiness probe sglang_source_entrypoints is partial: A100: python_module failed: orjson; A100: python_module failed: torchvision; A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_module failed: orjson; H200: python_module failed: torchvision; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ],

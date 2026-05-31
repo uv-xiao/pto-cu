@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "1d3242de",
-    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-1d3242de/",
+    "pto_commit": "94ba2e06",
+    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-94ba2e06/",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
     ]
@@ -116,6 +116,10 @@
         "REPO_ROOT=$PWD && cd tmp/baselines/vllm && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install -r requirements/build/cuda.txt",
         "REPO_ROOT=$PWD && cd tmp/baselines/vllm && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e ."
       ],
+      "preflight_commands": [
+        "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_preflight.py --source tmp/baselines/vllm --env-python tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python"
+      ],
+      "preflight_after_install_steps": 5,
       "validation_commands": [
         "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/vllm:$PWD/tmp/baselines/vllm/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm')\"",
         "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/vllm:$PWD/tmp/baselines/vllm/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.cli.main')\"",
@@ -131,7 +135,7 @@
         "Editable installation is kept in the isolated environment because the installed vllm module and console script are required before server and throughput runs."
       ],
       "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-1d3242de/environment-plans.json"
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-94ba2e06/environment-plans.json"
     },
     {
       "id": "sglang_runtime_environment",
@@ -195,6 +199,8 @@
         "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin:$PATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -m pip install --upgrade pip setuptools wheel",
         "REPO_ROOT=$PWD && cd tmp/baselines/sglang && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -m pip install --no-build-isolation -e \"python[all]\""
       ],
+      "preflight_commands": [],
+      "preflight_after_install_steps": 2,
       "validation_commands": [
         "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang')\"",
         "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('orjson')\"",
@@ -212,7 +218,7 @@
         "The pinned source declares torch==2.11.0 and CUDA 13 packages; installing it into the project venv would make PTO tests non-reproducible."
       ],
       "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-1d3242de/environment-plans.json"
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-94ba2e06/environment-plans.json"
     }
   ]
 }

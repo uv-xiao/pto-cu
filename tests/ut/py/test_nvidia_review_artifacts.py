@@ -1739,7 +1739,61 @@ dependencies = [
         "requirements/build/cuda.txt" in command
         for command in records["vllm"]["install_commands"]
     )
+    assert records["vllm"]["preflight_after_install_steps"] == 5
+    assert len(records["vllm"]["preflight_commands"]) == 1
+    assert "vllm_spinloop_preflight.py" in records["vllm"]["preflight_commands"][0]
+    assert records["sglang"]["preflight_commands"] == []
     assert (output_root / "environment-plans.json").is_file()
+
+
+def test_vllm_spinloop_preflight_rejects_python310_limited_api(tmp_path):
+    source = tmp_path / "vllm"
+    (source / "csrc").mkdir(parents=True)
+    (source / "CMakeLists.txt").write_text(
+        """
+define_extension_target(
+  spinloop
+  DESTINATION vllm
+  LANGUAGE CXX
+  SOURCES csrc/spinloop.cpp
+  USE_SABI 3.11
+  WITH_SOABI)
+""",
+        encoding="utf-8",
+    )
+    (source / "csrc" / "spinloop.cpp").write_text(
+        "void f() { Py_buffer buffer; PyBuffer_Release(&buffer); }\n",
+        encoding="utf-8",
+    )
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\n"
+        "printf '[3, 10, 12]\\n'\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/vllm_spinloop_preflight.py",
+            "--source",
+            str(source),
+            "--env-python",
+            str(fake_python),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "fail"
+    assert "Py_buffer" in payload["blocker"]
+    assert "Python 3.10.12" in payload["blocker"]
 
 
 def test_paper_baseline_environment_attempt_captures_bounded_steps(tmp_path):
@@ -2766,6 +2820,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paperBaselineEnvironmentPlans",
         "paper_baseline_environment_plans",
         "Environment Plans",
+        "preflight_commands",
+        "Preflight",
         "paperBaselineEnvironmentAttempts",
         "paper_baseline_environment_attempts",
         "Environment Attempts",
