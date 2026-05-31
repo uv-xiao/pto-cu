@@ -33,10 +33,15 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
         "title": "vLLM Isolated Runtime Environment",
         "dependency_sources": [
             "pyproject.toml",
+            "requirements/build/cuda.txt",
             "requirements/common.txt",
             "requirements/cuda.txt",
         ],
         "critical_packages": [
+            "cmake",
+            "ninja",
+            "setuptools-rust",
+            "setuptools-scm",
             "torch",
             "torchvision",
             "pydantic",
@@ -54,11 +59,21 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
             }
         ],
         "install_steps": [
+            "env PYTHONNOUSERSITE=1 PATH={env_bin}:$PATH "
             "{env_python} -m pip install --upgrade pip setuptools wheel",
+            "env PYTHONNOUSERSITE=1 PATH={env_bin}:$PATH "
             "{env_python} -m pip install uvloop",
-            "cd {source_path} && {env_python} -m pip install "
+            "REPO_ROOT=$PWD && cd {source_path} && "
+            "env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/{env_bin}:$PATH "
+            "$REPO_ROOT/{env_python} -m pip install "
             "-r requirements/common.txt -r requirements/cuda.txt",
-            "cd {source_path} && {env_python} -m pip install --no-build-isolation -e .",
+            "REPO_ROOT=$PWD && cd {source_path} && "
+            "env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/{env_bin}:$PATH "
+            "$REPO_ROOT/{env_python} -m pip install "
+            "-r requirements/build/cuda.txt",
+            "REPO_ROOT=$PWD && cd {source_path} && "
+            "env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/{env_bin}:$PATH "
+            "$REPO_ROOT/{env_python} -m pip install --no-build-isolation -e .",
         ],
         "validation_modules": [
             "vllm",
@@ -90,8 +105,11 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
         ],
         "manual_packages": [],
         "install_steps": [
+            "env PYTHONNOUSERSITE=1 PATH={env_bin}:$PATH "
             "{env_python} -m pip install --upgrade pip setuptools wheel",
-            "cd {source_path} && {env_python} -m pip install --no-build-isolation -e \"python[all]\"",
+            "REPO_ROOT=$PWD && cd {source_path} && "
+            "env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/{env_bin}:$PATH "
+            "$REPO_ROOT/{env_python} -m pip install --no-build-isolation -e \"python[all]\"",
         ],
         "validation_modules": [
             "sglang",
@@ -281,6 +299,7 @@ def build_environment_plan(
         / f"{baseline_id}-{source_short}"
     )
     env_python = f"{repo_relative(env_path)}/bin/python"
+    env_bin = f"{repo_relative(env_path)}/bin"
     dependency_sources = list(spec["dependency_sources"])
     evidence = dependency_evidence(source_root, dependency_sources)
     critical_packages = []
@@ -302,7 +321,7 @@ def build_environment_plan(
     )
     install_commands = [create_command]
     install_commands.extend(
-        step.format(source_path=source_path, env_python=env_python)
+        step.format(source_path=source_path, env_python=env_python, env_bin=env_bin)
         for step in spec["install_steps"]
     )
     validation_commands = [

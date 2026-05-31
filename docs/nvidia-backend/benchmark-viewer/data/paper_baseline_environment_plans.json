@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "ef065acd",
-    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-ef065acd/",
+    "pto_commit": "1d3242de",
+    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-1d3242de/",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
     ]
@@ -19,15 +19,50 @@
       "python_policy": "Create a dedicated venv under tmp/ with --system-site-packages; never install these serving framework dependencies into the project .venv or user site.",
       "dependency_sources": [
         "pyproject.toml",
+        "requirements/build/cuda.txt",
         "requirements/common.txt",
         "requirements/cuda.txt"
       ],
       "critical_packages": [
         {
+          "name": "cmake",
+          "declared": true,
+          "evidence": [
+            "pyproject.toml: cmake>=3.26.1",
+            "requirements/build/cuda.txt: cmake>=3.26.1"
+          ]
+        },
+        {
+          "name": "ninja",
+          "declared": true,
+          "evidence": [
+            "pyproject.toml: ninja",
+            "requirements/build/cuda.txt: ninja",
+            "requirements/common.txt: ninja"
+          ]
+        },
+        {
+          "name": "setuptools-rust",
+          "declared": true,
+          "evidence": [
+            "pyproject.toml: setuptools-rust>=1.9.0",
+            "requirements/build/cuda.txt: setuptools-rust>=1.9.0"
+          ]
+        },
+        {
+          "name": "setuptools-scm",
+          "declared": true,
+          "evidence": [
+            "pyproject.toml: setuptools-scm>=8.0",
+            "requirements/build/cuda.txt: setuptools-scm>=8"
+          ]
+        },
+        {
           "name": "torch",
           "declared": true,
           "evidence": [
             "pyproject.toml: torch == 2.11.0",
+            "requirements/build/cuda.txt: torch==2.11.0",
             "requirements/cuda.txt: torch==2.11.0"
           ]
         },
@@ -75,10 +110,11 @@
       ],
       "install_commands": [
         "python3 -m venv --system-site-packages tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
-        "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --upgrade pip setuptools wheel",
-        "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install uvloop",
-        "cd tmp/baselines/vllm && tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install -r requirements/common.txt -r requirements/cuda.txt",
-        "cd tmp/baselines/vllm && tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e ."
+        "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --upgrade pip setuptools wheel",
+        "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install uvloop",
+        "REPO_ROOT=$PWD && cd tmp/baselines/vllm && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install -r requirements/common.txt -r requirements/cuda.txt",
+        "REPO_ROOT=$PWD && cd tmp/baselines/vllm && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install -r requirements/build/cuda.txt",
+        "REPO_ROOT=$PWD && cd tmp/baselines/vllm && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e ."
       ],
       "validation_commands": [
         "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/vllm:$PWD/tmp/baselines/vllm/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm')\"",
@@ -95,7 +131,7 @@
         "Editable installation is kept in the isolated environment because the installed vllm module and console script are required before server and throughput runs."
       ],
       "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-ef065acd/environment-plans.json"
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-1d3242de/environment-plans.json"
     },
     {
       "id": "sglang_runtime_environment",
@@ -156,8 +192,8 @@
       "manual_packages": [],
       "install_commands": [
         "python3 -m venv --system-site-packages tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15",
-        "tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -m pip install --upgrade pip setuptools wheel",
-        "cd tmp/baselines/sglang && tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -m pip install --no-build-isolation -e \"python[all]\""
+        "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin:$PATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -m pip install --upgrade pip setuptools wheel",
+        "REPO_ROOT=$PWD && cd tmp/baselines/sglang && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -m pip install --no-build-isolation -e \"python[all]\""
       ],
       "validation_commands": [
         "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang')\"",
@@ -176,7 +212,7 @@
         "The pinned source declares torch==2.11.0 and CUDA 13 packages; installing it into the project venv would make PTO tests non-reproducible."
       ],
       "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-ef065acd/environment-plans.json"
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-1d3242de/environment-plans.json"
     }
   ]
 }

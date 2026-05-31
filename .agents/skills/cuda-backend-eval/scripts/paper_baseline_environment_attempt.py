@@ -131,10 +131,14 @@ def build_attempt(
     output_root: Path,
     commit: str,
     max_steps: int,
+    start_step: int,
     timeout_seconds: int,
+    attempt_id_suffix: str,
 ) -> dict[str, Any]:
     if max_steps <= 0:
         fail("--max-steps must be positive")
+    if start_step <= 0:
+        fail("--start-step must be positive")
     if timeout_seconds <= 0:
         fail("--timeout-seconds must be positive")
 
@@ -150,10 +154,14 @@ def build_attempt(
         *[("install", command) for command in install_commands],
         *[("validation", command) for command in validation_commands],
     ]
+    steps_total = len(commands)
+    if start_step > steps_total:
+        fail(f"--start-step {start_step} is past the {steps_total} planned steps")
+    selected_commands = commands[start_step - 1 : start_step - 1 + max_steps]
     output_root.mkdir(parents=True, exist_ok=True)
     steps: list[dict[str, Any]] = []
     blocked = ""
-    for index, (kind, command) in enumerate(commands[:max_steps], start=1):
+    for index, (kind, command) in enumerate(selected_commands, start=start_step):
         step = run_step(
             command=command,
             index=index,
@@ -169,26 +177,44 @@ def build_attempt(
             break
 
     failed = any(step["status"] != "pass" for step in steps)
-    steps_total = len(commands)
     steps_completed = len(steps)
+    end_step = steps[-1]["index"] if steps else start_step - 1
     status = "fail" if failed else "pass"
-    if not failed and steps_completed < steps_total:
+    if not failed and end_step < steps_total:
         status = "partial"
         blocked = (
-            f"bounded attempt stopped after {steps_completed} of {steps_total} "
+            f"bounded attempt stopped at step {end_step} of {steps_total} "
             "environment steps"
         )
 
     artifacts = [step["log"] for step in steps]
     artifacts.append(repo_relative(output_root / "environment-attempt.json"))
+    suffix = f"_{attempt_id_suffix}" if attempt_id_suffix else ""
+    if status == "partial":
+        next_action = (
+            "Continue the remaining install and validation steps before serving "
+            "benchmark execution."
+        )
+    elif status == "fail":
+        next_action = (
+            "Inspect the failed step log, resolve the recorded blocker, then "
+            f"rerun this attempt with --start-step {start_step}."
+        )
+    else:
+        next_action = plan["next_action"]
     attempt = {
-        "id": f"{baseline_id}_environment_attempt_{commit.replace('-', '_')}",
+        "id": (
+            f"{baseline_id}_environment_attempt_"
+            f"{commit.replace('-', '_')}{suffix}"
+        ),
         "paper_baseline_id": baseline_id,
         "environment_plan_id": plan["id"],
         "title": f"{plan['title']} setup attempt",
         "status": status,
         "environment_path": plan["environment_path"],
         "artifact_root": repo_relative(output_root) + "/",
+        "start_step": start_step,
+        "end_step": end_step,
         "steps_completed": steps_completed,
         "steps_total": steps_total,
         "steps": steps,
@@ -198,12 +224,7 @@ def build_attempt(
             "Bounded environment setup attempt captured command logs and JSON "
             "evidence under tmp/."
         ),
-        "next_action": (
-            "Continue the remaining install and validation steps before serving "
-            "benchmark execution."
-            if status == "partial"
-            else plan["next_action"]
-        ),
+        "next_action": next_action,
     }
     payload = {
         "schema_version": 1,
@@ -220,6 +241,30 @@ def build_attempt(
     return payload
 
 
+def append_viewer_attempts(viewer_output: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    if not viewer_output.is_file():
+        return payload
+    existing = load_json(viewer_output)
+    existing_records = existing.get("paper_baseline_environment_attempts")
+    new_records = payload.get("paper_baseline_environment_attempts")
+    if not isinstance(existing_records, list) or not isinstance(new_records, list):
+        fail(f"invalid environment attempts JSON: {viewer_output}")
+    by_id: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for record in [*existing_records, *new_records]:
+        if not isinstance(record, dict) or not isinstance(record.get("id"), str):
+            fail(f"invalid environment attempt record in {viewer_output}")
+        identifier = record["id"]
+        if identifier not in by_id:
+            order.append(identifier)
+        by_id[identifier] = record
+    merged = dict(payload)
+    merged["paper_baseline_environment_attempts"] = [
+        by_id[identifier] for identifier in order
+    ]
+    return merged
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--plans", type=Path, default=DEFAULT_PLANS)
@@ -228,6 +273,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--viewer-output", type=Path, default=DEFAULT_VIEWER_OUTPUT)
     parser.add_argument("--commit", default=None)
     parser.add_argument("--max-steps", type=int, default=1)
+    parser.add_argument("--start-step", type=int, default=1)
+    parser.add_argument("--attempt-id-suffix", default="")
+    parser.add_argument("--append-viewer", action="store_true")
     parser.add_argument("--timeout-seconds", type=int, default=300)
     return parser.parse_args()
 
@@ -244,8 +292,12 @@ def main() -> None:
         output_root=output_root,
         commit=commit,
         max_steps=args.max_steps,
+        start_step=args.start_step,
         timeout_seconds=args.timeout_seconds,
+        attempt_id_suffix=args.attempt_id_suffix,
     )
+    if args.append_viewer:
+        payload = append_viewer_attempts(args.viewer_output, payload)
     write_json(args.viewer_output, payload)
     print(f"wrote {repo_relative(output_root / 'environment-attempt.json')}")
 

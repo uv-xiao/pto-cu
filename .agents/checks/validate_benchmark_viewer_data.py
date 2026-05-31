@@ -852,6 +852,11 @@ def validate_paper_baseline_environment_plans(
             fail(f"{owner} must not install into the project .venv")
         if "--user" in " ".join(record["install_commands"]):
             fail(f"{owner} must not use pip --user")
+        for command in record["install_commands"]:
+            if "-m pip install" in command and "PYTHONNOUSERSITE=1" not in command:
+                fail(f"{owner} pip install must disable user-site packages")
+            if "-m pip install" in command and "PATH=" not in command:
+                fail(f"{owner} pip install must put the env bin on PATH")
         for package in record["critical_packages"]:
             if not isinstance(package, dict):
                 fail(f"{owner} critical package is not an object")
@@ -938,22 +943,32 @@ def validate_paper_baseline_environment_attempts(
             fail(f"{owner} artifact_root must be under tmp/: {attempt_root}")
         if not (root / attempt_root).is_dir():
             fail(f"{owner} artifact_root is missing: {attempt_root}")
-        for key in ("steps_completed", "steps_total"):
+        for key in ("start_step", "end_step", "steps_completed", "steps_total"):
             value = record.get(key)
-            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            if not isinstance(value, int) or isinstance(value, bool):
                 fail(f"{owner} has invalid {key}")
+            if key != "end_step" and value <= 0:
+                fail(f"{owner} has invalid {key}")
+        if record["end_step"] < record["start_step"] - 1:
+            fail(f"{owner} end_step is before the attempted window")
+        if record["end_step"] > record["steps_total"]:
+            fail(f"{owner} end_step is past steps_total")
         if record["steps_completed"] > record["steps_total"]:
             fail(f"{owner} completed more steps than total")
         steps = require_list(record, "steps", owner)
         if len(steps) != record["steps_completed"]:
             fail(f"{owner} steps_completed does not match steps length")
+        if steps and steps[0].get("index") != record["start_step"]:
+            fail(f"{owner} first captured step does not match start_step")
+        if steps and steps[-1].get("index") != record["end_step"]:
+            fail(f"{owner} last captured step does not match end_step")
         blocker = record.get("blocker", "")
         if not isinstance(blocker, str):
             fail(f"{owner} blocker is not a string")
         if record["status"] != "pass" and not blocker:
             fail(f"{owner} is not pass but has no blocker")
         if record["status"] == "partial" and not (
-            record["steps_completed"] < record["steps_total"]
+            record["end_step"] < record["steps_total"]
         ):
             fail(f"{owner} partial status must leave remaining steps")
         for step in steps:
@@ -968,6 +983,10 @@ def validate_paper_baseline_environment_attempts(
             command = step["command"]
             if ".venv" in command or "--user" in command:
                 fail(f"{owner} step command escapes environment policy")
+            if "-m pip install" in command and "PYTHONNOUSERSITE=1" not in command:
+                fail(f"{owner} pip install step must disable user-site packages")
+            if "-m pip install" in command and "PATH=" not in command:
+                fail(f"{owner} pip install step must put the env bin on PATH")
             log = step["log"]
             if not log.startswith("tmp/") or not (root / log).is_file():
                 fail(f"{owner} step log is missing: {log}")

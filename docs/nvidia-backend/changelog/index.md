@@ -57,6 +57,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 serving baseline probe scope](2026-06-01-serving-baseline-probe-scope.md)
 - [2026-06-01 serving baseline environment plans](2026-06-01-serving-baseline-environment-plans.md)
 - [2026-06-01 serving baseline environment attempt](2026-06-01-serving-baseline-environment-attempt.md)
+- [2026-06-01 vLLM environment materialization](2026-06-01-vllm-environment-materialization.md)
 - [2026-05-31 current artifact evidence guard](2026-05-31-current-artifact-evidence-guard.md)
 - [2026-05-31 serving policy](2026-05-31-serving-policy.md)
 - [2026-05-31 paired probe dependencies](2026-05-31-paired-probe-dependencies.md)

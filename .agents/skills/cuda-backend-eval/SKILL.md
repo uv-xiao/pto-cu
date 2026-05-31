@@ -491,6 +491,13 @@ PYTHONPATH=$PWD:$PWD/python \
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py \
     --baseline vllm --max-steps 3 --timeout-seconds 300
+
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py \
+    --baseline vllm --start-step 6 --max-steps 1 \
+    --attempt-id-suffix step06 --append-viewer \
+    --output-root tmp/cuda-backend/paper-baselines/environment-attempts/vllm-$(git rev-parse --short HEAD)-step06 \
+    --timeout-seconds 900
 ```
 
 Use `thunderkittens_mha_capture.py` for bounded ThunderKittens H200 MHA

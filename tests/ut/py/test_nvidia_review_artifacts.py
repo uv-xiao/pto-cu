@@ -1579,14 +1579,19 @@ def test_paper_baseline_environment_plan_exports_isolated_serving_envs(tmp_path)
     vllm_root = baseline_root / "vllm"
     sglang_root = baseline_root / "sglang"
     (vllm_root / "requirements").mkdir(parents=True)
+    (vllm_root / "requirements" / "build").mkdir(parents=True)
     (vllm_root / "pyproject.toml").write_text(
         """
 [build-system]
-requires = ["torch == 2.11.0"]
+requires = ["torch == 2.11.0", "setuptools-rust>=1.9.0", "setuptools-scm>=8.0"]
 [project]
 name = "vllm"
 dependencies = ["uvloop", "pydantic", "cbor2"]
 """,
+        encoding="utf-8",
+    )
+    (vllm_root / "requirements" / "build" / "cuda.txt").write_text(
+        "cmake>=3.26.1\nninja\nsetuptools-rust>=1.9.0\nsetuptools-scm>=8.0\n",
         encoding="utf-8",
     )
     (vllm_root / "requirements" / "common.txt").write_text(
@@ -1679,6 +1684,17 @@ dependencies = [
             records["sglang"]["install_commands"][0],
         ]
     )
+    assert all(
+        command.startswith("REPO_ROOT=$PWD && cd ")
+        for command in [
+            command
+            for command in (
+                records["vllm"]["install_commands"]
+                + records["sglang"]["install_commands"]
+            )
+            if command.startswith("REPO_ROOT=") or command.startswith("cd ")
+        ]
+    )
     assert ".venv" not in " ".join(
         records["vllm"]["install_commands"] + records["sglang"]["install_commands"]
     )
@@ -1688,6 +1704,22 @@ dependencies = [
             records["vllm"]["install_commands"]
             + records["sglang"]["install_commands"]
         )
+    )
+    assert all(
+        "PYTHONNOUSERSITE=1" in command
+        for command in (
+            records["vllm"]["install_commands"]
+            + records["sglang"]["install_commands"]
+        )
+        if "-m pip install" in command
+    )
+    assert all(
+        "PATH=" in command and "/bin:$PATH" in command
+        for command in (
+            records["vllm"]["install_commands"]
+            + records["sglang"]["install_commands"]
+        )
+        if "-m pip install" in command
     )
     assert "--user" not in " ".join(
         records["vllm"]["install_commands"] + records["sglang"]["install_commands"]
@@ -1700,7 +1732,13 @@ dependencies = [
         for package in records["vllm"]["critical_packages"]
     }
     assert vllm_packages["torch"]["declared"]
+    assert vllm_packages["setuptools-rust"]["declared"]
+    assert vllm_packages["setuptools-scm"]["declared"]
     assert vllm_packages["cbor2"]["declared"]
+    assert any(
+        "requirements/build/cuda.txt" in command
+        for command in records["vllm"]["install_commands"]
+    )
     assert (output_root / "environment-plans.json").is_file()
 
 
@@ -1792,6 +1830,131 @@ def test_paper_baseline_environment_attempt_captures_bounded_steps(tmp_path):
     assert (output_root / "environment-attempt.json").is_file()
     assert (output_root / "step-01.log").is_file()
     assert marker.read_text(encoding="utf-8") == "installed"
+
+
+def test_paper_baseline_environment_attempt_appends_resume_window(tmp_path):
+    env_path = tmp_path / "tmp" / "envs" / "vllm-fixture"
+    marker = env_path / "marker.txt"
+    plans_path = tmp_path / "paper_baseline_environment_plans.json"
+    viewer_output = tmp_path / "paper_baseline_environment_attempts.json"
+    first_output_root = tmp_path / "attempts-first"
+    second_output_root = tmp_path / "attempts-second"
+    plans_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "metadata": {
+                    "pto_commit": "abc1234",
+                    "artifact_root": "tmp/environment-plans/",
+                    "source_files": [
+                        "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
+                    ],
+                },
+                "paper_baseline_environment_plans": [
+                    {
+                        "id": "vllm_runtime_environment",
+                        "paper_baseline_id": "vllm",
+                        "title": "vLLM fixture env",
+                        "status": "plan_ready",
+                        "source_path": "tmp/baselines/vllm",
+                        "source_commit": "1234567890abcdef",
+                        "environment_path": str(env_path),
+                        "python_policy": "fixture policy",
+                        "dependency_sources": ["pyproject.toml"],
+                        "critical_packages": [],
+                        "manual_packages": [],
+                        "install_commands": [
+                            f"python3 -c \"import pathlib; pathlib.Path(r'{env_path}').mkdir(parents=True, exist_ok=True)\"",
+                            f"python3 -c \"import pathlib; pathlib.Path(r'{marker}').write_text('installed')\"",
+                        ],
+                        "validation_commands": [
+                            f"python3 -c \"import pathlib; assert pathlib.Path(r'{marker}').read_text() == 'installed'\""
+                        ],
+                        "execution_gaps": ["fixture gap"],
+                        "notes": ["fixture note"],
+                        "next_action": "fixture next",
+                        "raw_artifact": "tmp/environment-plans/environment-plans.json",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    first = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py",
+            "--plans",
+            str(plans_path),
+            "--baseline",
+            "vllm",
+            "--output-root",
+            str(first_output_root),
+            "--viewer-output",
+            str(viewer_output),
+            "--commit",
+            "abc1234",
+            "--max-steps",
+            "2",
+            "--timeout-seconds",
+            "10",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert first.returncode == 0, first.stdout
+
+    second = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py",
+            "--plans",
+            str(plans_path),
+            "--baseline",
+            "vllm",
+            "--output-root",
+            str(second_output_root),
+            "--viewer-output",
+            str(viewer_output),
+            "--commit",
+            "abc1234",
+            "--start-step",
+            "3",
+            "--max-steps",
+            "1",
+            "--attempt-id-suffix",
+            "step03",
+            "--append-viewer",
+            "--timeout-seconds",
+            "10",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert second.returncode == 0, second.stdout
+
+    payload = json.loads(viewer_output.read_text(encoding="utf-8"))
+    attempts = payload["paper_baseline_environment_attempts"]
+    assert [attempt["id"] for attempt in attempts] == [
+        "vllm_environment_attempt_abc1234",
+        "vllm_environment_attempt_abc1234_step03",
+    ]
+    resume = attempts[1]
+    assert resume["start_step"] == 3
+    assert resume["end_step"] == 3
+    assert resume["steps_total"] == 3
+    assert resume["steps_completed"] == 1
+    assert resume["steps"][0]["index"] == 3
+    assert resume["steps"][0]["kind"] == "validation"
+    assert resume["steps"][0]["status"] == "pass"
+    assert (second_output_root / "step-03.log").is_file()
 
 
 def test_paper_baseline_viewer_export_rejects_bool_sample_count(tmp_path):

@@ -2630,3 +2630,46 @@ Each entry must include:
   (`requirements/common.txt` and `requirements/cuda.txt`), then editable
   install and validation imports. Start a matching SGLang environment attempt
   after vLLM setup is either complete or blocked with concrete install logs.
+
+### 2026-06-01 - vLLM Environment Materialization
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned vLLM
+  environment materialization and blocker capture.
+- Exact Codex command or script invocation: added resumable/appendable
+  environment attempts, fixed vLLM build-requirement planning, tightened pip
+  setup to `PYTHONNOUSERSITE=1` plus env-local `PATH`, regenerated viewer data,
+  recreated `tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3`, and ran
+  bounded vLLM setup windows for steps 1-6.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready serving
+  baseline environment materialization evidence.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, benchmark-viewer data and
+  rendering, validator/tests, dispatch log, changelog docs, and local `tmp/`
+  environment-attempt artifacts. No upstream repositories were edited or
+  pushed.
+- Dependencies and blocked assumptions: vLLM runtime/CUDA requirements and
+  CUDA build requirements now install in the isolated env with user-site
+  disabled. Editable install reaches the source build and fails at
+  `csrc/spinloop.cpp` under `Py_LIMITED_API=0x030b0000` because `Py_buffer` and
+  `PyBuffer_Release` are not visible.
+- Verification commands and results:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q -k 'environment_plan_exports_isolated_serving_envs or environment_attempt_appends_resume_window'`
+  -> `2 passed`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py --baseline vllm --max-steps 3 --timeout-seconds 300 --commit 1d3242de`
+  -> wrote
+  `tmp/cuda-backend/paper-baselines/environment-attempts/vllm-1d3242de/environment-attempt.json`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py --baseline vllm --start-step 4 --max-steps 1 --attempt-id-suffix step04 --append-viewer --output-root tmp/cuda-backend/paper-baselines/environment-attempts/vllm-1d3242de-step04 --timeout-seconds 900 --commit 1d3242de`
+  -> step 4 passed;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py --baseline vllm --start-step 5 --max-steps 1 --attempt-id-suffix step05 --append-viewer --output-root tmp/cuda-backend/paper-baselines/environment-attempts/vllm-1d3242de-step05 --timeout-seconds 600 --commit 1d3242de`
+  -> step 5 passed;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py --baseline vllm --start-step 6 --max-steps 1 --attempt-id-suffix step06 --append-viewer --output-root tmp/cuda-backend/paper-baselines/environment-attempts/vllm-1d3242de-step06 --timeout-seconds 900 --commit 1d3242de`
+  -> step 6 failed with the `spinloop.cpp` limited-API compile blocker.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: decide whether to patch the pinned vLLM
+  source locally, adjust build flags for `spinloop`, or use an
+  upstream-supported prebuilt/skip-extension route before vLLM serving runs.
+  SGLang environment materialization is still pending.

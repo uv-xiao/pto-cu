@@ -425,7 +425,8 @@ function renderPaperBaselines() {
       return [
         `${attempt.title} (${attempt.status})`,
         `Environment: ${attempt.environment_path}`,
-        `Progress: ${attempt.steps_completed}/${attempt.steps_total}`,
+        `Window: ${attempt.start_step}-${attempt.end_step} of ${attempt.steps_total}`,
+        `Captured steps: ${attempt.steps_completed}`,
         `Artifact root: ${attempt.artifact_root}`,
         `Steps: ${steps.join(" | ")}`,
         `Observation: ${attempt.observation}`,
