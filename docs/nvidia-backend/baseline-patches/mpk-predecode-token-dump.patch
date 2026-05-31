@@ -1,0 +1,29 @@
+diff --git a/demo/qwen3/demo.py b/demo/qwen3/demo.py
+index 1b7c7d3..e015bdb 100644
+--- a/demo/qwen3/demo.py
++++ b/demo/qwen3/demo.py
+@@ -843,6 +843,25 @@ if __name__ == "__main__":
+         print("tokens.shape = ", tokens.shape)
+         for r in range(total_num_requests):
+             generated_ids = tokens[r, : step[r] + 1]
++            if save_path and rank == 0:
++                debug_path = f"{save_path}.predecode.json"
++                prompt_len = prompt_lengths[r].item()
++                generated_cpu = generated_ids.detach().cpu()
++                debug_payload = {
++                    "request_id": r,
++                    "step": int(step[r].item()),
++                    "prompt_length": int(prompt_len),
++                    "generated_length": int(step[r].item() + 1 - prompt_len),
++                    "min_token_id": int(generated_cpu.min().item()),
++                    "max_token_id": int(generated_cpu.max().item()),
++                    "prompt_token_ids": generated_cpu[:prompt_len].tolist(),
++                    "generated_token_ids": generated_cpu[
++                        prompt_len:min(generated_cpu.numel(), prompt_len + MAX_SAVE_TOKENS)
++                    ].tolist(),
++                }
++                with open(debug_path, "w") as f:
++                    json.dump(debug_payload, f, indent=2)
++                print(f"Saved predecode token debug to {debug_path}")
+             response = tokenizer.decode(generated_ids, skip_special_tokens=True)
+             print(response)

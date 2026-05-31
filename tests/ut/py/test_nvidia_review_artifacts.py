@@ -2768,6 +2768,14 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert patched_mpk["summary"]["tokens_saved"]
     assert patched_mpk["summary"]["exit_status"] == 0
     assert "local patch" in patched_mpk["blocker"]
+    runtime_patch = (
+        "docs/nvidia-backend/baseline-patches/"
+        "mpk-snapshot-pointer-runtime-config.patch"
+    )
+    assert runtime_patch in patched_mpk["reproducibility_patches"]
+    assert "paged_kv_indices_snapshot" in (ROOT / runtime_patch).read_text(
+        encoding="utf-8"
+    )
     patched_mpk_memcheck = attempts_by_id[
         "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200"
     ]
@@ -2781,6 +2789,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         == "OverflowError"
     )
     assert "snapshot pointer patch" in patched_mpk_memcheck["blocker"]
+    assert runtime_patch in patched_mpk_memcheck["reproducibility_patches"]
     patched_mpk_predecode = attempts_by_id[
         "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200"
     ]
@@ -2796,6 +2805,20 @@ def test_benchmark_viewer_has_json_backed_review_data():
         == "OverflowError"
     )
     assert "generated token -1" in patched_mpk_predecode["blocker"]
+    debug_patch = (
+        "docs/nvidia-backend/baseline-patches/"
+        "mpk-predecode-token-dump.patch"
+    )
+    assert patched_mpk_predecode["reproducibility_patches"] == [
+        runtime_patch,
+        debug_patch,
+    ]
+    assert "tokens.json.predecode.json" in " ".join(
+        patched_mpk_predecode["artifacts"]
+    )
+    assert "generated_token_ids" in (ROOT / debug_patch).read_text(
+        encoding="utf-8"
+    )
     vdcores_attempt = attempts_by_id["vdcores_qwen3_1p7b_dry_build_h200"]
     assert vdcores_attempt["status"] == "partial"
     assert vdcores_attempt["summary"]["layers"] == 28

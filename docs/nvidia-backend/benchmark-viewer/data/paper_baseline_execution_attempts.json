@@ -297,6 +297,9 @@
       "command": "cd tmp/baselines/mirage-mpk && apply local RuntimeConfig::paged_kv_indices_snapshot pointer patch, then HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 1 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --use-mirage --output-dir ../../cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/build --save-tokens ../../cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/tokens.json",
       "observation": "Assigning meta_tensors[10] to RuntimeConfig::paged_kv_indices_snapshot in the local MPK clone clears the previous scheduler null-write symptom for the smallest Qwen3-0.6B persistent run; the run exits 0 and saves token output.",
       "blocker": "The result is still partial because it depends on a local patch in the ignored MPK baseline clone; the patch must be upstreamed or carried as an explicit reproducibility patch before paper-grade MPK rows can be imported.",
+      "reproducibility_patches": [
+        "docs/nvidia-backend/baseline-patches/mpk-snapshot-pointer-runtime-config.patch"
+      ],
       "artifacts": [
         "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/tokens.json",
         "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/metadata.txt",
@@ -341,6 +344,9 @@
       "command": "cd tmp/baselines/mirage-mpk && apply local RuntimeConfig::paged_kv_indices_snapshot pointer patch, then HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 compute-sanitizer --tool memcheck --target-processes all python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 1 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --use-mirage --output-dir ../../cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/build --save-tokens ../../cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/tokens.json",
       "observation": "The snapshot pointer patch removes the previous invalid global write from compute-sanitizer output: the patched memcheck log has no invalid global access records and only reports the existing cudaDeviceSetLimit API error before the demo later fails while decoding generated token IDs.",
       "blocker": "The snapshot pointer patch is still local to the ignored MPK clone and the sanitized run remains partial because the demo raises OverflowError at demo.py:846 during tokenizer.decode under compute-sanitizer; import paper-grade MPK rows only after the patch is reproducible and the sanitized run reaches token export.",
+      "reproducibility_patches": [
+        "docs/nvidia-backend/baseline-patches/mpk-snapshot-pointer-runtime-config.patch"
+      ],
       "artifacts": [
         "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/memcheck-summary.json",
         "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/metadata.txt",
@@ -398,6 +404,10 @@
       "command": "cd tmp/baselines/mirage-mpk && apply local RuntimeConfig::paged_kv_indices_snapshot pointer patch plus predecode generated_ids dump, then HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 compute-sanitizer --tool memcheck --target-processes all python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 1 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --use-mirage --output-dir ../../cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck_predecode/build --save-tokens ../../cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck_predecode/tokens.json",
       "observation": "The predecode instrumentation confirms the snapshot-pointer patch clears the invalid global access symptom, but the sanitized run reaches token state with generated_token_ids=[-1] at step 39 before tokenizer.decode raises OverflowError.",
       "blocker": "The next MPK blocker is the invalid generated token -1 under compute-sanitizer after the snapshot pointer patch. Import paper-grade MPK rows only after the patch is reproducible and the persistent argmax/output-token path produces valid token IDs under sanitizer.",
+      "reproducibility_patches": [
+        "docs/nvidia-backend/baseline-patches/mpk-snapshot-pointer-runtime-config.patch",
+        "docs/nvidia-backend/baseline-patches/mpk-predecode-token-dump.patch"
+      ],
       "artifacts": [
         "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck_predecode/memcheck-summary.json",
         "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck_predecode/metadata.txt",

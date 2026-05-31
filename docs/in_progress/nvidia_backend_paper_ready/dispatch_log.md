@@ -1590,3 +1590,33 @@ Each entry must include:
   points to generated token id `-1` after the snapshot pointer patch. Next
   work should inspect MPK's persistent argmax/output-token path and make the
   local baseline patch reproducible without touching upstream.
+
+### 2026-05-31 - MPK Reproducibility Patches
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned MPK
+  baseline reproducibility slice.
+- Exact Codex command or script invocation: converted the ignored
+  `tmp/baselines/mirage-mpk` diffs into committed patch files under
+  `docs/nvidia-backend/baseline-patches/`, then wired those paths into the
+  patched MPK execution-attempt records.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready MPK baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, committed baseline patch
+  files, focused review tests, validator, dispatch log, and changelog docs.
+  No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the snapshot-pointer patch is still a
+  pto-cu-carried baseline delta, not an upstream MPK change. It can now be
+  reviewed and reapplied from this repo.
+- Verification commands and results: the focused TDD test and viewer-data
+  validator first failed because patched MPK attempts had no committed patch
+  references; after adding `reproducibility_patches`, both checks passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: MPK patch reproducibility is now an
+  explicit review artifact. The remaining MPK blocker is generated token id
+  `-1` under sanitizer plus missing paper-grade scheduler/resource/latency
+  import.

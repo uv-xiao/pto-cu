@@ -451,6 +451,26 @@ def validate_paper_baseline_execution_attempts(
             has_json_artifact = has_json_artifact or path.suffix == ".json"
         if not has_json_artifact:
             fail(f"{owner} must include at least one JSON artifact")
+        patch_markers = " ".join(
+            str(record.get(key, ""))
+            for key in ("command", "observation", "blocker")
+        )
+        if "local patch" in patch_markers:
+            patch_paths = require_list(record, "reproducibility_patches", owner)
+            if not patch_paths:
+                fail(f"{owner} local patch needs reproducibility_patches")
+            for patch_path in patch_paths:
+                if (
+                    not isinstance(patch_path, str)
+                    or not patch_path.startswith("docs/")
+                    or not patch_path.endswith(".patch")
+                ):
+                    fail(
+                        f"{owner} reproducibility patch must be docs/*.patch: "
+                        f"{patch_path}"
+                    )
+                if not (root / patch_path).is_file():
+                    fail(f"{owner} reproducibility patch missing: {patch_path}")
         require_dict(record, "summary", owner)
 
 
