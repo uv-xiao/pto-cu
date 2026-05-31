@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "460a34ba",
-    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-460a34ba-step06-overlay-preflight/",
+    "pto_commit": "e1c48975",
+    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_environment_plans.json"
     ]
@@ -192,6 +192,241 @@
       "blocker": "bounded attempt stopped at step 7 of 12 environment steps",
       "observation": "Bounded environment setup attempt captured command logs and JSON evidence under tmp/.",
       "next_action": "Continue the remaining install and validation steps before serving benchmark execution."
+    },
+    {
+      "id": "vllm_environment_attempt_e1c48975_step08_editable_install",
+      "paper_baseline_id": "vllm",
+      "environment_plan_id": "vllm_runtime_environment",
+      "title": "vLLM Isolated Runtime Environment setup attempt",
+      "status": "fail",
+      "environment_path": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step08-editable-install/",
+      "start_step": 8,
+      "end_step": 8,
+      "steps_completed": 1,
+      "steps_total": 12,
+      "steps": [
+        {
+          "index": 8,
+          "kind": "install",
+          "status": "fail",
+          "returncode": 1,
+          "duration_seconds": 3.193,
+          "command": "REPO_ROOT=$PWD && cd tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e .",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step08-editable-install/step-08.log"
+        }
+      ],
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step08-editable-install/step-08.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step08-editable-install/environment-attempt.json"
+      ],
+      "blocker": "step 8 install fail for command: REPO_ROOT=$PWD && cd tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e .",
+      "observation": "Bounded environment setup attempt captured command logs and JSON evidence under tmp/.",
+      "next_action": "Inspect the failed step log, resolve the recorded blocker, then rerun this attempt with --start-step 8."
+    },
+    {
+      "id": "vllm_environment_attempt_e1c48975_step08_editable_install_versioned",
+      "paper_baseline_id": "vllm",
+      "environment_plan_id": "vllm_runtime_environment",
+      "title": "vLLM Isolated Runtime Environment setup attempt",
+      "status": "fail",
+      "environment_path": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step08-editable-install-versioned/",
+      "start_step": 8,
+      "end_step": 8,
+      "steps_completed": 1,
+      "steps_total": 12,
+      "steps": [
+        {
+          "index": 8,
+          "kind": "install",
+          "status": "fail",
+          "returncode": 1,
+          "duration_seconds": 15.899,
+          "command": "REPO_ROOT=$PWD && VLLM_VERSION_OVERRIDE=$($REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import setuptools_scm; print(setuptools_scm.get_version(root='$REPO_ROOT/tmp/baselines/vllm'))\") && cd tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython && env VLLM_VERSION_OVERRIDE=$VLLM_VERSION_OVERRIDE PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e .",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step08-editable-install-versioned/step-08.log"
+        }
+      ],
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step08-editable-install-versioned/step-08.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step08-editable-install-versioned/environment-attempt.json"
+      ],
+      "blocker": "step 8 install fail for command: REPO_ROOT=$PWD && VLLM_VERSION_OVERRIDE=$($REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import setuptools_scm; print(setuptools_scm.get_version(root='$REPO_ROOT/tmp/baselines/vllm'))\") && cd tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython && env VLLM_VERSION_OVERRIDE=$VLLM_VERSION_OVERRIDE PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e .",
+      "observation": "Bounded environment setup attempt captured command logs and JSON evidence under tmp/.",
+      "next_action": "Inspect the failed step log, resolve the recorded blocker, then rerun this attempt with --start-step 8."
+    },
+    {
+      "id": "vllm_environment_attempt_e1c48975_step06_overlay_preflight_install_clean",
+      "paper_baseline_id": "vllm",
+      "environment_plan_id": "vllm_runtime_environment",
+      "title": "vLLM Isolated Runtime Environment setup attempt",
+      "status": "partial",
+      "environment_path": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step06-overlay-preflight-install-clean/",
+      "start_step": 6,
+      "end_step": 8,
+      "steps_completed": 3,
+      "steps_total": 12,
+      "steps": [
+        {
+          "index": 6,
+          "kind": "install",
+          "status": "pass",
+          "returncode": 0,
+          "duration_seconds": 1.425,
+          "command": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_source_overlay.py --source tmp/baselines/vllm --overlay tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step06-overlay-preflight-install-clean/step-06.log"
+        },
+        {
+          "index": 7,
+          "kind": "preflight",
+          "status": "pass",
+          "returncode": 0,
+          "duration_seconds": 0.098,
+          "command": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_preflight.py --source tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython --env-python tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step06-overlay-preflight-install-clean/step-07.log"
+        },
+        {
+          "index": 8,
+          "kind": "install",
+          "status": "pass",
+          "returncode": 0,
+          "duration_seconds": 760.226,
+          "command": "REPO_ROOT=$PWD && VLLM_VERSION_OVERRIDE=$($REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import setuptools_scm; print(setuptools_scm.get_version(root='$REPO_ROOT/tmp/baselines/vllm'))\") && cd tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython && env VLLM_VERSION_OVERRIDE=$VLLM_VERSION_OVERRIDE PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e .",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step06-overlay-preflight-install-clean/step-08.log"
+        }
+      ],
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step06-overlay-preflight-install-clean/step-06.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step06-overlay-preflight-install-clean/step-07.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step06-overlay-preflight-install-clean/step-08.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step06-overlay-preflight-install-clean/environment-attempt.json"
+      ],
+      "blocker": "bounded attempt stopped at step 8 of 12 environment steps",
+      "observation": "Bounded environment setup attempt captured command logs and JSON evidence under tmp/.",
+      "next_action": "Continue the remaining install and validation steps before serving benchmark execution."
+    },
+    {
+      "id": "vllm_environment_attempt_e1c48975_step09_validation_imports",
+      "paper_baseline_id": "vllm",
+      "environment_plan_id": "vllm_runtime_environment",
+      "title": "vLLM Isolated Runtime Environment setup attempt",
+      "status": "fail",
+      "environment_path": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-validation-imports/",
+      "start_step": 9,
+      "end_step": 11,
+      "steps_completed": 3,
+      "steps_total": 12,
+      "steps": [
+        {
+          "index": 9,
+          "kind": "validation",
+          "status": "pass",
+          "returncode": 0,
+          "duration_seconds": 2.462,
+          "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm')\"",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-validation-imports/step-09.log"
+        },
+        {
+          "index": 10,
+          "kind": "validation",
+          "status": "pass",
+          "returncode": 0,
+          "duration_seconds": 2.473,
+          "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.cli.main')\"",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-validation-imports/step-10.log"
+        },
+        {
+          "index": 11,
+          "kind": "validation",
+          "status": "fail",
+          "returncode": 1,
+          "duration_seconds": 4.033,
+          "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.openai.api_server')\"",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-validation-imports/step-11.log"
+        }
+      ],
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-validation-imports/step-09.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-validation-imports/step-10.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-validation-imports/step-11.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-validation-imports/environment-attempt.json"
+      ],
+      "blocker": "step 11 validation fail for command: env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.openai.api_server')\"",
+      "observation": "Bounded environment setup attempt captured command logs and JSON evidence under tmp/.",
+      "next_action": "Inspect the failed step log, resolve the recorded blocker, then rerun this attempt with --start-step 9."
+    },
+    {
+      "id": "vllm_environment_attempt_e1c48975_step09_scipy_validation",
+      "paper_baseline_id": "vllm",
+      "environment_plan_id": "vllm_runtime_environment",
+      "title": "vLLM Isolated Runtime Environment setup attempt",
+      "status": "pass",
+      "environment_path": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/",
+      "start_step": 9,
+      "end_step": 13,
+      "steps_completed": 5,
+      "steps_total": 13,
+      "steps": [
+        {
+          "index": 9,
+          "kind": "install",
+          "status": "pass",
+          "returncode": 0,
+          "duration_seconds": 1.003,
+          "command": "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install 'scipy>=1.15.0'",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/step-09.log"
+        },
+        {
+          "index": 10,
+          "kind": "validation",
+          "status": "pass",
+          "returncode": 0,
+          "duration_seconds": 2.314,
+          "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm')\"",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/step-10.log"
+        },
+        {
+          "index": 11,
+          "kind": "validation",
+          "status": "pass",
+          "returncode": 0,
+          "duration_seconds": 2.638,
+          "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.cli.main')\"",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/step-11.log"
+        },
+        {
+          "index": 12,
+          "kind": "validation",
+          "status": "pass",
+          "returncode": 0,
+          "duration_seconds": 6.445,
+          "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.openai.api_server')\"",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/step-12.log"
+        },
+        {
+          "index": 13,
+          "kind": "validation",
+          "status": "pass",
+          "returncode": 0,
+          "duration_seconds": 5.039,
+          "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.engine.arg_utils')\"",
+          "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/step-13.log"
+        }
+      ],
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/step-09.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/step-10.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/step-11.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/step-12.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/step-13.log",
+        "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation/environment-attempt.json"
+      ],
+      "blocker": "",
+      "observation": "Bounded environment setup attempt captured command logs and JSON evidence under tmp/.",
+      "next_action": "Environment setup and validation passed; run the serving benchmark commands and import their raw JSON results."
     }
   ]
 }

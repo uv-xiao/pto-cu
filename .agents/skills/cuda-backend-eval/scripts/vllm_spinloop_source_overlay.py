@@ -50,6 +50,7 @@ def copy_ignore(_directory: str, names: list[str]) -> set[str]:
     ignored = {
         ".git",
         ".venv",
+        ".deps",
         "__pycache__",
         ".pytest_cache",
         "build",

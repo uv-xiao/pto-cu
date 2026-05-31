@@ -221,7 +221,10 @@ def build_attempt(
             f"rerun this attempt with --start-step {start_step}."
         )
     else:
-        next_action = plan["next_action"]
+        next_action = (
+            "Environment setup and validation passed; run the serving "
+            "benchmark commands and import their raw JSON results."
+        )
     attempt = {
         "id": (
             f"{baseline_id}_environment_attempt_"

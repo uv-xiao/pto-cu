@@ -2762,3 +2762,47 @@ Each entry must include:
   The next vLLM slice should run editable install from step 8 and capture the
   first remaining install or validation blocker. SGLang environment
   materialization is still pending.
+
+### 2026-06-01 - vLLM Environment Validation
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned vLLM
+  isolated environment materialization and validation.
+- Exact Codex command or script invocation: updated the vLLM environment plan
+  to pass `VLLM_VERSION_OVERRIDE` from the pinned upstream checkout, excluded
+  `.deps/` from source-overlay copies, added env-local SciPy before validation,
+  then ran `paper_baseline_environment_attempt.py` for the clean overlay
+  install window and validation window at commit `e1c48975`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready serving
+  baseline environment materialization evidence.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, benchmark-viewer data,
+  validator/tests, dispatch log, changelog docs, and local `tmp/`
+  environment-attempt artifacts. No upstream repositories were edited or
+  pushed.
+- Dependencies and blocked assumptions: the successful environment is local
+  A100 evidence. It does not yet prove H200 vLLM readiness or serving
+  benchmark performance.
+- Verification commands and results:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py
+  --baseline vllm --start-step 6 --max-steps 3 --attempt-id-suffix
+  step06_overlay_preflight_install_clean --append-viewer --output-root
+  tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step06-overlay-preflight-install-clean
+  --timeout-seconds 1800 --commit e1c48975`
+  -> steps 6, 7, and 8 passed; editable install completed in `760.226s`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py
+  --baseline vllm --start-step 9 --max-steps 5 --attempt-id-suffix
+  step09_scipy_validation --append-viewer --output-root
+  tmp/cuda-backend/paper-baselines/environment-attempts/vllm-e1c48975-step09-scipy-validation
+  --timeout-seconds 300 --commit e1c48975`
+  -> env-local SciPy install and all four validation imports passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: vLLM local environment readiness is now
+  captured. The next serving slice should run vLLM benchmark commands and
+  import raw JSON results, or separately materialize the same environment on
+  H200. SGLang environment materialization is still pending.

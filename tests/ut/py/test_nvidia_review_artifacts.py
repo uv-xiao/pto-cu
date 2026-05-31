@@ -1686,6 +1686,7 @@ dependencies = [
     )
     assert all(
         command.startswith("REPO_ROOT=$PWD && cd ")
+        or command.startswith("REPO_ROOT=$PWD && VLLM_VERSION_OVERRIDE=")
         for command in [
             command
             for command in (
@@ -1735,6 +1736,11 @@ dependencies = [
     assert vllm_packages["setuptools-rust"]["declared"]
     assert vllm_packages["setuptools-scm"]["declared"]
     assert vllm_packages["cbor2"]["declared"]
+    vllm_manual_packages = {
+        package["name"]: package
+        for package in records["vllm"]["manual_packages"]
+    }
+    assert "old system SciPy" in vllm_manual_packages["scipy"]["why"]
     assert any(
         "requirements/build/cuda.txt" in command
         for command in records["vllm"]["install_commands"]
@@ -1758,6 +1764,13 @@ dependencies = [
     assert any(
         records["vllm"]["build_source_path"] in command
         and "pip install --no-build-isolation -e ." in command
+        and "VLLM_VERSION_OVERRIDE" in command
+        and "setuptools_scm.get_version" in command
+        and records["vllm"]["source_path"] in command
+        for command in records["vllm"]["install_commands"]
+    )
+    assert any(
+        "scipy>=1.15.0" in command
         for command in records["vllm"]["install_commands"]
     )
     assert all(
@@ -1829,6 +1842,11 @@ def test_vllm_spinloop_source_overlay_patches_copy_only(tmp_path):
     overlay = tmp_path / "overlays" / "vllm"
     (source / "csrc").mkdir(parents=True)
     (source / ".git").mkdir()
+    (source / ".deps" / "cutlass-subbuild").mkdir(parents=True)
+    (source / ".deps" / "cutlass-subbuild" / "CMakeCache.txt").write_text(
+        "stale cache\n",
+        encoding="utf-8",
+    )
     (source / "CMakeLists.txt").write_text(
         """
 set(VLLM_SPINLOOP_EXT_SRC "csrc/spinloop.cpp")
@@ -1881,6 +1899,7 @@ define_extension_target(
     assert payload["status"] == "pass"
     assert not payload["upstream_checkout_mutated"]
     assert not (overlay / ".git").exists()
+    assert not (overlay / ".deps").exists()
     assert "-UPy_LIMITED_API" not in (source / "CMakeLists.txt").read_text(
         encoding="utf-8"
     )

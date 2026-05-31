@@ -56,6 +56,15 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
                     "The pinned api_server.py imports uvloop, but uvloop is "
                     "not declared in the inspected runtime requirement files."
                 ),
+            },
+            {
+                "name": "scipy",
+                "why": (
+                    "The --system-site-packages environment can otherwise "
+                    "import an old system SciPy that is incompatible with the "
+                    "NumPy version installed by the pinned vLLM dependency "
+                    "set during Transformers/OpenAI entrypoint imports."
+                ),
             }
         ],
         "install_steps": [
@@ -78,9 +87,15 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
             "--source {build_source_path} --env-python {env_python}",
         ],
         "install_after_preflight_steps": [
-            "REPO_ROOT=$PWD && cd {build_source_path} && "
-            "env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/{env_bin}:$PATH "
+            "REPO_ROOT=$PWD && "
+            "VLLM_VERSION_OVERRIDE=$($REPO_ROOT/{env_python} -c "
+            "\"import setuptools_scm; print(setuptools_scm.get_version(root='$REPO_ROOT/{source_path}'))\") && "
+            "cd {build_source_path} && "
+            "env VLLM_VERSION_OVERRIDE=$VLLM_VERSION_OVERRIDE "
+            "PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/{env_bin}:$PATH "
             "$REPO_ROOT/{env_python} -m pip install --no-build-isolation -e .",
+            "env PYTHONNOUSERSITE=1 PATH={env_bin}:$PATH "
+            "{env_python} -m pip install 'scipy>=1.15.0'",
         ],
         "source_overlay_steps": [
             "{env_python} "
@@ -103,6 +118,9 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
             "The Python 3.10 evaluation host builds vLLM from a copied source "
             "overlay that unsets Py_LIMITED_API for the spinloop CXX compile; "
             "the pinned upstream checkout under tmp/baselines is not modified.",
+            "Editable install derives VLLM_VERSION_OVERRIDE from the pinned "
+            "upstream checkout before changing into the overlay, because the "
+            "overlay intentionally omits Git metadata.",
         ],
     },
     "sglang": {

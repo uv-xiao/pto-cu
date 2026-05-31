@@ -523,6 +523,20 @@ PYTHONPATH=$PWD:$PWD/python \
     --timeout-seconds 300
 ```
 
+After editable install passes, the vLLM validation window installs an
+env-local SciPy wheel before imports. This prevents the
+`--system-site-packages` venv from importing an old system SciPy that is
+incompatible with vLLM's NumPy dependency:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py \
+    --baseline vllm --start-step 9 --max-steps 5 \
+    --attempt-id-suffix step09_scipy_validation --append-viewer \
+    --output-root tmp/cuda-backend/paper-baselines/environment-attempts/vllm-$(git rev-parse --short HEAD)-step09-scipy-validation \
+    --timeout-seconds 300
+```
+
 Use `thunderkittens_mha_capture.py` for bounded ThunderKittens H200 MHA
 captures before attempting the full upstream `test_correctness.py` and
 `benchmark.py` sweeps. The script imports the already-built
