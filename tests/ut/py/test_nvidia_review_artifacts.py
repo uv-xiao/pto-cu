@@ -812,6 +812,86 @@ def test_paper_baseline_results_update_marks_imported_run(tmp_path):
     assert mpk_status["status"] == "imported_to_viewer"
 
 
+def test_paper_baseline_results_update_rejects_missing_required_metric(tmp_path):
+    raw = {
+        "metadata": {
+            "pto_commit": "abc1234",
+        },
+        "results": [
+            {
+                "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+                "benchmark_id": "graph_layered_cross",
+                "hardware": {
+                    "gpu": "H200",
+                    "machine": "dasys-h200x8",
+                    "compute_target": "compute_90",
+                },
+                "inputs": {
+                    "shape": "n=1024, nine-task layered-cross DAG",
+                    "dtype": "float32",
+                    "repeat_policy": "warmup=1,repeat=3",
+                },
+                "metrics": {
+                    "kind": "paper_baseline_scheduler_trace",
+                    "sample_count": 3,
+                    "host_wall_ns": 900000,
+                    "device_wall_ns": 700000,
+                    "dispatch_trace": {"task_count": 9},
+                    "resource_policy": {
+                        "scheduler_blocks": 3,
+                        "worker_blocks": 4,
+                    },
+                },
+                "correctness": "pass",
+            }
+        ],
+    }
+    raw_path = tmp_path / "missing-scheduler-overhead.json"
+    raw_path.write_text(json.dumps(raw), encoding="utf-8")
+
+    results_path = tmp_path / "results.json"
+    runs_path = tmp_path / "paper_baseline_runs.json"
+    audit_path = tmp_path / "paper_readiness_audit.json"
+    viewer_path = tmp_path / "viewer-records.json"
+    results_path.write_text(
+        (VIEWER_ROOT / "data" / "results.json").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    runs_path.write_text(
+        (VIEWER_ROOT / "data" / "paper_baseline_runs.json").read_text(
+            encoding="utf-8"
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/paper_baseline_results_update.py",
+            str(raw_path),
+            "--artifact-root",
+            "tmp/cuda-backend/paper-baselines/mpk/fixture/",
+            "--results",
+            str(results_path),
+            "--runs",
+            str(runs_path),
+            "--viewer-output",
+            str(viewer_path),
+            "--audit-output",
+            str(audit_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode != 0
+    assert "scheduler_overhead" in result.stdout
+    assert not viewer_path.exists()
+    assert not audit_path.exists()
+
+
 def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
     baseline_root = tmp_path / "baselines"
     mpk_root = baseline_root / "mirage-mpk"

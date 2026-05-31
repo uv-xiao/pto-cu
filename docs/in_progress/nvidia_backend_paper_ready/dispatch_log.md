@@ -1208,3 +1208,31 @@ Each entry must include:
   run-readiness status and blockers for pending MPK, VDCores, vLLM, and SGLang
   runs. The next readiness movement still requires actual imported baseline
   measurements and broader ThunderKittens sweeps.
+
+### 2026-05-31 - Paper Baseline Required Metric Gate
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned measured
+  evidence acceptance-guard slice.
+- Exact Codex command or script invocation: no worker invocation. Extended
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_results_update.py`
+  to validate raw rows against each run's `required_metrics`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, strict code/document
+  evidence guardrail slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, focused review tests, goal
+  docs, dispatch log, and changelog docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: this is an import gate. It does not
+  create measured baseline results; it prevents incomplete raw artifacts from
+  becoming committed viewer evidence.
+- Verification commands and results: focused TDD fixture first failed because
+  an MPK scheduler trace without `scheduler_overhead` was imported. After
+  implementation, both the rejecting fixture and the successful update fixture
+  passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future MPK, VDCores, vLLM, SGLang, and
+  ThunderKittens raw captures must now satisfy the committed `required_metrics`
+  contract before `results.json`, run status, or audit data can change.

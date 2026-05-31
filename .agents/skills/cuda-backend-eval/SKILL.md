@@ -350,7 +350,8 @@ PYTHONPATH=$PWD:$PWD/python \
 
 Use `paper_baseline_results_update.py` only after checking that a raw baseline
 artifact is measured data worth committing into the viewer. It wraps the
-paper-baseline importer, writes the normalized viewer records when requested,
+paper-baseline importer, rejects raw rows that do not satisfy the run's
+`required_metrics`, writes the normalized viewer records when requested,
 updates `docs/nvidia-backend/benchmark-viewer/data/results.json`, marks the
 referenced `paper_baseline_runs.json` rows as `imported_to_viewer`, and
 regenerates `paper_readiness_audit.json` from the updated data:

@@ -27,6 +27,22 @@ DEFAULT_MATRIX = VIEWER_DATA / "paper_evaluation_matrix.json"
 DEFAULT_PROBES = VIEWER_DATA / "paper_baseline_probes.json"
 DEFAULT_RUN_READINESS = VIEWER_DATA / "paper_baseline_run_readiness.json"
 DEFAULT_AUDIT = VIEWER_DATA / "paper_readiness_audit.json"
+REQUIRED_METRIC_KEYS = {
+    "correctness": ("correctness",),
+    "device_elapsed_time": ("device_wall_ns",),
+    "scheduler_overhead": ("scheduler_overhead_ns",),
+    "dispatch_trace": ("dispatch_trace",),
+    "queue_pressure": ("queue_pressure",),
+    "resource_policy": ("resource_policy",),
+    "end_to_end_latency": ("end_to_end_latency_ns", "host_wall_ns"),
+    "time_to_first_token": ("time_to_first_token_ns",),
+    "inter_token_latency": ("inter_token_latency_ns",),
+    "throughput": ("throughput_tokens_per_s", "throughput"),
+    "model_and_prompt_shape": ("shape",),
+    "batch_or_concurrency_policy": ("repeat_policy",),
+    "tensor_shape": ("shape",),
+    "raw_artifacts": ("raw_artifact",),
+}
 
 
 def fail(message: str) -> None:
@@ -50,6 +66,67 @@ def imported_run_ids(raw_payload: dict[str, Any]) -> set[str]:
             fail("raw result missing paper_baseline_run_id")
         run_ids.add(run_id)
     return run_ids
+
+
+def index_runs(runs: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    records = runs.get("paper_baseline_runs")
+    if not isinstance(records, list):
+        fail("paper_baseline_runs payload has no paper_baseline_runs list")
+    by_id: dict[str, dict[str, Any]] = {}
+    for record in records:
+        if not isinstance(record, dict):
+            fail("paper_baseline_runs contains a non-object record")
+        run_id = record.get("id")
+        if isinstance(run_id, str):
+            by_id[run_id] = record
+    return by_id
+
+
+def has_metric(raw: dict[str, Any], metric: str, raw_artifact: str) -> bool:
+    if metric not in REQUIRED_METRIC_KEYS:
+        return False
+    metrics = raw.get("metrics")
+    inputs = raw.get("inputs")
+    if not isinstance(metrics, dict):
+        return False
+    if metric == "correctness":
+        return raw.get("correctness") in {"pass", "fail", "skipped", "not_applicable"}
+    if metric == "raw_artifacts":
+        return isinstance(raw_artifact, str) and raw_artifact.startswith("tmp/")
+    if metric in {"model_and_prompt_shape", "batch_or_concurrency_policy", "tensor_shape"}:
+        if not isinstance(inputs, dict):
+            return False
+        return any(
+            isinstance(inputs.get(key), str) and bool(inputs[key].strip())
+            for key in REQUIRED_METRIC_KEYS[metric]
+        )
+    return any(key in metrics for key in REQUIRED_METRIC_KEYS[metric])
+
+
+def validate_required_metrics(
+    raw_payload: dict[str, Any],
+    *,
+    runs: dict[str, Any],
+    raw_artifact: str,
+) -> None:
+    runs_by_id = index_runs(runs)
+    for raw in require_raw_results(raw_payload):
+        run_id = raw.get("paper_baseline_run_id")
+        if not isinstance(run_id, str) or not run_id.strip():
+            fail("raw result missing paper_baseline_run_id")
+        run = runs_by_id.get(run_id)
+        if run is None:
+            fail(f"raw result references unknown paper_baseline_run_id: {run_id}")
+        required_metrics = run.get("required_metrics")
+        if not isinstance(required_metrics, list) or not required_metrics:
+            fail(f"paper baseline run {run_id} has no required_metrics")
+        missing = [
+            metric
+            for metric in required_metrics
+            if not isinstance(metric, str) or not has_metric(raw, metric, raw_artifact)
+        ]
+        if missing:
+            fail(f"raw result {run_id} missing required metrics: {missing}")
 
 
 def result_key(record: dict[str, Any]) -> tuple[str, str, str, str, str]:
@@ -135,6 +212,11 @@ def main() -> None:
     if raw_artifact is None:
         raw_artifact = repo_relative(args.raw_json.parent) + "/"
     runs = load_json(args.runs)
+    validate_required_metrics(
+        raw_payload,
+        runs=runs,
+        raw_artifact=raw_artifact,
+    )
     imported_records = export_paper_baseline_records(
         raw_payload,
         runs=runs,
