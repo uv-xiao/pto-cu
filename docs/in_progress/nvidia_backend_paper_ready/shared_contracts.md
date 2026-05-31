@@ -106,6 +106,12 @@ Each paper-baseline run record must include:
 - `required_metrics`: metrics needed before import;
 - `import_target`: viewer result file and importer notes.
 
+Runs attached to `llm_serving_paper_baselines` must include
+`model_and_prompt_shape` and `batch_or_concurrency_policy` in
+`required_metrics`. This keeps model, prompt, decode, batch, and concurrency
+metadata mandatory for every MPK, VDCores, vLLM, SGLang, and controlled
+serving-equivalent baseline row before import.
+
 Each paper-baseline probe record must include:
 
 - `paper_baseline_id`: the MPK, VDCores, or paper-baseline system;

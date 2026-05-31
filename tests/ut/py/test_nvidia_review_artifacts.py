@@ -206,7 +206,12 @@ def test_imported_paper_baseline_run_rejects_missing_expected_artifact(tmp_path)
             "setup_commands": ["true"],
             "run_commands": ["true"],
             "expected_artifacts": ["tmp/paper/future.json"],
-            "required_metrics": ["correctness", "raw_artifacts"],
+            "required_metrics": [
+                "correctness",
+                "raw_artifacts",
+                "model_and_prompt_shape",
+                "batch_or_concurrency_policy",
+            ],
             "import_target": {
                 "viewer_file": (
                     "docs/nvidia-backend/benchmark-viewer/data/results.json"
@@ -293,6 +298,138 @@ def test_imported_paper_baseline_run_rejects_missing_expected_artifact(tmp_path)
         assert "expected artifact path missing" in str(exc)
     else:
         raise AssertionError("missing expected artifact was accepted")
+
+
+def test_llm_serving_paper_baseline_run_requires_shape_and_concurrency(tmp_path):
+    script_path = ROOT / ".agents" / "checks" / "validate_benchmark_viewer_data.py"
+    spec = importlib.util.spec_from_file_location(
+        "validate_benchmark_viewer_data",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    def run_record(
+        run_id,
+        baseline_id,
+        paper_evaluation_id,
+        serving_ids=None,
+        required_metrics=None,
+    ):
+        return {
+            "id": run_id,
+            "paper_baseline_id": baseline_id,
+            "paper_evaluation_id": paper_evaluation_id,
+            "title": run_id,
+            "status": "planned_not_run",
+            "hardware_targets": ["H200"],
+            "serving_workload_ids": serving_ids or [],
+            "workload": {
+                "model": "fixture",
+                "input_policy": "fixture",
+                "output_policy": "fixture",
+                "batch_or_concurrency": "fixture",
+            },
+            "setup_commands": ["true"],
+            "run_commands": ["true"],
+            "expected_artifacts": ["tmp/paper/future.json"],
+            "required_metrics": required_metrics
+            or ["correctness", "raw_artifacts"],
+            "import_target": {
+                "viewer_file": (
+                    "docs/nvidia-backend/benchmark-viewer/data/results.json"
+                ),
+                "result_kind": "paper_baseline_result_record",
+                "notes": "fixture",
+            },
+        }
+
+    serving_metrics = [
+        "correctness",
+        "raw_artifacts",
+        "model_and_prompt_shape",
+        "batch_or_concurrency_policy",
+    ]
+    data = {
+        "paper_baseline_runs": [
+            run_record(
+                "mpk_qwen3_native_vs_persistent",
+                "mpk",
+                "llm_serving_paper_baselines",
+                ["mpk_offline_decode"],
+                ["correctness", "raw_artifacts", "model_and_prompt_shape"],
+            ),
+            run_record(
+                "vdcores_llama_decode_correctness",
+                "vdcores",
+                "llm_serving_paper_baselines",
+                ["vdcores_offline_decode"],
+                serving_metrics,
+            ),
+            run_record(
+                "mpk_persistent_scheduler_trace",
+                "mpk",
+                "persistent_device_scheduler_overhead",
+            ),
+            run_record(
+                "vdcores_resource_policy_trace",
+                "vdcores",
+                "persistent_device_scheduler_overhead",
+            ),
+            run_record(
+                "vllm_serving_and_throughput",
+                "vllm",
+                "llm_serving_paper_baselines",
+                ["mpk_offline_decode"],
+                serving_metrics,
+            ),
+            run_record(
+                "sglang_serving_and_offline",
+                "sglang",
+                "llm_serving_paper_baselines",
+                ["mpk_offline_decode"],
+                serving_metrics,
+            ),
+            run_record(
+                "thunderkittens_tile_kernel",
+                "thunderkittens",
+                "tensor_core_tile_baselines",
+            ),
+            run_record(
+                "thunderkittens_full_sweep",
+                "thunderkittens",
+                "tensor_core_tile_baselines",
+            ),
+            run_record(
+                "thunderkittens_decode_attention_tile",
+                "thunderkittens",
+                "llm_serving_paper_baselines",
+                ["vdcores_offline_decode"],
+                serving_metrics,
+            ),
+        ]
+    }
+
+    try:
+        module.validate_paper_baseline_runs(
+            data,
+            {"mpk", "vdcores", "vllm", "sglang", "thunderkittens"},
+            {
+                "llm_serving_paper_baselines",
+                "persistent_device_scheduler_overhead",
+                "tensor_core_tile_baselines",
+            },
+            {"mpk_offline_decode", "vdcores_offline_decode"},
+            root=tmp_path,
+        )
+    except SystemExit as exc:
+        assert "missing LLM serving required metrics" in str(exc)
+        assert "batch_or_concurrency_policy" in str(exc)
+    else:
+        raise AssertionError("LLM serving run without concurrency policy was accepted")
 
 
 def test_nvidia_changelog_validator_passes():
@@ -1997,6 +2134,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert item["import_target"]["viewer_file"].endswith("results.json")
         if item["paper_evaluation_id"] == "llm_serving_paper_baselines":
             assert item["serving_workload_ids"]
+            assert {
+                "model_and_prompt_shape",
+                "batch_or_concurrency_policy",
+            } <= set(item["required_metrics"])
         if item["id"] == "thunderkittens_tile_kernel":
             assert item["status"] == "imported_to_viewer"
             assert any(

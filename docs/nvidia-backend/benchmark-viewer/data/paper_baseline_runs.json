@@ -41,6 +41,7 @@
         "inter_token_latency",
         "throughput",
         "model_and_prompt_shape",
+        "batch_or_concurrency_policy",
         "raw_artifacts"
       ],
       "import_target": {
@@ -86,6 +87,8 @@
         "end_to_end_latency",
         "inter_token_latency",
         "throughput",
+        "model_and_prompt_shape",
+        "batch_or_concurrency_policy",
         "resource_policy",
         "raw_artifacts"
       ],
@@ -217,6 +220,7 @@
         "time_to_first_token",
         "inter_token_latency",
         "throughput",
+        "model_and_prompt_shape",
         "batch_or_concurrency_policy",
         "raw_artifacts"
       ],
@@ -266,6 +270,7 @@
         "time_to_first_token",
         "inter_token_latency",
         "throughput",
+        "model_and_prompt_shape",
         "batch_or_concurrency_policy",
         "raw_artifacts"
       ],

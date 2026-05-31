@@ -72,9 +72,10 @@ bring-up, target prompt length 64, decode length 1024, and offline batch sizes
 1, 2, 4, 8, and 16. The VDCores-comparable policy also uses Qwen3-8B as the
 cross-paper target, keeps Llama-3.1-8B as the current VDCores demo path, uses
 target context length 128, decode length 64, and the same batch-size ladder.
-Every imported serving baseline row must reference one of these policy IDs and
-record actual tokenizer counts, model identity, decode count, and batch size in
-raw JSON.
+Every serving baseline run record must reference one of these policy IDs and
+require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before
+it can be imported. Imported rows must record actual tokenizer counts, model
+identity, decode count, and batch size in raw JSON.
 
 ## Workloads
 

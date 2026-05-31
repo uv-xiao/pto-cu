@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "e8f3288f",
+    "pto_commit": "112a881d",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
       "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
@@ -15,7 +15,7 @@
       "paper_baseline_id": "mpk",
       "title": "MPK Qwen3 Native Versus Persistent Kernel Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-112a881d/",
       "checks": [
         {
           "kind": "source_path",
@@ -95,7 +95,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Llama Decode Correctness And Benchmark Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-112a881d/",
       "checks": [
         {
           "kind": "source_path",
@@ -182,7 +182,7 @@
       "paper_baseline_id": "mpk",
       "title": "MPK Persistent Scheduler Trace Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-112a881d/",
       "checks": [
         {
           "kind": "source_path",
@@ -250,7 +250,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Resource Policy Trace Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-112a881d/",
       "checks": [
         {
           "kind": "source_path",
@@ -325,7 +325,7 @@
       "paper_baseline_id": "vllm",
       "title": "vLLM Serving And Offline Throughput Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-112a881d/",
       "checks": [
         {
           "kind": "source_path",
@@ -390,7 +390,7 @@
       "paper_baseline_id": "sglang",
       "title": "SGLang Serving And Offline Throughput Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-112a881d/",
       "checks": [
         {
           "kind": "source_path",
@@ -466,7 +466,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Full Correctness And Benchmark Sweep Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-112a881d/",
       "checks": [
         {
           "kind": "source_path",
@@ -532,7 +532,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Decode-Attention Tile Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e8f3288f/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-112a881d/",
       "checks": [
         {
           "kind": "source_path",

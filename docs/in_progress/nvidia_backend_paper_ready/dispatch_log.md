@@ -1298,3 +1298,37 @@ Each entry must include:
 - Handoff summary and remaining gaps: imported paper-baseline runs now need
   existing `expected_artifacts`. The tensor-core claim still needs the planned
   `thunderkittens_full_sweep` raw captures before paper promotion.
+
+### 2026-05-31 - Serving Baseline Metadata Guard
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned strict
+  evidence guardrail slice.
+- Exact Codex command or script invocation:
+  `gh api -X PUT repos/uv-xiao/pto-cu/actions/permissions --input -` with
+  `{"enabled":false}` reconfirmed repository Actions are disabled, then
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_run_readiness.py`
+  regenerated run-readiness data with output root
+  `tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-112a881d/`,
+  followed by `paper_readiness_audit.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, strict code/document
+  evidence guardrail and paper-ready evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation validators and skill docs,
+  benchmark-viewer JSON contracts, focused review tests, goal docs, dispatch
+  log, and changelog docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: repository GitHub Actions remain
+  disabled during the ultimate goal. This slice only tightens serving-run
+  metadata; it does not create measured serving performance data.
+- Verification commands and results: focused TDD test first failed because an
+  LLM-serving run without `batch_or_concurrency_policy` was accepted. After
+  implementation, the focused test passed; broader verification is recorded in
+  the final commit summary for this slice.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: every LLM-serving paper-baseline run now
+  requires model/prompt shape and batch/concurrency policy before import.
+  Actual MPK, VDCores, vLLM, SGLang, and ThunderKittens serving-family H200
+  captures remain required before paper promotion.

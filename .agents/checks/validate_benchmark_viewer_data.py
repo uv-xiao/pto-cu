@@ -276,6 +276,14 @@ def validate_paper_baseline_runs(
         metrics = set(record["required_metrics"])
         if not {"correctness", "raw_artifacts"} <= metrics:
             fail(f"{owner} must require correctness and raw_artifacts")
+        if paper_evaluation_id == "llm_serving_paper_baselines":
+            serving_metrics = {
+                "model_and_prompt_shape",
+                "batch_or_concurrency_policy",
+            }
+            if not serving_metrics <= metrics:
+                missing = sorted(serving_metrics - metrics)
+                fail(f"{owner} missing LLM serving required metrics: {missing}")
         for artifact in record["expected_artifacts"]:
             if not artifact.startswith("tmp/"):
                 fail(f"{owner} expected artifact must be under tmp/: {artifact}")
