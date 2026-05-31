@@ -265,6 +265,8 @@ def claim_next_actions(
             }
         )
     for readiness in run_readiness_statuses:
+        if readiness["latest_status"] == "pass":
+            continue
         action = readiness.get("next_action")
         if not isinstance(action, str) or not action.strip():
             continue

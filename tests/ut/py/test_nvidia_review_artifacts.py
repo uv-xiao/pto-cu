@@ -1324,6 +1324,10 @@ def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
                 "run_commands": [
                     "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --use-mirage --profiling"
                 ],
+                "model_access": {
+                    "requires_hf_token": False,
+                    "public_models": ["Qwen/Qwen3-1.7B"],
+                },
                 "expected_artifacts": [
                     "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-trace.json"
                 ],
@@ -1460,10 +1464,16 @@ def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
         "sglang_serving_and_offline",
     } <= set(records)
 
-    assert records["mpk_persistent_scheduler_trace"]["latest_status"] == "partial"
-    assert any(
+    assert records["mpk_persistent_scheduler_trace"]["latest_status"] == "pass"
+    assert not any(
         "HF_TOKEN" in gap
         for gap in records["mpk_persistent_scheduler_trace"]["blocking_gaps"]
+    )
+    assert any(
+        check["kind"] == "environment"
+        and check["name"] == "public_model_access"
+        and check["status"] == "pass"
+        for check in records["mpk_persistent_scheduler_trace"]["checks"]
     )
     vdcores = records["vdcores_resource_policy_trace"]
     assert vdcores["latest_status"] == "partial"
@@ -1855,20 +1865,20 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         item["paper_baseline_run_id"]: item
         for item in persistent_claim["paper_baseline_run_readiness_statuses"]
     }
-    assert persistent_readiness["mpk_persistent_scheduler_trace"][
-        "latest_status"
-    ] == "partial"
-    assert any(
+    assert not any(
         action["source"] == "run_readiness"
         and action["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
         for action in persistent_claim["next_actions"]
     )
-    assert any(
+    assert not any(
         "HF_TOKEN" in gap
         for gap in persistent_readiness[
             "mpk_persistent_scheduler_trace"
         ]["blocking_gaps"]
     )
+    assert persistent_readiness["mpk_persistent_scheduler_trace"][
+        "latest_status"
+    ] == "pass"
     assert persistent_readiness["vdcores_resource_policy_trace"][
         "latest_status"
     ] == "partial"
@@ -1942,11 +1952,11 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 11
+    assert committed["summary"]["total_work_items"] == 9
     assert committed["summary"]["work_items_by_source"] == {
         "matrix_missing_evidence": 3,
         "probe": 2,
-        "run_readiness": 6,
+        "run_readiness": 4,
     }
     work_items = committed["work_items"]
     assert all(not item["ready_for_paper_claim"] for item in work_items)
@@ -1957,7 +1967,7 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and "Run SGLang" in item["action"]
         for item in work_items
     )
-    assert any(
+    assert not any(
         item["claim_id"] == "persistent_device_scheduler_overhead"
         and item["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
         for item in work_items
@@ -1995,7 +2005,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 11
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 9
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -2455,6 +2465,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert item["run_commands"]
         assert item["expected_artifacts"]
         assert item["import_target"]["viewer_file"].endswith("results.json")
+        if item["paper_baseline_id"] in {"mpk", "vdcores"}:
+            assert isinstance(item.get("model_access"), dict)
+            assert isinstance(item["model_access"]["requires_hf_token"], bool)
         if item["paper_evaluation_id"] == "llm_serving_paper_baselines":
             assert item["serving_workload_ids"]
             assert {
@@ -2640,12 +2653,24 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert isinstance(item["blocking_gaps"], list)
         if item["latest_status"] != "pass":
             assert item["blocking_gaps"]
-    assert any(
+    assert readiness_by_run["mpk_qwen3_native_vs_persistent"][
+        "latest_status"
+    ] == "pass"
+    assert not any(
+        "HF_TOKEN" in gap
+        for gap in readiness_by_run[
+            "mpk_qwen3_native_vs_persistent"
+        ]["blocking_gaps"]
+    )
+    assert not any(
         "HF_TOKEN" in gap
         for gap in readiness_by_run[
             "mpk_persistent_scheduler_trace"
         ]["blocking_gaps"]
     )
+    assert readiness_by_run["mpk_persistent_scheduler_trace"][
+        "latest_status"
+    ] == "pass"
     assert not any(
         "dae.runtime" in gap
         for gap in readiness_by_run[

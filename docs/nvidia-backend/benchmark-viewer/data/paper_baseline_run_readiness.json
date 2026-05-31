@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "13a5aac1",
+    "pto_commit": "b74bca3e",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
       "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
@@ -14,8 +14,8 @@
       "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
       "paper_baseline_id": "mpk",
       "title": "MPK Qwen3 Native Versus Persistent Kernel Readiness",
-      "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-13a5aac1/",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b74bca3e/",
       "checks": [
         {
           "kind": "source_path",
@@ -79,14 +79,12 @@
         },
         {
           "kind": "environment",
-          "name": "HF_TOKEN",
-          "status": "partial",
-          "why": "Selected MPK/VDCores model commands require gated Hugging Face model access."
+          "name": "public_model_access",
+          "status": "pass",
+          "why": "MPK Qwen3 runs use public Qwen model artifacts; unauthenticated Hugging Face API snapshots are stored under tmp/sources/huggingface/."
         }
       ],
-      "blocking_gaps": [
-        "HF_TOKEN is not available for this run."
-      ],
+      "blocking_gaps": [],
       "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
     },
     {
@@ -95,7 +93,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Llama Decode Correctness And Benchmark Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-13a5aac1/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b74bca3e/",
       "checks": [
         {
           "kind": "source_path",
@@ -161,7 +159,7 @@
           "kind": "environment",
           "name": "HF_TOKEN",
           "status": "partial",
-          "why": "Selected MPK/VDCores model commands require gated Hugging Face model access."
+          "why": "The currently selected VDCores llama3 demo reads HF_TOKEN directly when loading the Llama model and tokenizer."
         },
         {
           "kind": "compiled_extension",
@@ -180,8 +178,8 @@
       "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
       "paper_baseline_id": "mpk",
       "title": "MPK Persistent Scheduler Trace Readiness",
-      "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-13a5aac1/",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b74bca3e/",
       "checks": [
         {
           "kind": "source_path",
@@ -233,14 +231,12 @@
         },
         {
           "kind": "environment",
-          "name": "HF_TOKEN",
-          "status": "partial",
-          "why": "Selected MPK/VDCores model commands require gated Hugging Face model access."
+          "name": "public_model_access",
+          "status": "pass",
+          "why": "MPK persistent-scheduler bring-up uses public Qwen model artifacts; unauthenticated Hugging Face API snapshots are stored under tmp/sources/huggingface/."
         }
       ],
-      "blocking_gaps": [
-        "HF_TOKEN is not available for this run."
-      ],
+      "blocking_gaps": [],
       "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
     },
     {
@@ -249,7 +245,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Resource Policy Trace Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-13a5aac1/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b74bca3e/",
       "checks": [
         {
           "kind": "source_path",
@@ -303,7 +299,7 @@
           "kind": "environment",
           "name": "HF_TOKEN",
           "status": "partial",
-          "why": "Selected MPK/VDCores model commands require gated Hugging Face model access."
+          "why": "The selected VDCores resource-policy commands still use the llama3 path, which reads HF_TOKEN directly."
         },
         {
           "kind": "compiled_extension",
@@ -323,7 +319,7 @@
       "paper_baseline_id": "vllm",
       "title": "vLLM Serving And Offline Throughput Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-13a5aac1/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b74bca3e/",
       "checks": [
         {
           "kind": "source_path",
@@ -388,7 +384,7 @@
       "paper_baseline_id": "sglang",
       "title": "SGLang Serving And Offline Throughput Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-13a5aac1/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b74bca3e/",
       "checks": [
         {
           "kind": "source_path",

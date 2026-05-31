@@ -18,6 +18,14 @@
         "output_policy": "mpk_offline_decode output policy: deterministic greedy decode up to 1024 tokens",
         "batch_or_concurrency": "offline batched inference; maximum batch sizes 1,2,4,8,16"
       },
+      "model_access": {
+        "requires_hf_token": false,
+        "public_models": [
+          "Qwen/Qwen3-8B",
+          "Qwen/Qwen3-1.7B"
+        ],
+        "why": "MPK Qwen3 runs use public Qwen model artifacts; unauthenticated Hugging Face API snapshots are stored under tmp/sources/huggingface/."
+      },
       "setup_commands": [
         "cd tmp/baselines/mirage-mpk",
         "python -m pip install -r requirements.txt",
@@ -68,6 +76,13 @@
         "output_policy": "vdcores_offline_decode output policy: 64 decode tokens, adjusted only when VDCores KV-block scheduling requires rounding",
         "batch_or_concurrency": "offline fixed batch; batch sizes 1,2,4,8,16"
       },
+      "model_access": {
+        "requires_hf_token": true,
+        "gated_models": [
+          "meta-llama/Llama-3.1-8B-Instruct"
+        ],
+        "why": "The currently selected VDCores llama3 demo reads HF_TOKEN directly when loading the Llama model and tokenizer."
+      },
       "setup_commands": [
         "cd tmp/baselines/vdcores && make pyext"
       ],
@@ -114,6 +129,14 @@
         "output_policy": "correctness output plus MPK profiling trace",
         "batch_or_concurrency": "single-process persistent-kernel run aligned with PTO persistent-device task-count and resource-policy captures"
       },
+      "model_access": {
+        "requires_hf_token": false,
+        "public_models": [
+          "Qwen/Qwen3-8B",
+          "Qwen/Qwen3-1.7B"
+        ],
+        "why": "MPK persistent-scheduler bring-up uses public Qwen model artifacts; unauthenticated Hugging Face API snapshots are stored under tmp/sources/huggingface/."
+      },
       "setup_commands": [
         "cd tmp/baselines/mirage-mpk",
         "python -m pip install -r requirements.txt",
@@ -155,6 +178,13 @@
         "input_policy": "controlled decode/resource trace with virtual-core queues, memory/compute split, and task-count metadata recorded",
         "output_policy": "correctness output plus resource-policy timing trace",
         "batch_or_concurrency": "single-process VDCores run aligned with PTO persistent-device queue-pressure and worker/scheduler policy captures"
+      },
+      "model_access": {
+        "requires_hf_token": true,
+        "gated_models": [
+          "meta-llama/Llama-3.1-8B-Instruct"
+        ],
+        "why": "The selected VDCores resource-policy commands still use the llama3 path, which reads HF_TOKEN directly."
       },
       "setup_commands": [
         "cd tmp/baselines/vdcores && make pyext"

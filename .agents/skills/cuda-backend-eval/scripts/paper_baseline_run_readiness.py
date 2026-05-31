@@ -229,17 +229,55 @@ def metric_checks(run: dict[str, Any]) -> list[dict[str, str]]:
     return checks
 
 
-def environment_checks(baseline_id: str, source_root: Path) -> list[dict[str, str]]:
-    checks: list[dict[str, str]] = []
+def model_access_checks(run: dict[str, Any], baseline_id: str) -> list[dict[str, str]]:
+    model_access = run.get("model_access")
+    if isinstance(model_access, dict):
+        requires_hf_token = model_access.get("requires_hf_token")
+        if requires_hf_token is False:
+            return [
+                {
+                    "kind": "environment",
+                    "name": "public_model_access",
+                    "status": "pass",
+                    "why": str(
+                        model_access.get(
+                            "why",
+                            "Selected model policy uses public model artifacts.",
+                        )
+                    ),
+                }
+            ]
+        if requires_hf_token is True:
+            return [
+                {
+                    "kind": "environment",
+                    "name": "HF_TOKEN",
+                    "status": "pass" if os.environ.get("HF_TOKEN") else "partial",
+                    "why": str(
+                        model_access.get(
+                            "why",
+                            "Selected model policy requires gated Hugging Face access.",
+                        )
+                    ),
+                }
+            ]
+
     if baseline_id in {"mpk", "vdcores"}:
-        checks.append(
+        return [
             {
                 "kind": "environment",
                 "name": "HF_TOKEN",
                 "status": "pass" if os.environ.get("HF_TOKEN") else "partial",
                 "why": "Selected MPK/VDCores model commands require gated Hugging Face model access.",
             }
-        )
+        ]
+    return []
+
+
+def environment_checks(
+    run: dict[str, Any], baseline_id: str, source_root: Path
+) -> list[dict[str, str]]:
+    checks = model_access_checks(run, baseline_id)
     if baseline_id == "vdcores":
         runtime_candidates = list((source_root / "python" / "dae").glob("runtime*.so"))
         checks.append(
@@ -319,7 +357,7 @@ def build_run_readiness(
             *artifact_checks(run),
             *metric_checks(run),
             *probe_checks(baseline_id, probes_by_baseline),
-            *environment_checks(baseline_id, source_root),
+            *environment_checks(run, baseline_id, source_root),
         ]
         gaps = blocking_gaps(checks)
         records.append(
