@@ -67,6 +67,10 @@ Each raw row must include `paper_baseline_run_id`, `benchmark_id`, `hardware`,
 `paper_baseline_runs.json` to map the run to the matching paper-baseline
 method ID, then writes viewer-compatible records with the raw artifact path
 kept under `tmp/`.
+When a raw baseline artifact is ready to become committed viewer evidence,
+use `.agents/skills/cuda-backend-eval/scripts/paper_baseline_results_update.py`
+so `results.json`, `paper_baseline_runs.json`, and
+`paper_readiness_audit.json` move together instead of by hand.
 
 Each paper-baseline record must include:
 

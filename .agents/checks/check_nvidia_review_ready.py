@@ -424,6 +424,7 @@ def check_examples_and_rules() -> None:
         ".agents/checks/validate_remote_evaluation.py",
         ".agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py",
+        ".agents/skills/cuda-backend-eval/scripts/paper_baseline_results_update.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py",

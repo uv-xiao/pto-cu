@@ -183,6 +183,10 @@ The script reads `paper_baseline_runs.json`, maps each raw
 viewer `result_records` for MPK, VDCores, vLLM, SGLang, or ThunderKittens.
 This keeps paper-baseline rows generated from raw artifacts instead of
 hand-edited tables.
+After a capture is accepted for committed viewer evidence,
+`.agents/skills/cuda-backend-eval/scripts/paper_baseline_results_update.py`
+updates the viewer results, marks the matching run imported, and regenerates
+the paper-readiness audit from the same inputs.
 
 Serving baseline commands can be materialized with
 `.agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py`.

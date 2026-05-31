@@ -1080,3 +1080,37 @@ Each entry must include:
   now has selected A100/H200 tensor-launch evidence for CUDA Runtime, Driver,
   and Driver Graph rows. Remaining launch-overhead gaps are stream-count and
   graph-replay sweeps across selected vector and tensor shapes.
+
+### 2026-05-31 - Paper Baseline Results Updater
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  paper-baseline import automation slice.
+- Exact Codex command or script invocation: no worker invocation. Added
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_results_update.py`
+  to wrap paper-baseline raw JSON import, update viewer `results.json`, mark
+  referenced paper-baseline runs as `imported_to_viewer`, and regenerate a
+  paper-readiness audit from the same inputs.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-baseline evaluation
+  and strict code/document evidence guardrail slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, focused review tests,
+  goal docs, dispatch log, and changelog docs. No upstream repositories were
+  edited.
+- Dependencies and blocked assumptions: this adds the committed-data update
+  bridge for future measured MPK/VDCores imports. It does not create new MPK
+  or VDCores measured results and must not be used to promote unmeasured
+  artifacts.
+- Verification commands and results: focused TDD fixture first failed because
+  `paper_baseline_results_update.py` was missing; after implementation it
+  passed. Full verification is recorded in the matching changelog report and
+  PR body.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: future paper-baseline runs can now move
+  from normalized raw artifacts to viewer results, run status, and readiness
+  audit with one script. Remaining blockers are the actual MPK/VDCores
+  matching scheduler runs, broader ThunderKittens sweeps, and serving
+  baseline captures.

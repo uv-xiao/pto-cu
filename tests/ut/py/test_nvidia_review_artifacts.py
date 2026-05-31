@@ -702,6 +702,116 @@ def test_paper_baseline_viewer_export_preserves_scheduler_trace_metadata(tmp_pat
     assert vdcores_statistic["resource_policy"]["virtual_cores"] == 8
 
 
+def test_paper_baseline_results_update_marks_imported_run(tmp_path):
+    raw = {
+        "metadata": {
+            "pto_commit": "abc1234",
+        },
+        "results": [
+            {
+                "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+                "benchmark_id": "graph_layered_cross",
+                "hardware": {
+                    "gpu": "H200",
+                    "machine": "dasys-h200x8",
+                    "compute_target": "compute_90",
+                },
+                "inputs": {
+                    "shape": "n=1024, nine-task layered-cross DAG",
+                    "dtype": "float32",
+                    "repeat_policy": "warmup=1,repeat=3",
+                },
+                "metrics": {
+                    "kind": "paper_baseline_scheduler_trace",
+                    "sample_count": 3,
+                    "host_wall_ns": 900000,
+                    "device_wall_ns": 700000,
+                    "scheduler_overhead_ns": 42000,
+                    "dispatch_trace": {"task_count": 9},
+                    "resource_policy": {
+                        "scheduler_blocks": 3,
+                        "worker_blocks": 4,
+                    },
+                },
+                "correctness": "pass",
+            }
+        ],
+    }
+    raw_path = tmp_path / "mpk-scheduler.json"
+    raw_path.write_text(json.dumps(raw), encoding="utf-8")
+
+    results_path = tmp_path / "results.json"
+    runs_path = tmp_path / "paper_baseline_runs.json"
+    audit_path = tmp_path / "paper_readiness_audit.json"
+    viewer_path = tmp_path / "viewer-records.json"
+    results_path.write_text(
+        (VIEWER_ROOT / "data" / "results.json").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    runs_path.write_text(
+        (VIEWER_ROOT / "data" / "paper_baseline_runs.json").read_text(
+            encoding="utf-8"
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/paper_baseline_results_update.py",
+            str(raw_path),
+            "--artifact-root",
+            "tmp/cuda-backend/paper-baselines/mpk/fixture/",
+            "--results",
+            str(results_path),
+            "--runs",
+            str(runs_path),
+            "--viewer-output",
+            str(viewer_path),
+            "--audit-output",
+            str(audit_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+
+    viewer_records = json.loads(viewer_path.read_text(encoding="utf-8"))
+    assert len(viewer_records) == 1
+    assert viewer_records[0]["method_id"] == "mpk"
+    assert viewer_records[0]["statistic"]["scheduler_overhead_ns"] == 42000
+
+    updated_results = json.loads(results_path.read_text(encoding="utf-8"))
+    assert any(
+        record["method_id"] == "mpk"
+        and record["raw_artifact"] == "tmp/cuda-backend/paper-baselines/mpk/fixture/"
+        for record in updated_results["result_records"]
+    )
+
+    updated_runs = json.loads(runs_path.read_text(encoding="utf-8"))
+    run_by_id = {
+        record["id"]: record
+        for record in updated_runs["paper_baseline_runs"]
+    }
+    assert run_by_id["mpk_persistent_scheduler_trace"]["status"] == (
+        "imported_to_viewer"
+    )
+
+    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+    persistent_claim = {
+        record["id"]: record for record in audit["claim_audits"]
+    }["persistent_device_scheduler_overhead"]
+    mpk_status = [
+        record
+        for record in persistent_claim["paper_baseline_run_statuses"]
+        if record["id"] == "mpk_persistent_scheduler_trace"
+    ][0]
+    assert mpk_status["status"] == "imported_to_viewer"
+
+
 def test_paper_baseline_viewer_export_rejects_bool_sample_count(tmp_path):
     raw = {
         "metadata": {
@@ -1973,6 +2083,14 @@ def test_review_policy_changelog_and_examples_exist():
         / "cuda-backend-eval"
         / "scripts"
         / "paper_baseline_viewer_export.py"
+    ).is_file()
+    assert (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "paper_baseline_results_update.py"
     ).is_file()
     assert (
         ROOT

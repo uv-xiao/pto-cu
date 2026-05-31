@@ -348,6 +348,21 @@ PYTHONPATH=$PWD:$PWD/python \
     --output tmp/cuda-backend/paper-baselines/vllm/viewer-result-records.json
 ```
 
+Use `paper_baseline_results_update.py` only after checking that a raw baseline
+artifact is measured data worth committing into the viewer. It wraps the
+paper-baseline importer, writes the normalized viewer records when requested,
+updates `docs/nvidia-backend/benchmark-viewer/data/results.json`, marks the
+referenced `paper_baseline_runs.json` rows as `imported_to_viewer`, and
+regenerates `paper_readiness_audit.json` from the updated data:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_results_update.py \
+    tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-trace.json \
+    --artifact-root tmp/cuda-backend/paper-baselines/mpk/ \
+    --viewer-output tmp/cuda-backend/paper-baselines/mpk/viewer-result-records.json
+```
+
 Use `paper_serving_command_plan.py` before long MPK, VDCores, vLLM, or SGLang
 serving runs. It reads the committed `serving_workloads.json` and
 `paper_baseline_runs.json` contracts, then writes an inspectable command plan
