@@ -289,7 +289,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e1c48975/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-407fd3f7/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -297,7 +297,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e1c48975/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-407fd3f7/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -307,7 +307,7 @@
           "paper_baseline_run_id": "vllm_serving_and_throughput",
           "paper_baseline_id": "vllm",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e1c48975/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-407fd3f7/",
           "blocking_gaps": [
             "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; A100: python_import failed: vllm.entrypoints.openai.api_server; A100: python_import failed: vllm.engine.arg_utils; H200: python_module failed: vllm; H200: python_import failed: vllm.entrypoints.openai.api_server; H200: python_import failed: vllm.engine.arg_utils."
           ],
@@ -317,7 +317,7 @@
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "paper_baseline_id": "sglang",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e1c48975/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-407fd3f7/",
           "blocking_gaps": [
             "Readiness probe sglang_source_entrypoints is partial: A100: python_module failed: orjson; A100: python_module failed: torchvision; A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_module failed: orjson; H200: python_module failed: torchvision; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ],
@@ -338,6 +338,42 @@
             "prompt_length": 39,
             "generate_length": 2,
             "latency_ms_per_token": 238.19888305664062
+          }
+        },
+        {
+          "paper_baseline_run_id": "vllm_serving_and_throughput",
+          "paper_baseline_id": "vllm",
+          "execution_attempt_id": "vllm_qwen3_1p7b_offline_throughput_a100",
+          "title": "vLLM Qwen3 1.7B Offline Throughput Bring-Up",
+          "status": "partial",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/vdcores_offline_decode/",
+          "blocker": "This is not yet a paper-grade vLLM serving result: it is local A100 bring-up, uses the Qwen3-1.7B bring-up model instead of the Qwen3-8B target, and bench throughput does not emit serving TTFT/ITL metrics required before importing vllm_serving_and_throughput into viewer results.",
+          "summary": {
+            "mode": "vllm_bench_throughput",
+            "model": "Qwen/Qwen3-1.7B",
+            "offline_cache_used": true,
+            "source_overlay": "tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython",
+            "vllm_commit": "27fa5aa3b952a6108de127423397e50364a95fcb",
+            "pto_commit": "407fd3f726a252bfe89d9cf4ead706de08424ce1",
+            "input_tokens": 128,
+            "output_tokens": 64,
+            "total_tokens": 192,
+            "num_requests": 1,
+            "elapsed_time_s": 0.2419096989906393,
+            "requests_per_second": 4.1337739006433765,
+            "tokens_per_second": 793.6845889235282,
+            "output_tokens_per_second": 264.56,
+            "dtype": "bfloat16",
+            "max_model_len": 256,
+            "gpu_memory_utilization": 0.5,
+            "cuda_graphs_captured": true,
+            "first_cache_attempt_status": 1,
+            "successful_rerun_status": 0,
+            "serving_latency_measured": false,
+            "paper_target_model_measured": false,
+            "h200_measured": false,
+            "viewer_result_imported": false,
+            "next_step": "Run vllm serve plus vllm bench serve on H200 for Qwen3-8B or the agreed bring-up model so TTFT, ITL, end-to-end latency, and throughput can be imported together."
           }
         }
       ],
@@ -459,7 +495,8 @@
         "Readiness probe for sglang is partial.",
         "Run readiness vdcores_llama_decode_correctness is partial: HF_TOKEN is not available for this run.",
         "Run readiness vllm_serving_and_throughput is partial: Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; A100: python_import failed: vllm.entrypoints.openai.api_server; A100: python_import failed: vllm.engine.arg_utils; H200: python_module failed: vllm; H200: python_import failed: vllm.entrypoints.openai.api_server; H200: python_import failed: vllm.engine.arg_utils.",
-        "Run readiness sglang_serving_and_offline is partial: Readiness probe sglang_source_entrypoints is partial: A100: python_module failed: orjson; A100: python_module failed: torchvision; A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_module failed: orjson; H200: python_module failed: torchvision; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
+        "Run readiness sglang_serving_and_offline is partial: Readiness probe sglang_source_entrypoints is partial: A100: python_module failed: orjson; A100: python_module failed: torchvision; A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_module failed: orjson; H200: python_module failed: torchvision; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch.",
+        "Latest execution attempt vllm_qwen3_1p7b_offline_throughput_a100 for vllm_serving_and_throughput is partial: This is not yet a paper-grade vLLM serving result: it is local A100 bring-up, uses the Qwen3-1.7B bring-up model instead of the Qwen3-8B target, and bench throughput does not emit serving TTFT/ITL metrics required before importing vllm_serving_and_throughput into viewer results."
       ],
       "next_actions": [
         {
@@ -487,6 +524,14 @@
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "status": "partial",
           "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
+        },
+        {
+          "source": "execution_attempt",
+          "paper_baseline_id": "vllm",
+          "paper_baseline_run_id": "vllm_serving_and_throughput",
+          "execution_attempt_id": "vllm_qwen3_1p7b_offline_throughput_a100",
+          "status": "partial",
+          "action": "Resolve latest execution attempt vllm_qwen3_1p7b_offline_throughput_a100 before importing vllm_serving_and_throughput. Diagnostic blocker: This is not yet a paper-grade vLLM serving result: it is local A100 bring-up, uses the Qwen3-1.7B bring-up model instead of the Qwen3-8B target, and bench throughput does not emit serving TTFT/ITL metrics required before importing vllm_serving_and_throughput into viewer results."
         },
         {
           "source": "probe",

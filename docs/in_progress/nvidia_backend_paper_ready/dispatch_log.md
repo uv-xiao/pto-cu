@@ -2806,3 +2806,50 @@ Each entry must include:
   captured. The next serving slice should run vLLM benchmark commands and
   import raw JSON results, or separately materialize the same environment on
   H200. SGLang environment materialization is still pending.
+
+### 2026-06-01 - vLLM Local Offline Throughput Bring-Up
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned first vLLM
+  benchmark-command execution from the validated isolated environment.
+- Exact Codex command or script invocation: ran
+  `vllm bench throughput` from
+  `tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3` against
+  `Qwen/Qwen3-1.7B` with the source overlay, one local A100, random prompt
+  length `128`, output length `64`, one warmup request, and one measured
+  request.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready serving
+  baseline capture evidence.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, changelog docs, dispatch
+  log, and local `tmp/` vLLM run artifacts. No upstream repositories were
+  edited or pushed.
+- Dependencies and blocked assumptions: the first run failed before model load
+  because `HF_HOME` pointed above the actual Hugging Face cache. The rerun set
+  `HUGGINGFACE_HUB_CACHE=tmp/huggingface_cache` and completed.
+- Verification commands and results:
+  `CUDA_VISIBLE_DEVICES=0 CUDA_DEVICE_ORDER=PCI_BUS_ID
+  HF_HOME=$PWD/tmp/hf-home-vllm
+  HUGGINGFACE_HUB_CACHE=$PWD/tmp/huggingface_cache HF_HUB_OFFLINE=1
+  TRANSFORMERS_OFFLINE=1 PYTHONNOUSERSITE=1
+  PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PWD/python:$PWD
+  timeout 900
+  tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m
+  vllm.entrypoints.cli.main bench throughput --model Qwen/Qwen3-1.7B
+  --dataset-name random --random-input-len 128 --random-output-len 64
+  --num-prompts 1 --num-warmups 1 --dtype bfloat16
+  --gpu-memory-utilization 0.50 --max-model-len 256 --output-json
+  tmp/cuda-backend/paper-baselines/serving-runs/vllm/vdcores_offline_decode/vllm-throughput-qwen3-1p7b-batch1-bringup.json`
+  -> passed and wrote raw throughput JSON with elapsed time
+  `0.2419096989906393s`, `4.1337739006433765` requests/s, and
+  `793.6845889235282` total tokens/s.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: vLLM can now execute an offline
+  throughput bring-up from the isolated local environment. The attempt remains
+  partial and is intentionally not imported into `results.json` because it is
+  local A100 evidence, uses the Qwen3-1.7B bring-up model, and lacks serving
+  TTFT/ITL metrics. The next serving slice should run `vllm serve` plus
+  `vllm bench serve` on H200 for Qwen3-8B or the agreed bring-up model.

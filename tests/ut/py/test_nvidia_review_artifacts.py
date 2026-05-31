@@ -2628,8 +2628,9 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 8
+    assert committed["summary"]["total_work_items"] == 9
     assert committed["summary"]["work_items_by_source"] == {
+        "execution_attempt": 1,
         "matrix_missing_evidence": 3,
         "probe": 2,
         "run_readiness": 3,
@@ -2667,6 +2668,16 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and "stable baseline instrumentation mode" in item["action"]
         for item in work_items
     )
+    assert any(
+        item["claim_id"] == "llm_serving_paper_baselines"
+        and item["source"] == "execution_attempt"
+        and item["paper_baseline_id"] == "vllm"
+        and item["paper_baseline_run_id"] == "vllm_serving_and_throughput"
+        and item["execution_attempt_id"]
+        == "vllm_qwen3_1p7b_offline_throughput_a100"
+        and "paper-grade vLLM serving result" in item["action"]
+        for item in work_items
+    )
 
 
 def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
@@ -2700,7 +2711,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 8
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 9
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
