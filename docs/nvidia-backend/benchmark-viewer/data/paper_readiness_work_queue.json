@@ -35,7 +35,7 @@
       "paper_baseline_run_id": "",
       "execution_attempt_id": "",
       "status": "missing",
-      "action": "MPK persistent-kernel run with matching workload metadata.",
+      "action": "MPK bounded-decode run with scheduler/resource/latency distributions imported.",
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },
     {
@@ -52,9 +52,9 @@
       "owner": "mpk_persistent_scheduler_trace",
       "paper_baseline_id": "mpk",
       "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
-      "execution_attempt_id": "mpk_qwen3_0p6b_workload_metadata_sweep_h200",
+      "execution_attempt_id": "mpk_qwen3_0p6b_bounded_decode_h200",
       "status": "partial",
-      "action": "Resolve latest execution attempt mpk_qwen3_0p6b_workload_metadata_sweep_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: The patched MPK persistent path is not yet a matching workload for paper comparison because max_new_tokens is not honored by the persistent demo loop; it runs to the max_seq_length/eos policy instead. Import paper-grade MPK rows only after the run command records and enforces the intended decode length and scheduler/resource metadata for the same workload used by PTO and VDCores.",
+      "action": "Resolve latest execution attempt mpk_qwen3_0p6b_bounded_decode_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: This resolves the immediate MPK matching-workload decode-length mismatch, but the attempt is still partial because scheduler/resource/latency distributions are not imported and the run depends on carried local baseline patches. Import paper-grade MPK rows only after those metrics are captured for the bounded-decode workload.",
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },
     {

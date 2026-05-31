@@ -1725,3 +1725,42 @@ Each entry must include:
   points to `MInst` load-address, coordinate, and tensor-descriptor provenance
   for the earliest `final_rms` schedule. Paper-grade VDCores correctness,
   scheduler/resource-policy, and latency evidence remain missing.
+
+### 2026-05-31 - MPK Bounded Decode Smoke
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned MPK
+  matching-workload diagnostic.
+- Exact Codex command or script invocation: ran the H200 patched MPK Qwen3
+  0.6B persistent demo twice with `--max-new-tokens 1 --max-seq-length 40`
+  and `--max-new-tokens 2 --max-seq-length 41`, both with offline Hugging
+  Face cache, one request, one batched token, `--ignore-eos`, and token JSON
+  export under
+  `tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready MPK baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, and local `tmp/` raw artifacts. No upstream
+  repositories were edited or pushed.
+- Dependencies and blocked assumptions: the run uses carried local MPK
+  baseline patches as input artifacts. Bounded decode solves the immediate
+  `max_new_tokens` mismatch by using the persistent loop's existing
+  `max_seq_length` termination policy.
+- Verification commands and results: the focused TDD test first failed because
+  `mpk_qwen3_0p6b_bounded_decode_h200` was absent from viewer data. After
+  adding the execution attempt and refreshing derived artifacts, the focused
+  test passed:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest
+  tests/ut/py/test_nvidia_review_artifacts.py::test_benchmark_viewer_has_json_backed_review_data
+  -q` -> `1 passed`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the MPK persistent scheduler blocker now
+  moves from decode-length matching to scheduler/resource/latency import for
+  the bounded-decode workload. Paper-grade MPK scheduler evidence remains
+  partial until those metrics are captured and imported.

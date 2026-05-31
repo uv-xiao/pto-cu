@@ -90,41 +90,44 @@
         {
           "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
           "paper_baseline_id": "mpk",
-          "execution_attempt_id": "mpk_qwen3_0p6b_workload_metadata_sweep_h200",
-          "title": "MPK Qwen3 0.6B Workload Metadata Sweep",
+          "execution_attempt_id": "mpk_qwen3_0p6b_bounded_decode_h200",
+          "title": "MPK Qwen3 0.6B Bounded Decode Smoke",
           "status": "partial",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/workload-metadata-901ec9c1/",
-          "blocker": "The patched MPK persistent path is not yet a matching workload for paper comparison because max_new_tokens is not honored by the persistent demo loop; it runs to the max_seq_length/eos policy instead. Import paper-grade MPK rows only after the run command records and enforces the intended decode length and scheduler/resource metadata for the same workload used by PTO and VDCores.",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/",
+          "blocker": "This resolves the immediate MPK matching-workload decode-length mismatch, but the attempt is still partial because scheduler/resource/latency distributions are not imported and the run depends on carried local baseline patches. Import paper-grade MPK rows only after those metrics are captured for the bounded-decode workload.",
           "summary": {
-            "mode": "mpk_qwen3_0p6b_workload_metadata_sweep",
+            "mode": "mpk_qwen3_0p6b_bounded_decode",
             "model": "Qwen/Qwen3-0.6B",
             "offline_cache_used": true,
-            "max_seq_length": 128,
             "max_num_batched_requests": 1,
             "max_num_batched_tokens": 1,
             "requested_max_new_tokens": [
               1,
               2
             ],
+            "bounded_max_seq_lengths": [
+              40,
+              41
+            ],
+            "observed_prompt_lengths": [
+              39,
+              39
+            ],
             "observed_generate_lengths": [
-              89,
-              89
+              1,
+              2
             ],
             "observed_predecode_steps": [
-              127,
-              127
-            ],
-            "observed_predecode_generated_lengths": [
-              89,
-              89
+              39,
+              40
             ],
             "observed_first_generated_token_ids": [
               151667,
               151667
             ],
             "all_runs_exit_zero": true,
-            "max_new_tokens_honored": false,
-            "persistent_loop_runs_to_max_seq_length": true,
+            "requested_decode_lengths_honored": true,
+            "max_seq_length_used_as_decode_bound": true,
             "total_tasks": [
               7261,
               7261
@@ -141,6 +144,7 @@
             "compiled": true,
             "launched": true,
             "correctness_completed": true,
+            "scheduler_trace_available": true,
             "resource_policy_measured": false
           }
         },
@@ -236,26 +240,26 @@
         }
       ],
       "blockers": [
-        "MPK persistent-kernel run with matching workload metadata.",
+        "MPK bounded-decode run with scheduler/resource/latency distributions imported.",
         "VDCores run with matching queue/resource-policy metadata.",
         "Paper baseline run mpk_persistent_scheduler_trace is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
-        "Latest execution attempt mpk_qwen3_0p6b_workload_metadata_sweep_h200 for mpk_persistent_scheduler_trace is partial: The patched MPK persistent path is not yet a matching workload for paper comparison because max_new_tokens is not honored by the persistent demo loop; it runs to the max_seq_length/eos policy instead. Import paper-grade MPK rows only after the run command records and enforces the intended decode length and scheduler/resource metadata for the same workload used by PTO and VDCores.",
+        "Latest execution attempt mpk_qwen3_0p6b_bounded_decode_h200 for mpk_persistent_scheduler_trace is partial: This resolves the immediate MPK matching-workload decode-length mismatch, but the attempt is still partial because scheduler/resource/latency distributions are not imported and the run depends on carried local baseline patches. Import paper-grade MPK rows only after those metrics are captured for the bounded-decode workload.",
         "Latest execution attempt vdcores_qwen3_1p7b_minst_provenance_h200 for vdcores_resource_policy_trace is partial: The generated Python-side MInst effective addresses are live tensor ranges before launch, so the VDCores blocker shifts from MInst provenance to runtime/device-side mutation, instruction upload, or CUDA memcheck allocator visibility for direct 1D cp_async_bulk loads. This is still not paper-grade correctness or resource-policy evidence."
       ],
       "next_actions": [
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
-          "action": "MPK persistent-kernel run with matching workload metadata."
+          "action": "MPK bounded-decode run with scheduler/resource/latency distributions imported."
         },
         {
           "source": "execution_attempt",
           "paper_baseline_id": "mpk",
           "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
-          "execution_attempt_id": "mpk_qwen3_0p6b_workload_metadata_sweep_h200",
+          "execution_attempt_id": "mpk_qwen3_0p6b_bounded_decode_h200",
           "status": "partial",
-          "action": "Resolve latest execution attempt mpk_qwen3_0p6b_workload_metadata_sweep_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: The patched MPK persistent path is not yet a matching workload for paper comparison because max_new_tokens is not honored by the persistent demo loop; it runs to the max_seq_length/eos policy instead. Import paper-grade MPK rows only after the run command records and enforces the intended decode length and scheduler/resource metadata for the same workload used by PTO and VDCores."
+          "action": "Resolve latest execution attempt mpk_qwen3_0p6b_bounded_decode_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: This resolves the immediate MPK matching-workload decode-length mismatch, but the attempt is still partial because scheduler/resource/latency distributions are not imported and the run depends on carried local baseline patches. Import paper-grade MPK rows only after those metrics are captured for the bounded-decode workload."
         },
         {
           "source": "execution_attempt",

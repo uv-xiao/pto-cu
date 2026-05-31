@@ -1871,8 +1871,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     }
     assert persistent_attempts["mpk_persistent_scheduler_trace"][
         "execution_attempt_id"
-    ] == "mpk_qwen3_0p6b_workload_metadata_sweep_h200"
-    assert "max_new_tokens is not honored" in persistent_attempts[
+    ] == "mpk_qwen3_0p6b_bounded_decode_h200"
+    assert "scheduler/resource/latency" in persistent_attempts[
         "mpk_persistent_scheduler_trace"
     ]["blocker"]
     assert persistent_attempts["vdcores_resource_policy_trace"][
@@ -1883,7 +1883,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     ]["blocker"]
     assert any(
         "Latest execution attempt "
-        "mpk_qwen3_0p6b_workload_metadata_sweep_h200"
+        "mpk_qwen3_0p6b_bounded_decode_h200"
         in blocker
         for blocker in persistent_claim["blockers"]
     )
@@ -1891,8 +1891,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         action["source"] == "execution_attempt"
         and action["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
         and action["execution_attempt_id"]
-        == "mpk_qwen3_0p6b_workload_metadata_sweep_h200"
-        and "matching workload" in action["action"]
+        == "mpk_qwen3_0p6b_bounded_decode_h200"
+        and "scheduler/resource/latency" in action["action"]
         for action in persistent_claim["next_actions"]
     )
     assert not any(
@@ -2014,8 +2014,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
         and item["execution_attempt_id"]
-        == "mpk_qwen3_0p6b_workload_metadata_sweep_h200"
-        and "matching workload" in item["action"]
+        == "mpk_qwen3_0p6b_bounded_decode_h200"
+        and "scheduler/resource/latency" in item["action"]
         for item in work_items
     )
     assert any(
@@ -2705,6 +2705,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200",
         "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200",
         "mpk_qwen3_0p6b_workload_metadata_sweep_h200",
+        "mpk_qwen3_0p6b_bounded_decode_h200",
         "vdcores_qwen3_1p7b_dry_build_h200",
         "vdcores_qwen3_1p7b_correctness_hf_timeout_h200",
         "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200",
@@ -2840,6 +2841,23 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert mpk_workload["summary"]["total_events"] == [1870, 1870]
     assert "matching workload" in mpk_workload["blocker"]
     assert "workload-summary.json" in " ".join(mpk_workload["artifacts"])
+    mpk_bounded = attempts_by_id["mpk_qwen3_0p6b_bounded_decode_h200"]
+    assert mpk_bounded["status"] == "partial"
+    assert mpk_bounded["summary"]["mode"] == "mpk_qwen3_0p6b_bounded_decode"
+    assert mpk_bounded["summary"]["requested_max_new_tokens"] == [1, 2]
+    assert mpk_bounded["summary"]["bounded_max_seq_lengths"] == [40, 41]
+    assert mpk_bounded["summary"]["observed_prompt_lengths"] == [39, 39]
+    assert mpk_bounded["summary"]["observed_generate_lengths"] == [1, 2]
+    assert mpk_bounded["summary"]["observed_predecode_steps"] == [39, 40]
+    assert mpk_bounded["summary"]["requested_decode_lengths_honored"]
+    assert mpk_bounded["summary"]["max_seq_length_used_as_decode_bound"]
+    assert mpk_bounded["summary"]["all_runs_exit_zero"]
+    assert mpk_bounded["summary"]["total_tasks"] == [7261, 7261]
+    assert mpk_bounded["summary"]["total_events"] == [1870, 1870]
+    assert mpk_bounded["summary"]["scheduler_trace_available"]
+    assert not mpk_bounded["summary"]["resource_policy_measured"]
+    assert "bounded-decode-summary.json" in " ".join(mpk_bounded["artifacts"])
+    assert "scheduler/resource/latency" in mpk_bounded["blocker"]
     vdcores_attempt = attempts_by_id["vdcores_qwen3_1p7b_dry_build_h200"]
     assert vdcores_attempt["status"] == "partial"
     assert vdcores_attempt["summary"]["layers"] == 28
