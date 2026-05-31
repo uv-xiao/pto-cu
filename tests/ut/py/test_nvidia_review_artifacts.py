@@ -1878,8 +1878,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert "mpk_persistent_scheduler_trace" not in persistent_attempts
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
-    ] == "vdcores_qwen3_1p7b_single_visible_gpu_h200"
-    assert "one-layer full schedule still fails with illegal instruction" in (
+    ] == "vdcores_qwen3_1p7b_logits_stage_bisect_h200"
+    assert "co-located Qwen3-1.7B logits stage" in (
         persistent_attempts["vdcores_resource_policy_trace"]["blocker"]
     )
     assert not any(
@@ -2010,9 +2010,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
         and item["execution_attempt_id"]
-        == "vdcores_qwen3_1p7b_single_visible_gpu_h200"
-        and "one-layer full schedule still fails with illegal instruction"
-        in item["action"]
+        == "vdcores_qwen3_1p7b_logits_stage_bisect_h200"
+        and "logits projection scheduling" in item["action"]
         for item in work_items
     )
 
@@ -2709,6 +2708,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_pointer_attr_probe_h200",
         "vdcores_qwen3_1p7b_launch_pointer_attr_probe_h200",
         "vdcores_qwen3_1p7b_single_visible_gpu_h200",
+        "vdcores_qwen3_1p7b_logits_stage_bisect_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -3196,6 +3196,43 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert "one-layer final_rms failure" in " ".join(
         vdcores_single_visible["summary"]["rules_out"]
     )
+    vdcores_logits_bisect = attempts_by_id[
+        "vdcores_qwen3_1p7b_logits_stage_bisect_h200"
+    ]
+    assert vdcores_logits_bisect["status"] == "failed_after_kernel_launch"
+    assert vdcores_logits_bisect["summary"]["mode"] == (
+        "vdcores_qwen_logits_stage_bisect"
+    )
+    assert vdcores_logits_bisect["summary"]["cuda_visible_devices"] == "7"
+    assert vdcores_logits_bisect["summary"]["first_failing_stage"] == "logits"
+    assert vdcores_logits_bisect["summary"]["stage_statuses"] == {
+        "logits": 1,
+        "argmax": 1,
+        "restore": 1,
+        "full": 1,
+    }
+    assert vdcores_logits_bisect["summary"]["default_logits_split_m"] == 6
+    assert vdcores_logits_bisect["summary"]["default_logits_reaches_kernel"]
+    assert vdcores_logits_bisect["summary"][
+        "default_logits_has_illegal_instruction"
+    ]
+    assert vdcores_logits_bisect["summary"][
+        "default_logits_has_invalid_slot_or_coord_signal"
+    ]
+    assert vdcores_logits_bisect["summary"]["split_statuses"] == {
+        "1": 1,
+        "2": 1,
+        "3": 1,
+        "6": 1,
+    }
+    assert vdcores_logits_bisect["summary"]["split_1_2_3_fail_before_launch"]
+    assert "auto-folding placement assertion" in vdcores_logits_bisect[
+        "summary"
+    ]["split_1_2_3_failure"]
+    assert "logits projection scheduling" in vdcores_logits_bisect["blocker"]
+    assert "argmax-only or restore-only" in " ".join(
+        vdcores_logits_bisect["summary"]["rules_out"]
+    )
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
@@ -3446,19 +3483,19 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if attempt["paper_baseline_id"] == "vdcores"
             )
             assert vdcores_attempt["execution_attempt_id"] == (
-                "vdcores_qwen3_1p7b_single_visible_gpu_h200"
+                "vdcores_qwen3_1p7b_logits_stage_bisect_h200"
             )
             assert (
-                vdcores_attempt["summary"]["final_rms_launch_status"] == 0
+                vdcores_attempt["summary"]["first_failing_stage"] == "logits"
             )
             vdcores_actions = [
                 action
                 for action in item["next_actions"]
                 if action.get("execution_attempt_id")
-                == "vdcores_qwen3_1p7b_single_visible_gpu_h200"
+                == "vdcores_qwen3_1p7b_logits_stage_bisect_h200"
             ]
             assert vdcores_actions
-            assert "one-layer full schedule still fails with illegal instruction" in (
+            assert "logits projection scheduling" in (
                 vdcores_actions[0]["action"]
             )
         if item["id"] == "host_schedule_launch_overhead":

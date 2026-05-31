@@ -82,26 +82,42 @@
         {
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_single_visible_gpu_h200",
-          "title": "VDCores Qwen3 1.7B Single-Visible-GPU Diagnostic",
-          "status": "partial",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-single-visible-gpu-ac8dab26/",
-          "blocker": "Co-locating model weights and launcher buffers resolves the earliest final_rms launch failure, but the one-layer full schedule still fails with illegal instruction. VDCores still lacks full correctness and queue/resource-policy timing for paper comparison.",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_logits_stage_bisect_h200",
+          "title": "VDCores Qwen3 1.7B Logits Stage Bisect",
+          "status": "failed_after_kernel_launch",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-stage-bisect-cec118fe/",
+          "blocker": "VDCores cannot yet run the co-located Qwen3-1.7B logits stage. The next diagnostic must inspect logits projection scheduling, SM placement, and slot allocation before queue/resource-policy timing can be imported.",
           "summary": {
-            "mode": "vdcores_qwen_single_visible_gpu",
+            "mode": "vdcores_qwen_logits_stage_bisect",
             "model": "Qwen/Qwen3-1.7B",
             "offline_cache_used": true,
             "cuda_visible_devices": "7",
             "debug_num_layers": 1,
             "no_prefetch": "all",
-            "final_rms_launch_status": 0,
-            "final_rms_completed_without_python_exception": true,
-            "full_one_layer_launch_status": 1,
-            "full_one_layer_error": "launch_dae failed: an illegal instruction was encountered",
+            "first_failing_stage": "logits",
+            "stage_statuses": {
+              "logits": 1,
+              "argmax": 1,
+              "restore": 1,
+              "full": 1
+            },
+            "default_logits_split_m": 6,
+            "default_logits_reaches_kernel": true,
+            "default_logits_has_illegal_instruction": true,
+            "default_logits_has_invalid_slot_or_coord_signal": true,
+            "split_statuses": {
+              "1": 1,
+              "2": 1,
+              "3": 1,
+              "6": 1
+            },
+            "split_1_2_3_fail_before_launch": true,
+            "split_1_2_3_failure": "VDCores auto-folding placement assertion rejects the selected M tile count for 132 SMs",
             "rules_out": [
-              "cross-device Qwen weight placement as the sole cause of the one-layer final_rms failure"
+              "argmax-only or restore-only as the first co-located failure stage",
+              "QWEN1P7B_LOGITS_SPLIT_M=1,2,3 as simple launchable workarounds for the logits failure"
             ],
-            "next_debug_target": "debug the co-located one-layer full-schedule illegal instruction before collecting VDCores correctness or resource-policy timing",
+            "next_debug_target": "inspect VDCores logits projection scheduling, SM placement, and slot allocation before attempting resource-policy timing",
             "correctness_completed": false,
             "resource_policy_measured": false
           }
@@ -146,7 +162,7 @@
       "blockers": [
         "VDCores run with matching queue/resource-policy metadata.",
         "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
-        "Latest execution attempt vdcores_qwen3_1p7b_single_visible_gpu_h200 for vdcores_resource_policy_trace is partial: Co-locating model weights and launcher buffers resolves the earliest final_rms launch failure, but the one-layer full schedule still fails with illegal instruction. VDCores still lacks full correctness and queue/resource-policy timing for paper comparison."
+        "Latest execution attempt vdcores_qwen3_1p7b_logits_stage_bisect_h200 for vdcores_resource_policy_trace is failed_after_kernel_launch: VDCores cannot yet run the co-located Qwen3-1.7B logits stage. The next diagnostic must inspect logits projection scheduling, SM placement, and slot allocation before queue/resource-policy timing can be imported."
       ],
       "next_actions": [
         {
@@ -158,9 +174,9 @@
           "source": "execution_attempt",
           "paper_baseline_id": "vdcores",
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_single_visible_gpu_h200",
-          "status": "partial",
-          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_single_visible_gpu_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: Co-locating model weights and launcher buffers resolves the earliest final_rms launch failure, but the one-layer full schedule still fails with illegal instruction. VDCores still lacks full correctness and queue/resource-policy timing for paper comparison."
+          "execution_attempt_id": "vdcores_qwen3_1p7b_logits_stage_bisect_h200",
+          "status": "failed_after_kernel_launch",
+          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_logits_stage_bisect_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: VDCores cannot yet run the co-located Qwen3-1.7B logits stage. The next diagnostic must inspect logits projection scheduling, SM placement, and slot allocation before queue/resource-policy timing can be imported."
         }
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."

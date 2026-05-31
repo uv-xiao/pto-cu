@@ -2051,3 +2051,45 @@ Each entry must include:
   original direct 1D load failure. The one-layer full schedule still fails
   later with illegal instruction, so VDCores still lacks correctness and
   queue/resource-policy timing.
+
+### 2026-06-01 - VDCores Logits Stage Bisect
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  logits-stage bisect for the persistent scheduler baseline gap.
+- Exact Codex command or script invocation: ran Qwen3-1.7B one-layer
+  co-located cuts on H200 with `CUDA_VISIBLE_DEVICES=7`,
+  `QWEN1P7B_NO_PREFETCH=all`, offline Hugging Face cache,
+  `--debug-num-layers 1`, `-N 1`, and `--launch` for
+  `--debug-stop-after logits`, `argmax`, `restore`, and `full`; then reran
+  the `logits` cut with `QWEN1P7B_LOGITS_SPLIT_M=1,2,3,6`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, and local `tmp/` raw artifacts copied back
+  from H200. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the remote VDCores extension still had
+  debug-print instrumentation from prior diagnostics, so this is diagnostic
+  evidence, not timing evidence.
+- Verification commands and results:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q`
+  -> `32 passed`;
+  `validate_benchmark_viewer_data.py` -> passed;
+  `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed;
+  `jq empty docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `git diff --check` -> passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the first failing co-located stage is
+  `logits`; `argmax`, `restore`, and `full` inherit the failure. Default
+  `QWEN1P7B_LOGITS_SPLIT_M=6` reaches the kernel and fails with illegal
+  instruction after invalid slot-allocation or TMA-coordinate signals. Split
+  values `1`, `2`, and `3` fail before launch on VDCores auto-folding
+  placement assertions, so they are not simple launchable workarounds. VDCores
+  still lacks correctness and queue/resource-policy timing.
