@@ -5,7 +5,7 @@
       "paper_baseline_id": "mpk",
       "title": "MPK Source Entrypoints",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/",
       "checks": [
         {
           "kind": "path_exists",
@@ -44,13 +44,13 @@
         {
           "gpu": "A100",
           "status": "pass",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/a100-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/a100-probe.json",
           "blocking_gaps": []
         },
         {
           "gpu": "H200",
           "status": "pass",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/h200-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/h200-probe.json",
           "blocking_gaps": []
         }
       ]
@@ -60,41 +60,46 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Source Entrypoints",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/",
       "checks": [
         {
           "kind": "path_exists",
-          "path": "app/python/llama3/sched.py",
-          "why": "Primary VDCores Llama decode and correctness entrypoint."
+          "path": "app/python/qwen3_1p7b/sched.py",
+          "why": "Selected VDCores public Qwen resource-policy entrypoint."
         },
         {
           "kind": "py_compile",
-          "path": "app/python/llama3/sched.py",
+          "path": "app/python/qwen3_1p7b/sched.py",
           "why": "The selected scheduler entrypoint must parse before model-loading runs."
+        },
+        {
+          "kind": "py_compile",
+          "path": "app/python/qwen3_1p7b/runtime_context.py",
+          "why": "The public Qwen runtime context owns HF auth and dry-build behavior."
         },
         {
           "kind": "python_module",
           "module": "torch",
-          "why": "VDCores Llama materialization and correctness paths depend on PyTorch."
+          "why": "VDCores Qwen materialization, dry-build tensors, and correctness paths depend on PyTorch."
         },
         {
           "kind": "python_module",
           "module": "transformers",
-          "why": "VDCores sched.py imports AutoModelForCausalLM, AutoTokenizer, and AutoConfig from Transformers."
+          "why": "VDCores Qwen runtime context imports AutoModelForCausalLM and AutoConfig from Transformers."
         }
       ],
-      "next_action": "Build the VDCores extension on H200/H100-class hardware and run the Llama decode correctness and benchmark commands.",
+      "next_action": "Run the Qwen3-1.7B dry-build, correctness, and benchmark commands, then import measured resource-policy artifacts.",
       "latest_machine_status": [
         {
           "gpu": "A100",
           "status": "pass",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/a100-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/a100-probe.json",
           "blocking_gaps": []
         },
         {
           "gpu": "H200",
           "status": "pass",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/h200-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/h200-probe.json",
           "blocking_gaps": []
         }
       ]
@@ -104,7 +109,7 @@
       "paper_baseline_id": "vllm",
       "title": "vLLM Source Entrypoints",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/",
       "checks": [
         {
           "kind": "path_exists",
@@ -137,7 +142,7 @@
         {
           "gpu": "A100",
           "status": "partial",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/a100-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/a100-probe.json",
           "blocking_gaps": [
             "python_module failed: vllm"
           ]
@@ -145,7 +150,7 @@
         {
           "gpu": "H200",
           "status": "partial",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/h200-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/h200-probe.json",
           "blocking_gaps": [
             "python_module failed: vllm"
           ]
@@ -157,7 +162,7 @@
       "paper_baseline_id": "sglang",
       "title": "SGLang Source Entrypoints",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/",
       "checks": [
         {
           "kind": "path_exists",
@@ -208,7 +213,7 @@
         {
           "gpu": "A100",
           "status": "partial",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/a100-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/a100-probe.json",
           "blocking_gaps": [
             "python_import failed: sglang.bench_serving",
             "python_import failed: sglang.bench_offline_throughput",
@@ -218,7 +223,7 @@
         {
           "gpu": "H200",
           "status": "partial",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/h200-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/h200-probe.json",
           "blocking_gaps": [
             "python_module failed: sglang",
             "python_import failed: sglang.bench_serving",
@@ -233,7 +238,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Source Entrypoints",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/",
       "checks": [
         {
           "kind": "path_exists",
@@ -296,13 +301,13 @@
         {
           "gpu": "A100",
           "status": "pass",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/a100-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/a100-probe.json",
           "blocking_gaps": []
         },
         {
           "gpu": "H200",
           "status": "pass",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-b138cfc5/h200-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-61af3f01/h200-probe.json",
           "blocking_gaps": []
         }
       ]

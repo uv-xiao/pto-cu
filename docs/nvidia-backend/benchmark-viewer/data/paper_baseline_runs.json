@@ -174,26 +174,30 @@
       ],
       "serving_workload_ids": [],
       "workload": {
-        "model": "meta-llama/Llama-3.1-8B-Instruct demo path, with Qwen/Qwen3-1.7B bring-up when supported",
+        "model": "Qwen/Qwen3-1.7B public bring-up path before Qwen/Qwen3-8B paper target",
         "input_policy": "controlled decode/resource trace with virtual-core queues, memory/compute split, and task-count metadata recorded",
         "output_policy": "correctness output plus resource-policy timing trace",
         "batch_or_concurrency": "single-process VDCores run aligned with PTO persistent-device queue-pressure and worker/scheduler policy captures"
       },
       "model_access": {
-        "requires_hf_token": true,
-        "gated_models": [
-          "meta-llama/Llama-3.1-8B-Instruct"
+        "requires_hf_token": false,
+        "public_models": [
+          "Qwen/Qwen3-1.7B",
+          "Qwen/Qwen3-8B"
         ],
-        "why": "The selected VDCores resource-policy commands still use the llama3 path, which reads HF_TOKEN directly."
+        "why": "The selected VDCores resource-policy path uses app/python/qwen3_1p7b, whose runtime context only passes Hugging Face auth when HF_TOKEN is present and supports synthetic dry-build without model access."
       },
       "setup_commands": [
         "cd tmp/baselines/vdcores && make pyext"
       ],
       "run_commands": [
-        "cd tmp/baselines/vdcores && python app/python/llama3/sched.py --correctness",
-        "cd tmp/baselines/vdcores && python app/python/llama3/sched.py -N 256 \"Write a hello world in Python.\""
+        "cd tmp/baselines/vdcores && python app/python/qwen3_1p7b/sched.py --dry-build -w ../../cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/compute_ops_full.txt",
+        "cd tmp/baselines/vdcores && HF_HOME=<shared-hf-cache> HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> --correctness",
+        "cd tmp/baselines/vdcores && HF_HOME=<shared-hf-cache> HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> -N 64 -b 1"
       ],
       "expected_artifacts": [
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/dry-build-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/compute_ops_full.txt",
         "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-trace.json",
         "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-profile.log"
       ],

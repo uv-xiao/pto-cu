@@ -9,6 +9,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-05-31 MPK runtime import guard](2026-05-31-mpk-runtime-import-guard.md)
 - [2026-05-31 MPK runtime build readiness](2026-05-31-mpk-runtime-build-readiness.md)
 - [2026-05-31 MPK execution attempts](2026-05-31-mpk-execution-attempts.md)
+- [2026-05-31 VDCores Qwen resource contract](2026-05-31-vdcores-qwen-resource-contract.md)
 - [2026-05-31 MPK model-access readiness](2026-05-31-mpk-model-access-readiness.md)
 - [2026-05-31 VDCores extension readiness](2026-05-31-vdcores-extension-readiness.md)
 - [2026-05-31 ThunderKittens selected sweep](2026-05-31-thunderkittens-selected-sweep.md)

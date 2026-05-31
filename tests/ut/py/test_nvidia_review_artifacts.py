@@ -1869,7 +1869,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "Readiness probe for mpk is partial" in blocker
         for blocker in persistent_claim["blockers"]
     )
-    assert any(
+    assert not any(
         action["source"] == "run_readiness"
         and action["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
         for action in persistent_claim["next_actions"]
@@ -1885,8 +1885,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     ] == "pass"
     assert persistent_readiness["vdcores_resource_policy_trace"][
         "latest_status"
-    ] == "partial"
-    assert any(
+    ] == "pass"
+    assert not any(
         "HF_TOKEN" in gap
         for gap in persistent_readiness[
             "vdcores_resource_policy_trace"
@@ -1956,11 +1956,11 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 9
+    assert committed["summary"]["total_work_items"] == 8
     assert committed["summary"]["work_items_by_source"] == {
         "matrix_missing_evidence": 3,
         "probe": 2,
-        "run_readiness": 4,
+        "run_readiness": 3,
     }
     work_items = committed["work_items"]
     assert all(not item["ready_for_paper_claim"] for item in work_items)
@@ -2009,7 +2009,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 9
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 8
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -2568,7 +2568,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert (
             item["latest_artifact_root"]
             == "tmp/cuda-backend/paper-baselines/probes/"
-            "paired-a100-h200-b138cfc5/"
+            "paired-a100-h200-61af3f01/"
         )
         assert item["checks"]
         assert item["next_action"]
@@ -2634,6 +2634,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mpk_qwen3_0p6b_persistent_profile_token2_h200",
         "mpk_qwen3_0p6b_persistent_noprofile_token2_h200",
         "mpk_qwen3_0p6b_persistent_token8_h200",
+        "vdcores_qwen3_1p7b_dry_build_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
     assert (
@@ -2653,6 +2654,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert "illegal memory access" in attempts_by_id[
         "mpk_qwen3_0p6b_persistent_noprofile_token2_h200"
     ]["blocker"]
+    vdcores_attempt = attempts_by_id["vdcores_qwen3_1p7b_dry_build_h200"]
+    assert vdcores_attempt["status"] == "partial"
+    assert vdcores_attempt["summary"]["layers"] == 28
+    assert vdcores_attempt["summary"]["compute_operators"] == 9
+    assert not vdcores_attempt["summary"]["requires_hf_token"]
     for attempt in execution_attempts:
         assert attempt["artifact_root"].startswith("tmp/")
         assert (ROOT / attempt["artifact_root"]).is_dir()
@@ -2740,12 +2746,15 @@ def test_benchmark_viewer_has_json_backed_review_data():
             "vdcores_resource_policy_trace"
         ]["blocking_gaps"]
     )
-    assert any(
+    assert not any(
         "HF_TOKEN" in gap
         for gap in readiness_by_run[
             "vdcores_resource_policy_trace"
         ]["blocking_gaps"]
     )
+    assert readiness_by_run["vdcores_resource_policy_trace"][
+        "latest_status"
+    ] == "pass"
     assert any(
         "python_module failed: vllm" in gap
         for gap in readiness_by_run[

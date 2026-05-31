@@ -59,6 +59,8 @@
           "status": "planned_not_run",
           "serving_workload_ids": [],
           "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/dry-build-summary.json",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/compute_ops_full.txt",
             "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-trace.json",
             "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-profile.log"
           ]
@@ -69,18 +71,16 @@
           "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-61af3f01/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
         {
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
-          "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
-          "blocking_gaps": [
-            "HF_TOKEN is not available for this run."
-          ],
+          "latest_status": "pass",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-61af3f01/",
+          "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }
       ],
@@ -105,7 +105,7 @@
         {
           "paper_baseline_id": "vdcores",
           "latest_status": "pass",
-          "next_action": "Build the VDCores extension on H200/H100-class hardware and run the Llama decode correctness and benchmark commands.",
+          "next_action": "Run the Qwen3-1.7B dry-build, correctness, and benchmark commands, then import measured resource-policy artifacts.",
           "machines": [
             {
               "gpu": "A100",
@@ -124,21 +124,13 @@
         "MPK persistent-kernel run with matching workload metadata.",
         "VDCores run with matching queue/resource-policy metadata.",
         "Paper baseline run mpk_persistent_scheduler_trace is planned_not_run, not imported_to_viewer.",
-        "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
-        "Run readiness vdcores_resource_policy_trace is partial: HF_TOKEN is not available for this run."
+        "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer."
       ],
       "next_actions": [
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
           "action": "MPK persistent-kernel run with matching workload metadata."
-        },
-        {
-          "source": "run_readiness",
-          "paper_baseline_id": "vdcores",
-          "paper_baseline_run_id": "vdcores_resource_policy_trace",
-          "status": "partial",
-          "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
@@ -304,7 +296,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-61af3f01/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -312,7 +304,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-61af3f01/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -322,7 +314,7 @@
           "paper_baseline_run_id": "vllm_serving_and_throughput",
           "paper_baseline_id": "vllm",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-61af3f01/",
           "blocking_gaps": [
             "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; H200: python_module failed: vllm."
           ],
@@ -332,7 +324,7 @@
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "paper_baseline_id": "sglang",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b138cfc5/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-61af3f01/",
           "blocking_gaps": [
             "Readiness probe sglang_source_entrypoints is partial: A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ],
@@ -360,7 +352,7 @@
         {
           "paper_baseline_id": "vdcores",
           "latest_status": "pass",
-          "next_action": "Build the VDCores extension on H200/H100-class hardware and run the Llama decode correctness and benchmark commands.",
+          "next_action": "Run the Qwen3-1.7B dry-build, correctness, and benchmark commands, then import measured resource-policy artifacts.",
           "machines": [
             {
               "gpu": "A100",

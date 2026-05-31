@@ -403,6 +403,18 @@ ssh bizhaoh200 \
    make -C tmp/baselines/vdcores clean pyext NVCC="nvcc -include cfloat"'
 ```
 
+For the persistent-device resource-policy comparison, prefer the public
+`app/python/qwen3_1p7b` path over the gated Llama path. The Qwen path supports
+a synthetic schedule dry-build without `HF_TOKEN`, which is useful for
+checking scheduler construction and the selected compute-operator set before
+spending time on a real correctness or timing run:
+
+```bash
+cd tmp/baselines/vdcores && \
+  python app/python/qwen3_1p7b/sched.py --dry-build \
+    -w ../../cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/compute_ops_full.txt
+```
+
 For MPK, treat `mirage.mpk.base_dynamic_shard_loader` as the runtime import
 gate. The Qwen3 demo can parse while still being unable to execute persistent
 kernel paths if the environment only has a generic `mirage` package or a
