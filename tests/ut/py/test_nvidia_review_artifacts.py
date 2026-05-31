@@ -1739,9 +1739,37 @@ dependencies = [
         "requirements/build/cuda.txt" in command
         for command in records["vllm"]["install_commands"]
     )
-    assert records["vllm"]["preflight_after_install_steps"] == 5
+    assert records["vllm"]["build_source_path"].startswith(
+        "tmp/cuda-backend/paper-baselines/source-overlays/"
+        "vllm-12345678-spinloop-cpython"
+    )
+    assert records["sglang"]["build_source_path"] == str(sglang_root)
+    assert len(records["vllm"]["source_overlay_commands"]) == 1
+    assert (
+        "vllm_spinloop_source_overlay.py"
+        in records["vllm"]["source_overlay_commands"][0]
+    )
+    assert records["vllm"]["source_path"] in records["vllm"][
+        "source_overlay_commands"
+    ][0]
+    assert records["vllm"]["build_source_path"] in records["vllm"][
+        "source_overlay_commands"
+    ][0]
+    assert any(
+        records["vllm"]["build_source_path"] in command
+        and "pip install --no-build-isolation -e ." in command
+        for command in records["vllm"]["install_commands"]
+    )
+    assert all(
+        records["vllm"]["build_source_path"] in command
+        for command in records["vllm"]["validation_commands"]
+    )
+    assert records["vllm"]["preflight_after_install_steps"] == 6
     assert len(records["vllm"]["preflight_commands"]) == 1
     assert "vllm_spinloop_preflight.py" in records["vllm"]["preflight_commands"][0]
+    assert records["vllm"]["build_source_path"] in records["vllm"][
+        "preflight_commands"
+    ][0]
     assert records["sglang"]["preflight_commands"] == []
     assert (output_root / "environment-plans.json").is_file()
 
@@ -1794,6 +1822,92 @@ define_extension_target(
     assert payload["status"] == "fail"
     assert "Py_buffer" in payload["blocker"]
     assert "Python 3.10.12" in payload["blocker"]
+
+
+def test_vllm_spinloop_source_overlay_patches_copy_only(tmp_path):
+    source = tmp_path / "vllm"
+    overlay = tmp_path / "overlays" / "vllm"
+    (source / "csrc").mkdir(parents=True)
+    (source / ".git").mkdir()
+    (source / "CMakeLists.txt").write_text(
+        """
+set(VLLM_SPINLOOP_EXT_SRC "csrc/spinloop.cpp")
+set(SPINLOOP_COMPILE_FLAGS "")
+define_extension_target(
+  spinloop
+  DESTINATION vllm
+  LANGUAGE CXX
+  SOURCES ${VLLM_SPINLOOP_EXT_SRC}
+  COMPILE_FLAGS ${SPINLOOP_COMPILE_FLAGS}
+  USE_SABI 3.11
+  WITH_SOABI)
+
+#
+# next section
+#
+""",
+        encoding="utf-8",
+    )
+    (source / "csrc" / "spinloop.cpp").write_text(
+        "void f() { Py_buffer buffer; PyBuffer_Release(&buffer); }\n",
+        encoding="utf-8",
+    )
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\n"
+        "printf '[3, 10, 12]\\n'\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/vllm_spinloop_source_overlay.py",
+            "--source",
+            str(source),
+            "--overlay",
+            str(overlay),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "pass"
+    assert not payload["upstream_checkout_mutated"]
+    assert not (overlay / ".git").exists()
+    assert "-UPy_LIMITED_API" not in (source / "CMakeLists.txt").read_text(
+        encoding="utf-8"
+    )
+    assert "-UPy_LIMITED_API" in (overlay / "CMakeLists.txt").read_text(
+        encoding="utf-8"
+    )
+
+    preflight = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/vllm_spinloop_preflight.py",
+            "--source",
+            str(overlay),
+            "--env-python",
+            str(fake_python),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert preflight.returncode == 0, preflight.stdout
+    preflight_payload = json.loads(preflight.stdout)
+    assert preflight_payload["status"] == "pass"
+    assert preflight_payload["spinloop_unsets_limited_api"]
 
 
 def test_paper_baseline_environment_attempt_captures_bounded_steps(tmp_path):

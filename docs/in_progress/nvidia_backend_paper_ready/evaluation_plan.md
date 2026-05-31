@@ -254,9 +254,14 @@ VDCores, matching the selected Qwen3 and Llama entrypoint imports. It also
 checks that the selected SGLang benchmark modules import from the pinned
 source checkout, not only that the source files exist. The H200 project venv
 has `transformers` installed, so MPK, VDCores, and ThunderKittens remain
-setup-ready on H200 while vLLM and SGLang remain partial. SGLang is partial
-because H200 is missing `orjson`, while the local A100 import path currently
-hits a torch/torchvision operator-registration mismatch.
+setup-ready on H200 while vLLM and SGLang remain partial. vLLM now has a
+reviewed Python 3.10 source-overlay path that copies the pinned checkout under
+`tmp/cuda-backend/paper-baselines/source-overlays/`, unsets
+`Py_LIMITED_API` only for the copied spinloop CXX target, and passes the
+overlay preflight; editable install and validation imports still remain
+pending. SGLang is partial because H200 is missing `orjson`, while the local
+A100 import path currently hits a torch/torchvision operator-registration
+mismatch.
 ThunderKittens readiness must include the selected PyTorch-extension
 dependencies (`torch`, `pybind11`, `numpy`, `pandas`, `matplotlib`, and
 `tqdm`), not just source-file existence. After installing those modules in

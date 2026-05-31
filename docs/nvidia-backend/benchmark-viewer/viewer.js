@@ -406,10 +406,12 @@ function renderPaperBaselines() {
       return [
         `${plan.title} (${plan.status})`,
         `Environment: ${plan.environment_path}`,
+        `Build source: ${plan.build_source_path || plan.source_path}`,
         `Python policy: ${plan.python_policy}`,
         `Dependency sources: ${plan.dependency_sources.join(", ")}`,
         `Critical packages: ${critical.join(" | ")}`,
         `Manual packages: ${manual.length ? manual.join(" | ") : "none"}`,
+        `Source overlay: ${(plan.source_overlay_commands || []).length ? plan.source_overlay_commands.join(" | ") : "none"}`,
         `Install: ${plan.install_commands.join(" | ")}`,
         `Preflight: ${plan.preflight_commands.length ? plan.preflight_commands.join(" | ") : "none"}`,
         `Validate: ${plan.validation_commands.join(" | ")}`,

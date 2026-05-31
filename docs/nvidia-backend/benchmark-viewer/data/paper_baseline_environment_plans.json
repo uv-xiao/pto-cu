@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "94ba2e06",
-    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-94ba2e06/",
+    "pto_commit": "460a34ba",
+    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-460a34ba/",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
     ]
@@ -15,6 +15,10 @@
       "status": "plan_ready",
       "source_path": "tmp/baselines/vllm",
       "source_commit": "27fa5aa3b952a6108de127423397e50364a95fcb",
+      "build_source_path": "tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython",
+      "source_overlay_commands": [
+        "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_source_overlay.py --source tmp/baselines/vllm --overlay tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython"
+      ],
       "environment_path": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
       "python_policy": "Create a dedicated venv under tmp/ with --system-site-packages; never install these serving framework dependencies into the project .venv or user site.",
       "dependency_sources": [
@@ -114,17 +118,18 @@
         "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install uvloop",
         "REPO_ROOT=$PWD && cd tmp/baselines/vllm && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install -r requirements/common.txt -r requirements/cuda.txt",
         "REPO_ROOT=$PWD && cd tmp/baselines/vllm && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install -r requirements/build/cuda.txt",
-        "REPO_ROOT=$PWD && cd tmp/baselines/vllm && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e ."
+        "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_source_overlay.py --source tmp/baselines/vllm --overlay tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython",
+        "REPO_ROOT=$PWD && cd tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e ."
       ],
       "preflight_commands": [
-        "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_preflight.py --source tmp/baselines/vllm --env-python tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python"
+        "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_preflight.py --source tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython --env-python tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python"
       ],
-      "preflight_after_install_steps": 5,
+      "preflight_after_install_steps": 6,
       "validation_commands": [
-        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/vllm:$PWD/tmp/baselines/vllm/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm')\"",
-        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/vllm:$PWD/tmp/baselines/vllm/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.cli.main')\"",
-        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/vllm:$PWD/tmp/baselines/vllm/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.openai.api_server')\"",
-        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/vllm:$PWD/tmp/baselines/vllm/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.engine.arg_utils')\""
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.cli.main')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.openai.api_server')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.engine.arg_utils')\""
       ],
       "execution_gaps": [
         "Environment has not been materialized by this planner artifact.",
@@ -132,10 +137,11 @@
       ],
       "notes": [
         "The vLLM source declares torch==2.11.0 while the project venv may carry a different CUDA/PyTorch stack, so the serving baseline must use a dedicated environment under tmp/.",
-        "Editable installation is kept in the isolated environment because the installed vllm module and console script are required before server and throughput runs."
+        "Editable installation is kept in the isolated environment because the installed vllm module and console script are required before server and throughput runs.",
+        "The Python 3.10 evaluation host builds vLLM from a copied source overlay that unsets Py_LIMITED_API for the spinloop CXX compile; the pinned upstream checkout under tmp/baselines is not modified."
       ],
       "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-94ba2e06/environment-plans.json"
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-460a34ba/environment-plans.json"
     },
     {
       "id": "sglang_runtime_environment",
@@ -144,6 +150,8 @@
       "status": "plan_ready",
       "source_path": "tmp/baselines/sglang",
       "source_commit": "7ed53d15f357ea4d722c1980c2cb35e8367d8bb0",
+      "build_source_path": "tmp/baselines/sglang",
+      "source_overlay_commands": [],
       "environment_path": "tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15",
       "python_policy": "Create a dedicated venv under tmp/ with --system-site-packages; never install these serving framework dependencies into the project .venv or user site.",
       "dependency_sources": [
@@ -218,7 +226,7 @@
         "The pinned source declares torch==2.11.0 and CUDA 13 packages; installing it into the project venv would make PTO tests non-reproducible."
       ],
       "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-94ba2e06/environment-plans.json"
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-460a34ba/environment-plans.json"
     }
   ]
 }

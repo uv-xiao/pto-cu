@@ -47,13 +47,17 @@ def python_version(env_python: Path) -> tuple[int, int, int]:
     return tuple(version)  # type: ignore[return-value]
 
 
-def spinloop_uses_limited_api(cmake_text: str) -> bool:
+def spinloop_section(cmake_text: str) -> str:
     marker = "define_extension_target(\n  spinloop"
     target_start = cmake_text.find(marker)
     if target_start < 0:
         fail("could not find spinloop define_extension_target in CMakeLists.txt")
     next_section = cmake_text.find("\n#\n", target_start + len(marker))
-    target_text = cmake_text[target_start:next_section if next_section > 0 else None]
+    return cmake_text[target_start:next_section if next_section > 0 else None]
+
+
+def spinloop_uses_limited_api(cmake_text: str) -> bool:
+    target_text = spinloop_section(cmake_text)
     return "USE_SABI 3.11" in target_text and "-UPy_LIMITED_API" not in target_text
 
 
@@ -78,6 +82,9 @@ def build_report(source_root: Path, env_python: Path) -> dict[str, Any]:
         "python_version": ".".join(str(item) for item in version),
         "spinloop_uses_sabi_3_11": limited_api,
         "spinloop_uses_buffer_api": uses_buffer_api,
+        "spinloop_unsets_limited_api": "-UPy_LIMITED_API" in spinloop_section(
+            cmake_text
+        ),
         "blocker": (
             "spinloop uses Py_buffer/PyBuffer_Release while the target is built "
             "with USE_SABI 3.11, but the isolated environment uses Python "

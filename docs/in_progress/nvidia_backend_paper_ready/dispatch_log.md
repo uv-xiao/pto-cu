@@ -2709,3 +2709,56 @@ Each entry must include:
   Python 3.11+ baseline environment or by adding a reviewed local
   reproducibility patch/build flag that removes `Py_LIMITED_API` from the
   spinloop CXX compile. SGLang environment materialization is still pending.
+
+### 2026-06-01 - vLLM Spinloop Source Overlay
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned vLLM
+  source-overlay path for Python 3.10 baseline environment setup.
+- Exact Codex command or script invocation: added
+  `.agents/skills/cuda-backend-eval/scripts/vllm_spinloop_source_overlay.py`,
+  updated the vLLM environment plan to install from a copied source overlay,
+  regenerated the environment plan at commit `460a34ba`, and ran
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py
+  --baseline vllm --start-step 6 --max-steps 2 --attempt-id-suffix
+  step06_overlay_preflight --append-viewer --output-root
+  tmp/cuda-backend/paper-baselines/environment-attempts/vllm-460a34ba-step06-overlay-preflight
+  --timeout-seconds 300 --commit 460a34ba`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready serving
+  baseline environment materialization evidence.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, benchmark-viewer data and
+  rendering, validator/tests, dispatch log, changelog docs, and local `tmp/`
+  source-overlay/environment-attempt artifacts. No upstream repositories were
+  edited or pushed.
+- Dependencies and blocked assumptions: the source overlay copies the pinned
+  vLLM checkout into `tmp/cuda-backend/paper-baselines/source-overlays/` and
+  applies the spinloop-only `-UPy_LIMITED_API` CXX compile option there. The
+  pinned upstream checkout under `tmp/baselines/vllm` remains unmodified.
+- Verification commands and results:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q
+  -k 'environment_plan_exports_isolated_serving_envs or vllm_spinloop'`
+  -> `3 passed`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_plan.py
+  --commit 460a34ba --output-root
+  tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-460a34ba`
+  -> wrote the current environment plan;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py
+  --baseline vllm --start-step 6 --max-steps 2 --attempt-id-suffix
+  step06_overlay_preflight --append-viewer --output-root
+  tmp/cuda-backend/paper-baselines/environment-attempts/vllm-460a34ba-step06-overlay-preflight
+  --timeout-seconds 300 --commit 460a34ba`
+  -> step 6 overlay creation passed and step 7 overlay preflight passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the Python 3.10 spinloop preflight
+  blocker is now resolved through a local overlay without upstream mutation.
+  The next vLLM slice should run editable install from step 8 and capture the
+  first remaining install or validation blocker. SGLang environment
+  materialization is still pending.

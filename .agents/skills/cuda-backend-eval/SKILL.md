@@ -507,6 +507,22 @@ Python 3.10 environments it currently fails fast when the pinned source builds
 or by adding a reviewed local reproducibility patch/build flag; do not patch
 the upstream checkout in place.
 
+The reviewed Python 3.10 path uses
+`vllm_spinloop_source_overlay.py` to copy the pinned checkout into
+`tmp/cuda-backend/paper-baselines/source-overlays/`, add the spinloop-only
+`-UPy_LIMITED_API` CXX compile option in that copy, and leave
+`tmp/baselines/vllm` untouched. After steps 1-5 have passed, run the overlay
+and preflight window before attempting editable install:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py \
+    --baseline vllm --start-step 6 --max-steps 2 \
+    --attempt-id-suffix step06_overlay_preflight --append-viewer \
+    --output-root tmp/cuda-backend/paper-baselines/environment-attempts/vllm-$(git rev-parse --short HEAD)-step06-overlay-preflight \
+    --timeout-seconds 300
+```
+
 Use `thunderkittens_mha_capture.py` for bounded ThunderKittens H200 MHA
 captures before attempting the full upstream `test_correctness.py` and
 `benchmark.py` sweeps. The script imports the already-built

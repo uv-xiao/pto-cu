@@ -75,12 +75,17 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
         "preflight_steps": [
             "{env_python} "
             ".agents/skills/cuda-backend-eval/scripts/vllm_spinloop_preflight.py "
-            "--source {source_path} --env-python {env_python}",
+            "--source {build_source_path} --env-python {env_python}",
         ],
         "install_after_preflight_steps": [
-            "REPO_ROOT=$PWD && cd {source_path} && "
+            "REPO_ROOT=$PWD && cd {build_source_path} && "
             "env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/{env_bin}:$PATH "
             "$REPO_ROOT/{env_python} -m pip install --no-build-isolation -e .",
+        ],
+        "source_overlay_steps": [
+            "{env_python} "
+            ".agents/skills/cuda-backend-eval/scripts/vllm_spinloop_source_overlay.py "
+            "--source {source_path} --overlay {build_source_path}",
         ],
         "validation_modules": [
             "vllm",
@@ -95,6 +100,9 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
             "Editable installation is kept in the isolated environment because "
             "the installed vllm module and console script are required before "
             "server and throughput runs.",
+            "The Python 3.10 evaluation host builds vLLM from a copied source "
+            "overlay that unsets Py_LIMITED_API for the spinloop CXX compile; "
+            "the pinned upstream checkout under tmp/baselines is not modified.",
         ],
     },
     "sglang": {
@@ -308,8 +316,27 @@ def build_environment_plan(
         / "envs"
         / f"{baseline_id}-{source_short}"
     )
+    overlay_path = (
+        ROOT
+        / "tmp"
+        / "cuda-backend"
+        / "paper-baselines"
+        / "source-overlays"
+        / f"{baseline_id}-{source_short}-spinloop-cpython"
+    )
+    build_source_path = (
+        repo_relative(overlay_path)
+        if spec.get("source_overlay_steps")
+        else source_path
+    )
     env_python = f"{repo_relative(env_path)}/bin/python"
     env_bin = f"{repo_relative(env_path)}/bin"
+    format_args = {
+        "source_path": source_path,
+        "build_source_path": build_source_path,
+        "env_python": env_python,
+        "env_bin": env_bin,
+    }
     dependency_sources = list(spec["dependency_sources"])
     evidence = dependency_evidence(source_root, dependency_sources)
     critical_packages = []
@@ -331,22 +358,26 @@ def build_environment_plan(
     )
     install_commands = [create_command]
     install_commands.extend(
-        step.format(source_path=source_path, env_python=env_python, env_bin=env_bin)
+        step.format(**format_args)
         for step in spec["install_steps"]
     )
+    source_overlay_commands = [
+        step.format(**format_args) for step in spec.get("source_overlay_steps", [])
+    ]
+    install_commands.extend(source_overlay_commands)
     preflight_after_install_steps = len(install_commands)
     preflight_commands = [
-        step.format(source_path=source_path, env_python=env_python, env_bin=env_bin)
+        step.format(**format_args)
         for step in spec.get("preflight_steps", [])
     ]
     install_commands.extend(
-        step.format(source_path=source_path, env_python=env_python, env_bin=env_bin)
+        step.format(**format_args)
         for step in spec.get("install_after_preflight_steps", [])
     )
     validation_commands = [
         (
             "env PYTHONNOUSERSITE=1 "
-            f"PYTHONPATH=$PWD/{source_path}:$PWD/{source_path}/python:$PYTHONPATH "
+            f"PYTHONPATH=$PWD/{build_source_path}:$PWD/{build_source_path}/python:$PYTHONPATH "
             f"{env_python} -c \"import importlib; "
             f"importlib.import_module('{module}')\""
         )
@@ -364,6 +395,8 @@ def build_environment_plan(
         "status": status,
         "source_path": source_path,
         "source_commit": source_commit,
+        "build_source_path": build_source_path,
+        "source_overlay_commands": source_overlay_commands,
         "environment_path": repo_relative(env_path),
         "python_policy": (
             "Create a dedicated venv under tmp/ with --system-site-packages; "

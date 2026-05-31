@@ -824,6 +824,7 @@ def validate_paper_baseline_environment_plans(
             "status",
             "source_path",
             "source_commit",
+            "build_source_path",
             "environment_path",
             "python_policy",
             "next_action",
@@ -838,6 +839,11 @@ def validate_paper_baseline_environment_plans(
         covered_baselines.add(baseline_id)
         if not record["environment_path"].startswith("tmp/"):
             fail(f"{owner} environment_path must be under tmp/")
+        if record["build_source_path"] != record["source_path"]:
+            if not record["build_source_path"].startswith("tmp/"):
+                fail(f"{owner} build_source_path must be under tmp/")
+            if "source-overlays" not in record["build_source_path"]:
+                fail(f"{owner} build_source_path must identify a source overlay")
         require_current_artifact_path(root, record["raw_artifact"], owner)
         for key in (
             "dependency_sources",
@@ -850,6 +856,16 @@ def validate_paper_baseline_environment_plans(
             require_list(record, key, owner)
         if not isinstance(record.get("preflight_commands"), list):
             fail(f"{owner} preflight_commands is not a list")
+        if not isinstance(record.get("source_overlay_commands"), list):
+            fail(f"{owner} source_overlay_commands is not a list")
+        if record["build_source_path"] != record["source_path"]:
+            if not record["source_overlay_commands"]:
+                fail(f"{owner} overlay build source has no source_overlay_commands")
+            overlay_text = " ".join(record["source_overlay_commands"])
+            if record["source_path"] not in overlay_text:
+                fail(f"{owner} overlay command does not reference source_path")
+            if record["build_source_path"] not in overlay_text:
+                fail(f"{owner} overlay command does not reference build_source_path")
         preflight_after = record.get("preflight_after_install_steps")
         if (
             not isinstance(preflight_after, int)
