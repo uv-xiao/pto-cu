@@ -10,6 +10,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-05-31 MPK runtime build readiness](2026-05-31-mpk-runtime-build-readiness.md)
 - [2026-05-31 MPK execution attempts](2026-05-31-mpk-execution-attempts.md)
 - [2026-05-31 MPK diagnostic variants](2026-05-31-mpk-diagnostic-variants.md)
+- [2026-05-31 MPK Qwen memcheck diagnostic](2026-05-31-mpk-qwen-memcheck.md)
 - [2026-05-31 VDCores Qwen resource contract](2026-05-31-vdcores-qwen-resource-contract.md)
 - [2026-05-31 VDCores Qwen correctness fetch blocker](2026-05-31-vdcores-qwen-correctness-fetch-blocker.md)
 - [2026-05-31 VDCores Qwen runtime rebuild](2026-05-31-vdcores-qwen-runtime-rebuild.md)

@@ -2650,6 +2650,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mpk_qwen3_0p6b_launch_blocking_token2_h200",
         "mpk_qwen3_0p6b_no_cutlass_token2_h200",
         "mpk_qwen3_0p6b_token1_noprofile_h200",
+        "mpk_qwen3_0p6b_token1_memcheck_h200",
         "vdcores_qwen3_1p7b_dry_build_h200",
         "vdcores_qwen3_1p7b_correctness_hf_timeout_h200",
         "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200",
@@ -2693,6 +2694,20 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert one_token_attempt["status"] == "failed_after_kernel_launch"
     assert one_token_attempt["summary"]["max_new_tokens"] == 1
     assert "illegal memory access" in one_token_attempt["blocker"]
+    mpk_memcheck = attempts_by_id["mpk_qwen3_0p6b_token1_memcheck_h200"]
+    assert mpk_memcheck["status"] == "failed_after_kernel_launch"
+    assert mpk_memcheck["summary"]["tool"] == "compute-sanitizer memcheck"
+    assert mpk_memcheck["summary"]["offline_cache_used"]
+    assert mpk_memcheck["summary"]["sanitizer_exit_status"] == 1
+    assert mpk_memcheck["summary"]["error_summary_count"] == 4
+    assert mpk_memcheck["summary"]["total_tasks"] == 7261
+    first_mpk_invalid = mpk_memcheck["summary"]["first_invalid_access"]
+    assert first_mpk_invalid["function"] == "prepare_next_batch"
+    assert first_mpk_invalid["source"] == "persistent_kernel.cuh:273"
+    assert first_mpk_invalid["address"] == "0x0"
+    assert first_mpk_invalid["device_source"] == "persistent_kernel.cuh:1235"
+    assert first_mpk_invalid["kernel_source"] == "persistent_kernel.cuh:1391"
+    assert "paged_kv_indices_snapshot" in mpk_memcheck["blocker"]
     vdcores_attempt = attempts_by_id["vdcores_qwen3_1p7b_dry_build_h200"]
     assert vdcores_attempt["status"] == "partial"
     assert vdcores_attempt["summary"]["layers"] == 28
