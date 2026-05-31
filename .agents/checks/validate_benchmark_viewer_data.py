@@ -20,6 +20,14 @@ READINESS_AUDIT_SCRIPT = (
     / "scripts"
     / "paper_readiness_audit.py"
 )
+WORK_QUEUE_SCRIPT = (
+    ROOT
+    / ".agents"
+    / "skills"
+    / "cuda-backend-eval"
+    / "scripts"
+    / "paper_readiness_work_queue.py"
+)
 
 
 def fail(message: str) -> None:
@@ -118,6 +126,18 @@ def load_readiness_audit_builder():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.build_readiness_audit
+
+
+def load_work_queue_builder():
+    spec = importlib.util.spec_from_file_location(
+        "paper_readiness_work_queue",
+        WORK_QUEUE_SCRIPT,
+    )
+    if spec is None or spec.loader is None:
+        fail("could not load paper_readiness_work_queue.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.build_work_queue
 
 
 def check_evidence_refs(record: dict[str, Any], owner: str, root: Path) -> None:
@@ -999,6 +1019,80 @@ def validate_paper_readiness_audit(
         fail("paper readiness audit is stale; regenerate paper_readiness_audit.json")
 
 
+def validate_paper_readiness_work_queue(
+    work_queue: dict[str, Any],
+    *,
+    audit: dict[str, Any],
+) -> None:
+    if work_queue.get("schema_version") != 1:
+        fail("paper readiness work queue schema_version must be 1")
+    if (
+        work_queue.get("source_file")
+        != "docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json"
+    ):
+        fail("paper readiness work queue source_file is stale")
+    if work_queue.get("overall_status") != audit.get("overall_status"):
+        fail("paper readiness work queue overall_status does not match audit")
+    if work_queue.get("ready_claims") != audit.get("ready_claims"):
+        fail("paper readiness work queue ready_claims does not match audit")
+    if work_queue.get("blocked_claims") != audit.get("blocked_claims"):
+        fail("paper readiness work queue blocked_claims does not match audit")
+    summary = work_queue.get("summary")
+    if not isinstance(summary, dict):
+        fail("paper readiness work queue has no summary object")
+    work_items = work_queue.get("work_items")
+    if not isinstance(work_items, list):
+        fail("paper readiness work queue has no work_items list")
+    if summary.get("total_work_items") != len(work_items):
+        fail("paper readiness work queue summary total does not match items")
+    expected_total = sum(
+        len(claim.get("next_actions", []))
+        for claim in audit.get("claim_audits", [])
+    )
+    if len(work_items) != expected_total:
+        fail("paper readiness work queue item count does not match audit")
+    item_ids: set[str] = set()
+    for expected_priority, item in enumerate(work_items, start=1):
+        if not isinstance(item, dict):
+            fail("paper readiness work queue item is not an object")
+        owner = f"paper readiness work queue item {expected_priority}"
+        item_id = require_string(item, "id", owner)
+        validate_id(item_id, owner)
+        if item_id in item_ids:
+            fail(f"duplicate paper readiness work queue item id: {item_id}")
+        item_ids.add(item_id)
+        if item.get("priority") != expected_priority:
+            fail(f"{owner} priority is not sequential")
+        for key in (
+            "claim_id",
+            "claim_title",
+            "matrix_status",
+            "source",
+            "owner",
+            "status",
+            "action",
+            "promotion_gate",
+        ):
+            require_string(item, key, owner)
+        if not isinstance(item.get("ready_for_paper_claim"), bool):
+            fail(f"{owner} ready_for_paper_claim is not boolean")
+        for key in ("blocker_count", "missing_evidence_count", "action_index"):
+            value = item.get(key)
+            if isinstance(value, bool) or not isinstance(value, int):
+                fail(f"{owner} {key} is not an integer")
+        for key in ("paper_baseline_id", "paper_baseline_run_id"):
+            if not isinstance(item.get(key), str):
+                fail(f"{owner} {key} is not a string")
+        if item["ready_for_paper_claim"]:
+            fail(f"{owner} points at a ready paper claim")
+    generated = load_work_queue_builder()(audit)
+    if work_queue != generated:
+        fail(
+            "paper readiness work queue is stale; regenerate "
+            "paper_readiness_work_queue.json"
+        )
+
+
 def validate_viewer_data(root: Path = ROOT) -> None:
     benchmarks = load_json(root, "benchmarks.json")
     methods = load_json(root, "methods.json")
@@ -1012,6 +1106,9 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     serving_workloads = load_json(root, "serving_workloads.json")
     paper_evaluation_matrix = load_json(root, "paper_evaluation_matrix.json")
     paper_readiness_audit = load_json(root, "paper_readiness_audit.json")
+    paper_readiness_work_queue = load_json(
+        root, "paper_readiness_work_queue.json"
+    )
     capture_imports = load_json(root, "capture_imports.json")
     results = load_json(root, "results.json")
     benchmark_ids = validate_benchmarks(benchmarks, root)
@@ -1064,6 +1161,10 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         probes=paper_baseline_probes,
         run_readiness=paper_baseline_run_readiness,
         results=results,
+    )
+    validate_paper_readiness_work_queue(
+        paper_readiness_work_queue,
+        audit=paper_readiness_audit,
     )
     validate_serving_workload_run_refs(
         serving_workloads,

@@ -1783,6 +1783,54 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     )
 
 
+def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
+    output_path = tmp_path / "work-queue.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/"
+            "paper_readiness_work_queue.py",
+            "--output",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+
+    generated = json.loads(output_path.read_text(encoding="utf-8"))
+    committed = json.loads(
+        (VIEWER_ROOT / "data" / "paper_readiness_work_queue.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert generated == committed
+    assert committed["overall_status"] == "not_paper_ready"
+    assert committed["summary"]["total_work_items"] == 13
+    assert committed["summary"]["work_items_by_source"] == {
+        "matrix_missing_evidence": 3,
+        "probe": 2,
+        "run_readiness": 8,
+    }
+    work_items = committed["work_items"]
+    assert all(not item["ready_for_paper_claim"] for item in work_items)
+    assert any(
+        item["claim_id"] == "llm_serving_paper_baselines"
+        and item["source"] == "probe"
+        and item["paper_baseline_id"] == "sglang"
+        and "Run SGLang" in item["action"]
+        for item in work_items
+    )
+    assert any(
+        item["claim_id"] == "persistent_device_scheduler_overhead"
+        and item["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
+        for item in work_items
+    )
+
+
 def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
     output_path = tmp_path / "serving-plan.json"
     result = subprocess.run(
@@ -1959,6 +2007,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "data" / "serving_workloads.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_readiness_audit.json").is_file()
+    assert (VIEWER_ROOT / "data" / "paper_readiness_work_queue.json").is_file()
     assert (VIEWER_ROOT / "data" / "capture_imports.json").is_file()
     viewer_js = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
     for required in [
@@ -1988,6 +2037,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paper_evaluation_matrix",
         "paperReadinessAudit",
         "paper_readiness_audit",
+        "paperReadinessWorkQueue",
+        "paper_readiness_work_queue",
+        "Paper Work Queue",
+        "work_items_by_source",
         "paper_baseline_run_readiness_statuses",
         "ready_for_paper_claim",
         "result_records",
@@ -2039,6 +2092,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     paper_readiness_audit = json.loads(
         (VIEWER_ROOT / "data" / "paper_readiness_audit.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    paper_readiness_work_queue = json.loads(
+        (VIEWER_ROOT / "data" / "paper_readiness_work_queue.json").read_text(
             encoding="utf-8"
         )
     )
@@ -2205,6 +2263,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 "thunderkittens_mha_capture.py" in command
                 for command in item["run_commands"]
             )
+
+    assert paper_readiness_work_queue["summary"]["total_work_items"] == sum(
+        len(claim["next_actions"])
+        for claim in paper_readiness_audit["claim_audits"]
+    )
 
     probe_baselines = {
         item["paper_baseline_id"]

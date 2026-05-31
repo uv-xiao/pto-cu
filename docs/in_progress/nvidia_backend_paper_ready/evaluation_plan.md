@@ -52,6 +52,11 @@ readiness-probe statuses, missing viewer-result evidence, and generated next
 actions into one review record per claim. The audit must stay
 `not_paper_ready` until every claim has a ready matrix status and no generated
 blockers.
+The generated work queue in
+`docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json`
+flattens those next actions into one prioritized table for the HTML viewer, so
+reviewers can see the remaining MPK, VDCores, vLLM, SGLang, ThunderKittens,
+and PTO serving work without expanding each matrix claim.
 
 Paper-baseline reproduction commands are tracked in
 `docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json`. Those

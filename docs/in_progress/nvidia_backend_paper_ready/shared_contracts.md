@@ -190,6 +190,15 @@ Each audit claim must include:
 The viewer renders this audit before the matrix rows. The data validator
 regenerates the audit and fails when the committed JSON is stale.
 
+The generated paper-readiness work queue lives in
+`docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json`.
+It is derived from `paper_readiness_audit.json` by
+`.agents/skills/cuda-backend-eval/scripts/paper_readiness_work_queue.py` and
+must not be hand-edited. It flattens every blocked claim's `next_actions` into
+reviewable work items with claim, source, owner, status, action, priority, and
+promotion-gate fields. The viewer renders it as the `Work Queue` tab, and the
+data validator regenerates it from the audit.
+
 ## Code Evidence Contract
 
 Docs may describe implemented behavior only when one of these is true:

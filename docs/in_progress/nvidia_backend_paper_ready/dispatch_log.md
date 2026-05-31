@@ -1395,3 +1395,34 @@ Each entry must include:
 - Handoff summary and remaining gaps: the HTML viewer can now show per-claim
   next actions. The overall audit remains `not_paper_ready` until the planned
   raw baseline captures are imported.
+
+### 2026-05-31 - Paper Readiness Work Queue
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  paper-readiness work-queue reviewability slice.
+- Exact Codex command or script invocation:
+  `.agents/skills/cuda-backend-eval/scripts/paper_readiness_work_queue.py`
+  generated
+  `docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json`
+  from `paper_readiness_audit.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, benchmark-viewer expansion
+  and strict code/document evidence guardrail slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer rendering code, generated viewer
+  JSON, CUDA evaluation validator and skill docs, focused review tests, goal
+  docs, dispatch log, and changelog docs. No upstream repositories were
+  edited.
+- Dependencies and blocked assumptions: this is a generated work-planning
+  artifact only; it does not create new measured performance data.
+- Verification commands and results: focused TDD tests first failed because
+  `paper_readiness_work_queue.py` and the committed work-queue JSON did not
+  exist. After implementation, focused tests and broader verification are
+  recorded in the final commit summary for this slice.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: reviewers can now inspect the 13
+  remaining paper-readiness actions as one table. The queue still points at
+  raw captures that must be run and imported before paper promotion.

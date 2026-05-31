@@ -514,6 +514,15 @@ PYTHONPATH=$PWD:$PWD/python \
     --output docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json
 ```
 
+After regenerating the audit, use `paper_readiness_work_queue.py` to flatten
+the audit's next actions into the viewer's `Work Queue` tab:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_readiness_work_queue.py \
+    --output docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json
+```
+
 Use `cuda_scheduler_scaling.py` to summarize a scheduler-block sweep after
 capturing the individual paired smokes. Its ratio column is shape-aware:
 each row is compared with the one-scheduler row for the same artifact, DAG

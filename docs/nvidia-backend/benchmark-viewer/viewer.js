@@ -9,6 +9,7 @@ const DATA_FILES = {
   servingWorkloads: "data/serving_workloads.json",
   paperEvaluation: "data/paper_evaluation_matrix.json",
   paperReadinessAudit: "data/paper_readiness_audit.json",
+  paperReadinessWorkQueue: "data/paper_readiness_work_queue.json",
   results: "data/results.json",
 };
 
@@ -438,6 +439,41 @@ function renderPaperEvaluation() {
   }));
 }
 
+function renderPaperWorkQueue() {
+  const queue = state.paperReadinessWorkQueue;
+  const root = document.getElementById("paper-work-queue");
+  const sourceSummary = Object.entries(queue.summary.work_items_by_source)
+    .map(([source, count]) => `${source}: ${count}`)
+    .join(", ");
+  const claimSummary = Object.entries(queue.summary.work_items_by_claim)
+    .map(([claim, count]) => `${claim}: ${count}`)
+    .join(", ");
+  const summary = fieldList([
+    ["Overall status", queue.overall_status],
+    ["Ready claims", queue.ready_claims],
+    ["Blocked claims", queue.blocked_claims],
+    ["Total work items", queue.summary.total_work_items],
+    ["By source", sourceSummary || "none"],
+    ["By claim", claimSummary || "none"],
+    ["Source file", queue.source_file],
+  ]);
+  const rows = queue.work_items.map((item) => [
+    item.priority,
+    item.claim_title,
+    item.source,
+    item.owner,
+    item.status,
+    item.action,
+  ]);
+  const heading = document.createElement("h3");
+  heading.append(text("Paper Work Queue"));
+  root.replaceChildren(
+    heading,
+    summary,
+    table(["Priority", "Claim", "Source", "Owner", "Status", "Action"], rows),
+  );
+}
+
 function renderPaperReadinessAudit() {
   const audit = state.paperReadinessAudit;
   const root = document.getElementById("paper-readiness-audit");
@@ -594,6 +630,7 @@ async function main() {
       servingWorkloads,
       paperEvaluation,
       paperReadinessAudit,
+      paperReadinessWorkQueue,
       results,
     ] = await Promise.all([
       loadJson(DATA_FILES.benchmarks),
@@ -606,6 +643,7 @@ async function main() {
       loadJson(DATA_FILES.servingWorkloads),
       loadJson(DATA_FILES.paperEvaluation),
       loadJson(DATA_FILES.paperReadinessAudit),
+      loadJson(DATA_FILES.paperReadinessWorkQueue),
       loadJson(DATA_FILES.results),
     ]);
     Object.assign(state, {
@@ -619,6 +657,7 @@ async function main() {
       servingWorkloads,
       paperEvaluation,
       paperReadinessAudit,
+      paperReadinessWorkQueue,
       results,
     });
     renderSnapshot();
@@ -628,6 +667,7 @@ async function main() {
     renderServingWorkloads();
     renderServingCommandPlan();
     renderPaperBaselines();
+    renderPaperWorkQueue();
     renderPaperEvaluation();
     renderResults();
   } catch (error) {
