@@ -1872,6 +1872,38 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert all(item["verification"] for item in committed["acceptance_criteria"])
 
 
+def test_nvidia_review_artifact_refresh_regenerates_all_generated_json(tmp_path):
+    output_dir = tmp_path / "viewer-data"
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/"
+            "refresh_nvidia_review_artifacts.py",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    for filename in [
+        "paper_readiness_audit.json",
+        "paper_readiness_work_queue.json",
+        "goal_progress.json",
+    ]:
+        generated = json.loads((output_dir / filename).read_text(encoding="utf-8"))
+        committed = json.loads(
+            (VIEWER_ROOT / "data" / filename).read_text(encoding="utf-8")
+        )
+        assert generated == committed
+    assert "paper_readiness_audit.json" in result.stdout
+    assert "paper_readiness_work_queue.json" in result.stdout
+    assert "goal_progress.json" in result.stdout
+
+
 def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
     output_path = tmp_path / "serving-plan.json"
     result = subprocess.run(

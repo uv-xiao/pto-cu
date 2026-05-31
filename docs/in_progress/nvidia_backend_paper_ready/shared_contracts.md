@@ -207,6 +207,12 @@ the goal acceptance criteria to status, evidence refs, verification commands,
 and remaining gaps. The viewer renders it as the `Goal Progress` tab, and the
 data validator regenerates it from current artifacts.
 
+Normal refreshes of generated review JSON should use
+`.agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py`.
+That command regenerates the paper-readiness audit, work queue, and
+goal-progress audit in dependency order so reviewers do not accidentally
+update only one generated artifact.
+
 ## Code Evidence Contract
 
 Docs may describe implemented behavior only when one of these is true:

@@ -1458,3 +1458,32 @@ Each entry must include:
   progress. It reports seven met criteria and one in-progress criterion:
   final paper-grade results remain blocked by the 13 queued raw-capture
   actions.
+
+### 2026-05-31 - Review Artifact Refresh
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned generated
+  artifact maintenance slice.
+- Exact Codex command or script invocation:
+  `.agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py`
+  regenerates `paper_readiness_audit.json`,
+  `paper_readiness_work_queue.json`, and `goal_progress.json` in dependency
+  order.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, strict evidence guardrail
+  and benchmark-viewer maintenance slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts and skill docs, focused
+  review tests, goal docs, dispatch log, and changelog docs. No upstream
+  repositories were edited.
+- Dependencies and blocked assumptions: this is generated-artifact
+  maintenance only; it does not create measured paper-grade performance data.
+- Verification commands and results: focused TDD first failed because the
+  unified refresh script did not exist. After implementation, the focused
+  refresh regression and broader verification are recorded in the final commit
+  summary for this slice.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: generated review artifacts now have one
+  refresh command. The paper-readiness audit still has 13 queued actions.

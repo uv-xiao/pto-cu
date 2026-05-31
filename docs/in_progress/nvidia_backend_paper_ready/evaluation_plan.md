@@ -61,6 +61,9 @@ The generated goal-progress audit in
 `docs/nvidia-backend/benchmark-viewer/data/goal_progress.json` summarizes the
 overall NVIDIA backend objective. It should remain `in_progress` while the
 paper-grade results criterion still points at queued raw captures.
+Use `.agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py`
+after changing matrix, baseline, readiness, probe, result, or goal-progress
+inputs so the audit, work queue, and goal-progress data move together.
 
 Paper-baseline reproduction commands are tracked in
 `docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json`. Those

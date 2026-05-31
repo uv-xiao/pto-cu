@@ -508,6 +508,20 @@ readiness, missing viewer-result evidence, and the next actions copied from
 matrix gaps, run-readiness records, and failed or partial probes into one
 review record per paper claim:
 
+For normal review-data refreshes, use
+`refresh_nvidia_review_artifacts.py` instead of invoking each generated
+artifact script by hand. It regenerates `paper_readiness_audit.json`,
+`paper_readiness_work_queue.json`, and `goal_progress.json` in dependency
+order:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py
+```
+
+Use the individual commands below only when isolating a stale-artifact
+failure.
+
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py \
