@@ -1843,3 +1843,47 @@ Each entry must include:
   should identify why `-DMPK_ENABLE_PROFILING` or profile mode corrupts
   token/step state before importing scheduler, resource-policy, or latency
   rows.
+
+### 2026-06-01 - MPK Profile Termination Diagnostic
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned MPK
+  profile-mode root-cause diagnostic.
+- Exact Codex command or script invocation: ran the H200 patched MPK Qwen3
+  0.6B persistent demo with `--max-new-tokens 2 --max-seq-length 41`,
+  offline Hugging Face cache, one request, one batched token, `--ignore-eos`,
+  `--use-mirage`, `--profiling`, and Perfetto trace export under
+  `tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/profile-termination-diagnostic-fa357d52/`.
+  The first run failed before compilation because `nvcc` was not on the
+  non-interactive SSH `PATH`; the rerun set `CUDA_HOME=/usr/local/cuda-12.8`
+  and `PATH=$CUDA_HOME/bin:$PATH`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready MPK baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, committed baseline patch files, and local
+  `tmp/` raw artifacts copied back from H200. No upstream repositories were
+  edited or pushed.
+- Dependencies and blocked assumptions: the diagnostic uses carried local MPK
+  baseline patches. It removes only the `MPK_ENABLE_PROFILING` early
+  request-done override in offline `prepare_next_batch`; the real-profiler
+  variant keeps profiler event writes enabled.
+- Verification commands and results: the focused TDD test first failed because
+  the derived paper-readiness artifacts still referenced the previous
+  profile-no-op attempt. After adding the execution attempt and refreshing
+  derived artifacts, the focused tests passed:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest
+  tests/ut/py/test_nvidia_review_artifacts.py::test_benchmark_viewer_has_json_backed_review_data
+  tests/ut/py/test_nvidia_review_artifacts.py::test_paper_readiness_audit_matches_current_viewer_data
+  tests/ut/py/test_nvidia_review_artifacts.py::test_paper_readiness_work_queue_matches_current_audit
+  -q` -> `3 passed`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: MPK profiling can now preserve
+  bounded-decode correctness and export a real Perfetto trace with carried
+  patches. The remaining MPK paper-readiness gap is importing comparable
+  scheduler/resource/latency rows into viewer results for the bounded workload.

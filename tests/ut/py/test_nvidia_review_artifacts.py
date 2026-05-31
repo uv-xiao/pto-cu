@@ -1871,28 +1871,24 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     }
     assert persistent_attempts["mpk_persistent_scheduler_trace"][
         "execution_attempt_id"
-    ] == "mpk_qwen3_0p6b_profile_noop_diagnostic_h200"
-    assert "profile compile path still corrupts token progress" in persistent_attempts[
-        "mpk_persistent_scheduler_trace"
-    ]["blocker"]
+    ] == "mpk_qwen3_0p6b_profile_termination_diagnostic_h200"
+    assert persistent_attempts["mpk_persistent_scheduler_trace"]["status"] == "pass"
+    assert persistent_attempts["mpk_persistent_scheduler_trace"]["blocker"] == ""
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
     ] == "vdcores_qwen3_1p7b_minst_provenance_h200"
     assert "live tensor ranges before launch" in persistent_attempts[
         "vdcores_resource_policy_trace"
     ]["blocker"]
-    assert any(
+    assert not any(
         "Latest execution attempt "
-        "mpk_qwen3_0p6b_profile_noop_diagnostic_h200"
+        "mpk_qwen3_0p6b_profile_termination_diagnostic_h200"
         in blocker
         for blocker in persistent_claim["blockers"]
     )
-    assert any(
+    assert not any(
         action["source"] == "execution_attempt"
         and action["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
-        and action["execution_attempt_id"]
-        == "mpk_qwen3_0p6b_profile_noop_diagnostic_h200"
-        and "profile compile path still corrupts token progress" in action["action"]
         for action in persistent_claim["next_actions"]
     )
     assert not any(
@@ -1987,9 +1983,9 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 10
+    assert committed["summary"]["total_work_items"] == 9
     assert committed["summary"]["work_items_by_source"] == {
-        "execution_attempt": 2,
+        "execution_attempt": 1,
         "matrix_missing_evidence": 3,
         "probe": 2,
         "run_readiness": 3,
@@ -2009,13 +2005,10 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "run_readiness"
         for item in work_items
     )
-    assert any(
+    assert not any(
         item["claim_id"] == "persistent_device_scheduler_overhead"
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
-        and item["execution_attempt_id"]
-        == "mpk_qwen3_0p6b_profile_noop_diagnostic_h200"
-        and "profile compile path still corrupts token progress" in item["action"]
         for item in work_items
     )
     assert any(
@@ -2060,7 +2053,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 10
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 9
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -2708,6 +2701,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mpk_qwen3_0p6b_bounded_decode_h200",
         "mpk_qwen3_0p6b_bounded_profile_diagnostic_h200",
         "mpk_qwen3_0p6b_profile_noop_diagnostic_h200",
+        "mpk_qwen3_0p6b_profile_termination_diagnostic_h200",
         "vdcores_qwen3_1p7b_dry_build_h200",
         "vdcores_qwen3_1p7b_correctness_hf_timeout_h200",
         "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200",
@@ -2916,6 +2910,39 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert "profile compile path still corrupts token progress" in mpk_noop[
         "blocker"
     ]
+    mpk_termination = attempts_by_id[
+        "mpk_qwen3_0p6b_profile_termination_diagnostic_h200"
+    ]
+    termination_patch = (
+        "docs/nvidia-backend/baseline-patches/"
+        "mpk-profiler-termination-diagnostic.patch"
+    )
+    assert mpk_termination["status"] == "pass"
+    assert mpk_termination["summary"]["mode"] == (
+        "mpk_qwen3_0p6b_profile_termination_diagnostic"
+    )
+    assert mpk_termination["summary"]["profile_compile_flag_enabled"]
+    assert mpk_termination["summary"]["early_done_override_removed"]
+    assert mpk_termination["summary"]["all_noop_status"] == 0
+    assert mpk_termination["summary"]["real_profiler_status"] == 0
+    assert mpk_termination["summary"]["all_noop_generated_length"] == 2
+    assert mpk_termination["summary"]["real_profiler_generated_length"] == 2
+    assert mpk_termination["summary"]["all_noop_predecode_step"] == 40
+    assert mpk_termination["summary"]["real_profiler_predecode_step"] == 40
+    assert mpk_termination["summary"]["all_noop_trace_bytes"] == 89
+    assert mpk_termination["summary"]["real_profiler_trace_bytes"] > 16000000
+    assert mpk_termination["summary"]["profiling_preserves_correctness"]
+    assert mpk_termination["summary"]["scheduler_trace_available"]
+    assert not mpk_termination["summary"]["resource_policy_measured"]
+    assert "profile_termination_normalized_real_profiler" in " ".join(
+        mpk_termination["artifacts"]
+    )
+    assert termination_patch in mpk_termination["reproducibility_patches"]
+    termination_patch_text = (ROOT / termination_patch).read_text(
+        encoding="utf-8"
+    )
+    assert "MPK_ENABLE_PROFILING" in termination_patch_text
+    assert "if (true)" in termination_patch_text
     vdcores_attempt = attempts_by_id["vdcores_qwen3_1p7b_dry_build_h200"]
     assert vdcores_attempt["status"] == "partial"
     assert vdcores_attempt["summary"]["layers"] == 28
