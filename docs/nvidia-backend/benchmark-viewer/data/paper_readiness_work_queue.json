@@ -52,9 +52,9 @@
       "owner": "vdcores_resource_policy_trace",
       "paper_baseline_id": "vdcores",
       "paper_baseline_run_id": "vdcores_resource_policy_trace",
-      "execution_attempt_id": "vdcores_qwen3_1p7b_logits_schedule_introspection_h200",
+      "execution_attempt_id": "vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200",
       "status": "blocked",
-      "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_logits_schedule_introspection_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: VDCores still cannot import queue/resource-policy timing: the illegal instruction is now localized to the direct logits GEMV instruction window after final_rms, and the next diagnostic must inspect VDCores memory-slot allocation and RepeatM loop handling for the desc32/33/34 direct TMA sequence.",
+      "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: VDCores still cannot import queue/resource-policy timing: the co-located logits failure now points to slot metadata reuse before STU consumption and RepeatM-fed invalid desc33 coordinates in the direct GEMV window. The next diagnostic must instrument allocwarp GPR lanes and slot reuse around pc48-pc51, then test a VDCores-local change that prevents writeback-slot metadata reuse before STU has copied it.",
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },
     {

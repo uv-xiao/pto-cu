@@ -1878,8 +1878,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert "mpk_persistent_scheduler_trace" not in persistent_attempts
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
-    ] == "vdcores_qwen3_1p7b_logits_schedule_introspection_h200"
-    assert "desc32/33/34 direct TMA sequence" in (
+    ] == "vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200"
+    assert "slot metadata reuse" in (
         persistent_attempts["vdcores_resource_policy_trace"]["blocker"]
     )
     assert not any(
@@ -2010,8 +2010,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
         and item["execution_attempt_id"]
-        == "vdcores_qwen3_1p7b_logits_schedule_introspection_h200"
-        and "RepeatM loop handling" in item["action"]
+        == "vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200"
+        and "slot metadata reuse" in item["action"]
         for item in work_items
     )
 
@@ -2710,6 +2710,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_single_visible_gpu_h200",
         "vdcores_qwen3_1p7b_logits_stage_bisect_h200",
         "vdcores_qwen3_1p7b_logits_schedule_introspection_h200",
+        "vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -3261,6 +3262,42 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "sm64_desc34_store_count_in_window"
     ] == 2
     assert "RepeatM loop handling" in vdcores_logits_schedule["blocker"]
+    vdcores_slot_repeat = attempts_by_id[
+        "vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200"
+    ]
+    assert vdcores_slot_repeat["status"] == "blocked"
+    assert vdcores_slot_repeat["summary"]["mode"] == (
+        "vdcores_qwen_slot_repeat_source_analysis"
+    )
+    assert vdcores_slot_repeat["summary"]["source_analysis_only"]
+    assert not vdcores_slot_repeat["summary"]["launch_executed"]
+    assert vdcores_slot_repeat["summary"]["regular_slots"] == 24
+    assert vdcores_slot_repeat["summary"]["slot_metadata_hazard_observed"]
+    assert vdcores_slot_repeat["summary"]["pc48_desc34_store_slot"] == 0
+    assert vdcores_slot_repeat["summary"]["pc50_desc33_load_reuses_slot"] == 0
+    assert vdcores_slot_repeat["summary"][
+        "pc50_overwrites_st_insts_slot0_before_stu"
+    ]
+    assert (
+        vdcores_slot_repeat["summary"]["stu_unknown_writeback_opcode"]
+        == "opcode=0301 op=12"
+    )
+    assert vdcores_slot_repeat["summary"]["repeat_coord_hazard_observed"]
+    assert vdcores_slot_repeat["summary"]["pc50_repeat_updated_address"] == (
+        "0x7fffff"
+    )
+    assert vdcores_slot_repeat["summary"]["pc50_desc33_invalid_cords"] == [
+        65535,
+        127,
+        0,
+    ]
+    assert vdcores_slot_repeat["summary"][
+        "expected_pc50_desc33_cords_from_build_only_schedule"
+    ] == [0, 0, 0, 0]
+    assert "slot metadata reuse" in vdcores_slot_repeat["blocker"]
+    assert "allocwarp gpr lanes" in vdcores_slot_repeat["summary"][
+        "next_debug_target"
+    ]
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
@@ -3511,19 +3548,20 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if attempt["paper_baseline_id"] == "vdcores"
             )
             assert vdcores_attempt["execution_attempt_id"] == (
-                "vdcores_qwen3_1p7b_logits_schedule_introspection_h200"
+                "vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200"
             )
             assert (
-                vdcores_attempt["summary"]["sm64_first_logits_pc"] == 38
+                vdcores_attempt["summary"]["pc50_desc33_invalid_cords"]
+                == [65535, 127, 0]
             )
             vdcores_actions = [
                 action
                 for action in item["next_actions"]
                 if action.get("execution_attempt_id")
-                == "vdcores_qwen3_1p7b_logits_schedule_introspection_h200"
+                == "vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200"
             ]
             assert vdcores_actions
-            assert "RepeatM loop handling" in (
+            assert "slot metadata reuse" in (
                 vdcores_actions[0]["action"]
             )
         if item["id"] == "host_schedule_launch_overhead":

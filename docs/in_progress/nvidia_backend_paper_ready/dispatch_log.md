@@ -2166,3 +2166,45 @@ Each entry must include:
   The next diagnostic should inspect VDCores memory-slot allocation and
   `RepeatM` loop handling for the desc32/33/34 direct TMA sequence before any
   queue/resource-policy timing import.
+
+### 2026-06-01 - VDCores Slot/Repeat Source Analysis
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned source/log
+  diagnostic for the latest VDCores resource-policy blocker.
+- Exact Codex command or script invocation: analyzed the prior H200
+  co-located logits split-6 failure log and the build-only logits schedule
+  summary with the tmp-only script
+  `tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-slot-repeat-source-analysis-858717e4/vdcores_slot_repeat_analysis.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue data, focused review tests, dispatch log,
+  changelog docs, and local `tmp/` raw/source-analysis artifacts. No upstream
+  repositories were edited or pushed.
+- Dependencies and blocked assumptions: this was source/log analysis, not a
+  new launch. It uses the previous H200 co-located logits split-6 failure and
+  the previous build-only schedule dump as evidence.
+- Verification commands and results:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/checks/check_nvidia_review_ready.py` -> passed;
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q`
+  -> `32 passed`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/checks/validate_benchmark_viewer_data.py` -> passed;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/checks/validate_nvidia_changelog.py` -> passed;
+  `jq empty docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `git diff --check` -> passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the blocker now points at two concrete
+  VDCores runtime hazards in the direct logits GEMV window: slot `0` can be
+  reused for a `desc33` load before STU consumes the earlier `desc34` store
+  metadata, and `RepeatM` feeds invalid `desc33` coordinates `(65535,127,0)`
+  where the build-only schedule expects `[0,0,0,0]`. VDCores still lacks
+  correctness and queue/resource-policy timing.

@@ -82,13 +82,13 @@
         {
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_logits_schedule_introspection_h200",
-          "title": "VDCores Qwen3 1.7B Logits Schedule Introspection",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200",
+          "title": "VDCores Qwen3 1.7B Slot/Repeat Source Analysis",
           "status": "blocked",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-logits-schedule-introspection-e5d6786f/",
-          "blocker": "VDCores still cannot import queue/resource-policy timing: the illegal instruction is now localized to the direct logits GEMV instruction window after final_rms, and the next diagnostic must inspect VDCores memory-slot allocation and RepeatM loop handling for the desc32/33/34 direct TMA sequence.",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-slot-repeat-source-analysis-858717e4/",
+          "blocker": "VDCores still cannot import queue/resource-policy timing: the co-located logits failure now points to slot metadata reuse before STU consumption and RepeatM-fed invalid desc33 coordinates in the direct GEMV window. The next diagnostic must instrument allocwarp GPR lanes and slot reuse around pc48-pc51, then test a VDCores-local change that prevents writeback-slot metadata reuse before STU has copied it.",
           "summary": {
-            "mode": "vdcores_qwen_logits_schedule_introspection",
+            "mode": "vdcores_qwen_slot_repeat_source_analysis",
             "model": "Qwen/Qwen3-1.7B",
             "offline_cache_used": true,
             "cuda_visible_devices": "7",
@@ -96,56 +96,50 @@
             "debug_stop_after": "logits",
             "no_prefetch": "all",
             "launch_executed": false,
-            "remote_refresh_path": "tmp probe copy",
-            "local_pto_commit": "e5d6786f691a5d82be1aafc0ed65b0a7893d63cf",
-            "remote_pto_commit": "61af3f017537692ea860c0729bba8c78e08d223f",
-            "remote_vdcores_commit": "5247328cf3f893ed9df95f9f38e7e9a97f0cbfb1",
-            "logits_epoch": 3,
-            "logits_slice": 50688,
-            "vocab_size": 151936,
-            "active_tokens": 8,
-            "hidden": 2048,
-            "logits_split_m": 6,
-            "traced_sms": [
-              0,
-              1,
-              63,
-              64,
-              65,
-              95,
-              96,
+            "source_analysis_only": true,
+            "slot_size_bytes": 8192,
+            "regular_slots": 24,
+            "initial_availability_mask": "0x00ffffff",
+            "slot_metadata_hazard_observed": true,
+            "pc48_desc34_store_slot": 0,
+            "pc49_repeat_count": 2,
+            "pc50_desc33_load_reuses_slot": 0,
+            "pc50_overwrites_st_insts_slot0_before_stu": true,
+            "stu_unknown_writeback_opcode": "opcode=0301 op=12",
+            "repeat_coord_hazard_observed": true,
+            "pc50_repeat_updated_address": "0x7fffff",
+            "pc50_desc33_invalid_cords": [
+              65535,
               127,
-              128,
-              131
+              0
+            ],
+            "expected_pc50_desc33_cords_from_build_only_schedule": [
+              0,
+              0,
+              0,
+              0
             ],
             "descriptor_map": {
               "32": "logits GEMV loadA matLogitsW[epoch]",
               "33": "logits GEMV loadB matRMSHidden",
               "34": "logits GEMV storeC matLogits[epoch]"
             },
-            "sm64_memory_instruction_count": 169,
-            "sm64_compute_instruction_count": 25,
-            "sm64_first_logits_pc": 38,
-            "sm64_desc32_load_count_in_window": 12,
-            "sm64_desc33_load_count_in_window": 3,
-            "sm64_desc34_store_count_in_window": 2,
-            "sm64_first_desc32_cords": [
-              0,
-              4096,
-              0,
-              0
-            ],
-            "sm64_first_desc34_cords": [
-              4096,
-              0,
-              0,
-              0
+            "source_evidence_files": [
+              "tmp/baselines/vdcores/include/dae/context.cuh",
+              "tmp/baselines/vdcores/include/dae/allocator.cuh",
+              "tmp/baselines/vdcores/include/dae/pipeline/allocwarp.cuh",
+              "tmp/baselines/vdcores/include/dae/pipeline/stwarp.cuh",
+              "tmp/baselines/vdcores/include/dae/pipeline/ldwarp.cuh",
+              "tmp/baselines/vdcores/include/task/gemv.cuh",
+              "tmp/baselines/vdcores/python/dae/instructions.py",
+              "tmp/baselines/vdcores/python/dae/schedule.py"
             ],
             "rules_out": [
-              "missing schedule materialization as the cause of the logits-stage failure",
-              "argmax or restore scheduling as the first source of the desc32/33/34 failure sequence"
+              "missing desc32/33/34 schedule materialization as the cause",
+              "cross-device placement as the remaining logits-stage cause",
+              "argmax or restore scheduling as the first failing co-located stage"
             ],
-            "next_debug_target": "inspect VDCores memory-slot allocation and RepeatM loop handling for the direct logits GEMV desc32/33/34 instruction window before attempting resource-policy timing",
+            "next_debug_target": "instrument allocwarp gpr lanes and slot reuse around pc48-pc51, then test a VDCores-local diagnostic that delays writeback slot reuse until STU has copied MInst metadata",
             "correctness_completed": false,
             "resource_policy_measured": false
           }
@@ -190,7 +184,7 @@
       "blockers": [
         "VDCores run with matching queue/resource-policy metadata.",
         "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
-        "Latest execution attempt vdcores_qwen3_1p7b_logits_schedule_introspection_h200 for vdcores_resource_policy_trace is blocked: VDCores still cannot import queue/resource-policy timing: the illegal instruction is now localized to the direct logits GEMV instruction window after final_rms, and the next diagnostic must inspect VDCores memory-slot allocation and RepeatM loop handling for the desc32/33/34 direct TMA sequence."
+        "Latest execution attempt vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200 for vdcores_resource_policy_trace is blocked: VDCores still cannot import queue/resource-policy timing: the co-located logits failure now points to slot metadata reuse before STU consumption and RepeatM-fed invalid desc33 coordinates in the direct GEMV window. The next diagnostic must instrument allocwarp GPR lanes and slot reuse around pc48-pc51, then test a VDCores-local change that prevents writeback-slot metadata reuse before STU has copied it."
       ],
       "next_actions": [
         {
@@ -202,9 +196,9 @@
           "source": "execution_attempt",
           "paper_baseline_id": "vdcores",
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_logits_schedule_introspection_h200",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200",
           "status": "blocked",
-          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_logits_schedule_introspection_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: VDCores still cannot import queue/resource-policy timing: the illegal instruction is now localized to the direct logits GEMV instruction window after final_rms, and the next diagnostic must inspect VDCores memory-slot allocation and RepeatM loop handling for the desc32/33/34 direct TMA sequence."
+          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: VDCores still cannot import queue/resource-policy timing: the co-located logits failure now points to slot metadata reuse before STU consumption and RepeatM-fed invalid desc33 coordinates in the direct GEMV window. The next diagnostic must instrument allocwarp GPR lanes and slot reuse around pc48-pc51, then test a VDCores-local change that prevents writeback-slot metadata reuse before STU has copied it."
         }
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
