@@ -129,6 +129,44 @@ Each entry must include:
   manual workflow must deliberately re-enable repository Actions, dispatch it,
   disable Actions again, and record that run here.
 
+### 2026-05-31 - VDCores MInst Provenance Diagnostic
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  provenance diagnostic.
+- Exact Codex command or script invocation: H200 instruction dump with
+  `QWEN1P7B_NO_PREFETCH=all python app/python/qwen3_1p7b/sched.py
+  --hf-cache-dir <shared-hf-cache> --debug-num-layers 1 --debug-stop-after
+  final_rms -N 1 -i 68`; structured `runpy` provenance dump without launch;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, VDCores baseline
+  diagnostic slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files:
+  `docs/nvidia-backend/benchmark-viewer/data/`,
+  `docs/nvidia-backend/changelog/`,
+  `docs/in_progress/nvidia_backend_paper_ready/dispatch_log.md`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`, and raw `tmp/` artifacts.
+- Dependencies and blocked assumptions: upstream VDCores was used as a source
+  input only; no upstream repository was edited or pushed.
+- Verification commands and results: the focused viewer test first failed
+  because the new execution attempt was absent, then passed after adding the
+  viewer record and regenerating derived artifacts:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest
+  tests/ut/py/test_nvidia_review_artifacts.py::test_benchmark_viewer_has_json_backed_review_data
+  -q` -> `1 passed`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the diagnostic proves generated
+  Python-side direct 1D `MInst` effective addresses map to live tensor ranges
+  before launch. The next VDCores slice should inspect runtime/device-side
+  mutation, instruction upload, or CUDA memcheck allocator visibility for
+  direct 1D `cp_async_bulk` loads.
+
 ### 2026-05-31 - Benchmark Viewer Schema Guard
 
 - Dispatcher session or PR: local Codex session on
