@@ -5,16 +5,16 @@
   "ready_claims": 1,
   "blocked_claims": 3,
   "summary": {
-    "total_work_items": 12,
+    "total_work_items": 11,
     "work_items_by_source": {
       "matrix_missing_evidence": 3,
       "probe": 2,
-      "run_readiness": 7
+      "run_readiness": 6
     },
     "work_items_by_claim": {
       "llm_serving_paper_baselines": 7,
       "persistent_device_scheduler_overhead": 3,
-      "tensor_core_tile_baselines": 2
+      "tensor_core_tile_baselines": 1
     }
   },
   "work_items": [
@@ -79,7 +79,7 @@
       "claim_title": "Tensor-Core Tile Baselines",
       "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
-      "blocker_count": 2,
+      "blocker_count": 1,
       "missing_evidence_count": 1,
       "action_index": 1,
       "source": "matrix_missing_evidence",
@@ -93,24 +93,6 @@
     {
       "id": "paper_readiness_work_item_005",
       "priority": 5,
-      "claim_id": "tensor_core_tile_baselines",
-      "claim_title": "Tensor-Core Tile Baselines",
-      "matrix_status": "partial_current_capture",
-      "ready_for_paper_claim": false,
-      "blocker_count": 2,
-      "missing_evidence_count": 1,
-      "action_index": 2,
-      "source": "run_readiness",
-      "owner": "thunderkittens_full_sweep",
-      "paper_baseline_id": "thunderkittens",
-      "paper_baseline_run_id": "thunderkittens_full_sweep",
-      "status": "pass",
-      "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py.",
-      "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
-    },
-    {
-      "id": "paper_readiness_work_item_006",
-      "priority": 6,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
@@ -127,8 +109,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_007",
-      "priority": 7,
+      "id": "paper_readiness_work_item_006",
+      "priority": 6,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
@@ -145,8 +127,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_008",
-      "priority": 8,
+      "id": "paper_readiness_work_item_007",
+      "priority": 7,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
@@ -163,8 +145,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_009",
-      "priority": 9,
+      "id": "paper_readiness_work_item_008",
+      "priority": 8,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
@@ -181,8 +163,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_010",
-      "priority": 10,
+      "id": "paper_readiness_work_item_009",
+      "priority": 9,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
@@ -199,8 +181,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_011",
-      "priority": 11,
+      "id": "paper_readiness_work_item_010",
+      "priority": 10,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
@@ -217,8 +199,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_012",
-      "priority": 12,
+      "id": "paper_readiness_work_item_011",
+      "priority": 11,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",

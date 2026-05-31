@@ -182,24 +182,15 @@
         {
           "id": "thunderkittens_full_sweep",
           "paper_baseline_id": "thunderkittens",
-          "status": "planned_not_run",
+          "status": "imported_to_viewer",
           "serving_workload_ids": [],
           "expected_artifacts": [
-            "tmp/cuda-backend/paper-baselines/thunderkittens/correctness.json",
-            "tmp/cuda-backend/paper-baselines/thunderkittens/benchmark.json"
+            "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/correctness.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/benchmark.json"
           ]
         }
       ],
-      "paper_baseline_run_readiness_statuses": [
-        {
-          "paper_baseline_run_id": "thunderkittens_full_sweep",
-          "paper_baseline_id": "thunderkittens",
-          "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-112a881d/",
-          "blocking_gaps": [],
-          "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
-        }
-      ],
+      "paper_baseline_run_readiness_statuses": [],
       "probe_statuses": [
         {
           "paper_baseline_id": "thunderkittens",
@@ -220,21 +211,13 @@
         }
       ],
       "blockers": [
-        "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture.",
-        "Paper baseline run thunderkittens_full_sweep is planned_not_run, not imported_to_viewer."
+        "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture."
       ],
       "next_actions": [
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
           "action": "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture."
-        },
-        {
-          "source": "run_readiness",
-          "paper_baseline_id": "thunderkittens",
-          "paper_baseline_run_id": "thunderkittens_full_sweep",
-          "status": "pass",
-          "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }
       ],
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."

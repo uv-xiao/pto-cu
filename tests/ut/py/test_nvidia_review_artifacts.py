@@ -1026,6 +1026,57 @@ def test_thunderkittens_capture_builds_serving_decode_result():
     assert result["correctness"] == "pass"
 
 
+def test_thunderkittens_full_sweep_capture_builds_importable_record():
+    import importlib.util
+
+    script = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "thunderkittens_full_sweep_capture.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "thunderkittens_full_sweep_capture",
+        script,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    result = module.build_raw_result_record(
+        machine="dasys-h200x8",
+        cuda_toolkit="12.8",
+        clock_policy="not recorded",
+        gpu_metadata={
+            "gpu": "NVIDIA H200 NVL",
+            "driver": "580.126.20",
+            "compute_target": "compute_90",
+        },
+        shape={"b": 1, "h": 1, "n": 256, "d": 64, "causal": True, "dtype": "bfloat16"},
+        latency={
+            "warmup": 5,
+            "repeats": 20,
+            "sample_count": 20,
+            "p50_ns": 32000,
+        },
+        correctness={"status": "pass", "max_abs_diff": 0.001953125},
+    )
+
+    assert result["paper_baseline_run_id"] == "thunderkittens_full_sweep"
+    assert result["benchmark_id"] == "tensor_core_tile"
+    assert result["hardware"]["gpu"] == "H200"
+    assert result["inputs"]["shape"] == (
+        "mha_h100_full_sweep,b=1,h=1,n=256,d=64,causal=True"
+    )
+    assert result["metrics"]["kind"] == "paper_baseline_full_sweep_capture"
+    assert result["metrics"]["device_wall_ns"] == 32000
+    assert result["metrics"]["throughput"] > 0
+    assert result["metrics"]["max_abs_error"] == 0.001953125
+    assert result["correctness"] == "pass"
+
+
 def test_paper_baseline_results_update_marks_imported_run(tmp_path):
     raw = {
         "metadata": {
@@ -1835,12 +1886,17 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "thunderkittens_full_sweep",
     } <= tensor_run_ids
     assert any(
+        "Full ThunderKittens upstream correctness and benchmark sweeps"
+        in blocker
+        for blocker in tensor_claim["blockers"]
+    )
+    assert not any(
         "thunderkittens_full_sweep is planned_not_run" in blocker
         for blocker in tensor_claim["blockers"]
     )
     assert any(
-        action["source"] == "run_readiness"
-        and action["paper_baseline_run_id"] == "thunderkittens_full_sweep"
+        action["source"] == "matrix_missing_evidence"
+        and "Full ThunderKittens upstream correctness" in action["action"]
         for action in tensor_claim["next_actions"]
     )
 
@@ -1871,11 +1927,11 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 12
+    assert committed["summary"]["total_work_items"] == 11
     assert committed["summary"]["work_items_by_source"] == {
         "matrix_missing_evidence": 3,
         "probe": 2,
-        "run_readiness": 7,
+        "run_readiness": 6,
     }
     work_items = committed["work_items"]
     assert all(not item["ready_for_paper_claim"] for item in work_items)
@@ -1924,7 +1980,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 12
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 11
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -2406,7 +2462,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
             )
         if item["id"] == "thunderkittens_full_sweep":
             assert item["paper_evaluation_id"] == "tensor_core_tile_baselines"
-            assert item["status"] == "planned_not_run"
+            assert item["status"] == "imported_to_viewer"
+            assert "Selected" in item["title"]
             assert item["serving_workload_ids"] == []
             assert any(
                 path.endswith("correctness.json")
@@ -2414,6 +2471,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
             )
             assert any(
                 path.endswith("benchmark.json") for path in item["expected_artifacts"]
+            )
+            assert any(
+                "thunderkittens_full_sweep_capture.py" in command
+                for command in item["run_commands"]
             )
         if item["id"] == "thunderkittens_decode_attention_tile":
             assert item["paper_evaluation_id"] == "llm_serving_paper_baselines"
@@ -2750,6 +2811,36 @@ def test_benchmark_viewer_has_json_backed_review_data():
     } == {
         "mha_h100,b=1,h=1,n=768,d=64,causal=True",
         "mha_h100,b=1,h=4,n=1536,d=64,causal=True",
+    }
+    thunderkittens_full_sweep_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "tensor_core_tile"
+        and record["method_id"] == "thunderkittens"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/"
+    ]
+    assert len(thunderkittens_full_sweep_records) == 2
+    assert {
+        record["statistic"]["kind"] for record in thunderkittens_full_sweep_records
+    } == {"paper_baseline_full_sweep_capture"}
+    assert {
+        record["statistic"]["sample_count"]
+        for record in thunderkittens_full_sweep_records
+    } == {20}
+    assert all(
+        record["statistic"]["throughput"] > 0
+        and record["statistic"]["attention_flops"] > 0
+        and record["statistic"]["max_abs_error"] > 0
+        and record["correctness"] == "pass"
+        for record in thunderkittens_full_sweep_records
+    )
+    assert {
+        record["inputs"]["shape"] for record in thunderkittens_full_sweep_records
+    } == {
+        "mha_h100_full_sweep,b=1,h=1,n=768,d=64,causal=True",
+        "mha_h100_full_sweep,b=1,h=4,n=1536,d=64,causal=True",
     }
     thunderkittens_serving_records = [
         record
@@ -3192,6 +3283,14 @@ def test_review_policy_changelog_and_examples_exist():
         / "cuda-backend-eval"
         / "scripts"
         / "thunderkittens_mha_capture.py"
+    ).is_file()
+    assert (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "thunderkittens_full_sweep_capture.py"
     ).is_file()
     assert (
         ROOT

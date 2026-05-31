@@ -433,6 +433,24 @@ PYTHONPATH=$PWD:$PWD/python \
     --warmup 5 --repeats 20 --causal
 ```
 
+Use `thunderkittens_full_sweep_capture.py` when selected ThunderKittens
+correctness and benchmark rows need to be imported through the paper-baseline
+result updater. The wrapper still leaves the broader upstream full-suite
+blocker in place; it records selected H100 MHA shapes as normalized
+`thunderkittens_full_sweep` rows with correctness, p50 device time, FLOP-based
+throughput, and raw `correctness.json` / `benchmark.json` artifacts:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python \
+  .agents/skills/cuda-backend-eval/scripts/thunderkittens_full_sweep_capture.py \
+    --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 \
+    --output-dir tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73 \
+    --machine <h200-host> --pto-commit 4277aa73 --cuda-toolkit 12.8 \
+    --shape 1,1,768,64 --shape 1,4,1536,64 \
+    --warmup 5 --repeats 20 --causal
+```
+
 Use `triton_tensor_tile_capture.py` for the generated-kernel tensor-core
 baseline. It measures a Triton `tl.dot` 16x16x16 tile on A100 or H200,
 checks against `torch.matmul`, and writes raw JSON plus viewer rows under

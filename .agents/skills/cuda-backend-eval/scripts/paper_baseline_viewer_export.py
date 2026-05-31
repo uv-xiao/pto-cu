@@ -19,6 +19,8 @@ OPTIONAL_NUMERIC_METRICS = (
     "time_to_first_token_ns",
     "inter_token_latency_ns",
     "throughput_tokens_per_s",
+    "throughput",
+    "attention_flops",
     "scheduler_overhead_ns",
     "queue_wait_ns",
     "ready_queue_depth",
