@@ -2246,3 +2246,44 @@ Each entry must include:
   diagnostic should instrument the PC49/PC50 `RepeatM` shuffle lane source and
   packed coordinate delta encoding before attempting queue/resource-policy
   timing import.
+
+### 2026-06-01 - VDCores RepeatM Lane-Source Diagnostic
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  lane-source diagnostic for the persistent scheduler baseline gap.
+- Exact Codex command or script invocation: copied the tmp-only
+  `vdcores-repeat-lane-source-diagnostic.patch` into the H200 VDCores
+  checkout, rebuilt with `DAE_DIAG_REPEAT_LANES`,
+  `DAE_DIAG_WAIT_AFTER_WB_ALLOC`, and `DAE_DIAG_USE_SPLIT_U64_SHUFFLE`, then
+  ran `CUDA_VISIBLE_DEVICES=7`, `QWEN1P7B_NO_PREFETCH=all`,
+  `QWEN1P7B_LOGITS_SPLIT_M=6`, offline Hugging Face cache,
+  `--debug-num-layers 1`, `--debug-stop-after logits`, `-N 1`, and
+  `--launch`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, and local `tmp/` raw artifacts copied back
+  from H200. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the remote pto-cu checkout still had
+  unrelated dirty viewer-data files, so this used the allowed tmp patch-copy
+  path instead of remote Git refresh. The remote and local VDCores checkouts
+  were restored to clean state after artifact capture.
+- Verification commands and results before local review gates: remote rebuild
+  status `0`; launch status `1`; no `Unknown mem wb opcode` appeared after
+  the PC48 wait; forcing split 32-bit shuffles made PC50 update address `0x0`
+  and desc33 coordinates `(0,0,0)`, but PC52 updated address
+  `0x20000331000000`, produced desc32 coordinates `(0,12544,3)`, and ended
+  with illegal memory access.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the split-shuffle variant is not a
+  valid fix and rules out a simple native `uint64_t` shuffle lowering bug as
+  the sole root cause. The next VDCores diagnostic should leave `addr_accum`
+  unchanged and instrument actual `RepeatM` active masks, producer-lane
+  ownership, source-lane validity, and packed coordinate-delta lifetime before
+  attempting queue/resource-policy timing import.

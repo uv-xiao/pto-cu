@@ -1878,8 +1878,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert "mpk_persistent_scheduler_trace" not in persistent_attempts
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
-    ] == "vdcores_qwen3_1p7b_slot_lifetime_pc44_pc52_h200"
-    assert "RepeatM coordinate mutation" in (
+    ] == "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200"
+    assert "simple uint64 shuffle lowering bug" in (
         persistent_attempts["vdcores_resource_policy_trace"]["blocker"]
     )
     assert not any(
@@ -2010,8 +2010,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
         and item["execution_attempt_id"]
-        == "vdcores_qwen3_1p7b_slot_lifetime_pc44_pc52_h200"
-        and "RepeatM coordinate mutation" in item["action"]
+        == "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200"
+        and "simple uint64 shuffle lowering bug" in item["action"]
         for item in work_items
     )
 
@@ -2712,6 +2712,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_logits_schedule_introspection_h200",
         "vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200",
         "vdcores_qwen3_1p7b_slot_lifetime_pc44_pc52_h200",
+        "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -3336,6 +3337,40 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "next_debug_target"
     ]
     assert "not sufficient" in vdcores_slot_lifetime["blocker"]
+    vdcores_repeat_lane = attempts_by_id[
+        "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200"
+    ]
+    assert vdcores_repeat_lane["status"] == "blocked"
+    assert vdcores_repeat_lane["summary"]["mode"] == (
+        "vdcores_qwen_repeat_lane_source_diagnostic"
+    )
+    assert vdcores_repeat_lane["summary"]["launch_executed"]
+    assert vdcores_repeat_lane["summary"]["rebuild_status"] == 0
+    assert vdcores_repeat_lane["summary"]["launch_status"] == 1
+    assert vdcores_repeat_lane["summary"]["split_u64_shuffle_variant_enabled"]
+    assert vdcores_repeat_lane["summary"]["pc50_loop_counter_2_source_lane"] == 0
+    assert vdcores_repeat_lane["summary"]["pc50_loop_counter_2_split_lane0"] == (
+        "0x0"
+    )
+    assert vdcores_repeat_lane["summary"][
+        "pc50_loop_counter_2_split_lanes1_to_7"
+    ] == "0x7fffff"
+    assert vdcores_repeat_lane["summary"]["pc50_desc33_coords_after_split_variant"] == [
+        0,
+        0,
+        0,
+    ]
+    assert vdcores_repeat_lane["summary"]["pc52_loop_counter_2_source_lane"] == 2
+    assert vdcores_repeat_lane["summary"]["pc52_loop_counter_2_split_lane0"] == (
+        "0x1fffff00000000"
+    )
+    assert vdcores_repeat_lane["summary"][
+        "pc52_desc32_unexpected_coords_after_split_variant"
+    ] == [0, 12544, 3]
+    assert vdcores_repeat_lane["summary"]["final_error"] == "illegal memory access"
+    assert vdcores_repeat_lane["summary"]["split_shuffle_not_valid_fix"]
+    assert "simple uint64 shuffle lowering bug" in vdcores_repeat_lane["blocker"]
+    assert "active masks" in vdcores_repeat_lane["summary"]["next_debug_target"]
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
@@ -3586,22 +3621,24 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if attempt["paper_baseline_id"] == "vdcores"
             )
             assert vdcores_attempt["execution_attempt_id"] == (
-                "vdcores_qwen3_1p7b_slot_lifetime_pc44_pc52_h200"
+                "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200"
             )
             assert (
-                vdcores_attempt["summary"]["pc50_desc33_invalid_cords"]
-                == [65535, 127, 0, 0]
+                vdcores_attempt["summary"][
+                    "pc52_desc32_unexpected_coords_after_split_variant"
+                ]
+                == [0, 12544, 3]
             )
             vdcores_actions = [
                 action
                 for action in item["next_actions"]
                 if action.get("execution_attempt_id")
-                == "vdcores_qwen3_1p7b_slot_lifetime_pc44_pc52_h200"
+                == "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200"
             ]
             assert vdcores_actions
-            assert "RepeatM coordinate mutation" in (
-                vdcores_actions[0]["action"]
-            )
+            assert "simple uint64 shuffle lowering bug" in vdcores_actions[0][
+                "action"
+            ]
         if item["id"] == "host_schedule_launch_overhead":
             assert item["matrix_status"] == "ready_for_paper_claim"
             assert item["ready_for_paper_claim"] is True

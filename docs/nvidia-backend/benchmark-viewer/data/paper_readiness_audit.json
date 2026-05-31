@@ -82,17 +82,17 @@
         {
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_slot_lifetime_pc44_pc52_h200",
-          "title": "VDCores Qwen3 1.7B Slot Lifetime PC44-PC52 Diagnostic",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200",
+          "title": "VDCores Qwen3 1.7B RepeatM Lane-Source Diagnostic",
           "status": "blocked",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-slot-lifetime-diagnostic-be367ca4/",
-          "blocker": "VDCores still cannot import queue/resource-policy timing: the slot metadata lifetime hazard is real but not sufficient. After the pc48 writeback metadata is protected, the remaining direct logits GEMV blocker is RepeatM coordinate mutation for desc33. The next diagnostic must instrument the pc49/pc50 shuffle lane source and packed coordinate delta encoding for grouped TMA coordinate repeats.",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-lane-source-diagnostic-53fd525a/",
+          "blocker": "VDCores still cannot import queue/resource-policy timing. The writeback-slot lifetime hazard is reduced, but the RepeatM hazard is not a simple uint64 shuffle lowering bug. The next diagnostic must instrument active masks, producer-lane ownership, source-lane validity, and packed coordinate-delta lifetime without changing the runtime's addr_accum semantics.",
           "summary": {
-            "mode": "vdcores_qwen_slot_lifetime_pc44_pc52_diagnostic",
+            "mode": "vdcores_qwen_repeat_lane_source_diagnostic",
             "model": "Qwen/Qwen3-1.7B",
             "offline_cache_used": true,
             "remote_refresh_path": "tmp patch copy",
-            "local_source_pto_commit": "be367ca4f393cb5e60e66752f3c13d8666c1fd75",
+            "local_source_pto_commit": "53fd525af4a9d4f1709303ebc39276bb07ac02f8",
             "remote_pto_commit": "61af3f017537692ea860c0729bba8c78e08d223f",
             "remote_vdcores_commit": "5247328cf3f893ed9df95f9f38e7e9a97f0cbfb1",
             "cuda_visible_devices": "7",
@@ -104,30 +104,44 @@
             "launch_executed": true,
             "launch_status": 1,
             "rebuild_status": 0,
-            "broad_wait_variant_invalid": true,
-            "global_print_variant_invalid": true,
+            "wait_after_wb_alloc": true,
+            "split_u64_shuffle_variant_enabled": true,
             "pc48_desc34_store_slot": 0,
-            "pc48_desc34_alloc_mask": "0x1",
             "pc48_wait_flags_before": "0x00fffffe",
             "pc48_wait_flags_after": "0x00ffffff",
             "stu_copied_pc48_opcode": "0443",
             "unknown_writeback_opcode_seen_after_wait": false,
-            "pc49_repeat_count": 2,
-            "pc49_repeat_reg_start": 0,
-            "pc49_repeat_reg_end": 5,
-            "pc49_repeat_packed_delta": "0x1000000000",
-            "pc50_addr_accum": "0x7fffff",
-            "pc50_desc33_load_reuses_slot": 0,
-            "pc50_desc33_invalid_cords": [
-              65535,
-              127,
+            "pc50_loop_counter_2_source_lane": 0,
+            "pc50_loop_counter_2_native_lane0": "0xffffffff",
+            "pc50_loop_counter_2_native_lanes1_to_7": "0x0",
+            "pc50_loop_counter_2_split_lane0": "0x0",
+            "pc50_loop_counter_2_split_lanes1_to_7": "0x7fffff",
+            "pc50_loop_counter_2_updated_address": "0x0",
+            "pc50_desc33_coords_after_split_variant": [
+              0,
               0,
               0
             ],
-            "final_error": "illegal instruction",
-            "slot_metadata_hazard_reduced": true,
+            "pc51_loop_counter_2_updated_address": "0x31000000",
+            "pc52_loop_counter_2_source_lane": 2,
+            "pc52_loop_counter_2_split_lane0": "0x1fffff00000000",
+            "pc52_loop_counter_2_split_lanes1_to_7": "0x0",
+            "pc52_loop_counter_2_updated_address": "0x20000331000000",
+            "pc52_desc32_unexpected_coords_after_split_variant": [
+              0,
+              12544,
+              3
+            ],
+            "pc52_loop_counter_1_split_lanes0_to_7": "0x1fffff00000000",
+            "final_error": "illegal memory access",
+            "split_shuffle_not_valid_fix": true,
             "repeat_coord_hazard_remains": true,
-            "next_debug_target": "instrument RepeatM lane source for pc49/pc50 and validate whether the shuffle lane index or packed coordinate delta encoding is wrong for grouped TMA coordinate repeats",
+            "rules_out": [
+              "slot metadata lifetime as the only remaining logits-stage blocker",
+              "a simple uint64 native-shuffle lowering bug as the sole root cause",
+              "the previous pc50 desc33 invalid coordinate as the only RepeatM hazard"
+            ],
+            "next_debug_target": "instrument RepeatM active masks, source-lane ownership, and packed coordinate-delta lifecycle without changing addr_accum semantics; the next probe should print producer lanes and only inspect repeat opcodes",
             "correctness_completed": false,
             "resource_policy_measured": false
           }
@@ -172,7 +186,7 @@
       "blockers": [
         "VDCores run with matching queue/resource-policy metadata.",
         "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
-        "Latest execution attempt vdcores_qwen3_1p7b_slot_lifetime_pc44_pc52_h200 for vdcores_resource_policy_trace is blocked: VDCores still cannot import queue/resource-policy timing: the slot metadata lifetime hazard is real but not sufficient. After the pc48 writeback metadata is protected, the remaining direct logits GEMV blocker is RepeatM coordinate mutation for desc33. The next diagnostic must instrument the pc49/pc50 shuffle lane source and packed coordinate delta encoding for grouped TMA coordinate repeats."
+        "Latest execution attempt vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200 for vdcores_resource_policy_trace is blocked: VDCores still cannot import queue/resource-policy timing. The writeback-slot lifetime hazard is reduced, but the RepeatM hazard is not a simple uint64 shuffle lowering bug. The next diagnostic must instrument active masks, producer-lane ownership, source-lane validity, and packed coordinate-delta lifetime without changing the runtime's addr_accum semantics."
       ],
       "next_actions": [
         {
@@ -184,9 +198,9 @@
           "source": "execution_attempt",
           "paper_baseline_id": "vdcores",
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_slot_lifetime_pc44_pc52_h200",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200",
           "status": "blocked",
-          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_slot_lifetime_pc44_pc52_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: VDCores still cannot import queue/resource-policy timing: the slot metadata lifetime hazard is real but not sufficient. After the pc48 writeback metadata is protected, the remaining direct logits GEMV blocker is RepeatM coordinate mutation for desc33. The next diagnostic must instrument the pc49/pc50 shuffle lane source and packed coordinate delta encoding for grouped TMA coordinate repeats."
+          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: VDCores still cannot import queue/resource-policy timing. The writeback-slot lifetime hazard is reduced, but the RepeatM hazard is not a simple uint64 shuffle lowering bug. The next diagnostic must instrument active masks, producer-lane ownership, source-lane validity, and packed coordinate-delta lifetime without changing the runtime's addr_accum semantics."
         }
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
