@@ -291,6 +291,66 @@ def validate_paper_baseline_runs(
         fail(f"paper baseline runs missing baseline coverage: {missing}")
 
 
+def validate_paper_baseline_run_readiness(
+    data: dict[str, Any],
+    run_ids: set[str],
+    baseline_ids: set[str],
+    root: Path,
+) -> None:
+    records = require_list(
+        data,
+        "paper_baseline_run_readiness",
+        "paper baseline run readiness",
+    )
+    readiness_ids = check_unique_ids(records, "paper baseline run readiness")
+    required_readiness = {
+        "mpk_persistent_scheduler_trace_readiness",
+        "vdcores_resource_policy_trace_readiness",
+    }
+    if not required_readiness <= readiness_ids:
+        missing = sorted(required_readiness - readiness_ids)
+        fail(f"missing paper baseline run readiness records: {missing}")
+    allowed_status = {"pass", "partial", "fail"}
+    covered_runs: set[str] = set()
+    for record in records:
+        owner = f"paper baseline run readiness {record['id']}"
+        for key in ("title", "latest_status", "next_action"):
+            require_string(record, key, owner)
+        if record["latest_status"] not in allowed_status:
+            fail(f"{owner} has invalid latest_status: {record['latest_status']}")
+        run_id = require_string(record, "paper_baseline_run_id", owner)
+        if run_id not in run_ids:
+            fail(f"{owner} references unknown paper_baseline_run_id: {run_id}")
+        covered_runs.add(run_id)
+        baseline_id = require_string(record, "paper_baseline_id", owner)
+        if baseline_id not in baseline_ids:
+            fail(f"{owner} references unknown paper_baseline_id: {baseline_id}")
+        artifact_root = require_string(record, "latest_artifact_root", owner)
+        require_current_artifact_path(root, artifact_root, owner)
+        checks = require_list(record, "checks", owner)
+        for check in checks:
+            if not isinstance(check, dict):
+                fail(f"{owner} check is not an object")
+            for key in ("kind", "status", "why"):
+                require_string(check, key, owner)
+            if check["status"] not in allowed_status:
+                fail(f"{owner} has invalid check status: {check['status']}")
+        gaps = record.get("blocking_gaps")
+        if not isinstance(gaps, list) or not all(
+            isinstance(gap, str) for gap in gaps
+        ):
+            fail(f"{owner} blocking_gaps is not a list of strings")
+        if record["latest_status"] != "pass" and not gaps:
+            fail(f"{owner} is not pass but has no blocking_gaps")
+    required_run_ids = {
+        "mpk_persistent_scheduler_trace",
+        "vdcores_resource_policy_trace",
+    }
+    if not required_run_ids <= covered_runs:
+        missing = sorted(required_run_ids - covered_runs)
+        fail(f"missing run readiness coverage: {missing}")
+
+
 def validate_serving_workloads(data: dict[str, Any], root: Path) -> set[str]:
     records = require_list(data, "serving_workloads", "serving workloads")
     serving_ids = check_unique_ids(records, "serving workload")
@@ -800,6 +860,9 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     paper_baselines = load_json(root, "paper_baselines.json")
     paper_baseline_runs = load_json(root, "paper_baseline_runs.json")
     paper_baseline_probes = load_json(root, "paper_baseline_probes.json")
+    paper_baseline_run_readiness = load_json(
+        root, "paper_baseline_run_readiness.json"
+    )
     serving_workloads = load_json(root, "serving_workloads.json")
     paper_evaluation_matrix = load_json(root, "paper_evaluation_matrix.json")
     paper_readiness_audit = load_json(root, "paper_readiness_audit.json")
@@ -810,6 +873,16 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     baseline_ids = validate_paper_baselines(paper_baselines)
     serving_workload_ids = validate_serving_workloads(serving_workloads, root)
     validate_paper_baseline_probes(paper_baseline_probes, baseline_ids, root)
+    run_ids = {
+        record["id"]
+        for record in paper_baseline_runs["paper_baseline_runs"]
+    }
+    validate_paper_baseline_run_readiness(
+        paper_baseline_run_readiness,
+        run_ids,
+        baseline_ids,
+        root,
+    )
     validate_capture_imports(capture_imports, benchmark_ids, method_ids)
     validate_results(results, benchmark_ids, method_ids, root)
     paper_evaluation_ids = validate_paper_evaluation_matrix(

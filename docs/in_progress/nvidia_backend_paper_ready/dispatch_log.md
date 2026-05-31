@@ -1114,3 +1114,36 @@ Each entry must include:
   audit with one script. Remaining blockers are the actual MPK/VDCores
   matching scheduler runs, broader ThunderKittens sweeps, and serving
   baseline captures.
+
+### 2026-05-31 - Paper Baseline Run Readiness
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  MPK/VDCores scheduler-run readiness slice.
+- Exact Codex command or script invocation: no worker invocation. Added
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_run_readiness.py`
+  and generated:
+  `tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-3157ea68/run-readiness.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-baseline evaluation
+  visibility and strict evidence guardrail slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, benchmark-viewer data and
+  rendering, validators, focused tests, goal docs, dispatch log, and changelog
+  docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: readiness evidence is not benchmark
+  evidence. It intentionally leaves MPK/VDCores scheduler runs blocked until
+  model access and extension build prerequisites are resolved and measured
+  raw artifacts are imported.
+- Verification commands and results: focused TDD fixture first failed because
+  the run-readiness script was missing; after implementation it passed. The
+  viewer data validator and `node --check` passed after wiring the JSON into
+  the HTML viewer.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the viewer now shows MPK scheduler-run
+  readiness as partial due to missing `HF_TOKEN`, and VDCores readiness as
+  partial due to missing `HF_TOKEN` plus missing `dae.runtime` build output.
+  Remaining blockers are still the measured MPK/VDCores scheduler imports,
+  broader ThunderKittens sweeps, and serving baseline captures.

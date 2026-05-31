@@ -812,6 +812,114 @@ def test_paper_baseline_results_update_marks_imported_run(tmp_path):
     assert mpk_status["status"] == "imported_to_viewer"
 
 
+def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
+    baseline_root = tmp_path / "baselines"
+    mpk_root = baseline_root / "mirage-mpk"
+    vdcores_root = baseline_root / "vdcores"
+    (mpk_root / "demo" / "qwen3").mkdir(parents=True)
+    (mpk_root / "demo" / "qwen3" / "demo.py").write_text(
+        "print('mpk fixture')\n",
+        encoding="utf-8",
+    )
+    (vdcores_root / "app" / "python" / "llama3").mkdir(parents=True)
+    (vdcores_root / "python" / "dae").mkdir(parents=True)
+    (vdcores_root / "app" / "python" / "llama3" / "sched.py").write_text(
+        "print('vdcores fixture')\n",
+        encoding="utf-8",
+    )
+
+    baselines = {
+        "paper_baselines": [
+            {
+                "id": "mpk",
+                "source": {
+                    "local_tmp_path": str(mpk_root),
+                },
+            },
+            {
+                "id": "vdcores",
+                "source": {
+                    "local_tmp_path": str(vdcores_root),
+                },
+            },
+        ]
+    }
+    runs = {
+        "paper_baseline_runs": [
+            {
+                "id": "mpk_persistent_scheduler_trace",
+                "paper_baseline_id": "mpk",
+                "title": "MPK Persistent Scheduler Trace",
+                "run_commands": [
+                    "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --use-mirage --profiling"
+                ],
+                "expected_artifacts": [
+                    "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-trace.json"
+                ],
+                "required_metrics": ["correctness", "raw_artifacts"],
+            },
+            {
+                "id": "vdcores_resource_policy_trace",
+                "paper_baseline_id": "vdcores",
+                "title": "VDCores Resource Policy Trace",
+                "run_commands": [
+                    "cd tmp/baselines/vdcores && python app/python/llama3/sched.py --correctness"
+                ],
+                "expected_artifacts": [
+                    "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-trace.json"
+                ],
+                "required_metrics": ["correctness", "raw_artifacts"],
+            },
+        ]
+    }
+    baselines_path = tmp_path / "paper_baselines.json"
+    runs_path = tmp_path / "paper_baseline_runs.json"
+    output_root = tmp_path / "run-readiness"
+    viewer_output = tmp_path / "paper_baseline_run_readiness.json"
+    baselines_path.write_text(json.dumps(baselines), encoding="utf-8")
+    runs_path.write_text(json.dumps(runs), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/paper_baseline_run_readiness.py",
+            "--runs",
+            str(runs_path),
+            "--baselines",
+            str(baselines_path),
+            "--output-root",
+            str(output_root),
+            "--viewer-output",
+            str(viewer_output),
+            "--commit",
+            "abc1234",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    status = json.loads(viewer_output.read_text(encoding="utf-8"))
+    records = {
+        item["paper_baseline_run_id"]: item
+        for item in status["paper_baseline_run_readiness"]
+    }
+
+    assert records["mpk_persistent_scheduler_trace"]["latest_status"] == "partial"
+    assert any(
+        "HF_TOKEN" in gap
+        for gap in records["mpk_persistent_scheduler_trace"]["blocking_gaps"]
+    )
+    vdcores = records["vdcores_resource_policy_trace"]
+    assert vdcores["latest_status"] == "partial"
+    assert any("dae.runtime" in gap for gap in vdcores["blocking_gaps"])
+    assert (output_root / "run-readiness.json").is_file()
+    artifact = json.loads((output_root / "run-readiness.json").read_text())
+    assert artifact["metadata"]["pto_commit"] == "abc1234"
+
+
 def test_paper_baseline_viewer_export_rejects_bool_sample_count(tmp_path):
     raw = {
         "metadata": {
@@ -1317,6 +1425,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "data" / "paper_baselines.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_runs.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_probes.json").is_file()
+    assert (VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_workloads.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_readiness_audit.json").is_file()
@@ -1332,6 +1441,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paper_baseline_runs",
         "paperBaselineProbes",
         "paper_baseline_probes",
+        "paperBaselineRunReadiness",
+        "paper_baseline_run_readiness",
+        "Run Readiness",
         "servingWorkloads",
         "serving_workloads",
         "Serving policies",
@@ -1366,6 +1478,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     paper_baseline_probes = json.loads(
         (VIEWER_ROOT / "data" / "paper_baseline_probes.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    paper_baseline_run_readiness = json.loads(
+        (VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json").read_text(
             encoding="utf-8"
         )
     )
@@ -1584,6 +1701,34 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 "sglang.bench_offline_throughput",
                 "sglang.bench_one_batch",
             } <= imported_modules
+    readiness_by_run = {
+        item["paper_baseline_run_id"]: item
+        for item in paper_baseline_run_readiness["paper_baseline_run_readiness"]
+    }
+    assert {
+        "mpk_persistent_scheduler_trace",
+        "vdcores_resource_policy_trace",
+    } <= set(readiness_by_run)
+    for item in readiness_by_run.values():
+        assert item["latest_artifact_root"].startswith("tmp/")
+        assert (ROOT / item["latest_artifact_root"]).is_dir()
+        assert item["latest_status"] in {"pass", "partial", "fail"}
+        assert item["checks"]
+        assert isinstance(item["blocking_gaps"], list)
+        if item["latest_status"] != "pass":
+            assert item["blocking_gaps"]
+    assert any(
+        "HF_TOKEN" in gap
+        for gap in readiness_by_run[
+            "mpk_persistent_scheduler_trace"
+        ]["blocking_gaps"]
+    )
+    assert any(
+        "dae.runtime" in gap
+        for gap in readiness_by_run[
+            "vdcores_resource_policy_trace"
+        ]["blocking_gaps"]
+    )
 
     matrix_ids = {
         item["id"] for item in paper_evaluation["paper_evaluation_matrix"]
@@ -2091,6 +2236,14 @@ def test_review_policy_changelog_and_examples_exist():
         / "cuda-backend-eval"
         / "scripts"
         / "paper_baseline_results_update.py"
+    ).is_file()
+    assert (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "paper_baseline_run_readiness.py"
     ).is_file()
     assert (
         ROOT

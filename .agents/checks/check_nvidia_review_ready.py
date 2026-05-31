@@ -166,6 +166,8 @@ def check_viewer_data() -> None:
         "paper_baseline_runs",
         "paperBaselineProbes",
         "paper_baseline_probes",
+        "paperBaselineRunReadiness",
+        "paper_baseline_run_readiness",
         "servingWorkloads",
         "serving_workloads",
         "latest_artifact_root",
@@ -191,6 +193,9 @@ def check_viewer_data() -> None:
     )
     paper_baseline_probes = load_json(
         VIEWER_ROOT / "data" / "paper_baseline_probes.json"
+    )
+    paper_baseline_run_readiness = load_json(
+        VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json"
     )
     serving_workloads = load_json(VIEWER_ROOT / "data" / "serving_workloads.json")
     paper_evaluation = load_json(
@@ -306,6 +311,19 @@ def check_viewer_data() -> None:
     if not required_paper_baselines <= probe_baseline_ids:
         missing = sorted(required_paper_baselines - probe_baseline_ids)
         fail(f"missing paper baseline probe coverage: {missing}")
+    readiness_run_ids = {
+        item["paper_baseline_run_id"]
+        for item in paper_baseline_run_readiness.get(
+            "paper_baseline_run_readiness", []
+        )
+    }
+    required_scheduler_readiness = {
+        "mpk_persistent_scheduler_trace",
+        "vdcores_resource_policy_trace",
+    }
+    if not required_scheduler_readiness <= readiness_run_ids:
+        missing = sorted(required_scheduler_readiness - readiness_run_ids)
+        fail(f"missing scheduler run readiness coverage: {missing}")
 
     matrix_ids = {
         item["id"] for item in paper_evaluation.get("paper_evaluation_matrix", [])
@@ -425,6 +443,7 @@ def check_examples_and_rules() -> None:
         ".agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_results_update.py",
+        ".agents/skills/cuda-backend-eval/scripts/paper_baseline_run_readiness.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py",

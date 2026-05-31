@@ -363,6 +363,19 @@ PYTHONPATH=$PWD:$PWD/python \
     --viewer-output tmp/cuda-backend/paper-baselines/mpk/viewer-result-records.json
 ```
 
+Use `paper_baseline_run_readiness.py` before spending H200 time on the planned
+MPK and VDCores scheduler runs. It does not execute long baselines; it records
+source path, Python entrypoint, expected artifact, required metric, model-access,
+and VDCores extension-build readiness under `tmp/`, then updates the viewer's
+run-readiness data:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_run_readiness.py \
+    --output-root tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-$(git rev-parse --short HEAD) \
+    --viewer-output docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json
+```
+
 Use `paper_serving_command_plan.py` before long MPK, VDCores, vLLM, or SGLang
 serving runs. It reads the committed `serving_workloads.json` and
 `paper_baseline_runs.json` contracts, then writes an inspectable command plan

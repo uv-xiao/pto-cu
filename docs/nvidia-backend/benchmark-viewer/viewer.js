@@ -4,6 +4,7 @@ const DATA_FILES = {
   paperBaselines: "data/paper_baselines.json",
   paperBaselineRuns: "data/paper_baseline_runs.json",
   paperBaselineProbes: "data/paper_baseline_probes.json",
+  paperBaselineRunReadiness: "data/paper_baseline_run_readiness.json",
   servingWorkloads: "data/serving_workloads.json",
   paperEvaluation: "data/paper_evaluation_matrix.json",
   paperReadinessAudit: "data/paper_readiness_audit.json",
@@ -264,6 +265,9 @@ function renderPaperBaselines() {
     const runs = state.paperBaselineRuns.paper_baseline_runs.filter(
       (run) => run.paper_baseline_id === baseline.id,
     );
+    const runReadiness = state.paperBaselineRunReadiness
+      .paper_baseline_run_readiness
+      .filter((readiness) => readiness.paper_baseline_id === baseline.id);
     const probes = state.paperBaselineProbes.paper_baseline_probes.filter(
       (probe) => probe.paper_baseline_id === baseline.id,
     );
@@ -295,6 +299,23 @@ function renderPaperBaselines() {
       ];
       return lines.join("\n");
     });
+    const readinessItems = runReadiness.map((readiness) => {
+      const checks = readiness.checks.map((check) => {
+        const subject = check.path || check.metric || check.name || check.kind;
+        return `${check.kind}: ${subject} (${check.status})`;
+      });
+      const gaps = readiness.blocking_gaps.length
+        ? readiness.blocking_gaps.join(" | ")
+        : "none";
+      return [
+        `${readiness.title} (${readiness.latest_status})`,
+        `Run ID: ${readiness.paper_baseline_run_id}`,
+        `Artifact: ${readiness.latest_artifact_root}`,
+        `Checks: ${checks.join(" | ")}`,
+        `Blocking gaps: ${gaps}`,
+        `Next: ${readiness.next_action}`,
+      ].join("\n");
+    });
     const probeItems = probes.map((probe) => {
       const checks = probe.checks.map((check) => (
         check.path ? `${check.kind}: ${check.path}` : `${check.kind}: ${check.module}`
@@ -322,6 +343,7 @@ function renderPaperBaselines() {
       reproduce,
       next,
       ...namedList("Reproduction Runs", runItems),
+      ...namedList("Run Readiness", readinessItems),
       ...namedList("Readiness Probes", probeItems),
     );
     return details;
@@ -500,6 +522,7 @@ async function main() {
       paperBaselines,
       paperBaselineRuns,
       paperBaselineProbes,
+      paperBaselineRunReadiness,
       servingWorkloads,
       paperEvaluation,
       paperReadinessAudit,
@@ -510,6 +533,7 @@ async function main() {
       loadJson(DATA_FILES.paperBaselines),
       loadJson(DATA_FILES.paperBaselineRuns),
       loadJson(DATA_FILES.paperBaselineProbes),
+      loadJson(DATA_FILES.paperBaselineRunReadiness),
       loadJson(DATA_FILES.servingWorkloads),
       loadJson(DATA_FILES.paperEvaluation),
       loadJson(DATA_FILES.paperReadinessAudit),
@@ -521,6 +545,7 @@ async function main() {
       paperBaselines,
       paperBaselineRuns,
       paperBaselineProbes,
+      paperBaselineRunReadiness,
       servingWorkloads,
       paperEvaluation,
       paperReadinessAudit,

@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "pto_commit": "3157ea68",
+    "source_files": [
+      "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
+      "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json"
+    ]
+  },
+  "paper_baseline_run_readiness": [
+    {
+      "id": "mpk_persistent_scheduler_trace_readiness",
+      "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+      "paper_baseline_id": "mpk",
+      "title": "MPK Persistent Scheduler Trace Readiness",
+      "latest_status": "partial",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-3157ea68/",
+      "checks": [
+        {
+          "kind": "source_path",
+          "path": "tmp/baselines/mirage-mpk",
+          "status": "pass",
+          "why": "Baseline source checkout used by run_commands."
+        },
+        {
+          "kind": "path_exists",
+          "path": "demo/qwen3/demo.py",
+          "status": "pass",
+          "why": "Python entrypoint referenced by run_commands."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-trace.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-profile.log",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "required_metric",
+          "metric": "correctness",
+          "status": "pass",
+          "why": "Paper-baseline imports must include correctness and raw artifact evidence."
+        },
+        {
+          "kind": "required_metric",
+          "metric": "raw_artifacts",
+          "status": "pass",
+          "why": "Paper-baseline imports must include correctness and raw artifact evidence."
+        },
+        {
+          "kind": "environment",
+          "name": "HF_TOKEN",
+          "status": "partial",
+          "why": "Selected MPK/VDCores model commands require gated Hugging Face model access."
+        }
+      ],
+      "blocking_gaps": [
+        "HF_TOKEN is not available for this run."
+      ],
+      "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
+    },
+    {
+      "id": "vdcores_resource_policy_trace_readiness",
+      "paper_baseline_run_id": "vdcores_resource_policy_trace",
+      "paper_baseline_id": "vdcores",
+      "title": "VDCores Resource Policy Trace Readiness",
+      "latest_status": "partial",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-3157ea68/",
+      "checks": [
+        {
+          "kind": "source_path",
+          "path": "tmp/baselines/vdcores",
+          "status": "pass",
+          "why": "Baseline source checkout used by run_commands."
+        },
+        {
+          "kind": "path_exists",
+          "path": "app/python/llama3/sched.py",
+          "status": "pass",
+          "why": "Python entrypoint referenced by run_commands."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-trace.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-profile.log",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "required_metric",
+          "metric": "correctness",
+          "status": "pass",
+          "why": "Paper-baseline imports must include correctness and raw artifact evidence."
+        },
+        {
+          "kind": "required_metric",
+          "metric": "raw_artifacts",
+          "status": "pass",
+          "why": "Paper-baseline imports must include correctness and raw artifact evidence."
+        },
+        {
+          "kind": "environment",
+          "name": "HF_TOKEN",
+          "status": "partial",
+          "why": "Selected MPK/VDCores model commands require gated Hugging Face model access."
+        },
+        {
+          "kind": "compiled_extension",
+          "path": "python/dae/runtime*.so",
+          "status": "partial",
+          "why": "VDCores run commands import dae.runtime from the built CUDA extension."
+        }
+      ],
+      "blocking_gaps": [
+        "HF_TOKEN is not available for this run.",
+        "Missing dae.runtime compiled extension at python/dae/runtime*.so."
+      ],
+      "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
+    }
+  ]
+}
