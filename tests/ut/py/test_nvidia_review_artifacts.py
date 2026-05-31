@@ -1878,9 +1878,21 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert "mpk_persistent_scheduler_trace" not in persistent_attempts
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
-    ] == "vdcores_qwen3_1p7b_repeat_state_lite_h200"
-    assert "bad PC49 RepeatM field encoding" in (
-        persistent_attempts["vdcores_resource_policy_trace"]["blocker"]
+    ] == "vdcores_qwen3_1p7b_repeat_guard_bench_h200"
+    assert persistent_attempts["vdcores_resource_policy_trace"]["status"] == "pass"
+    assert persistent_attempts["vdcores_resource_policy_trace"]["summary"][
+        "median_execution_time_ns"
+    ] == 1778528
+    assert persistent_attempts["vdcores_resource_policy_trace"]["summary"][
+        "resource_policy_measured"
+    ]
+    assert not persistent_attempts["vdcores_resource_policy_trace"]["summary"][
+        "correctness_completed"
+    ]
+    assert any(
+        "VDCores correctness plus queue-pressure and scheduler-overhead metadata"
+        in blocker
+        for blocker in persistent_claim["blockers"]
     )
     assert not any(
         "Latest execution attempt "
@@ -1977,9 +1989,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 9
+    assert committed["summary"]["total_work_items"] == 8
     assert committed["summary"]["work_items_by_source"] == {
-        "execution_attempt": 1,
         "matrix_missing_evidence": 3,
         "probe": 2,
         "run_readiness": 3,
@@ -2005,13 +2016,10 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
         for item in work_items
     )
-    assert any(
+    assert not any(
         item["claim_id"] == "persistent_device_scheduler_overhead"
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
-        and item["execution_attempt_id"]
-        == "vdcores_qwen3_1p7b_repeat_state_lite_h200"
-        and "bad PC49 RepeatM field encoding" in item["action"]
         for item in work_items
     )
 
@@ -2047,7 +2055,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 9
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 8
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -2714,6 +2722,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_slot_lifetime_pc44_pc52_h200",
         "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200",
         "vdcores_qwen3_1p7b_repeat_state_lite_h200",
+        "vdcores_qwen3_1p7b_repeat_guard_bench_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -3421,6 +3430,25 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert "native 64-bit shuffle/register transport" in (
         vdcores_repeat_state["summary"]["next_debug_target"]
     )
+    vdcores_guard_bench = attempts_by_id[
+        "vdcores_qwen3_1p7b_repeat_guard_bench_h200"
+    ]
+    assert vdcores_guard_bench["status"] == "pass"
+    assert vdcores_guard_bench["summary"]["mode"] == (
+        "vdcores_qwen_repeat_guard_full_benchmark"
+    )
+    assert vdcores_guard_bench["summary"]["full_launch_status"] == 0
+    assert vdcores_guard_bench["summary"]["bench_status"] == 0
+    assert vdcores_guard_bench["summary"]["bench_iterations"] == 5
+    assert vdcores_guard_bench["summary"]["num_sms"] == 132
+    assert vdcores_guard_bench["summary"]["median_execution_time_ns"] == 1778528
+    assert vdcores_guard_bench["summary"]["average_execution_time_ns"] == 1779008
+    assert vdcores_guard_bench["summary"]["resource_policy_measured"]
+    assert not vdcores_guard_bench["summary"]["correctness_completed"]
+    assert not vdcores_guard_bench["summary"]["scheduler_overhead_measured"]
+    assert "unguarded addr_accum shuffle" in (
+        vdcores_guard_bench["summary"]["root_cause_supported"]
+    )
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
@@ -3671,22 +3699,22 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if attempt["paper_baseline_id"] == "vdcores"
             )
             assert vdcores_attempt["execution_attempt_id"] == (
-                "vdcores_qwen3_1p7b_repeat_state_lite_h200"
+                "vdcores_qwen3_1p7b_repeat_guard_bench_h200"
             )
-            assert (
-                vdcores_attempt["summary"]["pc50_desc33_invalid_cords"]
-                == [65535, 127, 0]
-            )
-            vdcores_actions = [
-                action
+            assert vdcores_attempt["status"] == "pass"
+            assert vdcores_attempt["summary"]["bench_status"] == 0
+            assert vdcores_attempt["summary"]["median_execution_time_ns"] == 1778528
+            assert not any(
+                action.get("source") == "execution_attempt"
+                and action.get("paper_baseline_run_id")
+                == "vdcores_resource_policy_trace"
                 for action in item["next_actions"]
-                if action.get("execution_attempt_id")
-                == "vdcores_qwen3_1p7b_repeat_state_lite_h200"
-            ]
-            assert vdcores_actions
-            assert "bad PC49 RepeatM field encoding" in vdcores_actions[0][
-                "action"
-            ]
+            )
+            assert any(
+                "VDCores correctness plus queue-pressure and scheduler-overhead"
+                in action["action"]
+                for action in item["next_actions"]
+            )
         if item["id"] == "host_schedule_launch_overhead":
             assert item["matrix_status"] == "ready_for_paper_claim"
             assert item["ready_for_paper_claim"] is True
@@ -4171,6 +4199,22 @@ def test_benchmark_viewer_has_json_backed_review_data():
         == "pto_controlled_serving_equivalent"
     )
     assert pto_serving_equivalent[0]["statistic"]["throughput_tokens_per_s"] > 0
+    vdcores_guarded_bench = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "vdcores"
+        and record["hardware"]["gpu"] == "H200"
+    ]
+    assert len(vdcores_guarded_bench) == 1
+    assert vdcores_guarded_bench[0]["statistic"]["sample_count"] == 5
+    assert vdcores_guarded_bench[0]["statistic"]["device_wall_ns"] == 1778528
+    assert vdcores_guarded_bench[0]["correctness"] == "skipped"
+    assert (
+        vdcores_guarded_bench[0]["raw_artifact"]
+        == "tmp/cuda-backend/paper-baselines/vdcores/"
+        "qwen3-1p7b-repeat-guard-bench-f6b16bac/"
+    )
     assert {"A100", "H200"} <= {
         item["gpu"] for item in results["headline_results"]
     }

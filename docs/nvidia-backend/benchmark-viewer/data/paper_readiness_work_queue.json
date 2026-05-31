@@ -5,16 +5,15 @@
   "ready_claims": 1,
   "blocked_claims": 3,
   "summary": {
-    "total_work_items": 9,
+    "total_work_items": 8,
     "work_items_by_source": {
-      "execution_attempt": 1,
       "matrix_missing_evidence": 3,
       "probe": 2,
       "run_readiness": 3
     },
     "work_items_by_claim": {
       "llm_serving_paper_baselines": 6,
-      "persistent_device_scheduler_overhead": 2,
+      "persistent_device_scheduler_overhead": 1,
       "tensor_core_tile_baselines": 1
     }
   },
@@ -26,7 +25,7 @@
       "claim_title": "Persistent-Device Scheduler Overhead",
       "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
-      "blocker_count": 3,
+      "blocker_count": 2,
       "missing_evidence_count": 1,
       "action_index": 1,
       "source": "matrix_missing_evidence",
@@ -35,31 +34,12 @@
       "paper_baseline_run_id": "",
       "execution_attempt_id": "",
       "status": "missing",
-      "action": "VDCores run with matching queue/resource-policy metadata.",
+      "action": "VDCores correctness plus queue-pressure and scheduler-overhead metadata comparable with PTO persistent_device and MPK.",
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },
     {
       "id": "paper_readiness_work_item_002",
       "priority": 2,
-      "claim_id": "persistent_device_scheduler_overhead",
-      "claim_title": "Persistent-Device Scheduler Overhead",
-      "matrix_status": "partial_current_capture",
-      "ready_for_paper_claim": false,
-      "blocker_count": 3,
-      "missing_evidence_count": 1,
-      "action_index": 2,
-      "source": "execution_attempt",
-      "owner": "vdcores_resource_policy_trace",
-      "paper_baseline_id": "vdcores",
-      "paper_baseline_run_id": "vdcores_resource_policy_trace",
-      "execution_attempt_id": "vdcores_qwen3_1p7b_repeat_state_lite_h200",
-      "status": "blocked",
-      "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_repeat_state_lite_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: VDCores still cannot import queue/resource-policy timing. The latest evidence rules out bad PC49 RepeatM field encoding and localizes the bad coordinate to allocwarp RepeatM accumulator transport between decode and consumers. The split-shuffle diagnostic was not a complete fix, so the next step is a non-perturbing native 64-bit shuffle/register transport isolation or a targeted 32-bit packed-coordinate transport experiment.",
-      "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
-    },
-    {
-      "id": "paper_readiness_work_item_003",
-      "priority": 3,
       "claim_id": "tensor_core_tile_baselines",
       "claim_title": "Tensor-Core Tile Baselines",
       "matrix_status": "partial_current_capture",
@@ -77,8 +57,8 @@
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
     },
     {
-      "id": "paper_readiness_work_item_004",
-      "priority": 4,
+      "id": "paper_readiness_work_item_003",
+      "priority": 3,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
@@ -96,8 +76,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_005",
-      "priority": 5,
+      "id": "paper_readiness_work_item_004",
+      "priority": 4,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
@@ -115,8 +95,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_006",
-      "priority": 6,
+      "id": "paper_readiness_work_item_005",
+      "priority": 5,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
@@ -134,8 +114,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_007",
-      "priority": 7,
+      "id": "paper_readiness_work_item_006",
+      "priority": 6,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
@@ -153,8 +133,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_008",
-      "priority": 8,
+      "id": "paper_readiness_work_item_007",
+      "priority": 7,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
@@ -172,8 +152,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_009",
-      "priority": 9,
+      "id": "paper_readiness_work_item_008",
+      "priority": 8,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",

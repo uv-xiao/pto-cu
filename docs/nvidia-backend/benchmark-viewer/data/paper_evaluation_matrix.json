@@ -239,10 +239,16 @@
         {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/scheduler-breakdown-6f7a1040/persistent-scheduler-breakdown-6f7a1040/"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "vdcores",
+          "gpu": "H200"
         }
       ],
       "missing_evidence": [
-        "VDCores run with matching queue/resource-policy metadata."
+        "VDCores correctness plus queue-pressure and scheduler-overhead metadata comparable with PTO persistent_device and MPK."
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },
@@ -331,9 +337,9 @@
           "gpu": "H200"
         }
       ],
-  "missing_evidence": [
-    "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable, PyTorch reference rows OOM at selected 12288-token shapes, and non-MHA ThunderKittens kernels are not yet captured."
-  ],
+      "missing_evidence": [
+        "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable, PyTorch reference rows OOM at selected 12288-token shapes, and non-MHA ThunderKittens kernels are not yet captured."
+      ],
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
     },
     {

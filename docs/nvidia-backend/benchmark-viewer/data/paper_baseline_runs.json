@@ -168,7 +168,7 @@
       "paper_baseline_id": "vdcores",
       "paper_evaluation_id": "persistent_device_scheduler_overhead",
       "title": "VDCores Resource Policy Trace",
-      "status": "planned_not_run",
+      "status": "captured_raw",
       "hardware_targets": [
         "H200"
       ],

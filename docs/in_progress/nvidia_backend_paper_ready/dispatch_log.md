@@ -2330,3 +2330,46 @@ Each entry must include:
   VDCores diagnostic should isolate native 64-bit shuffle/register transport
   and then test a lane-0-only split transport or explicit 32-bit
   packed-coordinate transport before importing queue/resource-policy timing.
+
+### 2026-06-01 - VDCores Guarded RepeatM Benchmark
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  guarded RepeatM full-launch and benchmark capture for the persistent
+  scheduler baseline gap.
+- Exact Codex command or script invocation: copied the tmp-only
+  `vdcores-repeat-guard-native.patch` into the H200 VDCores checkout, rebuilt
+  with `DAE_DIAG_GUARD_REPEAT_SHUFFLE` and
+  `DAE_DIAG_WAIT_AFTER_WB_ALLOC`, then ran the offline full launch with
+  `CUDA_VISIBLE_DEVICES=7`, `QWEN1P7B_NO_PREFETCH=all`,
+  `QWEN1P7B_LOGITS_SPLIT_M=6`, `HF_HUB_OFFLINE=1`,
+  `TRANSFORMERS_OFFLINE=1`, `-N 1`, and `--launch`. The benchmark reused the
+  guarded runtime without debug printing and ran `DAE_BENCH_WARMUP=1` with
+  `-N 1` and `-b 5`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, imported
+  viewer result data, generated paper-readiness audit/work-queue/goal-progress
+  data, focused review tests, dispatch log, changelog docs, and local `tmp/`
+  raw artifacts copied back from H200. No upstream repositories were edited or
+  pushed.
+- Dependencies and blocked assumptions: the first full attempt without offline
+  Hugging Face flags stalled in model HEAD retries and was terminated with
+  status `143`; the offline rerun completed. The local and remote VDCores
+  checkouts were restored to clean state after artifact capture.
+- Verification commands and results before local review gates: patch apply
+  status `0`; rebuild status `0`; full launch status `0`; benchmark status
+  `0`; patch restore status `0`; guarded PC49 skipped the invalid pre-repeat
+  shuffle from source lane 48; benchmark on 132 H200 SMs reported min
+  `1774240 ns`, median `1778528 ns`, average `1779008 ns`, and max
+  `1785504 ns`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the latest evidence supports the
+  root cause that unguarded `addr_accum` shuffles execute before `RepeatM` is
+  active and can read invalid source lanes. The next VDCores slice should run
+  guarded correctness, then add queue-pressure and scheduler-overhead metadata
+  before marking the VDCores resource-policy trace imported-to-viewer.

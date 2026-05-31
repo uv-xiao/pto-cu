@@ -132,7 +132,7 @@
         "Promote paper readiness only after the audit has zero blockers."
       ],
       "paper_readiness_status": "not_paper_ready",
-      "blocking_work_items": 9
+      "blocking_work_items": 8
     },
     {
       "id": "dispatcher_log",

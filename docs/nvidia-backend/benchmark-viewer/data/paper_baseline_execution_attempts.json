@@ -1952,6 +1952,88 @@
       }
     },
     {
+      "id": "vdcores_qwen3_1p7b_repeat_guard_bench_h200",
+      "paper_baseline_id": "vdcores",
+      "paper_baseline_run_id": "vdcores_resource_policy_trace",
+      "title": "VDCores Qwen3 1.7B Guarded RepeatM Benchmark",
+      "status": "pass",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-bench-f6b16bac/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "Apply a tmp-only VDCores guarded RepeatM patch on the H200 baseline checkout, rebuild without DAE_DEBUG_PRINT using the selected Qwen3-1.7B compute-op list, run one full offline launch, then run DAE_BENCH_WARMUP=1 python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> -N 1 -b 5 with HF_HUB_OFFLINE=1 and TRANSFORMERS_OFFLINE=1.",
+      "observation": "The guarded RepeatM patch skips addr_accum shuffles until RepeatM is active and the source lane is valid. The full one-token launch returned status 0, and the 5-iteration benchmark returned status 0 on 132 H200 SMs with median execution time 1778528 ns and average execution time 1779008 ns.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-bench-f6b16bac/repeat-guard-bench-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-bench-f6b16bac/repeat-guard-bench-report.md",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-bench-f6b16bac/bench-repeat-guard.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-bench-f6b16bac/bench-repeat-guard-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-bench-f6b16bac/rebuild-repeat-guard-bench.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-bench-f6b16bac/rebuild-repeat-guard-bench-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-bench-f6b16bac/vdcores-repeat-guard-native.patch",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-full-offline-f6b16bac/full-launch-repeat-guard-offline.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-full-offline-f6b16bac/full-launch-repeat-guard-offline-status.txt"
+      ],
+      "summary": {
+        "mode": "vdcores_qwen_repeat_guard_full_benchmark",
+        "model": "Qwen/Qwen3-1.7B",
+        "offline_cache_used": true,
+        "remote_refresh_path": "tmp patch copy",
+        "local_source_pto_commit": "f6b16bac839bdc433c515772e5699fe7d9116c2c",
+        "remote_pto_commit": "61af3f017537692ea860c0729bba8c78e08d223f",
+        "remote_vdcores_commit": "5247328cf3f893ed9df95f9f38e7e9a97f0cbfb1",
+        "cuda_visible_devices": "7",
+        "compute_target": "sm_90a",
+        "gpu": "H200",
+        "num_sms": 132,
+        "debug_build": false,
+        "no_prefetch": "all",
+        "logits_split_m": 6,
+        "num_generates": 1,
+        "bench_iterations": 5,
+        "bench_warmup": 1,
+        "patch_apply_status": 0,
+        "patch_restore_status": 0,
+        "rebuild_status": 0,
+        "bench_status": 0,
+        "full_launch_status": 0,
+        "min_execution_time_ns": 1774240,
+        "median_execution_time_ns": 1778528,
+        "average_execution_time_ns": 1779008,
+        "max_execution_time_ns": 1785504,
+        "full_launch_completed": true,
+        "bench_completed": true,
+        "resource_policy": {
+          "virtual_core_runtime": "VDCores DAE",
+          "gpu_sms": 132,
+          "compute_ops_file": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/compute_ops_full.txt",
+          "selected_compute_ops": 9,
+          "dynamic_compute_handlers": 1,
+          "all_compute_ops": 33,
+          "guard_patch": "skip addr_accum shuffle unless RepeatM is active and source lane is valid",
+          "writeback_wait_patch": "wait for writeback slot flags after allocation for PC48/PC55 hazards"
+        },
+        "scheduler_overhead_measured": false,
+        "queue_pressure_measured": false,
+        "correctness_completed": false,
+        "resource_policy_measured": true,
+        "raw_artifacts_preserved": true,
+        "rules_out": [
+          "VDCores logits-stage failure as a blocker after guarding invalid pre-repeat shuffle",
+          "Hugging Face model access as a blocker when offline cache flags are used"
+        ],
+        "remaining_paper_gaps": [
+          "run single-token correctness on the guarded patch",
+          "capture queue-pressure and scheduler-overhead metadata comparable to PTO persistent_device and MPK",
+          "repeat latency distributions on the final patched baseline policy before paper use"
+        ],
+        "next_debug_target": "run guarded VDCores correctness and add queue/resource-policy trace fields instead of only launcher profile timing",
+        "root_cause_supported": "unguarded addr_accum shuffle executes with invalid source lane before RepeatM decode at PC49; guarding it lets the full one-token launch and 5-iteration benchmark complete."
+      }
+    },
+    {
       "id": "thunderkittens_mha_h100_official_benchmark_h200",
       "paper_baseline_id": "thunderkittens",
       "paper_baseline_run_id": "thunderkittens_full_sweep",
