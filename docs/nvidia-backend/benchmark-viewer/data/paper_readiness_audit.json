@@ -40,15 +40,15 @@
       "evidence_ref_counts": {
         "raw_artifact": 1,
         "stable_doc": 1,
-        "viewer_result": 2
+        "viewer_result": 3
       },
-      "missing_evidence_count": 2,
+      "missing_evidence_count": 1,
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {
           "id": "mpk_persistent_scheduler_trace",
           "paper_baseline_id": "mpk",
-          "status": "planned_not_run",
+          "status": "imported_to_viewer",
           "serving_workload_ids": [],
           "expected_artifacts": [
             "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-trace.json",
@@ -70,14 +70,6 @@
       ],
       "paper_baseline_run_readiness_statuses": [
         {
-          "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
-          "paper_baseline_id": "mpk",
-          "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-61af3f01/",
-          "blocking_gaps": [],
-          "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
-        },
-        {
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
           "latest_status": "pass",
@@ -87,42 +79,6 @@
         }
       ],
       "execution_attempt_statuses": [
-        {
-          "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
-          "paper_baseline_id": "mpk",
-          "execution_attempt_id": "mpk_qwen3_0p6b_profile_termination_diagnostic_h200",
-          "title": "MPK Qwen3 0.6B Profile Termination Diagnostic",
-          "status": "pass",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/profile-termination-diagnostic-fa357d52/",
-          "blocker": "",
-          "summary": {
-            "mode": "mpk_qwen3_0p6b_profile_termination_diagnostic",
-            "model": "Qwen/Qwen3-0.6B",
-            "offline_cache_used": true,
-            "max_new_tokens": 2,
-            "max_seq_length": 41,
-            "max_num_batched_requests": 1,
-            "max_num_batched_tokens": 1,
-            "profile_compile_flag_enabled": true,
-            "early_done_override_removed": true,
-            "all_noop_status": 0,
-            "real_profiler_status": 0,
-            "all_noop_generated_length": 2,
-            "real_profiler_generated_length": 2,
-            "all_noop_predecode_step": 40,
-            "real_profiler_predecode_step": 40,
-            "all_noop_predecode_generated_length": 2,
-            "real_profiler_predecode_generated_length": 2,
-            "all_noop_trace_bytes": 89,
-            "real_profiler_trace_bytes": 16872606,
-            "profiling_preserves_correctness": true,
-            "perfetto_trace_exported": true,
-            "compiled": true,
-            "launched": true,
-            "scheduler_trace_available": true,
-            "resource_policy_measured": false
-          }
-        },
         {
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
@@ -215,9 +171,7 @@
         }
       ],
       "blockers": [
-        "MPK bounded-decode run with scheduler/resource/latency distributions imported.",
         "VDCores run with matching queue/resource-policy metadata.",
-        "Paper baseline run mpk_persistent_scheduler_trace is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
         "Latest execution attempt vdcores_qwen3_1p7b_minst_provenance_h200 for vdcores_resource_policy_trace is partial: The generated Python-side MInst effective addresses are live tensor ranges before launch, so the VDCores blocker shifts from MInst provenance to runtime/device-side mutation, instruction upload, or CUDA memcheck allocator visibility for direct 1D cp_async_bulk loads. This is still not paper-grade correctness or resource-policy evidence."
       ],
@@ -225,7 +179,7 @@
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
-          "action": "MPK bounded-decode run with scheduler/resource/latency distributions imported."
+          "action": "VDCores run with matching queue/resource-policy metadata."
         },
         {
           "source": "execution_attempt",

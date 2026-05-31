@@ -1869,11 +1869,13 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         item["paper_baseline_run_id"]: item
         for item in persistent_claim["execution_attempt_statuses"]
     }
-    assert persistent_attempts["mpk_persistent_scheduler_trace"][
-        "execution_attempt_id"
-    ] == "mpk_qwen3_0p6b_profile_termination_diagnostic_h200"
-    assert persistent_attempts["mpk_persistent_scheduler_trace"]["status"] == "pass"
-    assert persistent_attempts["mpk_persistent_scheduler_trace"]["blocker"] == ""
+    mpk_run_status = next(
+        run
+        for run in persistent_claim["paper_baseline_run_statuses"]
+        if run["id"] == "mpk_persistent_scheduler_trace"
+    )
+    assert mpk_run_status["status"] == "imported_to_viewer"
+    assert "mpk_persistent_scheduler_trace" not in persistent_attempts
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
     ] == "vdcores_qwen3_1p7b_minst_provenance_h200"
@@ -1900,15 +1902,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         and action["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
         for action in persistent_claim["next_actions"]
     )
-    assert not any(
-        "HF_TOKEN" in gap
-        for gap in persistent_readiness[
-            "mpk_persistent_scheduler_trace"
-        ]["blocking_gaps"]
-    )
-    assert persistent_readiness["mpk_persistent_scheduler_trace"][
-        "latest_status"
-    ] == "pass"
+    assert "mpk_persistent_scheduler_trace" not in persistent_readiness
     assert persistent_readiness["vdcores_resource_policy_trace"][
         "latest_status"
     ] == "pass"
@@ -3269,8 +3263,19 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 == "tmp/cuda-backend/scheduler-breakdown-6f7a1040/persistent-scheduler-breakdown-6f7a1040/"
                 for ref in item["current_evidence_refs"]
             )
+            assert any(
+                ref.get("kind") == "viewer_result"
+                and ref.get("benchmark_id") == "graph_layered_cross"
+                and ref.get("method_id") == "mpk"
+                and ref.get("gpu") == "H200"
+                for ref in item["current_evidence_refs"]
+            )
             assert not any(
                 "Scheduler-overhead breakdown" in gap
+                for gap in item["missing_evidence"]
+            )
+            assert not any(
+                "MPK bounded-decode run" in gap
                 for gap in item["missing_evidence"]
             )
         if item["id"] == "llm_serving_paper_baselines":
@@ -3348,6 +3353,31 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert artifact_root.is_dir()
         assert any(path.suffix == ".json" for path in artifact_root.iterdir())
     assert results["result_records"]
+    mpk_scheduler_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "graph_layered_cross"
+        and record["method_id"] == "mpk"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"] == "tmp/cuda-backend/paper-baselines/mpk/"
+    ]
+    assert len(mpk_scheduler_records) == 1
+    mpk_statistic = mpk_scheduler_records[0]["statistic"]
+    assert mpk_scheduler_records[0]["correctness"] == "pass"
+    assert mpk_statistic["kind"] == "paper_baseline_scheduler_trace"
+    assert mpk_statistic["sample_count"] == 1
+    assert mpk_statistic["task_count"] == 7261
+    assert mpk_statistic["scheduler_count"] == 16
+    assert mpk_statistic["worker_count"] == 128
+    assert mpk_statistic["scheduler_overhead_ns"] == 29008768
+    assert mpk_statistic["dispatch_trace"]["scheduler_slice_pairs"] == 74792
+    assert mpk_statistic["resource_policy"]["split_worker_scheduler"] is True
+    assert (
+        mpk_statistic["queue_pressure"]["worker_coverage_policy"]
+        == "128 workers over 16 local schedulers, eight workers per scheduler "
+        "under MAX_WORKER_PER_SCHEDULER=9"
+    )
+    assert mpk_statistic["generated_kernel_metadata"]["tensor_count"] == 371
     assert any(
         record["benchmark_id"] == "tensor_core_tile"
         and record["method_id"] == "thunderkittens"

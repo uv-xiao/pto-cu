@@ -118,7 +118,7 @@
       "paper_baseline_id": "mpk",
       "paper_evaluation_id": "persistent_device_scheduler_overhead",
       "title": "MPK Persistent Scheduler Trace",
-      "status": "planned_not_run",
+      "status": "imported_to_viewer",
       "hardware_targets": [
         "H200"
       ],

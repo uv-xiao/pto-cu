@@ -1887,3 +1887,43 @@ Each entry must include:
   bounded-decode correctness and export a real Perfetto trace with carried
   patches. The remaining MPK paper-readiness gap is importing comparable
   scheduler/resource/latency rows into viewer results for the bounded workload.
+
+### 2026-06-01 - MPK Scheduler Trace Import
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned MPK
+  scheduler-trace import.
+- Exact Codex command or script invocation: copied the successful H200 MPK
+  bounded-decode profiler run into
+  `tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-trace.json` and
+  imported it with `.agents/skills/cuda-backend-eval/scripts/paper_baseline_results_update.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready persistent
+  scheduler baseline evidence.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer results, paper-baseline run
+  status, paper evaluation matrix, generated paper-readiness audit/work-queue
+  and goal-progress data, focused tests, dispatch log, changelog docs, and
+  local `tmp/` raw artifacts. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the imported MPK row uses carried
+  local MPK patches from the profile-termination diagnostic. Device elapsed
+  time comes from the MPK demo CUDA events; scheduler overhead comes from
+  observed Perfetto scheduler slice begin/end pairs.
+- Verification commands and results: the first focused pytest run failed after
+  import because the audit no longer reports execution/readiness actions for
+  `mpk_persistent_scheduler_trace` once the run is `imported_to_viewer`. After
+  updating the test expectation, the focused review tests passed:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest
+  tests/ut/py/test_nvidia_review_artifacts.py::test_benchmark_viewer_has_json_backed_review_data
+  tests/ut/py/test_nvidia_review_artifacts.py::test_paper_readiness_audit_matches_current_viewer_data
+  tests/ut/py/test_nvidia_review_artifacts.py::test_paper_readiness_work_queue_matches_current_audit
+  tests/ut/py/test_nvidia_review_artifacts.py::test_nvidia_goal_progress_matches_current_artifacts
+  -q` -> `4 passed`. `validate_benchmark_viewer_data.py` also passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the persistent scheduler-overhead matrix
+  now cites an MPK H200 viewer result and no longer lists MPK scheduler-trace
+  import as missing evidence. The remaining blocker for that claim is VDCores
+  queue/resource-policy evidence.

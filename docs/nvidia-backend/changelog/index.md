@@ -19,6 +19,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 MPK bounded profile diagnostic](2026-06-01-mpk-bounded-profile-diagnostic.md)
 - [2026-06-01 MPK profile no-op diagnostic](2026-06-01-mpk-profile-noop-diagnostic.md)
 - [2026-06-01 MPK profile termination diagnostic](2026-06-01-mpk-profile-termination-diagnostic.md)
+- [2026-06-01 MPK scheduler trace import](2026-06-01-mpk-scheduler-trace-import.md)
 - [2026-05-31 VDCores Qwen resource contract](2026-05-31-vdcores-qwen-resource-contract.md)
 - [2026-05-31 VDCores Qwen correctness fetch blocker](2026-05-31-vdcores-qwen-correctness-fetch-blocker.md)
 - [2026-05-31 VDCores Qwen runtime rebuild](2026-05-31-vdcores-qwen-runtime-rebuild.md)

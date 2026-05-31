@@ -227,6 +227,12 @@
           "gpu": "H200"
         },
         {
+          "kind": "viewer_result",
+          "benchmark_id": "graph_layered_cross",
+          "method_id": "mpk",
+          "gpu": "H200"
+        },
+        {
           "kind": "stable_doc",
           "path": "docs/nvidia-backend/persistent-device.md"
         },
@@ -236,7 +242,6 @@
         }
       ],
       "missing_evidence": [
-        "MPK bounded-decode run with scheduler/resource/latency distributions imported.",
         "VDCores run with matching queue/resource-policy metadata."
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
