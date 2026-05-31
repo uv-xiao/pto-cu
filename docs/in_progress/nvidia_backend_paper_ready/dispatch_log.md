@@ -935,3 +935,42 @@ Each entry must include:
   now has A100 raw Driver launch and Driver graph replay rows. Remaining gaps
   are direct CUDA Runtime API rows, H200 Driver launch and graph rows,
   selected tensor launch shapes, and p50/p90/p99 distribution-ready captures.
+
+### 2026-05-31 - A100 Runtime Launch Viewer Evidence
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned Runtime API
+  launch evidence slice.
+- Exact Codex command or script invocation: no worker invocation. Added a
+  `direct_runtime` benchmark path backed by an nvcc-built shared library that
+  calls `cudaLaunchKernel`, captured
+  `tmp/cuda-backend/host-launch-runtime-a100-e429c07b/cuda-benchmark.json`,
+  imported the A100 Runtime API row into `results.json`, and regenerated
+  `paper_readiness_audit.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, benchmark viewer and
+  paper-ready evaluation evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA benchmark helper, benchmark viewer data, CUDA
+  evaluation raw artifacts under `tmp/`, focused tests, evaluation plan,
+  dispatch log, and changelog docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: this is a local A100 vector-shape
+  Runtime API microbenchmark; H200 Runtime API evidence and tensor-shape launch
+  evidence remain open.
+- Verification commands and results: passed focused
+  `test_cuda_benchmark_report.py` selectors for the Runtime API path, a real
+  A100 `--single-baseline direct_runtime` sample, the 10-repeat A100 Runtime
+  API capture, `check_nvidia_review_ready.py`,
+  `validate_benchmark_viewer_data.py`, `validate_nvidia_changelog.py`,
+  `validate_cuda_examples.py`, `validate_remote_evaluation.py`, focused
+  review artifact pytest with 19 tests, paper-readiness audit regeneration
+  plus diff check, Python compile checks for touched benchmark/import/guard
+  scripts, JSON syntax checks for viewer/example/import artifacts,
+  `node --check` on the viewer, and `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the host-schedule launch-overhead claim
+  now has A100 PTO, Runtime API, raw Driver API, and Driver graph rows. The
+  remaining gaps are H200 Runtime/Driver rows, selected tensor launch shapes,
+  and p50/p90/p99 distribution-ready captures.

@@ -82,6 +82,24 @@
       ]
     },
     {
+      "id": "direct_runtime",
+      "name": "CUDA Runtime launch baseline",
+      "category": "diagnostic_baseline",
+      "launch_model": "CUDA Runtime API direct kernel launch",
+      "runtime_flow": "The benchmark compiles a small nvcc shared library and measures its cudaLaunchKernel vector-add path through CUDA Runtime API allocation, events, launch, and synchronization.",
+      "lifecycle": "The host calls the shared library entry point from Python; the library owns cudaSetDevice, cudaMalloc, cudaMemcpy, cudaEventRecord, cudaLaunchKernel, cudaEventSynchronize, validation, and cleanup for one sample.",
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py",
+          "symbols": [
+            "DirectCudaRuntime",
+            "direct_runtime",
+            "cudaLaunchKernel"
+          ]
+        }
+      ]
+    },
+    {
       "id": "cublas_sgemm_graph",
       "name": "cuBLAS SGEMM Graph baseline",
       "category": "vendor_baseline",

@@ -222,6 +222,7 @@ def check_viewer_data() -> None:
     required_methods = {
         "pto_host_schedule",
         "pto_persistent_device",
+        "direct_runtime",
         "direct_driver",
         "direct_driver_graph",
         "cublas_sgemm_graph",
@@ -239,6 +240,7 @@ def check_viewer_data() -> None:
     import_baselines = {item["baseline"] for item in import_rules}
     required_import_baselines = {
         "pto_host_schedule",
+        "direct_runtime",
         "direct_driver",
         "direct_driver_graph",
         "pto_persistent_dag_graph_layered_cross",

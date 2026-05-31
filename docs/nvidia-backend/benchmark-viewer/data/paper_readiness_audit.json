@@ -16,16 +16,16 @@
       "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
-        "raw_artifact": 2,
+        "raw_artifact": 3,
         "viewer_data": 1,
-        "viewer_result": 4
+        "viewer_result": 5
       },
       "missing_evidence_count": 3,
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [],
       "probe_statuses": [],
       "blockers": [
-        "Direct CUDA Runtime API rows for the same host-schedule vector shapes.",
+        "H200 direct CUDA Runtime API row for the same host-schedule vector shape.",
         "H200 CUDA Driver launch and graph rows plus selected tensor launch shapes.",
         "Stream-count and graph-replay sweeps with sample distributions instead of selected medians."
       ],

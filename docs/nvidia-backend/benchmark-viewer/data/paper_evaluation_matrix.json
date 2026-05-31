@@ -11,6 +11,7 @@
       ],
       "method_ids": [
         "pto_host_schedule",
+        "direct_runtime",
         "direct_driver",
         "direct_driver_graph",
         "cublas_sgemm_graph"
@@ -54,6 +55,12 @@
           "gpu": "A100"
         },
         {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "direct_runtime",
+          "gpu": "A100"
+        },
+        {
           "kind": "viewer_data",
           "path": "docs/nvidia-backend/benchmark-viewer/data/results.json"
         },
@@ -64,10 +71,14 @@
         {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/host-launch-a100-8b6cdaee/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/host-launch-runtime-a100-e429c07b/"
         }
       ],
       "missing_evidence": [
-        "Direct CUDA Runtime API rows for the same host-schedule vector shapes.",
+        "H200 direct CUDA Runtime API row for the same host-schedule vector shape.",
         "H200 CUDA Driver launch and graph rows plus selected tensor launch shapes.",
         "Stream-count and graph-replay sweeps with sample distributions instead of selected medians."
       ],

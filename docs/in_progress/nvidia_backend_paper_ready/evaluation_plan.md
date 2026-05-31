@@ -155,6 +155,11 @@ The host-launch A100 capture at
 host-schedule launch claim explicit raw CUDA Driver launch and CUDA Driver
 graph evidence on A100 while H200 Driver rows, true Runtime API rows, and
 tensor-shape graph rows remain open.
+The follow-up A100 capture at
+`tmp/cuda-backend/host-launch-runtime-a100-e429c07b/` imports a 10-repeat
+`direct_runtime` row produced by an nvcc-built shared library that calls
+`cudaLaunchKernel`, reducing the Runtime API gap to H200 and tensor-shape
+coverage.
 
 Paper-baseline raw captures can be converted with
 `.agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py`.
