@@ -34,8 +34,8 @@
       "paper_baseline_run_id": "",
       "execution_attempt_id": "",
       "status": "missing",
-      "action": "Repeat the VDCores queue/scheduler trace on the final non-diagnostic baseline policy before treating the row as paper-ready evidence.",
-      "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
+      "action": "Promote the VDCores queue/scheduler diagnostic into a stable baseline instrumentation mode, or keep the diagnostic scheduler trace separate from final non-diagnostic latency/correctness rows in any paper claim.",
+      "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, latency distributions, and an explicit measurement scope separating diagnostic instrumentation from final baseline timing rows."
     },
     {
       "id": "paper_readiness_work_item_002",

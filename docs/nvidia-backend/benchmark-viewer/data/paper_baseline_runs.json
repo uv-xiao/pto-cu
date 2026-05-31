@@ -179,6 +179,11 @@
         "output_policy": "correctness output plus resource-policy timing trace",
         "batch_or_concurrency": "single-process VDCores run aligned with PTO persistent-device queue-pressure and worker/scheduler policy captures"
       },
+      "measurement_scope": {
+        "latency_correctness_policy": "final guarded RepeatM baseline policy is represented by qwen3-1p7b-repeat-guard-bench-f6b16bac and qwen3-1p7b-repeat-guard-correctness-712f88e8 without profile-slot diagnostics",
+        "scheduler_queue_policy": "queue pressure and allocwarp scheduler lifetime are diagnostic-scope fields from the tmp-only profile-slot patch in qwen3-1p7b-queue-scheduler-46872fa4",
+        "paper_use_rule": "Do not treat diagnostic scheduler fields as the final non-diagnostic latency row unless VDCores gains a stable baseline instrumentation mode with the same semantics."
+      },
       "model_access": {
         "requires_hf_token": false,
         "public_models": [

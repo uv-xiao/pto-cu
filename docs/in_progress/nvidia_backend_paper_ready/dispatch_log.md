@@ -2459,3 +2459,45 @@ Each entry must include:
   imported to the viewer, and the persistent-device scheduler claim no longer
   has a VDCores queue/scheduler metadata blocker. The remaining paper-readiness
   work is now in serving baseline runs and official tensor-core baseline gaps.
+
+### 2026-06-01 - VDCores Diagnostic Scope Contract
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned review
+  contract correction for the VDCores persistent scheduler evidence row.
+- Exact Codex command or script invocation: edited the paper evaluation matrix,
+  VDCores paper-baseline run metadata, imported viewer result metadata,
+  focused review tests, and changelog docs; then refreshed generated
+  paper-readiness artifacts with
+  `.agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence scope.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, generated
+  audit/work-queue/goal-progress data, focused review tests, dispatch log, and
+  changelog docs. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the VDCores queue/scheduler fields are
+  diagnostic-scope fields exported by a tmp-only profile-slot patch. They
+  cannot honestly be described as a non-diagnostic baseline trace unless
+  VDCores grows stable instrumentation with the same semantics.
+- Verification commands and results:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py`
+  refreshed audit/work-queue/goal-progress JSON;
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q`
+  -> `33 passed`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/checks/validate_benchmark_viewer_data.py`
+  -> `benchmark viewer data validation passed`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/checks/validate_nvidia_changelog.py`
+  -> `nvidia changelog validation passed`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/checks/check_nvidia_review_ready.py`
+  -> `nvidia review guard passed`;
+  `jq empty docs/nvidia-backend/benchmark-viewer/data/*.json && git diff --check`
+  -> passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the top work-queue item now asks for a
+  stable VDCores instrumentation mode or an explicit diagnostic-only paper
+  treatment, keeping final latency/correctness rows separate from diagnostic
+  scheduler counters.

@@ -432,6 +432,58 @@ def test_llm_serving_paper_baseline_run_requires_shape_and_concurrency(tmp_path)
         raise AssertionError("LLM serving run without concurrency policy was accepted")
 
 
+def test_vdcores_scheduler_trace_keeps_diagnostic_scope_separate():
+    matrix = json.loads(
+        (
+            VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
+        ).read_text(encoding="utf-8")
+    )
+    claim = next(
+        item
+        for item in matrix["paper_evaluation_matrix"]
+        if item["id"] == "persistent_device_scheduler_overhead"
+    )
+    missing_text = " ".join(claim["missing_evidence"])
+    assert "stable baseline instrumentation mode" in missing_text
+    assert "non-diagnostic baseline policy" not in missing_text
+    assert "measurement scope" in claim["promotion_gate"]
+
+    runs = json.loads(
+        (VIEWER_ROOT / "data" / "paper_baseline_runs.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    vdcores_run = next(
+        item
+        for item in runs["paper_baseline_runs"]
+        if item["id"] == "vdcores_resource_policy_trace"
+    )
+    scope = vdcores_run["measurement_scope"]
+    assert "without profile-slot diagnostics" in scope["latency_correctness_policy"]
+    assert "diagnostic-scope" in scope["scheduler_queue_policy"]
+    assert "Do not treat diagnostic scheduler fields" in scope["paper_use_rule"]
+
+    results = json.loads(
+        (VIEWER_ROOT / "data" / "results.json").read_text(encoding="utf-8")
+    )
+    vdcores_result = next(
+        item
+        for item in results["result_records"]
+        if item["benchmark_id"] == "llm_serving_decode"
+        and item["method_id"] == "vdcores"
+        and item["commit"] == "46872fa4"
+    )
+    statistic = vdcores_result["statistic"]
+    assert statistic["measurement_scope"] == "diagnostic_scheduler_trace"
+    trace = statistic["dispatch_trace"]
+    assert "tmp-only diagnostics" in trace["trace_scope"]
+    assert "stable VDCores baseline build" in trace["paper_use_rule"]
+    assert (
+        statistic["resource_policy"]["instrumentation_scope"]
+        == "diagnostic_profile_slots"
+    )
+
+
 def test_nvidia_changelog_validator_passes():
     result = subprocess.run(
         [sys.executable, ".agents/checks/validate_nvidia_changelog.py"],
@@ -1889,7 +1941,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         for blocker in persistent_claim["blockers"]
     )
     assert any(
-        "final non-diagnostic baseline policy" in blocker
+        "stable baseline instrumentation mode" in blocker
         for blocker in persistent_claim["blockers"]
     )
     assert not any(
@@ -2009,7 +2061,7 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     assert any(
         item["claim_id"] == "persistent_device_scheduler_overhead"
         and item["source"] == "matrix_missing_evidence"
-        and "final non-diagnostic baseline policy" in item["action"]
+        and "stable baseline instrumentation mode" in item["action"]
         for item in work_items
     )
 
@@ -3737,7 +3789,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         elif item["id"] == "persistent_device_scheduler_overhead":
             assert item["ready_for_paper_claim"] is False
             assert any(
-                "final non-diagnostic baseline policy" in blocker
+                "stable baseline instrumentation mode" in blocker
                 for blocker in item["blockers"]
             )
         else:

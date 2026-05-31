@@ -113,16 +113,16 @@
         }
       ],
       "blockers": [
-        "Repeat the VDCores queue/scheduler trace on the final non-diagnostic baseline policy before treating the row as paper-ready evidence."
+        "Promote the VDCores queue/scheduler diagnostic into a stable baseline instrumentation mode, or keep the diagnostic scheduler trace separate from final non-diagnostic latency/correctness rows in any paper claim."
       ],
       "next_actions": [
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
-          "action": "Repeat the VDCores queue/scheduler trace on the final non-diagnostic baseline policy before treating the row as paper-ready evidence."
+          "action": "Promote the VDCores queue/scheduler diagnostic into a stable baseline instrumentation mode, or keep the diagnostic scheduler trace separate from final non-diagnostic latency/correctness rows in any paper claim."
         }
       ],
-      "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
+      "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, latency distributions, and an explicit measurement scope separating diagnostic instrumentation from final baseline timing rows."
     },
     {
       "id": "tensor_core_tile_baselines",

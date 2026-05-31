@@ -3628,6 +3628,7 @@
       },
       "statistic": {
         "kind": "paper_baseline_scheduler_trace",
+        "measurement_scope": "diagnostic_scheduler_trace",
         "sample_count": 5,
         "host_wall_ns": 1786304,
         "device_wall_ns": 1786304,
@@ -3672,12 +3673,14 @@
           "scheduler_duration_ns_mean_per_sm": 1763558.7878787878,
           "scheduler_overhead_scope": "resident allocwarp scheduler lifetime; overlaps worker execution and is not additive latency",
           "scheduler_to_kernel_ratio_mean_per_sm": 0.9901329508220077,
-          "trace_scope": "per-SM VDCores profile slots imported from tmp-only diagnostics"
+          "trace_scope": "per-SM VDCores profile slots imported from tmp-only diagnostics",
+          "paper_use_rule": "compare scheduler and queue behavior only as diagnostic instrumentation unless the same fields are exported by a stable VDCores baseline build"
         },
         "resource_policy": {
           "compute_ops_file": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/qwen3-1p7b-compute-ops.vdcore.build",
           "compute_warps_per_sm": 4,
           "diagnostic_patch": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/vdcores-queue-scheduler-diagnostics.patch",
+          "instrumentation_scope": "diagnostic_profile_slots",
           "dynamic_compute_handlers": 1,
           "gpu_sms": 132,
           "guard_patch": "skip addr_accum shuffle unless RepeatM is active and source lane is valid",
