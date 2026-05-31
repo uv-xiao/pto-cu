@@ -289,7 +289,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-61af3f01/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-86ea3913/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -297,7 +297,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-61af3f01/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-86ea3913/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -307,9 +307,9 @@
           "paper_baseline_run_id": "vllm_serving_and_throughput",
           "paper_baseline_id": "vllm",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-61af3f01/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-86ea3913/",
           "blocking_gaps": [
-            "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; H200: python_module failed: vllm."
+            "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; A100: python_import failed: vllm.entrypoints.openai.api_server; A100: python_import failed: vllm.engine.arg_utils; H200: python_module failed: vllm; H200: python_import failed: vllm.entrypoints.openai.api_server; H200: python_import failed: vllm.engine.arg_utils."
           ],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -317,9 +317,9 @@
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "paper_baseline_id": "sglang",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-61af3f01/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-86ea3913/",
           "blocking_gaps": [
-            "Readiness probe sglang_source_entrypoints is partial: A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
+            "Readiness probe sglang_source_entrypoints is partial: A100: python_module failed: orjson; A100: python_module failed: torchvision; A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_module failed: orjson; H200: python_module failed: torchvision; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }
@@ -379,20 +379,24 @@
         {
           "paper_baseline_id": "vllm",
           "latest_status": "partial",
-          "next_action": "Install vLLM from the pinned source checkout, start a server, and run bench serve plus throughput with shared prompt/decode settings.",
+          "next_action": "Install vLLM runtime dependencies from the pinned source checkout, then start a server and run bench serve plus throughput with shared prompt/decode settings.",
           "machines": [
             {
               "gpu": "A100",
               "status": "partial",
               "blocking_gaps": [
-                "python_module failed: vllm"
+                "python_module failed: vllm",
+                "python_import failed: vllm.entrypoints.openai.api_server",
+                "python_import failed: vllm.engine.arg_utils"
               ]
             },
             {
               "gpu": "H200",
               "status": "partial",
               "blocking_gaps": [
-                "python_module failed: vllm"
+                "python_module failed: vllm",
+                "python_import failed: vllm.entrypoints.openai.api_server",
+                "python_import failed: vllm.engine.arg_utils"
               ]
             }
           ]
@@ -400,12 +404,14 @@
         {
           "paper_baseline_id": "sglang",
           "latest_status": "partial",
-          "next_action": "Run SGLang launch_server, bench_serving, offline throughput, and one-batch commands under the shared workload policy.",
+          "next_action": "Install SGLang runtime dependencies in an isolated evaluation venv, then run launch_server, bench_serving, offline throughput, and one-batch commands under the shared workload policy.",
           "machines": [
             {
               "gpu": "A100",
               "status": "partial",
               "blocking_gaps": [
+                "python_module failed: orjson",
+                "python_module failed: torchvision",
                 "python_import failed: sglang.bench_serving",
                 "python_import failed: sglang.bench_offline_throughput",
                 "python_import failed: sglang.bench_one_batch"
@@ -416,6 +422,8 @@
               "status": "partial",
               "blocking_gaps": [
                 "python_module failed: sglang",
+                "python_module failed: orjson",
+                "python_module failed: torchvision",
                 "python_import failed: sglang.bench_serving",
                 "python_import failed: sglang.bench_offline_throughput",
                 "python_import failed: sglang.bench_one_batch"
@@ -450,8 +458,8 @@
         "Readiness probe for vllm is partial.",
         "Readiness probe for sglang is partial.",
         "Run readiness vdcores_llama_decode_correctness is partial: HF_TOKEN is not available for this run.",
-        "Run readiness vllm_serving_and_throughput is partial: Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; H200: python_module failed: vllm.",
-        "Run readiness sglang_serving_and_offline is partial: Readiness probe sglang_source_entrypoints is partial: A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
+        "Run readiness vllm_serving_and_throughput is partial: Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; A100: python_import failed: vllm.entrypoints.openai.api_server; A100: python_import failed: vllm.engine.arg_utils; H200: python_module failed: vllm; H200: python_import failed: vllm.entrypoints.openai.api_server; H200: python_import failed: vllm.engine.arg_utils.",
+        "Run readiness sglang_serving_and_offline is partial: Readiness probe sglang_source_entrypoints is partial: A100: python_module failed: orjson; A100: python_module failed: torchvision; A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_module failed: orjson; H200: python_module failed: torchvision; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
       ],
       "next_actions": [
         {
@@ -484,13 +492,13 @@
           "source": "probe",
           "paper_baseline_id": "vllm",
           "status": "partial",
-          "action": "Install vLLM from the pinned source checkout, start a server, and run bench serve plus throughput with shared prompt/decode settings."
+          "action": "Install vLLM runtime dependencies from the pinned source checkout, then start a server and run bench serve plus throughput with shared prompt/decode settings."
         },
         {
           "source": "probe",
           "paper_baseline_id": "sglang",
           "status": "partial",
-          "action": "Run SGLang launch_server, bench_serving, offline throughput, and one-batch commands under the shared workload policy."
+          "action": "Install SGLang runtime dependencies in an isolated evaluation venv, then run launch_server, bench_serving, offline throughput, and one-batch commands under the shared workload policy."
         }
       ],
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."

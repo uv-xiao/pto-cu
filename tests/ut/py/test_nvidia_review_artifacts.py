@@ -1701,6 +1701,7 @@ def test_paper_baseline_probe_collects_source_readiness(tmp_path):
                         "kind": "python_import",
                         "module": "fixture_pkg",
                         "pythonpath": "python",
+                        "python_no_user_site": True,
                         "why": "fixture import through source path",
                     },
                 ],
@@ -1744,6 +1745,9 @@ def test_paper_baseline_probe_collects_source_readiness(tmp_path):
         "pass",
         "pass",
     ]
+    import_check = payload["probes"][0]["checks"][2]
+    assert import_check["pythonpath"] == "python"
+    assert import_check["python_no_user_site"] is True
 
 
 def test_paper_probe_status_update_materializes_machine_status(tmp_path):
@@ -1886,7 +1890,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert any(
         action["source"] == "probe"
         and action["paper_baseline_id"] == "sglang"
-        and "Run SGLang" in action["action"]
+        and "Install SGLang runtime dependencies" in action["action"]
         for action in llm_claim["next_actions"]
     )
     llm_readiness_ids = {
@@ -2037,7 +2041,7 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         item["claim_id"] == "llm_serving_paper_baselines"
         and item["source"] == "probe"
         and item["paper_baseline_id"] == "sglang"
-        and "Run SGLang" in item["action"]
+        and "Install SGLang runtime dependencies" in item["action"]
         for item in work_items
     )
     assert not any(
@@ -2668,7 +2672,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert (
             item["latest_artifact_root"]
             == "tmp/cuda-backend/paper-baselines/probes/"
-            "paired-a100-h200-61af3f01/"
+            "paired-a100-h200-86ea3913/"
         )
         assert item["checks"]
         assert item["next_action"]
@@ -2711,6 +2715,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
             }
             assert "mirage.mpk.base_dynamic_shard_loader" in imported_modules
         if item["paper_baseline_id"] == "sglang":
+            probed_modules = {
+                check["module"]
+                for check in item["checks"]
+                if check["kind"] == "python_module"
+            }
+            assert {"orjson", "torchvision"} <= probed_modules
             imported_modules = {
                 check["module"]
                 for check in item["checks"]
@@ -2721,6 +2731,28 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 "sglang.bench_offline_throughput",
                 "sglang.bench_one_batch",
             } <= imported_modules
+            assert all(
+                check.get("python_no_user_site") is True
+                for check in item["checks"]
+                if check["kind"] == "python_import"
+            )
+        if item["paper_baseline_id"] == "vllm":
+            imported_modules = {
+                check["module"]
+                for check in item["checks"]
+                if check["kind"] == "python_import"
+            }
+            assert {
+                "vllm",
+                "vllm.entrypoints.cli.main",
+                "vllm.entrypoints.openai.api_server",
+                "vllm.engine.arg_utils",
+            } <= imported_modules
+            assert all(
+                check.get("python_no_user_site") is True
+                for check in item["checks"]
+                if check["kind"] == "python_import"
+            )
     readiness_by_run = {
         item["paper_baseline_run_id"]: item
         for item in paper_baseline_run_readiness["paper_baseline_run_readiness"]

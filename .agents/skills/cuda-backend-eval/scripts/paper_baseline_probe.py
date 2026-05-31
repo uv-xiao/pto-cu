@@ -127,21 +127,11 @@ def check_py_compile(source_root: Path, check: dict[str, Any]) -> dict[str, Any]
     }
 
 
-def check_python_module(check: dict[str, Any]) -> dict[str, Any]:
-    module = str(check["module"])
-    found = importlib.util.find_spec(module) is not None
-    return {
-        "kind": "python_module",
-        "module": module,
-        "why": check["why"],
-        "status": "pass" if found else "fail",
-    }
-
-
-def check_python_import(source_root: Path, check: dict[str, Any]) -> dict[str, Any]:
-    module = str(check["module"])
-    pythonpath = check.get("pythonpath")
+def build_python_env(source_root: Path, check: dict[str, Any]) -> dict[str, str]:
     env = os.environ.copy()
+    if check.get("python_no_user_site") is True:
+        env["PYTHONNOUSERSITE"] = "1"
+    pythonpath = check.get("pythonpath")
     if pythonpath:
         path = source_root / str(pythonpath)
         env["PYTHONPATH"] = (
@@ -149,6 +139,55 @@ def check_python_import(source_root: Path, check: dict[str, Any]) -> dict[str, A
             if env.get("PYTHONPATH")
             else str(path)
         )
+    return env
+
+
+def check_python_module(source_root: Path, check: dict[str, Any]) -> dict[str, Any]:
+    module = str(check["module"])
+    base = {
+        "kind": "python_module",
+        "module": module,
+        "why": check["why"],
+    }
+    if check.get("python_no_user_site") is True or check.get("pythonpath"):
+        env = build_python_env(source_root, check)
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import importlib.util, sys; "
+                    f"sys.exit(0 if importlib.util.find_spec({module!r}) "
+                    "is not None else 1)"
+                ),
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=30,
+            check=False,
+            env=env,
+        )
+        if check.get("pythonpath"):
+            base["pythonpath"] = check.get("pythonpath")
+        if check.get("python_no_user_site") is True:
+            base["python_no_user_site"] = True
+        base.update(
+            {
+                "status": "pass" if result.returncode == 0 else "fail",
+                "returncode": result.returncode,
+                "output": result.stdout[-4000:],
+            }
+        )
+        return base
+    found = importlib.util.find_spec(module) is not None
+    base["status"] = "pass" if found else "fail"
+    return base
+
+
+def check_python_import(source_root: Path, check: dict[str, Any]) -> dict[str, Any]:
+    module = str(check["module"])
+    env = build_python_env(source_root, check)
     result = subprocess.run(
         [sys.executable, "-c", f"import importlib; importlib.import_module({module!r})"],
         text=True,
@@ -158,15 +197,19 @@ def check_python_import(source_root: Path, check: dict[str, Any]) -> dict[str, A
         check=False,
         env=env,
     )
-    return {
+    payload = {
         "kind": "python_import",
         "module": module,
-        "pythonpath": pythonpath,
         "why": check["why"],
         "status": "pass" if result.returncode == 0 else "fail",
         "returncode": result.returncode,
         "output": result.stdout[-4000:],
     }
+    if check.get("pythonpath"):
+        payload["pythonpath"] = check.get("pythonpath")
+    if check.get("python_no_user_site") is True:
+        payload["python_no_user_site"] = True
+    return payload
 
 
 def collect_check(source_root: Path, check: dict[str, Any]) -> dict[str, Any]:
@@ -176,7 +219,7 @@ def collect_check(source_root: Path, check: dict[str, Any]) -> dict[str, Any]:
     if kind == "py_compile":
         return check_py_compile(source_root, check)
     if kind == "python_module":
-        return check_python_module(check)
+        return check_python_module(source_root, check)
     if kind == "python_import":
         return check_python_import(source_root, check)
     fail(f"unknown probe check kind: {kind}")

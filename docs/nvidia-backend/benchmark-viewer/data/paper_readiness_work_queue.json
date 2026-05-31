@@ -148,7 +148,7 @@
       "paper_baseline_run_id": "",
       "execution_attempt_id": "",
       "status": "partial",
-      "action": "Install vLLM from the pinned source checkout, start a server, and run bench serve plus throughput with shared prompt/decode settings.",
+      "action": "Install vLLM runtime dependencies from the pinned source checkout, then start a server and run bench serve plus throughput with shared prompt/decode settings.",
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
@@ -167,7 +167,7 @@
       "paper_baseline_run_id": "",
       "execution_attempt_id": "",
       "status": "partial",
-      "action": "Run SGLang launch_server, bench_serving, offline throughput, and one-batch commands under the shared workload policy.",
+      "action": "Install SGLang runtime dependencies in an isolated evaluation venv, then run launch_server, bench_serving, offline throughput, and one-batch commands under the shared workload policy.",
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     }
   ]

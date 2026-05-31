@@ -96,10 +96,6 @@ def probe_by_baseline(probes: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return by_id
 
 
-def is_planned_run(run: dict[str, Any]) -> bool:
-    return run.get("status", "planned_not_run") != "imported_to_viewer"
-
-
 def python_entrypoints(command: str) -> list[str]:
     try:
         tokens = shlex.split(command)
@@ -336,8 +332,6 @@ def build_run_readiness(
     records: list[dict[str, Any]] = []
     for run in require_records(runs, "paper_baseline_runs"):
         run_id = run.get("id")
-        if not is_planned_run(run):
-            continue
         baseline_id = run.get("paper_baseline_id")
         if not isinstance(baseline_id, str):
             fail(f"{run_id} missing paper_baseline_id")

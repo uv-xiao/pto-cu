@@ -2501,3 +2501,55 @@ Each entry must include:
   stable VDCores instrumentation mode or an explicit diagnostic-only paper
   treatment, keeping final latency/correctness rows separate from diagnostic
   scheduler counters.
+
+### 2026-06-01 - Serving Baseline Probe Scope
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned vLLM/SGLang
+  source-entrypoint and dependency probe refinement for the LLM serving
+  paper-baseline blocker.
+- Exact Codex command or script invocation: updated
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py` and
+  `paper_baseline_probes.json`, then ran
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py --sync-remote-tree --local-python .venv/bin/python`.
+  The paired runner used tree sync for H200, then copied back
+  `tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/h200-probe.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready serving
+  baseline evaluation readiness.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: probe tooling, benchmark-viewer probe and
+  run-readiness data, generated audit/work-queue/goal-progress data, focused
+  review tests, dispatch log, changelog docs, and local `tmp/` probe
+  artifacts. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: vLLM source imports now pass from the
+  pinned checkout on A100 and H200, but installed `vllm`, server import, and
+  engine argument imports remain blocked on runtime dependencies. SGLang
+  benchmark module imports are now checked with `PYTHONNOUSERSITE=1`; both
+  A100 and H200 report missing isolated `orjson` and `torchvision`, and H200
+  also reports no installed `sglang` module.
+- Verification commands and results:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py --sync-remote-tree --local-python .venv/bin/python`
+  -> wrote paired A100/H200 probes under
+  `tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_run_readiness.py --commit 86ea3913 --output-root tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-86ea3913`
+  -> wrote run-readiness JSON;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py`
+  -> refreshed audit/work-queue/goal-progress JSON;
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q`
+  -> `33 passed`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/checks/validate_benchmark_viewer_data.py`
+  -> `benchmark viewer data validation passed`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/checks/validate_nvidia_changelog.py`
+  -> `nvidia changelog validation passed`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/checks/check_nvidia_review_ready.py`
+  -> `nvidia review guard passed`;
+  `jq empty docs/nvidia-backend/benchmark-viewer/data/*.json && git diff --check`
+  -> passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the serving-baseline blocker is narrower
+  and reviewable. The next execution slice should build isolated vLLM and
+  SGLang evaluation environments instead of installing their large dependency
+  stacks into the shared project venv.
