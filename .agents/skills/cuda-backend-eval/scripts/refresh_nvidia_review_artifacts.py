@@ -54,12 +54,14 @@ def main() -> None:
     runs = audit_module.load_json(audit_module.DEFAULT_RUNS)
     probes = audit_module.load_json(audit_module.DEFAULT_PROBES)
     run_readiness = audit_module.load_json(audit_module.DEFAULT_RUN_READINESS)
+    execution_attempts = audit_module.load_json(audit_module.DEFAULT_ATTEMPTS)
     results = audit_module.load_json(audit_module.DEFAULT_RESULTS)
     audit = audit_module.build_readiness_audit(
         matrix=matrix,
         runs=runs,
         probes=probes,
         run_readiness=run_readiness,
+        execution_attempts=execution_attempts,
         results=results,
     )
     audit_path = output_dir / "paper_readiness_audit.json"

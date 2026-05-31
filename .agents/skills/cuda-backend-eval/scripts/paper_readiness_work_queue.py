@@ -76,6 +76,7 @@ def build_work_queue(
             source = require_string(action, "source", claim_id)
             paper_baseline_id = str(action.get("paper_baseline_id", ""))
             paper_baseline_run_id = str(action.get("paper_baseline_run_id", ""))
+            execution_attempt_id = str(action.get("execution_attempt_id", ""))
             owner = paper_baseline_run_id or paper_baseline_id or source
             item_index = len(work_items) + 1
             work_items.append(
@@ -99,6 +100,7 @@ def build_work_queue(
                     "owner": owner,
                     "paper_baseline_id": paper_baseline_id,
                     "paper_baseline_run_id": paper_baseline_run_id,
+                    "execution_attempt_id": execution_attempt_id,
                     "status": require_string(action, "status", claim_id),
                     "action": require_string(action, "action", claim_id),
                     "promotion_gate": require_string(

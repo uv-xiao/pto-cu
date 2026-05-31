@@ -48,8 +48,9 @@ The generated readiness audit in
 human-reviewable summary of that matrix. It is produced by
 `.agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py` and folds
 matrix gaps, paper-baseline run statuses, run-readiness statuses,
-readiness-probe statuses, missing viewer-result evidence, and generated next
-actions into one review record per claim. The audit must stay
+readiness-probe statuses, latest execution-attempt diagnostics, missing
+viewer-result evidence, and generated next actions into one review record per
+claim. The audit must stay
 `not_paper_ready` until every claim has a ready matrix status and no generated
 blockers.
 The generated work queue in

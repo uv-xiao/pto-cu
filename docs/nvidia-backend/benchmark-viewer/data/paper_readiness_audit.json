@@ -5,6 +5,7 @@
     "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
     "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
     "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json",
+    "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_execution_attempts.json",
     "docs/nvidia-backend/benchmark-viewer/data/results.json"
   ],
   "overall_status": "not_paper_ready",
@@ -25,6 +26,7 @@
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [],
       "paper_baseline_run_readiness_statuses": [],
+      "execution_attempt_statuses": [],
       "probe_statuses": [],
       "blockers": [],
       "next_actions": [],
@@ -84,6 +86,95 @@
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }
       ],
+      "execution_attempt_statuses": [
+        {
+          "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+          "paper_baseline_id": "mpk",
+          "execution_attempt_id": "mpk_qwen3_0p6b_token1_memcheck_h200",
+          "title": "MPK Qwen3 0.6B Persistent One-Token Memcheck",
+          "status": "failed_after_kernel_launch",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/compute-sanitizer-712240f8-offline/token1_noprofile/",
+          "blocker": "The MPK scheduler writes 4 bytes through null paged_kv_indices_snapshot storage in prepare_next_batch at persistent_kernel.cuh:273 before torch.cuda.synchronize reports illegal memory access.",
+          "summary": {
+            "mode": "mpk_qwen3_0p6b_token1_memcheck",
+            "model": "Qwen/Qwen3-0.6B",
+            "offline_cache_used": true,
+            "max_new_tokens": 1,
+            "max_seq_length": 128,
+            "max_num_batched_requests": 1,
+            "max_num_batched_tokens": 1,
+            "total_tasks": 7261,
+            "total_events": 1870,
+            "tool": "compute-sanitizer memcheck",
+            "target_processes": "all",
+            "sanitizer_exit_status": 1,
+            "error_summary_count": 4,
+            "init_api_error": {
+              "api": "cudaDeviceSetLimit",
+              "cuda_error": "cudaErrorInvalidValue",
+              "host_entry": "init_persistent_kernel",
+              "host_source": "persistent_kernel.py:2549"
+            },
+            "first_invalid_access": {
+              "kind": "Invalid __global__ write",
+              "size_bytes": 4,
+              "function": "prepare_next_batch",
+              "source": "persistent_kernel.cuh:273",
+              "thread": "(0,0,0)",
+              "block": "(11,0,0)",
+              "address": "0x0",
+              "device_frame": "execute_scheduler",
+              "device_source": "persistent_kernel.cuh:1235",
+              "kernel_frame": "scheduler_kernel",
+              "kernel_source": "persistent_kernel.cuh:1391"
+            },
+            "host_launch_entry": "launch_persistent_kernel",
+            "host_sync_entry": "torch.cuda.synchronize",
+            "compiled": true,
+            "launched": true,
+            "correctness_completed": false,
+            "resource_policy_measured": false
+          }
+        },
+        {
+          "paper_baseline_run_id": "vdcores_resource_policy_trace",
+          "paper_baseline_id": "vdcores",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_final_rms_memcheck_h200",
+          "title": "VDCores Qwen3 1.7B Final-RMS Memcheck",
+          "status": "failed_after_kernel_launch",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-compute-sanitizer-f300a3b7/",
+          "blocker": "The earliest launched final_rms cut performs invalid 4096-byte global reads in cp_async_bulk through ldwarp_execute_singlethread, followed by warp illegal-address reports in the VDCores load warp.",
+          "summary": {
+            "mode": "vdcores_qwen_final_rms_memcheck",
+            "model": "Qwen/Qwen3-1.7B",
+            "offline_cache_used": true,
+            "runtime_rebuilt_with_required_ops": true,
+            "debug_num_layers": 1,
+            "debug_stop_after": "final_rms",
+            "tool": "compute-sanitizer memcheck",
+            "sanitizer_exit_status": 99,
+            "error_summary_count": 130,
+            "invalid_read_size_bytes": 4096,
+            "first_invalid_read": {
+              "function": "cuda::ptx::cp_async_bulk",
+              "source": "cp_async_bulk.h:62",
+              "device_frame": "ldwarp_execute_singlethread",
+              "device_source": "ldwarp.cuh:52",
+              "kernel_source": "dae2.cuh:167",
+              "thread": "(192,0,0)",
+              "example_block": "(68,0,0)"
+            },
+            "warp_illegal_address": {
+              "device_frame": "ldwarp_execute_singlethread",
+              "device_source": "ldwarp.cuh:113",
+              "thread": "(192,0,0)"
+            },
+            "host_entry": "launch_dae",
+            "correctness_completed": false,
+            "resource_policy_measured": false
+          }
+        }
+      ],
       "probe_statuses": [
         {
           "paper_baseline_id": "mpk",
@@ -124,13 +215,31 @@
         "MPK persistent-kernel run with matching workload metadata.",
         "VDCores run with matching queue/resource-policy metadata.",
         "Paper baseline run mpk_persistent_scheduler_trace is planned_not_run, not imported_to_viewer.",
-        "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer."
+        "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
+        "Latest execution attempt mpk_qwen3_0p6b_token1_memcheck_h200 for mpk_persistent_scheduler_trace is failed_after_kernel_launch: The MPK scheduler writes 4 bytes through null paged_kv_indices_snapshot storage in prepare_next_batch at persistent_kernel.cuh:273 before torch.cuda.synchronize reports illegal memory access.",
+        "Latest execution attempt vdcores_qwen3_1p7b_final_rms_memcheck_h200 for vdcores_resource_policy_trace is failed_after_kernel_launch: The earliest launched final_rms cut performs invalid 4096-byte global reads in cp_async_bulk through ldwarp_execute_singlethread, followed by warp illegal-address reports in the VDCores load warp."
       ],
       "next_actions": [
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
           "action": "MPK persistent-kernel run with matching workload metadata."
+        },
+        {
+          "source": "execution_attempt",
+          "paper_baseline_id": "mpk",
+          "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+          "execution_attempt_id": "mpk_qwen3_0p6b_token1_memcheck_h200",
+          "status": "failed_after_kernel_launch",
+          "action": "Resolve latest execution attempt mpk_qwen3_0p6b_token1_memcheck_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: The MPK scheduler writes 4 bytes through null paged_kv_indices_snapshot storage in prepare_next_batch at persistent_kernel.cuh:273 before torch.cuda.synchronize reports illegal memory access."
+        },
+        {
+          "source": "execution_attempt",
+          "paper_baseline_id": "vdcores",
+          "paper_baseline_run_id": "vdcores_resource_policy_trace",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_final_rms_memcheck_h200",
+          "status": "failed_after_kernel_launch",
+          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_final_rms_memcheck_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: The earliest launched final_rms cut performs invalid 4096-byte global reads in cp_async_bulk through ldwarp_execute_singlethread, followed by warp illegal-address reports in the VDCores load warp."
         }
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
@@ -175,6 +284,7 @@
         }
       ],
       "paper_baseline_run_readiness_statuses": [],
+      "execution_attempt_statuses": [],
       "probe_statuses": [
         {
           "paper_baseline_id": "thunderkittens",
@@ -332,6 +442,23 @@
             "Readiness probe sglang_source_entrypoints is partial: A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
+        }
+      ],
+      "execution_attempt_statuses": [
+        {
+          "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
+          "paper_baseline_id": "mpk",
+          "execution_attempt_id": "mpk_qwen3_0p6b_native_token2_h200",
+          "title": "MPK Qwen3 0.6B Native Bring-Up",
+          "status": "pass",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/",
+          "blocker": "",
+          "summary": {
+            "mode": "torch",
+            "prompt_length": 39,
+            "generate_length": 2,
+            "latency_ms_per_token": 238.19888305664062
+          }
         }
       ],
       "probe_statuses": [

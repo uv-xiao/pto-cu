@@ -1014,6 +1014,7 @@ def validate_paper_readiness_audit(
     runs: dict[str, Any],
     probes: dict[str, Any],
     run_readiness: dict[str, Any],
+    execution_attempts: dict[str, Any],
     results: dict[str, Any],
 ) -> None:
     if audit.get("schema_version") != 1:
@@ -1023,6 +1024,7 @@ def validate_paper_readiness_audit(
         "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
         "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
         "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json",
+        "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_execution_attempts.json",
         "docs/nvidia-backend/benchmark-viewer/data/results.json",
     }
     sources = audit.get("source_files")
@@ -1050,6 +1052,7 @@ def validate_paper_readiness_audit(
             "missing_viewer_results",
             "paper_baseline_run_statuses",
             "paper_baseline_run_readiness_statuses",
+            "execution_attempt_statuses",
             "probe_statuses",
             "blockers",
             "next_actions",
@@ -1064,15 +1067,18 @@ def validate_paper_readiness_audit(
             if source not in {
                 "matrix_missing_evidence",
                 "run_readiness",
+                "execution_attempt",
                 "probe",
             }:
                 fail(f"{owner} has invalid next action source: {source}")
             require_string(action, "status", owner)
             require_string(action, "action", owner)
-            if source in {"run_readiness", "probe"}:
+            if source in {"run_readiness", "execution_attempt", "probe"}:
                 require_string(action, "paper_baseline_id", owner)
-            if source == "run_readiness":
+            if source in {"run_readiness", "execution_attempt"}:
                 require_string(action, "paper_baseline_run_id", owner)
+            if source == "execution_attempt":
+                require_string(action, "execution_attempt_id", owner)
         missing_count = claim.get("missing_evidence_count")
         if isinstance(missing_count, bool) or not isinstance(missing_count, int):
             fail(f"{owner} missing_evidence_count is not an integer")
@@ -1088,6 +1094,7 @@ def validate_paper_readiness_audit(
         runs=runs,
         probes=probes,
         run_readiness=run_readiness,
+        execution_attempts=execution_attempts,
         results=results,
     )
     if audit != generated:
@@ -1155,7 +1162,11 @@ def validate_paper_readiness_work_queue(
             value = item.get(key)
             if isinstance(value, bool) or not isinstance(value, int):
                 fail(f"{owner} {key} is not an integer")
-        for key in ("paper_baseline_id", "paper_baseline_run_id"):
+        for key in (
+            "paper_baseline_id",
+            "paper_baseline_run_id",
+            "execution_attempt_id",
+        ):
             if not isinstance(item.get(key), str):
                 fail(f"{owner} {key} is not a string")
         if item["ready_for_paper_claim"]:
@@ -1329,6 +1340,7 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         runs=paper_baseline_runs,
         probes=paper_baseline_probes,
         run_readiness=paper_baseline_run_readiness,
+        execution_attempts=paper_baseline_execution_attempts,
         results=results,
     )
     validate_paper_readiness_work_queue(

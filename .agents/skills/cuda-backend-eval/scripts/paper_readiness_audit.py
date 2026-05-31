@@ -16,6 +16,7 @@ DEFAULT_MATRIX = VIEWER_DATA / "paper_evaluation_matrix.json"
 DEFAULT_RUNS = VIEWER_DATA / "paper_baseline_runs.json"
 DEFAULT_PROBES = VIEWER_DATA / "paper_baseline_probes.json"
 DEFAULT_RUN_READINESS = VIEWER_DATA / "paper_baseline_run_readiness.json"
+DEFAULT_ATTEMPTS = VIEWER_DATA / "paper_baseline_execution_attempts.json"
 DEFAULT_RESULTS = VIEWER_DATA / "results.json"
 
 
@@ -194,6 +195,37 @@ def paper_baseline_run_readiness_statuses(
     return statuses
 
 
+def execution_attempt_statuses(
+    run_statuses: list[dict[str, Any]],
+    attempts_by_run: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    statuses: list[dict[str, Any]] = []
+    for run in run_statuses:
+        if run["status"] == "imported_to_viewer":
+            continue
+        run_id = run["id"]
+        attempts = attempts_by_run.get(run_id, [])
+        if not attempts:
+            continue
+        latest = attempts[-1]
+        summary = latest.get("summary")
+        if not isinstance(summary, dict):
+            summary = {}
+        statuses.append(
+            {
+                "paper_baseline_run_id": run_id,
+                "paper_baseline_id": latest["paper_baseline_id"],
+                "execution_attempt_id": latest["id"],
+                "title": latest["title"],
+                "status": latest["status"],
+                "artifact_root": latest["artifact_root"],
+                "blocker": latest.get("blocker", ""),
+                "summary": summary,
+            }
+        )
+    return statuses
+
+
 def claim_blockers(
     *,
     paper_baseline_ids: list[str],
@@ -201,6 +233,7 @@ def claim_blockers(
     missing_viewer_results: list[str],
     run_statuses: list[dict[str, Any]],
     run_readiness_statuses: list[dict[str, Any]],
+    execution_attempts: list[dict[str, Any]],
     probes: list[dict[str, Any]],
 ) -> list[str]:
     blockers = list(missing_evidence)
@@ -233,6 +266,17 @@ def claim_blockers(
             f"{readiness['paper_baseline_run_id']} is "
             f"{readiness['latest_status']}{detail}"
         )
+    for attempt in execution_attempts:
+        if attempt["status"] == "pass":
+            continue
+        blocker = str(attempt.get("blocker", "")).strip()
+        detail = f": {blocker}" if blocker else ""
+        blockers.append(
+            "Latest execution attempt "
+            f"{attempt['execution_attempt_id']} for "
+            f"{attempt['paper_baseline_run_id']} is "
+            f"{attempt['status']}{detail}"
+        )
     return blockers
 
 
@@ -240,6 +284,7 @@ def claim_next_actions(
     *,
     missing_evidence: list[str],
     run_readiness_statuses: list[dict[str, Any]],
+    execution_attempts: list[dict[str, Any]],
     probes: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
@@ -279,6 +324,26 @@ def claim_next_actions(
                 "action": action,
             }
         )
+    for attempt in execution_attempts:
+        if attempt["status"] == "pass":
+            continue
+        blocker = str(attempt.get("blocker", "")).strip()
+        action = (
+            f"Resolve latest execution attempt {attempt['execution_attempt_id']}"
+            f" before importing {attempt['paper_baseline_run_id']}."
+        )
+        if blocker:
+            action = f"{action} Diagnostic blocker: {blocker}"
+        append_action(
+            {
+                "source": "execution_attempt",
+                "paper_baseline_id": attempt["paper_baseline_id"],
+                "paper_baseline_run_id": attempt["paper_baseline_run_id"],
+                "execution_attempt_id": attempt["execution_attempt_id"],
+                "status": attempt["status"],
+                "action": action,
+            }
+        )
     for probe in probes:
         if probe["latest_status"] == "pass":
             continue
@@ -302,6 +367,7 @@ def build_readiness_audit(
     runs: dict[str, Any],
     probes: dict[str, Any],
     run_readiness: dict[str, Any],
+    execution_attempts: dict[str, Any],
     results: dict[str, Any],
 ) -> dict[str, Any]:
     claims = require_records(matrix, "paper_evaluation_matrix")
@@ -310,6 +376,10 @@ def build_readiness_audit(
     readiness_records = require_records(
         run_readiness,
         "paper_baseline_run_readiness",
+    )
+    attempt_records = require_records(
+        execution_attempts,
+        "paper_baseline_execution_attempts",
     )
     current_results = result_index(results)
 
@@ -328,6 +398,11 @@ def build_readiness_audit(
         for readiness in readiness_records
         if isinstance(readiness.get("paper_baseline_run_id"), str)
     }
+    attempts_by_run: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for attempt in attempt_records:
+        paper_baseline_run_id = attempt.get("paper_baseline_run_id")
+        if isinstance(paper_baseline_run_id, str):
+            attempts_by_run[paper_baseline_run_id].append(attempt)
 
     claim_audits: list[dict[str, Any]] = []
     for claim in claims:
@@ -359,17 +434,23 @@ def build_readiness_audit(
             run_statuses,
             readiness_by_run,
         )
+        execution_attempt_items = execution_attempt_statuses(
+            run_statuses,
+            attempts_by_run,
+        )
         blockers = claim_blockers(
             paper_baseline_ids=paper_baseline_ids,
             missing_evidence=missing_evidence,
             missing_viewer_results=missing_results,
             run_statuses=run_statuses,
             run_readiness_statuses=run_readiness_items,
+            execution_attempts=execution_attempt_items,
             probes=probe_items,
         )
         next_actions = claim_next_actions(
             missing_evidence=missing_evidence,
             run_readiness_statuses=run_readiness_items,
+            execution_attempts=execution_attempt_items,
             probes=probe_items,
         )
         ready = claim["status"] == "ready_for_paper_claim" and not blockers
@@ -384,6 +465,7 @@ def build_readiness_audit(
                 "missing_viewer_results": missing_results,
                 "paper_baseline_run_statuses": run_statuses,
                 "paper_baseline_run_readiness_statuses": run_readiness_items,
+                "execution_attempt_statuses": execution_attempt_items,
                 "probe_statuses": probe_items,
                 "blockers": blockers,
                 "next_actions": [] if ready else next_actions,
@@ -399,6 +481,7 @@ def build_readiness_audit(
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json",
+            "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_execution_attempts.json",
             "docs/nvidia-backend/benchmark-viewer/data/results.json",
         ],
         "overall_status": "paper_ready"
@@ -416,6 +499,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--runs", type=Path, default=DEFAULT_RUNS)
     parser.add_argument("--probes", type=Path, default=DEFAULT_PROBES)
     parser.add_argument("--run-readiness", type=Path, default=DEFAULT_RUN_READINESS)
+    parser.add_argument("--execution-attempts", type=Path, default=DEFAULT_ATTEMPTS)
     parser.add_argument("--results", type=Path, default=DEFAULT_RESULTS)
     parser.add_argument("--output", type=Path)
     return parser.parse_args()
@@ -428,6 +512,7 @@ def main() -> None:
         runs=load_json(args.runs),
         probes=load_json(args.probes),
         run_readiness=load_json(args.run_readiness),
+        execution_attempts=load_json(args.execution_attempts),
         results=load_json(args.results),
     )
     if args.output:

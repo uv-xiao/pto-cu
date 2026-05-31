@@ -26,6 +26,7 @@ DEFAULT_RESULTS = VIEWER_DATA / "results.json"
 DEFAULT_MATRIX = VIEWER_DATA / "paper_evaluation_matrix.json"
 DEFAULT_PROBES = VIEWER_DATA / "paper_baseline_probes.json"
 DEFAULT_RUN_READINESS = VIEWER_DATA / "paper_baseline_run_readiness.json"
+DEFAULT_ATTEMPTS = VIEWER_DATA / "paper_baseline_execution_attempts.json"
 DEFAULT_AUDIT = VIEWER_DATA / "paper_readiness_audit.json"
 REQUIRED_METRIC_KEYS = {
     "correctness": ("correctness",),
@@ -200,6 +201,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--matrix", type=Path, default=DEFAULT_MATRIX)
     parser.add_argument("--probes", type=Path, default=DEFAULT_PROBES)
     parser.add_argument("--run-readiness", type=Path, default=DEFAULT_RUN_READINESS)
+    parser.add_argument("--execution-attempts", type=Path, default=DEFAULT_ATTEMPTS)
     parser.add_argument("--viewer-output", type=Path)
     parser.add_argument("--audit-output", type=Path, default=DEFAULT_AUDIT)
     return parser.parse_args()
@@ -240,6 +242,7 @@ def main() -> None:
         runs=updated_runs,
         probes=load_json(args.probes),
         run_readiness=load_json(args.run_readiness),
+        execution_attempts=load_json(args.execution_attempts),
         results=updated_results,
     )
     write_json(args.audit_output, audit)

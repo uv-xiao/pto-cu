@@ -173,8 +173,9 @@ Each paper-evaluation matrix claim must include:
 The generated paper-readiness audit lives in
 `docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json`. It is
 derived from the paper-evaluation matrix, paper-baseline runs, readiness
-probes, run-readiness records, and current viewer results. Do not hand-edit it
-after changing those inputs; regenerate it with
+probes, run-readiness records, paper-baseline execution attempts, and current
+viewer results. Do not hand-edit it after changing those inputs; regenerate it
+with
 `.agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py`.
 
 Each audit claim must include:
@@ -185,10 +186,12 @@ Each audit claim must include:
 - paper-baseline run statuses attached to the claim;
 - run-readiness statuses for non-imported paper-baseline runs attached to the
   claim;
+- latest execution-attempt diagnostics for non-imported paper-baseline runs;
 - readiness-probe statuses for paper baselines in the claim;
-- blockers copied from missing evidence plus generated run/probe gaps;
-- next actions copied from matrix gaps, run-readiness records, and failed or
-  partial readiness probes;
+- blockers copied from missing evidence plus generated run, execution-attempt,
+  and probe gaps;
+- next actions copied from matrix gaps, run-readiness records, failed
+  execution attempts, and failed or partial readiness probes;
 - the promotion gate from the source matrix.
 
 The viewer renders this audit before the matrix rows. The data validator
@@ -200,8 +203,10 @@ It is derived from `paper_readiness_audit.json` by
 `.agents/skills/cuda-backend-eval/scripts/paper_readiness_work_queue.py` and
 must not be hand-edited. It flattens every blocked claim's `next_actions` into
 reviewable work items with claim, source, owner, status, action, priority, and
-promotion-gate fields. The viewer renders it as the `Work Queue` tab, and the
-data validator regenerates it from the audit.
+promotion-gate fields. Execution-attempt work items also carry
+`execution_attempt_id` so reviewers can jump from a queued blocker to the
+sanitizer or launch-failure evidence. The viewer renders it as the `Work
+Queue` tab, and the data validator regenerates it from the audit.
 
 The generated ultimate-goal progress audit lives in
 `docs/nvidia-backend/benchmark-viewer/data/goal_progress.json`. It is derived

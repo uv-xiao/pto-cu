@@ -1865,6 +1865,34 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         item["paper_baseline_run_id"]: item
         for item in persistent_claim["paper_baseline_run_readiness_statuses"]
     }
+    persistent_attempts = {
+        item["paper_baseline_run_id"]: item
+        for item in persistent_claim["execution_attempt_statuses"]
+    }
+    assert persistent_attempts["mpk_persistent_scheduler_trace"][
+        "execution_attempt_id"
+    ] == "mpk_qwen3_0p6b_token1_memcheck_h200"
+    assert "paged_kv_indices_snapshot" in persistent_attempts[
+        "mpk_persistent_scheduler_trace"
+    ]["blocker"]
+    assert persistent_attempts["vdcores_resource_policy_trace"][
+        "execution_attempt_id"
+    ] == "vdcores_qwen3_1p7b_final_rms_memcheck_h200"
+    assert "cp_async_bulk" in persistent_attempts[
+        "vdcores_resource_policy_trace"
+    ]["blocker"]
+    assert any(
+        "Latest execution attempt mpk_qwen3_0p6b_token1_memcheck_h200"
+        in blocker
+        for blocker in persistent_claim["blockers"]
+    )
+    assert any(
+        action["source"] == "execution_attempt"
+        and action["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
+        and action["execution_attempt_id"] == "mpk_qwen3_0p6b_token1_memcheck_h200"
+        and "paged_kv_indices_snapshot" in action["action"]
+        for action in persistent_claim["next_actions"]
+    )
     assert not any(
         "Readiness probe for mpk is partial" in blocker
         for blocker in persistent_claim["blockers"]
@@ -1957,8 +1985,9 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 8
+    assert committed["summary"]["total_work_items"] == 10
     assert committed["summary"]["work_items_by_source"] == {
+        "execution_attempt": 2,
         "matrix_missing_evidence": 3,
         "probe": 2,
         "run_readiness": 3,
@@ -1975,6 +2004,23 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     assert not any(
         item["claim_id"] == "persistent_device_scheduler_overhead"
         and item["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
+        and item["source"] == "run_readiness"
+        for item in work_items
+    )
+    assert any(
+        item["claim_id"] == "persistent_device_scheduler_overhead"
+        and item["source"] == "execution_attempt"
+        and item["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
+        and item["execution_attempt_id"] == "mpk_qwen3_0p6b_token1_memcheck_h200"
+        and "paged_kv_indices_snapshot" in item["action"]
+        for item in work_items
+    )
+    assert any(
+        item["claim_id"] == "persistent_device_scheduler_overhead"
+        and item["source"] == "execution_attempt"
+        and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
+        and item["execution_attempt_id"] == "vdcores_qwen3_1p7b_final_rms_memcheck_h200"
+        and "cp_async_bulk" in item["action"]
         for item in work_items
     )
 
@@ -2010,7 +2056,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 8
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 10
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
