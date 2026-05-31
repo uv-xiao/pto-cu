@@ -2129,3 +2129,40 @@ Each entry must include:
 - Handoff summary and remaining gaps: repo CI is closed for the active
   ultimate goal. Local review guards, benchmark artifacts, changelog reports,
   and dispatch-log evidence remain the required progress gates.
+
+### 2026-06-01 - VDCores Logits Schedule Introspection
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  logits scheduling diagnostic for the persistent scheduler baseline gap.
+- Exact Codex command or script invocation: copied the tmp-only probe
+  `vdcores_logits_schedule_probe.py` to the H200 checkout, then ran it from
+  `tmp/baselines/vdcores` with `CUDA_VISIBLE_DEVICES=7`,
+  `QWEN1P7B_NO_PREFETCH=all`, `QWEN1P7B_LOGITS_SPLIT_M=6`, offline Hugging
+  Face cache, `--debug-num-layers 1`, `--debug-stop-after logits`, and
+  `-N 1`. The probe monkey-patched `dae_app`, called `dae.build_instructions()`,
+  and did not call `launch_dae`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue data, focused review tests, dispatch log,
+  changelog docs, and local `tmp/` raw artifacts copied back from H200. No
+  upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the remote pto-cu checkout had local
+  viewer-data modifications, so the run used the allowed tmp probe-copy path
+  instead of a remote Git refresh. The remote VDCores checkout remains the
+  same diagnostic baseline used by the earlier logits-stage failure.
+- Verification commands and results:
+  remote `logits-schedule-probe-status.txt` -> `0`; raw summary ->
+  `logits_epoch=3`, `logits_slice=50688`, `vocab_size=151936`,
+  `SM64 first logits PC=38`, desc32/33/34 counts `12/3/2`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the illegal-instruction blocker is now
+  localized to the direct logits GEMV instruction window after `final_rms`.
+  The next diagnostic should inspect VDCores memory-slot allocation and
+  `RepeatM` loop handling for the desc32/33/34 direct TMA sequence before any
+  queue/resource-policy timing import.

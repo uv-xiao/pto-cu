@@ -1878,8 +1878,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert "mpk_persistent_scheduler_trace" not in persistent_attempts
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
-    ] == "vdcores_qwen3_1p7b_logits_stage_bisect_h200"
-    assert "co-located Qwen3-1.7B logits stage" in (
+    ] == "vdcores_qwen3_1p7b_logits_schedule_introspection_h200"
+    assert "desc32/33/34 direct TMA sequence" in (
         persistent_attempts["vdcores_resource_policy_trace"]["blocker"]
     )
     assert not any(
@@ -2010,8 +2010,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
         and item["execution_attempt_id"]
-        == "vdcores_qwen3_1p7b_logits_stage_bisect_h200"
-        and "logits projection scheduling" in item["action"]
+        == "vdcores_qwen3_1p7b_logits_schedule_introspection_h200"
+        and "RepeatM loop handling" in item["action"]
         for item in work_items
     )
 
@@ -2709,6 +2709,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_launch_pointer_attr_probe_h200",
         "vdcores_qwen3_1p7b_single_visible_gpu_h200",
         "vdcores_qwen3_1p7b_logits_stage_bisect_h200",
+        "vdcores_qwen3_1p7b_logits_schedule_introspection_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -3233,6 +3234,33 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert "argmax-only or restore-only" in " ".join(
         vdcores_logits_bisect["summary"]["rules_out"]
     )
+    vdcores_logits_schedule = attempts_by_id[
+        "vdcores_qwen3_1p7b_logits_schedule_introspection_h200"
+    ]
+    assert vdcores_logits_schedule["status"] == "blocked"
+    assert vdcores_logits_schedule["summary"]["mode"] == (
+        "vdcores_qwen_logits_schedule_introspection"
+    )
+    assert not vdcores_logits_schedule["summary"]["launch_executed"]
+    assert vdcores_logits_schedule["summary"]["logits_epoch"] == 3
+    assert vdcores_logits_schedule["summary"]["logits_slice"] == 50688
+    assert vdcores_logits_schedule["summary"]["vocab_size"] == 151936
+    assert vdcores_logits_schedule["summary"]["descriptor_map"] == {
+        "32": "logits GEMV loadA matLogitsW[epoch]",
+        "33": "logits GEMV loadB matRMSHidden",
+        "34": "logits GEMV storeC matLogits[epoch]",
+    }
+    assert vdcores_logits_schedule["summary"]["sm64_first_logits_pc"] == 38
+    assert vdcores_logits_schedule["summary"][
+        "sm64_desc32_load_count_in_window"
+    ] == 12
+    assert vdcores_logits_schedule["summary"][
+        "sm64_desc33_load_count_in_window"
+    ] == 3
+    assert vdcores_logits_schedule["summary"][
+        "sm64_desc34_store_count_in_window"
+    ] == 2
+    assert "RepeatM loop handling" in vdcores_logits_schedule["blocker"]
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
@@ -3483,19 +3511,19 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if attempt["paper_baseline_id"] == "vdcores"
             )
             assert vdcores_attempt["execution_attempt_id"] == (
-                "vdcores_qwen3_1p7b_logits_stage_bisect_h200"
+                "vdcores_qwen3_1p7b_logits_schedule_introspection_h200"
             )
             assert (
-                vdcores_attempt["summary"]["first_failing_stage"] == "logits"
+                vdcores_attempt["summary"]["sm64_first_logits_pc"] == 38
             )
             vdcores_actions = [
                 action
                 for action in item["next_actions"]
                 if action.get("execution_attempt_id")
-                == "vdcores_qwen3_1p7b_logits_stage_bisect_h200"
+                == "vdcores_qwen3_1p7b_logits_schedule_introspection_h200"
             ]
             assert vdcores_actions
-            assert "logits projection scheduling" in (
+            assert "RepeatM loop handling" in (
                 vdcores_actions[0]["action"]
             )
         if item["id"] == "host_schedule_launch_overhead":
