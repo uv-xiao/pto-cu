@@ -1878,8 +1878,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert "mpk_persistent_scheduler_trace" not in persistent_attempts
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
-    ] == "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200"
-    assert "runtime load warp consumes the same direct 1D address" in (
+    ] == "vdcores_qwen3_1p7b_pointer_attr_probe_h200"
+    assert "readable by cudaMemcpy before launch" in (
         persistent_attempts["vdcores_resource_policy_trace"]["blocker"]
     )
     assert not any(
@@ -2010,8 +2010,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
         and item["execution_attempt_id"]
-        == "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200"
-        and "runtime load warp consumes the same direct 1D address"
+        == "vdcores_qwen3_1p7b_pointer_attr_probe_h200"
+        and "readable by cudaMemcpy before launch"
         in item["action"]
         for item in work_items
     )
@@ -2706,6 +2706,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_no_prefetch_sweep_h200",
         "vdcores_qwen3_1p7b_minst_provenance_h200",
         "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200",
+        "vdcores_qwen3_1p7b_pointer_attr_probe_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -3101,6 +3102,48 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert "runtime load warp consumes the same direct 1D address" in (
         vdcores_ldwarp["blocker"]
     )
+    vdcores_pointer_attr = attempts_by_id[
+        "vdcores_qwen3_1p7b_pointer_attr_probe_h200"
+    ]
+    assert vdcores_pointer_attr["status"] == "partial"
+    assert vdcores_pointer_attr["summary"]["mode"] == (
+        "vdcores_qwen_pointer_attr_probe"
+    )
+    assert not vdcores_pointer_attr["summary"]["launch_executed"]
+    assert vdcores_pointer_attr["summary"]["direct_record_count"] == 80
+    assert vdcores_pointer_attr["summary"]["direct_load_record_count"] == 40
+    assert (
+        vdcores_pointer_attr["summary"]["recognized_direct_record_count"]
+        == 0
+    )
+    assert (
+        vdcores_pointer_attr["summary"]["unrecognized_direct_record_count"]
+        == 80
+    )
+    assert (
+        vdcores_pointer_attr["summary"][
+            "device_to_host_copy_ok_record_count"
+        ]
+        == 80
+    )
+    assert (
+        vdcores_pointer_attr["summary"][
+            "direct_load_device_to_host_copy_ok_count"
+        ]
+        == 40
+    )
+    sm64_first_direct = vdcores_pointer_attr["summary"][
+        "sm64_first_direct_load"
+    ]
+    assert sm64_first_direct["pc"] == 1
+    assert sm64_first_direct["size_bytes"] == 4096
+    assert sm64_first_direct["runtime_accumulator"] == 212992
+    assert sm64_first_direct["range_status"] == 201
+    assert not sm64_first_direct["range_recognized"]
+    assert sm64_first_direct["copy_status"] == 0
+    assert sm64_first_direct["copy_ok"]
+    assert sm64_first_direct["copy_bytes_requested"] == 4096
+    assert "cudaMemcpy before launch" in vdcores_pointer_attr["blocker"]
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
@@ -3351,21 +3394,20 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if attempt["paper_baseline_id"] == "vdcores"
             )
             assert vdcores_attempt["execution_attempt_id"] == (
-                "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200"
+                "vdcores_qwen3_1p7b_pointer_attr_probe_h200"
             )
             assert (
-                vdcores_attempt["summary"][
-                    "runtime_ldwarp_address_matches_memcheck_first_invalid"
-                ]
+                vdcores_attempt["summary"]["device_to_host_copy_ok_record_count"]
+                == 80
             )
             vdcores_actions = [
                 action
                 for action in item["next_actions"]
                 if action.get("execution_attempt_id")
-                == "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200"
+                == "vdcores_qwen3_1p7b_pointer_attr_probe_h200"
             ]
             assert vdcores_actions
-            assert "runtime load warp consumes the same direct 1D address" in (
+            assert "readable by cudaMemcpy before launch" in (
                 vdcores_actions[0]["action"]
             )
         if item["id"] == "host_schedule_launch_overhead":

@@ -1968,3 +1968,44 @@ Each entry must include:
   the first invalid 4096-byte `cp_async_bulk` read. The VDCores blocker is now
   why the runtime-consumed address is outside sanitizer allocation tracking or
   otherwise unmapped during launch, not missing Python-side MInst provenance.
+
+### 2026-06-01 - VDCores Pointer Attribute Diagnostic
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  pointer-attribute diagnostic for the persistent scheduler baseline gap.
+- Exact Codex command or script invocation: synced a temporary wrapper under
+  `tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-pointer-attrs-sm64-c6e25d3e/`
+  to H200, monkey-patched `dae_app` for one process, built the Qwen3-1.7B
+  one-layer `final_rms` schedule without launch, simulated sampled direct 1D
+  effective addresses, then called `cuMemGetAddressRange` and 4096-byte
+  device-to-host `cudaMemcpy` from those addresses.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, and local `tmp/` raw artifacts copied back
+  from H200. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the probe classifies prelaunch direct
+  addresses and does not launch the failing kernel. It therefore narrows the
+  pointer-validity question but does not produce VDCores correctness or
+  queue/resource-policy timing.
+- Verification commands and results:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q`
+  -> `32 passed`;
+  `validate_benchmark_viewer_data.py` -> passed;
+  `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed;
+  `jq empty docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: 80 sampled direct 1D load/store
+  effective addresses were not classified by `cuMemGetAddressRange`, but all
+  80 copied successfully with device-to-host `cudaMemcpy`. The next VDCores
+  diagnostic should combine same-process pointer classification with the
+  failing launch, or inspect why `cp_async_bulk` and compute-sanitizer treat
+  `cudaMemcpy`-readable direct 1D addresses as out of bounds.

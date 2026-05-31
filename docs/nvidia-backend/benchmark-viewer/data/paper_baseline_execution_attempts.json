@@ -1300,6 +1300,85 @@
       }
     },
     {
+      "id": "vdcores_qwen3_1p7b_pointer_attr_probe_h200",
+      "paper_baseline_id": "vdcores",
+      "paper_baseline_run_id": "vdcores_resource_policy_trace",
+      "title": "VDCores Qwen3 1.7B Pointer Attribute Diagnostic",
+      "status": "partial",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-pointer-attrs-sm64-c6e25d3e/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "Monkey-patch dae_app from a temporary tmp/ wrapper, build the Qwen3-1.7B one-layer final_rms schedule without launch, simulate direct 1D effective addresses for sampled SMs, call cuMemGetAddressRange, and cudaMemcpy 4096 bytes from each sampled direct address.",
+      "observation": "For 80 sampled direct 1D load/store effective addresses, cuMemGetAddressRange returned status 201 for every address, while cudaMemcpy device-to-host succeeded for all 80. The SM64 pc1 4096-byte jumped OP_ALLOC_TMA_LOAD_1D effective address also copied successfully before launch.",
+      "blocker": "The sampled direct 1D addresses are readable by cudaMemcpy before launch but are not classified by cuMemGetAddressRange, while the launched VDCores kernel still fails in cp_async_bulk. VDCores still lacks correctness and queue/resource-policy timing; the next diagnostic must combine same-process pointer classification with the failing launch or inspect why cp_async_bulk/compute-sanitizer sees these readable addresses as out of bounds.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-pointer-attrs-sm64-c6e25d3e/pointer-attrs-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-pointer-attrs-sm64-c6e25d3e/pointer-attrs.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-pointer-attrs-sm64-c6e25d3e/pointer-attrs-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-pointer-attrs-sm64-c6e25d3e/metadata.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-pointer-attrs-sm64-c6e25d3e/vdcores_pointer_attr_probe.py"
+      ],
+      "summary": {
+        "mode": "vdcores_qwen_pointer_attr_probe",
+        "model": "Qwen/Qwen3-1.7B",
+        "offline_cache_used": true,
+        "runtime_rebuilt_with_required_ops": true,
+        "debug_num_layers": 1,
+        "debug_stop_after": "final_rms",
+        "no_prefetch": "all",
+        "launch_executed": false,
+        "tool": "temporary dae_app monkey-patch plus cuMemGetAddressRange and cudaMemcpy",
+        "remote_pto_commit": "61af3f017537692ea860c0729bba8c78e08d223f",
+        "remote_vdcores_commit": "5247328cf3f893ed9df95f9f38e7e9a97f0cbfb1",
+        "trace_sms": [
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "direct_record_count": 80,
+        "direct_load_record_count": 40,
+        "recognized_direct_record_count": 0,
+        "unrecognized_direct_record_count": 80,
+        "device_to_host_copy_ok_record_count": 80,
+        "direct_load_device_to_host_copy_ok_count": 40,
+        "sm64_first_direct_load": {
+          "pc": 1,
+          "address": "0x7e02be000000",
+          "effective_address": "0x7e02be034000",
+          "size_bytes": 4096,
+          "runtime_accumulator": 212992,
+          "range_status": 201,
+          "range_recognized": false,
+          "copy_status": 0,
+          "copy_ok": true,
+          "copy_bytes_requested": 4096
+        },
+        "rules_out": [
+          "prelaunch direct 1D effective addresses being unreadable by ordinary cudaMemcpy",
+          "missing token read for the SM64 embedding-row accumulator"
+        ],
+        "next_debug_target": "combine same-process pointer classification with the failing launch or inspect why cp_async_bulk/compute-sanitizer treats cudaMemcpy-readable direct 1D addresses as out of bounds",
+        "correctness_completed": false,
+        "resource_policy_measured": false
+      }
+    },
+    {
       "id": "thunderkittens_mha_h100_official_benchmark_h200",
       "paper_baseline_id": "thunderkittens",
       "paper_baseline_run_id": "thunderkittens_full_sweep",
