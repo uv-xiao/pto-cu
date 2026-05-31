@@ -129,6 +129,10 @@ def probe_statuses(
                     "paper_baseline_id": baseline_id,
                     "latest_status": "missing_probe_record",
                     "machines": [],
+                    "next_action": (
+                        "Add a paper-baseline probe record before executing "
+                        "or importing this baseline."
+                    ),
                 }
             )
             continue
@@ -136,6 +140,7 @@ def probe_statuses(
             {
                 "paper_baseline_id": baseline_id,
                 "latest_status": probe["latest_status"],
+                "next_action": probe["next_action"],
                 "machines": [
                     {
                         "gpu": machine["gpu"],
@@ -169,6 +174,10 @@ def paper_baseline_run_readiness_statuses(
                     "blocking_gaps": [
                         f"No paper-baseline run-readiness record exists for {run_id}."
                     ],
+                    "next_action": (
+                        "Add a paper-baseline run-readiness record before "
+                        "executing or importing this run."
+                    ),
                 }
             )
             continue
@@ -179,6 +188,7 @@ def paper_baseline_run_readiness_statuses(
                 "latest_status": readiness["latest_status"],
                 "latest_artifact_root": readiness["latest_artifact_root"],
                 "blocking_gaps": readiness.get("blocking_gaps", []),
+                "next_action": readiness["next_action"],
             }
         )
     return statuses
@@ -224,6 +234,64 @@ def claim_blockers(
             f"{readiness['latest_status']}{detail}"
         )
     return blockers
+
+
+def claim_next_actions(
+    *,
+    missing_evidence: list[str],
+    run_readiness_statuses: list[dict[str, Any]],
+    probes: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    actions: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+
+    def append_action(action: dict[str, Any]) -> None:
+        key = (
+            str(action.get("source", "")),
+            str(action.get("paper_baseline_run_id", "")),
+            str(action.get("paper_baseline_id", "")),
+        )
+        if key in seen:
+            return
+        seen.add(key)
+        actions.append(action)
+
+    for item in missing_evidence:
+        append_action(
+            {
+                "source": "matrix_missing_evidence",
+                "status": "missing",
+                "action": item,
+            }
+        )
+    for readiness in run_readiness_statuses:
+        action = readiness.get("next_action")
+        if not isinstance(action, str) or not action.strip():
+            continue
+        append_action(
+            {
+                "source": "run_readiness",
+                "paper_baseline_id": readiness["paper_baseline_id"],
+                "paper_baseline_run_id": readiness["paper_baseline_run_id"],
+                "status": readiness["latest_status"],
+                "action": action,
+            }
+        )
+    for probe in probes:
+        if probe["latest_status"] == "pass":
+            continue
+        action = probe.get("next_action")
+        if not isinstance(action, str) or not action.strip():
+            continue
+        append_action(
+            {
+                "source": "probe",
+                "paper_baseline_id": probe["paper_baseline_id"],
+                "status": probe["latest_status"],
+                "action": action,
+            }
+        )
+    return actions
 
 
 def build_readiness_audit(
@@ -297,6 +365,11 @@ def build_readiness_audit(
             run_readiness_statuses=run_readiness_items,
             probes=probe_items,
         )
+        next_actions = claim_next_actions(
+            missing_evidence=missing_evidence,
+            run_readiness_statuses=run_readiness_items,
+            probes=probe_items,
+        )
         ready = claim["status"] == "ready_for_paper_claim" and not blockers
         claim_audits.append(
             {
@@ -311,6 +384,7 @@ def build_readiness_audit(
                 "paper_baseline_run_readiness_statuses": run_readiness_items,
                 "probe_statuses": probe_items,
                 "blockers": blockers,
+                "next_actions": [] if ready else next_actions,
                 "promotion_gate": claim["promotion_gate"],
             }
         )

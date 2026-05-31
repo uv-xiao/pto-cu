@@ -1365,3 +1365,33 @@ Each entry must include:
   command rows in the HTML viewer. The LLM-serving claim still needs PTO,
   MPK, VDCores, vLLM, SGLang, and ThunderKittens raw H200 artifacts imported
   into viewer results.
+
+### 2026-05-31 - Paper Readiness Next Actions
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  paper-readiness audit reviewability slice.
+- Exact Codex command or script invocation:
+  `paper_readiness_audit.py` regenerated the committed audit after the audit
+  builder started copying next actions from matrix gaps, run-readiness records,
+  and readiness probes.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, benchmark-viewer expansion
+  and strict code/document evidence guardrail slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer rendering code, generated viewer
+  JSON, CUDA evaluation validator and skill docs, focused review tests, goal
+  docs, dispatch log, and changelog docs. No upstream repositories were
+  edited.
+- Dependencies and blocked assumptions: this is an audit and reviewability
+  improvement only; it does not create new measured performance data.
+- Verification commands and results: focused TDD tests first failed because
+  `next_actions` were missing from the committed audit and viewer. After
+  implementation, focused tests and broader verification are recorded in the
+  final commit summary for this slice.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the HTML viewer can now show per-claim
+  next actions. The overall audit remains `not_paper_ready` until the planned
+  raw baseline captures are imported.

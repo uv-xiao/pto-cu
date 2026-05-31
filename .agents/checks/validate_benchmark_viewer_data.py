@@ -957,10 +957,27 @@ def validate_paper_readiness_audit(
             "paper_baseline_run_readiness_statuses",
             "probe_statuses",
             "blockers",
+            "next_actions",
         ):
             value = claim.get(key)
             if not isinstance(value, list):
                 fail(f"{owner} {key} is not a list")
+        for action in claim["next_actions"]:
+            if not isinstance(action, dict):
+                fail(f"{owner} next action is not an object")
+            source = require_string(action, "source", owner)
+            if source not in {
+                "matrix_missing_evidence",
+                "run_readiness",
+                "probe",
+            }:
+                fail(f"{owner} has invalid next action source: {source}")
+            require_string(action, "status", owner)
+            require_string(action, "action", owner)
+            if source in {"run_readiness", "probe"}:
+                require_string(action, "paper_baseline_id", owner)
+            if source == "run_readiness":
+                require_string(action, "paper_baseline_run_id", owner)
         missing_count = claim.get("missing_evidence_count")
         if isinstance(missing_count, bool) or not isinstance(missing_count, int):
             fail(f"{owner} missing_evidence_count is not an integer")

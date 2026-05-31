@@ -504,8 +504,9 @@ Use `paper_readiness_audit.py` after changing paper-evaluation matrix rows,
 paper-baseline run records, run-readiness status, probe status, or viewer
 result records. The script regenerates `paper_readiness_audit.json`, which
 folds current matrix gaps, baseline-run status, run-readiness blockers, probe
-readiness, and missing viewer-result evidence into one blocker list per paper
-claim:
+readiness, missing viewer-result evidence, and the next actions copied from
+matrix gaps, run-readiness records, and failed or partial probes into one
+review record per paper claim:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

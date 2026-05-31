@@ -7,6 +7,7 @@ what evaluation ran, and what evidence proves the claim.
 ## Reports
 
 - [2026-05-31 ultimate goal setup](2026-05-31-ultimate-goal.md)
+- [2026-05-31 paper readiness next actions](2026-05-31-paper-readiness-next-actions.md)
 - [2026-05-31 serving command plan](2026-05-31-serving-command-plan.md)
 - [2026-05-31 serving command viewer data](2026-05-31-serving-command-viewer-data.md)
 - [2026-05-31 SGLang source import probe](2026-05-31-sglang-source-import-probe.md)

@@ -183,6 +183,8 @@ Each audit claim must include:
   claim;
 - readiness-probe statuses for paper baselines in the claim;
 - blockers copied from missing evidence plus generated run/probe gaps;
+- next actions copied from matrix gaps, run-readiness records, and failed or
+  partial readiness probes;
 - the promotion gate from the source matrix.
 
 The viewer renders this audit before the matrix rows. The data validator

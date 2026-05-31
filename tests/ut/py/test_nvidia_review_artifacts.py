@@ -1687,6 +1687,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     host_claim = by_id["host_schedule_launch_overhead"]
     assert host_claim["ready_for_paper_claim"]
     assert host_claim["blockers"] == []
+    assert host_claim["next_actions"] == []
     llm_claim = by_id["llm_serving_paper_baselines"]
     assert not llm_claim["ready_for_paper_claim"]
     assert any(
@@ -1700,6 +1701,18 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert any(
         "Run readiness vllm_serving_and_throughput is partial" in blocker
         for blocker in llm_claim["blockers"]
+    )
+    assert any(
+        action["source"] == "run_readiness"
+        and action["paper_baseline_run_id"] == "vllm_serving_and_throughput"
+        and "Resolve blocking gaps" in action["action"]
+        for action in llm_claim["next_actions"]
+    )
+    assert any(
+        action["source"] == "probe"
+        and action["paper_baseline_id"] == "sglang"
+        and "Run SGLang" in action["action"]
+        for action in llm_claim["next_actions"]
     )
     llm_readiness_ids = {
         item["paper_baseline_run_id"]
@@ -1733,6 +1746,11 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "latest_status"
     ] == "partial"
     assert any(
+        action["source"] == "run_readiness"
+        and action["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
+        for action in persistent_claim["next_actions"]
+    )
+    assert any(
         "HF_TOKEN" in gap
         for gap in persistent_readiness[
             "mpk_persistent_scheduler_trace"
@@ -1757,6 +1775,11 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert any(
         "thunderkittens_full_sweep is planned_not_run" in blocker
         for blocker in tensor_claim["blockers"]
+    )
+    assert any(
+        action["source"] == "run_readiness"
+        and action["paper_baseline_run_id"] == "thunderkittens_full_sweep"
+        for action in tensor_claim["next_actions"]
     )
 
 
@@ -1951,6 +1974,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paperBaselineRunReadiness",
         "paper_baseline_run_readiness",
         "Run Readiness",
+        "next_actions",
+        "Next Actions",
         "servingCommandPlan",
         "serving_command_plan.json",
         "Serving Command Plan",

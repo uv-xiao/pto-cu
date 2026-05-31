@@ -474,6 +474,12 @@ function renderPaperReadinessAudit() {
       )).join(", ");
       return `${probe.paper_baseline_id}: ${probe.latest_status} (${machines})`;
     });
+    const nextActions = claim.next_actions.map((action) => {
+      const owner = action.paper_baseline_run_id
+        || action.paper_baseline_id
+        || action.source;
+      return `${action.source}/${owner}: ${action.action}`;
+    });
     item.append(
       summaryLine,
       fieldList([
@@ -490,6 +496,7 @@ function renderPaperReadinessAudit() {
       ),
       ...namedList("Probe Status", probeStatuses.length ? probeStatuses : ["none"]),
       ...namedList("Blockers", claim.blockers),
+      ...namedList("Next Actions", nextActions.length ? nextActions : ["none"]),
       paragraph("Promotion gate", claim.promotion_gate),
     );
     return item;
