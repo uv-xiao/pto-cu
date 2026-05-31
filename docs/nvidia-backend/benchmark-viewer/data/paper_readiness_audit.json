@@ -16,7 +16,7 @@
       "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
-        "raw_artifact": 7,
+        "raw_artifact": 8,
         "viewer_data": 1,
         "viewer_result": 18
       },
@@ -25,9 +25,9 @@
       "paper_baseline_run_statuses": [],
       "probe_statuses": [],
       "blockers": [
-        "Graph-replay sweeps with distribution statistics across selected vector and tensor shapes."
+        "Direct runtime and direct driver sweeps with distribution statistics across the same selected vector and tensor shapes."
       ],
-      "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, stream-concurrency sweeps, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts."
+      "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, stream-concurrency sweeps, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts for each launch family."
     },
     {
       "id": "persistent_device_scheduler_overhead",

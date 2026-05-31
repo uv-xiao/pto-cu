@@ -172,12 +172,16 @@
         {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/combined-stream-pool6-02bca4df/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/graph-replay-sweep-01e30e99/"
         }
       ],
       "missing_evidence": [
-        "Graph-replay sweeps with distribution statistics across selected vector and tensor shapes."
+        "Direct runtime and direct driver sweeps with distribution statistics across the same selected vector and tensor shapes."
       ],
-      "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, stream-concurrency sweeps, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts."
+      "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, stream-concurrency sweeps, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts for each launch family."
     },
     {
       "id": "persistent_device_scheduler_overhead",

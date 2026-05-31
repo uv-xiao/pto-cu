@@ -1449,6 +1449,486 @@
       },
       "raw_artifact": "tmp/cuda-backend/combined-stream-pool6-02bca4df",
       "correctness": "pass"
+    },
+    {
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "A100",
+        "machine": "hina",
+        "compute_target": "compute_80",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "01e30e99",
+      "inputs": {
+        "shape": "n=1024 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat host-launch capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 35361,
+        "device_wall_ns": 19968,
+        "host_wall_p50_ns": 35361,
+        "host_wall_p90_ns": 42519,
+        "host_wall_p99_ns": 42891,
+        "host_wall_mean_ns": 35277,
+        "host_wall_stdev_ns": 7083,
+        "host_wall_min_ns": 27414,
+        "host_wall_max_ns": 42933,
+        "device_wall_p50_ns": 19968,
+        "device_wall_p90_ns": 24678,
+        "device_wall_p99_ns": 25506,
+        "device_wall_mean_ns": 19865,
+        "device_wall_stdev_ns": 4685,
+        "device_wall_min_ns": 14336,
+        "device_wall_max_ns": 25599
+      },
+      "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "A100",
+        "machine": "hina",
+        "compute_target": "compute_80",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "01e30e99",
+      "inputs": {
+        "shape": "n=4096 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat graph-replay sweep capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 42092,
+        "device_wall_ns": 24576,
+        "host_wall_p50_ns": 42092,
+        "host_wall_p90_ns": 43646,
+        "host_wall_p99_ns": 43896,
+        "host_wall_mean_ns": 40002,
+        "host_wall_stdev_ns": 5515,
+        "host_wall_min_ns": 27026,
+        "host_wall_max_ns": 43924,
+        "device_wall_p50_ns": 24576,
+        "device_wall_p90_ns": 26623,
+        "device_wall_p99_ns": 26623,
+        "device_wall_mean_ns": 23346,
+        "device_wall_stdev_ns": 4118,
+        "device_wall_min_ns": 14336,
+        "device_wall_max_ns": 26623
+      },
+      "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "A100",
+        "machine": "hina",
+        "compute_target": "compute_80",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "01e30e99",
+      "inputs": {
+        "shape": "n=65536 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat graph-replay sweep capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 37645,
+        "device_wall_ns": 23103,
+        "host_wall_p50_ns": 37645,
+        "host_wall_p90_ns": 44921,
+        "host_wall_p99_ns": 46370,
+        "host_wall_mean_ns": 36952,
+        "host_wall_stdev_ns": 7031,
+        "host_wall_min_ns": 27996,
+        "host_wall_max_ns": 46532,
+        "device_wall_p50_ns": 23103,
+        "device_wall_p90_ns": 29119,
+        "device_wall_p99_ns": 29896,
+        "device_wall_mean_ns": 22920,
+        "device_wall_stdev_ns": 5034,
+        "device_wall_min_ns": 16448,
+        "device_wall_max_ns": 29983
+      },
+      "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "A100",
+        "machine": "hina",
+        "compute_target": "compute_80",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "01e30e99",
+      "inputs": {
+        "shape": "n=1024, tensor tile 16x16x16",
+        "dtype": "float32 naive SGEMM",
+        "repeat_policy": "10-repeat selected tensor launch capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 31507,
+        "device_wall_ns": 18943,
+        "host_wall_p50_ns": 31507,
+        "host_wall_p90_ns": 40009,
+        "host_wall_p99_ns": 40060,
+        "host_wall_mean_ns": 32889,
+        "host_wall_stdev_ns": 5604,
+        "host_wall_min_ns": 26419,
+        "host_wall_max_ns": 40066,
+        "device_wall_p50_ns": 18943,
+        "device_wall_p90_ns": 22528,
+        "device_wall_p99_ns": 22528,
+        "device_wall_mean_ns": 18328,
+        "device_wall_stdev_ns": 3722,
+        "device_wall_min_ns": 13311,
+        "device_wall_max_ns": 22528
+      },
+      "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "A100",
+        "machine": "hina",
+        "compute_target": "compute_80",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "01e30e99",
+      "inputs": {
+        "shape": "n=4096, tensor tile 16x16x16",
+        "dtype": "float32 naive SGEMM",
+        "repeat_policy": "10-repeat graph-replay sweep capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 36658,
+        "device_wall_ns": 19455,
+        "host_wall_p50_ns": 36658,
+        "host_wall_p90_ns": 41576,
+        "host_wall_p99_ns": 43893,
+        "host_wall_mean_ns": 35250,
+        "host_wall_stdev_ns": 6913,
+        "host_wall_min_ns": 27333,
+        "host_wall_max_ns": 44151,
+        "device_wall_p50_ns": 19455,
+        "device_wall_p90_ns": 23756,
+        "device_wall_p99_ns": 25414,
+        "device_wall_mean_ns": 19148,
+        "device_wall_stdev_ns": 4425,
+        "device_wall_min_ns": 14336,
+        "device_wall_max_ns": 25599
+      },
+      "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "A100",
+        "machine": "hina",
+        "compute_target": "compute_80",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "01e30e99",
+      "inputs": {
+        "shape": "n=65536, tensor tile 16x16x16",
+        "dtype": "float32 naive SGEMM",
+        "repeat_policy": "10-repeat graph-replay sweep capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 30503,
+        "device_wall_ns": 18416,
+        "host_wall_p50_ns": 30503,
+        "host_wall_p90_ns": 43075,
+        "host_wall_p99_ns": 43966,
+        "host_wall_mean_ns": 34176,
+        "host_wall_stdev_ns": 6633,
+        "host_wall_min_ns": 28083,
+        "host_wall_max_ns": 44065,
+        "device_wall_p50_ns": 18416,
+        "device_wall_p90_ns": 24933,
+        "device_wall_p99_ns": 25503,
+        "device_wall_mean_ns": 19916,
+        "device_wall_stdev_ns": 3945,
+        "device_wall_min_ns": 15904,
+        "device_wall_max_ns": 25567
+      },
+      "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "01e30e99",
+      "inputs": {
+        "shape": "n=1024 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat host-launch capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 28795,
+        "device_wall_ns": 17023,
+        "host_wall_p50_ns": 28795,
+        "host_wall_p90_ns": 29903,
+        "host_wall_p99_ns": 30353,
+        "host_wall_mean_ns": 28432,
+        "host_wall_stdev_ns": 1594,
+        "host_wall_min_ns": 25097,
+        "host_wall_max_ns": 30403,
+        "device_wall_p50_ns": 17023,
+        "device_wall_p90_ns": 18098,
+        "device_wall_p99_ns": 18773,
+        "device_wall_mean_ns": 17017,
+        "device_wall_stdev_ns": 983,
+        "device_wall_min_ns": 15615,
+        "device_wall_max_ns": 18848
+      },
+      "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "01e30e99",
+      "inputs": {
+        "shape": "n=4096 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat graph-replay sweep capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 29500,
+        "device_wall_ns": 16863,
+        "host_wall_p50_ns": 29500,
+        "host_wall_p90_ns": 39680,
+        "host_wall_p99_ns": 101540,
+        "host_wall_mean_ns": 37566,
+        "host_wall_stdev_ns": 24918,
+        "host_wall_min_ns": 28454,
+        "host_wall_max_ns": 108414,
+        "device_wall_p50_ns": 16863,
+        "device_wall_p90_ns": 21583,
+        "device_wall_p99_ns": 38302,
+        "device_wall_mean_ns": 19583,
+        "device_wall_stdev_ns": 7330,
+        "device_wall_min_ns": 16063,
+        "device_wall_max_ns": 40160
+      },
+      "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "01e30e99",
+      "inputs": {
+        "shape": "n=65536 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat graph-replay sweep capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 31847,
+        "device_wall_ns": 19071,
+        "host_wall_p50_ns": 31847,
+        "host_wall_p90_ns": 39591,
+        "host_wall_p99_ns": 42564,
+        "host_wall_mean_ns": 32434,
+        "host_wall_stdev_ns": 5262,
+        "host_wall_min_ns": 26925,
+        "host_wall_max_ns": 42895,
+        "device_wall_p50_ns": 19071,
+        "device_wall_p90_ns": 25647,
+        "device_wall_p99_ns": 28110,
+        "device_wall_mean_ns": 20108,
+        "device_wall_stdev_ns": 4126,
+        "device_wall_min_ns": 15231,
+        "device_wall_max_ns": 28384
+      },
+      "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "01e30e99",
+      "inputs": {
+        "shape": "n=1024, tensor tile 16x16x16",
+        "dtype": "float32 naive SGEMM",
+        "repeat_policy": "10-repeat selected tensor launch capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 29638,
+        "device_wall_ns": 17759,
+        "host_wall_p50_ns": 29638,
+        "host_wall_p90_ns": 31727,
+        "host_wall_p99_ns": 35248,
+        "host_wall_mean_ns": 30119,
+        "host_wall_stdev_ns": 2117,
+        "host_wall_min_ns": 28254,
+        "host_wall_max_ns": 35640,
+        "device_wall_p50_ns": 17759,
+        "device_wall_p90_ns": 18367,
+        "device_wall_p99_ns": 18886,
+        "device_wall_mean_ns": 17756,
+        "device_wall_stdev_ns": 543,
+        "device_wall_min_ns": 17184,
+        "device_wall_max_ns": 18944
+      },
+      "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "01e30e99",
+      "inputs": {
+        "shape": "n=4096, tensor tile 16x16x16",
+        "dtype": "float32 naive SGEMM",
+        "repeat_policy": "10-repeat graph-replay sweep capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 29033,
+        "device_wall_ns": 17424,
+        "host_wall_p50_ns": 29033,
+        "host_wall_p90_ns": 30028,
+        "host_wall_p99_ns": 30429,
+        "host_wall_mean_ns": 29133,
+        "host_wall_stdev_ns": 897,
+        "host_wall_min_ns": 27922,
+        "host_wall_max_ns": 30474,
+        "device_wall_p50_ns": 17424,
+        "device_wall_p90_ns": 18248,
+        "device_wall_p99_ns": 18326,
+        "device_wall_mean_ns": 17388,
+        "device_wall_stdev_ns": 768,
+        "device_wall_min_ns": 16319,
+        "device_wall_max_ns": 18335
+      },
+      "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "01e30e99",
+      "inputs": {
+        "shape": "n=65536, tensor tile 16x16x16",
+        "dtype": "float32 naive SGEMM",
+        "repeat_policy": "10-repeat graph-replay sweep capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 34765,
+        "device_wall_ns": 21023,
+        "host_wall_p50_ns": 34765,
+        "host_wall_p90_ns": 37013,
+        "host_wall_p99_ns": 38339,
+        "host_wall_mean_ns": 34534,
+        "host_wall_stdev_ns": 2553,
+        "host_wall_min_ns": 31002,
+        "host_wall_max_ns": 38487,
+        "device_wall_p50_ns": 21023,
+        "device_wall_p90_ns": 24428,
+        "device_wall_p99_ns": 25569,
+        "device_wall_mean_ns": 21420,
+        "device_wall_stdev_ns": 2229,
+        "device_wall_min_ns": 18656,
+        "device_wall_max_ns": 25696
+      },
+      "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+      "correctness": "pass"
     }
   ]
 }

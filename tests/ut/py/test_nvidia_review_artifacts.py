@@ -1264,8 +1264,13 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 == "tmp/cuda-backend/combined-stream-pool6-02bca4df/"
                 for ref in item["current_evidence_refs"]
             )
+            assert any(
+                ref.get("path")
+                == "tmp/cuda-backend/graph-replay-sweep-01e30e99/"
+                for ref in item["current_evidence_refs"]
+            )
             assert item["missing_evidence"] == [
-                "Graph-replay sweeps with distribution statistics across selected vector and tensor shapes."
+                "Direct runtime and direct driver sweeps with distribution statistics across the same selected vector and tensor shapes."
             ]
         if item["id"] == "llm_serving_paper_baselines":
             assert not any(
@@ -1423,6 +1428,48 @@ def test_benchmark_viewer_has_json_backed_review_data():
         and record["statistic"]["device_wall_p90_ns"]
         >= record["statistic"]["device_wall_ns"]
         for record in tensor_launch_records
+    )
+    graph_replay_sweep_records = [
+        record
+        for record in results["result_records"]
+        if record["method_id"] == "direct_driver_graph"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/graph-replay-sweep-01e30e99/"
+    ]
+    assert {
+        (record["hardware"]["gpu"], record["benchmark_id"], record["inputs"]["shape"])
+        for record in graph_replay_sweep_records
+    } == {
+        ("A100", "host_schedule_vector_ops", "n=1024 vector"),
+        ("A100", "host_schedule_vector_ops", "n=4096 vector"),
+        ("A100", "host_schedule_vector_ops", "n=65536 vector"),
+        ("A100", "tensor_core_tile", "n=1024, tensor tile 16x16x16"),
+        ("A100", "tensor_core_tile", "n=4096, tensor tile 16x16x16"),
+        ("A100", "tensor_core_tile", "n=65536, tensor tile 16x16x16"),
+        ("H200", "host_schedule_vector_ops", "n=1024 vector"),
+        ("H200", "host_schedule_vector_ops", "n=4096 vector"),
+        ("H200", "host_schedule_vector_ops", "n=65536 vector"),
+        ("H200", "tensor_core_tile", "n=1024, tensor tile 16x16x16"),
+        ("H200", "tensor_core_tile", "n=4096, tensor tile 16x16x16"),
+        ("H200", "tensor_core_tile", "n=65536, tensor tile 16x16x16"),
+    }
+    assert {
+        record["statistic"]["sample_count"]
+        for record in graph_replay_sweep_records
+    } == {10}
+    assert all(
+        record["inputs"]["repeat_policy"]
+        in {
+            "10-repeat host-launch capture",
+            "10-repeat selected tensor launch capture",
+            "10-repeat graph-replay sweep capture",
+        }
+        and record["statistic"]["host_wall_p90_ns"]
+        >= record["statistic"]["host_wall_ns"]
+        and record["statistic"]["device_wall_p90_ns"]
+        >= record["statistic"]["device_wall_ns"]
+        and record["correctness"] == "pass"
+        for record in graph_replay_sweep_records
     )
     stream_concurrency_records = [
         record

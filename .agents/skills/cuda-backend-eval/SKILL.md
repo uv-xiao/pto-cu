@@ -199,6 +199,20 @@ This writes `a100.json`, `h200.json`, `cuda-smoke-report.md`, and
 C++ so the local and remote runtime shared objects are rebuilt before the
 smoke runs.
 
+Run the paired CUDA graph-replay sweep when the host-schedule launch-overhead
+claim needs selected vector and tensor graph replay distributions:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_graph_replay_sweep.py \
+    --branch goal/nvidia-paper-ready --sizes 1024,4096,65536 \
+    --repeats 10 --sync-remote-tree
+```
+
+This writes `cuda-benchmark.json`, Markdown, and SVG reports under
+`tmp/cuda-backend/graph-replay-sweep-<commit>/` and validates A100/H200 rows
+for `direct_driver_graph` and `direct_driver_graph_sgemm`.
+
 Run the persistent-device tracer-bullet smoke:
 
 ```bash

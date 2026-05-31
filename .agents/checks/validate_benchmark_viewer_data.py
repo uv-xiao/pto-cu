@@ -503,26 +503,32 @@ def validate_capture_imports(
             require_string(record, key, f"capture imports hardware {machine}")
 
     records = require_list(data, "capture_imports", "capture imports")
-    baselines: set[str] = set()
+    import_keys: set[tuple[str, int, int]] = set()
     for record in records:
         if not isinstance(record, dict):
             fail("capture import rule is not an object")
         owner = f"capture import {record.get('baseline', '<missing>')}"
         baseline = require_string(record, "baseline", owner)
         validate_id(baseline, owner)
-        if baseline in baselines:
-            fail(f"duplicate capture import baseline: {baseline}")
-        baselines.add(baseline)
         benchmark_id = require_string(record, "benchmark_id", owner)
         method_id = require_string(record, "method_id", owner)
         if benchmark_id not in benchmark_ids:
             fail(f"{owner} references unknown benchmark_id: {benchmark_id}")
         if method_id not in method_ids:
             fail(f"{owner} references unknown method_id: {method_id}")
+        n = record.get("n")
+        task_count = record.get("task_count")
         for key in ("n", "task_count"):
             value = record.get(key)
             if not isinstance(value, int) or value <= 0:
                 fail(f"{owner} has invalid {key}")
+        import_key = (baseline, int(n), int(task_count))
+        if import_key in import_keys:
+            fail(
+                "duplicate capture import rule: "
+                f"baseline={baseline}, n={n}, task_count={task_count}"
+            )
+        import_keys.add(import_key)
         inputs = require_dict(record, "inputs", owner)
         for key in ("shape", "dtype", "repeat_policy"):
             require_string(inputs, key, owner)
