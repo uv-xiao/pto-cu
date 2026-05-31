@@ -1240,6 +1240,33 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert item["current_evidence_refs"]
         assert item["missing_evidence"]
         assert item["promotion_gate"]
+        if item["id"] == "host_schedule_launch_overhead":
+            assert "host_schedule_stream_concurrency" in item["workload_ids"]
+            assert {
+                "pto_stream_serial",
+                "pto_stream_parallel",
+            } <= set(item["method_ids"])
+            stream_refs = [
+                ref
+                for ref in item["current_evidence_refs"]
+                if ref.get("benchmark_id") == "host_schedule_stream_concurrency"
+            ]
+            assert {
+                (ref["gpu"], ref["method_id"]) for ref in stream_refs
+            } == {
+                ("A100", "pto_stream_serial"),
+                ("A100", "pto_stream_parallel"),
+                ("H200", "pto_stream_serial"),
+                ("H200", "pto_stream_parallel"),
+            }
+            assert any(
+                ref.get("path")
+                == "tmp/cuda-backend/combined-stream-pool6-02bca4df/"
+                for ref in item["current_evidence_refs"]
+            )
+            assert item["missing_evidence"] == [
+                "Graph-replay sweeps with distribution statistics across selected vector and tensor shapes."
+            ]
         if item["id"] == "llm_serving_paper_baselines":
             assert not any(
                 "Selected shared model" in gap
@@ -1396,6 +1423,38 @@ def test_benchmark_viewer_has_json_backed_review_data():
         and record["statistic"]["device_wall_p90_ns"]
         >= record["statistic"]["device_wall_ns"]
         for record in tensor_launch_records
+    )
+    stream_concurrency_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "host_schedule_stream_concurrency"
+        and record["method_id"] in {"pto_stream_serial", "pto_stream_parallel"}
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/combined-stream-pool6-02bca4df"
+    ]
+    assert {
+        (record["hardware"]["gpu"], record["method_id"])
+        for record in stream_concurrency_records
+    } == {
+        ("A100", "pto_stream_serial"),
+        ("A100", "pto_stream_parallel"),
+        ("H200", "pto_stream_serial"),
+        ("H200", "pto_stream_parallel"),
+    }
+    assert {
+        record["statistic"]["sample_count"]
+        for record in stream_concurrency_records
+    } == {10}
+    assert all(
+        record["inputs"]["shape"] == "two independent n=1 vector kernels"
+        and record["inputs"]["repeat_policy"]
+        == "10-repeat stream-concurrency capture"
+        and record["statistic"]["host_wall_p90_ns"]
+        >= record["statistic"]["host_wall_ns"]
+        and record["statistic"]["device_wall_p90_ns"]
+        >= record["statistic"]["device_wall_ns"]
+        and record["correctness"] == "pass"
+        for record in stream_concurrency_records
     )
     for record in results["result_records"]:
         assert record["benchmark_id"] in benchmark_ids

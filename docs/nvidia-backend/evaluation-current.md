@@ -10,8 +10,9 @@ full benchmark matrix and the compact selected gate.
 | --- | --- | ---: | --- |
 | Full paired matrix | `tmp/cuda-backend/current-head-full-layered-cross-fixed/combined-current-743709f3/` | 1350 | Three sizes, three repeats, selected host, persistent, CUDA Graph, cuBLAS, tensor, and graph rows. |
 | Compact paired gate | `tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/` | 108 | Review-size gate for selected baselines and graph descriptor rows. |
+| Stream concurrency | `tmp/cuda-backend/combined-stream-pool6-02bca4df/` | 40 | Ten-repeat A100/H200 comparison between serial host-schedule launches and parallel launches on separate CUDA streams. |
 
-Both captures passed `cuda_validate_capture.py` with the matching current
+These captures passed `cuda_validate_capture.py` with the matching current
 presets during the latest verification run.
 
 ## Runtime Rows
