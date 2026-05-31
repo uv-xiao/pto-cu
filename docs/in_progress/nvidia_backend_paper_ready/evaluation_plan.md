@@ -163,8 +163,12 @@ The H200 host-launch capture at
 `tmp/cuda-backend/host-launch-h200-ec8f272e/` imports 10-repeat
 `direct_runtime`, `direct_driver`, and `direct_driver_graph` rows for the same
 `n=1024` vector shape. This closes the cross-GPU vector-launch comparison gap
-for Runtime API, Driver API, and Driver graph paths while selected tensor
-launch shapes and distribution sweeps remain open.
+for Runtime API, Driver API, and Driver graph paths.
+`cuda_viewer_export.py` now imports p50, p90, p99, mean, standard deviation,
+minimum, and maximum host/device latency fields for repeated raw captures, so
+the current 10-repeat A100/H200 host-launch rows expose distribution shape in
+the viewer instead of selected medians alone. Selected tensor launch shapes and
+stream-count or graph-replay sweep distributions remain open.
 
 Paper-baseline raw captures can be converted with
 `.agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py`.

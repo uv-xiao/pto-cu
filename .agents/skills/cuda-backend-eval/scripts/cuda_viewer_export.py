@@ -85,9 +85,34 @@ def matching_rows(
     )
 
 
-def median_int(rows: list[dict[str, Any]], field: str) -> int:
+def percentile_int(values: list[int], quantile: float) -> int:
+    if not values:
+        raise ValueError("percentile requires at least one value")
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return ordered[0]
+    position = (len(ordered) - 1) * quantile
+    lower = int(position)
+    upper = min(lower + 1, len(ordered) - 1)
+    weight = position - lower
+    return int(ordered[lower] + (ordered[upper] - ordered[lower]) * weight)
+
+
+def latency_summary(
+    rows: list[dict[str, Any]],
+    field: str,
+    prefix: str,
+) -> dict[str, int]:
     values = [int(row[field]) for row in rows]
-    return int(statistics.median(values))
+    return {
+        f"{prefix}_p50_ns": percentile_int(values, 0.50),
+        f"{prefix}_p90_ns": percentile_int(values, 0.90),
+        f"{prefix}_p99_ns": percentile_int(values, 0.99),
+        f"{prefix}_mean_ns": int(statistics.fmean(values)),
+        f"{prefix}_stdev_ns": int(statistics.stdev(values)) if len(values) > 1 else 0,
+        f"{prefix}_min_ns": min(values),
+        f"{prefix}_max_ns": max(values),
+    }
 
 
 def record_for_group(
@@ -102,6 +127,8 @@ def record_for_group(
     machine = str(key[0])
     hardware = hardware_by_machine.get(machine, {})
     first = rows[0]
+    host_summary = latency_summary(rows, "host_wall_ns", "host_wall")
+    device_summary = latency_summary(rows, "device_wall_ns", "device_wall")
     return {
         "benchmark_id": rule["benchmark_id"],
         "method_id": rule["method_id"],
@@ -122,8 +149,10 @@ def record_for_group(
         "statistic": {
             "kind": "median_capture_group",
             "sample_count": len(rows),
-            "host_wall_ns": median_int(rows, "host_wall_ns"),
-            "device_wall_ns": median_int(rows, "device_wall_ns"),
+            "host_wall_ns": host_summary["host_wall_p50_ns"],
+            "device_wall_ns": device_summary["device_wall_p50_ns"],
+            **host_summary,
+            **device_summary,
         },
         "raw_artifact": raw_artifact,
         "correctness": "pass"

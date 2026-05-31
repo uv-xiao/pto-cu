@@ -287,8 +287,8 @@ Use `cuda_viewer_export.py` to convert raw combined benchmark captures into
 benchmark-viewer `result_records`. The script reads the committed import
 mapping in `docs/nvidia-backend/benchmark-viewer/data/capture_imports.json`,
 groups repeated rows by machine, baseline, size, and task count, and emits the
-viewer schema with hardware, inputs, median timing, sample count, correctness,
-and raw artifact path:
+viewer schema with hardware, inputs, p50 timing aliases, p90/p99/mean/stdev
+latency statistics, sample count, correctness, and raw artifact path:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

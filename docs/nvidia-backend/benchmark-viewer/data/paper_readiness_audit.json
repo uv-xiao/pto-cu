@@ -26,7 +26,7 @@
       "probe_statuses": [],
       "blockers": [
         "Selected tensor launch shapes for CUDA Runtime, Driver, and graph rows.",
-        "Stream-count and graph-replay sweeps with sample distributions instead of selected medians."
+        "Stream-count and graph-replay sweeps with distribution statistics across selected vector and tensor shapes."
       ],
       "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts."
     },

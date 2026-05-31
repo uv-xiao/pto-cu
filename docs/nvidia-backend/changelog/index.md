@@ -21,6 +21,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-05-31 A100 driver launch viewer evidence](2026-05-31-a100-driver-launch-viewer-evidence.md)
 - [2026-05-31 A100 Runtime launch viewer evidence](2026-05-31-a100-runtime-launch-viewer-evidence.md)
 - [2026-05-31 H200 host launch viewer evidence](2026-05-31-h200-host-launch-viewer-evidence.md)
+- [2026-05-31 viewer latency distributions](2026-05-31-viewer-latency-distributions.md)
 - [2026-05-31 ThunderKittens bounded capture](2026-05-31-thunderkittens-bounded-capture.md)
 - [2026-05-31 ThunderKittens quick smoke](2026-05-31-thunderkittens-quick-smoke.md)
 - [2026-05-31 ThunderKittens dependency probe](2026-05-31-thunderkittens-dependency-probe.md)

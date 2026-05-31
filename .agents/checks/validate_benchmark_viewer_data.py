@@ -576,6 +576,14 @@ def validate_results(
         for key in ("host_wall_ns", "device_wall_ns"):
             if not isinstance(statistic.get(key), int) or statistic[key] < 0:
                 fail(f"{owner} has invalid statistic.{key}")
+        if statistic["kind"] == "median_capture_group" and sample_count > 1:
+            for prefix in ("host_wall", "device_wall"):
+                for suffix in ("p50", "p90", "p99", "mean", "stdev", "min", "max"):
+                    key = f"{prefix}_{suffix}_ns"
+                    if not isinstance(statistic.get(key), int) or statistic[key] < 0:
+                        fail(f"{owner} has invalid statistic.{key}")
+                if statistic[f"{prefix}_min_ns"] > statistic[f"{prefix}_max_ns"]:
+                    fail(f"{owner} has invalid {prefix} min/max statistic")
         raw_artifact = require_string(record, "raw_artifact", owner)
         require_current_artifact_path(root, raw_artifact, owner)
         if require_string(record, "correctness", owner) not in {

@@ -449,6 +449,7 @@ function table(headers, rows) {
 
 function renderResults() {
   const root = document.getElementById("result-table");
+  const p90 = (statistic, key) => statistic[key] ?? "-";
   root.replaceChildren(table(
     [
       "GPU",
@@ -457,7 +458,9 @@ function renderResults() {
       "Inputs",
       "Samples",
       "Host ns",
+      "Host p90 ns",
       "Device ns",
+      "Device p90 ns",
       "Correctness",
       "Raw artifact",
     ],
@@ -468,7 +471,9 @@ function renderResults() {
       `${row.inputs.shape}; ${row.inputs.dtype}; ${row.inputs.repeat_policy}`,
       row.statistic.sample_count,
       row.statistic.host_wall_ns,
+      p90(row.statistic, "host_wall_p90_ns"),
       row.statistic.device_wall_ns,
+      p90(row.statistic, "device_wall_p90_ns"),
       row.correctness,
       row.raw_artifact,
     ]),

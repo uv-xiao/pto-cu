@@ -1012,3 +1012,33 @@ Each entry must include:
   now has A100 and H200 vector evidence for PTO host-schedule, CUDA Runtime
   API, CUDA Driver API, and CUDA Driver graph paths. Remaining gaps are
   selected tensor launch shapes and p50/p90/p99 distribution-ready sweeps.
+
+### 2026-05-31 - Viewer Latency Distribution Fields
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned benchmark
+  viewer evidence-quality slice.
+- Exact Codex command or script invocation: no worker invocation. Extended
+  `cuda_viewer_export.py` to emit p50, p90, p99, mean, standard deviation,
+  minimum, and maximum host/device latency fields for each imported capture
+  group, then regenerated viewer records from the current raw CUDA artifacts.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, benchmark viewer and
+  paper-ready evaluation evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA viewer exporter, benchmark viewer data and
+  rendering, viewer validators, focused tests, evaluation plan, dispatch log,
+  and changelog docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: this improves distribution visibility
+  for already-imported repeated captures. It does not add selected tensor
+  launch shapes or new stream-count/graph-replay sweeps.
+- Verification commands and results: focused TDD test first failed because
+  exported records lacked `host_wall_p50_ns`; after implementation it passed.
+  Full verification is recorded in the matching changelog report and PR body.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: repeated A100/H200 host-launch viewer
+  rows now expose p50/p90/p99/mean/stdev/min/max fields. Remaining
+  host-launch gaps are selected tensor launch shapes and actual stream-count
+  or graph-replay sweep captures.

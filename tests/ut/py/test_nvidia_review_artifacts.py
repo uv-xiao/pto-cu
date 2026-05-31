@@ -232,6 +232,15 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
                 "status": "pass",
             },
             {
+                "machine": "hina",
+                "baseline": "pto_host_schedule",
+                "n": 1024,
+                "task_count": 1,
+                "host_wall_ns": 200,
+                "device_wall_ns": 120,
+                "status": "pass",
+            },
+            {
                 "machine": "dasys-h200x8",
                 "baseline": "cublas_sgemm_graph",
                 "n": 1024,
@@ -271,9 +280,23 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
     assert host_record["benchmark_id"] == "host_schedule_vector_ops"
     assert host_record["hardware"]["gpu"] == "A100"
     assert host_record["hardware"]["compute_target"] == "compute_80"
-    assert host_record["statistic"]["sample_count"] == 2
-    assert host_record["statistic"]["host_wall_ns"] == 140
-    assert host_record["statistic"]["device_wall_ns"] == 90
+    assert host_record["statistic"]["sample_count"] == 3
+    assert host_record["statistic"]["host_wall_ns"] == 160
+    assert host_record["statistic"]["device_wall_ns"] == 100
+    assert host_record["statistic"]["host_wall_p50_ns"] == 160
+    assert host_record["statistic"]["host_wall_p90_ns"] == 192
+    assert host_record["statistic"]["host_wall_p99_ns"] == 199
+    assert host_record["statistic"]["host_wall_mean_ns"] == 160
+    assert host_record["statistic"]["host_wall_stdev_ns"] == 40
+    assert host_record["statistic"]["host_wall_min_ns"] == 120
+    assert host_record["statistic"]["host_wall_max_ns"] == 200
+    assert host_record["statistic"]["device_wall_p50_ns"] == 100
+    assert host_record["statistic"]["device_wall_p90_ns"] == 116
+    assert host_record["statistic"]["device_wall_p99_ns"] == 119
+    assert host_record["statistic"]["device_wall_mean_ns"] == 100
+    assert host_record["statistic"]["device_wall_stdev_ns"] == 20
+    assert host_record["statistic"]["device_wall_min_ns"] == 80
+    assert host_record["statistic"]["device_wall_max_ns"] == 120
     assert host_record["raw_artifact"] == "tmp/cuda-backend/fixture/"
     assert host_record["correctness"] == "pass"
 
@@ -1281,6 +1304,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
         record["statistic"]["sample_count"]
         for record in h200_host_launch_records
     } == {10}
+    assert all(
+        record["statistic"]["host_wall_p90_ns"] >= record["statistic"]["host_wall_ns"]
+        and record["statistic"]["device_wall_p90_ns"]
+        >= record["statistic"]["device_wall_ns"]
+        for record in h200_host_launch_records
+    )
     assert {
         record["correctness"] for record in h200_host_launch_records
     } == {"pass"}
