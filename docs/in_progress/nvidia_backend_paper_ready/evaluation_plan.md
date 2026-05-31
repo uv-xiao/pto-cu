@@ -200,17 +200,18 @@ Serving baseline commands can be materialized with
 `.agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py`.
 The script reads `serving_workloads.json` plus `paper_baseline_runs.json` and
 emits one command-plan row per baseline, policy, and batch size. The current
-primary-model command plan is recorded at
-`tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json`. The
-current command planner emits 35 rows covering MPK, VDCores, vLLM, SGLang, and
-the ThunderKittens decode-attention serving-equivalent over the MPK/VDCores
-policy batch ladders. This is not a performance result; it is the reproducible
-launch contract that long H200 runs must execute before their raw JSON can be
-imported into the viewer. SGLang launch rows explicitly prepend the pinned
-source checkout to `PYTHONPATH`, so generated commands do not accidentally use
-a globally installed SGLang package. ThunderKittens rows use the bounded MHA
-capture wrapper as a controlled serving-family kernel baseline for the VDCores
-decode policy.
+primary-model command plan is committed as
+`docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json` for
+human review and is also regenerated under `tmp/cuda-backend/` before long
+runs. The current command planner emits 35 rows covering MPK, VDCores, vLLM,
+SGLang, and the ThunderKittens decode-attention serving-equivalent over the
+MPK/VDCores policy batch ladders. This is not a performance result; it is the
+reproducible launch contract that long H200 runs must execute before their raw
+JSON can be imported into the viewer. SGLang launch rows explicitly prepend the
+pinned source checkout to `PYTHONPATH`, so generated commands do not
+accidentally use a globally installed SGLang package. ThunderKittens rows use
+the bounded MHA capture wrapper as a controlled serving-family kernel baseline
+for the VDCores decode policy.
 
 Before full baseline builds, paper-baseline readiness probes can be captured
 with `.agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py`. The

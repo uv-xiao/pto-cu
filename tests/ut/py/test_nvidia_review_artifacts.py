@@ -1932,6 +1932,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "data" / "paper_baseline_runs.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_probes.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json").is_file()
+    assert (VIEWER_ROOT / "data" / "serving_command_plan.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_workloads.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_readiness_audit.json").is_file()
@@ -1950,6 +1951,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paperBaselineRunReadiness",
         "paper_baseline_run_readiness",
         "Run Readiness",
+        "servingCommandPlan",
+        "serving_command_plan.json",
+        "Serving Command Plan",
         "servingWorkloads",
         "serving_workloads",
         "Serving policies",
@@ -1990,6 +1994,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     paper_baseline_run_readiness = json.loads(
         (VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    serving_command_plan = json.loads(
+        (VIEWER_ROOT / "data" / "serving_command_plan.json").read_text(
             encoding="utf-8"
         )
     )
@@ -2241,6 +2250,47 @@ def test_benchmark_viewer_has_json_backed_review_data():
         item["paper_baseline_run_id"]: item
         for item in paper_baseline_run_readiness["paper_baseline_run_readiness"]
     }
+    command_plan_records = serving_command_plan["serving_command_plans"]
+    assert serving_command_plan["metadata"]["model_tier"] == "primary"
+    assert len(command_plan_records) == 35
+    command_plan_run_ids = {
+        item["paper_baseline_run_id"] for item in command_plan_records
+    }
+    assert {
+        "mpk_qwen3_native_vs_persistent",
+        "vdcores_llama_decode_correctness",
+        "vllm_serving_and_throughput",
+        "sglang_serving_and_offline",
+        "thunderkittens_decode_attention_tile",
+    } <= command_plan_run_ids
+    command_plan_baselines = {
+        item["paper_baseline_id"] for item in command_plan_records
+    }
+    assert {
+        "mpk",
+        "vdcores",
+        "vllm",
+        "sglang",
+        "thunderkittens",
+    } <= command_plan_baselines
+    for item in command_plan_records:
+        assert item["serving_workload_id"] in serving_by_id
+        assert item["batch_size"] in serving_by_id[item["serving_workload_id"]][
+            "decode_policy"
+        ]["batch_sizes"]
+        assert item["prompt_tokens"] == serving_by_id[item["serving_workload_id"]][
+            "prompt_policy"
+        ]["target_prompt_tokens"]
+        assert item["decode_tokens"] == serving_by_id[item["serving_workload_id"]][
+            "decode_policy"
+        ]["decode_tokens"]
+        assert item["commands"]
+        assert any(command.get("raw_artifact") for command in item["commands"])
+        for command in item["commands"]:
+            assert command["kind"]
+            assert command["command"]
+            if "raw_artifact" in command:
+                assert command["raw_artifact"].startswith("tmp/")
     planned_run_ids = {
         item["id"]
         for item in paper_baseline_runs["paper_baseline_runs"]
@@ -2367,6 +2417,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert any(
                 ref.get("path")
                 == "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json"
+                for ref in item["current_evidence_refs"]
+            )
+            assert any(
+                ref.get("path")
+                == "docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json"
                 for ref in item["current_evidence_refs"]
             )
 

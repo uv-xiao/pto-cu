@@ -1332,3 +1332,36 @@ Each entry must include:
   requires model/prompt shape and batch/concurrency policy before import.
   Actual MPK, VDCores, vLLM, SGLang, and ThunderKittens serving-family H200
   captures remain required before paper promotion.
+
+### 2026-05-31 - Serving Command Viewer Data
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned viewer and
+  paper-evaluation reviewability slice.
+- Exact Codex command or script invocation:
+  `.agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py`
+  generated
+  `docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json`,
+  then `paper_readiness_audit.py` regenerated the committed audit after the
+  LLM-serving matrix gained the command-plan evidence reference.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, benchmark-viewer expansion
+  and paper-ready evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer JSON and rendering code, CUDA
+  evaluation validator and skill docs, focused review tests, goal docs,
+  dispatch log, and changelog docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: this commits a reproducible launch
+  contract for future H200 serving runs. It does not create measured baseline
+  results or remove imported-run blockers.
+- Verification commands and results: focused viewer-data test first failed
+  because `serving_command_plan.json` did not exist. After implementation, the
+  focused test, viewer-data validator, and JavaScript syntax check passed;
+  broader verification is recorded in the final commit summary for this slice.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: reviewers can now inspect 35 serving
+  command rows in the HTML viewer. The LLM-serving claim still needs PTO,
+  MPK, VDCores, vLLM, SGLang, and ThunderKittens raw H200 artifacts imported
+  into viewer results.

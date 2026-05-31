@@ -392,7 +392,11 @@ or ThunderKittens serving-family runs. It reads the committed
 `paper_baseline_runs.json` contracts, then writes an inspectable command plan
 with one row per baseline, policy, and batch size. The output stays under
 `tmp/` and records the intended raw artifact paths that later feed
-`paper_baseline_viewer_export.py`. SGLang rows prepend the pinned
+`paper_baseline_viewer_export.py`. For human review, also refresh the committed
+viewer copy at
+`docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json` whenever
+serving workload policies or serving paper-baseline runs change. SGLang rows
+prepend the pinned
 `tmp/baselines/sglang/python` checkout to `PYTHONPATH`, so command plans do not
 silently use a globally installed SGLang package. ThunderKittens rows use the
 bounded MHA capture wrapper as a controlled serving-equivalent kernel baseline
@@ -402,6 +406,10 @@ for the VDCores decode policy:
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py \
     --output tmp/cuda-backend/paper-baselines/serving-runs/plan-$(git rev-parse --short HEAD).json
+
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py \
+    --output docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json
 ```
 
 Use `thunderkittens_mha_capture.py` for bounded ThunderKittens H200 MHA

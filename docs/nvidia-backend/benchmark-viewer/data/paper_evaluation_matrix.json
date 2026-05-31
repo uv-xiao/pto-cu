@@ -373,11 +373,15 @@
           "kind": "viewer_data",
           "path": "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
         },
-        {
-          "kind": "viewer_data",
-          "path": "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json"
-        }
-      ],
+      {
+        "kind": "viewer_data",
+        "path": "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json"
+      },
+      {
+        "kind": "viewer_data",
+        "path": "docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json"
+      }
+    ],
       "missing_evidence": [
         "PTO CUDA serving workload or controlled serving-equivalent workload.",
         "MPK, VDCores, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records."

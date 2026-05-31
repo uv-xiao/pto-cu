@@ -443,6 +443,121 @@ def validate_serving_workload_run_refs(
                 fail(f"{owner} references unknown baseline run: {run_id}")
 
 
+def validate_serving_command_plan(
+    data: dict[str, Any],
+    runs: dict[str, Any],
+    serving_workloads: dict[str, Any],
+) -> None:
+    metadata = require_dict(data, "metadata", "serving command plan")
+    artifact_root = require_string(
+        metadata,
+        "artifact_root",
+        "serving command plan metadata",
+    )
+    if not artifact_root.startswith("tmp/"):
+        fail("serving command plan artifact_root must be under tmp/")
+    if require_string(metadata, "model_tier", "serving command plan") != "primary":
+        fail("serving command plan must use primary model tier")
+    expected_sources = {
+        "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json",
+        "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
+    }
+    source_files = set(
+        require_list(metadata, "source_files", "serving command plan")
+    )
+    if source_files != expected_sources:
+        fail("serving command plan source_files are stale")
+
+    workloads_by_id = {
+        record["id"]: record
+        for record in serving_workloads["serving_workloads"]
+    }
+    runs_by_id = {
+        record["id"]: record
+        for record in runs["paper_baseline_runs"]
+    }
+    required_keys: set[tuple[str, str, int]] = set()
+    for run in runs["paper_baseline_runs"]:
+        if run["paper_evaluation_id"] != "llm_serving_paper_baselines":
+            continue
+        for workload_id in run["serving_workload_ids"]:
+            workload = workloads_by_id[workload_id]
+            for batch_size in workload["decode_policy"]["batch_sizes"]:
+                required_keys.add((run["id"], workload_id, batch_size))
+
+    records = require_list(data, "serving_command_plans", "serving command plans")
+    seen_ids: set[str] = set()
+    covered_keys: set[tuple[str, str, int]] = set()
+    for record in records:
+        if not isinstance(record, dict):
+            fail("serving command plan record is not an object")
+        owner = f"serving command plan {record.get('id', '<missing>')}"
+        identifier = require_string(record, "id", owner)
+        if identifier in seen_ids:
+            fail(f"duplicate serving command plan id: {identifier}")
+        seen_ids.add(identifier)
+        run_id = require_string(record, "paper_baseline_run_id", owner)
+        run = runs_by_id.get(run_id)
+        if run is None:
+            fail(f"{owner} references unknown paper_baseline_run_id: {run_id}")
+        baseline_id = require_string(record, "paper_baseline_id", owner)
+        if baseline_id != run["paper_baseline_id"]:
+            fail(f"{owner} paper_baseline_id disagrees with run")
+        workload_id = require_string(record, "serving_workload_id", owner)
+        workload = workloads_by_id.get(workload_id)
+        if workload is None:
+            fail(f"{owner} references unknown serving_workload_id: {workload_id}")
+        batch_size = record.get("batch_size")
+        if isinstance(batch_size, bool) or not isinstance(batch_size, int):
+            fail(f"{owner} has invalid batch_size")
+        expected_id = f"{run_id}:{workload_id}:batch{batch_size}"
+        if identifier != expected_id:
+            fail(f"{owner} id should be {expected_id}")
+        covered_keys.add((run_id, workload_id, batch_size))
+        if batch_size not in workload["decode_policy"]["batch_sizes"]:
+            fail(f"{owner} batch_size is not in workload policy")
+        if (
+            record.get("prompt_tokens")
+            != workload["prompt_policy"]["target_prompt_tokens"]
+        ):
+            fail(f"{owner} prompt_tokens disagree with workload policy")
+        if record.get("decode_tokens") != workload["decode_policy"]["decode_tokens"]:
+            fail(f"{owner} decode_tokens disagree with workload policy")
+        if require_string(record, "model_tier", owner) != metadata["model_tier"]:
+            fail(f"{owner} model_tier disagrees with metadata")
+        if (
+            require_string(record, "model", owner)
+            != workload["model_policy"]["primary_model"]
+        ):
+            fail(f"{owner} model disagrees with workload primary model")
+        require_string(record, "traffic_mode", owner)
+        commands = require_list(record, "commands", owner)
+        raw_artifact_count = 0
+        for command in commands:
+            if not isinstance(command, dict):
+                fail(f"{owner} command entry is not an object")
+            require_string(command, "kind", owner)
+            require_string(command, "command", owner)
+            raw_artifact = command.get("raw_artifact")
+            if raw_artifact is None:
+                continue
+            if not isinstance(raw_artifact, str) or not raw_artifact.startswith(
+                "tmp/"
+            ):
+                fail(f"{owner} raw_artifact must be under tmp/")
+            raw_artifact_count += 1
+        if raw_artifact_count == 0:
+            fail(f"{owner} has no raw_artifact-producing command")
+
+    if required_keys != covered_keys:
+        missing = sorted(required_keys - covered_keys)
+        extra = sorted(covered_keys - required_keys)
+        fail(
+            "serving command plan coverage mismatch; "
+            f"missing={missing}, extra={extra}"
+        )
+
+
 def validate_paper_baseline_probes(
     data: dict[str, Any],
     baseline_ids: set[str],
@@ -876,6 +991,7 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     paper_baseline_run_readiness = load_json(
         root, "paper_baseline_run_readiness.json"
     )
+    serving_command_plan = load_json(root, "serving_command_plan.json")
     serving_workloads = load_json(root, "serving_workloads.json")
     paper_evaluation_matrix = load_json(root, "paper_evaluation_matrix.json")
     paper_readiness_audit = load_json(root, "paper_readiness_audit.json")
@@ -901,6 +1017,11 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         planned_run_ids,
         baseline_ids,
         root,
+    )
+    validate_serving_command_plan(
+        serving_command_plan,
+        paper_baseline_runs,
+        serving_workloads,
     )
     validate_capture_imports(capture_imports, benchmark_ids, method_ids)
     validate_results(results, benchmark_ids, method_ids, root)

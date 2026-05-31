@@ -5,6 +5,7 @@ const DATA_FILES = {
   paperBaselineRuns: "data/paper_baseline_runs.json",
   paperBaselineProbes: "data/paper_baseline_probes.json",
   paperBaselineRunReadiness: "data/paper_baseline_run_readiness.json",
+  servingCommandPlan: "data/serving_command_plan.json",
   servingWorkloads: "data/serving_workloads.json",
   paperEvaluation: "data/paper_evaluation_matrix.json",
   paperReadinessAudit: "data/paper_readiness_audit.json",
@@ -79,6 +80,13 @@ function servingWorkloadTitle(id) {
     (item) => item.id === id,
   );
   return workload ? workload.title : id;
+}
+
+function paperBaselineRunTitle(id) {
+  const run = state.paperBaselineRuns.paper_baseline_runs.find(
+    (item) => item.id === id,
+  );
+  return run ? run.title : id;
 }
 
 function renderSnapshot() {
@@ -257,6 +265,47 @@ function renderServingWorkloads() {
     );
     return details;
   }));
+}
+
+function renderServingCommandPlan() {
+  const root = document.getElementById("serving-command-list");
+  const metadata = state.servingCommandPlan.metadata;
+  const heading = document.createElement("h3");
+  heading.append(text("Serving Command Plan"));
+  const metadataFields = fieldList([
+    ["Commit", metadata.pto_commit],
+    ["Model tier", metadata.model_tier],
+    ["Artifact root", metadata.artifact_root],
+    ["Source files", metadata.source_files.join(", ")],
+  ]);
+  const records = state.servingCommandPlan.serving_command_plans.map((plan) => {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.append(text(
+      `${paperBaselineRunTitle(plan.paper_baseline_run_id)} / `
+      + `${servingWorkloadTitle(plan.serving_workload_id)} / `
+      + `batch ${plan.batch_size}`,
+    ));
+    const metadata = fieldList([
+      ["Baseline", paperBaselineName(plan.paper_baseline_id)],
+      ["Model", plan.model],
+      ["Prompt tokens", plan.prompt_tokens],
+      ["Decode tokens", plan.decode_tokens],
+      ["Traffic mode", plan.traffic_mode],
+    ]);
+    const commandRows = plan.commands.map((command) => [
+      command.kind,
+      command.command,
+      command.raw_artifact || "-",
+    ]);
+    details.append(
+      summary,
+      metadata,
+      table(["Kind", "Command", "Raw Artifact"], commandRows),
+    );
+    return details;
+  });
+  root.replaceChildren(heading, metadataFields, ...records);
 }
 
 function renderPaperBaselines() {
@@ -534,6 +583,7 @@ async function main() {
       paperBaselineRuns,
       paperBaselineProbes,
       paperBaselineRunReadiness,
+      servingCommandPlan,
       servingWorkloads,
       paperEvaluation,
       paperReadinessAudit,
@@ -545,6 +595,7 @@ async function main() {
       loadJson(DATA_FILES.paperBaselineRuns),
       loadJson(DATA_FILES.paperBaselineProbes),
       loadJson(DATA_FILES.paperBaselineRunReadiness),
+      loadJson(DATA_FILES.servingCommandPlan),
       loadJson(DATA_FILES.servingWorkloads),
       loadJson(DATA_FILES.paperEvaluation),
       loadJson(DATA_FILES.paperReadinessAudit),
@@ -557,6 +608,7 @@ async function main() {
       paperBaselineRuns,
       paperBaselineProbes,
       paperBaselineRunReadiness,
+      servingCommandPlan,
       servingWorkloads,
       paperEvaluation,
       paperReadinessAudit,
@@ -567,6 +619,7 @@ async function main() {
     renderBenchmarks();
     renderMethods();
     renderServingWorkloads();
+    renderServingCommandPlan();
     renderPaperBaselines();
     renderPaperEvaluation();
     renderResults();

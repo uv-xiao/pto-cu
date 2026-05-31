@@ -112,6 +112,14 @@ Runs attached to `llm_serving_paper_baselines` must include
 metadata mandatory for every MPK, VDCores, vLLM, SGLang, and controlled
 serving-equivalent baseline row before import.
 
+The committed serving command plan lives in
+`docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json`. It is
+derived from `serving_workloads.json` and `paper_baseline_runs.json`, and must
+cover every LLM-serving run, serving policy, and batch size before reviewers
+spend H200 time on long baseline captures. Each plan row records the target
+model, prompt/decode token counts, batch size, commands, and raw tmp artifact
+paths.
+
 Each paper-baseline probe record must include:
 
 - `paper_baseline_id`: the MPK, VDCores, or paper-baseline system;
