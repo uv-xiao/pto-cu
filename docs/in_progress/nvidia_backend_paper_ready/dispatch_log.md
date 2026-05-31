@@ -1659,6 +1659,40 @@ Each entry must include:
   `-1` under sanitizer plus missing paper-grade scheduler/resource/latency
   import.
 
+### 2026-05-31 - MPK Workload Metadata Sweep
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned MPK
+  matching-workload diagnostic.
+- Exact Codex command or script invocation: ran the H200 patched MPK Qwen3
+  0.6B persistent demo twice with `--max-new-tokens 1` and
+  `--max-new-tokens 2`, both with offline Hugging Face cache, max sequence
+  length 128, one request, one batched token, `--ignore-eos`, and token JSON
+  export under
+  `tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/workload-metadata-901ec9c1/`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready MPK baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, and local `tmp/` raw artifacts. No upstream
+  repositories were edited or pushed.
+- Dependencies and blocked assumptions: the run uses carried local MPK baseline
+  patches as input artifacts. The sweep proves successful patched execution is
+  still not a matching workload because `max_new_tokens` is not honored.
+- Verification commands and results: the focused TDD test first failed because
+  `mpk_qwen3_0p6b_workload_metadata_sweep_h200` was absent from viewer data.
+  After adding the execution attempt and refreshing derived artifacts, the
+  focused test passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: MPK persistent rows must not be imported
+  as paper-grade scheduler evidence until the run command or demo loop
+  enforces the intended decode length and records scheduler/resource metadata
+  for the same workload used by PTO and VDCores.
+
 ### 2026-05-31 - VDCores No-Prefetch Sweep
 
 - Dispatcher session or PR: local Codex session on

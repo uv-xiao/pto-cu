@@ -1871,8 +1871,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     }
     assert persistent_attempts["mpk_persistent_scheduler_trace"][
         "execution_attempt_id"
-    ] == "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200"
-    assert "generated token -1" in persistent_attempts[
+    ] == "mpk_qwen3_0p6b_workload_metadata_sweep_h200"
+    assert "max_new_tokens is not honored" in persistent_attempts[
         "mpk_persistent_scheduler_trace"
     ]["blocker"]
     assert persistent_attempts["vdcores_resource_policy_trace"][
@@ -1883,7 +1883,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     ]["blocker"]
     assert any(
         "Latest execution attempt "
-        "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200"
+        "mpk_qwen3_0p6b_workload_metadata_sweep_h200"
         in blocker
         for blocker in persistent_claim["blockers"]
     )
@@ -1891,8 +1891,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         action["source"] == "execution_attempt"
         and action["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
         and action["execution_attempt_id"]
-        == "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200"
-        and "generated token -1" in action["action"]
+        == "mpk_qwen3_0p6b_workload_metadata_sweep_h200"
+        and "matching workload" in action["action"]
         for action in persistent_claim["next_actions"]
     )
     assert not any(
@@ -2014,8 +2014,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
         and item["execution_attempt_id"]
-        == "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200"
-        and "generated token -1" in item["action"]
+        == "mpk_qwen3_0p6b_workload_metadata_sweep_h200"
+        and "matching workload" in item["action"]
         for item in work_items
     )
     assert any(
@@ -2704,6 +2704,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mpk_qwen3_0p6b_snapshot_pointer_patch_token1_h200",
         "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200",
         "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200",
+        "mpk_qwen3_0p6b_workload_metadata_sweep_h200",
         "vdcores_qwen3_1p7b_dry_build_h200",
         "vdcores_qwen3_1p7b_correctness_hf_timeout_h200",
         "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200",
@@ -2822,6 +2823,23 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert "generated_token_ids" in (ROOT / debug_patch).read_text(
         encoding="utf-8"
     )
+    mpk_workload = attempts_by_id[
+        "mpk_qwen3_0p6b_workload_metadata_sweep_h200"
+    ]
+    assert mpk_workload["status"] == "partial"
+    assert mpk_workload["summary"]["mode"] == (
+        "mpk_qwen3_0p6b_workload_metadata_sweep"
+    )
+    assert mpk_workload["summary"]["requested_max_new_tokens"] == [1, 2]
+    assert mpk_workload["summary"]["observed_generate_lengths"] == [89, 89]
+    assert mpk_workload["summary"]["observed_predecode_steps"] == [127, 127]
+    assert not mpk_workload["summary"]["max_new_tokens_honored"]
+    assert mpk_workload["summary"]["persistent_loop_runs_to_max_seq_length"]
+    assert mpk_workload["summary"]["all_runs_exit_zero"]
+    assert mpk_workload["summary"]["total_tasks"] == [7261, 7261]
+    assert mpk_workload["summary"]["total_events"] == [1870, 1870]
+    assert "matching workload" in mpk_workload["blocker"]
+    assert "workload-summary.json" in " ".join(mpk_workload["artifacts"])
     vdcores_attempt = attempts_by_id["vdcores_qwen3_1p7b_dry_build_h200"]
     assert vdcores_attempt["status"] == "partial"
     assert vdcores_attempt["summary"]["layers"] == 28

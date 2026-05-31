@@ -52,9 +52,9 @@
       "owner": "mpk_persistent_scheduler_trace",
       "paper_baseline_id": "mpk",
       "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
-      "execution_attempt_id": "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200",
+      "execution_attempt_id": "mpk_qwen3_0p6b_workload_metadata_sweep_h200",
       "status": "partial",
-      "action": "Resolve latest execution attempt mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: The next MPK blocker is the invalid generated token -1 under compute-sanitizer after the snapshot pointer patch. Import paper-grade MPK rows only after the patch is reproducible and the persistent argmax/output-token path produces valid token IDs under sanitizer.",
+      "action": "Resolve latest execution attempt mpk_qwen3_0p6b_workload_metadata_sweep_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: The patched MPK persistent path is not yet a matching workload for paper comparison because max_new_tokens is not honored by the persistent demo loop; it runs to the max_seq_length/eos policy instead. Import paper-grade MPK rows only after the run command records and enforces the intended decode length and scheduler/resource metadata for the same workload used by PTO and VDCores.",
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },
     {
