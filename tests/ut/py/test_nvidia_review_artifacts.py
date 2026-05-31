@@ -1878,19 +1878,25 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert "mpk_persistent_scheduler_trace" not in persistent_attempts
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
-    ] == "vdcores_qwen3_1p7b_repeat_guard_bench_h200"
+    ] == "vdcores_qwen3_1p7b_repeat_guard_correctness_h200"
     assert persistent_attempts["vdcores_resource_policy_trace"]["status"] == "pass"
     assert persistent_attempts["vdcores_resource_policy_trace"]["summary"][
-        "median_execution_time_ns"
-    ] == 1778528
-    assert persistent_attempts["vdcores_resource_policy_trace"]["summary"][
-        "resource_policy_measured"
-    ]
-    assert not persistent_attempts["vdcores_resource_policy_trace"]["summary"][
         "correctness_completed"
     ]
+    assert persistent_attempts["vdcores_resource_policy_trace"]["summary"][
+        "correctness_check_count"
+    ] == 17
+    assert persistent_attempts["vdcores_resource_policy_trace"]["summary"][
+        "final_token"
+    ] == "ref=25, dae=25"
+    assert not persistent_attempts["vdcores_resource_policy_trace"]["summary"][
+        "scheduler_overhead_measured"
+    ]
+    assert not persistent_attempts["vdcores_resource_policy_trace"]["summary"][
+        "queue_pressure_measured"
+    ]
     assert any(
-        "VDCores correctness plus queue-pressure and scheduler-overhead metadata"
+        "VDCores queue-pressure and scheduler-overhead metadata"
         in blocker
         for blocker in persistent_claim["blockers"]
     )
@@ -2723,6 +2729,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200",
         "vdcores_qwen3_1p7b_repeat_state_lite_h200",
         "vdcores_qwen3_1p7b_repeat_guard_bench_h200",
+        "vdcores_qwen3_1p7b_repeat_guard_correctness_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -3449,6 +3456,22 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert "unguarded addr_accum shuffle" in (
         vdcores_guard_bench["summary"]["root_cause_supported"]
     )
+    vdcores_guard_correctness = attempts_by_id[
+        "vdcores_qwen3_1p7b_repeat_guard_correctness_h200"
+    ]
+    assert vdcores_guard_correctness["status"] == "pass"
+    assert vdcores_guard_correctness["summary"]["mode"] == (
+        "vdcores_qwen_repeat_guard_correctness"
+    )
+    assert vdcores_guard_correctness["summary"]["correctness_completed"]
+    assert vdcores_guard_correctness["summary"]["correctness_passed"]
+    assert vdcores_guard_correctness["summary"]["correctness_check_count"] == 17
+    assert vdcores_guard_correctness["summary"]["final_token"] == "ref=25, dae=25"
+    assert not vdcores_guard_correctness["summary"]["scheduler_overhead_measured"]
+    assert not vdcores_guard_correctness["summary"]["queue_pressure_measured"]
+    assert "VDCores single-token correctness" in " ".join(
+        vdcores_guard_correctness["summary"]["rules_out"]
+    )
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
@@ -3699,11 +3722,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if attempt["paper_baseline_id"] == "vdcores"
             )
             assert vdcores_attempt["execution_attempt_id"] == (
-                "vdcores_qwen3_1p7b_repeat_guard_bench_h200"
+                "vdcores_qwen3_1p7b_repeat_guard_correctness_h200"
             )
             assert vdcores_attempt["status"] == "pass"
-            assert vdcores_attempt["summary"]["bench_status"] == 0
-            assert vdcores_attempt["summary"]["median_execution_time_ns"] == 1778528
+            assert vdcores_attempt["summary"]["correctness_status_code"] == 0
+            assert vdcores_attempt["summary"]["correctness_check_count"] == 17
+            assert vdcores_attempt["summary"]["final_token"] == "ref=25, dae=25"
             assert not any(
                 action.get("source") == "execution_attempt"
                 and action.get("paper_baseline_run_id")
@@ -3711,7 +3735,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 for action in item["next_actions"]
             )
             assert any(
-                "VDCores correctness plus queue-pressure and scheduler-overhead"
+                "VDCores queue-pressure and scheduler-overhead"
                 in action["action"]
                 for action in item["next_actions"]
             )
@@ -4209,7 +4233,13 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert len(vdcores_guarded_bench) == 1
     assert vdcores_guarded_bench[0]["statistic"]["sample_count"] == 5
     assert vdcores_guarded_bench[0]["statistic"]["device_wall_ns"] == 1778528
-    assert vdcores_guarded_bench[0]["correctness"] == "skipped"
+    assert vdcores_guarded_bench[0]["correctness"] == "pass"
+    assert (
+        vdcores_guarded_bench[0]["statistic"]["correctness_artifact"]
+        == "tmp/cuda-backend/paper-baselines/vdcores/"
+        "qwen3-1p7b-repeat-guard-correctness-712f88e8/"
+    )
+    assert vdcores_guarded_bench[0]["statistic"]["correctness_check_count"] == 17
     assert (
         vdcores_guarded_bench[0]["raw_artifact"]
         == "tmp/cuda-backend/paper-baselines/vdcores/"

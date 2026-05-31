@@ -2373,3 +2373,47 @@ Each entry must include:
   active and can read invalid source lanes. The next VDCores slice should run
   guarded correctness, then add queue-pressure and scheduler-overhead metadata
   before marking the VDCores resource-policy trace imported-to-viewer.
+
+### 2026-06-01 - VDCores Guarded RepeatM Correctness
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  guarded RepeatM correctness capture for the persistent scheduler baseline
+  gap.
+- Exact Codex command or script invocation: copied the tmp-only
+  `vdcores-repeat-guard-native.patch` into the H200 VDCores checkout, rebuilt
+  through the remote project venv with the selected Qwen3-1.7B compute-op
+  list, pinned CUTLASS include path, `-include cfloat`,
+  `DAE_DIAG_GUARD_REPEAT_SHUFFLE`, and
+  `DAE_DIAG_WAIT_AFTER_WB_ALLOC`, then ran the offline correctness command
+  with `CUDA_VISIBLE_DEVICES=7`, `QWEN1P7B_NO_PREFETCH=all`,
+  `QWEN1P7B_LOGITS_SPLIT_M=6`, `HF_HUB_OFFLINE=1`,
+  `TRANSFORMERS_OFFLINE=1`, and `--correctness`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, imported
+  viewer result correctness metadata, generated paper-readiness
+  audit/work-queue/goal-progress data, focused review tests, dispatch log,
+  changelog docs, and local `tmp/` raw artifacts copied back from H200. No
+  upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the first rebuild attempt failed
+  before CUDA because non-interactive `python` was absent; the second failed
+  because CUTLASS headers were not on the include path; the third failed
+  because `FLT_MAX` needed the existing `-include cfloat` workaround and
+  system `pip` was blocked by PEP 668. The successful run used the project
+  venv first on `PATH`.
+- Verification commands and results before local review gates: patch apply
+  status `0`; rebuild status `0`; correctness status `0`; patch restore
+  status `0`; all 17 logged correctness checks passed; final token agreement
+  was `ref=25, dae=25`; local and remote VDCores checkouts were clean after
+  capture.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: guarded RepeatM now has full-layer
+  Qwen3-1.7B single-token correctness, so correctness is no longer part of the
+  persistent-device scheduler blocker. The next VDCores slice should export
+  queue-pressure and scheduler-overhead metadata comparable with PTO
+  persistent-device and MPK.

@@ -38,7 +38,7 @@
       "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
-        "raw_artifact": 1,
+        "raw_artifact": 2,
         "stable_doc": 1,
         "viewer_result": 4
       },
@@ -82,19 +82,20 @@
         {
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_repeat_guard_bench_h200",
-          "title": "VDCores Qwen3 1.7B Guarded RepeatM Benchmark",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_repeat_guard_correctness_h200",
+          "title": "VDCores Qwen3 1.7B Guarded RepeatM Correctness",
           "status": "pass",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-bench-f6b16bac/",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-correctness-712f88e8/",
           "blocker": "",
           "summary": {
-            "mode": "vdcores_qwen_repeat_guard_full_benchmark",
+            "mode": "vdcores_qwen_repeat_guard_correctness",
             "model": "Qwen/Qwen3-1.7B",
             "offline_cache_used": true,
             "remote_refresh_path": "tmp patch copy",
-            "local_source_pto_commit": "f6b16bac839bdc433c515772e5699fe7d9116c2c",
+            "local_source_pto_commit": "712f88e85a3586140946571ba079fe4fc89e907e",
             "remote_pto_commit": "61af3f017537692ea860c0729bba8c78e08d223f",
             "remote_vdcores_commit": "5247328cf3f893ed9df95f9f38e7e9a97f0cbfb1",
+            "remote_cutlass_commit": "1732ed7da3b81d9f28b0130370ba70755a7e6dda",
             "cuda_visible_devices": "7",
             "compute_target": "sm_90a",
             "gpu": "H200",
@@ -102,20 +103,102 @@
             "debug_build": false,
             "no_prefetch": "all",
             "logits_split_m": 6,
-            "num_generates": 1,
-            "bench_iterations": 5,
-            "bench_warmup": 1,
+            "num_generates": 0,
             "patch_apply_status": 0,
             "patch_restore_status": 0,
             "rebuild_status": 0,
-            "bench_status": 0,
-            "full_launch_status": 0,
-            "min_execution_time_ns": 1774240,
-            "median_execution_time_ns": 1778528,
-            "average_execution_time_ns": 1779008,
-            "max_execution_time_ns": 1785504,
-            "full_launch_completed": true,
-            "bench_completed": true,
+            "correctness_status_code": 0,
+            "correctness_completed": true,
+            "correctness_passed": true,
+            "correctness_check_count": 17,
+            "correctness_checks": [
+              {
+                "status": "pass",
+                "name": "v_proj",
+                "detail": "0.351% <= 5.000%"
+              },
+              {
+                "status": "pass",
+                "name": "q_proj_interleaved",
+                "detail": "0.233% <= 5.000%"
+              },
+              {
+                "status": "pass",
+                "name": "q_rope_interleaved",
+                "detail": "0.305% <= 5.000%"
+              },
+              {
+                "status": "pass",
+                "name": "k_rope_interleaved",
+                "detail": "0.222% <= 5.000%"
+              },
+              {
+                "status": "pass",
+                "name": "v_proj",
+                "detail": "0.952% <= 5.000%"
+              },
+              {
+                "status": "pass",
+                "name": "q_proj_interleaved",
+                "detail": "0.805% <= 5.000%"
+              },
+              {
+                "status": "pass",
+                "name": "q_rope_interleaved",
+                "detail": "0.804% <= 5.000%"
+              },
+              {
+                "status": "pass",
+                "name": "k_rope_interleaved",
+                "detail": "0.468% <= 5.000%"
+              },
+              {
+                "status": "pass",
+                "name": "gate_proj_split",
+                "detail": "0.539% <= 5.000%"
+              },
+              {
+                "status": "pass",
+                "name": "up_proj_split",
+                "detail": "0.550% <= 5.000%"
+              },
+              {
+                "status": "pass",
+                "name": "silu",
+                "detail": "1.249% <= 10.000%"
+              },
+              {
+                "status": "pass",
+                "name": "final_hidden",
+                "detail": "1.792% <= 15.000%"
+              },
+              {
+                "status": "pass",
+                "name": "final_rms",
+                "detail": "2.069% <= 12.000%"
+              },
+              {
+                "status": "pass",
+                "name": "logits_0",
+                "detail": "2.183% <= 10.000%"
+              },
+              {
+                "status": "pass",
+                "name": "logits_1",
+                "detail": "2.417% <= 10.000%"
+              },
+              {
+                "status": "pass",
+                "name": "logits_2",
+                "detail": "1.799% <= 10.000%"
+              },
+              {
+                "status": "pass",
+                "name": "final_token",
+                "detail": "ref=25, dae=25"
+              }
+            ],
+            "final_token": "ref=25, dae=25",
             "resource_policy": {
               "virtual_core_runtime": "VDCores DAE",
               "gpu_sms": 132,
@@ -124,24 +207,25 @@
               "dynamic_compute_handlers": 1,
               "all_compute_ops": 33,
               "guard_patch": "skip addr_accum shuffle unless RepeatM is active and source lane is valid",
-              "writeback_wait_patch": "wait for writeback slot flags after allocation for PC48/PC55 hazards"
+              "writeback_wait_patch": "wait for writeback slot flags after allocation for PC48/PC55 hazards",
+              "cutlass_include": "tmp/baselines/cutlass/include",
+              "cfloat_include_workaround": true
             },
             "scheduler_overhead_measured": false,
             "queue_pressure_measured": false,
-            "correctness_completed": false,
             "resource_policy_measured": true,
             "raw_artifacts_preserved": true,
             "rules_out": [
-              "VDCores logits-stage failure as a blocker after guarding invalid pre-repeat shuffle",
-              "Hugging Face model access as a blocker when offline cache flags are used"
+              "VDCores single-token correctness as a blocker for the guarded RepeatM patch",
+              "Hugging Face model access as a blocker when offline cache flags are used",
+              "full-layer Qwen3-1.7B launch failure after guarding the invalid pre-repeat shuffle"
             ],
             "remaining_paper_gaps": [
-              "run single-token correctness on the guarded patch",
-              "capture queue-pressure and scheduler-overhead metadata comparable to PTO persistent_device and MPK",
+              "capture queue-pressure metadata comparable to PTO persistent_device and MPK",
+              "capture scheduler-overhead metadata comparable to PTO persistent_device and MPK",
               "repeat latency distributions on the final patched baseline policy before paper use"
             ],
-            "next_debug_target": "run guarded VDCores correctness and add queue/resource-policy trace fields instead of only launcher profile timing",
-            "root_cause_supported": "unguarded addr_accum shuffle executes with invalid source lane before RepeatM decode at PC49; guarding it lets the full one-token launch and 5-iteration benchmark complete."
+            "next_debug_target": "instrument VDCores profile or queue state to export scheduler-overhead and queue-pressure fields for the persistent-device comparison"
           }
         }
       ],
@@ -182,14 +266,14 @@
         }
       ],
       "blockers": [
-        "VDCores correctness plus queue-pressure and scheduler-overhead metadata comparable with PTO persistent_device and MPK.",
+        "VDCores queue-pressure and scheduler-overhead metadata comparable with PTO persistent_device and MPK.",
         "Paper baseline run vdcores_resource_policy_trace is captured_raw, not imported_to_viewer."
       ],
       "next_actions": [
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
-          "action": "VDCores correctness plus queue-pressure and scheduler-overhead metadata comparable with PTO persistent_device and MPK."
+          "action": "VDCores queue-pressure and scheduler-overhead metadata comparable with PTO persistent_device and MPK."
         }
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."

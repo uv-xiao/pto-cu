@@ -3601,10 +3601,13 @@
         "device_wall_mean_ns": 1779008,
         "device_wall_stdev_ns": 0,
         "device_wall_min_ns": 1774240,
-        "device_wall_max_ns": 1785504
+        "device_wall_max_ns": 1785504,
+        "correctness_artifact": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-correctness-712f88e8/",
+        "correctness_check_count": 17,
+        "final_token": "ref=25, dae=25"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-bench-f6b16bac/",
-      "correctness": "skipped"
+      "correctness": "pass"
     }
   ]
 }

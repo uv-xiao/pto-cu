@@ -34,7 +34,7 @@
       "paper_baseline_run_id": "",
       "execution_attempt_id": "",
       "status": "missing",
-      "action": "VDCores correctness plus queue-pressure and scheduler-overhead metadata comparable with PTO persistent_device and MPK.",
+      "action": "VDCores queue-pressure and scheduler-overhead metadata comparable with PTO persistent_device and MPK.",
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },
     {
