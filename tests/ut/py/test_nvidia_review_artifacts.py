@@ -2652,6 +2652,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mpk_qwen3_0p6b_token1_noprofile_h200",
         "vdcores_qwen3_1p7b_dry_build_h200",
         "vdcores_qwen3_1p7b_correctness_hf_timeout_h200",
+        "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200",
+        "vdcores_qwen3_1p7b_correctness_rebuilt_illegal_memory_h200",
+        "vdcores_qwen3_1p7b_stage_launch_sweep_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -2704,6 +2707,37 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert not vdcores_correctness_attempt["summary"]["launched"]
     assert not vdcores_correctness_attempt["summary"]["resource_policy_measured"]
     assert "config.json timed out" in vdcores_correctness_attempt["blocker"]
+    vdcores_rebuild_attempt = attempts_by_id[
+        "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200"
+    ]
+    assert vdcores_rebuild_attempt["status"] == "pass"
+    assert vdcores_rebuild_attempt["summary"]["selected_compute_ops"] == 9
+    assert vdcores_rebuild_attempt["summary"]["all_required_compute_ops_supported"]
+    assert vdcores_rebuild_attempt["summary"]["extension_installed"]
+    vdcores_rebuilt_correctness_attempt = attempts_by_id[
+        "vdcores_qwen3_1p7b_correctness_rebuilt_illegal_memory_h200"
+    ]
+    assert vdcores_rebuilt_correctness_attempt["status"] == (
+        "failed_after_kernel_launch"
+    )
+    assert vdcores_rebuilt_correctness_attempt["summary"]["model_loaded"]
+    assert vdcores_rebuilt_correctness_attempt["summary"][
+        "runtime_rebuilt_with_required_ops"
+    ]
+    assert vdcores_rebuilt_correctness_attempt["summary"]["launched"]
+    assert not vdcores_rebuilt_correctness_attempt["summary"][
+        "correctness_completed"
+    ]
+    assert "illegal memory access" in vdcores_rebuilt_correctness_attempt["blocker"]
+    vdcores_stage_sweep = attempts_by_id[
+        "vdcores_qwen3_1p7b_stage_launch_sweep_h200"
+    ]
+    assert vdcores_stage_sweep["status"] == "failed_after_kernel_launch"
+    assert vdcores_stage_sweep["summary"]["earliest_failed_stage"] == "final_rms"
+    assert set(vdcores_stage_sweep["summary"]["stages"].values()) == {
+        "failed_after_kernel_launch"
+    }
+    assert "first launched VDCores stage" in vdcores_stage_sweep["blocker"]
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]

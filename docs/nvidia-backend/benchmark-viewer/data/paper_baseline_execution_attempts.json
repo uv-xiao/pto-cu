@@ -290,6 +290,114 @@
       }
     },
     {
+      "id": "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200",
+      "paper_baseline_id": "vdcores",
+      "paper_baseline_run_id": "vdcores_resource_policy_trace",
+      "title": "VDCores Qwen3 1.7B Selected Runtime Rebuild",
+      "status": "pass",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-rebuild-f300a3b7/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "CPATH=<cutlass-include> DAE_COMPUTE_OPS_FILE=<qwen-compute-ops> make clean pyext NVCC=\"nvcc -include cfloat\"",
+      "observation": "The selected VDCores Qwen3-1.7B runtime rebuild succeeded after using the captured nine-op compute list, pinned CUTLASS headers, and the existing cfloat include workaround.",
+      "blocker": "",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-rebuild-f300a3b7/rebuild-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-rebuild-f300a3b7/metadata.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-rebuild-f300a3b7/rebuild-cfloat.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-rebuild-f300a3b7/rebuild-cfloat-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-rebuild-f300a3b7/supported-compute-ops-after-cfloat.txt"
+      ],
+      "summary": {
+        "mode": "vdcores_runtime_rebuild",
+        "selected_compute_ops": 9,
+        "dynamic_compute_ops": 1,
+        "all_required_compute_ops_supported": true,
+        "cutlass_include_supplied": true,
+        "cfloat_include_supplied": true,
+        "build_completed": true,
+        "extension_installed": true
+      }
+    },
+    {
+      "id": "vdcores_qwen3_1p7b_correctness_rebuilt_illegal_memory_h200",
+      "paper_baseline_id": "vdcores",
+      "paper_baseline_run_id": "vdcores_resource_policy_trace",
+      "title": "VDCores Qwen3 1.7B Rebuilt Correctness Launch",
+      "status": "failed_after_kernel_launch",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-correctness-rebuilt-f300a3b7/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> --correctness",
+      "observation": "After the model cache was synced and dae.runtime was rebuilt with the Qwen compute-op list, VDCores loaded Qwen/Qwen3-1.7B and reached launch_dae.",
+      "blocker": "The rebuilt VDCores runtime failed inside launch_dae with CUDA illegal memory access before correctness or resource-policy measurements could complete.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-correctness-rebuilt-f300a3b7/correctness-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-correctness-rebuilt-f300a3b7/metadata.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-correctness-rebuilt-f300a3b7/correctness.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-correctness-rebuilt-f300a3b7/correctness-status.txt"
+      ],
+      "summary": {
+        "mode": "vdcores_qwen_correctness",
+        "model": "Qwen/Qwen3-1.7B",
+        "offline_cache_used": true,
+        "model_loaded": true,
+        "runtime_rebuilt_with_required_ops": true,
+        "launched": true,
+        "correctness_completed": false,
+        "resource_policy_measured": false,
+        "error": "launch_dae failed: an illegal memory access was encountered"
+      }
+    },
+    {
+      "id": "vdcores_qwen3_1p7b_stage_launch_sweep_h200",
+      "paper_baseline_id": "vdcores",
+      "paper_baseline_run_id": "vdcores_resource_policy_trace",
+      "title": "VDCores Qwen3 1.7B One-Layer Launch Sweep",
+      "status": "failed_after_kernel_launch",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-stage-launch-sweep-f300a3b7/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> --debug-num-layers 1 --debug-stop-after <stage> -N 1 --launch",
+      "observation": "The one-layer launch sweep loaded Qwen/Qwen3-1.7B and attempted final_rms, logits, argmax, restore, and full stage cuts against the rebuilt runtime.",
+      "blocker": "Every launched stage failed at launch_dae with CUDA illegal memory access, including the earliest final_rms cut, so the remaining blocker is at or before the first launched VDCores stage.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-stage-launch-sweep-f300a3b7/stage-sweep-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-stage-launch-sweep-f300a3b7/metadata.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-stage-launch-sweep-f300a3b7/stage-status-summary.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-stage-launch-sweep-f300a3b7/final_rms.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-stage-launch-sweep-f300a3b7/logits.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-stage-launch-sweep-f300a3b7/argmax.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-stage-launch-sweep-f300a3b7/restore.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-stage-launch-sweep-f300a3b7/full.log"
+      ],
+      "summary": {
+        "mode": "vdcores_qwen_stage_launch_sweep",
+        "model": "Qwen/Qwen3-1.7B",
+        "offline_cache_used": true,
+        "runtime_rebuilt_with_required_ops": true,
+        "debug_num_layers": 1,
+        "stages": {
+          "final_rms": "failed_after_kernel_launch",
+          "logits": "failed_after_kernel_launch",
+          "argmax": "failed_after_kernel_launch",
+          "restore": "failed_after_kernel_launch",
+          "full": "failed_after_kernel_launch"
+        },
+        "earliest_failed_stage": "final_rms",
+        "error": "launch_dae failed: an illegal memory access was encountered"
+      }
+    },
+    {
       "id": "thunderkittens_mha_h100_official_benchmark_h200",
       "paper_baseline_id": "thunderkittens",
       "paper_baseline_run_id": "thunderkittens_full_sweep",
