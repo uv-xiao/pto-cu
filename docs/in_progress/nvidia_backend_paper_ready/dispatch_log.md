@@ -1523,3 +1523,38 @@ Each entry must include:
   `persistent_device` H200 controlled serving-equivalent evidence. The
   work queue drops the LLM serving blocker count from 13 to 12 and keeps the
   remaining raw-baseline import action visible.
+
+### 2026-05-31 - MPK Snapshot Pointer Root Cause
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned MPK
+  baseline diagnostic slice.
+- Exact Codex command or script invocation: traced the MPK memcheck null write
+  from `prepare_next_batch` to the unassigned
+  `RuntimeConfig::paged_kv_indices_snapshot` pointer, applied a one-line
+  local patch under `tmp/baselines/mirage-mpk`, copied that ignored baseline
+  file to the H200 checkout, and ran the one-token Qwen3-0.6B MPK smoke plus
+  memcheck with `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready MPK baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, MPK tmp artifacts, focused
+  review tests, dispatch log, and changelog docs. No upstream repositories
+  were edited or pushed.
+- Dependencies and blocked assumptions: the local MPK patch is not upstreamed
+  and is not part of pto-cu source. It proves the root cause of the first
+  sanitizer invalid write, but paper-grade MPK rows still need a reproducible
+  patch path and successful sanitized token export.
+- Verification commands and results: the focused TDD test first failed because
+  the latest MPK execution attempt was still
+  `mpk_qwen3_0p6b_token1_memcheck_h200`; after adding the patched attempts and
+  refreshing derived artifacts, the focused review tests passed. Broader guard
+  results are recorded in the commit summary for this slice.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the MPK persistent scheduler blocker now
+  points to a concrete snapshot-pointer runtime-config assignment and a
+  follow-up sanitizer decode/export issue, rather than an unexplained
+  scheduler null write.

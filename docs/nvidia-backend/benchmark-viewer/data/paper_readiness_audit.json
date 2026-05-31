@@ -90,13 +90,13 @@
         {
           "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
           "paper_baseline_id": "mpk",
-          "execution_attempt_id": "mpk_qwen3_0p6b_token1_memcheck_h200",
-          "title": "MPK Qwen3 0.6B Persistent One-Token Memcheck",
-          "status": "failed_after_kernel_launch",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/compute-sanitizer-712240f8-offline/token1_noprofile/",
-          "blocker": "The MPK scheduler writes 4 bytes through null paged_kv_indices_snapshot storage in prepare_next_batch at persistent_kernel.cuh:273 before torch.cuda.synchronize reports illegal memory access.",
+          "execution_attempt_id": "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200",
+          "title": "MPK Qwen3 0.6B Snapshot-Pointer Patch Memcheck",
+          "status": "partial",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/",
+          "blocker": "The snapshot pointer patch is still local to the ignored MPK clone and the sanitized run remains partial because the demo raises OverflowError at demo.py:846 during tokenizer.decode under compute-sanitizer; import paper-grade MPK rows only after the patch is reproducible and the sanitized run reaches token export.",
           "summary": {
-            "mode": "mpk_qwen3_0p6b_token1_memcheck",
+            "mode": "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck",
             "model": "Qwen/Qwen3-0.6B",
             "offline_cache_used": true,
             "max_new_tokens": 1,
@@ -108,28 +108,20 @@
             "tool": "compute-sanitizer memcheck",
             "target_processes": "all",
             "sanitizer_exit_status": 1,
-            "error_summary_count": 4,
+            "error_summary_count": 1,
+            "invalid_global_access_count": 0,
+            "null_snapshot_write_cleared": true,
             "init_api_error": {
               "api": "cudaDeviceSetLimit",
               "cuda_error": "cudaErrorInvalidValue",
               "host_entry": "init_persistent_kernel",
               "host_source": "persistent_kernel.py:2549"
             },
-            "first_invalid_access": {
-              "kind": "Invalid __global__ write",
-              "size_bytes": 4,
-              "function": "prepare_next_batch",
-              "source": "persistent_kernel.cuh:273",
-              "thread": "(0,0,0)",
-              "block": "(11,0,0)",
-              "address": "0x0",
-              "device_frame": "execute_scheduler",
-              "device_source": "persistent_kernel.cuh:1235",
-              "kernel_frame": "scheduler_kernel",
-              "kernel_source": "persistent_kernel.cuh:1391"
+            "application_error": {
+              "type": "OverflowError",
+              "host_source": "demo.py:846",
+              "message": "out of range integral type conversion attempted"
             },
-            "host_launch_entry": "launch_persistent_kernel",
-            "host_sync_entry": "torch.cuda.synchronize",
             "compiled": true,
             "launched": true,
             "correctness_completed": false,
@@ -216,7 +208,7 @@
         "VDCores run with matching queue/resource-policy metadata.",
         "Paper baseline run mpk_persistent_scheduler_trace is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
-        "Latest execution attempt mpk_qwen3_0p6b_token1_memcheck_h200 for mpk_persistent_scheduler_trace is failed_after_kernel_launch: The MPK scheduler writes 4 bytes through null paged_kv_indices_snapshot storage in prepare_next_batch at persistent_kernel.cuh:273 before torch.cuda.synchronize reports illegal memory access.",
+        "Latest execution attempt mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200 for mpk_persistent_scheduler_trace is partial: The snapshot pointer patch is still local to the ignored MPK clone and the sanitized run remains partial because the demo raises OverflowError at demo.py:846 during tokenizer.decode under compute-sanitizer; import paper-grade MPK rows only after the patch is reproducible and the sanitized run reaches token export.",
         "Latest execution attempt vdcores_qwen3_1p7b_final_rms_memcheck_h200 for vdcores_resource_policy_trace is failed_after_kernel_launch: The earliest launched final_rms cut performs invalid 4096-byte global reads in cp_async_bulk through ldwarp_execute_singlethread, followed by warp illegal-address reports in the VDCores load warp."
       ],
       "next_actions": [
@@ -229,9 +221,9 @@
           "source": "execution_attempt",
           "paper_baseline_id": "mpk",
           "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
-          "execution_attempt_id": "mpk_qwen3_0p6b_token1_memcheck_h200",
-          "status": "failed_after_kernel_launch",
-          "action": "Resolve latest execution attempt mpk_qwen3_0p6b_token1_memcheck_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: The MPK scheduler writes 4 bytes through null paged_kv_indices_snapshot storage in prepare_next_batch at persistent_kernel.cuh:273 before torch.cuda.synchronize reports illegal memory access."
+          "execution_attempt_id": "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200",
+          "status": "partial",
+          "action": "Resolve latest execution attempt mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: The snapshot pointer patch is still local to the ignored MPK clone and the sanitized run remains partial because the demo raises OverflowError at demo.py:846 during tokenizer.decode under compute-sanitizer; import paper-grade MPK rows only after the patch is reproducible and the sanitized run reaches token export."
         },
         {
           "source": "execution_attempt",

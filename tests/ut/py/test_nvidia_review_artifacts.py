@@ -1871,8 +1871,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     }
     assert persistent_attempts["mpk_persistent_scheduler_trace"][
         "execution_attempt_id"
-    ] == "mpk_qwen3_0p6b_token1_memcheck_h200"
-    assert "paged_kv_indices_snapshot" in persistent_attempts[
+    ] == "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200"
+    assert "snapshot pointer patch" in persistent_attempts[
         "mpk_persistent_scheduler_trace"
     ]["blocker"]
     assert persistent_attempts["vdcores_resource_policy_trace"][
@@ -1882,15 +1882,16 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "vdcores_resource_policy_trace"
     ]["blocker"]
     assert any(
-        "Latest execution attempt mpk_qwen3_0p6b_token1_memcheck_h200"
+        "Latest execution attempt mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200"
         in blocker
         for blocker in persistent_claim["blockers"]
     )
     assert any(
         action["source"] == "execution_attempt"
         and action["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
-        and action["execution_attempt_id"] == "mpk_qwen3_0p6b_token1_memcheck_h200"
-        and "paged_kv_indices_snapshot" in action["action"]
+        and action["execution_attempt_id"]
+        == "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200"
+        and "snapshot pointer patch" in action["action"]
         for action in persistent_claim["next_actions"]
     )
     assert not any(
@@ -2011,8 +2012,9 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         item["claim_id"] == "persistent_device_scheduler_overhead"
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
-        and item["execution_attempt_id"] == "mpk_qwen3_0p6b_token1_memcheck_h200"
-        and "paged_kv_indices_snapshot" in item["action"]
+        and item["execution_attempt_id"]
+        == "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200"
+        and "snapshot pointer patch" in item["action"]
         for item in work_items
     )
     assert any(
@@ -2697,6 +2699,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mpk_qwen3_0p6b_no_cutlass_token2_h200",
         "mpk_qwen3_0p6b_token1_noprofile_h200",
         "mpk_qwen3_0p6b_token1_memcheck_h200",
+        "mpk_qwen3_0p6b_snapshot_pointer_patch_token1_h200",
+        "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200",
         "vdcores_qwen3_1p7b_dry_build_h200",
         "vdcores_qwen3_1p7b_correctness_hf_timeout_h200",
         "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200",
@@ -2754,6 +2758,27 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert first_mpk_invalid["device_source"] == "persistent_kernel.cuh:1235"
     assert first_mpk_invalid["kernel_source"] == "persistent_kernel.cuh:1391"
     assert "paged_kv_indices_snapshot" in mpk_memcheck["blocker"]
+    patched_mpk = attempts_by_id[
+        "mpk_qwen3_0p6b_snapshot_pointer_patch_token1_h200"
+    ]
+    assert patched_mpk["status"] == "partial"
+    assert patched_mpk["summary"]["null_snapshot_write_cleared"]
+    assert patched_mpk["summary"]["tokens_saved"]
+    assert patched_mpk["summary"]["exit_status"] == 0
+    assert "local patch" in patched_mpk["blocker"]
+    patched_mpk_memcheck = attempts_by_id[
+        "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200"
+    ]
+    assert patched_mpk_memcheck["status"] == "partial"
+    assert patched_mpk_memcheck["summary"]["tool"] == "compute-sanitizer memcheck"
+    assert patched_mpk_memcheck["summary"]["null_snapshot_write_cleared"]
+    assert patched_mpk_memcheck["summary"]["invalid_global_access_count"] == 0
+    assert patched_mpk_memcheck["summary"]["error_summary_count"] == 1
+    assert (
+        patched_mpk_memcheck["summary"]["application_error"]["type"]
+        == "OverflowError"
+    )
+    assert "snapshot pointer patch" in patched_mpk_memcheck["blocker"]
     vdcores_attempt = attempts_by_id["vdcores_qwen3_1p7b_dry_build_h200"]
     assert vdcores_attempt["status"] == "partial"
     assert vdcores_attempt["summary"]["layers"] == 28
