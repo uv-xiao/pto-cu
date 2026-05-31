@@ -1927,3 +1927,44 @@ Each entry must include:
   now cites an MPK H200 viewer result and no longer lists MPK scheduler-trace
   import as missing evidence. The remaining blocker for that claim is VDCores
   queue/resource-policy evidence.
+
+### 2026-06-01 - VDCores Runtime LD Warp Diagnostic
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  runtime load-warp diagnostic for the persistent scheduler baseline gap.
+- Exact Codex command or script invocation: temporarily synced an ignored
+  `tmp/baselines/vdcores/include/dae/pipeline/ldwarp.cuh` debug print to H200,
+  rebuilt VDCores with `debug=64`, then ran the Qwen3-1.7B one-layer
+  `final_rms` cut under compute-sanitizer with `QWEN1P7B_NO_PREFETCH=all`,
+  offline Hugging Face cache, `--debug-num-layers 1`,
+  `--debug-stop-after final_rms`, `-N 1`, and `--launch`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, and local `tmp/` raw artifacts copied back
+  from H200. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: remote PTO checkout was stale and had
+  unrelated dirty committed-data files, so the raw artifact records the remote
+  PTO commit separately. VDCores source remained at
+  `5247328cf3f893ed9df95f9f38e7e9a97f0cbfb1`; the temporary debug header was
+  restored locally and remotely after capture.
+- Verification commands and results:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q`
+  -> `32 passed`;
+  `validate_benchmark_viewer_data.py` -> passed;
+  `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed;
+  `jq empty docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: SM64 reported a runtime direct 1D load
+  address of `0x761ba2034000`; compute-sanitizer reported the same address as
+  the first invalid 4096-byte `cp_async_bulk` read. The VDCores blocker is now
+  why the runtime-consumed address is outside sanitizer allocation tracking or
+  otherwise unmapped during launch, not missing Python-side MInst provenance.

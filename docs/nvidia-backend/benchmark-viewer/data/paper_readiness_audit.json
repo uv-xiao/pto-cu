@@ -82,53 +82,57 @@
         {
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_minst_provenance_h200",
-          "title": "VDCores Qwen3 1.7B MInst Provenance Diagnostic",
-          "status": "partial",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-minst-provenance-83e8135b/",
-          "blocker": "The generated Python-side MInst effective addresses are live tensor ranges before launch, so the VDCores blocker shifts from MInst provenance to runtime/device-side mutation, instruction upload, or CUDA memcheck allocator visibility for direct 1D cp_async_bulk loads. This is still not paper-grade correctness or resource-policy evidence.",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200",
+          "title": "VDCores Qwen3 1.7B Runtime LD Warp Address Diagnostic",
+          "status": "failed_after_kernel_launch",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-ldwarp-sm64-16944235/",
+          "blocker": "The runtime load warp consumes the same direct 1D address that compute-sanitizer reports as the first invalid 4096-byte cp_async_bulk read, so VDCores still cannot provide correctness or queue/resource-policy timing. The remaining blocker is why this runtime-consumed global address is outside sanitizer allocation tracking or otherwise unmapped during launch.",
           "summary": {
-            "mode": "vdcores_qwen_minst_provenance",
+            "mode": "vdcores_qwen_runtime_ldwarp_sm64",
             "model": "Qwen/Qwen3-1.7B",
             "offline_cache_used": true,
             "runtime_rebuilt_with_required_ops": true,
             "debug_num_layers": 1,
             "debug_stop_after": "final_rms",
             "no_prefetch": "all",
-            "tool": "instdump plus structured runpy provenance",
-            "launch_executed": false,
-            "token_id": 52,
-            "token_embedding_row_bytes": 4096,
-            "sampled_sms": [
-              0,
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              64,
-              65,
-              66,
-              67,
-              68,
-              69,
-              70,
-              71
+            "tool": "compute-sanitizer memcheck plus temporary DAE_DEBUG_PRINT=64 ldwarp address print",
+            "launch_executed": true,
+            "debug_sm": 64,
+            "remote_pto_commit": "61af3f017537692ea860c0729bba8c78e08d223f",
+            "remote_vdcores_commit": "5247328cf3f893ed9df95f9f38e7e9a97f0cbfb1",
+            "debug_build_status": 0,
+            "sanitizer_exit_status": 1,
+            "error_summary_count": 18,
+            "invalid_4096_byte_global_read_count": 16,
+            "first_ldwarp_load": {
+              "sm": 64,
+              "slot": 0,
+              "bar": 0,
+              "opcode": 9,
+              "address": "0x761ba2034000",
+              "size_bytes": 4096,
+              "arg": 0,
+              "nslot": 1
+            },
+            "first_invalid_read": {
+              "function": "cuda::ptx::cp_async_bulk",
+              "address": "0x761ba2034000",
+              "size_bytes": 4096,
+              "thread": "(192,0,0)",
+              "block": "(68,0,0)",
+              "device_source": "ldwarp.cuh:56",
+              "kernel_source": "dae2.cuh:167"
+            },
+            "unique_invalid_read_addresses": [
+              "0x761ba2034000",
+              "0x761d09e00000"
             ],
-            "direct_1d_loads_without_owner": 0,
-            "sm64_to_sm71_embedding_load_pc": 1,
-            "sm0_rms_weight_load_pc": 0,
-            "sm0_hidden_load_pcs": [
-              23,
-              54
-            ],
-            "proves_generated_effective_addresses_live_before_launch": true,
+            "runtime_ldwarp_address_matches_memcheck_first_invalid": true,
             "rules_out": [
+              "load warp consuming a different direct 1D address than the first memcheck invalid read",
               "static Python-side MInst address provenance as sole cause"
             ],
-            "next_debug_target": "runtime/device-side mutation, instruction upload, or CUDA memcheck allocator visibility for direct 1D cp_async_bulk loads",
+            "next_debug_target": "explain why the direct 1D global address consumed by the runtime load warp is outside sanitizer allocation tracking or otherwise unmapped during VDCores launch",
             "correctness_completed": false,
             "resource_policy_measured": false
           }
@@ -173,7 +177,7 @@
       "blockers": [
         "VDCores run with matching queue/resource-policy metadata.",
         "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
-        "Latest execution attempt vdcores_qwen3_1p7b_minst_provenance_h200 for vdcores_resource_policy_trace is partial: The generated Python-side MInst effective addresses are live tensor ranges before launch, so the VDCores blocker shifts from MInst provenance to runtime/device-side mutation, instruction upload, or CUDA memcheck allocator visibility for direct 1D cp_async_bulk loads. This is still not paper-grade correctness or resource-policy evidence."
+        "Latest execution attempt vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200 for vdcores_resource_policy_trace is failed_after_kernel_launch: The runtime load warp consumes the same direct 1D address that compute-sanitizer reports as the first invalid 4096-byte cp_async_bulk read, so VDCores still cannot provide correctness or queue/resource-policy timing. The remaining blocker is why this runtime-consumed global address is outside sanitizer allocation tracking or otherwise unmapped during launch."
       ],
       "next_actions": [
         {
@@ -185,9 +189,9 @@
           "source": "execution_attempt",
           "paper_baseline_id": "vdcores",
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_minst_provenance_h200",
-          "status": "partial",
-          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_minst_provenance_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: The generated Python-side MInst effective addresses are live tensor ranges before launch, so the VDCores blocker shifts from MInst provenance to runtime/device-side mutation, instruction upload, or CUDA memcheck allocator visibility for direct 1D cp_async_bulk loads. This is still not paper-grade correctness or resource-policy evidence."
+          "execution_attempt_id": "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200",
+          "status": "failed_after_kernel_launch",
+          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: The runtime load warp consumes the same direct 1D address that compute-sanitizer reports as the first invalid 4096-byte cp_async_bulk read, so VDCores still cannot provide correctness or queue/resource-policy timing. The remaining blocker is why this runtime-consumed global address is outside sanitizer allocation tracking or otherwise unmapped during launch."
         }
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."

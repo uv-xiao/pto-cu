@@ -26,6 +26,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-05-31 VDCores Qwen memcheck diagnostic](2026-05-31-vdcores-qwen-memcheck.md)
 - [2026-05-31 VDCores no-prefetch sweep](2026-05-31-vdcores-no-prefetch-sweep.md)
 - [2026-05-31 VDCores MInst provenance diagnostic](2026-05-31-vdcores-minst-provenance.md)
+- [2026-06-01 VDCores runtime LD warp diagnostic](2026-06-01-vdcores-runtime-ldwarp-diagnostic.md)
 - [2026-05-31 MPK model-access readiness](2026-05-31-mpk-model-access-readiness.md)
 - [2026-05-31 VDCores extension readiness](2026-05-31-vdcores-extension-readiness.md)
 - [2026-05-31 ThunderKittens selected sweep](2026-05-31-thunderkittens-selected-sweep.md)

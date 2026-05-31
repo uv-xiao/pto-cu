@@ -1878,10 +1878,10 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert "mpk_persistent_scheduler_trace" not in persistent_attempts
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
-    ] == "vdcores_qwen3_1p7b_minst_provenance_h200"
-    assert "live tensor ranges before launch" in persistent_attempts[
-        "vdcores_resource_policy_trace"
-    ]["blocker"]
+    ] == "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200"
+    assert "runtime load warp consumes the same direct 1D address" in (
+        persistent_attempts["vdcores_resource_policy_trace"]["blocker"]
+    )
     assert not any(
         "Latest execution attempt "
         "mpk_qwen3_0p6b_profile_termination_diagnostic_h200"
@@ -2010,8 +2010,9 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
         and item["execution_attempt_id"]
-        == "vdcores_qwen3_1p7b_minst_provenance_h200"
-        and "device-side mutation" in item["action"]
+        == "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200"
+        and "runtime load warp consumes the same direct 1D address"
+        in item["action"]
         for item in work_items
     )
 
@@ -2704,6 +2705,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_final_rms_memcheck_h200",
         "vdcores_qwen3_1p7b_no_prefetch_sweep_h200",
         "vdcores_qwen3_1p7b_minst_provenance_h200",
+        "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -3069,6 +3071,36 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert vdcores_minst["summary"]["sm0_rms_weight_load_pc"] == 0
     assert vdcores_minst["summary"]["sm0_hidden_load_pcs"] == [23, 54]
     assert "live tensor ranges before launch" in vdcores_minst["blocker"]
+    vdcores_ldwarp = attempts_by_id[
+        "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200"
+    ]
+    assert vdcores_ldwarp["status"] == "failed_after_kernel_launch"
+    assert vdcores_ldwarp["summary"]["mode"] == (
+        "vdcores_qwen_runtime_ldwarp_sm64"
+    )
+    assert vdcores_ldwarp["summary"]["debug_sm"] == 64
+    assert vdcores_ldwarp["summary"]["debug_stop_after"] == "final_rms"
+    assert vdcores_ldwarp["summary"]["launch_executed"]
+    assert vdcores_ldwarp["summary"]["debug_build_status"] == 0
+    assert vdcores_ldwarp["summary"]["sanitizer_exit_status"] == 1
+    assert vdcores_ldwarp["summary"]["error_summary_count"] == 18
+    assert (
+        vdcores_ldwarp["summary"]["invalid_4096_byte_global_read_count"]
+        == 16
+    )
+    first_load = vdcores_ldwarp["summary"]["first_ldwarp_load"]
+    first_invalid = vdcores_ldwarp["summary"]["first_invalid_read"]
+    assert first_load["address"] == first_invalid["address"]
+    assert first_load["size_bytes"] == 4096
+    assert first_invalid["size_bytes"] == 4096
+    assert first_invalid["device_source"] == "ldwarp.cuh:56"
+    assert first_invalid["kernel_source"] == "dae2.cuh:167"
+    assert vdcores_ldwarp["summary"][
+        "runtime_ldwarp_address_matches_memcheck_first_invalid"
+    ]
+    assert "runtime load warp consumes the same direct 1D address" in (
+        vdcores_ldwarp["blocker"]
+    )
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
@@ -3319,20 +3351,23 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if attempt["paper_baseline_id"] == "vdcores"
             )
             assert vdcores_attempt["execution_attempt_id"] == (
-                "vdcores_qwen3_1p7b_minst_provenance_h200"
+                "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200"
             )
             assert (
-                vdcores_attempt["summary"]["direct_1d_loads_without_owner"]
-                == 0
+                vdcores_attempt["summary"][
+                    "runtime_ldwarp_address_matches_memcheck_first_invalid"
+                ]
             )
             vdcores_actions = [
                 action
                 for action in item["next_actions"]
                 if action.get("execution_attempt_id")
-                == "vdcores_qwen3_1p7b_minst_provenance_h200"
+                == "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200"
             ]
             assert vdcores_actions
-            assert "device-side mutation" in vdcores_actions[0]["action"]
+            assert "runtime load warp consumes the same direct 1D address" in (
+                vdcores_actions[0]["action"]
+            )
         if item["id"] == "host_schedule_launch_overhead":
             assert item["matrix_status"] == "ready_for_paper_claim"
             assert item["ready_for_paper_claim"] is True

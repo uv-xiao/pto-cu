@@ -1227,6 +1227,79 @@
       }
     },
     {
+      "id": "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200",
+      "paper_baseline_id": "vdcores",
+      "paper_baseline_run_id": "vdcores_resource_policy_trace",
+      "title": "VDCores Qwen3 1.7B Runtime LD Warp Address Diagnostic",
+      "status": "failed_after_kernel_launch",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-ldwarp-sm64-16944235/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "Build tmp/baselines/vdcores with DAE_DEBUG_PRINT=64 and a temporary ldwarp address print, then run QWEN1P7B_NO_PREFETCH=all compute-sanitizer memcheck python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> --debug-num-layers 1 --debug-stop-after final_rms -N 1 --launch on H200.",
+      "observation": "SM64 emitted a runtime load-warp direct 1D load for slot 0, bar 0, addr 0x761ba2034000, size 4096. The first compute-sanitizer invalid 4096-byte cp_async_bulk read reports the same address in block (68,0,0), so the failing address is the direct 1D address consumed by the runtime load warp after instruction upload.",
+      "blocker": "The runtime load warp consumes the same direct 1D address that compute-sanitizer reports as the first invalid 4096-byte cp_async_bulk read, so VDCores still cannot provide correctness or queue/resource-policy timing. The remaining blocker is why this runtime-consumed global address is outside sanitizer allocation tracking or otherwise unmapped during launch.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-ldwarp-sm64-16944235/runtime-ldwarp-sm64-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-ldwarp-sm64-16944235/runtime-ldwarp-sm64-memcheck.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-ldwarp-sm64-16944235/runtime-ldwarp-sm64-memcheck-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-ldwarp-sm64-16944235/rebuild-debug-sm64.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-ldwarp-sm64-16944235/rebuild-debug-sm64-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-runtime-ldwarp-sm64-16944235/metadata.txt"
+      ],
+      "summary": {
+        "mode": "vdcores_qwen_runtime_ldwarp_sm64",
+        "model": "Qwen/Qwen3-1.7B",
+        "offline_cache_used": true,
+        "runtime_rebuilt_with_required_ops": true,
+        "debug_num_layers": 1,
+        "debug_stop_after": "final_rms",
+        "no_prefetch": "all",
+        "tool": "compute-sanitizer memcheck plus temporary DAE_DEBUG_PRINT=64 ldwarp address print",
+        "launch_executed": true,
+        "debug_sm": 64,
+        "remote_pto_commit": "61af3f017537692ea860c0729bba8c78e08d223f",
+        "remote_vdcores_commit": "5247328cf3f893ed9df95f9f38e7e9a97f0cbfb1",
+        "debug_build_status": 0,
+        "sanitizer_exit_status": 1,
+        "error_summary_count": 18,
+        "invalid_4096_byte_global_read_count": 16,
+        "first_ldwarp_load": {
+          "sm": 64,
+          "slot": 0,
+          "bar": 0,
+          "opcode": 9,
+          "address": "0x761ba2034000",
+          "size_bytes": 4096,
+          "arg": 0,
+          "nslot": 1
+        },
+        "first_invalid_read": {
+          "function": "cuda::ptx::cp_async_bulk",
+          "address": "0x761ba2034000",
+          "size_bytes": 4096,
+          "thread": "(192,0,0)",
+          "block": "(68,0,0)",
+          "device_source": "ldwarp.cuh:56",
+          "kernel_source": "dae2.cuh:167"
+        },
+        "unique_invalid_read_addresses": [
+          "0x761ba2034000",
+          "0x761d09e00000"
+        ],
+        "runtime_ldwarp_address_matches_memcheck_first_invalid": true,
+        "rules_out": [
+          "load warp consuming a different direct 1D address than the first memcheck invalid read",
+          "static Python-side MInst address provenance as sole cause"
+        ],
+        "next_debug_target": "explain why the direct 1D global address consumed by the runtime load warp is outside sanitizer allocation tracking or otherwise unmapped during VDCores launch",
+        "correctness_completed": false,
+        "resource_policy_measured": false
+      }
+    },
+    {
       "id": "thunderkittens_mha_h100_official_benchmark_h200",
       "paper_baseline_id": "thunderkittens",
       "paper_baseline_run_id": "thunderkittens_full_sweep",
