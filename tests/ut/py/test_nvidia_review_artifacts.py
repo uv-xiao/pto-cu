@@ -755,10 +755,13 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["ready_claims"] == 0
-    assert committed["blocked_claims"] == 4
+    assert committed["ready_claims"] == 1
+    assert committed["blocked_claims"] == 3
 
     by_id = {claim["id"]: claim for claim in committed["claim_audits"]}
+    host_claim = by_id["host_schedule_launch_overhead"]
+    assert host_claim["ready_for_paper_claim"]
+    assert host_claim["blockers"] == []
     llm_claim = by_id["llm_serving_paper_baselines"]
     assert not llm_claim["ready_for_paper_claim"]
     assert any(
@@ -1238,9 +1241,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert "correctness" in item["required_metrics"]
         assert "raw_artifacts" in item["required_metrics"]
         assert item["current_evidence_refs"]
-        assert item["missing_evidence"]
+        assert isinstance(item["missing_evidence"], list)
         assert item["promotion_gate"]
         if item["id"] == "host_schedule_launch_overhead":
+            assert item["status"] == "ready_for_paper_claim"
             assert "host_schedule_stream_concurrency" in item["workload_ids"]
             assert {
                 "pto_stream_serial",
@@ -1269,9 +1273,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 == "tmp/cuda-backend/graph-replay-sweep-01e30e99/"
                 for ref in item["current_evidence_refs"]
             )
-            assert item["missing_evidence"] == [
-                "Direct runtime and direct driver sweeps with distribution statistics across the same selected vector and tensor shapes."
-            ]
+            assert any(
+                ref.get("path")
+                == "tmp/cuda-backend/direct-launch-sweep-626b8c75/"
+                for ref in item["current_evidence_refs"]
+            )
+            assert item["missing_evidence"] == []
         if item["id"] == "llm_serving_paper_baselines":
             assert not any(
                 "Selected shared model" in gap
@@ -1284,12 +1291,18 @@ def test_benchmark_viewer_has_json_backed_review_data():
             )
 
     assert paper_readiness_audit["overall_status"] == "not_paper_ready"
-    assert paper_readiness_audit["blocked_claims"] == 4
+    assert paper_readiness_audit["ready_claims"] == 1
+    assert paper_readiness_audit["blocked_claims"] == 3
     assert paper_readiness_audit["claim_audits"]
     for item in paper_readiness_audit["claim_audits"]:
         assert item["matrix_status"]
-        assert item["ready_for_paper_claim"] is False
-        assert item["blockers"]
+        if item["id"] == "host_schedule_launch_overhead":
+            assert item["matrix_status"] == "ready_for_paper_claim"
+            assert item["ready_for_paper_claim"] is True
+            assert item["blockers"] == []
+        else:
+            assert item["ready_for_paper_claim"] is False
+            assert item["blockers"]
         assert item["promotion_gate"]
 
     assert results["snapshot"]["commit"] == "743709f3"
@@ -1470,6 +1483,66 @@ def test_benchmark_viewer_has_json_backed_review_data():
         >= record["statistic"]["device_wall_ns"]
         and record["correctness"] == "pass"
         for record in graph_replay_sweep_records
+    )
+    direct_launch_sweep_records = [
+        record
+        for record in results["result_records"]
+        if record["method_id"] in {"direct_runtime", "direct_driver"}
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/direct-launch-sweep-626b8c75/"
+    ]
+    assert {
+        (
+            record["hardware"]["gpu"],
+            record["method_id"],
+            record["benchmark_id"],
+            record["inputs"]["shape"],
+        )
+        for record in direct_launch_sweep_records
+    } == {
+        ("A100", "direct_driver", "host_schedule_vector_ops", "n=1024 vector"),
+        ("A100", "direct_driver", "host_schedule_vector_ops", "n=4096 vector"),
+        ("A100", "direct_driver", "host_schedule_vector_ops", "n=65536 vector"),
+        ("A100", "direct_runtime", "host_schedule_vector_ops", "n=1024 vector"),
+        ("A100", "direct_runtime", "host_schedule_vector_ops", "n=4096 vector"),
+        ("A100", "direct_runtime", "host_schedule_vector_ops", "n=65536 vector"),
+        ("A100", "direct_driver", "tensor_core_tile", "n=1024, tensor tile 16x16x16"),
+        ("A100", "direct_driver", "tensor_core_tile", "n=4096, tensor tile 16x16x16"),
+        ("A100", "direct_driver", "tensor_core_tile", "n=65536, tensor tile 16x16x16"),
+        ("A100", "direct_runtime", "tensor_core_tile", "n=1024, tensor tile 16x16x16"),
+        ("A100", "direct_runtime", "tensor_core_tile", "n=4096, tensor tile 16x16x16"),
+        ("A100", "direct_runtime", "tensor_core_tile", "n=65536, tensor tile 16x16x16"),
+        ("H200", "direct_driver", "host_schedule_vector_ops", "n=1024 vector"),
+        ("H200", "direct_driver", "host_schedule_vector_ops", "n=4096 vector"),
+        ("H200", "direct_driver", "host_schedule_vector_ops", "n=65536 vector"),
+        ("H200", "direct_runtime", "host_schedule_vector_ops", "n=1024 vector"),
+        ("H200", "direct_runtime", "host_schedule_vector_ops", "n=4096 vector"),
+        ("H200", "direct_runtime", "host_schedule_vector_ops", "n=65536 vector"),
+        ("H200", "direct_driver", "tensor_core_tile", "n=1024, tensor tile 16x16x16"),
+        ("H200", "direct_driver", "tensor_core_tile", "n=4096, tensor tile 16x16x16"),
+        ("H200", "direct_driver", "tensor_core_tile", "n=65536, tensor tile 16x16x16"),
+        ("H200", "direct_runtime", "tensor_core_tile", "n=1024, tensor tile 16x16x16"),
+        ("H200", "direct_runtime", "tensor_core_tile", "n=4096, tensor tile 16x16x16"),
+        ("H200", "direct_runtime", "tensor_core_tile", "n=65536, tensor tile 16x16x16"),
+    }
+    assert {
+        record["statistic"]["sample_count"]
+        for record in direct_launch_sweep_records
+    } == {10}
+    assert all(
+        record["inputs"]["repeat_policy"]
+        in {
+            "10-repeat CUDA Runtime API capture",
+            "10-repeat host-launch capture",
+            "10-repeat selected tensor launch capture",
+            "10-repeat direct-launch sweep capture",
+        }
+        and record["statistic"]["host_wall_p90_ns"]
+        >= record["statistic"]["host_wall_ns"]
+        and record["statistic"]["device_wall_p90_ns"]
+        >= record["statistic"]["device_wall_ns"]
+        and record["correctness"] == "pass"
+        for record in direct_launch_sweep_records
     )
     stream_concurrency_records = [
         record

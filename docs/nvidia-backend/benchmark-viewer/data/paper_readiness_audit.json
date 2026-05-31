@@ -7,26 +7,24 @@
     "docs/nvidia-backend/benchmark-viewer/data/results.json"
   ],
   "overall_status": "not_paper_ready",
-  "ready_claims": 0,
-  "blocked_claims": 4,
+  "ready_claims": 1,
+  "blocked_claims": 3,
   "claim_audits": [
     {
       "id": "host_schedule_launch_overhead",
       "title": "Host-Schedule Launch Overhead",
-      "matrix_status": "partial_current_capture",
-      "ready_for_paper_claim": false,
+      "matrix_status": "ready_for_paper_claim",
+      "ready_for_paper_claim": true,
       "evidence_ref_counts": {
-        "raw_artifact": 8,
+        "raw_artifact": 9,
         "viewer_data": 1,
         "viewer_result": 18
       },
-      "missing_evidence_count": 1,
+      "missing_evidence_count": 0,
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [],
       "probe_statuses": [],
-      "blockers": [
-        "Direct runtime and direct driver sweeps with distribution statistics across the same selected vector and tensor shapes."
-      ],
+      "blockers": [],
       "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, stream-concurrency sweeps, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts for each launch family."
     },
     {

@@ -12,6 +12,7 @@ full benchmark matrix and the compact selected gate.
 | Compact paired gate | `tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/` | 108 | Review-size gate for selected baselines and graph descriptor rows. |
 | Stream concurrency | `tmp/cuda-backend/combined-stream-pool6-02bca4df/` | 40 | Ten-repeat A100/H200 comparison between serial host-schedule launches and parallel launches on separate CUDA streams. |
 | Graph replay sweep | `tmp/cuda-backend/graph-replay-sweep-01e30e99/` | 120 | Ten-repeat A100/H200 CUDA Driver graph replay sweep for vector sizes 1024, 4096, 65536 and matching naive SGEMM graph replay. |
+| Direct launch sweep | `tmp/cuda-backend/direct-launch-sweep-626b8c75/` | 240 | Ten-repeat A100/H200 CUDA Runtime and CUDA Driver direct-launch sweep for the same vector sizes and naive SGEMM tile shape. |
 
 These captures passed `cuda_validate_capture.py` with the matching current
 presets during the latest verification run.
@@ -21,6 +22,8 @@ presets during the latest verification run.
 | Row | Runtime meaning | Review signal |
 | --- | --- | --- |
 | `pto_host_schedule` | Host launches CUDA callables asynchronously through the CUDA host runtime. | Phase-1 launch path and stream API surface. |
+| `direct_runtime` | CUDA Runtime API launches vector and naive SGEMM kernels directly from host code. | Runtime API launch baseline for host-schedule comparisons. |
+| `direct_driver` | CUDA Driver API launches vector and naive SGEMM kernels directly from host code. | Driver API launch baseline for host-schedule comparisons. |
 | `direct_driver_graph` | Raw CUDA Driver API graph replay. | Host-launch amortization baseline. |
 | `pto_persistent_device` | Persistent CUDA kernel executes task descriptors on worker blocks. | First device-side scheduler baseline. |
 | `pto_persistent_dag_graph_layered_cross` | Persistent scheduler executes a nine-task explicit graph descriptor. | Current graph topology and lifetime-stress gate. |

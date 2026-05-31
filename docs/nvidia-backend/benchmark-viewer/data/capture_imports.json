@@ -95,6 +95,30 @@
       }
     },
     {
+      "baseline": "direct_driver",
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_driver",
+      "n": 4096,
+      "task_count": 1,
+      "inputs": {
+        "shape": "n=4096 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat direct-launch sweep capture"
+      }
+    },
+    {
+      "baseline": "direct_driver",
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_driver",
+      "n": 65536,
+      "task_count": 1,
+      "inputs": {
+        "shape": "n=65536 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat direct-launch sweep capture"
+      }
+    },
+    {
       "baseline": "direct_runtime",
       "benchmark_id": "host_schedule_vector_ops",
       "method_id": "direct_runtime",
@@ -104,6 +128,30 @@
         "shape": "n=1024 vector",
         "dtype": "float32",
         "repeat_policy": "10-repeat CUDA Runtime API capture"
+      }
+    },
+    {
+      "baseline": "direct_runtime",
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_runtime",
+      "n": 4096,
+      "task_count": 1,
+      "inputs": {
+        "shape": "n=4096 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat direct-launch sweep capture"
+      }
+    },
+    {
+      "baseline": "direct_runtime",
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_runtime",
+      "n": 65536,
+      "task_count": 1,
+      "inputs": {
+        "shape": "n=65536 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat direct-launch sweep capture"
       }
     },
     {
@@ -119,6 +167,30 @@
       }
     },
     {
+      "baseline": "direct_driver_sgemm",
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "direct_driver",
+      "n": 4096,
+      "task_count": 1,
+      "inputs": {
+        "shape": "n=4096, tensor tile 16x16x16",
+        "dtype": "float32 naive SGEMM",
+        "repeat_policy": "10-repeat direct-launch sweep capture"
+      }
+    },
+    {
+      "baseline": "direct_driver_sgemm",
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "direct_driver",
+      "n": 65536,
+      "task_count": 1,
+      "inputs": {
+        "shape": "n=65536, tensor tile 16x16x16",
+        "dtype": "float32 naive SGEMM",
+        "repeat_policy": "10-repeat direct-launch sweep capture"
+      }
+    },
+    {
       "baseline": "direct_runtime_sgemm",
       "benchmark_id": "tensor_core_tile",
       "method_id": "direct_runtime",
@@ -128,6 +200,30 @@
         "shape": "n=1024, tensor tile 16x16x16",
         "dtype": "float32 naive SGEMM",
         "repeat_policy": "10-repeat selected tensor launch capture"
+      }
+    },
+    {
+      "baseline": "direct_runtime_sgemm",
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "direct_runtime",
+      "n": 4096,
+      "task_count": 1,
+      "inputs": {
+        "shape": "n=4096, tensor tile 16x16x16",
+        "dtype": "float32 naive SGEMM",
+        "repeat_policy": "10-repeat direct-launch sweep capture"
+      }
+    },
+    {
+      "baseline": "direct_runtime_sgemm",
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "direct_runtime",
+      "n": 65536,
+      "task_count": 1,
+      "inputs": {
+        "shape": "n=65536, tensor tile 16x16x16",
+        "dtype": "float32 naive SGEMM",
+        "repeat_policy": "10-repeat direct-launch sweep capture"
       }
     },
     {

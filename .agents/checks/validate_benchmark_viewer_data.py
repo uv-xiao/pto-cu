@@ -656,7 +656,15 @@ def validate_paper_evaluation_matrix(
         hardware_targets = require_list(record, "hardware_targets", owner)
         metrics = set(require_list(record, "required_metrics", owner))
         evidence_refs = require_list(record, "current_evidence_refs", owner)
-        require_list(record, "missing_evidence", owner)
+        missing_evidence = record.get("missing_evidence")
+        if not isinstance(missing_evidence, list) or not all(
+            isinstance(item, str) and item.strip() for item in missing_evidence
+        ):
+            fail(f"{owner} missing_evidence is not a list of strings")
+        if record["status"] == "ready_for_paper_claim" and missing_evidence:
+            fail(f"{owner} is ready but still has missing_evidence")
+        if record["status"] != "ready_for_paper_claim" and not missing_evidence:
+            fail(f"{owner} is not ready but has no missing_evidence")
 
         for workload_id in workloads:
             if workload_id not in benchmark_ids:
@@ -768,6 +776,10 @@ def validate_paper_readiness_audit(
         missing_count = claim.get("missing_evidence_count")
         if isinstance(missing_count, bool) or not isinstance(missing_count, int):
             fail(f"{owner} missing_evidence_count is not an integer")
+        if claim["ready_for_paper_claim"] and (
+            claim["blockers"] or missing_count != 0
+        ):
+            fail(f"{owner} is ready but still has blockers or missing evidence")
         if not claim["ready_for_paper_claim"] and not claim["blockers"]:
             fail(f"{owner} is blocked but has no blockers")
 

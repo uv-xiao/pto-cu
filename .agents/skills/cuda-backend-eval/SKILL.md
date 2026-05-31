@@ -213,6 +213,22 @@ This writes `cuda-benchmark.json`, Markdown, and SVG reports under
 `tmp/cuda-backend/graph-replay-sweep-<commit>/` and validates A100/H200 rows
 for `direct_driver_graph` and `direct_driver_graph_sgemm`.
 
+Run the paired CUDA direct-launch sweep when the host-schedule
+launch-overhead claim needs CUDA Runtime and CUDA Driver distributions across
+the same selected vector and tensor launch shapes:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_direct_launch_sweep.py \
+    --branch goal/nvidia-paper-ready --sizes 1024,4096,65536 \
+    --repeats 10 --sync-remote-tree
+```
+
+This writes `cuda-benchmark.json`, Markdown, and SVG reports under
+`tmp/cuda-backend/direct-launch-sweep-<commit>/` and validates A100/H200 rows
+for `direct_runtime`, `direct_driver`, `direct_runtime_sgemm`, and
+`direct_driver_sgemm`.
+
 Run the persistent-device tracer-bullet smoke:
 
 ```bash
