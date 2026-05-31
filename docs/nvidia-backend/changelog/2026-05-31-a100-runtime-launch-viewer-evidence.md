@@ -45,6 +45,6 @@ The imported `direct_runtime` record has `sample_count=10`,
 
 - The capture covers A100 only.
 - The capture covers the vector host-schedule shape only.
-- The host-schedule launch-overhead claim still needs H200 Runtime/Driver rows,
-  selected tensor launch shapes, and full p50/p90/p99 statistics before it can
-  be promoted to paper-ready.
+- A later H200 host-launch capture closes the vector Runtime/Driver row gap.
+  The claim still needs selected tensor launch shapes and full p50/p90/p99
+  statistics before it can be promoted to paper-ready.

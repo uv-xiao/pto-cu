@@ -158,8 +158,13 @@ tensor-shape graph rows remain open.
 The follow-up A100 capture at
 `tmp/cuda-backend/host-launch-runtime-a100-e429c07b/` imports a 10-repeat
 `direct_runtime` row produced by an nvcc-built shared library that calls
-`cudaLaunchKernel`, reducing the Runtime API gap to H200 and tensor-shape
-coverage.
+`cudaLaunchKernel`.
+The H200 host-launch capture at
+`tmp/cuda-backend/host-launch-h200-ec8f272e/` imports 10-repeat
+`direct_runtime`, `direct_driver`, and `direct_driver_graph` rows for the same
+`n=1024` vector shape. This closes the cross-GPU vector-launch comparison gap
+for Runtime API, Driver API, and Driver graph paths while selected tensor
+launch shapes and distribution sweeps remain open.
 
 Paper-baseline raw captures can be converted with
 `.agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py`.

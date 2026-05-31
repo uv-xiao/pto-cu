@@ -1262,6 +1262,28 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert len(runtime_launch_records) == 1
     assert runtime_launch_records[0]["statistic"]["sample_count"] == 10
     assert runtime_launch_records[0]["correctness"] == "pass"
+    h200_host_launch_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "host_schedule_vector_ops"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"] == "tmp/cuda-backend/host-launch-h200-ec8f272e/"
+    ]
+    assert {
+        record["method_id"] for record in h200_host_launch_records
+    } == {
+        "pto_host_schedule",
+        "direct_runtime",
+        "direct_driver",
+        "direct_driver_graph",
+    }
+    assert {
+        record["statistic"]["sample_count"]
+        for record in h200_host_launch_records
+    } == {10}
+    assert {
+        record["correctness"] for record in h200_host_launch_records
+    } == {"pass"}
     for record in results["result_records"]:
         assert record["benchmark_id"] in benchmark_ids
         assert record["method_id"] in method_ids

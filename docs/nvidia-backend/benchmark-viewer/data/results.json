@@ -381,7 +381,7 @@
       "inputs": {
         "shape": "n=1024 vector",
         "dtype": "float32",
-        "repeat_policy": "10-repeat local A100 host-launch capture"
+        "repeat_policy": "10-repeat host-launch capture"
       },
       "statistic": {
         "kind": "median_capture_group",
@@ -407,7 +407,7 @@
       "inputs": {
         "shape": "n=1024 vector",
         "dtype": "float32",
-        "repeat_policy": "10-repeat local A100 host-launch capture"
+        "repeat_policy": "10-repeat host-launch capture"
       },
       "statistic": {
         "kind": "median_capture_group",
@@ -433,7 +433,7 @@
       "inputs": {
         "shape": "n=1024 vector",
         "dtype": "float32",
-        "repeat_policy": "10-repeat local A100 Runtime API capture"
+        "repeat_policy": "10-repeat CUDA Runtime API capture"
       },
       "statistic": {
         "kind": "median_capture_group",
@@ -442,6 +442,110 @@
         "device_wall_ns": 252415
       },
       "raw_artifact": "tmp/cuda-backend/host-launch-runtime-a100-e429c07b/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "pto_host_schedule",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "ec8f272e",
+      "inputs": {
+        "shape": "n=1024 vector",
+        "dtype": "float32",
+        "repeat_policy": "selected row from compact capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 25340,
+        "device_wall_ns": 14976
+      },
+      "raw_artifact": "tmp/cuda-backend/host-launch-h200-ec8f272e/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_driver_graph",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "ec8f272e",
+      "inputs": {
+        "shape": "n=1024 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat host-launch capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 26296,
+        "device_wall_ns": 14991
+      },
+      "raw_artifact": "tmp/cuda-backend/host-launch-h200-ec8f272e/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_driver",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "ec8f272e",
+      "inputs": {
+        "shape": "n=1024 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat host-launch capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 32077,
+        "device_wall_ns": 20911
+      },
+      "raw_artifact": "tmp/cuda-backend/host-launch-h200-ec8f272e/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "direct_runtime",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "ec8f272e",
+      "inputs": {
+        "shape": "n=1024 vector",
+        "dtype": "float32",
+        "repeat_policy": "10-repeat CUDA Runtime API capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 10,
+        "host_wall_ns": 157191,
+        "device_wall_ns": 146336
+      },
+      "raw_artifact": "tmp/cuda-backend/host-launch-h200-ec8f272e/",
       "correctness": "pass"
     }
   ]

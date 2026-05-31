@@ -971,6 +971,44 @@ Each entry must include:
   `node --check` on the viewer, and `git diff --check`.
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: the host-schedule launch-overhead claim
-  now has A100 PTO, Runtime API, raw Driver API, and Driver graph rows. The
-  remaining gaps are H200 Runtime/Driver rows, selected tensor launch shapes,
-  and p50/p90/p99 distribution-ready captures.
+  now has A100 PTO, Runtime API, raw Driver API, and Driver graph rows. A
+  later H200 host-launch entry closes the H200 vector Runtime/Driver row gap;
+  selected tensor launch shapes and p50/p90/p99 distribution-ready captures
+  remain open.
+
+### 2026-05-31 - H200 Host Launch Viewer Evidence
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned H200
+  host-launch evidence slice.
+- Exact Codex command or script invocation: no worker invocation. Used the
+  documented remote fallback by syncing the local tree to `bizhaoh200` with
+  `rsync`, then ran:
+  `CUDA_HOME=/usr/local/cuda-12.8 PATH=/usr/local/cuda-12.8/bin:$PATH
+  PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py --device 0
+  --sizes 1024 --repeats 10 --block-dim 256 --arch compute_90 --label
+  host-launch-h200-ec8f272e --output-dir
+  tmp/cuda-backend/host-launch-h200-ec8f272e`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, benchmark viewer and
+  paper-ready evaluation evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark viewer data, CUDA evaluation raw
+  artifacts under `tmp/`, focused tests, evaluation plan, dispatch log, and
+  changelog docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: remote Git refresh was avoided by the
+  tree-sync fallback. The capture covers the H200 `n=1024` vector launch
+  shape only; tensor launch shapes and distribution sweeps remain open.
+- Verification commands and results: captured ten passing H200 repeats for
+  `pto_host_schedule`, `direct_runtime`, `direct_driver`, and
+  `direct_driver_graph`, validated the raw capture with
+  `cuda_validate_capture.py`, exported viewer records with
+  `cuda_viewer_export.py`, and regenerated `paper_readiness_audit.json`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the host-schedule launch-overhead claim
+  now has A100 and H200 vector evidence for PTO host-schedule, CUDA Runtime
+  API, CUDA Driver API, and CUDA Driver graph paths. Remaining gaps are
+  selected tensor launch shapes and p50/p90/p99 distribution-ready sweeps.

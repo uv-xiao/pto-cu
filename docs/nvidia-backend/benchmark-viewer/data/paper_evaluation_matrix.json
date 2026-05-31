@@ -51,14 +51,32 @@
         {
           "kind": "viewer_result",
           "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "direct_driver_graph",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
           "method_id": "direct_driver",
           "gpu": "A100"
         },
         {
           "kind": "viewer_result",
           "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "direct_driver",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
           "method_id": "direct_runtime",
           "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "direct_runtime",
+          "gpu": "H200"
         },
         {
           "kind": "viewer_data",
@@ -75,11 +93,14 @@
         {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/host-launch-runtime-a100-e429c07b/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/host-launch-h200-ec8f272e/"
         }
       ],
       "missing_evidence": [
-        "H200 direct CUDA Runtime API row for the same host-schedule vector shape.",
-        "H200 CUDA Driver launch and graph rows plus selected tensor launch shapes.",
+        "Selected tensor launch shapes for CUDA Runtime, Driver, and graph rows.",
         "Stream-count and graph-replay sweeps with sample distributions instead of selected medians."
       ],
       "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts."
