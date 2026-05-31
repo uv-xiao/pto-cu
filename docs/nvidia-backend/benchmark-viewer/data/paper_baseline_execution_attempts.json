@@ -252,6 +252,50 @@
         "compiled_extension": true,
         "launched": false
       }
+    },
+    {
+      "id": "thunderkittens_mha_h100_official_benchmark_h200",
+      "paper_baseline_id": "thunderkittens",
+      "paper_baseline_run_id": "thunderkittens_full_sweep",
+      "title": "ThunderKittens Official H100 MHA Benchmark Probe",
+      "status": "partial",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "cd tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076 && PYTHONPATH=$PWD/tmp/baselines/thunderkittens/kernels/attention/mha_h100:$PYTHONPATH python tmp/baselines/thunderkittens/kernels/attention/mha_h100/benchmark.py && PYTHONPATH=$PWD/tmp/baselines/thunderkittens/kernels/attention/mha_h100:$PYTHONPATH python tmp/baselines/thunderkittens/kernels/attention/mha_h100/test_correctness.py",
+      "observation": "The official ThunderKittens H100 MHA benchmark completed forward/backward causal and non-causal tables on H200 after rebuilding the extension with the project venv; the official correctness script generated output, backward, and all-mode error graphs.",
+      "blocker": "The probe remains partial because FlashAttention 3 bindings are unavailable, PyTorch reference rows OOM at selected 12288-token shapes, and non-MHA ThunderKittens kernels are not covered.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/upstream-summary.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/build-venv.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/build-venv-status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/run-after-build.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/run-after-build-status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/correctness.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/correctness-status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/correctness-generated-files.txt"
+      ],
+      "summary": {
+        "mode": "official_mha_h100",
+        "kernel": "kernels/attention/mha_h100",
+        "sequence_lengths": [
+          768,
+          1536,
+          3072,
+          6144,
+          12288
+        ],
+        "build_with_project_venv": true,
+        "benchmark_completed": true,
+        "correctness_completed": true,
+        "tk_rows_completed": true,
+        "fa3_available": false,
+        "pytorch_reference_oom": true,
+        "generated_error_graphs": 6
+      }
     }
   ]
 }

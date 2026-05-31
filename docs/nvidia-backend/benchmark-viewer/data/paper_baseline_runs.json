@@ -383,7 +383,10 @@
       ],
       "expected_artifacts": [
         "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/correctness.json",
-        "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/benchmark.json"
+        "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/benchmark.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/upstream-summary.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/run-after-build.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/correctness.log"
       ],
       "required_metrics": [
         "correctness",

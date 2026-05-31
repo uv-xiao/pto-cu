@@ -167,7 +167,10 @@
           "serving_workload_ids": [],
           "expected_artifacts": [
             "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/correctness.json",
-            "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/benchmark.json"
+            "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/benchmark.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/upstream-summary.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/run-after-build.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/correctness.log"
           ]
         }
       ],
@@ -192,13 +195,13 @@
         }
       ],
       "blockers": [
-        "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture."
+        "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable, PyTorch reference rows OOM at selected 12288-token shapes, and non-MHA ThunderKittens kernels are not yet captured."
       ],
       "next_actions": [
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
-          "action": "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture."
+          "action": "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable, PyTorch reference rows OOM at selected 12288-token shapes, and non-MHA ThunderKittens kernels are not yet captured."
         }
       ],
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."

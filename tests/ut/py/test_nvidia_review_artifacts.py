@@ -1915,8 +1915,9 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "thunderkittens_full_sweep",
     } <= tensor_run_ids
     assert any(
-        "Full ThunderKittens upstream correctness and benchmark sweeps"
+        "Resolve remaining official ThunderKittens upstream sweep gaps"
         in blocker
+        and "non-MHA ThunderKittens kernels" in blocker
         for blocker in tensor_claim["blockers"]
     )
     assert not any(
@@ -1925,7 +1926,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     )
     assert any(
         action["source"] == "matrix_missing_evidence"
-        and "Full ThunderKittens upstream correctness" in action["action"]
+        and "FlashAttention 3 bindings are unavailable" in action["action"]
         for action in tensor_claim["next_actions"]
     )
 
@@ -2521,6 +2522,18 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 path.endswith("benchmark.json") for path in item["expected_artifacts"]
             )
             assert any(
+                path.endswith("upstream-summary.json")
+                for path in item["expected_artifacts"]
+            )
+            assert any(
+                path.endswith("run-after-build.log")
+                for path in item["expected_artifacts"]
+            )
+            assert any(
+                path.endswith("correctness.log")
+                for path in item["expected_artifacts"]
+            )
+            assert any(
                 "thunderkittens_full_sweep_capture.py" in command
                 for command in item["run_commands"]
             )
@@ -2638,6 +2651,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mpk_qwen3_0p6b_no_cutlass_token2_h200",
         "mpk_qwen3_0p6b_token1_noprofile_h200",
         "vdcores_qwen3_1p7b_dry_build_h200",
+        "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
     assert (
@@ -2679,6 +2693,16 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert vdcores_attempt["summary"]["layers"] == 28
     assert vdcores_attempt["summary"]["compute_operators"] == 9
     assert not vdcores_attempt["summary"]["requires_hf_token"]
+    tk_official_attempt = attempts_by_id[
+        "thunderkittens_mha_h100_official_benchmark_h200"
+    ]
+    assert tk_official_attempt["status"] == "partial"
+    assert tk_official_attempt["summary"]["benchmark_completed"]
+    assert tk_official_attempt["summary"]["correctness_completed"]
+    assert tk_official_attempt["summary"]["tk_rows_completed"]
+    assert not tk_official_attempt["summary"]["fa3_available"]
+    assert tk_official_attempt["summary"]["pytorch_reference_oom"]
+    assert "non-MHA ThunderKittens kernels" in tk_official_attempt["blocker"]
     for attempt in execution_attempts:
         assert attempt["artifact_root"].startswith("tmp/")
         assert (ROOT / attempt["artifact_root"]).is_dir()

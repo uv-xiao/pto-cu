@@ -51,7 +51,7 @@
       "paper_baseline_id": "",
       "paper_baseline_run_id": "",
       "status": "missing",
-      "action": "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture.",
+      "action": "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable, PyTorch reference rows OOM at selected 12288-token shapes, and non-MHA ThunderKittens kernels are not yet captured.",
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
     },
     {

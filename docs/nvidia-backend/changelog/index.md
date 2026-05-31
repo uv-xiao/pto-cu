@@ -14,6 +14,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-05-31 MPK model-access readiness](2026-05-31-mpk-model-access-readiness.md)
 - [2026-05-31 VDCores extension readiness](2026-05-31-vdcores-extension-readiness.md)
 - [2026-05-31 ThunderKittens selected sweep](2026-05-31-thunderkittens-selected-sweep.md)
+- [2026-05-31 ThunderKittens official MHA probe](2026-05-31-thunderkittens-official-mha-probe.md)
 - [2026-05-31 ThunderKittens serving capture](2026-05-31-thunderkittens-serving-capture.md)
 - [2026-05-31 PTO serving-equivalent evidence](2026-05-31-pto-serving-equivalent-evidence.md)
 - [2026-05-31 ultimate goal setup](2026-05-31-ultimate-goal.md)
