@@ -2208,3 +2208,41 @@ Each entry must include:
   metadata, and `RepeatM` feeds invalid `desc33` coordinates `(65535,127,0)`
   where the build-only schedule expects `[0,0,0,0]`. VDCores still lacks
   correctness and queue/resource-policy timing.
+
+### 2026-06-01 - VDCores Slot Lifetime PC44-PC52 Diagnostic
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  slot-lifetime diagnostic for the persistent scheduler baseline gap.
+- Exact Codex command or script invocation: copied the tmp-only
+  `vdcores-slot-lifetime-diagnostic-pc44-pc52.patch` into the H200 VDCores
+  checkout, rebuilt with `DAE_DIAG_SLOT_LIFETIME` and
+  `DAE_DIAG_WAIT_AFTER_WB_ALLOC`, then ran `CUDA_VISIBLE_DEVICES=7`,
+  `QWEN1P7B_NO_PREFETCH=all`, `QWEN1P7B_LOGITS_SPLIT_M=6`, offline Hugging
+  Face cache, `--debug-num-layers 1`, `--debug-stop-after logits`, `-N 1`,
+  and `--launch`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, and local `tmp/` raw artifacts copied back
+  from H200. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the remote pto-cu checkout still had
+  unrelated dirty viewer-data files, so this used the allowed tmp patch-copy
+  path instead of remote Git refresh. The remote VDCores checkout was clean
+  before applying the diagnostic patch.
+- Verification commands and results: remote rebuild status `0`; valid launch
+  status `1`; PC48 wait changed flags from `0x00fffffe` to `0x00ffffff`;
+  STU copied slot 0 opcode `0443`; `Unknown mem wb opcode` did not recur;
+  PC50 still applied `addr_accum=0x7fffff` and produced desc33 coordinates
+  `(65535,127,0,0)`, ending in illegal instruction.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: writeback metadata lifetime is a real
+  hazard but not sufficient to fix the logits-stage failure. The next VDCores
+  diagnostic should instrument the PC49/PC50 `RepeatM` shuffle lane source and
+  packed coordinate delta encoding before attempting queue/resource-policy
+  timing import.
