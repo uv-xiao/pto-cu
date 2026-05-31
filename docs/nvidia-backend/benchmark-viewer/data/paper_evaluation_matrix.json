@@ -229,12 +229,15 @@
         {
           "kind": "stable_doc",
           "path": "docs/nvidia-backend/persistent-device.md"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/scheduler-breakdown-6f7a1040/persistent-scheduler-breakdown-6f7a1040/"
         }
       ],
       "missing_evidence": [
         "MPK persistent-kernel run with matching workload metadata.",
-        "VDCores run with matching queue/resource-policy metadata.",
-        "Scheduler-overhead breakdown that separates ready-queue work, worker execution, and host synchronization."
+        "VDCores run with matching queue/resource-policy metadata."
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },

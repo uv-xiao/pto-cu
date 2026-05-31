@@ -255,6 +255,26 @@ def _load_scheduler_scaling_module():
         sys.modules.pop(spec.name, None)
 
 
+def _load_scheduler_breakdown_module():
+    script_path = (
+        Path(__file__).resolve().parents[3]
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "cuda_scheduler_breakdown.py"
+    )
+    spec = importlib.util.spec_from_file_location("cuda_scheduler_breakdown", script_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        sys.modules.pop(spec.name, None)
+
+
 def _load_current_summary_module():
     script_dir = Path(__file__).resolve().parents[3] / ".agents" / "skills" / "cuda-backend-eval" / "scripts"
     script_path = script_dir / "cuda_current_summary.py"
@@ -6485,6 +6505,92 @@ def test_cuda_scheduler_scaling_report_uses_shape_local_baselines(tmp_path):
         "| a100 | graph_descriptor_parallel_chains | 9 | 4 | 120000 | 13333 | 2.25 | 121000 | `2,2,3,2` |"
     ) in markdown
     assert "`0.60x` |" in markdown
+
+
+def test_cuda_scheduler_breakdown_separates_queue_worker_and_host_sync(tmp_path):
+    cuda_scheduler_breakdown = _load_scheduler_breakdown_module()
+    payloads = {
+        "a100": {
+            "status": "pass",
+            "runtime": "persistent_device",
+            "mode": "dag",
+            "dag_shape": "graph_descriptor_layered_cross",
+            "n": 1024,
+            "task_count": 9,
+            "completed_count": 9,
+            "device_wall_ns": 90000,
+            "host_wall_ns": 130000,
+            "scheduler_blocks": 3,
+            "worker_blocks": 4,
+            "scheduler_loop_count": 3,
+            "scheduler_processed_count": 9,
+            "scheduler_processed_by_block": [3, 3, 3],
+            "launch_completed_counts": [9, 9],
+            "launch_device_wall_ns": [50000, 40000],
+            "launch_host_wall_ns": [70000, 60000],
+            "dispatch_func_ids": [1, 2, 11, 1, 2, 1, 6, 1, 1],
+            "resource_policy": {
+                "scheduler_blocks": 3,
+                "worker_blocks": 4,
+                "grid_dim": 7,
+                "stream_id": 1,
+            },
+            "device_scheduler_errors": {"count": 0, "code": 0, "task_id": 0},
+        },
+        "h200": {
+            "status": "pass",
+            "runtime": "persistent_device",
+            "mode": "dag",
+            "dag_shape": "graph_descriptor_layered_cross",
+            "n": 1024,
+            "task_count": 9,
+            "completed_count": 9,
+            "device_wall_ns": 72000,
+            "host_wall_ns": 105000,
+            "scheduler_blocks": 3,
+            "worker_blocks": 4,
+            "scheduler_loop_count": 3,
+            "scheduler_processed_count": 9,
+            "scheduler_processed_by_block": [2, 4, 3],
+            "launch_completed_counts": [9, 9],
+            "launch_device_wall_ns": [40000, 32000],
+            "launch_host_wall_ns": [58000, 47000],
+            "dispatch_func_ids": [1, 2, 11, 1, 2, 1, 6, 1, 1],
+            "resource_policy": {
+                "scheduler_blocks": 3,
+                "worker_blocks": 4,
+                "grid_dim": 7,
+                "stream_id": 1,
+            },
+            "device_scheduler_errors": {"count": 0, "code": 0, "task_id": 0},
+        },
+    }
+    paths = []
+    for artifact, payload in payloads.items():
+        path = tmp_path / f"{artifact}.json"
+        path.write_text(json.dumps(payload) + "\n")
+        paths.append(path)
+
+    rows = cuda_scheduler_breakdown.load_breakdown_rows(paths)
+    markdown = cuda_scheduler_breakdown.render_markdown_report(
+        rows,
+        label="scheduler-breakdown-test",
+    )
+    output_dir = tmp_path / "report"
+    cuda_scheduler_breakdown.write_breakdown_report(
+        rows,
+        output_dir,
+        label="scheduler-breakdown-test",
+    )
+
+    report = json.loads((output_dir / "cuda-scheduler-breakdown.json").read_text())
+    assert len(report["rows"]) == 2
+    assert report["rows"][0]["ready_queue"]["processed_count"] == 9
+    assert report["rows"][0]["ready_queue"]["processed_by_block"] == [3, 3, 3]
+    assert report["rows"][0]["worker_execution"]["device_ns_per_task"] == 10000
+    assert report["rows"][0]["host_synchronization"]["host_sync_overhead_ns"] == 40000
+    assert "| a100 | graph_descriptor_layered_cross | 9 | `3,3,3` | 90000 | 10000 | 40000 |" in markdown
+    assert "ready_queue" in (output_dir / "cuda-scheduler-breakdown.svg").read_text()
 
 
 def test_cuda_pair_persistent_smoke_passes_repeat_runs(tmp_path):

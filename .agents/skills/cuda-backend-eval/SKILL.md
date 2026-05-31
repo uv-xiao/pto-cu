@@ -504,6 +504,21 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-dir tmp/cuda-backend/scheduler-graph-size-scaling-working/scheduler-graph-size-scaling-$(git rev-parse --short HEAD)
 ```
 
+Use `cuda_scheduler_breakdown.py` when the paper-readiness matrix needs a
+reviewable persistent-device scheduler breakdown. It consumes paired
+persistent smoke JSON and separates the observable scheduler counters
+(`ready_queue`), completed task execution (`worker_execution`), and host minus
+device timing (`host_synchronization`) into JSON, Markdown, and SVG reports:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_scheduler_breakdown.py \
+    tmp/cuda-backend/scheduler-breakdown-$(git rev-parse --short HEAD)/persistent-graph_descriptor_layered_cross-sched3-repeat20-smoke-$(git rev-parse --short HEAD)/a100.json \
+    tmp/cuda-backend/scheduler-breakdown-$(git rev-parse --short HEAD)/persistent-graph_descriptor_layered_cross-sched3-repeat20-smoke-$(git rev-parse --short HEAD)/h200.json \
+    --label persistent-scheduler-breakdown-$(git rev-parse --short HEAD) \
+    --output-dir tmp/cuda-backend/scheduler-breakdown-$(git rev-parse --short HEAD)/persistent-scheduler-breakdown-$(git rev-parse --short HEAD)
+```
+
 Run the bounded-ring persistent smoke with wraparound:
 
 ```bash

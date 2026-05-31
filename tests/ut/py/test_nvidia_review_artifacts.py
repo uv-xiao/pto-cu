@@ -923,6 +923,10 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "vdcores_resource_policy_trace",
     } <= persistent_run_ids
     assert not any(
+        "Scheduler-overhead breakdown" in blocker
+        for blocker in persistent_claim["blockers"]
+    )
+    assert not any(
         "No paper baseline run record is attached" in blocker
         for blocker in persistent_claim["blockers"]
     )
@@ -1424,6 +1428,17 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 for ref in item["current_evidence_refs"]
             )
             assert item["missing_evidence"] == []
+        if item["id"] == "persistent_device_scheduler_overhead":
+            assert any(
+                ref.get("kind") == "raw_artifact"
+                and ref.get("path")
+                == "tmp/cuda-backend/scheduler-breakdown-6f7a1040/persistent-scheduler-breakdown-6f7a1040/"
+                for ref in item["current_evidence_refs"]
+            )
+            assert not any(
+                "Scheduler-overhead breakdown" in gap
+                for gap in item["missing_evidence"]
+            )
         if item["id"] == "llm_serving_paper_baselines":
             assert not any(
                 "Selected shared model" in gap
@@ -1867,6 +1882,14 @@ def test_review_policy_changelog_and_examples_exist():
         / "cuda-backend-eval"
         / "scripts"
         / "cutlass_tensor_tile_capture.py"
+    ).is_file()
+    assert (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "cuda_scheduler_breakdown.py"
     ).is_file()
     assert (
         ROOT

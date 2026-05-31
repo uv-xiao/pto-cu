@@ -33,10 +33,11 @@
       "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
+        "raw_artifact": 1,
         "stable_doc": 1,
         "viewer_result": 2
       },
-      "missing_evidence_count": 3,
+      "missing_evidence_count": 2,
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {
@@ -97,7 +98,6 @@
       "blockers": [
         "MPK persistent-kernel run with matching workload metadata.",
         "VDCores run with matching queue/resource-policy metadata.",
-        "Scheduler-overhead breakdown that separates ready-queue work, worker execution, and host synchronization.",
         "Paper baseline run mpk_persistent_scheduler_trace is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer."
       ],
