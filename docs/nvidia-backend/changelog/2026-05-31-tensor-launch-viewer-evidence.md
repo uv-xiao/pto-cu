@@ -42,6 +42,5 @@ baselines and `16x16x16` tensor-tile metadata.
 
 - The host-schedule launch-overhead claim still needs actual stream-count and
   graph-replay sweeps across selected vector and tensor shapes.
-- The tensor-core baseline claim still needs matching PTO tensor-core, CUTLASS
-  or CuTe, Triton or `torch.compile`, and broader ThunderKittens rows before
-  it is paper-ready.
+- The tensor-core baseline claim still needs CUTLASS or CuTe, Triton or
+  `torch.compile`, and broader ThunderKittens rows before it is paper-ready.

@@ -109,9 +109,9 @@
       "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
-        "viewer_result": 3
+        "viewer_result": 5
       },
-      "missing_evidence_count": 4,
+      "missing_evidence_count": 3,
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {
@@ -150,7 +150,6 @@
         }
       ],
       "blockers": [
-        "PTO tensor-core result row for the same 16x16x16 tile shape.",
         "CUTLASS or CuTe baseline for the same shape.",
         "Triton or torch.compile generated-kernel baseline.",
         "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture."

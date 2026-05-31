@@ -263,6 +263,18 @@
       }
     },
     {
+      "baseline": "pto_persistent_dag_graph_tensor_core",
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "pto_persistent_device",
+      "n": 1024,
+      "task_count": 4,
+      "inputs": {
+        "shape": "n=1024, tensor tile 16x16x16",
+        "dtype": "tf32 WMMA tensor-core, f32 accumulator",
+        "repeat_policy": "selected row from compact capture"
+      }
+    },
+    {
       "baseline": "pto_persistent_dag_graph_layered_cross",
       "benchmark_id": "graph_layered_cross",
       "method_id": "pto_persistent_device",

@@ -2889,6 +2889,86 @@
       },
       "raw_artifact": "tmp/cuda-backend/direct-launch-sweep-626b8c75/",
       "correctness": "pass"
+    },
+    {
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "pto_persistent_device",
+      "hardware": {
+        "gpu": "A100",
+        "machine": "hina",
+        "compute_target": "compute_80",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "743709f3",
+      "inputs": {
+        "shape": "n=1024, tensor tile 16x16x16",
+        "dtype": "tf32 WMMA tensor-core, f32 accumulator",
+        "repeat_policy": "selected row from compact capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 1,
+        "host_wall_ns": 58824,
+        "device_wall_ns": 47104,
+        "host_wall_p50_ns": 58824,
+        "host_wall_p90_ns": 58824,
+        "host_wall_p99_ns": 58824,
+        "host_wall_mean_ns": 58824,
+        "host_wall_stdev_ns": 0,
+        "host_wall_min_ns": 58824,
+        "host_wall_max_ns": 58824,
+        "device_wall_p50_ns": 47104,
+        "device_wall_p90_ns": 47104,
+        "device_wall_p99_ns": 47104,
+        "device_wall_mean_ns": 47104,
+        "device_wall_stdev_ns": 0,
+        "device_wall_min_ns": 47104,
+        "device_wall_max_ns": 47104
+      },
+      "raw_artifact": "tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "pto_persistent_device",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "743709f3",
+      "inputs": {
+        "shape": "n=1024, tensor tile 16x16x16",
+        "dtype": "tf32 WMMA tensor-core, f32 accumulator",
+        "repeat_policy": "selected row from compact capture"
+      },
+      "statistic": {
+        "kind": "median_capture_group",
+        "sample_count": 1,
+        "host_wall_ns": 51184,
+        "device_wall_ns": 41472,
+        "host_wall_p50_ns": 51184,
+        "host_wall_p90_ns": 51184,
+        "host_wall_p99_ns": 51184,
+        "host_wall_mean_ns": 51184,
+        "host_wall_stdev_ns": 0,
+        "host_wall_min_ns": 51184,
+        "host_wall_max_ns": 51184,
+        "device_wall_p50_ns": 41472,
+        "device_wall_p90_ns": 41472,
+        "device_wall_p99_ns": 41472,
+        "device_wall_mean_ns": 41472,
+        "device_wall_stdev_ns": 0,
+        "device_wall_min_ns": 41472,
+        "device_wall_max_ns": 41472
+      },
+      "raw_artifact": "tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/",
+      "correctness": "pass"
     }
   ]
 }

@@ -260,6 +260,15 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
             },
             {
                 "machine": "hina",
+                "baseline": "pto_persistent_dag_graph_tensor_core",
+                "n": 1024,
+                "task_count": 4,
+                "host_wall_ns": 110,
+                "device_wall_ns": 85,
+                "status": "pass",
+            },
+            {
+                "machine": "hina",
                 "baseline": "pto_stream_serial",
                 "n": 2,
                 "task_count": 1,
@@ -338,6 +347,14 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
         and record["method_id"] == "direct_runtime"
         and record["hardware"]["gpu"] == "A100"
         and record["inputs"]["dtype"] == "float32 naive SGEMM"
+        for record in records
+    )
+    assert any(
+        record["benchmark_id"] == "tensor_core_tile"
+        and record["method_id"] == "pto_persistent_device"
+        and record["hardware"]["gpu"] == "A100"
+        and record["inputs"]["dtype"] == "tf32 WMMA tensor-core, f32 accumulator"
+        and record["statistic"]["sample_count"] == 1
         for record in records
     )
     assert any(
@@ -1061,6 +1078,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert "direct_driver_sgemm" in import_baselines
     assert "direct_runtime_sgemm" in import_baselines
     assert "direct_driver_graph_sgemm" in import_baselines
+    assert "pto_persistent_dag_graph_tensor_core" in import_baselines
 
     paper_baseline_ids = {
         item["id"] for item in paper_baselines["paper_baselines"]
@@ -1544,6 +1562,29 @@ def test_benchmark_viewer_has_json_backed_review_data():
         and record["correctness"] == "pass"
         for record in direct_launch_sweep_records
     )
+    pto_tensor_core_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "tensor_core_tile"
+        and record["method_id"] == "pto_persistent_device"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/"
+    ]
+    assert {
+        (record["hardware"]["gpu"], record["inputs"]["shape"])
+        for record in pto_tensor_core_records
+    } == {
+        ("A100", "n=1024, tensor tile 16x16x16"),
+        ("H200", "n=1024, tensor tile 16x16x16"),
+    }
+    assert {
+        record["inputs"]["dtype"] for record in pto_tensor_core_records
+    } == {"tf32 WMMA tensor-core, f32 accumulator"}
+    assert {
+        record["statistic"]["sample_count"]
+        for record in pto_tensor_core_records
+    } == {1}
+    assert all(record["correctness"] == "pass" for record in pto_tensor_core_records)
     stream_concurrency_records = [
         record
         for record in results["result_records"]
