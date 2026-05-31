@@ -2207,8 +2207,9 @@ wrapper matches the current vector-add launch ABI and can be loaded by
 
 ## Microbenchmark Report
 
-Use `cuda_benchmark.py` for the current early-runtime comparison. It runs the
-same vector-add PTX kernel through two launch paths:
+Use `cuda_benchmark.py` for the current early-runtime comparison. It runs
+vector-add and selected tensor-shaped SGEMM rows through PTO, Driver API,
+Runtime API, graph, persistent-device, and library baselines:
 
 - `pto_host_schedule`: the PTO CUDA host runtime C API and manifest dispatch.
 - `pto_host_schedule_compiler`: the same host runtime path, but the PTX comes
@@ -2219,8 +2220,16 @@ same vector-add PTX kernel through two launch paths:
 - `pto_host_schedule_quad`: the same generated host runtime path for the
   four-input `(a, b, c, d, out, n)` ABI.
 - `direct_driver`: a thin CUDA Driver API baseline in Python `ctypes`.
+- `direct_runtime`: a thin CUDA Runtime API baseline compiled as a small nvcc
+  shared library and called from Python `ctypes`.
 - `direct_driver_graph`: the same Driver API kernel replayed through a CUDA
   Graph, with graph instantiation outside the timed interval.
+- `direct_driver_sgemm`: a naive column-major SGEMM kernel launched through
+  the CUDA Driver API over the configured tensor descriptor.
+- `direct_runtime_sgemm`: the same naive SGEMM shape launched through the
+  CUDA Runtime API shared-library path.
+- `direct_driver_graph_sgemm`: the Driver API naive SGEMM kernel replayed
+  through a CUDA Graph.
 - `pto_persistent_device`: a descriptor-array persistent executor.
 - `pto_persistent_queue`: one scheduler block publishing ready task IDs to a
   bounded device ring queue consumed by worker blocks inside the same launch.
@@ -2558,7 +2567,8 @@ The script writes:
 For tensor-DAG and tensor-library experiments, pass `--tensor-rows`,
 `--tensor-cols`, and `--tensor-inner` to the benchmark script. These flags
 affect `pto_persistent_dag_tensor`, `pto_persistent_dag_tensor_core`,
-`pto_persistent_dag_graph_tensor`, `cublas_sgemm`, and
+`pto_persistent_dag_graph_tensor`, `direct_driver_sgemm`,
+`direct_runtime_sgemm`, `direct_driver_graph_sgemm`, `cublas_sgemm`, and
 `cublas_sgemm_graph`; other baselines keep their normal vector-add work. The
 generated Markdown report records the descriptor as `rows x cols x inner`.
 
@@ -3024,6 +3034,22 @@ PYTHONPATH=$PWD:$PWD/python \
     --sizes 256 --arch compute_80 \
     --tensor-rows 16 --tensor-cols 16 --tensor-inner 16
 ```
+
+Use `--single-baseline direct_runtime_sgemm` to check the direct CUDA Runtime
+tensor launch row without running the full persistent benchmark set:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  python3 .agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py \
+    --single-baseline direct_runtime_sgemm \
+    --sizes 256 --arch compute_80 \
+    --tensor-rows 16 --tensor-cols 16 --tensor-inner 16
+```
+
+When a remote tree is copied with `rsync` instead of refreshed with Git, set
+`PTO_SOURCE_COMMIT=<local-short-sha>` in the remote benchmark environment so
+`cuda_benchmark.py` records the synced source commit instead of the stale
+remote checkout commit.
 
 Use `--single-baseline cublas_sgemm` for a quick CUDA library-backed tensor
 baseline check on one GPU:

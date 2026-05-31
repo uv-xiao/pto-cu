@@ -28,7 +28,11 @@ BASELINE_ROWS: tuple[str, ...] = (
     "pto_host_schedule_quad",
     "pto_host_schedule_generic_args",
     "direct_driver",
+    "direct_runtime",
     "direct_driver_graph",
+    "direct_driver_sgemm",
+    "direct_runtime_sgemm",
+    "direct_driver_graph_sgemm",
     "pto_persistent_device",
     "pto_persistent_queue",
     "pto_persistent_dag",
@@ -129,6 +133,9 @@ EXPECTED_DISPATCH_BY_BASELINE: dict[str, str] = {
     "pto_persistent_dag_graph_tensor_core": "10,1,2,1",
 }
 TENSOR_TILE_BASELINES: tuple[str, ...] = (
+    "direct_driver_sgemm",
+    "direct_runtime_sgemm",
+    "direct_driver_graph_sgemm",
     "pto_persistent_dag_tensor",
     "pto_persistent_dag_graph_tensor",
     "pto_persistent_dag_tensor_core",

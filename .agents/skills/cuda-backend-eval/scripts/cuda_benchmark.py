@@ -61,6 +61,9 @@ SOURCE_PAPERS = (
     },
 )
 TENSOR_THROUGHPUT_BASELINES = {
+    "direct_driver_sgemm",
+    "direct_runtime_sgemm",
+    "direct_driver_graph_sgemm",
     "pto_persistent_dag_tensor",
     "pto_persistent_dag_graph_tensor",
     "pto_persistent_dag_tensor_core",
@@ -144,6 +147,9 @@ $L__BB0_4:
 
 
 def _git_commit() -> str:
+    source_commit = os.environ.get("PTO_SOURCE_COMMIT")
+    if source_commit:
+        return source_commit
     result = subprocess.run(["git", "rev-parse", "--short", "HEAD"], check=False, capture_output=True, text=True)
     return result.stdout.strip() if result.returncode == 0 else "unknown"
 
@@ -188,6 +194,105 @@ extern "C" __global__ void pto_vector_add_f32(
     return ptx_path.read_bytes(), f"nvcc-slow-{arch}"
 
 
+def _normalized_tensor_tile(tensor_tile: dict[str, int] | None) -> dict[str, int]:
+    tile = tensor_tile or {"rows": 16, "cols": 16, "inner": 16}
+    rows = int(tile["rows"])
+    cols = int(tile["cols"])
+    inner = int(tile["inner"])
+    if rows <= 0 or cols <= 0 or inner <= 0:
+        raise ValueError(f"invalid tensor tile: {tile}")
+    return {"rows": rows, "cols": cols, "inner": inner}
+
+
+def _sgemm_shape(n: int, tensor_tile: dict[str, int] | None) -> dict[str, int]:
+    tile = _normalized_tensor_tile(tensor_tile)
+    output_elements = tile["rows"] * tile["cols"]
+    batch_count = max(1, math.ceil(n / output_elements))
+    effective_n = batch_count * output_elements
+    return {
+        **tile,
+        "output_elements": output_elements,
+        "batch_count": batch_count,
+        "effective_n": effective_n,
+        "a_elements": tile["rows"] * tile["inner"] * batch_count,
+        "b_elements": tile["inner"] * tile["cols"] * batch_count,
+        "c_elements": effective_n,
+    }
+
+
+def _sgemm_max_abs_diff(
+    *,
+    host_a,
+    host_b,
+    host_c,
+    rows: int,
+    cols: int,
+    inner: int,
+    batch_count: int,
+) -> float:
+    output_elements = rows * cols
+    max_abs_diff = 0.0
+    for batch in range(batch_count):
+        a_base = batch * rows * inner
+        b_base = batch * inner * cols
+        c_base = batch * output_elements
+        for col in range(cols):
+            for row in range(rows):
+                expected = 0.0
+                for k_idx in range(inner):
+                    expected += host_a[a_base + row + k_idx * rows] * host_b[b_base + k_idx + col * inner]
+                actual = host_c[c_base + row + col * rows]
+                max_abs_diff = max(max_abs_diff, abs(actual - expected))
+    return max_abs_diff
+
+
+def _compile_sgemm_ptx(work_dir: Path, arch: str) -> tuple[bytes, str]:
+    nvcc = _find_nvcc()
+    if nvcc is None:
+        raise RuntimeError("nvcc is required for direct SGEMM baselines")
+
+    kernel_src = work_dir / "direct_sgemm.cu"
+    kernel_src.write_text(
+        r"""
+extern "C" __global__ void pto_direct_sgemm_f32(
+    const float *a,
+    const float *b,
+    float *c,
+    unsigned long long rows,
+    unsigned long long cols,
+    unsigned long long inner,
+    unsigned long long batch_count) {
+    unsigned long long output_elements = rows * cols;
+    unsigned long long total = output_elements * batch_count;
+    unsigned long long idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= total) {
+        return;
+    }
+    unsigned long long row = idx % rows;
+    unsigned long long col = (idx / rows) % cols;
+    unsigned long long batch = idx / output_elements;
+    unsigned long long a_base = batch * rows * inner;
+    unsigned long long b_base = batch * inner * cols;
+    unsigned long long c_base = batch * output_elements;
+    float acc = 0.0f;
+    for (unsigned long long k = 0; k < inner; ++k) {
+        acc += a[a_base + row + k * rows] * b[b_base + k + col * inner];
+    }
+    c[c_base + row + col * rows] = acc;
+}
+""".lstrip(),
+        encoding="utf-8",
+    )
+    ptx_path = work_dir / "direct_sgemm.ptx"
+    subprocess.run(
+        [nvcc, "--ptx", "-std=c++17", f"-arch={arch}", str(kernel_src), "-o", str(ptx_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return ptx_path.read_bytes(), f"nvcc-direct-sgemm-{arch}"
+
+
 def _compile_runtime_api_vector_add_library(work_dir: Path, arch: str) -> tuple[Path, str]:
     nvcc = _find_nvcc()
     if nvcc is None:
@@ -199,6 +304,7 @@ def _compile_runtime_api_vector_add_library(work_dir: Path, arch: str) -> tuple[
 #include <cuda_runtime_api.h>
 
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 
@@ -211,6 +317,195 @@ extern "C" __global__ void pto_runtime_vector_add_f32(
     if (i < n) {
         out[i] = a[i] + b[i];
     }
+}
+
+extern "C" __global__ void pto_runtime_sgemm_f32(
+    const float *a,
+    const float *b,
+    float *c,
+    unsigned long long rows,
+    unsigned long long cols,
+    unsigned long long inner,
+    unsigned long long batch_count) {
+    unsigned long long output_elements = rows * cols;
+    unsigned long long total = output_elements * batch_count;
+    unsigned long long idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= total) {
+        return;
+    }
+    unsigned long long row = idx % rows;
+    unsigned long long col = (idx / rows) % cols;
+    unsigned long long batch = idx / output_elements;
+    unsigned long long a_base = batch * rows * inner;
+    unsigned long long b_base = batch * inner * cols;
+    unsigned long long c_base = batch * output_elements;
+    float acc = 0.0f;
+    for (unsigned long long k = 0; k < inner; ++k) {
+        acc += a[a_base + row + k * rows] * b[b_base + k + col * inner];
+    }
+    c[c_base + row + col * rows] = acc;
+}
+
+extern "C" int pto_runtime_sgemm_once(
+    int device,
+    unsigned long long n,
+    int block_dim,
+    unsigned long long rows,
+    unsigned long long cols,
+    unsigned long long inner,
+    unsigned long long *effective_n_out,
+    unsigned long long *batch_count_out,
+    unsigned long long *host_wall_ns,
+    unsigned long long *device_wall_ns,
+    float *max_abs_diff_out) {
+    if (effective_n_out == nullptr || batch_count_out == nullptr || host_wall_ns == nullptr ||
+        device_wall_ns == nullptr || max_abs_diff_out == nullptr || n == 0 || block_dim <= 0 ||
+        rows == 0 || cols == 0 || inner == 0) {
+        return 10101;
+    }
+
+    const unsigned long long output_elements = rows * cols;
+    const unsigned long long batch_count = (n + output_elements - 1) / output_elements;
+    const unsigned long long effective_n = batch_count * output_elements;
+    const unsigned long long a_elements = rows * inner * batch_count;
+    const unsigned long long b_elements = inner * cols * batch_count;
+    const unsigned long long c_elements = effective_n;
+    const size_t a_nbytes = static_cast<size_t>(a_elements) * sizeof(float);
+    const size_t b_nbytes = static_cast<size_t>(b_elements) * sizeof(float);
+    const size_t c_nbytes = static_cast<size_t>(c_elements) * sizeof(float);
+
+    float *host_a = nullptr;
+    float *host_b = nullptr;
+    float *host_c = nullptr;
+    float *dev_a = nullptr;
+    float *dev_b = nullptr;
+    float *dev_c = nullptr;
+    cudaEvent_t start_event = nullptr;
+    cudaEvent_t stop_event = nullptr;
+    int status = 0;
+
+    auto cleanup = [&]() {
+        if (start_event != nullptr) {
+            cudaEventDestroy(start_event);
+        }
+        if (stop_event != nullptr) {
+            cudaEventDestroy(stop_event);
+        }
+        if (dev_a != nullptr) {
+            cudaFree(dev_a);
+        }
+        if (dev_b != nullptr) {
+            cudaFree(dev_b);
+        }
+        if (dev_c != nullptr) {
+            cudaFree(dev_c);
+        }
+        std::free(host_a);
+        std::free(host_b);
+        std::free(host_c);
+    };
+
+    host_a = static_cast<float *>(std::malloc(a_nbytes));
+    host_b = static_cast<float *>(std::malloc(b_nbytes));
+    host_c = static_cast<float *>(std::malloc(c_nbytes));
+    if (host_a == nullptr || host_b == nullptr || host_c == nullptr) {
+        cleanup();
+        return 10102;
+    }
+    for (unsigned long long i = 0; i < a_elements; ++i) {
+        host_a[i] = 0.01f * static_cast<float>((i % 17) + 1);
+    }
+    for (unsigned long long i = 0; i < b_elements; ++i) {
+        host_b[i] = 0.02f * static_cast<float>((i % 13) + 1);
+    }
+    for (unsigned long long i = 0; i < c_elements; ++i) {
+        host_c[i] = 0.0f;
+    }
+
+#define PTO_RUNTIME_CHECK(expr)                    \
+    do {                                           \
+        cudaError_t err__ = (expr);                \
+        if (err__ != cudaSuccess) {                \
+            status = static_cast<int>(err__);      \
+            cleanup();                             \
+            return status;                         \
+        }                                          \
+    } while (0)
+
+    PTO_RUNTIME_CHECK(cudaSetDevice(device));
+    PTO_RUNTIME_CHECK(cudaMalloc(reinterpret_cast<void **>(&dev_a), a_nbytes));
+    PTO_RUNTIME_CHECK(cudaMalloc(reinterpret_cast<void **>(&dev_b), b_nbytes));
+    PTO_RUNTIME_CHECK(cudaMalloc(reinterpret_cast<void **>(&dev_c), c_nbytes));
+    PTO_RUNTIME_CHECK(cudaMemcpy(dev_a, host_a, a_nbytes, cudaMemcpyHostToDevice));
+    PTO_RUNTIME_CHECK(cudaMemcpy(dev_b, host_b, b_nbytes, cudaMemcpyHostToDevice));
+    PTO_RUNTIME_CHECK(cudaEventCreate(&start_event));
+    PTO_RUNTIME_CHECK(cudaEventCreate(&stop_event));
+
+    unsigned int grid_dim =
+        static_cast<unsigned int>((effective_n + static_cast<unsigned long long>(block_dim) - 1) /
+                                  static_cast<unsigned long long>(block_dim));
+    unsigned long long rows_arg = rows;
+    unsigned long long cols_arg = cols;
+    unsigned long long inner_arg = inner;
+    unsigned long long batch_count_arg = batch_count;
+    void *kernel_args[] = {
+        &dev_a,
+        &dev_b,
+        &dev_c,
+        &rows_arg,
+        &cols_arg,
+        &inner_arg,
+        &batch_count_arg,
+    };
+
+    auto host_start = std::chrono::steady_clock::now();
+    PTO_RUNTIME_CHECK(cudaEventRecord(start_event, nullptr));
+    PTO_RUNTIME_CHECK(cudaLaunchKernel(
+        reinterpret_cast<const void *>(pto_runtime_sgemm_f32),
+        dim3(grid_dim),
+        dim3(static_cast<unsigned int>(block_dim)),
+        kernel_args,
+        0,
+        nullptr));
+    PTO_RUNTIME_CHECK(cudaEventRecord(stop_event, nullptr));
+    PTO_RUNTIME_CHECK(cudaEventSynchronize(stop_event));
+    auto host_stop = std::chrono::steady_clock::now();
+
+    float elapsed_ms = 0.0f;
+    PTO_RUNTIME_CHECK(cudaEventElapsedTime(&elapsed_ms, start_event, stop_event));
+    PTO_RUNTIME_CHECK(cudaMemcpy(host_c, dev_c, c_nbytes, cudaMemcpyDeviceToHost));
+
+#undef PTO_RUNTIME_CHECK
+
+    float max_abs_diff = 0.0f;
+    for (unsigned long long batch = 0; batch < batch_count; ++batch) {
+        unsigned long long a_base = batch * rows * inner;
+        unsigned long long b_base = batch * inner * cols;
+        unsigned long long c_base = batch * output_elements;
+        for (unsigned long long col = 0; col < cols; ++col) {
+            for (unsigned long long row = 0; row < rows; ++row) {
+                float expected = 0.0f;
+                for (unsigned long long k = 0; k < inner; ++k) {
+                    expected += host_a[a_base + row + k * rows] * host_b[b_base + k + col * inner];
+                }
+                float actual = host_c[c_base + row + col * rows];
+                max_abs_diff = fmaxf(max_abs_diff, fabsf(actual - expected));
+            }
+        }
+    }
+    if (max_abs_diff > 1.0e-2f) {
+        cleanup();
+        return 10103;
+    }
+
+    *effective_n_out = effective_n;
+    *batch_count_out = batch_count;
+    *host_wall_ns = static_cast<unsigned long long>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(host_stop - host_start).count());
+    *device_wall_ns = static_cast<unsigned long long>(elapsed_ms * 1000000.0f);
+    *max_abs_diff_out = max_abs_diff;
+    cleanup();
+    return 0;
 }
 
 extern "C" int pto_runtime_vector_add_once(
@@ -388,7 +683,7 @@ class CudaKernelNodeParams(ctypes.Structure):
 class DirectCudaDriver:
     """Minimal CUDA Driver API wrapper used as a launch baseline."""
 
-    def __init__(self, device: int, ptx: bytes):
+    def __init__(self, device: int, ptx: bytes, function_name: bytes = b"pto_vector_add_f32"):
         self.lib = ctypes.CDLL("libcuda.so.1")
         self.ctx = ctypes.c_void_p()
         self.module = ctypes.c_void_p()
@@ -396,6 +691,7 @@ class DirectCudaDriver:
         self.start_event = ctypes.c_void_p()
         self.stop_event = ctypes.c_void_p()
         self.ptx_buf = ctypes.create_string_buffer(ptx + b"\0")
+        self.function_name = function_name
         self._bind()
         self._init(device)
 
@@ -463,7 +759,7 @@ class DirectCudaDriver:
         _check_cuda(self.lib.cuCtxCreate_v2(ctypes.byref(self.ctx), 0, dev), "cuCtxCreate")
         _check_cuda(self.lib.cuModuleLoadData(ctypes.byref(self.module), self.ptx_buf), "cuModuleLoadData")
         _check_cuda(
-            self.lib.cuModuleGetFunction(ctypes.byref(self.function), self.module, b"pto_vector_add_f32"),
+            self.lib.cuModuleGetFunction(ctypes.byref(self.function), self.module, self.function_name),
             "cuModuleGetFunction",
         )
         _check_cuda(self.lib.cuEventCreate(ctypes.byref(self.start_event), 0), "cuEventCreate(start)")
@@ -494,6 +790,152 @@ class DirectCudaDriver:
 
     def run_vector_add_graph(self, n: int, block_dim: int) -> dict[str, Any]:
         return self._run_vector_add(n=n, block_dim=block_dim, use_graph=True)
+
+    def run_sgemm(self, n: int, block_dim: int, tensor_tile: dict[str, int] | None, *, use_graph: bool = False):
+        shape = _sgemm_shape(n=n, tensor_tile=tensor_tile)
+        host_a_t = ctypes.c_float * shape["a_elements"]
+        host_b_t = ctypes.c_float * shape["b_elements"]
+        host_c_t = ctypes.c_float * shape["c_elements"]
+        host_a = host_a_t(*[0.01 * float((i % 17) + 1) for i in range(shape["a_elements"])])
+        host_b = host_b_t(*[0.02 * float((i % 13) + 1) for i in range(shape["b_elements"])])
+        host_c = host_c_t()
+
+        dev_a = ctypes.c_uint64()
+        dev_b = ctypes.c_uint64()
+        dev_c = ctypes.c_uint64()
+        a_nbytes = ctypes.sizeof(host_a)
+        b_nbytes = ctypes.sizeof(host_b)
+        c_nbytes = ctypes.sizeof(host_c)
+        _check_cuda(self.lib.cuMemAlloc_v2(ctypes.byref(dev_a), a_nbytes), "cuMemAlloc(sgemm_a)")
+        _check_cuda(self.lib.cuMemAlloc_v2(ctypes.byref(dev_b), b_nbytes), "cuMemAlloc(sgemm_b)")
+        _check_cuda(self.lib.cuMemAlloc_v2(ctypes.byref(dev_c), c_nbytes), "cuMemAlloc(sgemm_c)")
+        try:
+            _check_cuda(self.lib.cuMemcpyHtoD_v2(dev_a, ctypes.byref(host_a), a_nbytes), "cuMemcpyHtoD(sgemm_a)")
+            _check_cuda(self.lib.cuMemcpyHtoD_v2(dev_b, ctypes.byref(host_b), b_nbytes), "cuMemcpyHtoD(sgemm_b)")
+
+            a_arg = ctypes.c_uint64(dev_a.value)
+            b_arg = ctypes.c_uint64(dev_b.value)
+            c_arg = ctypes.c_uint64(dev_c.value)
+            rows_arg = ctypes.c_uint64(shape["rows"])
+            cols_arg = ctypes.c_uint64(shape["cols"])
+            inner_arg = ctypes.c_uint64(shape["inner"])
+            batch_arg = ctypes.c_uint64(shape["batch_count"])
+            kernel_args = (ctypes.c_void_p * 7)(
+                ctypes.cast(ctypes.byref(a_arg), ctypes.c_void_p),
+                ctypes.cast(ctypes.byref(b_arg), ctypes.c_void_p),
+                ctypes.cast(ctypes.byref(c_arg), ctypes.c_void_p),
+                ctypes.cast(ctypes.byref(rows_arg), ctypes.c_void_p),
+                ctypes.cast(ctypes.byref(cols_arg), ctypes.c_void_p),
+                ctypes.cast(ctypes.byref(inner_arg), ctypes.c_void_p),
+                ctypes.cast(ctypes.byref(batch_arg), ctypes.c_void_p),
+            )
+
+            grid_dim = (shape["effective_n"] + block_dim - 1) // block_dim
+            graph = ctypes.c_void_p()
+            graph_exec = ctypes.c_void_p()
+            graph_node = ctypes.c_void_p()
+            if use_graph:
+                node_params = CudaKernelNodeParams(
+                    self.function,
+                    grid_dim,
+                    1,
+                    1,
+                    block_dim,
+                    1,
+                    1,
+                    0,
+                    kernel_args,
+                    None,
+                )
+                _check_cuda(self.lib.cuGraphCreate(ctypes.byref(graph), 0), "cuGraphCreate")
+                try:
+                    _check_cuda(
+                        self.lib.cuGraphAddKernelNode(
+                            ctypes.byref(graph_node),
+                            graph,
+                            None,
+                            0,
+                            ctypes.byref(node_params),
+                        ),
+                        "cuGraphAddKernelNode",
+                    )
+                    _check_cuda(
+                        self.lib.cuGraphInstantiateWithFlags(ctypes.byref(graph_exec), graph, 0),
+                        "cuGraphInstantiateWithFlags",
+                    )
+                except Exception:
+                    if graph:
+                        self.lib.cuGraphDestroy(graph)
+                    raise
+
+            host_start = time.time_ns()
+            try:
+                _check_cuda(self.lib.cuEventRecord(self.start_event, None), "cuEventRecord(start)")
+                if use_graph:
+                    _check_cuda(self.lib.cuGraphLaunch(graph_exec, None), "cuGraphLaunch")
+                else:
+                    _check_cuda(
+                        self.lib.cuLaunchKernel(
+                            self.function,
+                            grid_dim,
+                            1,
+                            1,
+                            block_dim,
+                            1,
+                            1,
+                            0,
+                            None,
+                            kernel_args,
+                            None,
+                        ),
+                        "cuLaunchKernel",
+                    )
+                _check_cuda(self.lib.cuEventRecord(self.stop_event, None), "cuEventRecord(stop)")
+                _check_cuda(self.lib.cuEventSynchronize(self.stop_event), "cuEventSynchronize")
+                host_wall_ns = time.time_ns() - host_start
+            finally:
+                if graph_exec:
+                    self.lib.cuGraphExecDestroy(graph_exec)
+                if graph:
+                    self.lib.cuGraphDestroy(graph)
+
+            elapsed_ms = ctypes.c_float()
+            _check_cuda(
+                self.lib.cuEventElapsedTime(ctypes.byref(elapsed_ms), self.start_event, self.stop_event),
+                "cuEventElapsedTime",
+            )
+            _check_cuda(self.lib.cuMemcpyDtoH_v2(ctypes.byref(host_c), dev_c, c_nbytes), "cuMemcpyDtoH(sgemm_c)")
+        finally:
+            self.lib.cuMemFree_v2(dev_a)
+            self.lib.cuMemFree_v2(dev_b)
+            self.lib.cuMemFree_v2(dev_c)
+
+        max_abs_diff = _sgemm_max_abs_diff(
+            host_a=host_a,
+            host_b=host_b,
+            host_c=host_c,
+            rows=shape["rows"],
+            cols=shape["cols"],
+            inner=shape["inner"],
+            batch_count=shape["batch_count"],
+        )
+        if max_abs_diff > 1.0e-2:
+            raise RuntimeError(f"direct-driver SGEMM output mismatch: max_abs_diff={max_abs_diff}")
+
+        return {
+            "baseline": "direct_driver_graph_sgemm" if use_graph else "direct_driver_sgemm",
+            "n": shape["effective_n"],
+            "task_count": 1,
+            "block_dim": block_dim,
+            "host_wall_ns": host_wall_ns,
+            "device_wall_ns": int(elapsed_ms.value * 1_000_000),
+            "status": "pass",
+            "operation": "naive_sgemm",
+            "launch_mode": "cuda_driver_graph" if use_graph else "cuda_driver",
+            "batch_count": shape["batch_count"],
+            "tensor_tile": {"rows": shape["rows"], "cols": shape["cols"], "inner": shape["inner"]},
+            "max_abs_diff": max_abs_diff,
+        }
 
     def _run_vector_add(self, n: int, block_dim: int, use_graph: bool) -> dict[str, Any]:
         array_t = ctypes.c_float * n
@@ -628,6 +1070,20 @@ class DirectCudaRuntime:
             ctypes.POINTER(ctypes.c_ulonglong),
         ]
         self.lib.pto_runtime_vector_add_once.restype = ctypes.c_int
+        self.lib.pto_runtime_sgemm_once.argtypes = [
+            ctypes.c_int,
+            ctypes.c_ulonglong,
+            ctypes.c_int,
+            ctypes.c_ulonglong,
+            ctypes.c_ulonglong,
+            ctypes.c_ulonglong,
+            ctypes.POINTER(ctypes.c_ulonglong),
+            ctypes.POINTER(ctypes.c_ulonglong),
+            ctypes.POINTER(ctypes.c_ulonglong),
+            ctypes.POINTER(ctypes.c_ulonglong),
+            ctypes.POINTER(ctypes.c_float),
+        ]
+        self.lib.pto_runtime_sgemm_once.restype = ctypes.c_int
 
     def run_vector_add(self, device: int, n: int, block_dim: int) -> dict[str, Any]:
         host_wall_ns = ctypes.c_ulonglong()
@@ -649,6 +1105,49 @@ class DirectCudaRuntime:
             "host_wall_ns": int(host_wall_ns.value),
             "device_wall_ns": int(device_wall_ns.value),
             "status": "pass",
+        }
+
+    def run_sgemm(
+        self,
+        device: int,
+        n: int,
+        block_dim: int,
+        tensor_tile: dict[str, int] | None,
+    ) -> dict[str, Any]:
+        tile = _normalized_tensor_tile(tensor_tile)
+        effective_n = ctypes.c_ulonglong()
+        batch_count = ctypes.c_ulonglong()
+        host_wall_ns = ctypes.c_ulonglong()
+        device_wall_ns = ctypes.c_ulonglong()
+        max_abs_diff = ctypes.c_float()
+        rc = self.lib.pto_runtime_sgemm_once(
+            device,
+            n,
+            block_dim,
+            tile["rows"],
+            tile["cols"],
+            tile["inner"],
+            ctypes.byref(effective_n),
+            ctypes.byref(batch_count),
+            ctypes.byref(host_wall_ns),
+            ctypes.byref(device_wall_ns),
+            ctypes.byref(max_abs_diff),
+        )
+        if rc != 0:
+            raise RuntimeError(f"direct Runtime API SGEMM failed with code {rc}")
+        return {
+            "baseline": "direct_runtime_sgemm",
+            "n": int(effective_n.value),
+            "task_count": 1,
+            "block_dim": block_dim,
+            "host_wall_ns": int(host_wall_ns.value),
+            "device_wall_ns": int(device_wall_ns.value),
+            "status": "pass",
+            "operation": "naive_sgemm",
+            "launch_mode": "cuda_runtime",
+            "batch_count": int(batch_count.value),
+            "tensor_tile": tile,
+            "max_abs_diff": float(max_abs_diff.value),
         }
 
 
@@ -1692,6 +2191,41 @@ def run_direct_runtime_sample(
     return DirectCudaRuntime(library_path).run_vector_add(device=device, n=n, block_dim=block_dim)
 
 
+def run_direct_sgemm_sample(
+    device: int,
+    n: int,
+    block_dim: int,
+    arch: str,
+    tensor_tile: dict[str, int] | None,
+    use_graph: bool = False,
+) -> dict[str, Any]:
+    with tempfile.TemporaryDirectory(prefix="pto_cuda_sgemm_") as td:
+        ptx, ptx_source = _compile_sgemm_ptx(Path(td), arch)
+    with DirectCudaDriver(device=device, ptx=ptx, function_name=b"pto_direct_sgemm_f32") as driver:
+        result = driver.run_sgemm(n=n, block_dim=block_dim, tensor_tile=tensor_tile, use_graph=use_graph)
+    result["ptx_source"] = ptx_source
+    return result
+
+
+def run_direct_runtime_sgemm_sample(
+    device: int,
+    n: int,
+    block_dim: int,
+    arch: str,
+    tensor_tile: dict[str, int] | None,
+) -> dict[str, Any]:
+    with tempfile.TemporaryDirectory(prefix="pto_cuda_runtime_") as td:
+        library_path, runtime_source = _compile_runtime_api_vector_add_library(Path(td), arch)
+        result = DirectCudaRuntime(library_path).run_sgemm(
+            device=device,
+            n=n,
+            block_dim=block_dim,
+            tensor_tile=tensor_tile,
+        )
+    result["ptx_source"] = runtime_source
+    return result
+
+
 def run_persistent_sample(
     device: int,
     n: int,
@@ -1833,6 +2367,31 @@ def run_single_sample(  # noqa: PLR0912
         )
         result["ptx_source"] = ptx_source
         return result
+    if baseline == "direct_driver_sgemm":
+        return run_direct_sgemm_sample(
+            device=device,
+            n=n,
+            block_dim=block_dim,
+            arch=arch,
+            tensor_tile=tensor_tile,
+        )
+    if baseline == "direct_runtime_sgemm":
+        return run_direct_runtime_sgemm_sample(
+            device=device,
+            n=n,
+            block_dim=block_dim,
+            arch=arch,
+            tensor_tile=tensor_tile,
+        )
+    if baseline == "direct_driver_graph_sgemm":
+        return run_direct_sgemm_sample(
+            device=device,
+            n=n,
+            block_dim=block_dim,
+            arch=arch,
+            tensor_tile=tensor_tile,
+            use_graph=True,
+        )
     if baseline == "pto_persistent_device":
         return run_persistent_sample(device=device, n=n, arch=arch, mode="direct")
     if baseline == "pto_persistent_queue":
@@ -2391,6 +2950,25 @@ def run_benchmark(
             graph.update({"machine": metadata["machine"], "repeat": repeat})
             results.append(graph)
 
+            for baseline in (
+                "direct_driver_sgemm",
+                "direct_runtime_sgemm",
+                "direct_driver_graph_sgemm",
+            ):
+                sample_kwargs: dict[str, Any] = {}
+                if tensor_tile is not None:
+                    sample_kwargs["tensor_tile"] = tensor_tile
+                direct_sgemm = run_single_sample(
+                    baseline=baseline,
+                    device=device,
+                    n=n,
+                    block_dim=block_dim,
+                    arch=arch,
+                    **sample_kwargs,
+                )
+                direct_sgemm.update({"machine": metadata["machine"], "repeat": repeat})
+                results.append(direct_sgemm)
+
             if include_persistent:
                 for baseline in (
                     "pto_persistent_device",
@@ -2444,14 +3022,7 @@ def run_benchmark(
                     sample_kwargs: dict[str, Any] = {}
                     if (
                         baseline
-                        in {
-                            "pto_persistent_dag_tensor",
-                            "pto_persistent_dag_graph_tensor",
-                            "pto_persistent_dag_tensor_core",
-                            "pto_persistent_dag_graph_tensor_core",
-                            "cublas_sgemm",
-                            "cublas_sgemm_graph",
-                        }
+                        in TENSOR_THROUGHPUT_BASELINES
                         and tensor_tile is not None
                     ):
                         sample_kwargs["tensor_tile"] = tensor_tile
@@ -3278,6 +3849,9 @@ def render_tensor_throughput_svg(payload: dict[str, Any]) -> str:
     height = 68 + len(rows) * (bar_height + row_gap)
     width = left + chart_width + 170
     colors = {
+        "direct_driver_sgemm": "#5b8def",
+        "direct_runtime_sgemm": "#2d6cdf",
+        "direct_driver_graph_sgemm": "#1d4ed8",
         "pto_persistent_dag_tensor": "#e76f51",
         "pto_persistent_dag_graph_tensor": "#c7522a",
         "pto_persistent_dag_tensor_core": "#d1495b",
@@ -3647,6 +4221,30 @@ def render_markdown_report(payload: dict[str, Any]) -> str:
             ),
             "  followed by the same residual, gate, and fan-in tasks.",
             (
+                f"- `direct_driver_sgemm` measures a naive CUDA Driver API SGEMM launch over a configured "
+                f"{tensor_tile_shape}"
+                if tensor_tile_shape is not None
+                else "- `direct_driver_sgemm` measures a naive CUDA Driver API SGEMM launch over a default "
+                "16x16x16"
+            ),
+            "  descriptor with the same column-major tensor layout as the cuBLAS and persistent tensor rows.",
+            (
+                f"- `direct_runtime_sgemm` measures a naive CUDA Runtime API SGEMM launch over a configured "
+                f"{tensor_tile_shape}"
+                if tensor_tile_shape is not None
+                else "- `direct_runtime_sgemm` measures a naive CUDA Runtime API SGEMM launch over a default "
+                "16x16x16"
+            ),
+            "  descriptor from a statically compiled nvcc shared library.",
+            (
+                f"- `direct_driver_graph_sgemm` measures the same naive CUDA Driver API SGEMM captured as a "
+                f"CUDA Graph over a configured {tensor_tile_shape}"
+                if tensor_tile_shape is not None
+                else "- `direct_driver_graph_sgemm` measures the same naive CUDA Driver API SGEMM captured as a "
+                "CUDA Graph over a default 16x16x16"
+            ),
+            "  descriptor.",
+            (
                 f"- `cublas_sgemm` measures cuBLAS SGEMM over a configured {tensor_tile_shape}"
                 if tensor_tile_shape is not None
                 else "- `cublas_sgemm` measures cuBLAS SGEMM over a default 16x16x16"
@@ -3757,6 +4355,9 @@ def main() -> None:
             "direct_driver",
             "direct_runtime",
             "direct_driver_graph",
+            "direct_driver_sgemm",
+            "direct_runtime_sgemm",
+            "direct_driver_graph_sgemm",
             "pto_persistent_device",
             "pto_persistent_queue",
             "pto_persistent_dag",

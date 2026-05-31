@@ -3051,7 +3051,7 @@ def test_cuda_capture_validator_paired_current_requires_generic_args_baseline():
     assert (
         "pto_persistent_dag_graph_node_link=task0=op:add=1;task1=op:mul=2;task2=op:add=1" in args.require_graph_node_ops
     )
-    assert args.expected_result_count == 1350
+    assert args.expected_result_count == 1422
     assert args.require_report_graph_topology is True
     assert args.require_report_graph_task_args is True
     assert args.require_report_graph_role_spelling is True
@@ -3067,7 +3067,7 @@ def test_cuda_capture_validator_compact_current_preset_matches_docs_gate():  # n
     assert args.require_machine == ["hina", "dasys-h200x8"]
     assert args.require_size == ["1024"]
     assert args.expected_repeats == 1
-    assert args.expected_result_count == 108
+    assert args.expected_result_count == 116
     assert args.require_report_files is True
     assert args.require_command_examples is True
     assert args.require_zero_scheduler_errors is True
@@ -4895,7 +4895,7 @@ def test_cuda_pair_benchmark_validate_command_matches_configured_capture(tmp_pat
     assert "--expected-repeats" in validate
     assert "2" in validate
     assert "--expected-result-count" in validate
-    assert "472" in validate
+    assert "504" in validate
     assert "--require-baseline" in validate
     baselines = [validate[index + 1] for index, part in enumerate(validate) if part == "--require-baseline"]
     assert "pto_host_schedule_generic_args" in baselines
@@ -11927,6 +11927,14 @@ def test_run_single_sample_dispatches_direct_runtime(monkeypatch):
     assert result["ptx_source"] == "fake-runtime-compute_90"
 
 
+def test_cuda_benchmark_git_commit_prefers_source_commit_env(monkeypatch):
+    cuda_benchmark = _load_benchmark_module()
+
+    monkeypatch.setenv("PTO_SOURCE_COMMIT", "source123")
+
+    assert cuda_benchmark._git_commit() == "source123"
+
+
 def test_run_benchmark_can_include_persistent_device_modes(monkeypatch):
     cuda_benchmark = _load_benchmark_module()
     seen = []
@@ -14919,6 +14927,9 @@ def test_run_benchmark_passes_tensor_descriptor_to_tensor_dag(monkeypatch):
     )
 
     tensor_baselines = {
+        "direct_driver_sgemm",
+        "direct_runtime_sgemm",
+        "direct_driver_graph_sgemm",
         "pto_persistent_dag_tensor",
         "pto_persistent_dag_graph_tensor",
         "pto_persistent_dag_tensor_core",
@@ -14930,6 +14941,9 @@ def test_run_benchmark_passes_tensor_descriptor_to_tensor_dag(monkeypatch):
     non_tensor_calls = [item for item in seen if item[0] not in tensor_baselines]
     assert payload["metadata"]["tensor_tile"] == tensor_tile
     assert tensor_calls == [
+        ("direct_driver_sgemm", tensor_tile),
+        ("direct_runtime_sgemm", tensor_tile),
+        ("direct_driver_graph_sgemm", tensor_tile),
         ("pto_persistent_dag_tensor", tensor_tile),
         ("pto_persistent_dag_graph_tensor", tensor_tile),
         ("pto_persistent_dag_tensor_core", tensor_tile),
@@ -14938,6 +14952,101 @@ def test_run_benchmark_passes_tensor_descriptor_to_tensor_dag(monkeypatch):
         ("cublas_sgemm_graph", tensor_tile),
     ]
     assert all(call[1] is None for call in non_tensor_calls)
+
+
+def test_run_single_sample_dispatches_direct_tensor_baselines(monkeypatch):
+    cuda_benchmark = _load_benchmark_module()
+    tensor_tile = {"rows": 16, "cols": 16, "inner": 16}
+    seen = []
+
+    def fake_run_direct_sgemm_sample(
+        device,
+        n,
+        block_dim,
+        arch,
+        tensor_tile,
+        use_graph=False,
+    ):
+        seen.append(
+            (
+                "driver",
+                device,
+                n,
+                block_dim,
+                arch,
+                tensor_tile,
+                use_graph,
+            )
+        )
+        return {
+            "baseline": "direct_driver_graph_sgemm"
+            if use_graph
+            else "direct_driver_sgemm",
+            "status": "pass",
+        }
+
+    def fake_run_direct_runtime_sgemm_sample(
+        device,
+        n,
+        block_dim,
+        arch,
+        tensor_tile,
+    ):
+        seen.append(("runtime", device, n, block_dim, arch, tensor_tile))
+        return {"baseline": "direct_runtime_sgemm", "status": "pass"}
+
+    monkeypatch.setattr(
+        cuda_benchmark,
+        "run_direct_sgemm_sample",
+        fake_run_direct_sgemm_sample,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cuda_benchmark,
+        "run_direct_runtime_sgemm_sample",
+        fake_run_direct_runtime_sgemm_sample,
+        raising=False,
+    )
+
+    assert (
+        cuda_benchmark.run_single_sample(
+            baseline="direct_driver_sgemm",
+            device=3,
+            n=1024,
+            block_dim=128,
+            arch="compute_80",
+            tensor_tile=tensor_tile,
+        )["baseline"]
+        == "direct_driver_sgemm"
+    )
+    assert (
+        cuda_benchmark.run_single_sample(
+            baseline="direct_runtime_sgemm",
+            device=3,
+            n=1024,
+            block_dim=128,
+            arch="compute_80",
+            tensor_tile=tensor_tile,
+        )["baseline"]
+        == "direct_runtime_sgemm"
+    )
+    assert (
+        cuda_benchmark.run_single_sample(
+            baseline="direct_driver_graph_sgemm",
+            device=3,
+            n=1024,
+            block_dim=128,
+            arch="compute_80",
+            tensor_tile=tensor_tile,
+        )["baseline"]
+        == "direct_driver_graph_sgemm"
+    )
+
+    assert seen == [
+        ("driver", 3, 1024, 128, "compute_80", tensor_tile, False),
+        ("runtime", 3, 1024, 128, "compute_80", tensor_tile),
+        ("driver", 3, 1024, 128, "compute_80", tensor_tile, True),
+    ]
 
 
 def test_run_benchmark_can_include_same_work_batch_modes(monkeypatch):
@@ -14982,6 +15091,9 @@ def test_run_benchmark_can_include_same_work_batch_modes(monkeypatch):
         ("direct_driver", 1),
         ("direct_runtime", 1),
         ("direct_driver_graph", 1),
+        ("direct_driver_sgemm", 1),
+        ("direct_runtime_sgemm", 1),
+        ("direct_driver_graph_sgemm", 1),
         ("pto_persistent_device", 1),
         ("pto_persistent_queue", 1),
         ("pto_persistent_dag", 1),
@@ -15034,7 +15146,7 @@ def test_run_benchmark_can_include_same_work_batch_modes(monkeypatch):
         ("pto_persistent_queue_batch", 6),
     ]
     assert payload["metadata"]["batch_tasks"] == 6
-    assert len(payload["results"]) == 58
+    assert len(payload["results"]) == 61
 
 
 def test_run_benchmark_can_include_worker_grid_batch_mode(monkeypatch):

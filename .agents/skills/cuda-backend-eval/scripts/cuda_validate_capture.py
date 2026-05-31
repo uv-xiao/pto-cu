@@ -28,7 +28,11 @@ PAIRED_CURRENT_BASELINES = (
     "cublas_sgemm",
     "cublas_sgemm_graph",
     "direct_driver",
+    "direct_driver_sgemm",
     "direct_driver_graph",
+    "direct_driver_graph_sgemm",
+    "direct_runtime",
+    "direct_runtime_sgemm",
     "pto_host_schedule",
     "pto_host_schedule_batch",
     "pto_host_schedule_compiler",
@@ -98,8 +102,8 @@ COMPACT_CURRENT_BASELINES = tuple(
 PAIRED_CURRENT_SIZES = (1024, 65536, 1048576)
 COMPACT_CURRENT_SIZES = (1024,)
 COMPACT_CURRENT_EXPECTED_REPEATS = 1
-COMPACT_CURRENT_EXPECTED_RESULT_COUNT = 108
-PAIRED_CURRENT_EXPECTED_RESULT_COUNT = 1350
+COMPACT_CURRENT_EXPECTED_RESULT_COUNT = 116
+PAIRED_CURRENT_EXPECTED_RESULT_COUNT = 1422
 REQUIRED_SOURCE_PAPER_IDS = ("arXiv:2605.03190", "arXiv:2512.22219v1")
 REPORT_FILES = (
     "cuda-benchmark.md",
@@ -154,6 +158,9 @@ PAIRED_CURRENT_DISPATCH = {
     "pto_persistent_dag_graph_tensor_core": "10,1,2,1",
 }
 PAIRED_CURRENT_TENSOR_TILES = {
+    "direct_driver_sgemm": "16x16x16",
+    "direct_runtime_sgemm": "16x16x16",
+    "direct_driver_graph_sgemm": "16x16x16",
     "pto_persistent_dag_tensor": "16x16x16",
     "pto_persistent_dag_graph_tensor": "16x16x16",
     "pto_persistent_dag_tensor_core": "16x16x16",

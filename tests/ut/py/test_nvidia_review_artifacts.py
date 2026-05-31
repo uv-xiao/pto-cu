@@ -249,6 +249,15 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
                 "device_wall_ns": 40,
                 "status": "pass",
             },
+            {
+                "machine": "hina",
+                "baseline": "direct_runtime_sgemm",
+                "n": 1024,
+                "task_count": 1,
+                "host_wall_ns": 90,
+                "device_wall_ns": 70,
+                "status": "pass",
+            },
         ],
     }
     capture_path = tmp_path / "cuda-benchmark.json"
@@ -304,6 +313,13 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
         record["benchmark_id"] == "tensor_core_tile"
         and record["method_id"] == "cublas_sgemm_graph"
         and record["hardware"]["gpu"] == "H200"
+        for record in records
+    )
+    assert any(
+        record["benchmark_id"] == "tensor_core_tile"
+        and record["method_id"] == "direct_runtime"
+        and record["hardware"]["gpu"] == "A100"
+        and record["inputs"]["dtype"] == "float32 naive SGEMM"
         for record in records
     )
 
@@ -1009,6 +1025,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert "direct_runtime" in import_baselines
     assert "direct_driver" in import_baselines
     assert "direct_driver_graph" in import_baselines
+    assert "direct_driver_sgemm" in import_baselines
+    assert "direct_runtime_sgemm" in import_baselines
+    assert "direct_driver_graph_sgemm" in import_baselines
 
     paper_baseline_ids = {
         item["id"] for item in paper_baselines["paper_baselines"]
