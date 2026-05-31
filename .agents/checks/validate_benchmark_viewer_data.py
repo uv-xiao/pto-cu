@@ -418,6 +418,7 @@ def validate_paper_baseline_execution_attempts(
         "fail",
         "failed_after_kernel_launch",
         "blocked",
+        "blocked_before_model_load",
     }
     for record in records:
         owner = f"paper baseline execution attempt {record['id']}"

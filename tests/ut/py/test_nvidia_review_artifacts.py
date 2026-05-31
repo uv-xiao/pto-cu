@@ -2651,6 +2651,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mpk_qwen3_0p6b_no_cutlass_token2_h200",
         "mpk_qwen3_0p6b_token1_noprofile_h200",
         "vdcores_qwen3_1p7b_dry_build_h200",
+        "vdcores_qwen3_1p7b_correctness_hf_timeout_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -2693,6 +2694,16 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert vdcores_attempt["summary"]["layers"] == 28
     assert vdcores_attempt["summary"]["compute_operators"] == 9
     assert not vdcores_attempt["summary"]["requires_hf_token"]
+    vdcores_correctness_attempt = attempts_by_id[
+        "vdcores_qwen3_1p7b_correctness_hf_timeout_h200"
+    ]
+    assert vdcores_correctness_attempt["status"] == "blocked_before_model_load"
+    assert vdcores_correctness_attempt["summary"]["hf_fetch_timeout"]
+    assert vdcores_correctness_attempt["summary"]["dae_runtime_present"]
+    assert not vdcores_correctness_attempt["summary"]["model_loaded"]
+    assert not vdcores_correctness_attempt["summary"]["launched"]
+    assert not vdcores_correctness_attempt["summary"]["resource_policy_measured"]
+    assert "config.json timed out" in vdcores_correctness_attempt["blocker"]
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
