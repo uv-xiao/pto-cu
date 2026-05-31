@@ -335,6 +335,10 @@ ThunderKittens commands write normalized raw JSON under
 metrics, and correctness. The importer looks up the run in
 `paper_baseline_runs.json`, maps it to the matching paper-baseline method ID,
 and emits the same `result_records` schema used by the HTML viewer:
+scheduler comparison rows may include `scheduler_overhead_ns`,
+`dispatch_trace`, `resource_policy`, `queue_pressure`, `task_registry`, and
+`generated_kernel_metadata` inside `metrics`; the importer preserves those
+fields under the emitted `statistic` object for review.
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

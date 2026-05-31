@@ -14,6 +14,26 @@ VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 DEFAULT_RUNS = VIEWER_DATA / "paper_baseline_runs.json"
 DEFAULT_BENCHMARKS = VIEWER_DATA / "benchmarks.json"
 DEFAULT_METHODS = VIEWER_DATA / "methods.json"
+OPTIONAL_NUMERIC_METRICS = (
+    "end_to_end_latency_ns",
+    "time_to_first_token_ns",
+    "inter_token_latency_ns",
+    "throughput_tokens_per_s",
+    "scheduler_overhead_ns",
+    "queue_wait_ns",
+    "ready_queue_depth",
+    "task_count",
+    "scheduler_count",
+    "worker_count",
+    "max_abs_error",
+)
+OPTIONAL_STRUCTURED_METRICS = (
+    "dispatch_trace",
+    "resource_policy",
+    "queue_pressure",
+    "task_registry",
+    "generated_kernel_metadata",
+)
 
 
 def fail(message: str) -> None:
@@ -60,6 +80,15 @@ def require_number(record: dict[str, Any], key: str, owner: str) -> int:
 def optional_number(record: dict[str, Any], key: str, owner: str) -> int | float:
     value = record.get(key)
     if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+        fail(f"{owner} has invalid {key}")
+    return value
+
+
+def optional_structured_metric(
+    record: dict[str, Any], key: str, owner: str
+) -> dict[str, Any] | list[Any]:
+    value = record.get(key)
+    if not isinstance(value, (dict, list)) or not value:
         fail(f"{owner} has invalid {key}")
     return value
 
@@ -111,14 +140,14 @@ def result_record(
         if "device_wall_ns" in metrics
         else 0,
     }
-    for optional_key in (
-        "end_to_end_latency_ns",
-        "time_to_first_token_ns",
-        "inter_token_latency_ns",
-        "throughput_tokens_per_s",
-    ):
+    for optional_key in OPTIONAL_NUMERIC_METRICS:
         if optional_key in metrics:
             statistic[optional_key] = optional_number(metrics, optional_key, owner)
+    for optional_key in OPTIONAL_STRUCTURED_METRICS:
+        if optional_key in metrics:
+            statistic[optional_key] = optional_structured_metric(
+                metrics, optional_key, owner
+            )
 
     return {
         "benchmark_id": benchmark_id,

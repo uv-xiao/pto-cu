@@ -587,6 +587,121 @@ def test_paper_baseline_viewer_export_generates_contract_records(tmp_path):
     ]
 
 
+def test_paper_baseline_viewer_export_preserves_scheduler_trace_metadata(tmp_path):
+    raw = {
+        "metadata": {
+            "pto_commit": "abc1234",
+        },
+        "results": [
+            {
+                "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+                "benchmark_id": "graph_layered_cross",
+                "hardware": {
+                    "gpu": "H200",
+                    "machine": "dasys-h200x8",
+                    "compute_target": "compute_90",
+                },
+                "inputs": {
+                    "shape": "n=1024, nine-task layered-cross DAG",
+                    "dtype": "float32",
+                    "repeat_policy": "warmup=1,repeat=3",
+                },
+                "metrics": {
+                    "kind": "paper_baseline_scheduler_trace",
+                    "sample_count": 3,
+                    "host_wall_ns": 900000,
+                    "device_wall_ns": 700000,
+                    "scheduler_overhead_ns": 42000,
+                    "dispatch_trace": {
+                        "task_count": 9,
+                        "func_ids": [1, 2, 11, 1, 2, 1, 6, 1, 1],
+                    },
+                    "resource_policy": {
+                        "scheduler_blocks": 3,
+                        "worker_blocks": 4,
+                    },
+                    "task_registry": {
+                        "generated_kernel": "mirage_persistent_kernel",
+                    },
+                },
+                "correctness": "pass",
+            },
+            {
+                "paper_baseline_run_id": "vdcores_resource_policy_trace",
+                "benchmark_id": "graph_layered_cross",
+                "hardware": {
+                    "gpu": "H200",
+                    "machine": "dasys-h200x8",
+                    "compute_target": "compute_90",
+                },
+                "inputs": {
+                    "shape": "n=1024, virtual-core resource trace",
+                    "dtype": "float32",
+                    "repeat_policy": "warmup=1,repeat=3",
+                },
+                "metrics": {
+                    "kind": "paper_baseline_scheduler_trace",
+                    "sample_count": 3,
+                    "host_wall_ns": 1100000,
+                    "device_wall_ns": 850000,
+                    "scheduler_overhead_ns": 51000,
+                    "dispatch_trace": {
+                        "task_count": 9,
+                        "queue_ids": ["compute", "memory"],
+                    },
+                    "queue_pressure": {
+                        "ready_queue_max": 4,
+                        "memory_queue_max": 2,
+                    },
+                    "resource_policy": {
+                        "virtual_cores": 8,
+                        "memory_compute_split": "2:6",
+                    },
+                },
+                "correctness": "pass",
+            },
+        ],
+    }
+    raw_path = tmp_path / "scheduler-baseline.json"
+    output_path = tmp_path / "viewer-records.json"
+    raw_path.write_text(json.dumps(raw), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py",
+            str(raw_path),
+            "--artifact-root",
+            "tmp/cuda-backend/paper-baselines/scheduler-fixture/",
+            "--output",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    records = json.loads(output_path.read_text(encoding="utf-8"))
+    by_method = {record["method_id"]: record for record in records}
+
+    mpk_statistic = by_method["mpk"]["statistic"]
+    assert mpk_statistic["scheduler_overhead_ns"] == 42000
+    assert mpk_statistic["dispatch_trace"]["task_count"] == 9
+    assert mpk_statistic["resource_policy"]["scheduler_blocks"] == 3
+    assert mpk_statistic["task_registry"]["generated_kernel"]
+
+    vdcores_statistic = by_method["vdcores"]["statistic"]
+    assert vdcores_statistic["scheduler_overhead_ns"] == 51000
+    assert vdcores_statistic["dispatch_trace"]["queue_ids"] == [
+        "compute",
+        "memory",
+    ]
+    assert vdcores_statistic["queue_pressure"]["ready_queue_max"] == 4
+    assert vdcores_statistic["resource_policy"]["virtual_cores"] == 8
+
+
 def test_paper_baseline_viewer_export_rejects_bool_sample_count(tmp_path):
     raw = {
         "metadata": {
