@@ -1558,3 +1558,35 @@ Each entry must include:
   points to a concrete snapshot-pointer runtime-config assignment and a
   follow-up sanitizer decode/export issue, rather than an unexplained
   scheduler null write.
+
+### 2026-05-31 - MPK Predecode Token Diagnostic
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned MPK
+  baseline diagnostic slice.
+- Exact Codex command or script invocation: added temporary predecode
+  instrumentation under the ignored `tmp/baselines/mirage-mpk` clone, synced
+  it to the H200 checkout, and reran the patched Qwen3-0.6B one-token MPK
+  memcheck with `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready MPK baseline
+  evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, MPK tmp artifacts, focused
+  review tests, dispatch log, and changelog docs. No upstream repositories
+  were edited or pushed.
+- Dependencies and blocked assumptions: the latest evidence depends on a
+  local tmp baseline patch and diagnostic print. It proves the next MPK
+  blocker is invalid generated token state under sanitizer, not token export
+  alone.
+- Verification commands and results: the focused TDD tests first failed
+  because the latest MPK execution attempt still pointed to the prior patched
+  memcheck run; after adding the predecode attempt and refreshing derived
+  artifacts, the focused tests passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the MPK persistent scheduler blocker now
+  points to generated token id `-1` after the snapshot pointer patch. Next
+  work should inspect MPK's persistent argmax/output-token path and make the
+  local baseline patch reproducible without touching upstream.

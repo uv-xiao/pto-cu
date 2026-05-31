@@ -90,13 +90,13 @@
         {
           "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
           "paper_baseline_id": "mpk",
-          "execution_attempt_id": "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200",
-          "title": "MPK Qwen3 0.6B Snapshot-Pointer Patch Memcheck",
+          "execution_attempt_id": "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200",
+          "title": "MPK Qwen3 0.6B Snapshot-Pointer Patch Predecode Memcheck",
           "status": "partial",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/",
-          "blocker": "The snapshot pointer patch is still local to the ignored MPK clone and the sanitized run remains partial because the demo raises OverflowError at demo.py:846 during tokenizer.decode under compute-sanitizer; import paper-grade MPK rows only after the patch is reproducible and the sanitized run reaches token export.",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck_predecode/",
+          "blocker": "The next MPK blocker is the invalid generated token -1 under compute-sanitizer after the snapshot pointer patch. Import paper-grade MPK rows only after the patch is reproducible and the persistent argmax/output-token path produces valid token IDs under sanitizer.",
           "summary": {
-            "mode": "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck",
+            "mode": "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck",
             "model": "Qwen/Qwen3-0.6B",
             "offline_cache_used": true,
             "max_new_tokens": 1,
@@ -111,6 +111,13 @@
             "error_summary_count": 1,
             "invalid_global_access_count": 0,
             "null_snapshot_write_cleared": true,
+            "predecode_dump_written": true,
+            "step": 39,
+            "prompt_length": 39,
+            "generated_length": 1,
+            "first_generated_token_id": -1,
+            "min_token_id": -1,
+            "max_token_id": 151645,
             "init_api_error": {
               "api": "cudaDeviceSetLimit",
               "cuda_error": "cudaErrorInvalidValue",
@@ -119,7 +126,7 @@
             },
             "application_error": {
               "type": "OverflowError",
-              "host_source": "demo.py:846",
+              "host_source": "demo.py:865",
               "message": "out of range integral type conversion attempted"
             },
             "compiled": true,
@@ -208,7 +215,7 @@
         "VDCores run with matching queue/resource-policy metadata.",
         "Paper baseline run mpk_persistent_scheduler_trace is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
-        "Latest execution attempt mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200 for mpk_persistent_scheduler_trace is partial: The snapshot pointer patch is still local to the ignored MPK clone and the sanitized run remains partial because the demo raises OverflowError at demo.py:846 during tokenizer.decode under compute-sanitizer; import paper-grade MPK rows only after the patch is reproducible and the sanitized run reaches token export.",
+        "Latest execution attempt mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200 for mpk_persistent_scheduler_trace is partial: The next MPK blocker is the invalid generated token -1 under compute-sanitizer after the snapshot pointer patch. Import paper-grade MPK rows only after the patch is reproducible and the persistent argmax/output-token path produces valid token IDs under sanitizer.",
         "Latest execution attempt vdcores_qwen3_1p7b_final_rms_memcheck_h200 for vdcores_resource_policy_trace is failed_after_kernel_launch: The earliest launched final_rms cut performs invalid 4096-byte global reads in cp_async_bulk through ldwarp_execute_singlethread, followed by warp illegal-address reports in the VDCores load warp."
       ],
       "next_actions": [
@@ -221,9 +228,9 @@
           "source": "execution_attempt",
           "paper_baseline_id": "mpk",
           "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
-          "execution_attempt_id": "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200",
+          "execution_attempt_id": "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200",
           "status": "partial",
-          "action": "Resolve latest execution attempt mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: The snapshot pointer patch is still local to the ignored MPK clone and the sanitized run remains partial because the demo raises OverflowError at demo.py:846 during tokenizer.decode under compute-sanitizer; import paper-grade MPK rows only after the patch is reproducible and the sanitized run reaches token export."
+          "action": "Resolve latest execution attempt mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: The next MPK blocker is the invalid generated token -1 under compute-sanitizer after the snapshot pointer patch. Import paper-grade MPK rows only after the patch is reproducible and the persistent argmax/output-token path produces valid token IDs under sanitizer."
         },
         {
           "source": "execution_attempt",

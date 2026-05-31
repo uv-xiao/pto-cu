@@ -52,9 +52,9 @@
       "owner": "mpk_persistent_scheduler_trace",
       "paper_baseline_id": "mpk",
       "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
-      "execution_attempt_id": "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200",
+      "execution_attempt_id": "mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200",
       "status": "partial",
-      "action": "Resolve latest execution attempt mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: The snapshot pointer patch is still local to the ignored MPK clone and the sanitized run remains partial because the demo raises OverflowError at demo.py:846 during tokenizer.decode under compute-sanitizer; import paper-grade MPK rows only after the patch is reproducible and the sanitized run reaches token export.",
+      "action": "Resolve latest execution attempt mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200 before importing mpk_persistent_scheduler_trace. Diagnostic blocker: The next MPK blocker is the invalid generated token -1 under compute-sanitizer after the snapshot pointer patch. Import paper-grade MPK rows only after the patch is reproducible and the persistent argmax/output-token path produces valid token IDs under sanitizer.",
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },
     {
