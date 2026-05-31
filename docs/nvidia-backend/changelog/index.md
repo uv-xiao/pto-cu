@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-05-31 VDCores extension readiness](2026-05-31-vdcores-extension-readiness.md)
 - [2026-05-31 ThunderKittens selected sweep](2026-05-31-thunderkittens-selected-sweep.md)
 - [2026-05-31 ThunderKittens serving capture](2026-05-31-thunderkittens-serving-capture.md)
 - [2026-05-31 PTO serving-equivalent evidence](2026-05-31-pto-serving-equivalent-evidence.md)

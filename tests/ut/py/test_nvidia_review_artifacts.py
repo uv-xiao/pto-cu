@@ -1869,6 +1869,21 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
             "mpk_persistent_scheduler_trace"
         ]["blocking_gaps"]
     )
+    assert persistent_readiness["vdcores_resource_policy_trace"][
+        "latest_status"
+    ] == "partial"
+    assert any(
+        "HF_TOKEN" in gap
+        for gap in persistent_readiness[
+            "vdcores_resource_policy_trace"
+        ]["blocking_gaps"]
+    )
+    assert not any(
+        "dae.runtime" in gap
+        for gap in persistent_readiness[
+            "vdcores_resource_policy_trace"
+        ]["blocking_gaps"]
+    )
     assert not any(
         "Scheduler-overhead breakdown" in blocker
         for blocker in persistent_claim["blockers"]
@@ -2631,8 +2646,14 @@ def test_benchmark_viewer_has_json_backed_review_data():
             "mpk_persistent_scheduler_trace"
         ]["blocking_gaps"]
     )
-    assert any(
+    assert not any(
         "dae.runtime" in gap
+        for gap in readiness_by_run[
+            "vdcores_resource_policy_trace"
+        ]["blocking_gaps"]
+    )
+    assert any(
+        "HF_TOKEN" in gap
         for gap in readiness_by_run[
             "vdcores_resource_policy_trace"
         ]["blocking_gaps"]

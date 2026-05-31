@@ -386,6 +386,23 @@ PYTHONPATH=$PWD:$PWD/python \
     --viewer-output docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json
 ```
 
+Build the VDCores `dae.runtime` extension on H200 before refreshing readiness.
+Keep the workaround in the command line instead of editing the VDCores checkout:
+`CPATH` supplies the pinned CUTLASS headers from `tmp/baselines/cutlass`, and
+`NVCC='nvcc -include cfloat'` supplies the missing `FLT_MAX` declaration in the
+selected nvcc path. Use the H200 venv because it matches CUDA 12.8; the local
+venv currently uses a CUDA 13.0 PyTorch build and rejects CUDA 12.8 extension
+builds:
+
+```bash
+ssh bizhaoh200 \
+  'cd /path/to/pto-cu && \
+   CPATH=$PWD/tmp/baselines/cutlass/include \
+   CUDA_HOME=/usr/local/cuda-12.8 \
+   PATH=$PWD/.venv/bin:/usr/local/cuda-12.8/bin:$PATH \
+   make -C tmp/baselines/vdcores clean pyext NVCC="nvcc -include cfloat"'
+```
+
 Use `paper_serving_command_plan.py` before long MPK, VDCores, vLLM, SGLang,
 or ThunderKittens serving-family runs. It reads the committed
 `serving_workloads.json` and
