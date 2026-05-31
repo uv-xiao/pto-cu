@@ -2287,3 +2287,46 @@ Each entry must include:
   unchanged and instrument actual `RepeatM` active masks, producer-lane
   ownership, source-lane validity, and packed coordinate-delta lifetime before
   attempting queue/resource-policy timing import.
+
+### 2026-06-01 - VDCores RepeatM State Lite Diagnostic
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  lite RepeatM state diagnostic for the persistent scheduler baseline gap.
+- Exact Codex command or script invocation: copied the tmp-only
+  `vdcores-repeat-state-lite.patch` into the H200 VDCores checkout, rebuilt
+  with `DAE_DIAG_REPEAT_STATE_LITE` and `DAE_DIAG_WAIT_AFTER_WB_ALLOC`, then
+  ran `CUDA_VISIBLE_DEVICES=7`, `QWEN1P7B_NO_PREFETCH=all`,
+  `QWEN1P7B_LOGITS_SPLIT_M=6`, offline Hugging Face cache,
+  `--debug-num-layers 1`, `--debug-stop-after logits`, `-N 1`, and
+  `--launch`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, and local `tmp/` raw artifacts copied back
+  from H200. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the remote pto-cu checkout still had
+  unrelated dirty viewer-data files, so this used the allowed tmp patch-copy
+  path instead of remote Git refresh. A broader per-lane diagnostic perturbed
+  the schedule, so the committed review data uses the narrower lane-0 debug
+  macro run. The remote and local VDCores checkouts were restored to clean
+  state after artifact capture.
+- Verification commands and results before local review gates: remote rebuild
+  status `0`; launch status `1`; no `Unknown mem wb opcode` appeared after
+  the PC48 wait; PC49 decoded `RepeatM` as `reg_start=0`, `reg_end=5`,
+  `size=2`, `arg=0x0000`, and `address=0x1000000000`; after PC49, lane-0
+  `gpr0=0x1000000000` and `gpr1=0x0`; PC50 consumed source lane `0` but the
+  runtime `addr_accum` was `0x7fffff`, producing desc33 coordinates
+  `(65535,127,0)` and ending with illegal instruction.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the latest evidence rules out bad PC49
+  `RepeatM` field encoding and localizes the bad coordinate to allocwarp
+  RepeatM accumulator transport between decode and consumers. The next
+  VDCores diagnostic should isolate native 64-bit shuffle/register transport
+  and then test a lane-0-only split transport or explicit 32-bit
+  packed-coordinate transport before importing queue/resource-policy timing.

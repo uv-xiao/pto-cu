@@ -1878,8 +1878,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert "mpk_persistent_scheduler_trace" not in persistent_attempts
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
-    ] == "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200"
-    assert "simple uint64 shuffle lowering bug" in (
+    ] == "vdcores_qwen3_1p7b_repeat_state_lite_h200"
+    assert "bad PC49 RepeatM field encoding" in (
         persistent_attempts["vdcores_resource_policy_trace"]["blocker"]
     )
     assert not any(
@@ -2010,8 +2010,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
         and item["execution_attempt_id"]
-        == "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200"
-        and "simple uint64 shuffle lowering bug" in item["action"]
+        == "vdcores_qwen3_1p7b_repeat_state_lite_h200"
+        and "bad PC49 RepeatM field encoding" in item["action"]
         for item in work_items
     )
 
@@ -2713,6 +2713,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200",
         "vdcores_qwen3_1p7b_slot_lifetime_pc44_pc52_h200",
         "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200",
+        "vdcores_qwen3_1p7b_repeat_state_lite_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -3371,6 +3372,55 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert vdcores_repeat_lane["summary"]["split_shuffle_not_valid_fix"]
     assert "simple uint64 shuffle lowering bug" in vdcores_repeat_lane["blocker"]
     assert "active masks" in vdcores_repeat_lane["summary"]["next_debug_target"]
+    vdcores_repeat_state = attempts_by_id[
+        "vdcores_qwen3_1p7b_repeat_state_lite_h200"
+    ]
+    assert vdcores_repeat_state["status"] == "blocked"
+    assert vdcores_repeat_state["summary"]["mode"] == (
+        "vdcores_qwen_repeat_state_lite_diagnostic"
+    )
+    assert vdcores_repeat_state["summary"]["launch_executed"]
+    assert vdcores_repeat_state["summary"]["rebuild_status"] == 0
+    assert vdcores_repeat_state["summary"]["launch_status"] == 1
+    assert vdcores_repeat_state["summary"]["pc48_wait_flags_before"] == (
+        "0x00fffffe"
+    )
+    assert vdcores_repeat_state["summary"]["pc48_wait_flags_after"] == (
+        "0x00ffffff"
+    )
+    assert vdcores_repeat_state["summary"]["stu_copied_pc48_opcode"] == "0443"
+    assert not vdcores_repeat_state["summary"][
+        "unknown_writeback_opcode_seen_after_wait"
+    ]
+    assert vdcores_repeat_state["summary"]["pc49_repeat_reg_start"] == 0
+    assert vdcores_repeat_state["summary"]["pc49_repeat_reg_end"] == 5
+    assert vdcores_repeat_state["summary"]["pc49_repeat_size"] == 2
+    assert vdcores_repeat_state["summary"]["pc49_repeat_address"] == (
+        "0x1000000000"
+    )
+    assert vdcores_repeat_state["summary"]["pc49_after_lane0_gpr1"] == "0x0"
+    assert vdcores_repeat_state["summary"]["pc50_source_lane"] == 0
+    assert vdcores_repeat_state["summary"]["pc50_lane0_gpr1_before_shuffle"] == (
+        "0x0"
+    )
+    assert vdcores_repeat_state["summary"]["pc50_addr_accum"] == "0x7fffff"
+    assert vdcores_repeat_state["summary"]["pc50_desc33_invalid_cords"] == [
+        65535,
+        127,
+        0,
+    ]
+    assert vdcores_repeat_state["summary"][
+        "repeat_decode_matches_expected_encoding"
+    ]
+    assert vdcores_repeat_state["summary"][
+        "addr_accum_mismatch_after_repeat_decode"
+    ]
+    assert "incorrect pc49 RepeatM field encoding" in " ".join(
+        vdcores_repeat_state["summary"]["rules_out"]
+    )
+    assert "native 64-bit shuffle/register transport" in (
+        vdcores_repeat_state["summary"]["next_debug_target"]
+    )
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
@@ -3621,22 +3671,20 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if attempt["paper_baseline_id"] == "vdcores"
             )
             assert vdcores_attempt["execution_attempt_id"] == (
-                "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200"
+                "vdcores_qwen3_1p7b_repeat_state_lite_h200"
             )
             assert (
-                vdcores_attempt["summary"][
-                    "pc52_desc32_unexpected_coords_after_split_variant"
-                ]
-                == [0, 12544, 3]
+                vdcores_attempt["summary"]["pc50_desc33_invalid_cords"]
+                == [65535, 127, 0]
             )
             vdcores_actions = [
                 action
                 for action in item["next_actions"]
                 if action.get("execution_attempt_id")
-                == "vdcores_qwen3_1p7b_repeat_lane_source_diagnostic_h200"
+                == "vdcores_qwen3_1p7b_repeat_state_lite_h200"
             ]
             assert vdcores_actions
-            assert "simple uint64 shuffle lowering bug" in vdcores_actions[0][
+            assert "bad PC49 RepeatM field encoding" in vdcores_actions[0][
                 "action"
             ]
         if item["id"] == "host_schedule_launch_overhead":
