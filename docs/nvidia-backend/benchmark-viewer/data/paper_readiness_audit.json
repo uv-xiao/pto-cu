@@ -82,64 +82,26 @@
         {
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_pointer_attr_probe_h200",
-          "title": "VDCores Qwen3 1.7B Pointer Attribute Diagnostic",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_single_visible_gpu_h200",
+          "title": "VDCores Qwen3 1.7B Single-Visible-GPU Diagnostic",
           "status": "partial",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-pointer-attrs-sm64-c6e25d3e/",
-          "blocker": "The sampled direct 1D addresses are readable by cudaMemcpy before launch but are not classified by cuMemGetAddressRange, while the launched VDCores kernel still fails in cp_async_bulk. VDCores still lacks correctness and queue/resource-policy timing; the next diagnostic must combine same-process pointer classification with the failing launch or inspect why cp_async_bulk/compute-sanitizer sees these readable addresses as out of bounds.",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-single-visible-gpu-ac8dab26/",
+          "blocker": "Co-locating model weights and launcher buffers resolves the earliest final_rms launch failure, but the one-layer full schedule still fails with illegal instruction. VDCores still lacks full correctness and queue/resource-policy timing for paper comparison.",
           "summary": {
-            "mode": "vdcores_qwen_pointer_attr_probe",
+            "mode": "vdcores_qwen_single_visible_gpu",
             "model": "Qwen/Qwen3-1.7B",
             "offline_cache_used": true,
-            "runtime_rebuilt_with_required_ops": true,
+            "cuda_visible_devices": "7",
             "debug_num_layers": 1,
-            "debug_stop_after": "final_rms",
             "no_prefetch": "all",
-            "launch_executed": false,
-            "tool": "temporary dae_app monkey-patch plus cuMemGetAddressRange and cudaMemcpy",
-            "remote_pto_commit": "61af3f017537692ea860c0729bba8c78e08d223f",
-            "remote_vdcores_commit": "5247328cf3f893ed9df95f9f38e7e9a97f0cbfb1",
-            "trace_sms": [
-              64,
-              65,
-              66,
-              67,
-              68,
-              69,
-              70,
-              71,
-              0,
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7
-            ],
-            "direct_record_count": 80,
-            "direct_load_record_count": 40,
-            "recognized_direct_record_count": 0,
-            "unrecognized_direct_record_count": 80,
-            "device_to_host_copy_ok_record_count": 80,
-            "direct_load_device_to_host_copy_ok_count": 40,
-            "sm64_first_direct_load": {
-              "pc": 1,
-              "address": "0x7e02be000000",
-              "effective_address": "0x7e02be034000",
-              "size_bytes": 4096,
-              "runtime_accumulator": 212992,
-              "range_status": 201,
-              "range_recognized": false,
-              "copy_status": 0,
-              "copy_ok": true,
-              "copy_bytes_requested": 4096
-            },
+            "final_rms_launch_status": 0,
+            "final_rms_completed_without_python_exception": true,
+            "full_one_layer_launch_status": 1,
+            "full_one_layer_error": "launch_dae failed: an illegal instruction was encountered",
             "rules_out": [
-              "prelaunch direct 1D effective addresses being unreadable by ordinary cudaMemcpy",
-              "missing token read for the SM64 embedding-row accumulator"
+              "cross-device Qwen weight placement as the sole cause of the one-layer final_rms failure"
             ],
-            "next_debug_target": "combine same-process pointer classification with the failing launch or inspect why cp_async_bulk/compute-sanitizer treats cudaMemcpy-readable direct 1D addresses as out of bounds",
+            "next_debug_target": "debug the co-located one-layer full-schedule illegal instruction before collecting VDCores correctness or resource-policy timing",
             "correctness_completed": false,
             "resource_policy_measured": false
           }
@@ -184,7 +146,7 @@
       "blockers": [
         "VDCores run with matching queue/resource-policy metadata.",
         "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
-        "Latest execution attempt vdcores_qwen3_1p7b_pointer_attr_probe_h200 for vdcores_resource_policy_trace is partial: The sampled direct 1D addresses are readable by cudaMemcpy before launch but are not classified by cuMemGetAddressRange, while the launched VDCores kernel still fails in cp_async_bulk. VDCores still lacks correctness and queue/resource-policy timing; the next diagnostic must combine same-process pointer classification with the failing launch or inspect why cp_async_bulk/compute-sanitizer sees these readable addresses as out of bounds."
+        "Latest execution attempt vdcores_qwen3_1p7b_single_visible_gpu_h200 for vdcores_resource_policy_trace is partial: Co-locating model weights and launcher buffers resolves the earliest final_rms launch failure, but the one-layer full schedule still fails with illegal instruction. VDCores still lacks full correctness and queue/resource-policy timing for paper comparison."
       ],
       "next_actions": [
         {
@@ -196,9 +158,9 @@
           "source": "execution_attempt",
           "paper_baseline_id": "vdcores",
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_pointer_attr_probe_h200",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_single_visible_gpu_h200",
           "status": "partial",
-          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_pointer_attr_probe_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: The sampled direct 1D addresses are readable by cudaMemcpy before launch but are not classified by cuMemGetAddressRange, while the launched VDCores kernel still fails in cp_async_bulk. VDCores still lacks correctness and queue/resource-policy timing; the next diagnostic must combine same-process pointer classification with the failing launch or inspect why cp_async_bulk/compute-sanitizer sees these readable addresses as out of bounds."
+          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_single_visible_gpu_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: Co-locating model weights and launcher buffers resolves the earliest final_rms launch failure, but the one-layer full schedule still fails with illegal instruction. VDCores still lacks full correctness and queue/resource-policy timing for paper comparison."
         }
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."

@@ -1379,6 +1379,104 @@
       }
     },
     {
+      "id": "vdcores_qwen3_1p7b_launch_pointer_attr_probe_h200",
+      "paper_baseline_id": "vdcores",
+      "paper_baseline_run_id": "vdcores_resource_policy_trace",
+      "title": "VDCores Qwen3 1.7B Launch Pointer-Device Diagnostic",
+      "status": "failed_after_kernel_launch",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-launch-pointer-attrs-ac8dab26/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "Monkey-patch dae_app, classify sampled direct 1D addresses with cudaPointerGetAttributes in the same process, then invoke the failing Qwen3-1.7B one-layer final_rms launch.",
+      "observation": "All 80 sampled direct addresses were recognized by cudaPointerGetAttributes and copied by cudaMemcpy before launch. Direct load pointers spanned devices 0 and 7 while the launch context was device 0; SM64 pc1 used a device-7 direct-load pointer and the launch failed with illegal memory access.",
+      "blocker": "The same-process launch shows a device-placement mismatch: VDCores launches on current device 0 while sampled Qwen direct-load source pointers include device 7. This explains the original cp_async_bulk illegal memory direction but still needs a co-located run before importing resource-policy timing.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-launch-pointer-attrs-ac8dab26/launch-pointer-attrs-distilled.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-launch-pointer-attrs-ac8dab26/launch-pointer-attrs-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-launch-pointer-attrs-ac8dab26/launch-pointer-attrs.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-launch-pointer-attrs-ac8dab26/launch-pointer-attrs-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-launch-pointer-attrs-ac8dab26/metadata.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-launch-pointer-attrs-ac8dab26/vdcores_launch_pointer_attr_probe.py"
+      ],
+      "summary": {
+        "mode": "vdcores_qwen_launch_pointer_attr_probe",
+        "model": "Qwen/Qwen3-1.7B",
+        "offline_cache_used": true,
+        "debug_num_layers": 1,
+        "debug_stop_after": "final_rms",
+        "no_prefetch": "all",
+        "launch_executed": true,
+        "remote_pto_commit": "61af3f017537692ea860c0729bba8c78e08d223f",
+        "remote_vdcores_commit": "5247328cf3f893ed9df95f9f38e7e9a97f0cbfb1",
+        "current_device_before_launch": 0,
+        "direct_record_count": 80,
+        "pointer_attribute_success_count": 80,
+        "address_range_success_count": 0,
+        "device_to_host_copy_ok_count": 80,
+        "direct_load_pointer_devices": [
+          0,
+          7
+        ],
+        "direct_store_pointer_devices": [
+          0
+        ],
+        "sm64_first_direct_load_device": 7,
+        "sm64_first_direct_load_effective_address": "0x7b3996034000",
+        "launch_exception": "launch_dae failed: an illegal memory access was encountered",
+        "rules_out": [
+          "unrecognized CUDA runtime pointer attributes as the cause of the first direct load failure"
+        ],
+        "next_debug_target": "co-locate Qwen model weights and VDCores launcher buffers on one visible GPU and rerun the failing cut",
+        "correctness_completed": false,
+        "resource_policy_measured": false
+      }
+    },
+    {
+      "id": "vdcores_qwen3_1p7b_single_visible_gpu_h200",
+      "paper_baseline_id": "vdcores",
+      "paper_baseline_run_id": "vdcores_resource_policy_trace",
+      "title": "VDCores Qwen3 1.7B Single-Visible-GPU Diagnostic",
+      "status": "partial",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-single-visible-gpu-ac8dab26/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "Run Qwen3-1.7B with CUDA_VISIBLE_DEVICES=7, offline Hugging Face cache, QWEN1P7B_NO_PREFETCH=all, one-layer final_rms launch, then one-layer full-schedule launch.",
+      "observation": "Restricting visibility to physical GPU 7 makes the one-layer final_rms launch return status 0, resolving the previous direct 1D cp_async_bulk illegal memory access. The one-layer full schedule still fails later with an illegal instruction.",
+      "blocker": "Co-locating model weights and launcher buffers resolves the earliest final_rms launch failure, but the one-layer full schedule still fails with illegal instruction. VDCores still lacks full correctness and queue/resource-policy timing for paper comparison.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-single-visible-gpu-ac8dab26/single-visible-gpu-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-single-visible-gpu-ac8dab26/final-rms-launch.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-single-visible-gpu-ac8dab26/final-rms-launch-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-single-visible-gpu-ac8dab26/full-one-layer-launch.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-single-visible-gpu-ac8dab26/full-one-layer-launch-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-single-visible-gpu-ac8dab26/metadata.txt"
+      ],
+      "summary": {
+        "mode": "vdcores_qwen_single_visible_gpu",
+        "model": "Qwen/Qwen3-1.7B",
+        "offline_cache_used": true,
+        "cuda_visible_devices": "7",
+        "debug_num_layers": 1,
+        "no_prefetch": "all",
+        "final_rms_launch_status": 0,
+        "final_rms_completed_without_python_exception": true,
+        "full_one_layer_launch_status": 1,
+        "full_one_layer_error": "launch_dae failed: an illegal instruction was encountered",
+        "rules_out": [
+          "cross-device Qwen weight placement as the sole cause of the one-layer final_rms failure"
+        ],
+        "next_debug_target": "debug the co-located one-layer full-schedule illegal instruction before collecting VDCores correctness or resource-policy timing",
+        "correctness_completed": false,
+        "resource_policy_measured": false
+      }
+    },
+    {
       "id": "thunderkittens_mha_h100_official_benchmark_h200",
       "paper_baseline_id": "thunderkittens",
       "paper_baseline_run_id": "thunderkittens_full_sweep",

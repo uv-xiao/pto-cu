@@ -1878,8 +1878,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert "mpk_persistent_scheduler_trace" not in persistent_attempts
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
-    ] == "vdcores_qwen3_1p7b_pointer_attr_probe_h200"
-    assert "readable by cudaMemcpy before launch" in (
+    ] == "vdcores_qwen3_1p7b_single_visible_gpu_h200"
+    assert "one-layer full schedule still fails with illegal instruction" in (
         persistent_attempts["vdcores_resource_policy_trace"]["blocker"]
     )
     assert not any(
@@ -2010,8 +2010,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
         and item["execution_attempt_id"]
-        == "vdcores_qwen3_1p7b_pointer_attr_probe_h200"
-        and "readable by cudaMemcpy before launch"
+        == "vdcores_qwen3_1p7b_single_visible_gpu_h200"
+        and "one-layer full schedule still fails with illegal instruction"
         in item["action"]
         for item in work_items
     )
@@ -2707,6 +2707,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_minst_provenance_h200",
         "vdcores_qwen3_1p7b_runtime_ldwarp_sm64_h200",
         "vdcores_qwen3_1p7b_pointer_attr_probe_h200",
+        "vdcores_qwen3_1p7b_launch_pointer_attr_probe_h200",
+        "vdcores_qwen3_1p7b_single_visible_gpu_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -3144,6 +3146,56 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert sm64_first_direct["copy_ok"]
     assert sm64_first_direct["copy_bytes_requested"] == 4096
     assert "cudaMemcpy before launch" in vdcores_pointer_attr["blocker"]
+    vdcores_launch_pointer = attempts_by_id[
+        "vdcores_qwen3_1p7b_launch_pointer_attr_probe_h200"
+    ]
+    assert vdcores_launch_pointer["status"] == "failed_after_kernel_launch"
+    assert vdcores_launch_pointer["summary"]["mode"] == (
+        "vdcores_qwen_launch_pointer_attr_probe"
+    )
+    assert vdcores_launch_pointer["summary"]["launch_executed"]
+    assert vdcores_launch_pointer["summary"]["current_device_before_launch"] == 0
+    assert vdcores_launch_pointer["summary"]["direct_record_count"] == 80
+    assert vdcores_launch_pointer["summary"][
+        "pointer_attribute_success_count"
+    ] == 80
+    assert vdcores_launch_pointer["summary"][
+        "device_to_host_copy_ok_count"
+    ] == 80
+    assert vdcores_launch_pointer["summary"]["direct_load_pointer_devices"] == [
+        0,
+        7,
+    ]
+    assert vdcores_launch_pointer["summary"]["direct_store_pointer_devices"] == [
+        0
+    ]
+    assert (
+        vdcores_launch_pointer["summary"]["sm64_first_direct_load_device"]
+        == 7
+    )
+    assert "illegal memory access" in vdcores_launch_pointer["summary"][
+        "launch_exception"
+    ]
+    assert "device-placement mismatch" in vdcores_launch_pointer["blocker"]
+    vdcores_single_visible = attempts_by_id[
+        "vdcores_qwen3_1p7b_single_visible_gpu_h200"
+    ]
+    assert vdcores_single_visible["status"] == "partial"
+    assert vdcores_single_visible["summary"]["mode"] == (
+        "vdcores_qwen_single_visible_gpu"
+    )
+    assert vdcores_single_visible["summary"]["cuda_visible_devices"] == "7"
+    assert vdcores_single_visible["summary"]["final_rms_launch_status"] == 0
+    assert vdcores_single_visible["summary"][
+        "final_rms_completed_without_python_exception"
+    ]
+    assert vdcores_single_visible["summary"]["full_one_layer_launch_status"] == 1
+    assert "illegal instruction" in vdcores_single_visible["summary"][
+        "full_one_layer_error"
+    ]
+    assert "one-layer final_rms failure" in " ".join(
+        vdcores_single_visible["summary"]["rules_out"]
+    )
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
@@ -3394,20 +3446,19 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if attempt["paper_baseline_id"] == "vdcores"
             )
             assert vdcores_attempt["execution_attempt_id"] == (
-                "vdcores_qwen3_1p7b_pointer_attr_probe_h200"
+                "vdcores_qwen3_1p7b_single_visible_gpu_h200"
             )
             assert (
-                vdcores_attempt["summary"]["device_to_host_copy_ok_record_count"]
-                == 80
+                vdcores_attempt["summary"]["final_rms_launch_status"] == 0
             )
             vdcores_actions = [
                 action
                 for action in item["next_actions"]
                 if action.get("execution_attempt_id")
-                == "vdcores_qwen3_1p7b_pointer_attr_probe_h200"
+                == "vdcores_qwen3_1p7b_single_visible_gpu_h200"
             ]
             assert vdcores_actions
-            assert "readable by cudaMemcpy before launch" in (
+            assert "one-layer full schedule still fails with illegal instruction" in (
                 vdcores_actions[0]["action"]
             )
         if item["id"] == "host_schedule_launch_overhead":

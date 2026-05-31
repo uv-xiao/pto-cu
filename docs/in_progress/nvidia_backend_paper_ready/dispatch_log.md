@@ -2009,3 +2009,45 @@ Each entry must include:
   diagnostic should combine same-process pointer classification with the
   failing launch, or inspect why `cp_async_bulk` and compute-sanitizer treat
   `cudaMemcpy`-readable direct 1D addresses as out of bounds.
+
+### 2026-06-01 - VDCores Device Colocation Diagnostic
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  device-colocation diagnostic for the persistent scheduler baseline gap.
+- Exact Codex command or script invocation: ran the launch pointer-attribute
+  wrapper under
+  `tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-launch-pointer-attrs-ac8dab26/`;
+  then ran the Qwen3-1.7B one-layer `final_rms` and one-layer `full` launch
+  commands with `CUDA_VISIBLE_DEVICES=7`, `QWEN1P7B_NO_PREFETCH=all`, offline
+  Hugging Face cache, `--debug-num-layers 1`, `-N 1`, and `--launch`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, and local `tmp/` raw artifacts copied back
+  from H200. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the latest remote VDCores extension
+  still had debug-print instrumentation from the prior diagnostic build. The
+  result is diagnostic evidence, not paper-grade timing.
+- Verification commands and results:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q`
+  -> `32 passed`;
+  `validate_benchmark_viewer_data.py` -> passed;
+  `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed;
+  `jq empty docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `git diff --check` -> passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the launch pointer probe found direct
+  source-load pointers on devices 0 and 7 while VDCores launched on current
+  device 0. Restricting visibility to physical GPU 7 made the one-layer
+  `final_rms` launch return status 0, so cross-device weight placement was the
+  original direct 1D load failure. The one-layer full schedule still fails
+  later with illegal instruction, so VDCores still lacks correctness and
+  queue/resource-policy timing.
