@@ -139,6 +139,26 @@ def _load_graph_replay_sweep_module():
         sys.modules.pop(spec.name, None)
 
 
+def _load_direct_launch_sweep_module():
+    script_path = (
+        Path(__file__).resolve().parents[3]
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "cuda_direct_launch_sweep.py"
+    )
+    spec = importlib.util.spec_from_file_location("cuda_direct_launch_sweep", script_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        sys.modules.pop(spec.name, None)
+
+
 def _load_tensor_shape_sweep_module():
     script_path = (
         Path(__file__).resolve().parents[3]
@@ -5336,6 +5356,107 @@ def test_cuda_graph_replay_sweep_dry_run_records_source_papers(tmp_path):
     assert payload["metadata"]["source_papers"]
     assert "sync_remote_tree" in payload["metadata"]["command_examples"]
     output_dir = tmp_path / "cuda-backend" / "graph-replay-sweep-abc123"
+    assert (output_dir / "cuda-benchmark.json").is_file()
+    assert (output_dir / "cuda-benchmark.md").is_file()
+
+
+def test_cuda_direct_launch_sweep_builds_a100_h200_workflow(tmp_path):
+    cuda_direct_launch_sweep = _load_direct_launch_sweep_module()
+    config = cuda_direct_launch_sweep.DirectLaunchSweepConfig(
+        remote="h200-box",
+        remote_workdir="/remote/pto-cu",
+        branch="goal/nvidia-paper-ready",
+        output_root=tmp_path / "cuda-backend",
+        local_python=".venv/bin/python",
+        remote_python=".venv/bin/python",
+        sizes=(1024, 4096),
+        repeats=2,
+        sync_remote_tree=True,
+    )
+
+    local = cuda_direct_launch_sweep.build_local_sample_command(
+        config,
+        baseline="direct_driver",
+        n=4096,
+    )
+    tensor_local = cuda_direct_launch_sweep.build_local_sample_command(
+        config,
+        baseline="direct_runtime_sgemm",
+        n=4096,
+    )
+    remote = cuda_direct_launch_sweep.build_remote_sample_command(
+        config,
+        baseline="direct_runtime_sgemm",
+        n=4096,
+        commit="abc123",
+    )
+    validate = cuda_direct_launch_sweep.build_validate_command(config, "abc123")
+
+    assert "--single-baseline" in local
+    assert "direct_driver" in local
+    assert "--sizes" in local
+    assert "4096" in local
+    assert "--tensor-rows" not in local
+    assert "direct_runtime_sgemm" in tensor_local
+    assert "--tensor-rows" in tensor_local
+    assert "16" in tensor_local
+    remote_shell = remote[-1]
+    assert "git fetch" not in remote_shell
+    assert "git checkout" not in remote_shell
+    assert (
+        "CUDA_HOME=/usr/local/cuda-12.8 PATH=/usr/local/cuda-12.8/bin:$PATH "
+        "PYTHONPATH=$PWD:$PWD/python PTO_SOURCE_COMMIT=abc123"
+    ) in remote_shell
+    assert "--single-baseline direct_runtime_sgemm" in remote_shell
+    assert "--expected-result-count 32" in " ".join(validate)
+    assert "--require-baseline direct_runtime" in " ".join(validate)
+    assert "--require-baseline direct_driver" in " ".join(validate)
+    assert "--require-baseline direct_runtime_sgemm" in " ".join(validate)
+    assert "--require-baseline direct_driver_sgemm" in " ".join(validate)
+    assert "--require-tensor-tile direct_runtime_sgemm=16x16x16" in " ".join(validate)
+    assert "--require-tensor-tile direct_driver_sgemm=16x16x16" in " ".join(validate)
+
+
+def test_cuda_direct_launch_sweep_dry_run_records_source_papers(tmp_path):
+    cuda_direct_launch_sweep = _load_direct_launch_sweep_module()
+    calls = []
+
+    def fake_runner(command, **kwargs):
+        calls.append((command, kwargs))
+        return subprocess.CompletedProcess(command, 0, stdout="abc123\n", stderr="")
+
+    config = cuda_direct_launch_sweep.DirectLaunchSweepConfig(
+        output_root=tmp_path / "cuda-backend",
+        sizes=(1024, 4096),
+        repeats=2,
+        sync_remote_tree=True,
+    )
+
+    payload = cuda_direct_launch_sweep.run_direct_launch_sweep(
+        config,
+        runner=fake_runner,
+        dry_run=True,
+    )
+
+    assert calls == [(["git", "rev-parse", "--short", "HEAD"], {"check": True, "capture_output": True, "text": True})]
+    assert payload["metadata"]["git_commit"] == "abc123"
+    assert payload["metadata"]["sizes"] == [1024, 4096]
+    assert payload["metadata"]["repeats"] == 2
+    assert {row["baseline"] for row in payload["results"]} == {
+        "direct_runtime",
+        "direct_driver",
+        "direct_runtime_sgemm",
+        "direct_driver_sgemm",
+    }
+    assert {row["machine"] for row in payload["results"]} == {
+        "hina",
+        "dasys-h200x8",
+    }
+    assert len(payload["results"]) == 32
+    assert payload["metadata"]["source_papers"]
+    assert payload["metadata"]["paper_setup"].startswith("Direct CUDA launch sweep")
+    assert "sync_remote_tree" in payload["metadata"]["command_examples"]
+    output_dir = tmp_path / "cuda-backend" / "direct-launch-sweep-abc123"
     assert (output_dir / "cuda-benchmark.json").is_file()
     assert (output_dir / "cuda-benchmark.md").is_file()
 
