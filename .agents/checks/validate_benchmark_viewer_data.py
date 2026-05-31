@@ -788,6 +788,98 @@ def validate_paper_baseline_probes(
         fail(f"paper baseline probes missing baseline coverage: {missing}")
 
 
+def validate_paper_baseline_environment_plans(
+    data: dict[str, Any],
+    baseline_ids: set[str],
+    root: Path,
+) -> None:
+    if data.get("schema_version") != 1:
+        fail("paper baseline environment plans schema_version must be 1")
+    metadata = require_dict(data, "metadata", "paper baseline environment plans")
+    artifact_root = require_string(
+        metadata,
+        "artifact_root",
+        "paper baseline environment plan metadata",
+    )
+    require_current_artifact_path(root, artifact_root, "environment plan metadata")
+    source_files = set(
+        require_list(metadata, "source_files", "environment plan metadata")
+    )
+    if source_files != {
+        "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
+    }:
+        fail("paper baseline environment plan source_files are stale")
+    records = require_list(
+        data,
+        "paper_baseline_environment_plans",
+        "paper baseline environment plans",
+    )
+    check_unique_ids(records, "paper baseline environment plan")
+    allowed_status = {"plan_ready", "partial", "materialized"}
+    covered_baselines: set[str] = set()
+    for record in records:
+        owner = f"paper baseline environment plan {record['id']}"
+        for key in (
+            "title",
+            "status",
+            "source_path",
+            "source_commit",
+            "environment_path",
+            "python_policy",
+            "next_action",
+            "raw_artifact",
+        ):
+            require_string(record, key, owner)
+        if record["status"] not in allowed_status:
+            fail(f"{owner} has invalid status: {record['status']}")
+        baseline_id = require_string(record, "paper_baseline_id", owner)
+        if baseline_id not in baseline_ids:
+            fail(f"{owner} references unknown paper_baseline_id: {baseline_id}")
+        covered_baselines.add(baseline_id)
+        if not record["environment_path"].startswith("tmp/"):
+            fail(f"{owner} environment_path must be under tmp/")
+        require_current_artifact_path(root, record["raw_artifact"], owner)
+        for key in (
+            "dependency_sources",
+            "critical_packages",
+            "install_commands",
+            "validation_commands",
+            "execution_gaps",
+            "notes",
+        ):
+            require_list(record, key, owner)
+        if ".venv" in " ".join(record["install_commands"]):
+            fail(f"{owner} must not install into the project .venv")
+        if "--user" in " ".join(record["install_commands"]):
+            fail(f"{owner} must not use pip --user")
+        for package in record["critical_packages"]:
+            if not isinstance(package, dict):
+                fail(f"{owner} critical package is not an object")
+            require_string(package, "name", owner)
+            if not isinstance(package.get("declared"), bool):
+                fail(f"{owner} critical package declared is not boolean")
+            evidence = package.get("evidence")
+            if not isinstance(evidence, list):
+                fail(f"{owner} critical package evidence is not a list")
+            if package["declared"] and not evidence:
+                fail(f"{owner} declared critical package has no evidence")
+        manual_packages = record.get("manual_packages")
+        if not isinstance(manual_packages, list):
+            fail(f"{owner} manual_packages is not a list")
+        for package in manual_packages:
+            if not isinstance(package, dict):
+                fail(f"{owner} manual package is not an object")
+            require_string(package, "name", owner)
+            require_string(package, "why", owner)
+        validation_text = " ".join(record["validation_commands"])
+        if "PYTHONNOUSERSITE=1" not in validation_text:
+            fail(f"{owner} validation must disable user-site packages")
+    required = {"vllm", "sglang"}
+    if not required <= covered_baselines:
+        missing = sorted(required - covered_baselines)
+        fail(f"environment plans missing baseline coverage: {missing}")
+
+
 def validate_capture_imports(
     data: dict[str, Any],
     benchmark_ids: set[str],
@@ -1289,6 +1381,9 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     paper_baselines = load_json(root, "paper_baselines.json")
     paper_baseline_runs = load_json(root, "paper_baseline_runs.json")
     paper_baseline_probes = load_json(root, "paper_baseline_probes.json")
+    paper_baseline_environment_plans = load_json(
+        root, "paper_baseline_environment_plans.json"
+    )
     paper_baseline_run_readiness = load_json(
         root, "paper_baseline_run_readiness.json"
     )
@@ -1310,6 +1405,11 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     baseline_ids = validate_paper_baselines(paper_baselines)
     serving_workload_ids = validate_serving_workloads(serving_workloads, root)
     validate_paper_baseline_probes(paper_baseline_probes, baseline_ids, root)
+    validate_paper_baseline_environment_plans(
+        paper_baseline_environment_plans,
+        baseline_ids,
+        root,
+    )
     run_ids = {
         record["id"]
         for record in paper_baseline_runs["paper_baseline_runs"]

@@ -4,6 +4,7 @@ const DATA_FILES = {
   paperBaselines: "data/paper_baselines.json",
   paperBaselineRuns: "data/paper_baseline_runs.json",
   paperBaselineProbes: "data/paper_baseline_probes.json",
+  paperBaselineEnvironmentPlans: "data/paper_baseline_environment_plans.json",
   paperBaselineRunReadiness: "data/paper_baseline_run_readiness.json",
   paperBaselineExecutionAttempts: "data/paper_baseline_execution_attempts.json",
   servingCommandPlan: "data/serving_command_plan.json",
@@ -323,6 +324,9 @@ function renderPaperBaselines() {
     const probes = state.paperBaselineProbes.paper_baseline_probes.filter(
       (probe) => probe.paper_baseline_id === baseline.id,
     );
+    const environmentPlans = state.paperBaselineEnvironmentPlans
+      .paper_baseline_environment_plans
+      .filter((plan) => plan.paper_baseline_id === baseline.id);
     const executionAttempts = state.paperBaselineExecutionAttempts
       .paper_baseline_execution_attempts
       .filter((attempt) => attempt.paper_baseline_id === baseline.id);
@@ -389,6 +393,26 @@ function renderPaperBaselines() {
         `Next: ${probe.next_action}`,
       ].join("\n");
     });
+    const environmentItems = environmentPlans.map((plan) => {
+      const critical = plan.critical_packages.map((pkg) => {
+        const evidence = pkg.evidence.length ? pkg.evidence.join(", ") : "missing";
+        return `${pkg.name}: ${pkg.declared ? "declared" : "missing"} (${evidence})`;
+      });
+      const manual = plan.manual_packages.map((pkg) => `${pkg.name}: ${pkg.why}`);
+      return [
+        `${plan.title} (${plan.status})`,
+        `Environment: ${plan.environment_path}`,
+        `Python policy: ${plan.python_policy}`,
+        `Dependency sources: ${plan.dependency_sources.join(", ")}`,
+        `Critical packages: ${critical.join(" | ")}`,
+        `Manual packages: ${manual.length ? manual.join(" | ") : "none"}`,
+        `Install: ${plan.install_commands.join(" | ")}`,
+        `Validate: ${plan.validation_commands.join(" | ")}`,
+        `Execution gaps: ${plan.execution_gaps.join(" | ")}`,
+        `Raw artifact: ${plan.raw_artifact}`,
+        `Next: ${plan.next_action}`,
+      ].join("\n");
+    });
     const executionItems = executionAttempts.map((attempt) => {
       const evidence = attempt.artifacts.join(", ");
       const blocker = attempt.blocker || "none";
@@ -415,6 +439,7 @@ function renderPaperBaselines() {
       ...namedList("Reproduction Runs", runItems),
       ...namedList("Run Readiness", readinessItems),
       ...namedList("Readiness Probes", probeItems),
+      ...namedList("Environment Plans", environmentItems),
       ...namedList("Execution Attempts", executionItems),
     );
     return details;

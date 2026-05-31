@@ -1474,11 +1474,33 @@ def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
     baselines_path = tmp_path / "paper_baselines.json"
     runs_path = tmp_path / "paper_baseline_runs.json"
     probes_path = tmp_path / "paper_baseline_probes.json"
+    env_plans_path = tmp_path / "paper_baseline_environment_plans.json"
     output_root = tmp_path / "run-readiness"
     viewer_output = tmp_path / "paper_baseline_run_readiness.json"
     baselines_path.write_text(json.dumps(baselines), encoding="utf-8")
     runs_path.write_text(json.dumps(runs), encoding="utf-8")
     probes_path.write_text(json.dumps(probes), encoding="utf-8")
+    env_plans_path.write_text(
+        json.dumps(
+            {
+                "paper_baseline_environment_plans": [
+                    {
+                        "id": "vllm_runtime_environment",
+                        "paper_baseline_id": "vllm",
+                        "status": "plan_ready",
+                        "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/run-readiness-fixture/environment-plans.json",
+                    },
+                    {
+                        "id": "sglang_runtime_environment",
+                        "paper_baseline_id": "sglang",
+                        "status": "plan_ready",
+                        "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/run-readiness-fixture/environment-plans.json",
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
 
     result = subprocess.run(
         [
@@ -1490,6 +1512,8 @@ def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
             str(baselines_path),
             "--probes",
             str(probes_path),
+            "--env-plans",
+            str(env_plans_path),
             "--output-root",
             str(output_root),
             "--viewer-output",
@@ -1540,9 +1564,144 @@ def test_paper_baseline_run_readiness_probe_exports_run_blockers(tmp_path):
         "sglang.bench_serving" in gap
         for gap in records["sglang_serving_and_offline"]["blocking_gaps"]
     )
+    assert any(
+        check["kind"] == "environment_plan"
+        and check["status"] == "pass"
+        for check in records["vllm_serving_and_throughput"]["checks"]
+    )
     assert (output_root / "run-readiness.json").is_file()
     artifact = json.loads((output_root / "run-readiness.json").read_text())
     assert artifact["metadata"]["pto_commit"] == "abc1234"
+
+
+def test_paper_baseline_environment_plan_exports_isolated_serving_envs(tmp_path):
+    baseline_root = tmp_path / "baselines"
+    vllm_root = baseline_root / "vllm"
+    sglang_root = baseline_root / "sglang"
+    (vllm_root / "requirements").mkdir(parents=True)
+    (vllm_root / "pyproject.toml").write_text(
+        """
+[build-system]
+requires = ["torch == 2.11.0"]
+[project]
+name = "vllm"
+dependencies = ["uvloop", "pydantic", "cbor2"]
+""",
+        encoding="utf-8",
+    )
+    (vllm_root / "requirements" / "common.txt").write_text(
+        "pydantic >= 2.12.0\ncbor2\nuvloop==0.22.1\n",
+        encoding="utf-8",
+    )
+    (vllm_root / "requirements" / "cuda.txt").write_text(
+        "torch==2.11.0\ntorchvision==0.26.0\nflashinfer-python==0.6.11.post2\ntilelang==0.1.9\n",
+        encoding="utf-8",
+    )
+    (sglang_root / "python").mkdir(parents=True)
+    (sglang_root / "python" / "pyproject.toml").write_text(
+        """
+[project]
+name = "sglang"
+dependencies = [
+  "sglang",
+  "torch==2.11.0",
+  "torchvision",
+  "orjson",
+  "uvloop",
+  "flashinfer_python[cu13]==0.6.11.post1",
+  "tilelang==0.1.8",
+]
+""",
+        encoding="utf-8",
+    )
+    baselines = {
+        "paper_baselines": [
+            {
+                "id": "vllm",
+                "source": {
+                    "local_tmp_path": str(vllm_root),
+                    "commit": "1234567890abcdef1234567890abcdef12345678",
+                },
+            },
+            {
+                "id": "sglang",
+                "source": {
+                    "local_tmp_path": str(sglang_root),
+                    "commit": "abcdef1234567890abcdef1234567890abcdef12",
+                },
+            },
+        ]
+    }
+    baselines_path = tmp_path / "paper_baselines.json"
+    output_root = tmp_path / "environment-plans"
+    viewer_output = tmp_path / "paper_baseline_environment_plans.json"
+    baselines_path.write_text(json.dumps(baselines), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_plan.py",
+            "--baselines",
+            str(baselines_path),
+            "--output-root",
+            str(output_root),
+            "--viewer-output",
+            str(viewer_output),
+            "--commit",
+            "abc1234",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(viewer_output.read_text(encoding="utf-8"))
+    records = {
+        item["paper_baseline_id"]: item
+        for item in payload["paper_baseline_environment_plans"]
+    }
+    assert set(records) == {"vllm", "sglang"}
+    assert records["vllm"]["status"] == "plan_ready"
+    assert records["sglang"]["status"] == "plan_ready"
+    assert records["vllm"]["environment_path"].startswith(
+        "tmp/cuda-backend/paper-baselines/envs/vllm-12345678"
+    )
+    assert records["sglang"]["environment_path"].startswith(
+        "tmp/cuda-backend/paper-baselines/envs/sglang-abcdef12"
+    )
+    assert all(
+        "--system-site-packages" in command
+        for command in [
+            records["vllm"]["install_commands"][0],
+            records["sglang"]["install_commands"][0],
+        ]
+    )
+    assert ".venv" not in " ".join(
+        records["vllm"]["install_commands"] + records["sglang"]["install_commands"]
+    )
+    assert not any(
+        command.startswith("python -m pip")
+        for command in (
+            records["vllm"]["install_commands"]
+            + records["sglang"]["install_commands"]
+        )
+    )
+    assert "--user" not in " ".join(
+        records["vllm"]["install_commands"] + records["sglang"]["install_commands"]
+    )
+    assert "PYTHONNOUSERSITE=1" in " ".join(
+        records["sglang"]["validation_commands"]
+    )
+    vllm_packages = {
+        package["name"]: package
+        for package in records["vllm"]["critical_packages"]
+    }
+    assert vllm_packages["torch"]["declared"]
+    assert vllm_packages["cbor2"]["declared"]
+    assert (output_root / "environment-plans.json").is_file()
 
 
 def test_paper_baseline_viewer_export_rejects_bool_sample_count(tmp_path):
@@ -2325,6 +2484,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "data" / "paper_baselines.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_runs.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_probes.json").is_file()
+    assert (
+        VIEWER_ROOT / "data" / "paper_baseline_environment_plans.json"
+    ).is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_execution_attempts.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_command_plan.json").is_file()
@@ -2345,6 +2507,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paper_baseline_runs",
         "paperBaselineProbes",
         "paper_baseline_probes",
+        "paperBaselineEnvironmentPlans",
+        "paper_baseline_environment_plans",
+        "Environment Plans",
         "paperBaselineRunReadiness",
         "paper_baseline_run_readiness",
         "Run Readiness",

@@ -46,14 +46,53 @@ def main() -> None:
     output_dir = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    env_plan_module = load_module("paper_baseline_environment_plan")
+    run_readiness_module = load_module("paper_baseline_run_readiness")
     audit_module = load_module("paper_readiness_audit")
     work_queue_module = load_module("paper_readiness_work_queue")
     goal_progress_module = load_module("nvidia_goal_progress")
 
+    commit = run_readiness_module.git_commit()
+    env_output_root = (
+        env_plan_module.DEFAULT_OUTPUT_ROOT / f"environment-plans-{commit}"
+    )
+    run_readiness_output_root = (
+        run_readiness_module.DEFAULT_OUTPUT_ROOT / f"run-readiness-{commit}"
+    )
+    env_plans = env_plan_module.build_environment_plans(
+        baselines=env_plan_module.load_json(env_plan_module.DEFAULT_BASELINES),
+        output_root=env_output_root,
+        commit=commit,
+    )
+    env_plan_module.write_json(
+        env_output_root / "environment-plans.json",
+        env_plans,
+    )
+    env_plan_path = output_dir / "paper_baseline_environment_plans.json"
+    env_plan_module.write_json(env_plan_path, env_plans)
+    print(f"wrote {env_plan_path}")
+
+    run_readiness = run_readiness_module.build_run_readiness(
+        baselines=run_readiness_module.load_json(
+            run_readiness_module.DEFAULT_BASELINES
+        ),
+        runs=run_readiness_module.load_json(run_readiness_module.DEFAULT_RUNS),
+        probes=run_readiness_module.load_json(run_readiness_module.DEFAULT_PROBES),
+        env_plans=env_plans,
+        output_root=run_readiness_output_root,
+        commit=commit,
+    )
+    run_readiness_module.write_json(
+        run_readiness_output_root / "run-readiness.json",
+        run_readiness,
+    )
+    run_readiness_path = output_dir / "paper_baseline_run_readiness.json"
+    run_readiness_module.write_json(run_readiness_path, run_readiness)
+    print(f"wrote {run_readiness_path}")
+
     matrix = audit_module.load_json(audit_module.DEFAULT_MATRIX)
     runs = audit_module.load_json(audit_module.DEFAULT_RUNS)
     probes = audit_module.load_json(audit_module.DEFAULT_PROBES)
-    run_readiness = audit_module.load_json(audit_module.DEFAULT_RUN_READINESS)
     execution_attempts = audit_module.load_json(audit_module.DEFAULT_ATTEMPTS)
     results = audit_module.load_json(audit_module.DEFAULT_RESULTS)
     audit = audit_module.build_readiness_audit(

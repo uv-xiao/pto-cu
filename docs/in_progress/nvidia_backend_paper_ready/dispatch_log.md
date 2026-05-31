@@ -2553,3 +2553,42 @@ Each entry must include:
   and reviewable. The next execution slice should build isolated vLLM and
   SGLang evaluation environments instead of installing their large dependency
   stacks into the shared project venv.
+
+### 2026-06-01 - Serving Baseline Environment Plans
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned isolated
+  environment planning for vLLM and SGLang serving-baseline execution.
+- Exact Codex command or script invocation: added
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_plan.py`,
+  updated the run-readiness generator, viewer, validator, tests, and
+  changelog docs, then ran
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready serving
+  baseline evaluation environment readiness.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, benchmark-viewer data and
+  rendering, validator/tests, generated audit/work-queue/goal-progress data,
+  dispatch log, changelog docs, and local `tmp/` environment-plan artifacts.
+  No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: vLLM and SGLang dependency stacks are
+  intentionally not installed into the project `.venv`. The environment plans
+  require dedicated `tmp/` venvs and `PYTHONNOUSERSITE=1` validation before
+  actual serving benchmark runs.
+- Verification commands and results:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py`
+  -> wrote `paper_baseline_environment_plans.json`, refreshed
+  run-readiness, audit, work-queue, and goal-progress JSON;
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q -k 'environment_plan or run_readiness_probe_exports_run_blockers or benchmark_viewer_has_json_backed_review_data'`
+  -> `3 passed`;
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/checks/validate_benchmark_viewer_data.py`
+  -> `benchmark viewer data validation passed`;
+  `node --check docs/nvidia-backend/benchmark-viewer/viewer.js` -> passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: vLLM and SGLang now have reviewable
+  isolated-environment recipes in the benchmark viewer. The next execution
+  slice should materialize those venvs on the evaluation host, run the
+  validation commands, then capture serving benchmark raw JSON.

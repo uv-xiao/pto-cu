@@ -17,6 +17,7 @@ VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 DEFAULT_BASELINES = VIEWER_DATA / "paper_baselines.json"
 DEFAULT_RUNS = VIEWER_DATA / "paper_baseline_runs.json"
 DEFAULT_PROBES = VIEWER_DATA / "paper_baseline_probes.json"
+DEFAULT_ENV_PLANS = VIEWER_DATA / "paper_baseline_environment_plans.json"
 DEFAULT_OUTPUT_ROOT = (
     ROOT / "tmp" / "cuda-backend" / "paper-baselines" / "run-readiness"
 )
@@ -93,6 +94,19 @@ def probe_by_baseline(probes: dict[str, Any]) -> dict[str, dict[str, Any]]:
         baseline_id = probe.get("paper_baseline_id")
         if isinstance(baseline_id, str):
             by_id[baseline_id] = probe
+    return by_id
+
+
+def environment_plan_by_baseline(
+    env_plans: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    by_id: dict[str, dict[str, Any]] = {}
+    for plan in env_plans.get("paper_baseline_environment_plans", []):
+        if not isinstance(plan, dict):
+            continue
+        baseline_id = plan.get("paper_baseline_id")
+        if isinstance(baseline_id, str):
+            by_id[baseline_id] = plan
     return by_id
 
 
@@ -271,9 +285,28 @@ def model_access_checks(run: dict[str, Any], baseline_id: str) -> list[dict[str,
 
 
 def environment_checks(
-    run: dict[str, Any], baseline_id: str, source_root: Path
+    run: dict[str, Any],
+    baseline_id: str,
+    source_root: Path,
+    env_plans: dict[str, dict[str, Any]],
 ) -> list[dict[str, str]]:
     checks = model_access_checks(run, baseline_id)
+    plan = env_plans.get(baseline_id)
+    if plan is not None and baseline_id in {"vllm", "sglang"}:
+        checks.append(
+            {
+                "kind": "environment_plan",
+                "name": str(plan.get("id", baseline_id)),
+                "path": str(plan.get("raw_artifact", "")),
+                "status": (
+                    "pass" if plan.get("status") == "plan_ready" else "partial"
+                ),
+                "why": (
+                    "Serving framework dependencies must be installed in an "
+                    "isolated tmp/ environment before benchmark execution."
+                ),
+            }
+        )
     if baseline_id == "vdcores":
         runtime_candidates = list((source_root / "python" / "dae").glob("runtime*.so"))
         checks.append(
@@ -324,11 +357,13 @@ def build_run_readiness(
     baselines: dict[str, Any],
     runs: dict[str, Any],
     probes: dict[str, Any],
+    env_plans: dict[str, Any],
     output_root: Path,
     commit: str,
 ) -> dict[str, Any]:
     sources = source_by_baseline(baselines)
     probes_by_baseline = probe_by_baseline(probes)
+    env_plans_by_baseline = environment_plan_by_baseline(env_plans)
     records: list[dict[str, Any]] = []
     for run in require_records(runs, "paper_baseline_runs"):
         run_id = run.get("id")
@@ -351,7 +386,12 @@ def build_run_readiness(
             *artifact_checks(run),
             *metric_checks(run),
             *probe_checks(baseline_id, probes_by_baseline),
-            *environment_checks(run, baseline_id, source_root),
+            *environment_checks(
+                run,
+                baseline_id,
+                source_root,
+                env_plans_by_baseline,
+            ),
         ]
         gaps = blocking_gaps(checks)
         records.append(
@@ -375,6 +415,7 @@ def build_run_readiness(
                 "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
                 "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
                 "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
+                "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_environment_plans.json",
             ],
         },
         "paper_baseline_run_readiness": records,
@@ -386,6 +427,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--baselines", type=Path, default=DEFAULT_BASELINES)
     parser.add_argument("--runs", type=Path, default=DEFAULT_RUNS)
     parser.add_argument("--probes", type=Path, default=DEFAULT_PROBES)
+    parser.add_argument("--env-plans", type=Path, default=DEFAULT_ENV_PLANS)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--viewer-output", type=Path, default=DEFAULT_VIEWER_OUTPUT)
     parser.add_argument("--commit", default=None)
@@ -399,6 +441,7 @@ def main() -> None:
         baselines=load_json(args.baselines),
         runs=load_json(args.runs),
         probes=load_json(args.probes),
+        env_plans=load_json(args.env_plans),
         output_root=args.output_root,
         commit=commit,
     )

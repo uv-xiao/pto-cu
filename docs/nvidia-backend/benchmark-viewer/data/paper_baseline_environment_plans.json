@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "pto_commit": "a4f5eabf",
+    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-a4f5eabf/",
+    "source_files": [
+      "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
+    ]
+  },
+  "paper_baseline_environment_plans": [
+    {
+      "id": "vllm_runtime_environment",
+      "paper_baseline_id": "vllm",
+      "title": "vLLM Isolated Runtime Environment",
+      "status": "plan_ready",
+      "source_path": "tmp/baselines/vllm",
+      "source_commit": "27fa5aa3b952a6108de127423397e50364a95fcb",
+      "environment_path": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+      "python_policy": "Create a dedicated venv under tmp/ with --system-site-packages; never install these serving framework dependencies into the project .venv or user site.",
+      "dependency_sources": [
+        "pyproject.toml",
+        "requirements/common.txt",
+        "requirements/cuda.txt"
+      ],
+      "critical_packages": [
+        {
+          "name": "torch",
+          "declared": true,
+          "evidence": [
+            "pyproject.toml: torch == 2.11.0",
+            "requirements/cuda.txt: torch==2.11.0"
+          ]
+        },
+        {
+          "name": "torchvision",
+          "declared": true,
+          "evidence": [
+            "requirements/cuda.txt: torchvision==0.26.0"
+          ]
+        },
+        {
+          "name": "pydantic",
+          "declared": true,
+          "evidence": [
+            "requirements/common.txt: pydantic >= 2.12.0"
+          ]
+        },
+        {
+          "name": "cbor2",
+          "declared": true,
+          "evidence": [
+            "requirements/common.txt: cbor2"
+          ]
+        },
+        {
+          "name": "flashinfer-python",
+          "declared": true,
+          "evidence": [
+            "requirements/cuda.txt: flashinfer-python==0.6.11.post2"
+          ]
+        },
+        {
+          "name": "tilelang",
+          "declared": true,
+          "evidence": [
+            "requirements/cuda.txt: tilelang==0.1.9"
+          ]
+        }
+      ],
+      "manual_packages": [
+        {
+          "name": "uvloop",
+          "why": "The pinned api_server.py imports uvloop, but uvloop is not declared in the inspected runtime requirement files."
+        }
+      ],
+      "install_commands": [
+        "python3 -m venv --system-site-packages tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+        "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --upgrade pip setuptools wheel",
+        "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install uvloop",
+        "cd tmp/baselines/vllm && tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install -r requirements/common.txt -r requirements/cuda.txt",
+        "cd tmp/baselines/vllm && tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e ."
+      ],
+      "validation_commands": [
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/vllm:$PWD/tmp/baselines/vllm/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/vllm:$PWD/tmp/baselines/vllm/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.cli.main')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/vllm:$PWD/tmp/baselines/vllm/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.openai.api_server')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/vllm:$PWD/tmp/baselines/vllm/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.engine.arg_utils')\""
+      ],
+      "execution_gaps": [
+        "Environment has not been materialized by this planner artifact.",
+        "Serving benchmarks still need raw JSON capture after validation passes."
+      ],
+      "notes": [
+        "The vLLM source declares torch==2.11.0 while the project venv may carry a different CUDA/PyTorch stack, so the serving baseline must use a dedicated environment under tmp/.",
+        "Editable installation is kept in the isolated environment because the installed vllm module and console script are required before server and throughput runs."
+      ],
+      "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-a4f5eabf/environment-plans.json"
+    },
+    {
+      "id": "sglang_runtime_environment",
+      "paper_baseline_id": "sglang",
+      "title": "SGLang Isolated Runtime Environment",
+      "status": "plan_ready",
+      "source_path": "tmp/baselines/sglang",
+      "source_commit": "7ed53d15f357ea4d722c1980c2cb35e8367d8bb0",
+      "environment_path": "tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15",
+      "python_policy": "Create a dedicated venv under tmp/ with --system-site-packages; never install these serving framework dependencies into the project .venv or user site.",
+      "dependency_sources": [
+        "python/pyproject.toml"
+      ],
+      "critical_packages": [
+        {
+          "name": "torch",
+          "declared": true,
+          "evidence": [
+            "python/pyproject.toml: torch==2.11.0"
+          ]
+        },
+        {
+          "name": "torchvision",
+          "declared": true,
+          "evidence": [
+            "python/pyproject.toml: torchvision"
+          ]
+        },
+        {
+          "name": "orjson",
+          "declared": true,
+          "evidence": [
+            "python/pyproject.toml: orjson"
+          ]
+        },
+        {
+          "name": "uvloop",
+          "declared": true,
+          "evidence": [
+            "python/pyproject.toml: uvloop"
+          ]
+        },
+        {
+          "name": "flashinfer_python",
+          "declared": true,
+          "evidence": [
+            "python/pyproject.toml: flashinfer_python[cu13]==0.6.11.post1"
+          ]
+        },
+        {
+          "name": "tilelang",
+          "declared": true,
+          "evidence": [
+            "python/pyproject.toml: tilelang==0.1.8"
+          ]
+        }
+      ],
+      "manual_packages": [],
+      "install_commands": [
+        "python3 -m venv --system-site-packages tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15",
+        "tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -m pip install --upgrade pip setuptools wheel",
+        "cd tmp/baselines/sglang && tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -m pip install --no-build-isolation -e \"python[all]\""
+      ],
+      "validation_commands": [
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('orjson')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('torchvision')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang.bench_serving')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang.bench_offline_throughput')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang.bench_one_batch')\""
+      ],
+      "execution_gaps": [
+        "Environment has not been materialized by this planner artifact.",
+        "Serving benchmarks still need raw JSON capture after validation passes."
+      ],
+      "notes": [
+        "SGLang imports orjson and torchvision during benchmark module initialization, so dependency validation must run with PYTHONNOUSERSITE=1 to avoid user-site leakage.",
+        "The pinned source declares torch==2.11.0 and CUDA 13 packages; installing it into the project venv would make PTO tests non-reproducible."
+      ],
+      "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-a4f5eabf/environment-plans.json"
+    }
+  ]
+}
