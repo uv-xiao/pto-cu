@@ -403,6 +403,13 @@ ssh bizhaoh200 \
    make -C tmp/baselines/vdcores clean pyext NVCC="nvcc -include cfloat"'
 ```
 
+For MPK, treat `mirage.mpk.base_dynamic_shard_loader` as the runtime import
+gate. The Qwen3 demo can parse while still being unable to execute persistent
+kernel paths if the environment only has a generic `mirage` package or a
+mismatched native `mirage.core`. Re-run the paired probe after any MPK setup
+change and do not execute/import MPK raw results until the `mpk_source_entrypoints`
+probe passes on the target host.
+
 Use `paper_serving_command_plan.py` before long MPK, VDCores, vLLM, SGLang,
 or ThunderKittens serving-family runs. It reads the committed
 `serving_workloads.json` and

@@ -1865,7 +1865,11 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         item["paper_baseline_run_id"]: item
         for item in persistent_claim["paper_baseline_run_readiness_statuses"]
     }
-    assert not any(
+    assert any(
+        "Readiness probe for mpk is partial" in blocker
+        for blocker in persistent_claim["blockers"]
+    )
+    assert any(
         action["source"] == "run_readiness"
         and action["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
         for action in persistent_claim["next_actions"]
@@ -1878,7 +1882,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     )
     assert persistent_readiness["mpk_persistent_scheduler_trace"][
         "latest_status"
-    ] == "pass"
+    ] == "partial"
     assert persistent_readiness["vdcores_resource_policy_trace"][
         "latest_status"
     ] == "partial"
@@ -1952,11 +1956,11 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 9
+    assert committed["summary"]["total_work_items"] == 13
     assert committed["summary"]["work_items_by_source"] == {
         "matrix_missing_evidence": 3,
-        "probe": 2,
-        "run_readiness": 4,
+        "probe": 4,
+        "run_readiness": 6,
     }
     work_items = committed["work_items"]
     assert all(not item["ready_for_paper_claim"] for item in work_items)
@@ -1967,7 +1971,7 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and "Run SGLang" in item["action"]
         for item in work_items
     )
-    assert not any(
+    assert any(
         item["claim_id"] == "persistent_device_scheduler_overhead"
         and item["paper_baseline_run_id"] == "mpk_persistent_scheduler_trace"
         for item in work_items
@@ -2005,7 +2009,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 9
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 13
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -2548,7 +2552,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert (
             item["latest_artifact_root"]
             == "tmp/cuda-backend/paper-baselines/probes/"
-            "paired-a100-h200-43b927ed/"
+            "paired-a100-h200-04dc762d/"
         )
         assert item["checks"]
         assert item["next_action"]
@@ -2583,6 +2587,13 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if check["kind"] == "python_module"
             }
             assert "transformers" in probed_modules
+        if item["paper_baseline_id"] == "mpk":
+            imported_modules = {
+                check["module"]
+                for check in item["checks"]
+                if check["kind"] == "python_import"
+            }
+            assert "mirage.mpk.base_dynamic_shard_loader" in imported_modules
         if item["paper_baseline_id"] == "sglang":
             imported_modules = {
                 check["module"]
@@ -2655,7 +2666,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert item["blocking_gaps"]
     assert readiness_by_run["mpk_qwen3_native_vs_persistent"][
         "latest_status"
-    ] == "pass"
+    ] == "partial"
     assert not any(
         "HF_TOKEN" in gap
         for gap in readiness_by_run[
@@ -2670,7 +2681,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     assert readiness_by_run["mpk_persistent_scheduler_trace"][
         "latest_status"
-    ] == "pass"
+    ] == "partial"
     assert not any(
         "dae.runtime" in gap
         for gap in readiness_by_run[
