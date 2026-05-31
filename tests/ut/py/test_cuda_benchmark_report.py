@@ -4701,7 +4701,7 @@ def test_cuda_pair_benchmark_builds_current_a100_h200_workflow(tmp_path):
     assert ".agents/skills/cuda-backend-eval/scripts/cuda_validate_capture.py" in validate
     assert str(tmp_path / "cuda-backend" / "combined-current-abc123" / "cuda-benchmark.json") in validate
     assert "--expected-result-count" in validate
-    assert "1350" in validate
+    assert "1422" in validate
     _assert_contains_all(
         validate,
         (
@@ -5067,7 +5067,7 @@ def test_cuda_pair_benchmark_omits_empty_batch_sweeps(tmp_path):
     assert "pto_host_schedule_batch" not in validate
     assert "pto_persistent_device_grid_batch" not in validate
     assert "--expected-result-count" in validate
-    assert "108" in validate
+    assert "116" in validate
 
 
 def test_cuda_pair_benchmark_treats_zero_batch_sweeps_as_empty(tmp_path):
@@ -5089,7 +5089,7 @@ def test_cuda_pair_benchmark_treats_zero_batch_sweeps_as_empty(tmp_path):
     assert "pto_host_schedule_batch" not in validate
     assert "pto_persistent_device_grid_batch" not in validate
     assert "--expected-result-count" in validate
-    assert "108" in validate
+    assert "116" in validate
 
 
 def test_cuda_pair_benchmark_merge_command_records_sanitized_examples(tmp_path):
@@ -11646,8 +11646,11 @@ def test_run_benchmark_uses_in_process_samples(monkeypatch):
         ("direct_driver", 3, 1024, 128, "compute_80"),
         ("direct_runtime", 3, 1024, 128, "compute_80"),
         ("direct_driver_graph", 3, 1024, 128, "compute_80"),
+        ("direct_driver_sgemm", 3, 1024, 128, "compute_80"),
+        ("direct_runtime_sgemm", 3, 1024, 128, "compute_80"),
+        ("direct_driver_graph_sgemm", 3, 1024, 128, "compute_80"),
     ]
-    assert len(payload["results"]) == 8
+    assert len(payload["results"]) == 11
 
 
 def test_run_benchmark_records_source_paper_metadata(monkeypatch):
@@ -11975,6 +11978,9 @@ def test_run_benchmark_can_include_persistent_device_modes(monkeypatch):
         "direct_driver",
         "direct_runtime",
         "direct_driver_graph",
+        "direct_driver_sgemm",
+        "direct_runtime_sgemm",
+        "direct_driver_graph_sgemm",
         "pto_persistent_device",
         "pto_persistent_queue",
         "pto_persistent_dag",
@@ -12023,7 +12029,7 @@ def test_run_benchmark_can_include_persistent_device_modes(monkeypatch):
         "cublas_sgemm",
         "cublas_sgemm_graph",
     ]
-    assert len(payload["results"]) == 55
+    assert len(payload["results"]) == 58
     assert any(result["baseline"] == "pto_persistent_dag_graph_reordered" for result in payload["results"])
 
 

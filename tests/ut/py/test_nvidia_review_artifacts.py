@@ -1332,6 +1332,41 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert {
         record["correctness"] for record in h200_host_launch_records
     } == {"pass"}
+    tensor_launch_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "tensor_core_tile"
+        and record["method_id"]
+        in {"direct_runtime", "direct_driver", "direct_driver_graph"}
+        and record["raw_artifact"]
+        in {
+            "tmp/cuda-backend/tensor-launch-a100-09462d04/",
+            "tmp/cuda-backend/tensor-launch-h200-09462d04/",
+        }
+    ]
+    assert {
+        (record["hardware"]["gpu"], record["method_id"])
+        for record in tensor_launch_records
+    } == {
+        ("A100", "direct_runtime"),
+        ("A100", "direct_driver"),
+        ("A100", "direct_driver_graph"),
+        ("H200", "direct_runtime"),
+        ("H200", "direct_driver"),
+        ("H200", "direct_driver_graph"),
+    }
+    assert {
+        record["statistic"]["sample_count"]
+        for record in tensor_launch_records
+    } == {10}
+    assert all(
+        record["inputs"]["dtype"] == "float32 naive SGEMM"
+        and record["statistic"]["host_wall_p90_ns"]
+        >= record["statistic"]["host_wall_ns"]
+        and record["statistic"]["device_wall_p90_ns"]
+        >= record["statistic"]["device_wall_ns"]
+        for record in tensor_launch_records
+    )
     for record in results["result_records"]:
         assert record["benchmark_id"] in benchmark_ids
         assert record["method_id"] in method_ids

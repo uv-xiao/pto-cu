@@ -16,16 +16,15 @@
       "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
-        "raw_artifact": 4,
+        "raw_artifact": 6,
         "viewer_data": 1,
-        "viewer_result": 8
+        "viewer_result": 14
       },
-      "missing_evidence_count": 2,
+      "missing_evidence_count": 1,
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [],
       "probe_statuses": [],
       "blockers": [
-        "Selected tensor launch shapes for CUDA Runtime, Driver, and graph rows.",
         "Stream-count and graph-replay sweeps with distribution statistics across selected vector and tensor shapes."
       ],
       "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts."

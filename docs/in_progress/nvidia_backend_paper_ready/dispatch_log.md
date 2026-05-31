@@ -1042,3 +1042,41 @@ Each entry must include:
   rows now expose p50/p90/p99/mean/stdev/min/max fields. Remaining
   host-launch gaps are selected tensor launch shapes and actual stream-count
   or graph-replay sweep captures.
+
+### 2026-05-31 - Tensor Launch Viewer Evidence
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned selected
+  tensor launch evidence slice.
+- Exact Codex command or script invocation: no worker invocation. Added
+  direct CUDA Driver, Runtime, and Driver Graph naive SGEMM baselines, then
+  captured A100 and H200 artifacts with:
+  `CUDA_HOME=/usr/local/cuda-12.8 PATH=/usr/local/cuda-12.8/bin:$PATH
+  PYTHONPATH=$PWD:$PWD/python PTO_SOURCE_COMMIT=09462d04 .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py --device 0
+  --sizes 1024 --repeats 10 --block-dim 256 --arch compute_80 --label
+  tensor-launch-a100-09462d04 --output-dir
+  tmp/cuda-backend/tensor-launch-a100-09462d04` locally, and the matching
+  `compute_90` command on `bizhaoh200` after `rsync` tree sync.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, benchmark viewer and
+  paper-ready evaluation evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, viewer import data,
+  focused tests, raw artifacts under `tmp/`, evaluation plan, dispatch log,
+  and changelog docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: remote Git refresh was avoided by the
+  tree-sync fallback. `PTO_SOURCE_COMMIT` records the synced source commit in
+  H200 raw metadata.
+- Verification commands and results: focused TDD dispatch tests passed, A100
+  single-baseline smokes passed for the three new direct SGEMM baselines, both
+  10-repeat raw captures validated with 110 rows and `16x16x16` tensor-tile
+  requirements, `cuda_viewer_export.py` imported six tensor viewer records,
+  and `paper_readiness_audit.py` regenerated the committed audit.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the host-schedule launch-overhead claim
+  now has selected A100/H200 tensor-launch evidence for CUDA Runtime, Driver,
+  and Driver Graph rows. Remaining launch-overhead gaps are stream-count and
+  graph-replay sweeps across selected vector and tensor shapes.

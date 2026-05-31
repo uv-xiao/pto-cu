@@ -167,8 +167,14 @@ for Runtime API, Driver API, and Driver graph paths.
 `cuda_viewer_export.py` now imports p50, p90, p99, mean, standard deviation,
 minimum, and maximum host/device latency fields for repeated raw captures, so
 the current 10-repeat A100/H200 host-launch rows expose distribution shape in
-the viewer instead of selected medians alone. Selected tensor launch shapes and
-stream-count or graph-replay sweep distributions remain open.
+the viewer instead of selected medians alone.
+The selected tensor-launch captures at
+`tmp/cuda-backend/tensor-launch-a100-09462d04/` and
+`tmp/cuda-backend/tensor-launch-h200-09462d04/` import 10-repeat
+`direct_runtime`, `direct_driver`, and `direct_driver_graph` rows for the
+`n=1024`, `16x16x16` naive SGEMM tensor shape. This closes the selected
+tensor-launch comparison gap for the host-schedule launch claim. Stream-count
+or graph-replay sweep distributions remain open.
 
 Paper-baseline raw captures can be converted with
 `.agents/skills/cuda-backend-eval/scripts/paper_baseline_viewer_export.py`.
