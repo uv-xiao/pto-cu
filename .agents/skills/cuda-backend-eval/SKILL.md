@@ -523,6 +523,17 @@ PYTHONPATH=$PWD:$PWD/python \
     --output docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json
 ```
 
+Use `nvidia_goal_progress.py` after changing the goal contracts, paper audit,
+or work queue. It regenerates the viewer's `Goal Progress` tab and must keep
+the final paper-grade result criterion `in_progress` until the audit has zero
+blockers:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/nvidia_goal_progress.py \
+    --output docs/nvidia-backend/benchmark-viewer/data/goal_progress.json
+```
+
 Use `cuda_scheduler_scaling.py` to summarize a scheduler-block sweep after
 capturing the individual paired smokes. Its ratio column is shape-aware:
 each row is compared with the one-scheduler row for the same artifact, DAG

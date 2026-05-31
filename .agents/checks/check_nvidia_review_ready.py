@@ -176,6 +176,8 @@ def check_viewer_data() -> None:
         "paper_evaluation_matrix",
         "paperReadinessAudit",
         "paper_readiness_audit",
+        "goalProgress",
+        "goal_progress",
         "paper_baseline_run_readiness_statuses",
         "ready_for_paper_claim",
         "result_records",
@@ -205,6 +207,7 @@ def check_viewer_data() -> None:
     paper_readiness_audit = load_json(
         VIEWER_ROOT / "data" / "paper_readiness_audit.json"
     )
+    goal_progress = load_json(VIEWER_ROOT / "data" / "goal_progress.json")
     results = load_json(VIEWER_ROOT / "data" / "results.json")
 
     benchmark_ids = {item["id"] for item in benchmarks.get("benchmarks", [])}
@@ -348,6 +351,20 @@ def check_viewer_data() -> None:
         fail("paper readiness audit has no claim audits")
     if not any(item.get("blockers") for item in claim_audits):
         fail("paper readiness audit must expose blockers")
+    if goal_progress.get("overall_status") != "in_progress":
+        fail("goal progress must remain in_progress until paper results finish")
+    progress_by_id = {
+        item.get("id"): item
+        for item in goal_progress.get("acceptance_criteria", [])
+        if isinstance(item, dict)
+    }
+    paper_results = progress_by_id.get("paper_grade_results")
+    if not paper_results:
+        fail("goal progress missing paper_grade_results criterion")
+    if paper_results.get("status") != "in_progress":
+        fail("paper_grade_results criterion must remain in_progress")
+    if paper_results.get("paper_readiness_status") != "not_paper_ready":
+        fail("paper_grade_results must reflect current audit status")
     matrix_baselines = {
         baseline_id
         for item in paper_evaluation["paper_evaluation_matrix"]

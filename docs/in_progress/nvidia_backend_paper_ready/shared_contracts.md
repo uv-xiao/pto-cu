@@ -199,6 +199,14 @@ reviewable work items with claim, source, owner, status, action, priority, and
 promotion-gate fields. The viewer renders it as the `Work Queue` tab, and the
 data validator regenerates it from the audit.
 
+The generated ultimate-goal progress audit lives in
+`docs/nvidia-backend/benchmark-viewer/data/goal_progress.json`. It is derived
+from current viewer data and goal docs by
+`.agents/skills/cuda-backend-eval/scripts/nvidia_goal_progress.py`. It maps
+the goal acceptance criteria to status, evidence refs, verification commands,
+and remaining gaps. The viewer renders it as the `Goal Progress` tab, and the
+data validator regenerates it from current artifacts.
+
 ## Code Evidence Contract
 
 Docs may describe implemented behavior only when one of these is true:

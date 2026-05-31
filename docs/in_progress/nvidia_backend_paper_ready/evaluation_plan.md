@@ -57,6 +57,10 @@ The generated work queue in
 flattens those next actions into one prioritized table for the HTML viewer, so
 reviewers can see the remaining MPK, VDCores, vLLM, SGLang, ThunderKittens,
 and PTO serving work without expanding each matrix claim.
+The generated goal-progress audit in
+`docs/nvidia-backend/benchmark-viewer/data/goal_progress.json` summarizes the
+overall NVIDIA backend objective. It should remain `in_progress` while the
+paper-grade results criterion still points at queued raw captures.
 
 Paper-baseline reproduction commands are tracked in
 `docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json`. Those

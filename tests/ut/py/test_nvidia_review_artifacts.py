@@ -1831,6 +1831,47 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
 
 
+def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
+    output_path = tmp_path / "goal-progress.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/"
+            "nvidia_goal_progress.py",
+            "--output",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+
+    generated = json.loads(output_path.read_text(encoding="utf-8"))
+    committed = json.loads(
+        (VIEWER_ROOT / "data" / "goal_progress.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert generated == committed
+    assert committed["overall_status"] == "in_progress"
+    assert committed["summary"]["criteria_total"] == 8
+    assert committed["summary"]["criteria_met"] >= 6
+    assert committed["summary"]["criteria_in_progress"] >= 1
+    by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
+    assert by_id["paper_grade_results"]["status"] == "in_progress"
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 13
+    assert by_id["paper_grade_results"]["paper_readiness_status"] == (
+        "not_paper_ready"
+    )
+    assert by_id["remote_evaluation"]["status"] == "met"
+    assert by_id["benchmark_viewer"]["status"] == "met"
+    assert all(item["evidence_refs"] for item in committed["acceptance_criteria"])
+    assert all(item["verification"] for item in committed["acceptance_criteria"])
+
+
 def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
     output_path = tmp_path / "serving-plan.json"
     result = subprocess.run(
@@ -2008,6 +2049,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_readiness_audit.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_readiness_work_queue.json").is_file()
+    assert (VIEWER_ROOT / "data" / "goal_progress.json").is_file()
     assert (VIEWER_ROOT / "data" / "capture_imports.json").is_file()
     viewer_js = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
     for required in [
@@ -2041,6 +2083,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paper_readiness_work_queue",
         "Paper Work Queue",
         "work_items_by_source",
+        "goalProgress",
+        "goal_progress",
+        "Goal Progress",
+        "acceptance_criteria",
+        "paper_grade_results",
         "paper_baseline_run_readiness_statuses",
         "ready_for_paper_claim",
         "result_records",
@@ -2097,6 +2144,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     paper_readiness_work_queue = json.loads(
         (VIEWER_ROOT / "data" / "paper_readiness_work_queue.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    goal_progress = json.loads(
+        (VIEWER_ROOT / "data" / "goal_progress.json").read_text(
             encoding="utf-8"
         )
     )
@@ -2267,6 +2319,14 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert paper_readiness_work_queue["summary"]["total_work_items"] == sum(
         len(claim["next_actions"])
         for claim in paper_readiness_audit["claim_audits"]
+    )
+    assert goal_progress["overall_status"] == "in_progress"
+    assert any(
+        item["id"] == "paper_grade_results"
+        and item["status"] == "in_progress"
+        and item["blocking_work_items"]
+        == paper_readiness_work_queue["summary"]["total_work_items"]
+        for item in goal_progress["acceptance_criteria"]
     )
 
     probe_baselines = {

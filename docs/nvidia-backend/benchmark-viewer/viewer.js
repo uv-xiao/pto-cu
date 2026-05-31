@@ -10,6 +10,7 @@ const DATA_FILES = {
   paperEvaluation: "data/paper_evaluation_matrix.json",
   paperReadinessAudit: "data/paper_readiness_audit.json",
   paperReadinessWorkQueue: "data/paper_readiness_work_queue.json",
+  goalProgress: "data/goal_progress.json",
   results: "data/results.json",
 };
 
@@ -474,6 +475,50 @@ function renderPaperWorkQueue() {
   );
 }
 
+function renderGoalProgress() {
+  const progress = state.goalProgress;
+  const root = document.getElementById("goal-progress-list");
+  const heading = document.createElement("h3");
+  heading.append(text("Goal Progress"));
+  const statusSummary = Object.entries(progress.summary.criteria_by_status)
+    .map(([status, count]) => `${status}: ${count}`)
+    .join(", ");
+  const summary = fieldList([
+    ["Overall status", progress.overall_status],
+    ["Criteria total", progress.summary.criteria_total],
+    ["Criteria met", progress.summary.criteria_met],
+    ["Criteria in progress", progress.summary.criteria_in_progress],
+    ["By status", statusSummary || "none"],
+    ["Source files", progress.source_files.join(", ")],
+  ]);
+  const criteria = progress.acceptance_criteria.map((criterion) => {
+    const details = document.createElement("details");
+    const summaryLine = document.createElement("summary");
+    summaryLine.append(text(`${criterion.title}: ${criterion.status}`));
+    const extraFields = [];
+    if (criterion.id === "paper_grade_results") {
+      extraFields.push(
+        ["Paper readiness", criterion.paper_readiness_status],
+        ["Blocking work items", criterion.blocking_work_items],
+      );
+    }
+    details.append(
+      summaryLine,
+      paragraph("Summary", criterion.summary),
+      fieldList([
+        ["Criterion ID", criterion.id],
+        ["Status", criterion.status],
+        ...extraFields,
+      ]),
+      ...namedList("Evidence", criterion.evidence_refs),
+      ...namedList("Verification", criterion.verification),
+      ...namedList("Gaps", criterion.gaps.length ? criterion.gaps : ["none"]),
+    );
+    return details;
+  });
+  root.replaceChildren(heading, summary, ...criteria);
+}
+
 function renderPaperReadinessAudit() {
   const audit = state.paperReadinessAudit;
   const root = document.getElementById("paper-readiness-audit");
@@ -631,6 +676,7 @@ async function main() {
       paperEvaluation,
       paperReadinessAudit,
       paperReadinessWorkQueue,
+      goalProgress,
       results,
     ] = await Promise.all([
       loadJson(DATA_FILES.benchmarks),
@@ -644,6 +690,7 @@ async function main() {
       loadJson(DATA_FILES.paperEvaluation),
       loadJson(DATA_FILES.paperReadinessAudit),
       loadJson(DATA_FILES.paperReadinessWorkQueue),
+      loadJson(DATA_FILES.goalProgress),
       loadJson(DATA_FILES.results),
     ]);
     Object.assign(state, {
@@ -658,6 +705,7 @@ async function main() {
       paperEvaluation,
       paperReadinessAudit,
       paperReadinessWorkQueue,
+      goalProgress,
       results,
     });
     renderSnapshot();
@@ -667,6 +715,7 @@ async function main() {
     renderServingWorkloads();
     renderServingCommandPlan();
     renderPaperBaselines();
+    renderGoalProgress();
     renderPaperWorkQueue();
     renderPaperEvaluation();
     renderResults();

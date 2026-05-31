@@ -1426,3 +1426,35 @@ Each entry must include:
 - Handoff summary and remaining gaps: reviewers can now inspect the 13
   remaining paper-readiness actions as one table. The queue still points at
   raw captures that must be run and imported before paper promotion.
+
+### 2026-05-31 - Goal Progress Audit
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  ultimate-goal progress audit slice.
+- Exact Codex command or script invocation:
+  `.agents/skills/cuda-backend-eval/scripts/nvidia_goal_progress.py`
+  generated `docs/nvidia-backend/benchmark-viewer/data/goal_progress.json`
+  from the current paper audit, work queue, matrix, baseline records, and
+  goal docs.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, durable project planning
+  and strict evidence guardrail slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer rendering code, generated viewer
+  JSON, CUDA evaluation validators and skill docs, focused review tests, goal
+  docs, dispatch log, and changelog docs. No upstream repositories were
+  edited.
+- Dependencies and blocked assumptions: this is an acceptance-criteria audit.
+  It does not create measured paper-grade performance data.
+- Verification commands and results: focused TDD tests first failed because
+  `nvidia_goal_progress.py` and `goal_progress.json` did not exist. After
+  implementation, focused tests and broader verification are recorded in the
+  final commit summary for this slice.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the viewer now exposes goal-level
+  progress. It reports seven met criteria and one in-progress criterion:
+  final paper-grade results remain blocked by the 13 queued raw-capture
+  actions.
