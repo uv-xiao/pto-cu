@@ -226,6 +226,7 @@ def check_viewer_data() -> None:
         "direct_driver",
         "direct_driver_graph",
         "cublas_sgemm_graph",
+        "triton",
         "mpk",
         "vdcores",
         "vllm",

@@ -31,6 +31,5 @@ refresh.
 ## Remaining Gaps
 
 - CUTLASS or CuTe has not been captured for the same tile shape.
-- Triton or `torch.compile` has not been captured for the same tile shape.
 - ThunderKittens still needs full upstream correctness and benchmark sweeps
   beyond the bounded MHA capture.

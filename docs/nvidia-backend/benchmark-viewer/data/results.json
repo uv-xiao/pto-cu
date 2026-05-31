@@ -2969,6 +2969,90 @@
       },
       "raw_artifact": "tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/",
       "correctness": "pass"
+    },
+    {
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "triton",
+      "hardware": {
+        "gpu": "A100",
+        "machine": "hina",
+        "compute_target": "compute_80",
+        "driver": "595.71.05",
+        "cuda_toolkit": "13.0",
+        "clock_policy": "not recorded"
+      },
+      "commit": "0054494c",
+      "inputs": {
+        "shape": "n=1024, tensor tile 16x16x16",
+        "dtype": "tf32 Triton tl.dot, f32 accumulator",
+        "repeat_policy": "20-repeat Triton tensor tile capture"
+      },
+      "statistic": {
+        "kind": "triton_cuda_event_distribution",
+        "sample_count": 20,
+        "host_wall_ns": 82860,
+        "device_wall_ns": 57215,
+        "host_wall_p50_ns": 82860,
+        "host_wall_p90_ns": 138289,
+        "host_wall_p99_ns": 293470,
+        "host_wall_mean_ns": 103913,
+        "host_wall_stdev_ns": 58262,
+        "host_wall_min_ns": 79218,
+        "host_wall_max_ns": 310360,
+        "device_wall_p50_ns": 57215,
+        "device_wall_p90_ns": 93785,
+        "device_wall_p99_ns": 149432,
+        "device_wall_mean_ns": 66964,
+        "device_wall_stdev_ns": 25283,
+        "device_wall_min_ns": 55039,
+        "device_wall_max_ns": 161216,
+        "max_abs_error": 1.2775417417287827e-06,
+        "tolerance": 0.001
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/triton/tensor-tile-0054494c/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "tensor_core_tile",
+      "method_id": "triton",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "dasys-h200x8",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded"
+      },
+      "commit": "0054494c",
+      "inputs": {
+        "shape": "n=1024, tensor tile 16x16x16",
+        "dtype": "tf32 Triton tl.dot, f32 accumulator",
+        "repeat_policy": "20-repeat Triton tensor tile capture"
+      },
+      "statistic": {
+        "kind": "triton_cuda_event_distribution",
+        "sample_count": 20,
+        "host_wall_ns": 45093,
+        "device_wall_ns": 30639,
+        "host_wall_p50_ns": 45093,
+        "host_wall_p90_ns": 67909,
+        "host_wall_p99_ns": 112822,
+        "host_wall_mean_ns": 53051,
+        "host_wall_stdev_ns": 20157,
+        "host_wall_min_ns": 42265,
+        "host_wall_max_ns": 114536,
+        "device_wall_p50_ns": 30639,
+        "device_wall_p90_ns": 45384,
+        "device_wall_p99_ns": 77148,
+        "device_wall_mean_ns": 35149,
+        "device_wall_stdev_ns": 12658,
+        "device_wall_min_ns": 28351,
+        "device_wall_max_ns": 84512,
+        "max_abs_error": 1.2774253264069557e-06,
+        "tolerance": 0.001
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/triton/tensor-tile-0054494c/",
+      "correctness": "pass"
     }
   ]
 }

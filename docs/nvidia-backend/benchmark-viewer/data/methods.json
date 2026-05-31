@@ -154,6 +154,24 @@
       ]
     },
     {
+      "id": "triton",
+      "name": "Triton Tensor Tile baseline",
+      "category": "generated_kernel_baseline",
+      "launch_model": "Triton JIT generated tl.dot kernel",
+      "runtime_flow": "The capture script JIT-compiles a Triton tl.dot kernel for the 16x16x16 tensor-tile shape and measures CUDA-event timing on the selected GPU.",
+      "lifecycle": "The host prepares deterministic torch tensors, launches the Triton kernel for warmup and repeated measurements, checks against torch.matmul, and writes raw JSON plus viewer rows under tmp/.",
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/triton_tensor_tile_capture.py",
+          "symbols": [
+            "tensor_tile_kernel",
+            "tl.dot",
+            "viewer_record"
+          ]
+        }
+      ]
+    },
+    {
       "id": "mpk",
       "name": "Mirage Persistent Kernel",
       "category": "paper_baseline",

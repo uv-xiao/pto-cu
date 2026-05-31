@@ -377,6 +377,20 @@ PYTHONPATH=$PWD:$PWD/python \
     --warmup 5 --repeats 20 --causal
 ```
 
+Use `triton_tensor_tile_capture.py` for the generated-kernel tensor-core
+baseline. It measures a Triton `tl.dot` 16x16x16 tile on A100 or H200,
+checks against `torch.matmul`, and writes raw JSON plus viewer rows under
+`tmp/`:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/triton_tensor_tile_capture.py \
+    --device 0 --warmup 5 --repeats 20 \
+    --output tmp/cuda-backend/paper-baselines/triton/tensor-tile-$(git rev-parse --short HEAD)/a100-capture.json \
+    --viewer-output tmp/cuda-backend/paper-baselines/triton/tensor-tile-$(git rev-parse --short HEAD)/a100-viewer-result-records.json \
+    --artifact-root tmp/cuda-backend/paper-baselines/triton/tensor-tile-$(git rev-parse --short HEAD)/
+```
+
 Use `paper_baseline_probe.py` before expensive baseline builds to capture
 source-checkout, entrypoint, syntax, module, CUDA toolkit, and GPU readiness.
 The probe configuration is committed in

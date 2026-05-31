@@ -159,6 +159,7 @@ def validate_methods(data: dict[str, Any], root: Path) -> set[str]:
     allowed_categories = {
         "pto_runtime",
         "vendor_baseline",
+        "generated_kernel_baseline",
         "framework_baseline",
         "paper_baseline",
         "diagnostic_baseline",

@@ -109,9 +109,9 @@
       "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
-        "viewer_result": 5
+        "viewer_result": 7
       },
-      "missing_evidence_count": 3,
+      "missing_evidence_count": 2,
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {
@@ -151,7 +151,6 @@
       ],
       "blockers": [
         "CUTLASS or CuTe baseline for the same shape.",
-        "Triton or torch.compile generated-kernel baseline.",
         "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture."
       ],
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."

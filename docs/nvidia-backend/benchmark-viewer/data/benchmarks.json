@@ -95,9 +95,9 @@
     {
       "id": "tensor_core_tile",
       "title": "Tensor-Core Tile DAG",
-      "description": "Runs tensor-shaped 16x16x16 SGEMM work across direct CUDA Driver, Runtime, Driver Graph, persistent DAG, persistent graph DAG, and cuBLAS graph rows.",
+      "description": "Runs tensor-shaped 16x16x16 SGEMM work across direct CUDA Driver, Runtime, Driver Graph, persistent DAG, persistent graph DAG, Triton, and cuBLAS graph rows.",
       "math": "A WMMA m16n16k8 TF32/F32 tile contributes C = A x B, followed by the same residual, gate, and fan-in elementwise task family used by the scalar tensor DAG.",
-      "code": "tensor_tile = {\"rows\": 16, \"cols\": 16, \"inner\": 16}\nbaselines = [\"direct_driver_sgemm\", \"direct_runtime_sgemm\", \"direct_driver_graph_sgemm\", \"pto_persistent_dag_tensor_core\", \"pto_persistent_dag_graph_tensor_core\", \"cublas_sgemm\", \"cublas_sgemm_graph\"]",
+      "code": "tensor_tile = {\"rows\": 16, \"cols\": 16, \"inner\": 16}\nbaselines = [\"direct_driver_sgemm\", \"direct_runtime_sgemm\", \"direct_driver_graph_sgemm\", \"pto_persistent_dag_tensor_core\", \"pto_persistent_dag_graph_tensor_core\", \"triton\", \"cublas_sgemm\", \"cublas_sgemm_graph\"]",
       "run": {
         "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py --device 0 --sizes 1024 --repeats 1 --arch compute_80 --include-persistent --tensor-rows 16 --tensor-cols 16 --tensor-inner 16",
         "inputs": {
@@ -112,6 +112,13 @@
           "symbols": [
             "pto_persistent_dag_graph_tensor_core",
             "cublas_sgemm_graph"
+          ]
+        },
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/triton_tensor_tile_capture.py",
+          "symbols": [
+            "tensor_tile_kernel",
+            "tl.dot"
           ]
         }
       ]
