@@ -172,6 +172,25 @@
       ]
     },
     {
+      "id": "cutlass",
+      "name": "CUTLASS TensorOp baseline",
+      "category": "vendor_baseline",
+      "launch_model": "CUTLASS device Gemm with TF32 tensor-op MMA",
+      "runtime_flow": "The capture script generates and compiles a small nvcc/CUTLASS program that launches cutlass::gemm::device::Gemm for the 16x16x16 tensor-tile shape and measures CUDA-event timing on the selected GPU.",
+      "lifecycle": "The host initializes deterministic TF32-rounded inputs, copies them to CUDA memory, launches CUTLASS Gemm for warmup and repeated measurements, checks against a host reference, and writes raw JSON plus viewer rows under tmp/.",
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cutlass_tensor_tile_capture.py",
+          "symbols": [
+            "generated_source",
+            "cutlass::gemm::device::Gemm",
+            "viewer_record",
+            "cutlass_commit"
+          ]
+        }
+      ]
+    },
+    {
       "id": "mpk",
       "name": "Mirage Persistent Kernel",
       "category": "paper_baseline",

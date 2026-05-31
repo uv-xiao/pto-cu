@@ -391,6 +391,21 @@ PYTHONPATH=$PWD:$PWD/python \
     --artifact-root tmp/cuda-backend/paper-baselines/triton/tensor-tile-$(git rev-parse --short HEAD)/
 ```
 
+Use `cutlass_tensor_tile_capture.py` for the CUTLASS vendor tensor-core
+baseline. It generates a small CUDA source file, compiles it with normal
+`nvcc` against `tmp/baselines/cutlass`, runs a TF32
+`cutlass::gemm::device::Gemm` 16x16x16 tile on A100 or H200, checks against a
+host reference, and writes raw JSON plus viewer rows under `tmp/`:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cutlass_tensor_tile_capture.py \
+    --device 0 --warmup 5 --repeats 20 \
+    --output tmp/cuda-backend/paper-baselines/cutlass/tensor-tile-$(git rev-parse --short HEAD)/a100-capture.json \
+    --viewer-output tmp/cuda-backend/paper-baselines/cutlass/tensor-tile-$(git rev-parse --short HEAD)/a100-viewer-result-records.json \
+    --artifact-root tmp/cuda-backend/paper-baselines/cutlass/tensor-tile-$(git rev-parse --short HEAD)/
+```
+
 Use `paper_baseline_probe.py` before expensive baseline builds to capture
 source-checkout, entrypoint, syntax, module, CUDA toolkit, and GPU readiness.
 The probe configuration is committed in

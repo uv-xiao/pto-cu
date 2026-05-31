@@ -433,6 +433,69 @@ def test_triton_tensor_tile_capture_exports_fixture_records(tmp_path):
     assert record["correctness"] == "pass"
 
 
+def test_cutlass_tensor_tile_capture_exports_fixture_records(tmp_path):
+    raw = {
+        "metadata": {
+            "pto_commit": "abc1234",
+            "source": "fixture",
+            "cutlass_commit": "1732ed7",
+        },
+        "hardware": {
+            "gpu": "A100",
+            "machine": "hina",
+            "compute_target": "compute_80",
+            "driver": "fixture-driver",
+            "cuda_toolkit": "fixture-cuda",
+            "clock_policy": "fixture-clock",
+        },
+        "inputs": {
+            "shape": "n=1024, tensor tile 16x16x16",
+            "dtype": "tf32 CUTLASS Gemm tensor op, f32 accumulator",
+            "repeat_policy": "3-repeat fixture capture",
+        },
+        "samples": [
+            {"host_wall_ns": 2000, "device_wall_ns": 1200, "max_abs_error": 0.0},
+            {"host_wall_ns": 2200, "device_wall_ns": 1300, "max_abs_error": 0.0},
+            {"host_wall_ns": 2400, "device_wall_ns": 1400, "max_abs_error": 0.0},
+        ],
+    }
+    raw_path = tmp_path / "cutlass-capture.json"
+    output_path = tmp_path / "viewer-records.json"
+    raw_path.write_text(json.dumps(raw), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/cutlass_tensor_tile_capture.py",
+            "--input-json",
+            str(raw_path),
+            "--artifact-root",
+            "tmp/cuda-backend/paper-baselines/cutlass/fixture/",
+            "--viewer-output",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    records = json.loads(output_path.read_text(encoding="utf-8"))
+    assert len(records) == 1
+    record = records[0]
+    assert record["benchmark_id"] == "tensor_core_tile"
+    assert record["method_id"] == "cutlass"
+    assert record["hardware"]["gpu"] == "A100"
+    assert record["inputs"]["shape"] == "n=1024, tensor tile 16x16x16"
+    assert record["statistic"]["sample_count"] == 3
+    assert record["statistic"]["host_wall_ns"] == 2200
+    assert record["statistic"]["device_wall_ns"] == 1300
+    assert record["statistic"]["max_abs_error"] == 0.0
+    assert record["raw_artifact"] == "tmp/cuda-backend/paper-baselines/cutlass/fixture/"
+    assert record["correctness"] == "pass"
+
+
 def test_paper_baseline_viewer_export_generates_contract_records(tmp_path):
     raw = {
         "metadata": {
@@ -1122,6 +1185,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "direct_driver_graph",
         "cublas_sgemm_graph",
         "triton",
+        "cutlass",
         "mpk",
         "vdcores",
         "vllm",
@@ -1673,6 +1737,31 @@ def test_benchmark_viewer_has_json_backed_review_data():
         and record["correctness"] == "pass"
         for record in triton_tensor_core_records
     )
+    cutlass_tensor_core_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "tensor_core_tile"
+        and record["method_id"] == "cutlass"
+        and record["raw_artifact"].startswith(
+            "tmp/cuda-backend/paper-baselines/cutlass/tensor-tile-"
+        )
+    ]
+    assert {
+        (record["hardware"]["gpu"], record["inputs"]["shape"])
+        for record in cutlass_tensor_core_records
+    } == {
+        ("A100", "n=1024, tensor tile 16x16x16"),
+        ("H200", "n=1024, tensor tile 16x16x16"),
+    }
+    assert {
+        record["inputs"]["dtype"] for record in cutlass_tensor_core_records
+    } == {"tf32 CUTLASS Gemm tensor op, f32 accumulator"}
+    assert all(
+        record["statistic"]["sample_count"] >= 10
+        and record["statistic"]["max_abs_error"] <= 1.0e-3
+        and record["correctness"] == "pass"
+        for record in cutlass_tensor_core_records
+    )
     stream_concurrency_records = [
         record
         for record in results["result_records"]
@@ -1770,6 +1859,14 @@ def test_review_policy_changelog_and_examples_exist():
         / "cuda-backend-eval"
         / "scripts"
         / "triton_tensor_tile_capture.py"
+    ).is_file()
+    assert (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "cutlass_tensor_tile_capture.py"
     ).is_file()
     assert (
         ROOT

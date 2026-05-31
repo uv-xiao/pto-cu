@@ -28,6 +28,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-05-31 direct launch sweep evidence](2026-05-31-direct-launch-sweep-evidence.md)
 - [2026-05-31 PTO tensor-core viewer evidence](2026-05-31-pto-tensor-core-viewer-evidence.md)
 - [2026-05-31 Triton tensor-tile capture](2026-05-31-triton-tensor-tile-capture.md)
+- [2026-05-31 CUTLASS tensor-tile capture](2026-05-31-cutlass-tensor-tile-capture.md)
 - [2026-05-31 ThunderKittens bounded capture](2026-05-31-thunderkittens-bounded-capture.md)
 - [2026-05-31 ThunderKittens quick smoke](2026-05-31-thunderkittens-quick-smoke.md)
 - [2026-05-31 ThunderKittens dependency probe](2026-05-31-thunderkittens-dependency-probe.md)

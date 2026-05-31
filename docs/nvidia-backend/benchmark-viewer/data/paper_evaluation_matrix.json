@@ -249,7 +249,8 @@
       "method_ids": [
         "pto_persistent_device",
         "cublas_sgemm_graph",
-        "triton"
+        "triton",
+        "cutlass"
       ],
       "paper_baseline_ids": [
         "thunderkittens"
@@ -308,10 +309,21 @@
           "benchmark_id": "tensor_core_tile",
           "method_id": "triton",
           "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "cutlass",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "cutlass",
+          "gpu": "H200"
         }
       ],
       "missing_evidence": [
-        "CUTLASS or CuTe baseline for the same shape.",
         "Full ThunderKittens upstream correctness and benchmark sweeps beyond the bounded MHA capture."
       ],
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
