@@ -1178,3 +1178,33 @@ Each entry must include:
   for pending MPK, VDCores, vLLM, and SGLang runs. MPK/VDCores are blocked by
   model access and VDCores extension build state; vLLM/SGLang are blocked by
   paired-probe dependency/import gaps. These are still not measured results.
+
+### 2026-05-31 - Readiness Audit Run Readiness
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  paper-readiness audit integration slice.
+- Exact Codex command or script invocation: no worker invocation. Extended
+  `.agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py` and
+  regenerated `docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready evaluation
+  visibility and strict evidence guardrail slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, benchmark-viewer data and
+  rendering, validators, focused tests, goal docs, dispatch log, and changelog
+  docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: run-readiness blockers are pre-run
+  evidence. They make claim blockers more explicit, but they do not replace
+  measured raw benchmark artifacts.
+- Verification commands and results: focused TDD fixture first failed because
+  the audit lacked `paper_baseline_run_readiness_statuses`. After
+  implementation, the focused audit test and benchmark-viewer data validator
+  passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: paper-readiness audit claims now include
+  run-readiness status and blockers for pending MPK, VDCores, vLLM, and SGLang
+  runs. The next readiness movement still requires actual imported baseline
+  measurements and broader ThunderKittens sweeps.

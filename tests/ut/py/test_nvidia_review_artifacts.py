@@ -1355,6 +1355,20 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "Readiness probe for sglang is partial" in blocker
         for blocker in llm_claim["blockers"]
     )
+    assert any(
+        "Run readiness vllm_serving_and_throughput is partial" in blocker
+        for blocker in llm_claim["blockers"]
+    )
+    llm_readiness_ids = {
+        item["paper_baseline_run_id"]
+        for item in llm_claim["paper_baseline_run_readiness_statuses"]
+    }
+    assert {
+        "mpk_qwen3_native_vs_persistent",
+        "vdcores_llama_decode_correctness",
+        "vllm_serving_and_throughput",
+        "sglang_serving_and_offline",
+    } <= llm_readiness_ids
     persistent_claim = by_id["persistent_device_scheduler_overhead"]
     persistent_run_ids = {
         run["id"] for run in persistent_claim["paper_baseline_run_statuses"]
@@ -1363,6 +1377,19 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "mpk_persistent_scheduler_trace",
         "vdcores_resource_policy_trace",
     } <= persistent_run_ids
+    persistent_readiness = {
+        item["paper_baseline_run_id"]: item
+        for item in persistent_claim["paper_baseline_run_readiness_statuses"]
+    }
+    assert persistent_readiness["mpk_persistent_scheduler_trace"][
+        "latest_status"
+    ] == "partial"
+    assert any(
+        "HF_TOKEN" in gap
+        for gap in persistent_readiness[
+            "mpk_persistent_scheduler_trace"
+        ]["blocking_gaps"]
+    )
     assert not any(
         "Scheduler-overhead breakdown" in blocker
         for blocker in persistent_claim["blockers"]
@@ -1561,6 +1588,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paper_evaluation_matrix",
         "paperReadinessAudit",
         "paper_readiness_audit",
+        "paper_baseline_run_readiness_statuses",
         "ready_for_paper_claim",
         "result_records",
         "raw_artifact",
@@ -1948,6 +1976,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert paper_readiness_audit["claim_audits"]
     for item in paper_readiness_audit["claim_audits"]:
         assert item["matrix_status"]
+        assert "paper_baseline_run_readiness_statuses" in item
         if item["id"] == "host_schedule_launch_overhead":
             assert item["matrix_status"] == "ready_for_paper_claim"
             assert item["ready_for_paper_claim"] is True

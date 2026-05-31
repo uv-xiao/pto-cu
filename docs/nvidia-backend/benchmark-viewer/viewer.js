@@ -412,6 +412,13 @@ function renderPaperReadinessAudit() {
     const runStatuses = claim.paper_baseline_run_statuses.map((run) => (
       `${run.paper_baseline_id}/${run.id}: ${run.status}`
     ));
+    const runReadinessStatuses = claim.paper_baseline_run_readiness_statuses
+      .map((readiness) => {
+        const gaps = readiness.blocking_gaps.length
+          ? readiness.blocking_gaps.join(" | ")
+          : "none";
+        return `${readiness.paper_baseline_id}/${readiness.paper_baseline_run_id}: ${readiness.latest_status} (${gaps})`;
+      });
     const probeStatuses = claim.probe_statuses.map((probe) => {
       const machines = probe.machines.map((machine) => (
         `${machine.gpu}=${machine.status}`
@@ -428,6 +435,10 @@ function renderPaperReadinessAudit() {
         ["Missing viewer results", claim.missing_viewer_results.join(", ") || "none"],
       ]),
       ...namedList("Paper Baseline Runs", runStatuses.length ? runStatuses : ["none"]),
+      ...namedList(
+        "Run Readiness",
+        runReadinessStatuses.length ? runReadinessStatuses : ["none"],
+      ),
       ...namedList("Probe Status", probeStatuses.length ? probeStatuses : ["none"]),
       ...namedList("Blockers", claim.blockers),
       paragraph("Promotion gate", claim.promotion_gate),

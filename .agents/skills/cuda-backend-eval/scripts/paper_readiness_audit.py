@@ -15,6 +15,7 @@ VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 DEFAULT_MATRIX = VIEWER_DATA / "paper_evaluation_matrix.json"
 DEFAULT_RUNS = VIEWER_DATA / "paper_baseline_runs.json"
 DEFAULT_PROBES = VIEWER_DATA / "paper_baseline_probes.json"
+DEFAULT_RUN_READINESS = VIEWER_DATA / "paper_baseline_run_readiness.json"
 DEFAULT_RESULTS = VIEWER_DATA / "results.json"
 
 
@@ -148,12 +149,48 @@ def probe_statuses(
     return statuses
 
 
+def paper_baseline_run_readiness_statuses(
+    run_statuses: list[dict[str, Any]],
+    readiness_by_run: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    statuses: list[dict[str, Any]] = []
+    for run in run_statuses:
+        if run["status"] == "imported_to_viewer":
+            continue
+        run_id = run["id"]
+        readiness = readiness_by_run.get(run_id)
+        if readiness is None:
+            statuses.append(
+                {
+                    "paper_baseline_run_id": run_id,
+                    "paper_baseline_id": run["paper_baseline_id"],
+                    "latest_status": "missing_readiness_record",
+                    "latest_artifact_root": "",
+                    "blocking_gaps": [
+                        f"No paper-baseline run-readiness record exists for {run_id}."
+                    ],
+                }
+            )
+            continue
+        statuses.append(
+            {
+                "paper_baseline_run_id": run_id,
+                "paper_baseline_id": readiness["paper_baseline_id"],
+                "latest_status": readiness["latest_status"],
+                "latest_artifact_root": readiness["latest_artifact_root"],
+                "blocking_gaps": readiness.get("blocking_gaps", []),
+            }
+        )
+    return statuses
+
+
 def claim_blockers(
     *,
     paper_baseline_ids: list[str],
     missing_evidence: list[str],
     missing_viewer_results: list[str],
     run_statuses: list[dict[str, Any]],
+    run_readiness_statuses: list[dict[str, Any]],
     probes: list[dict[str, Any]],
 ) -> list[str]:
     blockers = list(missing_evidence)
@@ -175,6 +212,17 @@ def claim_blockers(
             blockers.append(
                 f"Readiness probe for {probe['paper_baseline_id']} is {probe['latest_status']}."
             )
+    for readiness in run_readiness_statuses:
+        if readiness["latest_status"] == "pass":
+            continue
+        gaps = readiness.get("blocking_gaps", [])
+        gap_text = "; ".join(gap.rstrip(".") for gap in gaps)
+        detail = f": {gap_text}." if gap_text else "."
+        blockers.append(
+            "Run readiness "
+            f"{readiness['paper_baseline_run_id']} is "
+            f"{readiness['latest_status']}{detail}"
+        )
     return blockers
 
 
@@ -183,11 +231,16 @@ def build_readiness_audit(
     matrix: dict[str, Any],
     runs: dict[str, Any],
     probes: dict[str, Any],
+    run_readiness: dict[str, Any],
     results: dict[str, Any],
 ) -> dict[str, Any]:
     claims = require_records(matrix, "paper_evaluation_matrix")
     run_records = require_records(runs, "paper_baseline_runs")
     probe_records = require_records(probes, "paper_baseline_probes")
+    readiness_records = require_records(
+        run_readiness,
+        "paper_baseline_run_readiness",
+    )
     current_results = result_index(results)
 
     runs_by_claim: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -199,6 +252,11 @@ def build_readiness_audit(
         probe["paper_baseline_id"]: probe
         for probe in probe_records
         if isinstance(probe.get("paper_baseline_id"), str)
+    }
+    readiness_by_run = {
+        readiness["paper_baseline_run_id"]: readiness
+        for readiness in readiness_records
+        if isinstance(readiness.get("paper_baseline_run_id"), str)
     }
 
     claim_audits: list[dict[str, Any]] = []
@@ -227,11 +285,16 @@ def build_readiness_audit(
             runs_by_claim,
         )
         probe_items = probe_statuses(paper_baseline_ids, probes_by_baseline)
+        run_readiness_items = paper_baseline_run_readiness_statuses(
+            run_statuses,
+            readiness_by_run,
+        )
         blockers = claim_blockers(
             paper_baseline_ids=paper_baseline_ids,
             missing_evidence=missing_evidence,
             missing_viewer_results=missing_results,
             run_statuses=run_statuses,
+            run_readiness_statuses=run_readiness_items,
             probes=probe_items,
         )
         ready = claim["status"] == "ready_for_paper_claim" and not blockers
@@ -245,6 +308,7 @@ def build_readiness_audit(
                 "missing_evidence_count": len(missing_evidence),
                 "missing_viewer_results": missing_results,
                 "paper_baseline_run_statuses": run_statuses,
+                "paper_baseline_run_readiness_statuses": run_readiness_items,
                 "probe_statuses": probe_items,
                 "blockers": blockers,
                 "promotion_gate": claim["promotion_gate"],
@@ -258,6 +322,7 @@ def build_readiness_audit(
             "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix.json",
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
+            "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json",
             "docs/nvidia-backend/benchmark-viewer/data/results.json",
         ],
         "overall_status": "paper_ready"
@@ -274,6 +339,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--matrix", type=Path, default=DEFAULT_MATRIX)
     parser.add_argument("--runs", type=Path, default=DEFAULT_RUNS)
     parser.add_argument("--probes", type=Path, default=DEFAULT_PROBES)
+    parser.add_argument("--run-readiness", type=Path, default=DEFAULT_RUN_READINESS)
     parser.add_argument("--results", type=Path, default=DEFAULT_RESULTS)
     parser.add_argument("--output", type=Path)
     return parser.parse_args()
@@ -285,6 +351,7 @@ def main() -> None:
         matrix=load_json(args.matrix),
         runs=load_json(args.runs),
         probes=load_json(args.probes),
+        run_readiness=load_json(args.run_readiness),
         results=load_json(args.results),
     )
     if args.output:

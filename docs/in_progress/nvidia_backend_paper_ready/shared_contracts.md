@@ -152,8 +152,8 @@ Each paper-evaluation matrix claim must include:
 The generated paper-readiness audit lives in
 `docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json`. It is
 derived from the paper-evaluation matrix, paper-baseline runs, readiness
-probes, and current viewer results. Do not hand-edit it after changing those
-inputs; regenerate it with
+probes, run-readiness records, and current viewer results. Do not hand-edit it
+after changing those inputs; regenerate it with
 `.agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py`.
 
 Each audit claim must include:
@@ -162,6 +162,8 @@ Each audit claim must include:
 - counts of current evidence refs by kind;
 - missing viewer-result refs, if any;
 - paper-baseline run statuses attached to the claim;
+- run-readiness statuses for non-imported paper-baseline runs attached to the
+  claim;
 - readiness-probe statuses for paper baselines in the claim;
 - blockers copied from missing evidence plus generated run/probe gaps;
 - the promotion gate from the source matrix.

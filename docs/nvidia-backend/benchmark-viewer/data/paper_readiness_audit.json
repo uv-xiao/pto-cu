@@ -4,6 +4,7 @@
     "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix.json",
     "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
     "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
+    "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json",
     "docs/nvidia-backend/benchmark-viewer/data/results.json"
   ],
   "overall_status": "not_paper_ready",
@@ -23,6 +24,7 @@
       "missing_evidence_count": 0,
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [],
+      "paper_baseline_run_readiness_statuses": [],
       "probe_statuses": [],
       "blockers": [],
       "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, stream-concurrency sweeps, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts for each launch family."
@@ -58,6 +60,27 @@
           "expected_artifacts": [
             "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-trace.json",
             "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-profile.log"
+          ]
+        }
+      ],
+      "paper_baseline_run_readiness_statuses": [
+        {
+          "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+          "paper_baseline_id": "mpk",
+          "latest_status": "partial",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+          "blocking_gaps": [
+            "HF_TOKEN is not available for this run."
+          ]
+        },
+        {
+          "paper_baseline_run_id": "vdcores_resource_policy_trace",
+          "paper_baseline_id": "vdcores",
+          "latest_status": "partial",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+          "blocking_gaps": [
+            "HF_TOKEN is not available for this run.",
+            "Missing dae.runtime compiled extension at python/dae/runtime*.so."
           ]
         }
       ],
@@ -99,7 +122,9 @@
         "MPK persistent-kernel run with matching workload metadata.",
         "VDCores run with matching queue/resource-policy metadata.",
         "Paper baseline run mpk_persistent_scheduler_trace is planned_not_run, not imported_to_viewer.",
-        "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer."
+        "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
+        "Run readiness mpk_persistent_scheduler_trace is partial: HF_TOKEN is not available for this run.",
+        "Run readiness vdcores_resource_policy_trace is partial: HF_TOKEN is not available for this run; Missing dae.runtime compiled extension at python/dae/runtime*.so."
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },
@@ -131,6 +156,7 @@
           ]
         }
       ],
+      "paper_baseline_run_readiness_statuses": [],
       "probe_statuses": [
         {
           "paper_baseline_id": "thunderkittens",
@@ -221,6 +247,45 @@
             "tmp/cuda-backend/paper-baselines/sglang/bench-serving.json",
             "tmp/cuda-backend/paper-baselines/sglang/offline-throughput.json",
             "tmp/cuda-backend/paper-baselines/sglang/one-batch.json"
+          ]
+        }
+      ],
+      "paper_baseline_run_readiness_statuses": [
+        {
+          "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
+          "paper_baseline_id": "mpk",
+          "latest_status": "partial",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+          "blocking_gaps": [
+            "HF_TOKEN is not available for this run."
+          ]
+        },
+        {
+          "paper_baseline_run_id": "vdcores_llama_decode_correctness",
+          "paper_baseline_id": "vdcores",
+          "latest_status": "partial",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+          "blocking_gaps": [
+            "HF_TOKEN is not available for this run.",
+            "Missing dae.runtime compiled extension at python/dae/runtime*.so."
+          ]
+        },
+        {
+          "paper_baseline_run_id": "vllm_serving_and_throughput",
+          "paper_baseline_id": "vllm",
+          "latest_status": "partial",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+          "blocking_gaps": [
+            "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; H200: python_module failed: vllm."
+          ]
+        },
+        {
+          "paper_baseline_run_id": "sglang_serving_and_offline",
+          "paper_baseline_id": "sglang",
+          "latest_status": "partial",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+          "blocking_gaps": [
+            "Readiness probe sglang_source_entrypoints is partial: A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ]
         }
       ],
@@ -328,7 +393,11 @@
         "Paper baseline run sglang_serving_and_offline is planned_not_run, not imported_to_viewer.",
         "No paper baseline run record is attached to this claim for thunderkittens.",
         "Readiness probe for vllm is partial.",
-        "Readiness probe for sglang is partial."
+        "Readiness probe for sglang is partial.",
+        "Run readiness mpk_qwen3_native_vs_persistent is partial: HF_TOKEN is not available for this run.",
+        "Run readiness vdcores_llama_decode_correctness is partial: HF_TOKEN is not available for this run; Missing dae.runtime compiled extension at python/dae/runtime*.so.",
+        "Run readiness vllm_serving_and_throughput is partial: Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; H200: python_module failed: vllm.",
+        "Run readiness sglang_serving_and_offline is partial: Readiness probe sglang_source_entrypoints is partial: A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
       ],
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     }

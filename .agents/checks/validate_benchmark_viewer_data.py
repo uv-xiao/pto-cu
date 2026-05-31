@@ -788,6 +788,7 @@ def validate_paper_readiness_audit(
     matrix: dict[str, Any],
     runs: dict[str, Any],
     probes: dict[str, Any],
+    run_readiness: dict[str, Any],
     results: dict[str, Any],
 ) -> None:
     if audit.get("schema_version") != 1:
@@ -796,6 +797,7 @@ def validate_paper_readiness_audit(
         "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix.json",
         "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
         "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
+        "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json",
         "docs/nvidia-backend/benchmark-viewer/data/results.json",
     }
     sources = audit.get("source_files")
@@ -822,6 +824,7 @@ def validate_paper_readiness_audit(
         for key in (
             "missing_viewer_results",
             "paper_baseline_run_statuses",
+            "paper_baseline_run_readiness_statuses",
             "probe_statuses",
             "blockers",
         ):
@@ -842,6 +845,7 @@ def validate_paper_readiness_audit(
         matrix=matrix,
         runs=runs,
         probes=probes,
+        run_readiness=run_readiness,
         results=results,
     )
     if audit != generated:
@@ -904,6 +908,7 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         matrix=paper_evaluation_matrix,
         runs=paper_baseline_runs,
         probes=paper_baseline_probes,
+        run_readiness=paper_baseline_run_readiness,
         results=results,
     )
     validate_serving_workload_run_refs(

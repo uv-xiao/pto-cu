@@ -176,6 +176,7 @@ def check_viewer_data() -> None:
         "paper_evaluation_matrix",
         "paperReadinessAudit",
         "paper_readiness_audit",
+        "paper_baseline_run_readiness_statuses",
         "ready_for_paper_claim",
         "result_records",
         "raw_artifact",
