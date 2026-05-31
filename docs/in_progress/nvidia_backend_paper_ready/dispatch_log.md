@@ -1620,3 +1620,36 @@ Each entry must include:
   explicit review artifact. The remaining MPK blocker is generated token id
   `-1` under sanitizer plus missing paper-grade scheduler/resource/latency
   import.
+
+### 2026-05-31 - VDCores No-Prefetch Sweep
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  baseline diagnostic slice.
+- Exact Codex command or script invocation: ran the H200 Qwen3-1.7B
+  `final_rms` launch with `QWEN1P7B_NO_PREFETCH` set to `all`, `q_proj`,
+  `k_proj`, `v_proj`, `out_proj`, `gate_low`, `gate_high`, `up_low`,
+  `up_high`, and `down_proj`, then reran the all-stage no-prefetch variant
+  under `compute-sanitizer --tool memcheck`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  baseline evaluation slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data, generated
+  paper-readiness audit/work-queue/goal-progress data, focused review tests,
+  dispatch log, changelog docs, and local `tmp/` raw artifacts. No upstream
+  repositories were edited or pushed.
+- Dependencies and blocked assumptions: all no-prefetch variants still fail
+  after model load and `launch_dae`; disabling per-stage async prefetch
+  routing is not sufficient to import a VDCores paper-grade row.
+- Verification commands and results: the focused TDD test first failed because
+  `vdcores_qwen3_1p7b_no_prefetch_sweep_h200` was absent from viewer data.
+  After adding the execution attempt and refreshing derived artifacts, the
+  focused test passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the VDCores work-queue blocker now
+  points to `MInst` load-address, coordinate, and tensor-descriptor provenance
+  for the earliest `final_rms` schedule. Paper-grade VDCores correctness,
+  scheduler/resource-policy, and latency evidence remain missing.

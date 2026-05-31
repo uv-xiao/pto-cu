@@ -138,37 +138,56 @@
         {
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_final_rms_memcheck_h200",
-          "title": "VDCores Qwen3 1.7B Final-RMS Memcheck",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_no_prefetch_sweep_h200",
+          "title": "VDCores Qwen3 1.7B No-Prefetch Sweep",
           "status": "failed_after_kernel_launch",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-compute-sanitizer-f300a3b7/",
-          "blocker": "The earliest launched final_rms cut performs invalid 4096-byte global reads in cp_async_bulk through ldwarp_execute_singlethread, followed by warp illegal-address reports in the VDCores load warp.",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-no-prefetch-sweep-97110540/",
+          "blocker": "Disabling per-stage async prefetch routing is not sufficient to clear the VDCores final_rms failure. The next diagnostic target is generated MInst load address, coordinate, and tensor-descriptor provenance for the earliest final_rms schedule.",
           "summary": {
-            "mode": "vdcores_qwen_final_rms_memcheck",
+            "mode": "vdcores_qwen_no_prefetch_sweep",
             "model": "Qwen/Qwen3-1.7B",
             "offline_cache_used": true,
             "runtime_rebuilt_with_required_ops": true,
             "debug_num_layers": 1,
             "debug_stop_after": "final_rms",
-            "tool": "compute-sanitizer memcheck",
-            "sanitizer_exit_status": 99,
-            "error_summary_count": 130,
-            "invalid_read_size_bytes": 4096,
-            "first_invalid_read": {
-              "function": "cuda::ptx::cp_async_bulk",
-              "source": "cp_async_bulk.h:62",
-              "device_frame": "ldwarp_execute_singlethread",
-              "device_source": "ldwarp.cuh:52",
-              "kernel_source": "dae2.cuh:167",
-              "thread": "(192,0,0)",
-              "example_block": "(68,0,0)"
+            "no_prefetch_variants": [
+              "all",
+              "q_proj",
+              "k_proj",
+              "v_proj",
+              "out_proj",
+              "gate_low",
+              "gate_high",
+              "up_low",
+              "up_high",
+              "down_proj"
+            ],
+            "failed_variants": [
+              "all",
+              "q_proj",
+              "k_proj",
+              "v_proj",
+              "out_proj",
+              "gate_low",
+              "gate_high",
+              "up_low",
+              "up_high",
+              "down_proj"
+            ],
+            "all_variants_loaded_model": true,
+            "all_variants_failed_after_kernel_launch": true,
+            "all_no_prefetch_memcheck": {
+              "tool": "compute-sanitizer memcheck",
+              "sanitizer_exit_status": 1,
+              "error_summary_count": 18,
+              "invalid_4096_byte_global_read": true,
+              "cp_async_bulk_present": true
             },
-            "warp_illegal_address": {
-              "device_frame": "ldwarp_execute_singlethread",
-              "device_source": "ldwarp.cuh:113",
-              "thread": "(192,0,0)"
-            },
-            "host_entry": "launch_dae",
+            "previous_memcheck_error_summary_count": 130,
+            "rules_out": [
+              "per-stage async prefetch routing as the sole cause"
+            ],
+            "next_debug_target": "generated MInst load address, coordinate, and tensor-descriptor provenance for the earliest final_rms schedule",
             "correctness_completed": false,
             "resource_policy_measured": false
           }
@@ -216,7 +235,7 @@
         "Paper baseline run mpk_persistent_scheduler_trace is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vdcores_resource_policy_trace is planned_not_run, not imported_to_viewer.",
         "Latest execution attempt mpk_qwen3_0p6b_snapshot_pointer_patch_predecode_memcheck_h200 for mpk_persistent_scheduler_trace is partial: The next MPK blocker is the invalid generated token -1 under compute-sanitizer after the snapshot pointer patch. Import paper-grade MPK rows only after the patch is reproducible and the persistent argmax/output-token path produces valid token IDs under sanitizer.",
-        "Latest execution attempt vdcores_qwen3_1p7b_final_rms_memcheck_h200 for vdcores_resource_policy_trace is failed_after_kernel_launch: The earliest launched final_rms cut performs invalid 4096-byte global reads in cp_async_bulk through ldwarp_execute_singlethread, followed by warp illegal-address reports in the VDCores load warp."
+        "Latest execution attempt vdcores_qwen3_1p7b_no_prefetch_sweep_h200 for vdcores_resource_policy_trace is failed_after_kernel_launch: Disabling per-stage async prefetch routing is not sufficient to clear the VDCores final_rms failure. The next diagnostic target is generated MInst load address, coordinate, and tensor-descriptor provenance for the earliest final_rms schedule."
       ],
       "next_actions": [
         {
@@ -236,9 +255,9 @@
           "source": "execution_attempt",
           "paper_baseline_id": "vdcores",
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
-          "execution_attempt_id": "vdcores_qwen3_1p7b_final_rms_memcheck_h200",
+          "execution_attempt_id": "vdcores_qwen3_1p7b_no_prefetch_sweep_h200",
           "status": "failed_after_kernel_launch",
-          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_final_rms_memcheck_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: The earliest launched final_rms cut performs invalid 4096-byte global reads in cp_async_bulk through ldwarp_execute_singlethread, followed by warp illegal-address reports in the VDCores load warp."
+          "action": "Resolve latest execution attempt vdcores_qwen3_1p7b_no_prefetch_sweep_h200 before importing vdcores_resource_policy_trace. Diagnostic blocker: Disabling per-stage async prefetch routing is not sufficient to clear the VDCores final_rms failure. The next diagnostic target is generated MInst load address, coordinate, and tensor-descriptor provenance for the earliest final_rms schedule."
         }
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."

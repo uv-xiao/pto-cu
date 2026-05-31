@@ -1877,8 +1877,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     ]["blocker"]
     assert persistent_attempts["vdcores_resource_policy_trace"][
         "execution_attempt_id"
-    ] == "vdcores_qwen3_1p7b_final_rms_memcheck_h200"
-    assert "cp_async_bulk" in persistent_attempts[
+    ] == "vdcores_qwen3_1p7b_no_prefetch_sweep_h200"
+    assert "MInst load address" in persistent_attempts[
         "vdcores_resource_policy_trace"
     ]["blocker"]
     assert any(
@@ -2022,8 +2022,9 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         item["claim_id"] == "persistent_device_scheduler_overhead"
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
-        and item["execution_attempt_id"] == "vdcores_qwen3_1p7b_final_rms_memcheck_h200"
-        and "cp_async_bulk" in item["action"]
+        and item["execution_attempt_id"]
+        == "vdcores_qwen3_1p7b_no_prefetch_sweep_h200"
+        and "MInst load address" in item["action"]
         for item in work_items
     )
 
@@ -2709,6 +2710,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_correctness_rebuilt_illegal_memory_h200",
         "vdcores_qwen3_1p7b_stage_launch_sweep_h200",
         "vdcores_qwen3_1p7b_final_rms_memcheck_h200",
+        "vdcores_qwen3_1p7b_no_prefetch_sweep_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -2883,6 +2885,44 @@ def test_benchmark_viewer_has_json_backed_review_data():
         == "ldwarp.cuh:113"
     )
     assert "invalid 4096-byte global reads" in vdcores_memcheck["blocker"]
+    vdcores_no_prefetch = attempts_by_id[
+        "vdcores_qwen3_1p7b_no_prefetch_sweep_h200"
+    ]
+    assert vdcores_no_prefetch["status"] == "failed_after_kernel_launch"
+    assert vdcores_no_prefetch["summary"]["mode"] == (
+        "vdcores_qwen_no_prefetch_sweep"
+    )
+    assert vdcores_no_prefetch["summary"]["debug_stop_after"] == "final_rms"
+    assert set(vdcores_no_prefetch["summary"]["failed_variants"]) == {
+        "all",
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "out_proj",
+        "gate_low",
+        "gate_high",
+        "up_low",
+        "up_high",
+        "down_proj",
+    }
+    assert vdcores_no_prefetch["summary"]["all_variants_loaded_model"]
+    assert vdcores_no_prefetch["summary"][
+        "all_variants_failed_after_kernel_launch"
+    ]
+    all_memcheck = vdcores_no_prefetch["summary"]["all_no_prefetch_memcheck"]
+    assert all_memcheck["tool"] == "compute-sanitizer memcheck"
+    assert all_memcheck["error_summary_count"] == 18
+    assert all_memcheck["invalid_4096_byte_global_read"]
+    assert all_memcheck["cp_async_bulk_present"]
+    assert (
+        vdcores_no_prefetch["summary"]["previous_memcheck_error_summary_count"]
+        == 130
+    )
+    assert "per-stage async prefetch routing" in vdcores_no_prefetch["blocker"]
+    assert (
+        "MInst load address"
+        in vdcores_no_prefetch["summary"]["next_debug_target"]
+    )
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
@@ -3115,6 +3155,29 @@ def test_benchmark_viewer_has_json_backed_review_data():
     for item in paper_readiness_audit["claim_audits"]:
         assert item["matrix_status"]
         assert "paper_baseline_run_readiness_statuses" in item
+        if item["id"] == "persistent_device_scheduler_overhead":
+            vdcores_attempt = next(
+                attempt
+                for attempt in item["execution_attempt_statuses"]
+                if attempt["paper_baseline_id"] == "vdcores"
+            )
+            assert vdcores_attempt["execution_attempt_id"] == (
+                "vdcores_qwen3_1p7b_no_prefetch_sweep_h200"
+            )
+            assert (
+                vdcores_attempt["summary"]["all_no_prefetch_memcheck"][
+                    "error_summary_count"
+                ]
+                == 18
+            )
+            vdcores_actions = [
+                action
+                for action in item["next_actions"]
+                if action.get("execution_attempt_id")
+                == "vdcores_qwen3_1p7b_no_prefetch_sweep_h200"
+            ]
+            assert vdcores_actions
+            assert "MInst load address" in vdcores_actions[0]["action"]
         if item["id"] == "host_schedule_launch_overhead":
             assert item["matrix_status"] == "ready_for_paper_claim"
             assert item["ready_for_paper_claim"] is True
