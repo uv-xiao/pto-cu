@@ -114,7 +114,8 @@
         "vdcores_llama_decode_correctness",
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
-        "thunderkittens_tile_kernel"
+        "thunderkittens_tile_kernel",
+        "thunderkittens_decode_attention_tile"
       ],
       "required_metrics": [
         "correctness",
@@ -130,7 +131,7 @@
       "current_blockers": [
         "VDCores extension and model path still need captured H200 run artifacts.",
         "vLLM and SGLang packages are not yet installed for H200 serving capture.",
-        "ThunderKittens currently has bounded MHA evidence, not the full Llama/Qwen serving-family sweep."
+        "ThunderKittens has a bounded decode-attention command contract, but not the full Llama/Qwen serving-family sweep."
       ],
       "evidence_refs": [
         {

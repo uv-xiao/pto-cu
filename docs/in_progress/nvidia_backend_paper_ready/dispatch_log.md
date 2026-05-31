@@ -1236,3 +1236,34 @@ Each entry must include:
 - Handoff summary and remaining gaps: future MPK, VDCores, vLLM, SGLang, and
   ThunderKittens raw captures must now satisfy the committed `required_metrics`
   contract before `results.json`, run status, or audit data can change.
+
+### 2026-05-31 - ThunderKittens Serving Run Contract
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned paper
+  baseline planning and audit-coverage slice.
+- Exact Codex command or script invocation:
+  `.agents/skills/cuda-backend-eval/scripts/paper_baseline_run_readiness.py`
+  regenerated run-readiness data with output root
+  `tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/`,
+  then `paper_readiness_audit.py` regenerated the committed audit.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready evaluation
+  and strict evidence guardrail slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation planning scripts, benchmark-viewer
+  JSON contracts, focused review tests, goal docs, dispatch log, and changelog
+  docs. No upstream repositories were edited.
+- Dependencies and blocked assumptions: this adds a planned
+  ThunderKittens decode-attention serving-equivalent contract. It does not
+  claim measured LLM-serving performance.
+- Verification commands and results: focused tests for the readiness audit and
+  serving command planner passed after initially failing for the missing
+  ThunderKittens run/readiness record and missing planner rows.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the LLM-serving paper claim now has an
+  attached ThunderKittens planned run and readiness record. Actual H200
+  captures for MPK, VDCores, vLLM, SGLang, and ThunderKittens serving-family
+  rows remain required before the claim can be promoted.

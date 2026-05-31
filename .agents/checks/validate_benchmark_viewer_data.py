@@ -207,6 +207,7 @@ def validate_paper_baseline_runs(
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
         "thunderkittens_tile_kernel",
+        "thunderkittens_decode_attention_tile",
     }
     if not required_runs <= run_ids:
         missing = sorted(required_runs - run_ids)

@@ -127,7 +127,11 @@ def check_entrypoints(run: dict[str, Any], source_root: Path) -> list[dict[str, 
             if entrypoint in seen:
                 continue
             seen.add(entrypoint)
-            path = source_root / entrypoint
+            path = (
+                ROOT / entrypoint
+                if entrypoint.startswith(".agents/")
+                else source_root / entrypoint
+            )
             checks.append(
                 {
                     "kind": "path_exists",

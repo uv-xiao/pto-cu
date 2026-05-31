@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "1ace72fb",
+    "pto_commit": "cf273f6d",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
       "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
@@ -15,7 +15,7 @@
       "paper_baseline_id": "mpk",
       "title": "MPK Qwen3 Native Versus Persistent Kernel Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
       "checks": [
         {
           "kind": "source_path",
@@ -95,7 +95,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Llama Decode Correctness And Benchmark Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
       "checks": [
         {
           "kind": "source_path",
@@ -182,7 +182,7 @@
       "paper_baseline_id": "mpk",
       "title": "MPK Persistent Scheduler Trace Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
       "checks": [
         {
           "kind": "source_path",
@@ -250,7 +250,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Resource Policy Trace Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
       "checks": [
         {
           "kind": "source_path",
@@ -325,7 +325,7 @@
       "paper_baseline_id": "vllm",
       "title": "vLLM Serving And Offline Throughput Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
       "checks": [
         {
           "kind": "source_path",
@@ -390,7 +390,7 @@
       "paper_baseline_id": "sglang",
       "title": "SGLang Serving And Offline Throughput Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
       "checks": [
         {
           "kind": "source_path",
@@ -458,6 +458,102 @@
       "blocking_gaps": [
         "Readiness probe sglang_source_entrypoints is partial: A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
       ],
+      "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
+    },
+    {
+      "id": "thunderkittens_decode_attention_tile_readiness",
+      "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
+      "paper_baseline_id": "thunderkittens",
+      "title": "ThunderKittens Decode-Attention Tile Readiness",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
+      "checks": [
+        {
+          "kind": "source_path",
+          "path": "tmp/baselines/thunderkittens",
+          "status": "pass",
+          "why": "Baseline source checkout used by run_commands."
+        },
+        {
+          "kind": "run_command_contract",
+          "status": "pass",
+          "why": "Run readiness must be tied to explicit reproduction commands."
+        },
+        {
+          "kind": "path_exists",
+          "path": ".agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py",
+          "status": "pass",
+          "why": "Python entrypoint referenced by run_commands."
+        },
+        {
+          "kind": "path_exists",
+          "path": "kernels/attention/mha_h100/test_correctness.py",
+          "status": "pass",
+          "why": "Python entrypoint referenced by run_commands."
+        },
+        {
+          "kind": "path_exists",
+          "path": "kernels/attention/mha_h100/benchmark.py",
+          "status": "pass",
+          "why": "Python entrypoint referenced by run_commands."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch1.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch2.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch4.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch8.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch16.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "required_metric",
+          "metric": "correctness",
+          "status": "pass",
+          "why": "Paper-baseline imports must include correctness and raw artifact evidence."
+        },
+        {
+          "kind": "required_metric",
+          "metric": "raw_artifacts",
+          "status": "pass",
+          "why": "Paper-baseline imports must include correctness and raw artifact evidence."
+        },
+        {
+          "kind": "baseline_probe",
+          "name": "thunderkittens_source_entrypoints",
+          "status": "pass",
+          "why": "Latest committed source/dependency probe status for this baseline.",
+          "blocking_gaps": []
+        }
+      ],
+      "blocking_gaps": [],
       "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
     }
   ]

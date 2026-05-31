@@ -389,11 +389,61 @@ def vdcores_commands(
     ]
 
 
+def thunderkittens_commands(
+    *,
+    model: str,
+    policy: dict[str, Any],
+    batch_size: int,
+    out_dir: str,
+) -> list[dict[str, str]]:
+    del model
+    decode_tokens = policy["decode_policy"]["decode_tokens"]
+    raw_json = f"{out_dir}/thunderkittens-mha-batch{batch_size}.json"
+    shape = f"{batch_size},1,{decode_tokens},64"
+    command = shell_join(
+        [
+            ".venv/bin/python",
+            ".agents/skills/cuda-backend-eval/scripts/"
+            "thunderkittens_mha_capture.py",
+            "--baseline-dir",
+            "tmp/baselines/thunderkittens/kernels/attention/mha_h100",
+            "--output",
+            raw_json,
+            "--machine",
+            "<h200-host>",
+            "--pto-commit",
+            "<pto-commit>",
+            "--cuda-toolkit",
+            "12.8",
+            "--shape",
+            shape,
+            "--warmup",
+            "5",
+            "--repeats",
+            "20",
+            "--causal",
+        ]
+    )
+    return [
+        {
+            "kind": "decode_attention_tile",
+            "command": f"PYTHONPATH=$PWD:$PWD/python {command}",
+            "raw_artifact": raw_json,
+            "note": (
+                "ThunderKittens is a serving-family kernel baseline here; "
+                "the capture records decode-attention tile latency and "
+                "throughput for the VDCores policy batch ladder."
+            ),
+        }
+    ]
+
+
 COMMAND_BUILDERS = {
     "mpk": mpk_commands,
     "vdcores": vdcores_commands,
     "vllm": vllm_commands,
     "sglang": sglang_commands,
+    "thunderkittens": thunderkittens_commands,
 }
 
 
@@ -407,6 +457,8 @@ def build_plan(
     workloads = {item["id"]: item for item in serving["serving_workloads"]}
     records = []
     for run in runs["paper_baseline_runs"]:
+        if run.get("paper_evaluation_id") != "llm_serving_paper_baselines":
+            continue
         baseline_id = run["paper_baseline_id"]
         builder = COMMAND_BUILDERS.get(baseline_id)
         if builder is None:

@@ -200,13 +200,16 @@ Serving baseline commands can be materialized with
 The script reads `serving_workloads.json` plus `paper_baseline_runs.json` and
 emits one command-plan row per baseline, policy, and batch size. The current
 primary-model command plan is recorded at
-`tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json`. It has 30
-rows covering MPK, VDCores, vLLM, and SGLang over the MPK/VDCores policy batch
-ladders. This is not a performance result; it is the reproducible launch
-contract that long H200 runs must execute before their raw JSON can be
+`tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json`. The
+current command planner emits 35 rows covering MPK, VDCores, vLLM, SGLang, and
+the ThunderKittens decode-attention serving-equivalent over the MPK/VDCores
+policy batch ladders. This is not a performance result; it is the reproducible
+launch contract that long H200 runs must execute before their raw JSON can be
 imported into the viewer. SGLang launch rows explicitly prepend the pinned
 source checkout to `PYTHONPATH`, so generated commands do not accidentally use
-a globally installed SGLang package.
+a globally installed SGLang package. ThunderKittens rows use the bounded MHA
+capture wrapper as a controlled serving-family kernel baseline for the VDCores
+decode policy.
 
 Before full baseline builds, paper-baseline readiness probes can be captured
 with `.agents/skills/cuda-backend-eval/scripts/paper_baseline_probe.py`. The
@@ -236,6 +239,11 @@ dependencies (`torch`, `pybind11`, `numpy`, `pandas`, `matplotlib`, and
 the H200 project venv, the current H200 probe is ready for the selected
 ThunderKittens setup path, but full correctness and benchmark sweeps remain
 future paper-evaluation work.
+The LLM-serving claim also has a planned ThunderKittens
+`thunderkittens_decode_attention_tile` run record. Its readiness is generated
+from the selected source tree, repo-local capture wrapper, expected tmp
+artifact paths, required metrics, and paired ThunderKittens probe status, so
+the audit no longer hides ThunderKittens behind a missing-run blocker.
 The first bounded ThunderKittens MHA capture is recorded under
 `tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/`. It
 uses `.agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py`

@@ -321,6 +321,56 @@
         "result_kind": "paper_baseline_result_record",
         "notes": "Importer must map ThunderKittens output onto the tensor-core tile baseline claim with the selected tensor shape."
       }
+    },
+    {
+      "id": "thunderkittens_decode_attention_tile",
+      "paper_baseline_id": "thunderkittens",
+      "paper_evaluation_id": "llm_serving_paper_baselines",
+      "title": "ThunderKittens Decode-Attention Tile",
+      "status": "planned_not_run",
+      "hardware_targets": [
+        "H200"
+      ],
+      "serving_workload_ids": [
+        "vdcores_offline_decode"
+      ],
+      "workload": {
+        "model": "not applicable; kernel-level VDCores serving-family baseline",
+        "input_policy": "vdcores_offline_decode batch ladder mapped to MHA shapes B,1,64,64",
+        "output_policy": "causal attention correctness plus per-shape CUDA-event timing",
+        "batch_or_concurrency": "offline fixed batch sizes 1,2,4,8,16"
+      },
+      "setup_commands": [
+        "cd tmp/baselines/thunderkittens && make -C kernels/attention/mha_h100"
+      ],
+      "run_commands": [
+        "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch<batch>.json --machine <h200-host> --pto-commit <pto-commit> --cuda-toolkit 12.8 --shape <batch>,1,64,64 --warmup 5 --repeats 20 --causal",
+        "cd tmp/baselines/thunderkittens && python kernels/attention/mha_h100/test_correctness.py",
+        "cd tmp/baselines/thunderkittens && python kernels/attention/mha_h100/benchmark.py"
+      ],
+      "expected_artifacts": [
+        "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch1.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch2.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch4.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch8.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch16.json"
+      ],
+      "required_metrics": [
+        "correctness",
+        "end_to_end_latency",
+        "time_to_first_token",
+        "inter_token_latency",
+        "throughput",
+        "batch_or_concurrency_policy",
+        "model_and_prompt_shape",
+        "raw_artifacts"
+      ],
+      "import_target": {
+        "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+        "result_kind": "paper_baseline_result_record",
+        "notes": "Importer must mark this as a controlled serving-equivalent kernel row and preserve the VDCores policy batch, decode-token, shape, correctness, and timing fields."
+      }
     }
   ]
 }

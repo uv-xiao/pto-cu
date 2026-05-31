@@ -369,7 +369,9 @@ paper-baseline runs. It does not execute long baselines; it records source
 path, reproduction-command presence, Python entrypoints, expected artifact,
 required metric, latest paired probe status, MPK/VDCores model-access state,
 and VDCores extension-build readiness under `tmp/`, then updates the viewer's
-run-readiness data for every run that is not already `imported_to_viewer`:
+run-readiness data for every run that is not already `imported_to_viewer`.
+Run commands may reference repo-local capture wrappers under `.agents/` as
+well as Python entrypoints inside the baseline source tree:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
@@ -378,14 +380,17 @@ PYTHONPATH=$PWD:$PWD/python \
     --viewer-output docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json
 ```
 
-Use `paper_serving_command_plan.py` before long MPK, VDCores, vLLM, or SGLang
-serving runs. It reads the committed `serving_workloads.json` and
+Use `paper_serving_command_plan.py` before long MPK, VDCores, vLLM, SGLang,
+or ThunderKittens serving-family runs. It reads the committed
+`serving_workloads.json` and
 `paper_baseline_runs.json` contracts, then writes an inspectable command plan
 with one row per baseline, policy, and batch size. The output stays under
 `tmp/` and records the intended raw artifact paths that later feed
 `paper_baseline_viewer_export.py`. SGLang rows prepend the pinned
 `tmp/baselines/sglang/python` checkout to `PYTHONPATH`, so command plans do not
-silently use a globally installed SGLang package:
+silently use a globally installed SGLang package. ThunderKittens rows use the
+bounded MHA capture wrapper as a controlled serving-equivalent kernel baseline
+for the VDCores decode policy:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

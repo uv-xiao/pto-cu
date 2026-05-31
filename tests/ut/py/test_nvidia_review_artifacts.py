@@ -1448,7 +1448,13 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "vdcores_llama_decode_correctness",
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
+        "thunderkittens_decode_attention_tile",
     } <= llm_readiness_ids
+    assert not any(
+        "No paper baseline run record is attached to this claim for thunderkittens"
+        in blocker
+        for blocker in llm_claim["blockers"]
+    )
     persistent_claim = by_id["persistent_device_scheduler_overhead"]
     persistent_run_ids = {
         run["id"] for run in persistent_claim["paper_baseline_run_statuses"]
@@ -1501,7 +1507,7 @@ def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
     records = payload["serving_command_plans"]
 
     assert payload["metadata"]["model_tier"] == "primary"
-    assert len(records) == 30
+    assert len(records) == 35
     by_id = {record["id"]: record for record in records}
     vllm_mpk = by_id[
         "vllm_serving_and_throughput:mpk_offline_decode:batch16"
@@ -1532,6 +1538,17 @@ def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
             "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH "
         )
         for command in sglang_vdcores["commands"]
+    )
+    thunderkittens_decode = by_id[
+        "thunderkittens_decode_attention_tile:vdcores_offline_decode:batch4"
+    ]
+    assert thunderkittens_decode["prompt_tokens"] == 128
+    assert thunderkittens_decode["decode_tokens"] == 64
+    assert any(
+        command["kind"] == "decode_attention_tile"
+        and "thunderkittens_mha_capture.py" in command["command"]
+        and "--shape 4,1,64,64" in command["command"]
+        for command in thunderkittens_decode["commands"]
     )
     assert all(
         command.get("raw_artifact", "").startswith(
@@ -1819,6 +1836,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
         "thunderkittens_tile_kernel",
+        "thunderkittens_decode_attention_tile",
     } <= run_ids
     run_baselines = {
         item["paper_baseline_id"]
@@ -1847,6 +1865,14 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 "quick-smoke.json" in path for path in item["expected_artifacts"]
             )
             assert any("capture.json" in path for path in item["expected_artifacts"])
+            assert any(
+                "thunderkittens_mha_capture.py" in command
+                for command in item["run_commands"]
+            )
+        if item["id"] == "thunderkittens_decode_attention_tile":
+            assert item["paper_evaluation_id"] == "llm_serving_paper_baselines"
+            assert item["status"] == "planned_not_run"
+            assert item["serving_workload_ids"] == ["vdcores_offline_decode"]
             assert any(
                 "thunderkittens_mha_capture.py" in command
                 for command in item["run_commands"]

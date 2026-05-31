@@ -68,7 +68,7 @@
           "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
           "paper_baseline_id": "mpk",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ]
@@ -77,7 +77,7 @@
           "paper_baseline_run_id": "vdcores_resource_policy_trace",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run.",
             "Missing dae.runtime compiled extension at python/dae/runtime*.so."
@@ -248,6 +248,22 @@
             "tmp/cuda-backend/paper-baselines/sglang/offline-throughput.json",
             "tmp/cuda-backend/paper-baselines/sglang/one-batch.json"
           ]
+        },
+        {
+          "id": "thunderkittens_decode_attention_tile",
+          "paper_baseline_id": "thunderkittens",
+          "status": "planned_not_run",
+          "serving_workload_ids": [
+            "vdcores_offline_decode"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch1.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch2.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch4.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch8.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch16.json"
+          ]
         }
       ],
       "paper_baseline_run_readiness_statuses": [
@@ -255,7 +271,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ]
@@ -264,7 +280,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run.",
             "Missing dae.runtime compiled extension at python/dae/runtime*.so."
@@ -274,7 +290,7 @@
           "paper_baseline_run_id": "vllm_serving_and_throughput",
           "paper_baseline_id": "vllm",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
           "blocking_gaps": [
             "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; H200: python_module failed: vllm."
           ]
@@ -283,10 +299,17 @@
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "paper_baseline_id": "sglang",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-1ace72fb/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
           "blocking_gaps": [
             "Readiness probe sglang_source_entrypoints is partial: A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ]
+        },
+        {
+          "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
+          "paper_baseline_id": "thunderkittens",
+          "latest_status": "pass",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cf273f6d/",
+          "blocking_gaps": []
         }
       ],
       "probe_statuses": [
@@ -391,7 +414,7 @@
         "Paper baseline run vdcores_llama_decode_correctness is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vllm_serving_and_throughput is planned_not_run, not imported_to_viewer.",
         "Paper baseline run sglang_serving_and_offline is planned_not_run, not imported_to_viewer.",
-        "No paper baseline run record is attached to this claim for thunderkittens.",
+        "Paper baseline run thunderkittens_decode_attention_tile is planned_not_run, not imported_to_viewer.",
         "Readiness probe for vllm is partial.",
         "Readiness probe for sglang is partial.",
         "Run readiness mpk_qwen3_native_vs_persistent is partial: HF_TOKEN is not available for this run.",
