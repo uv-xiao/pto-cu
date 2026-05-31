@@ -2634,6 +2634,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mpk_qwen3_0p6b_persistent_profile_token2_h200",
         "mpk_qwen3_0p6b_persistent_noprofile_token2_h200",
         "mpk_qwen3_0p6b_persistent_token8_h200",
+        "mpk_qwen3_0p6b_launch_blocking_token2_h200",
+        "mpk_qwen3_0p6b_no_cutlass_token2_h200",
+        "mpk_qwen3_0p6b_token1_noprofile_h200",
         "vdcores_qwen3_1p7b_dry_build_h200",
     } <= set(attempts_by_id)
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
@@ -2654,6 +2657,23 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert "illegal memory access" in attempts_by_id[
         "mpk_qwen3_0p6b_persistent_noprofile_token2_h200"
     ]["blocker"]
+    launch_blocking_attempt = attempts_by_id[
+        "mpk_qwen3_0p6b_launch_blocking_token2_h200"
+    ]
+    assert launch_blocking_attempt["status"] == "blocked"
+    assert "CUDA_LAUNCH_BLOCKING=1" in launch_blocking_attempt["blocker"]
+    assert launch_blocking_attempt["summary"]["terminated"]
+    assert launch_blocking_attempt["summary"]["compiled_artifacts_present"]
+    no_cutlass_attempt = attempts_by_id["mpk_qwen3_0p6b_no_cutlass_token2_h200"]
+    assert no_cutlass_attempt["status"] == "failed_after_kernel_launch"
+    assert "no-CUTLASS" in no_cutlass_attempt["blocker"]
+    assert "illegal memory access" in no_cutlass_attempt["blocker"]
+    assert not no_cutlass_attempt["summary"]["use_cutlass_kernel"]
+    assert no_cutlass_attempt["summary"]["launched"]
+    one_token_attempt = attempts_by_id["mpk_qwen3_0p6b_token1_noprofile_h200"]
+    assert one_token_attempt["status"] == "failed_after_kernel_launch"
+    assert one_token_attempt["summary"]["max_new_tokens"] == 1
+    assert "illegal memory access" in one_token_attempt["blocker"]
     vdcores_attempt = attempts_by_id["vdcores_qwen3_1p7b_dry_build_h200"]
     assert vdcores_attempt["status"] == "partial"
     assert vdcores_attempt["summary"]["layers"] == 28
