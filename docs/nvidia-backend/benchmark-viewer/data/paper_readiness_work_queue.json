@@ -25,7 +25,7 @@
       "claim_title": "Persistent-Device Scheduler Overhead",
       "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
-      "blocker_count": 2,
+      "blocker_count": 1,
       "missing_evidence_count": 1,
       "action_index": 1,
       "source": "matrix_missing_evidence",
@@ -34,7 +34,7 @@
       "paper_baseline_run_id": "",
       "execution_attempt_id": "",
       "status": "missing",
-      "action": "VDCores queue-pressure and scheduler-overhead metadata comparable with PTO persistent_device and MPK.",
+      "action": "Repeat the VDCores queue/scheduler trace on the final non-diagnostic baseline policy before treating the row as paper-ready evidence.",
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },
     {

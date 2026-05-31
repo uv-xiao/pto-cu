@@ -249,10 +249,14 @@
         {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-correctness-712f88e8/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/"
         }
       ],
       "missing_evidence": [
-        "VDCores queue-pressure and scheduler-overhead metadata comparable with PTO persistent_device and MPK."
+        "Repeat the VDCores queue/scheduler trace on the final non-diagnostic baseline policy before treating the row as paper-ready evidence."
       ],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, and latency distributions."
     },

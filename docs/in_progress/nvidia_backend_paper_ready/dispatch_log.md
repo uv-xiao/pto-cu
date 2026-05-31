@@ -2417,3 +2417,45 @@ Each entry must include:
   persistent-device scheduler blocker. The next VDCores slice should export
   queue-pressure and scheduler-overhead metadata comparable with PTO
   persistent-device and MPK.
+
+### 2026-06-01 - VDCores Queue/Scheduler Trace Import
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  queue-pressure and scheduler-overhead import for the persistent scheduler
+  baseline gap.
+- Exact Codex command or script invocation: applied the tmp-only guarded
+  RepeatM plus profile-slot diagnostics patch to the H200 VDCores checkout,
+  generated the Qwen3-1.7B compute-op list with `--dry-build -w`, rebuilt
+  through the remote project venv with pinned CUTLASS headers, `-include
+  cfloat`, `DAE_DIAG_GUARD_REPEAT_SHUFFLE`, and
+  `DAE_DIAG_WAIT_AFTER_WB_ALLOC`, then ran `-b 5` for the timing trace and
+  `--correctness` in a separate fresh process.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready VDCores
+  resource-policy evidence slice.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer result data, paper-baseline run
+  status, execution-attempt data, generated paper-readiness
+  audit/work-queue/goal-progress data, focused review tests, dispatch log,
+  changelog docs, and local `tmp/` raw artifacts copied back from H200. No
+  upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: a combined `-b 5 --correctness`
+  command emitted valid timing diagnostics but failed the subsequent
+  correctness check after repeated launches. The imported evidence uses the
+  clean benchmark-only status `0` plus a separate fresh correctness status
+  `0`.
+- Verification commands and results before local review gates: rebuild status
+  `0`; benchmark status `0`; correctness status `0`; five H200 benchmark
+  iterations reported median `1787488 ns` and average `1786304 ns`; mean
+  allocwarp scheduler resident time was `1763558 ns`; max slot pressure was
+  `24 / 24`; all 17 correctness checks passed with final token
+  `ref=25, dae=25`; local and remote VDCores checkouts were clean after
+  capture.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: `vdcores_resource_policy_trace` is now
+  imported to the viewer, and the persistent-device scheduler claim no longer
+  has a VDCores queue/scheduler metadata blocker. The remaining paper-readiness
+  work is now in serving baseline runs and official tensor-core baseline gaps.

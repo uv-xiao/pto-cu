@@ -1876,28 +1876,20 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     )
     assert mpk_run_status["status"] == "imported_to_viewer"
     assert "mpk_persistent_scheduler_trace" not in persistent_attempts
-    assert persistent_attempts["vdcores_resource_policy_trace"][
-        "execution_attempt_id"
-    ] == "vdcores_qwen3_1p7b_repeat_guard_correctness_h200"
-    assert persistent_attempts["vdcores_resource_policy_trace"]["status"] == "pass"
-    assert persistent_attempts["vdcores_resource_policy_trace"]["summary"][
-        "correctness_completed"
-    ]
-    assert persistent_attempts["vdcores_resource_policy_trace"]["summary"][
-        "correctness_check_count"
-    ] == 17
-    assert persistent_attempts["vdcores_resource_policy_trace"]["summary"][
-        "final_token"
-    ] == "ref=25, dae=25"
-    assert not persistent_attempts["vdcores_resource_policy_trace"]["summary"][
-        "scheduler_overhead_measured"
-    ]
-    assert not persistent_attempts["vdcores_resource_policy_trace"]["summary"][
-        "queue_pressure_measured"
-    ]
-    assert any(
+    assert "vdcores_resource_policy_trace" not in persistent_attempts
+    vdcores_run_status = next(
+        run
+        for run in persistent_claim["paper_baseline_run_statuses"]
+        if run["id"] == "vdcores_resource_policy_trace"
+    )
+    assert vdcores_run_status["status"] == "imported_to_viewer"
+    assert not any(
         "VDCores queue-pressure and scheduler-overhead metadata"
         in blocker
+        for blocker in persistent_claim["blockers"]
+    )
+    assert any(
+        "final non-diagnostic baseline policy" in blocker
         for blocker in persistent_claim["blockers"]
     )
     assert not any(
@@ -1921,21 +1913,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         for action in persistent_claim["next_actions"]
     )
     assert "mpk_persistent_scheduler_trace" not in persistent_readiness
-    assert persistent_readiness["vdcores_resource_policy_trace"][
-        "latest_status"
-    ] == "pass"
-    assert not any(
-        "HF_TOKEN" in gap
-        for gap in persistent_readiness[
-            "vdcores_resource_policy_trace"
-        ]["blocking_gaps"]
-    )
-    assert not any(
-        "dae.runtime" in gap
-        for gap in persistent_readiness[
-            "vdcores_resource_policy_trace"
-        ]["blocking_gaps"]
-    )
+    assert "vdcores_resource_policy_trace" not in persistent_readiness
     assert not any(
         "Scheduler-overhead breakdown" in blocker
         for blocker in persistent_claim["blockers"]
@@ -2026,6 +2004,12 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         item["claim_id"] == "persistent_device_scheduler_overhead"
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
+        for item in work_items
+    )
+    assert any(
+        item["claim_id"] == "persistent_device_scheduler_overhead"
+        and item["source"] == "matrix_missing_evidence"
+        and "final non-diagnostic baseline policy" in item["action"]
         for item in work_items
     )
 
@@ -3472,6 +3456,24 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert "VDCores single-token correctness" in " ".join(
         vdcores_guard_correctness["summary"]["rules_out"]
     )
+    vdcores_queue_scheduler = attempts_by_id[
+        "vdcores_qwen3_1p7b_queue_scheduler_h200"
+    ]
+    assert vdcores_queue_scheduler["status"] == "pass"
+    assert vdcores_queue_scheduler["summary"]["mode"] == (
+        "vdcores_qwen_queue_scheduler_diagnostic"
+    )
+    assert vdcores_queue_scheduler["summary"]["bench_status"] == 0
+    assert vdcores_queue_scheduler["summary"]["correctness_status_code"] == 0
+    assert vdcores_queue_scheduler["summary"]["scheduler_overhead_measured"]
+    assert vdcores_queue_scheduler["summary"]["queue_pressure_measured"]
+    assert vdcores_queue_scheduler["summary"]["max_live_slot_occupancy"] == 24
+    assert vdcores_queue_scheduler["summary"]["max_live_slot_pressure"] == 1.0
+    assert (
+        vdcores_queue_scheduler["summary"]["scheduler_overhead_ns_mean_per_sm"]
+        == 1763558
+    )
+    assert vdcores_queue_scheduler["summary"]["final_token"] == "ref=25, dae=25"
     tk_official_attempt = attempts_by_id[
         "thunderkittens_mha_h100_official_benchmark_h200"
     ]
@@ -3716,25 +3718,14 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert item["matrix_status"]
         assert "paper_baseline_run_readiness_statuses" in item
         if item["id"] == "persistent_device_scheduler_overhead":
-            vdcores_attempt = next(
-                attempt
-                for attempt in item["execution_attempt_statuses"]
-                if attempt["paper_baseline_id"] == "vdcores"
-            )
-            assert vdcores_attempt["execution_attempt_id"] == (
-                "vdcores_qwen3_1p7b_repeat_guard_correctness_h200"
-            )
-            assert vdcores_attempt["status"] == "pass"
-            assert vdcores_attempt["summary"]["correctness_status_code"] == 0
-            assert vdcores_attempt["summary"]["correctness_check_count"] == 17
-            assert vdcores_attempt["summary"]["final_token"] == "ref=25, dae=25"
+            assert item["execution_attempt_statuses"] == []
             assert not any(
                 action.get("source") == "execution_attempt"
                 and action.get("paper_baseline_run_id")
                 == "vdcores_resource_policy_trace"
                 for action in item["next_actions"]
             )
-            assert any(
+            assert not any(
                 "VDCores queue-pressure and scheduler-overhead"
                 in action["action"]
                 for action in item["next_actions"]
@@ -3743,6 +3734,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert item["matrix_status"] == "ready_for_paper_claim"
             assert item["ready_for_paper_claim"] is True
             assert item["blockers"] == []
+        elif item["id"] == "persistent_device_scheduler_overhead":
+            assert item["ready_for_paper_claim"] is False
+            assert any(
+                "final non-diagnostic baseline policy" in blocker
+                for blocker in item["blockers"]
+            )
         else:
             assert item["ready_for_paper_claim"] is False
             assert item["blockers"]
@@ -3784,6 +3781,30 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "under MAX_WORKER_PER_SCHEDULER=9"
     )
     assert mpk_statistic["generated_kernel_metadata"]["tensor_count"] == 371
+    vdcores_scheduler_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "vdcores"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/"
+    ]
+    assert len(vdcores_scheduler_records) == 1
+    vdcores_statistic = vdcores_scheduler_records[0]["statistic"]
+    assert vdcores_scheduler_records[0]["correctness"] == "pass"
+    assert vdcores_statistic["kind"] == "paper_baseline_scheduler_trace"
+    assert vdcores_statistic["sample_count"] == 5
+    assert vdcores_statistic["scheduler_overhead_ns"] == 1763558
+    assert vdcores_statistic["queue_pressure"]["max_live_slot_occupancy"] == 24
+    assert vdcores_statistic["queue_pressure"]["max_live_slot_pressure"] == 1.0
+    assert vdcores_statistic["dispatch_trace"]["queue_ids"] == [
+        "m2c",
+        "m2ld0",
+        "m2ld1",
+        "c2m",
+    ]
+    assert vdcores_statistic["resource_policy"]["virtual_cores"] == 8
     assert any(
         record["benchmark_id"] == "tensor_core_tile"
         and record["method_id"] == "thunderkittens"
@@ -4229,6 +4250,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         if record["benchmark_id"] == "llm_serving_decode"
         and record["method_id"] == "vdcores"
         and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/paper-baselines/vdcores/"
+        "qwen3-1p7b-repeat-guard-bench-f6b16bac/"
     ]
     assert len(vdcores_guarded_bench) == 1
     assert vdcores_guarded_bench[0]["statistic"]["sample_count"] == 5

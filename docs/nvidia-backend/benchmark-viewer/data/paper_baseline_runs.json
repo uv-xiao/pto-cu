@@ -168,7 +168,7 @@
       "paper_baseline_id": "vdcores",
       "paper_evaluation_id": "persistent_device_scheduler_overhead",
       "title": "VDCores Resource Policy Trace",
-      "status": "captured_raw",
+      "status": "imported_to_viewer",
       "hardware_targets": [
         "H200"
       ],
@@ -188,18 +188,24 @@
         "why": "The selected VDCores resource-policy path uses app/python/qwen3_1p7b, whose runtime context only passes Hugging Face auth when HF_TOKEN is present and supports synthetic dry-build without model access."
       },
       "setup_commands": [
-        "cd tmp/baselines/vdcores && make pyext"
+        "cd tmp/baselines/vdcores && python app/python/qwen3_1p7b/sched.py --dry-build -w <artifact>/qwen3-1p7b-compute-ops.vdcore.build",
+        "cd tmp/baselines/vdcores && DAE_COMPUTE_OPS_FILE=<artifact>/qwen3-1p7b-compute-ops.vdcore.build EXTRA_NVCC_FLAGS=\"-include cfloat -I<cutlass>/include -DDAE_DIAG_GUARD_REPEAT_SHUFFLE -DDAE_DIAG_WAIT_AFTER_WB_ALLOC\" make clean pyext"
       ],
       "run_commands": [
-        "cd tmp/baselines/vdcores && python app/python/qwen3_1p7b/sched.py --dry-build -w ../../cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/compute_ops_full.txt",
-        "cd tmp/baselines/vdcores && HF_HOME=<shared-hf-cache> HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> --correctness",
-        "cd tmp/baselines/vdcores && HF_HOME=<shared-hf-cache> HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> -N 64 -b 1"
+        "cd tmp/baselines/vdcores && HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=7 QWEN1P7B_NO_PREFETCH=all QWEN1P7B_LOGITS_SPLIT_M=6 DAE_BENCH_WARMUP=1 python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> -b 5",
+        "cd tmp/baselines/vdcores && HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=7 QWEN1P7B_NO_PREFETCH=all QWEN1P7B_LOGITS_SPLIT_M=6 python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> --correctness"
       ],
       "expected_artifacts": [
-        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/dry-build-summary.json",
-        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/compute_ops_full.txt",
-        "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-trace.json",
-        "tmp/cuda-backend/paper-baselines/vdcores/resource-policy-profile.log"
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/viewer-import.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-bench-only.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-bench-only-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-correctness-fresh.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-correctness-fresh-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/rebuild-qwen-compute-ops.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/rebuild-qwen-compute-ops-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/qwen3-1p7b-compute-ops.vdcore.build",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/vdcores-queue-scheduler-diagnostics.patch"
       ],
       "required_metrics": [
         "correctness",
