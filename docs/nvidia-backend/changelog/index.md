@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 paper baseline environment plan script split](2026-06-02-paper-baseline-environment-plan-script-split.md)
 - [2026-06-02 baseline survey split](2026-06-02-baseline-survey-split.md)
 - [2026-06-02 CUDA example manifest split](2026-06-02-cuda-example-manifest-split.md)
 - [2026-06-02 paper readiness audit script split](2026-06-02-paper-readiness-audit-script-split.md)
