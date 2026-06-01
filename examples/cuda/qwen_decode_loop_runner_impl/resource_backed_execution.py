@@ -180,6 +180,7 @@ def run_workload(
                 "run_prepared_status": int(status),
                 "scheduler_counters": counters,
                 "output_sample": graph.read_output_sample(workspace),
+                "logits_summary": graph.read_logits_summary(workspace),
                 "timing_ns": {
                     "host_wall": int(timing.host_wall_ns),
                     "device_wall": int(timing.device_wall_ns),
@@ -212,12 +213,39 @@ def run_workload(
             item["scheduler_counters"]["error_count"] for item in repeat_results
         ),
         "output_sample": last["output_sample"],
+        "logits_summary": last["logits_summary"],
+        "logits_summary_stable": logits_summary_stable(repeat_results),
         "timing_ns": {
             "host_wall": total_host_wall,
             "device_wall": total_device_wall,
         },
     }
     return result
+
+
+def logits_summary_stable(repeat_results: list[dict[str, Any]]) -> bool:
+    if not repeat_results:
+        return False
+    first = repeat_results[0].get("logits_summary", {})
+    first_key = (
+        first.get("sample_checksum"),
+        first.get("topk", [{}])[0].get("token_id") if first.get("topk") else None,
+        first.get("written_element_count"),
+        first.get("sampled_element_count"),
+    )
+    for item in repeat_results[1:]:
+        summary = item.get("logits_summary", {})
+        key = (
+            summary.get("sample_checksum"),
+            summary.get("topk", [{}])[0].get("token_id")
+            if summary.get("topk")
+            else None,
+            summary.get("written_element_count"),
+            summary.get("sampled_element_count"),
+        )
+        if key != first_key:
+            return False
+    return True
 
 
 def artifact_summary(prepared: Any) -> dict[str, Any]:

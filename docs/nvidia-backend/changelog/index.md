@@ -118,6 +118,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-02 Qwen single context session](2026-06-02-qwen-single-context-session.md)
 - [2026-06-02 Qwen resource-backed execution](2026-06-02-qwen-resource-backed-execution.md)
 - [2026-06-02 Qwen resource-backed repeat execution](2026-06-02-qwen-resource-backed-repeat.md)
+- [2026-06-02 Qwen resource-backed logits sampling](2026-06-02-qwen-resource-backed-logits-sampling.md)
 - [2026-06-02 Qwen resource-backed viewer import](2026-06-02-qwen-resource-backed-viewer-import.md)
 - [2026-06-01 Qwen KV-cache binding](2026-06-01-qwen-kv-cache-binding.md)
 - [2026-06-01 Qwen token pointer table](2026-06-01-qwen-token-pointer-table.md)

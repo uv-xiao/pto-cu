@@ -50,6 +50,14 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                     },
                     "total_completed_count": 765,
                     "total_error_count": 0,
+                    "logits_summary": {
+                        "coverage": "partial_logits_not_full_vocab",
+                        "written_element_count": 65536,
+                        "logits_buffer_elements": 2430976,
+                        "sampled_element_count": 65536,
+                        "topk": [{"token_id": 17, "logit": 2.5}],
+                    },
+                    "logits_summary_stable": True,
                 },
                 {
                     "workload_id": "vdcores_offline_decode",
@@ -62,6 +70,14 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                         "error_count": 0,
                         "scheduler_processed_count": 255,
                     },
+                    "logits_summary": {
+                        "coverage": "partial_logits_not_full_vocab",
+                        "written_element_count": 20480,
+                        "logits_buffer_elements": 759680,
+                        "sampled_element_count": 20480,
+                        "topk": [{"token_id": 9, "logit": 1.25}],
+                    },
+                    "logits_summary_stable": True,
                 },
             ],
         },
@@ -92,6 +108,15 @@ def test_resource_backed_importer_emits_diagnostic_rows():
         assert record["correctness"] == "pass"
         assert "resource-backed diagnostic" in record["inputs"]["shape"]
         assert "prepared callable reused" in record["inputs"]["repeat_policy"]
+        assert record["statistic"]["logits_coverage"] == (
+            "partial_logits_not_full_vocab"
+        )
+        assert record["statistic"]["logits_written_element_count"] > 0
+        assert record["statistic"]["logits_buffer_element_count"] > (
+            record["statistic"]["logits_written_element_count"]
+        )
+        assert isinstance(record["statistic"]["sampled_token_id"], int)
+        assert record["statistic"]["logits_summary_stable"] is True
 
 
 def test_resource_backed_importer_adds_matrix_ref():
@@ -100,7 +125,13 @@ def test_resource_backed_importer_adds_matrix_ref():
         "paper_evaluation_matrix": [
             {
                 "id": "llm_serving_paper_baselines",
-                "current_evidence_refs": [],
+                "current_evidence_refs": [
+                    {
+                        "kind": "raw_artifact",
+                        "path": "tmp/cuda-backend/resource-backed-repeat.json",
+                        "symbols": ["repeat_runs"],
+                    },
+                ],
                 "missing_evidence_details": [
                     {
                         "id": "pto_full_serving_qwen3_8b",
@@ -134,6 +165,19 @@ def test_resource_backed_importer_adds_matrix_ref():
         "tmp/cuda-backend/resource-backed-repeat.json"
     )
     assert "repeat_runs" in claim["current_evidence_refs"][1]["symbols"]
+    assert "partial_logits_not_full_vocab" in claim[
+        "current_evidence_refs"
+    ][1]["symbols"]
+    assert (
+        len(
+            [
+                item
+                for item in claim["current_evidence_refs"]
+                if item.get("path") == "tmp/cuda-backend/resource-backed-repeat.json"
+            ]
+        )
+        == 1
+    )
     assert "repeated resource-backed execution viewer_result_imports" in claim[
         "missing_evidence_details"
     ][0]["action"]
@@ -174,3 +218,8 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
     assert all(row["statistic"]["completed_count"] in {255, 765} for row in rows)
     assert all(row["statistic"]["error_count"] == 0 for row in rows)
     assert all(row["correctness"] == "pass" for row in rows)
+    assert all(
+        row["statistic"].get("logits_coverage")
+        in {"partial_logits_not_full_vocab", None}
+        for row in rows
+    )

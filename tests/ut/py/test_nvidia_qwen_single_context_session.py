@@ -20,6 +20,27 @@ def load_decode_loop_runner_module():
     return module
 
 
+def load_resource_graph_module():
+    sys.path.insert(0, str(ROOT / "examples" / "cuda"))
+    script_path = (
+        ROOT
+        / "examples"
+        / "cuda"
+        / "qwen_decode_loop_runner_impl"
+        / "resource_graph.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "qwen_resource_graph_test",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 class FakeSingleContextSession:
     def __init__(self):
         self.closed = False
@@ -229,4 +250,28 @@ def test_resource_backed_smoke_runs_before_single_context_close(monkeypatch):
     assert runner["resource_backed_execution"]["status"] == "pass"
     assert "qwen_resource_backed_diagnostic_execution" in runner[
         "implemented_contracts"
+    ]
+
+
+def test_resource_backed_logits_summary_marks_partial_vocab_coverage():
+    module = load_resource_graph_module()
+
+    summary = module.summarize_logits_values(
+        [0.0, 3.5, -1.0, 2.0],
+        logits_buffer_elements=12,
+        written_element_count=4,
+        top_k=2,
+    )
+
+    assert summary["status"] == "partial_logits_sampled"
+    assert summary["coverage"] == "partial_logits_not_full_vocab"
+    assert summary["full_buffer_sampled"] is False
+    assert summary["sampled_element_count"] == 4
+    assert summary["written_element_count"] == 4
+    assert summary["logits_buffer_elements"] == 12
+    assert summary["finite_count"] == 4
+    assert summary["nonzero_count"] == 3
+    assert summary["topk"] == [
+        {"token_id": 1, "logit": 3.5},
+        {"token_id": 3, "logit": 2.0},
     ]

@@ -55,6 +55,8 @@ def build_result_records(
     records = []
     for workload in execution["workloads"]:
         counters = workload["scheduler_counters"]
+        logits_summary = workload.get("logits_summary", {})
+        topk = logits_summary.get("topk", [])
         repeat_runs = int(workload.get("repeat_runs", 1))
         completed_count = int(
             workload.get("total_completed_count", counters["completed_count"]),
@@ -105,6 +107,25 @@ def build_result_records(
                     "serving_coverage": COVERAGE,
                     "workload_id": workload["workload_id"],
                     "context_policy": execution["context_policy"],
+                    "logits_coverage": logits_summary.get("coverage", "not_recorded"),
+                    "logits_written_element_count": int(
+                        logits_summary.get("written_element_count", 0),
+                    ),
+                    "logits_buffer_element_count": int(
+                        logits_summary.get("logits_buffer_elements", 0),
+                    ),
+                    "logits_sampled_element_count": int(
+                        logits_summary.get("sampled_element_count", 0),
+                    ),
+                    "sampled_token_id": (
+                        int(topk[0]["token_id"]) if topk else None
+                    ),
+                    "sampled_token_logit": (
+                        float(topk[0]["logit"]) if topk else None
+                    ),
+                    "logits_summary_stable": bool(
+                        workload.get("logits_summary_stable", False),
+                    ),
                 },
                 "raw_artifact": raw_artifact,
                 "correctness": "pass" if workload["status"] == "pass" else "fail",
@@ -157,6 +178,8 @@ def ensure_matrix_ref(
                 "qwen_resource_backed_diagnostic_execution",
                 "diagnostic_resource_backed_qwen_dag",
                 "repeat_runs",
+                "partial_logits_not_full_vocab",
+                "logits_summary_stable",
             ],
         }
         if raw_artifact
@@ -170,7 +193,15 @@ def ensure_matrix_ref(
             refs = current["current_evidence_refs"]
             if ref not in refs:
                 refs.append(ref)
-            if raw_ref is not None and raw_ref not in refs:
+            if raw_ref is not None:
+                refs[:] = [
+                    item
+                    for item in refs
+                    if not (
+                        item.get("kind") == "raw_artifact"
+                        and item.get("path") == raw_artifact
+                    )
+                ]
                 refs.append(raw_ref)
             for detail in current.get("missing_evidence_details", []):
                 if detail.get("id") == "pto_full_serving_qwen3_8b":
@@ -179,13 +210,17 @@ def ensure_matrix_ref(
                         "diagnostic proxy, unit-math, descriptor-smoke, "
                         "resource-backed execution, and repeated "
                         "resource-backed execution viewer_result_imports "
-                        "are present."
+                        "with partial-logits sampling are present."
                     )
                     for phrase in (
                         "diagnostic proxy, unit-math, and descriptor-smoke "
                         "viewer_result_imports are present.",
                         "diagnostic proxy, unit-math, descriptor-smoke, "
                         "and resource-backed execution viewer_result_imports "
+                        "are present.",
+                        "diagnostic proxy, unit-math, descriptor-smoke, "
+                        "resource-backed execution, and repeated "
+                        "resource-backed execution viewer_result_imports "
                         "are present.",
                     ):
                         action = action.replace(phrase, updated_phrase)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ctypes
+import math
 from typing import Any
 
 from simpler_setup.cuda_callable_compiler import CudaPersistentDagState
@@ -123,3 +124,66 @@ class MaterializedGraph:
         ptr = int(workspace["logits_buffer"]["device_ptr_hex"], 0)
         self.copy_from_device(host, ptr, "logits_sample")
         return [round(float(value), 6) for value in host]
+
+    def read_logits_summary(self, workspace: dict[str, Any]) -> dict[str, Any]:
+        written_elements = logits_written_elements(workspace)
+        sampled_elements = min(written_elements, 65536)
+        if sampled_elements <= 0:
+            return {
+                "status": "not_sampled",
+                "reason": "no_written_logits",
+                "logits_buffer_elements": int(
+                    workspace["logits_buffer"].get("element_count", 0),
+                ),
+                "written_element_count": written_elements,
+                "sampled_element_count": 0,
+            }
+        host = (ctypes.c_float * sampled_elements)(*([0.0] * sampled_elements))
+        ptr = int(workspace["logits_buffer"]["device_ptr_hex"], 0)
+        self.copy_from_device(host, ptr, "logits_prefix")
+        return summarize_logits_values(
+            [float(value) for value in host],
+            logits_buffer_elements=int(workspace["logits_buffer"]["element_count"]),
+            written_element_count=written_elements,
+        )
+
+
+def logits_written_elements(workspace: dict[str, Any]) -> int:
+    buffers = workspace.get("activation_buffers", [])
+    if buffers:
+        return int(buffers[0].get("element_count", 0))
+    return int(workspace["logits_buffer"].get("element_count", 0))
+
+
+def summarize_logits_values(
+    values: list[float],
+    *,
+    logits_buffer_elements: int,
+    written_element_count: int,
+    top_k: int = 5,
+) -> dict[str, Any]:
+    finite_values = [
+        (index, value)
+        for index, value in enumerate(values)
+        if math.isfinite(value)
+    ]
+    ranked = sorted(finite_values, key=lambda item: item[1], reverse=True)[:top_k]
+    checksum = sum((index + 1) * value for index, value in enumerate(values))
+    return {
+        "status": "partial_logits_sampled",
+        "coverage": "partial_logits_not_full_vocab",
+        "logits_buffer_elements": int(logits_buffer_elements),
+        "written_element_count": int(written_element_count),
+        "sampled_element_count": len(values),
+        "full_buffer_sampled": len(values) == int(logits_buffer_elements),
+        "finite_count": len(finite_values),
+        "nonzero_count": sum(1 for value in values if value != 0.0),
+        "topk": [
+            {
+                "token_id": int(index),
+                "logit": round(float(value), 6),
+            }
+            for index, value in ranked
+        ],
+        "sample_checksum": round(float(checksum), 6),
+    }
