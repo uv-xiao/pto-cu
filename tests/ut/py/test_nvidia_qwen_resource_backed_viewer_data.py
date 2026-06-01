@@ -62,13 +62,20 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
         and row["statistic"].get("decode_feedback_applied_step_count") == 2
         for row in rows
     )
-    assert any(
-        row["statistic"].get("workload_id") == "vdcores_offline_decode"
-        and row["statistic"].get("executed_decode_steps") == 64
-        and row["statistic"].get("logits_check_policy") == "final_step"
-        and row["statistic"].get("logits_checked_step_count") == 1
-        and row["statistic"].get("logits_deferred_step_count") == 63
+    long_decode_rows = [
+        row["statistic"]
         for row in rows
+        if row["statistic"].get("executed_decode_steps") == 64
+    ]
+    assert {row["workload_id"] for row in long_decode_rows} == {
+        "mpk_offline_decode",
+        "vdcores_offline_decode",
+    }
+    assert all(
+        row.get("logits_check_policy") == "final_step"
+        and row.get("logits_checked_step_count") == 1
+        and row.get("logits_deferred_step_count") == 63
+        for row in long_decode_rows
     )
     assert all(row["statistic"]["error_count"] == 0 for row in rows)
     assert any(row["correctness"] == "pass" for row in rows)

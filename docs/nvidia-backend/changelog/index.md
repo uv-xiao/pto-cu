@@ -127,6 +127,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-02 Qwen resource-backed token feedback](2026-06-02-qwen-resource-backed-token-feedback.md)
 - [2026-06-02 Qwen device token feedback](2026-06-02-qwen-device-token-feedback.md)
 - [2026-06-02 Qwen resource-backed viewer import](2026-06-02-qwen-resource-backed-viewer-import.md)
+- [2026-06-02 Qwen MPK full diagnostic decode](2026-06-02-qwen-mpk-full-diagnostic-decode.md)
 - [2026-06-02 Qwen VDCores full diagnostic decode](2026-06-02-qwen-vdcores-full-diagnostic-decode.md)
 - [2026-06-02 Paper work queue evidence summary](2026-06-02-paper-work-queue-evidence-summary.md)
 - [2026-06-01 Qwen KV-cache binding](2026-06-01-qwen-kv-cache-binding.md)
