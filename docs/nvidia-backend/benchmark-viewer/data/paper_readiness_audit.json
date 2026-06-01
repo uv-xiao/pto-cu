@@ -289,7 +289,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-840a847f/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-89fe1705/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -297,7 +297,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-840a847f/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-89fe1705/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -307,7 +307,7 @@
           "paper_baseline_run_id": "vllm_serving_and_throughput",
           "paper_baseline_id": "vllm",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-840a847f/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-89fe1705/",
           "blocking_gaps": [
             "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; A100: python_import failed: vllm.entrypoints.openai.api_server; A100: python_import failed: vllm.engine.arg_utils; H200: python_module failed: vllm; H200: python_import failed: vllm.entrypoints.openai.api_server; H200: python_import failed: vllm.engine.arg_utils."
           ],
@@ -317,7 +317,7 @@
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "paper_baseline_id": "sglang",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-840a847f/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-89fe1705/",
           "blocking_gaps": [
             "Readiness probe sglang_source_entrypoints is partial: A100: python_module failed: orjson; A100: python_module failed: torchvision; A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_module failed: orjson; H200: python_module failed: torchvision; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ],
@@ -343,47 +343,93 @@
         {
           "paper_baseline_run_id": "vllm_serving_and_throughput",
           "paper_baseline_id": "vllm",
-          "execution_attempt_id": "vllm_qwen3_8b_vdcores_batch1_h200",
-          "title": "vLLM Qwen3 8B VDCores Batch-1 Serving Capture",
+          "execution_attempt_id": "vllm_qwen3_8b_vdcores_sweep_h200",
+          "title": "vLLM Qwen3 8B VDCores Batch Sweep",
           "status": "partial",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-batch1-840a847f-pandas/",
-          "blocker": "This is a successful H200 batch-1 serving capture but not the full paper sweep: batch 2/4/8/16, repeated samples, MPK serving policy, and cross-method Qwen3-8B comparisons are still pending.",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/",
+          "blocker": "The VDCores-comparable vLLM batch sweep is captured, but the full paper baseline still needs the MPK-comparable 1024-token serving policy, repeated samples for variance, and cross-method Qwen3-8B comparisons.",
           "summary": {
-            "mode": "vllm_bench_serve",
+            "mode": "vllm_bench_serve_vdcores_sweep",
             "model": "Qwen/Qwen3-8B",
             "offline_cache_used": true,
             "remote_refresh_path": "tree sync fallback",
             "source_overlay": "tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython",
             "vllm_commit": "27fa5aa3b952a6108de127423397e50364a95fcb",
-            "pto_commit": "840a847f",
-            "input_tokens": 128,
-            "output_tokens": 64,
-            "completed_requests": 1,
-            "failed_requests": 0,
-            "duration_s": 0.4316783440299332,
-            "request_throughput": 2.316539650019271,
-            "output_tokens_per_second": 148.25853760123334,
-            "total_tokens_per_second": 444.7756128037,
-            "mean_ttft_ms": 64.89939196035266,
-            "mean_tpot_ms": 5.807641686664687,
-            "mean_itl_ms": 5.8076567134805135,
-            "p99_ttft_ms": 64.89939196035266,
-            "p99_itl_ms": 6.297955494374038,
+            "pto_commit": "89fe1705",
+            "input_tokens_per_request": 128,
+            "output_tokens_per_request": 64,
+            "batches": [
+              2,
+              4,
+              8,
+              16
+            ],
+            "all_status_codes_zero": true,
+            "server_ready": true,
             "dtype": "bfloat16",
             "max_model_len": 192,
             "gpu_memory_utilization": 0.8,
             "cuda_visible_devices": "7",
-            "manual_env_package_fix": [
-              "pandas",
-              "numexpr",
-              "bottleneck"
-            ],
             "serving_latency_measured": true,
             "paper_target_model_measured": true,
             "h200_measured": true,
             "viewer_result_imported": true,
+            "batch_results": {
+              "2": {
+                "completed_requests": 2,
+                "failed_requests": 0,
+                "duration_s": 0.44475597282871604,
+                "request_throughput": 4.49684798447943,
+                "output_tokens_per_second": 287.79827100668354,
+                "total_tokens_per_second": 863.3948130200506,
+                "mean_ttft_ms": 80.22279106080532,
+                "mean_tpot_ms": 5.732919558853148,
+                "mean_itl_ms": 5.732923454146773,
+                "p99_ttft_ms": 81.51569220237434,
+                "p99_itl_ms": 6.507871788926423
+              },
+              "4": {
+                "completed_requests": 4,
+                "failed_requests": 0,
+                "duration_s": 0.4026788822375238,
+                "request_throughput": 9.933473485804909,
+                "output_tokens_per_second": 635.7423030915141,
+                "total_tokens_per_second": 1907.2269092745425,
+                "mean_ttft_ms": 34.042275743559,
+                "mean_tpot_ms": 5.801661627455836,
+                "mean_itl_ms": 5.801673921283394,
+                "p99_ttft_ms": 36.03190307505429,
+                "p99_itl_ms": 6.71896698884666
+              },
+              "8": {
+                "completed_requests": 8,
+                "failed_requests": 0,
+                "duration_s": 0.46205534879118204,
+                "request_throughput": 17.31394306099779,
+                "output_tokens_per_second": 1108.0923559038586,
+                "total_tokens_per_second": 3324.277067711576,
+                "mean_ttft_ms": 82.2809441597201,
+                "mean_tpot_ms": 5.931010698005261,
+                "mean_itl_ms": 5.931017967495357,
+                "p99_ttft_ms": 90.5747760925442,
+                "p99_itl_ms": 8.523433050140737
+              },
+              "16": {
+                "completed_requests": 16,
+                "failed_requests": 0,
+                "duration_s": 0.4831471280194819,
+                "request_throughput": 33.1162063729681,
+                "output_tokens_per_second": 2119.4372078699585,
+                "total_tokens_per_second": 6358.311623609875,
+                "mean_ttft_ms": 116.38721390045248,
+                "mean_tpot_ms": 5.672925732113303,
+                "mean_itl_ms": 5.672932683309127,
+                "p99_ttft_ms": 123.21710740216076,
+                "p99_itl_ms": 10.06477566435933
+              }
+            },
             "remaining_paper_gaps": [
-              "capture batch 2, 4, 8, and 16 serving points",
+              "capture MPK-comparable 1024-token vLLM serving policy",
               "repeat samples for variance and confidence intervals",
               "capture MPK serving policy under the same workload",
               "compare against PTO persistent-device once the matching runner exists"
@@ -510,7 +556,7 @@
         "Run readiness vdcores_llama_decode_correctness is partial: HF_TOKEN is not available for this run.",
         "Run readiness vllm_serving_and_throughput is partial: Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; A100: python_import failed: vllm.entrypoints.openai.api_server; A100: python_import failed: vllm.engine.arg_utils; H200: python_module failed: vllm; H200: python_import failed: vllm.entrypoints.openai.api_server; H200: python_import failed: vllm.engine.arg_utils.",
         "Run readiness sglang_serving_and_offline is partial: Readiness probe sglang_source_entrypoints is partial: A100: python_module failed: orjson; A100: python_module failed: torchvision; A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_module failed: orjson; H200: python_module failed: torchvision; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch.",
-        "Latest execution attempt vllm_qwen3_8b_vdcores_batch1_h200 for vllm_serving_and_throughput is partial: This is a successful H200 batch-1 serving capture but not the full paper sweep: batch 2/4/8/16, repeated samples, MPK serving policy, and cross-method Qwen3-8B comparisons are still pending."
+        "Latest execution attempt vllm_qwen3_8b_vdcores_sweep_h200 for vllm_serving_and_throughput is partial: The VDCores-comparable vLLM batch sweep is captured, but the full paper baseline still needs the MPK-comparable 1024-token serving policy, repeated samples for variance, and cross-method Qwen3-8B comparisons."
       ],
       "next_actions": [
         {
@@ -543,9 +589,9 @@
           "source": "execution_attempt",
           "paper_baseline_id": "vllm",
           "paper_baseline_run_id": "vllm_serving_and_throughput",
-          "execution_attempt_id": "vllm_qwen3_8b_vdcores_batch1_h200",
+          "execution_attempt_id": "vllm_qwen3_8b_vdcores_sweep_h200",
           "status": "partial",
-          "action": "Resolve latest execution attempt vllm_qwen3_8b_vdcores_batch1_h200 before importing vllm_serving_and_throughput. Diagnostic blocker: This is a successful H200 batch-1 serving capture but not the full paper sweep: batch 2/4/8/16, repeated samples, MPK serving policy, and cross-method Qwen3-8B comparisons are still pending."
+          "action": "Resolve latest execution attempt vllm_qwen3_8b_vdcores_sweep_h200 before importing vllm_serving_and_throughput. Diagnostic blocker: The VDCores-comparable vLLM batch sweep is captured, but the full paper baseline still needs the MPK-comparable 1024-token serving policy, repeated samples for variance, and cross-method Qwen3-8B comparisons."
         },
         {
           "source": "probe",

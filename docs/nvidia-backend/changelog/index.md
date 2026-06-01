@@ -39,6 +39,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 VDCores RepeatM guard correctness](2026-06-01-vdcores-repeat-guard-correctness.md)
 - [2026-06-01 VDCores queue/scheduler trace](2026-06-01-vdcores-queue-scheduler-trace.md)
 - [2026-06-01 VDCores diagnostic scope contract](2026-06-01-vdcores-diagnostic-scope-contract.md)
+- [2026-06-01 vLLM H200 serving sweep](2026-06-01-vllm-h200-serving-sweep.md)
 - [2026-06-01 vLLM H200 serving capture](2026-06-01-vllm-h200-serving-capture.md)
 - [2026-06-01 repository CI closed for ultimate goal](2026-06-01-repo-ci-closed.md)
 - [2026-05-31 MPK model-access readiness](2026-05-31-mpk-model-access-readiness.md)

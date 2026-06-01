@@ -2902,3 +2902,49 @@ Each entry must include:
   still partial for paper use until batch `2`, `4`, `8`, and `16`, repeated
   samples, MPK serving comparison, and PTO persistent-device comparison are
   captured under the same workload policy.
+
+### 2026-06-01 - vLLM H200 VDCores Serving Sweep
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned vLLM H200
+  VDCores-comparable serving sweep for the paper baseline evaluation track.
+- Exact Codex command or script invocation: used the documented tree-sync
+  fallback to refresh the standalone pto-cu checkout on `bizhaoh200`, started
+  one isolated vLLM server for `Qwen/Qwen3-8B` on `CUDA_VISIBLE_DEVICES=7`
+  with `max_model_len=192`, `bfloat16`, and `gpu_memory_utilization=0.80`,
+  then ran `vllm bench serve` for batch/concurrency `2`, `4`, `8`, and `16`
+  with input length `128`, output length `64`, `request_rate=inf`,
+  `ignore_eos`, and `temperature=0`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready serving
+  baseline sweep evidence.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, changelog docs, dispatch
+  log, and local `tmp/` vLLM run artifacts. No upstream repositories were
+  edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The sweep reuses the previously materialized isolated vLLM environment and
+  source overlay; it does not exercise the MPK-comparable 1024-token policy.
+- Verification commands and results:
+  H200 serving artifact
+  `tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/`
+  -> server readiness passed, status code `0`, batch `2`, `4`, `8`, and `16`
+  each returned `bench-serve-status.txt=0`, and all rows completed with zero
+  failed requests.
+  Batch `2`: mean TTFT `80.22279106080532 ms`, mean ITL
+  `5.732923454146773 ms`, output throughput `287.79827100668354 tokens/s`.
+  Batch `4`: mean TTFT `34.042275743559 ms`, mean ITL
+  `5.801673921283394 ms`, output throughput `635.7423030915141 tokens/s`.
+  Batch `8`: mean TTFT `82.2809441597201 ms`, mean ITL
+  `5.931017967495357 ms`, output throughput `1108.0923559038586 tokens/s`.
+  Batch `16`: mean TTFT `116.38721390045248 ms`, mean ITL
+  `5.672932683309127 ms`, output throughput `2119.4372078699585 tokens/s`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: vLLM now has the full
+  VDCores-comparable H200 Qwen3-8B batch sweep imported into the benchmark
+  viewer. The vLLM paper-baseline run is still partial until the
+  MPK-comparable 1024-token policy, repeated samples, MPK serving comparison,
+  and PTO persistent-device comparison are captured under the same workload
+  policy.

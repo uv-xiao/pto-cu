@@ -2684,8 +2684,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["paper_baseline_id"] == "vllm"
         and item["paper_baseline_run_id"] == "vllm_serving_and_throughput"
         and item["execution_attempt_id"]
-        == "vllm_qwen3_8b_vdcores_batch1_h200"
-        and "batch 2/4/8/16" in item["action"]
+        == "vllm_qwen3_8b_vdcores_sweep_h200"
+        and "MPK-comparable 1024-token" in item["action"]
         for item in work_items
     )
 
@@ -3441,6 +3441,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_repeat_guard_correctness_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
         "vllm_qwen3_8b_vdcores_batch1_h200",
+        "vllm_qwen3_8b_vdcores_sweep_h200",
     } <= set(attempts_by_id)
     environment_attempts = paper_baseline_environment_attempts[
         "paper_baseline_environment_attempts"
@@ -3479,6 +3480,26 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "numexpr",
         "bottleneck",
     }
+    vllm_h200_sweep = attempts_by_id["vllm_qwen3_8b_vdcores_sweep_h200"]
+    assert vllm_h200_sweep["status"] == "partial"
+    assert vllm_h200_sweep["hardware"]["gpu"] == "H200"
+    assert vllm_h200_sweep["summary"]["model"] == "Qwen/Qwen3-8B"
+    assert vllm_h200_sweep["summary"]["batches"] == [2, 4, 8, 16]
+    assert vllm_h200_sweep["summary"]["all_status_codes_zero"]
+    assert vllm_h200_sweep["summary"]["server_ready"]
+    assert vllm_h200_sweep["summary"]["viewer_result_imported"]
+    assert set(vllm_h200_sweep["summary"]["batch_results"]) == {
+        "2",
+        "4",
+        "8",
+        "16",
+    }
+    assert all(
+        item["completed_requests"] == int(batch)
+        and item["failed_requests"] == 0
+        and item["output_tokens_per_second"] > 0
+        for batch, item in vllm_h200_sweep["summary"]["batch_results"].items()
+    )
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
     assert (
         attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["summary"][
@@ -4705,6 +4726,43 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert vllm_h200_serving["statistic"]["prompt_tokens"] == 128
     assert vllm_h200_serving["statistic"]["decode_tokens"] == 64
     assert vllm_h200_serving["correctness"] == "pass"
+    vllm_h200_sweep_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "vllm"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"].startswith(
+            "tmp/cuda-backend/paper-baselines/serving-runs/vllm/"
+            "h200-vdcores-qwen3-8b-sweep-89fe1705/batch"
+        )
+    ]
+    assert len(vllm_h200_sweep_records) == 4
+    assert {
+        record["statistic"]["batch_size"] for record in vllm_h200_sweep_records
+    } == {2, 4, 8, 16}
+    assert {
+        record["statistic"]["prompt_tokens"] for record in vllm_h200_sweep_records
+    } == {128}
+    assert {
+        record["statistic"]["decode_tokens"] for record in vllm_h200_sweep_records
+    } == {64}
+    assert {
+        record["statistic"]["completed_requests"]
+        for record in vllm_h200_sweep_records
+    } == {2, 4, 8, 16}
+    assert {
+        record["statistic"]["failed_requests"] for record in vllm_h200_sweep_records
+    } == {0}
+    assert all(
+        record["inputs"]["dtype"] == "bfloat16"
+        and record["statistic"]["kind"] == "paper_baseline_serving_capture"
+        and record["statistic"]["throughput_tokens_per_s"] > 0
+        and record["statistic"]["time_to_first_token_ns"] > 0
+        and record["statistic"]["inter_token_latency_ns"] > 0
+        and record["correctness"] == "pass"
+        for record in vllm_h200_sweep_records
+    )
     driver_graph_records = [
         record
         for record in results["result_records"]

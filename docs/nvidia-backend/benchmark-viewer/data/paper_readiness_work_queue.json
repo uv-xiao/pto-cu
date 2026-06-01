@@ -147,9 +147,9 @@
       "owner": "vllm_serving_and_throughput",
       "paper_baseline_id": "vllm",
       "paper_baseline_run_id": "vllm_serving_and_throughput",
-      "execution_attempt_id": "vllm_qwen3_8b_vdcores_batch1_h200",
+      "execution_attempt_id": "vllm_qwen3_8b_vdcores_sweep_h200",
       "status": "partial",
-      "action": "Resolve latest execution attempt vllm_qwen3_8b_vdcores_batch1_h200 before importing vllm_serving_and_throughput. Diagnostic blocker: This is a successful H200 batch-1 serving capture but not the full paper sweep: batch 2/4/8/16, repeated samples, MPK serving policy, and cross-method Qwen3-8B comparisons are still pending.",
+      "action": "Resolve latest execution attempt vllm_qwen3_8b_vdcores_sweep_h200 before importing vllm_serving_and_throughput. Diagnostic blocker: The VDCores-comparable vLLM batch sweep is captured, but the full paper baseline still needs the MPK-comparable 1024-token serving policy, repeated samples for variance, and cross-method Qwen3-8B comparisons.",
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {

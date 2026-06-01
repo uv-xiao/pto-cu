@@ -2442,6 +2442,133 @@
           "compare against PTO persistent-device once the matching runner exists"
         ]
       }
+    },
+    {
+      "id": "vllm_qwen3_8b_vdcores_sweep_h200",
+      "paper_baseline_id": "vllm",
+      "paper_baseline_run_id": "vllm_serving_and_throughput",
+      "title": "vLLM Qwen3 8B VDCores Batch Sweep",
+      "status": "partial",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "Tree-sync the standalone pto-cu checkout to the H200 host, start one isolated vLLM server for Qwen/Qwen3-8B on CUDA_VISIBLE_DEVICES=7 with max_model_len=192 and bfloat16, then run vllm bench serve for vdcores_offline_decode batch/concurrency 2, 4, 8, and 16 with input length 128, output length 64, request_rate=inf, ignore_eos, and temperature=0.",
+      "observation": "The vLLM server reached readiness on H200 and all four remaining VDCores-comparable batch points completed with zero failed requests. Output throughput scaled from 287.79827100668354 tokens/s at batch 2 to 2119.4372078699585 tokens/s at batch 16.",
+      "blocker": "The VDCores-comparable vLLM batch sweep is captured, but the full paper baseline still needs the MPK-comparable 1024-token serving policy, repeated samples for variance, and cross-method Qwen3-8B comparisons.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/server-command.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/server-ready.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/server-ready-status.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/server.log",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/status.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/status-code.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch2/bench-serve.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch2/bench-serve.log",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch2/bench-serve-command.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch2/bench-serve-status.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch4/bench-serve.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch4/bench-serve.log",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch4/bench-serve-command.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch4/bench-serve-status.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch8/bench-serve.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch8/bench-serve.log",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch8/bench-serve-command.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch8/bench-serve-status.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch16/bench-serve.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch16/bench-serve.log",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch16/bench-serve-command.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch16/bench-serve-status.txt"
+      ],
+      "summary": {
+        "mode": "vllm_bench_serve_vdcores_sweep",
+        "model": "Qwen/Qwen3-8B",
+        "offline_cache_used": true,
+        "remote_refresh_path": "tree sync fallback",
+        "source_overlay": "tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython",
+        "vllm_commit": "27fa5aa3b952a6108de127423397e50364a95fcb",
+        "pto_commit": "89fe1705",
+        "input_tokens_per_request": 128,
+        "output_tokens_per_request": 64,
+        "batches": [
+          2,
+          4,
+          8,
+          16
+        ],
+        "all_status_codes_zero": true,
+        "server_ready": true,
+        "dtype": "bfloat16",
+        "max_model_len": 192,
+        "gpu_memory_utilization": 0.8,
+        "cuda_visible_devices": "7",
+        "serving_latency_measured": true,
+        "paper_target_model_measured": true,
+        "h200_measured": true,
+        "viewer_result_imported": true,
+        "batch_results": {
+          "2": {
+            "completed_requests": 2,
+            "failed_requests": 0,
+            "duration_s": 0.44475597282871604,
+            "request_throughput": 4.49684798447943,
+            "output_tokens_per_second": 287.79827100668354,
+            "total_tokens_per_second": 863.3948130200506,
+            "mean_ttft_ms": 80.22279106080532,
+            "mean_tpot_ms": 5.732919558853148,
+            "mean_itl_ms": 5.732923454146773,
+            "p99_ttft_ms": 81.51569220237434,
+            "p99_itl_ms": 6.507871788926423
+          },
+          "4": {
+            "completed_requests": 4,
+            "failed_requests": 0,
+            "duration_s": 0.4026788822375238,
+            "request_throughput": 9.933473485804909,
+            "output_tokens_per_second": 635.7423030915141,
+            "total_tokens_per_second": 1907.2269092745425,
+            "mean_ttft_ms": 34.042275743559,
+            "mean_tpot_ms": 5.801661627455836,
+            "mean_itl_ms": 5.801673921283394,
+            "p99_ttft_ms": 36.03190307505429,
+            "p99_itl_ms": 6.71896698884666
+          },
+          "8": {
+            "completed_requests": 8,
+            "failed_requests": 0,
+            "duration_s": 0.46205534879118204,
+            "request_throughput": 17.31394306099779,
+            "output_tokens_per_second": 1108.0923559038586,
+            "total_tokens_per_second": 3324.277067711576,
+            "mean_ttft_ms": 82.2809441597201,
+            "mean_tpot_ms": 5.931010698005261,
+            "mean_itl_ms": 5.931017967495357,
+            "p99_ttft_ms": 90.5747760925442,
+            "p99_itl_ms": 8.523433050140737
+          },
+          "16": {
+            "completed_requests": 16,
+            "failed_requests": 0,
+            "duration_s": 0.4831471280194819,
+            "request_throughput": 33.1162063729681,
+            "output_tokens_per_second": 2119.4372078699585,
+            "total_tokens_per_second": 6358.311623609875,
+            "mean_ttft_ms": 116.38721390045248,
+            "mean_tpot_ms": 5.672925732113303,
+            "mean_itl_ms": 5.672932683309127,
+            "p99_ttft_ms": 123.21710740216076,
+            "p99_itl_ms": 10.06477566435933
+          }
+        },
+        "remaining_paper_gaps": [
+          "capture MPK-comparable 1024-token vLLM serving policy",
+          "repeat samples for variance and confidence intervals",
+          "capture MPK serving policy under the same workload",
+          "compare against PTO persistent-device once the matching runner exists"
+        ]
+      }
     }
   ]
 }
