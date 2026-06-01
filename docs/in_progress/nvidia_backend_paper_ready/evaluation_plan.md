@@ -166,7 +166,9 @@ source-level consumption of token fields `a`, `b`, and `out`, KV-cache fields
 `c` and `d`, and weight `tensor_args`. This is source-generation evidence,
 not a numerically correct Qwen kernel implementation. The persistent DAG ABI
 now exposes mutable `c` and `d` fields, so the artifact also records
-KV-cache writeback field access.
+KV-cache writeback field access. It also includes a controlled proxy numeric
+oracle for the current deterministic scaffold formulas; that oracle is not
+full Qwen correctness evidence.
 The persistent decode-argument artifact in
 `examples/cuda/qwen_persistent_decode_args.py` maps those token buffers onto
 the persistent DAG `a`, `b`, and `out` fields while preserving `tensor_args`

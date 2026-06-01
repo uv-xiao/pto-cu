@@ -12,6 +12,8 @@ from simpler_setup.cuda_callable_compiler import (
     render_persistent_dag_source,
 )
 
+from .oracle import build_numeric_oracle
+
 
 ROOT = Path(__file__).resolve().parents[3]
 ENTRY_NAME = "pto_persistent_dag_f32_executor"
@@ -237,8 +239,10 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
                 ],
             ),
         },
+        "numeric_oracle": build_numeric_oracle(callables),
         "implemented_contracts": [
             "generated_qwen_kernel_bodies",
+            "controlled_proxy_numeric_oracle",
             "qwen_kernel_token_field_consumption",
             "qwen_kernel_kv_field_consumption",
             "qwen_kernel_kv_cache_writeback_field_contract",

@@ -4541,12 +4541,45 @@ Follow-up tracked-state closure after user confirmation:
   `examples/cuda/qwen_persistent_task_bodies.py` did not exist; after
   implementation the artifact reported `status=generated_task_bodies_ready`,
   10 task bodies, and rendered source sha256
-  `89a292d05f63fa5a70442428f8329da114050e5bad8f3ee420bae6757c8f8875`.
+  `92344f30355981ac7777320e8670377df614cff46b62917b70395f7171c90b4f`.
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: the branch now proves generated Qwen
   task-body source through the existing persistent DAG source generator and
   records token, KV-cache, and weight argument field consumption. Remaining
   PTO full-serving gaps are numerically correct Qwen kernels, `cuda_live`
+  decode-loop execution, and viewer-result import.
+
+### 2026-06-01 - Qwen Proxy Numeric Oracle
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned review
+  evidence update for the Qwen persistent task-body scaffold.
+- Exact Codex command or script invocation:
+  `qwen_persistent_task_bodies.py --output-json
+  tmp/cuda-backend/pto-serving-task-bodies-2026-06-01/qwen-persistent-task-bodies.json
+  --output-source
+  tmp/cuda-backend/pto-serving-task-bodies-2026-06-01/qwen-persistent-task-bodies.cu`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, benchmark-viewer data,
+  in-progress evaluation docs, changelog docs, dispatch log, and focused
+  tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the new oracle checks only the
+  deterministic controlled proxy formulas. It is not full Qwen model
+  correctness and does not reduce the need for `cuda_live` decode-loop
+  execution.
+- Verification commands and results: focused TDD test first failed because
+  the task-body manifest lacked `controlled_proxy_numeric_oracle`; after
+  implementation the manifest recorded 10 checked callables and max absolute
+  error 0.0 for the proxy formulas.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now makes proxy arithmetic
+  reviewable while keeping the full-serving blocker explicit. Remaining PTO
+  full-serving gaps are numerically correct Qwen kernels, `cuda_live`
   decode-loop execution, and viewer-result import.
 
 ### 2026-06-01 - Mutable KV-Cache Persistent DAG ABI

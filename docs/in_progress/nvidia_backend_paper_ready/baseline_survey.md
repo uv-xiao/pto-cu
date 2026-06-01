@@ -268,6 +268,7 @@ CUDA token-buffer allocation/copy-back verification, safetensors shard/tensor
 persistent decode token argument binding through `a`, `b`, and `out`,
 token pointer-table ownership through decode-arg materialization,
 KV-cache key/value binding through persistent DAG `c` and `d`,
+controlled proxy numeric-oracle outputs for the generated task-body scaffold,
 dry-run decode-loop owner ordering and persistent DAG submission planning,
 safetensors shard/tensor inventory, and the config-derived expected weight
 shape/dtype contract. It also has local Qwen shard placement plus actual

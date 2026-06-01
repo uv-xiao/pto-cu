@@ -962,10 +962,24 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     assert "task->d[kv_index] =" in source
     assert "task->tensor_args[0]" in source
     assert "generated_qwen_kernel_bodies" in manifest["implemented_contracts"]
+    assert "controlled_proxy_numeric_oracle" in manifest["implemented_contracts"]
     assert (
         "qwen_kernel_kv_cache_writeback_field_contract"
         in manifest["implemented_contracts"]
     )
+    oracle = manifest["numeric_oracle"]
+    assert oracle["status"] == "controlled_proxy_numeric_oracle_ready"
+    assert oracle["scope"] == "controlled_proxy_not_full_qwen"
+    assert oracle["checked_callables"] == manifest["task_body_count"]
+    assert oracle["max_abs_error"] == 0.0
+    qkv_oracle = next(
+        item
+        for item in oracle["sample_outputs"]
+        if item["callable"] == "qwen_attention_qkv"
+    )
+    assert qkv_oracle["expected_out"] == [13.0, 15.0, 17.0, 19.0]
+    assert qkv_oracle["expected_c"] == [11.0, 13.0, 15.0, 17.0]
+    assert qkv_oracle["expected_d"] == qkv_oracle["expected_out"]
     assert manifest["remaining_runtime_gaps"] == [
         "numerically_correct_qwen_kernel_bodies",
         "cuda_live_decode_loop_execution",
@@ -2137,8 +2151,9 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
             "preserving tensor_args for weights",
             "dry-run KV-cache key/value pointer binding",
             "persistent DAG c/d",
-            "generated persistent-device Qwen task-body source",
-            "mutable KV fields c/d",
+        "generated persistent-device Qwen task-body source",
+        "mutable KV fields c/d",
+        "controlled proxy numeric oracle",
             "decode-loop execution",
     ]:
         assert phrase in action

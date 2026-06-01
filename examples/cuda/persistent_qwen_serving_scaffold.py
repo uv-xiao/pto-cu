@@ -671,9 +671,10 @@ def build_scaffold() -> dict[str, Any]:
             status="partial" if task_bodies_ready else "missing",
             evidence="examples/cuda/qwen_persistent_task_bodies.py",
             next_action=(
-                "Replace review-oriented task bodies with numerically correct "
-                "Qwen kernels, then validate them in cuda_live decode-loop "
-                "execution."
+                "Use the controlled proxy oracle only as deterministic "
+                "scaffold evidence. Replace review-oriented task bodies with "
+                "numerically correct Qwen kernels, then validate them in "
+                "cuda_live decode-loop execution."
             ),
         ),
         stage(

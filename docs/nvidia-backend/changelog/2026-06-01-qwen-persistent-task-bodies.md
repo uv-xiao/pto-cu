@@ -6,6 +6,7 @@
   `examples/cuda/qwen_persistent_task_bodies_impl/`.
 - Wired the artifact into the Qwen serving scaffold, PTO serving preflight,
   CUDA example manifest, example README, paper-readiness matrix, and tests.
+- Added a controlled proxy numeric oracle for the generated task-body scaffold.
 - Captured current evidence at
   `tmp/cuda-backend/pto-serving-task-bodies-2026-06-01/`
   `qwen-persistent-task-bodies.json` and
@@ -16,7 +17,9 @@
 The artifact uses the existing persistent DAG source generator instead of a
 separate source shape. It reports token field consumption through `a`, `b`,
 and `out`, KV-cache field consumption through mutable `c` and `d`, and weight
-consumption through `tensor_args`.
+consumption through `tensor_args`. The numeric oracle records deterministic
+host-side expected values for the current proxy formulas; it is deliberately
+scoped away from full Qwen correctness.
 
 ## Evaluation Run
 
@@ -31,8 +34,8 @@ qwen-persistent-task-bodies.json \
 qwen-persistent-task-bodies.cu
 ```
 
-Result: `status=generated_task_bodies_ready`, 10 rendered task bodies, and
-source sha256
+Result: `status=generated_task_bodies_ready`, 10 rendered task bodies,
+`controlled_proxy_numeric_oracle_ready`, and source sha256
 `92344f30355981ac7777320e8670377df614cff46b62917b70395f7171c90b4f`.
 
 ## Remaining Gaps
