@@ -160,9 +160,14 @@
           ]
         },
         {
-          "path": ".agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py",
+          "path": ".agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan_impl/commands_serving.py",
           "symbols": [
-            "vllm_commands",
+            "vllm_commands"
+          ]
+        },
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan_impl/commands_sglang.py",
+          "symbols": [
             "sglang.bench_offline_throughput"
           ]
         }
