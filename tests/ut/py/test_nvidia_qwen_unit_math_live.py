@@ -10,15 +10,52 @@ VIEWER_ROOT = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer"
 
 def load_viewer_results():
     path = VIEWER_ROOT / "data" / "results"
+    return load_viewer_collection(path)["result_records"]
+
+
+def load_viewer_collection(path):
+    if path.suffix == ".json" and path.with_suffix("").is_dir():
+        path = path.with_suffix("")
     index = json.loads((path / "index.json").read_text(encoding="utf-8"))
     record_files = index.get("record_files")
     if record_files is None:
         record_files = json.loads(
             (path / index["record_files_path"]).read_text(encoding="utf-8")
         )
+    records = [
+        expand_viewer_record(
+            path,
+            json.loads((path / relpath).read_text(encoding="utf-8")),
+        )
+        for relpath in record_files
+    ]
+    return {
+        **{
+            key: value
+            for key, value in index.items()
+            if key not in {"collection", "record_files", "record_files_path"}
+        },
+        index["collection"]: records,
+    }
+
+
+def expand_viewer_record(base, record):
+    payload = dict(record)
+    for field in ("current_evidence_refs", "missing_evidence_details"):
+        path_key = f"{field}_path"
+        relpath = payload.pop(path_key, None)
+        if relpath is not None:
+            payload[field] = load_viewer_sidecar_list(base / relpath)
+    return payload
+
+
+def load_viewer_sidecar_list(path):
+    if path.is_file():
+        return json.loads(path.read_text(encoding="utf-8"))
+    index = json.loads((path / "index.json").read_text(encoding="utf-8"))
     return [
         json.loads((path / relpath).read_text(encoding="utf-8"))
-        for relpath in record_files
+        for relpath in index["item_files"]
     ]
 
 
@@ -87,10 +124,8 @@ def test_unit_math_live_plan_matches_oracle_contract():
 
 
 def test_viewer_matrix_tracks_unit_math_live_evidence():
-    matrix = json.loads(
-        (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").read_text(
-            encoding="utf-8",
-        )
+    matrix = load_viewer_collection(
+        VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
     )["paper_evaluation_matrix"]
     claim = next(
         item
@@ -112,8 +147,8 @@ def test_viewer_matrix_tracks_unit_math_live_evidence():
         for item in claim["missing_evidence_details"]
         if item["id"] == "pto_full_serving_qwen3_8b"
     )
-    assert "live CUDA coverage for RMSNorm" in pto_gap["action"]
-    assert "full Qwen decode-loop execution" in pto_gap["action"]
+    assert "Diagnostic resource-backed execution is present" in pto_gap["action"]
+    assert "full token-by-token decode-loop execution" in pto_gap["action"]
     assert "cuda_live execution of the Qwen unit-math" not in pto_gap["action"]
 
 

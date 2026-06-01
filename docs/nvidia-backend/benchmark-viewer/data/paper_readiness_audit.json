@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source_files": [
-    "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix.json",
+    "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix/index.json",
     "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
     "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
     "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness/index.json",

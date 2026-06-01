@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +15,14 @@ COLLECTION_KEYS = (
     "result_records",
     "paper_baseline_execution_attempts",
     "paper_baseline_run_readiness",
+    "paper_evaluation_matrix",
 )
+SIDECAR_LIST_FIELDS = {
+    "paper_evaluation_matrix": (
+        "current_evidence_refs",
+        "missing_evidence_details",
+    ),
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -60,7 +68,7 @@ def expand_manifest(base: Path, manifest: dict[str, Any]) -> dict[str, Any]:
         record = json.loads((base / relpath).read_text(encoding="utf-8"))
         if not isinstance(record, dict):
             raise ValueError(f"sharded record is not an object: {base / relpath}")
-        records.append(record)
+        records.append(expand_record_sidecars(base, collection, record))
     payload = {
         key: value
         for key, value in manifest.items()
@@ -100,10 +108,14 @@ def write_sharded_collection(path: Path, payload: dict[str, Any]) -> None:
     records_dir = path / "records"
     records_dir.mkdir(parents=True, exist_ok=True)
     record_files = []
+    record_stems = set()
     for index, record in enumerate(records):
         if not isinstance(record, dict):
             raise ValueError(f"{collection} contains a non-object record")
-        relpath = f"records/{record_filename(collection, index, record)}"
+        filename = record_filename(collection, index, record)
+        record_stems.add(Path(filename).stem)
+        relpath = f"records/{filename}"
+        record = split_record_sidecars(path, collection, relpath, record)
         (path / relpath).write_text(
             json.dumps(record, indent=2, sort_keys=False) + "\n",
             encoding="utf-8",
@@ -112,6 +124,9 @@ def write_sharded_collection(path: Path, payload: dict[str, Any]) -> None:
     for old in records_dir.glob("*.json"):
         if f"records/{old.name}" not in record_files:
             old.unlink()
+    for old in records_dir.iterdir():
+        if old.is_dir() and old.name not in record_stems:
+            shutil.rmtree(old)
     manifest = {
         key: value
         for key, value in payload.items()
@@ -137,6 +152,92 @@ def collection_key(payload: dict[str, Any]) -> str:
     if len(matches) != 1:
         raise ValueError(f"expected one sharded collection key, got {matches}")
     return matches[0]
+
+
+def split_record_sidecars(
+    base: Path,
+    collection: str,
+    relpath: str,
+    record: dict[str, Any],
+) -> dict[str, Any]:
+    fields = SIDECAR_LIST_FIELDS.get(collection, ())
+    if not fields:
+        return record
+    payload = dict(record)
+    sidecar_dir = Path(relpath).with_suffix("")
+    for field in fields:
+        value = payload.pop(field, None)
+        if value is None:
+            continue
+        sidecar_relpath = sidecar_dir / field
+        sidecar_path = base / sidecar_relpath
+        write_sidecar_list(sidecar_path, value)
+        legacy_path = sidecar_path.with_suffix(".json")
+        if legacy_path.is_file():
+            legacy_path.unlink()
+        payload[f"{field}_path"] = sidecar_relpath.as_posix()
+    return payload
+
+
+def write_sidecar_list(path: Path, values: Any) -> None:
+    if not isinstance(values, list):
+        raise ValueError(f"sidecar value is not a list: {path}")
+    items_dir = path / "items"
+    items_dir.mkdir(parents=True, exist_ok=True)
+    item_files = []
+    for index, value in enumerate(values):
+        relpath = f"items/{index:03d}.json"
+        (path / relpath).write_text(
+            json.dumps(value, indent=2, sort_keys=False) + "\n",
+            encoding="utf-8",
+        )
+        item_files.append(relpath)
+    for old in items_dir.glob("*.json"):
+        if f"items/{old.name}" not in item_files:
+            old.unlink()
+    (path / "index.json").write_text(
+        json.dumps({"item_files": item_files}, indent=2, sort_keys=False) + "\n",
+        encoding="utf-8",
+    )
+
+
+def expand_record_sidecars(
+    base: Path,
+    collection: str,
+    record: dict[str, Any],
+) -> dict[str, Any]:
+    fields = SIDECAR_LIST_FIELDS.get(collection, ())
+    if not fields:
+        return record
+    payload = dict(record)
+    for field in fields:
+        path_key = f"{field}_path"
+        relpath = payload.pop(path_key, None)
+        if relpath is None:
+            continue
+        if not isinstance(relpath, str):
+            raise ValueError(f"{path_key} is not a path string")
+        payload[field] = load_sidecar_list(base / relpath)
+    return payload
+
+
+def load_sidecar_list(path: Path) -> list[Any]:
+    if path.is_file():
+        value = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(value, list):
+            raise ValueError(f"sidecar file does not contain a list: {path}")
+        return value
+    index_path = path / "index.json"
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    item_files = index.get("item_files")
+    if not isinstance(item_files, list):
+        raise ValueError(f"sidecar index has no item_files: {index_path}")
+    values = []
+    for relpath in item_files:
+        if not isinstance(relpath, str):
+            raise ValueError(f"sidecar item path is not a string: {index_path}")
+        values.append(json.loads((path / relpath).read_text(encoding="utf-8")))
+    return values
 
 
 def manifest_record_files(base: Path, manifest: dict[str, Any]) -> list[Any]:

@@ -1,0 +1,41 @@
+{
+  "id": "llm_serving_paper_baselines",
+  "title": "LLM Serving Paper Baselines",
+  "claim": "Paper-level PTO CUDA claims require a shared serving workload against MPK, VDCores, vLLM, SGLang, and ThunderKittens-family baselines.",
+  "status": "partial_current_capture",
+  "workload_ids": [
+    "llm_serving_decode",
+    "graph_layered_cross",
+    "tensor_core_tile"
+  ],
+  "method_ids": [
+    "pto_host_schedule",
+    "pto_persistent_device"
+  ],
+  "paper_baseline_ids": [
+    "mpk",
+    "vdcores",
+    "vllm",
+    "sglang",
+    "thunderkittens"
+  ],
+  "hardware_targets": [
+    "H200"
+  ],
+  "required_metrics": [
+    "correctness",
+    "end_to_end_latency",
+    "time_to_first_token",
+    "inter_token_latency",
+    "throughput",
+    "batch_or_concurrency_policy",
+    "model_and_prompt_shape",
+    "raw_artifacts"
+  ],
+  "missing_evidence": [
+    "PTO persistent-device full-serving, VDCores Qwen3-8B full serving after the current global-instruction correctness blocker, and ThunderKittens-family full serving rows are not yet imported for the shared Qwen3-8B serving policies."
+  ],
+  "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics.",
+  "current_evidence_refs_path": "records/llm_serving_paper_baselines/current_evidence_refs",
+  "missing_evidence_details_path": "records/llm_serving_paper_baselines/missing_evidence_details"
+}

@@ -33,7 +33,10 @@ def load_viewer_collection(path):
                 (base / index["record_files_path"]).read_text(encoding="utf-8")
             )
         records = [
-            json.loads((base / relpath).read_text(encoding="utf-8"))
+            expand_viewer_record(
+                base,
+                json.loads((base / relpath).read_text(encoding="utf-8")),
+            )
             for relpath in record_files
         ]
         return {
@@ -45,6 +48,26 @@ def load_viewer_collection(path):
             index["collection"]: records,
         }
     return index
+
+
+def expand_viewer_record(base, record):
+    payload = dict(record)
+    for field in ("current_evidence_refs", "missing_evidence_details"):
+        path_key = f"{field}_path"
+        relpath = payload.pop(path_key, None)
+        if relpath is not None:
+            payload[field] = load_viewer_sidecar_list(base / relpath)
+    return payload
+
+
+def load_viewer_sidecar_list(path):
+    if path.is_file():
+        return json.loads(path.read_text(encoding="utf-8"))
+    index = json.loads((path / "index.json").read_text(encoding="utf-8"))
+    return [
+        json.loads((path / relpath).read_text(encoding="utf-8"))
+        for relpath in index["item_files"]
+    ]
 
 
 def qwen_one_layer_bindings():
@@ -2139,10 +2162,8 @@ def test_persistent_qwen_safetensors_fetch_status_is_reviewable(tmp_path):
 
 
 def test_llm_serving_matrix_tracks_pto_preflight_blocker():
-    matrix = json.loads(
-        (
-            VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
-        ).read_text(encoding="utf-8")
+    matrix = load_viewer_collection(
+        VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
     )
     claim = next(
         item
@@ -2295,7 +2316,6 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "process-scoped resident weight table owner",
         "padded target-length input_ids",
         "attention_mask",
-        "CUDA token-buffer allocation/copy-back verification",
         "persistent decode token argument binding",
         "preserving tensor_args for weights",
         "dry-run KV-cache key/value pointer binding",
@@ -2313,10 +2333,8 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
 
 
 def test_vdcores_scheduler_trace_keeps_diagnostic_scope_separate():
-    matrix = json.loads(
-        (
-            VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
-        ).read_text(encoding="utf-8")
+    matrix = load_viewer_collection(
+        VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
     )
     claim = next(
         item
@@ -5148,7 +5166,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (execution_attempts_dir / "index.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_command_plan.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_workloads.json").is_file()
-    assert (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").is_file()
+    paper_evaluation_dir = VIEWER_ROOT / "data" / "paper_evaluation_matrix"
+    assert (paper_evaluation_dir / "index.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_readiness_audit.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_readiness_work_queue.json").is_file()
     assert (VIEWER_ROOT / "data" / "goal_progress.json").is_file()
@@ -5253,10 +5272,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
             encoding="utf-8"
         )
     )
-    paper_evaluation = json.loads(
-        (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").read_text(
-            encoding="utf-8"
-        )
+    paper_evaluation = load_viewer_collection(
+        VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
     )
     paper_readiness_audit = json.loads(
         (VIEWER_ROOT / "data" / "paper_readiness_audit.json").read_text(

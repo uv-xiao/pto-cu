@@ -1,0 +1,9 @@
+{
+  "collection": "paper_evaluation_matrix",
+  "record_files": [
+    "records/host_schedule_launch_overhead.json",
+    "records/persistent_device_scheduler_overhead.json",
+    "records/tensor_core_tile_baselines.json",
+    "records/llm_serving_paper_baselines.json"
+  ]
+}

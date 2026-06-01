@@ -110,7 +110,7 @@ def load_sharded_collection(path: Path) -> dict[str, Any]:
             fail(f"invalid JSON in {record_path.relative_to(ROOT)}: {exc}")
         if not isinstance(record, dict):
             fail(f"sharded record is not an object: {record_path.relative_to(ROOT)}")
-        records.append(record)
+        records.append(expand_record_sidecars(path, record))
     payload = {
         key: value
         for key, value in index.items()
@@ -118,6 +118,52 @@ def load_sharded_collection(path: Path) -> dict[str, Any]:
     }
     payload[collection] = records
     return payload
+
+
+def expand_record_sidecars(base: Path, record: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(record)
+    for field in ("current_evidence_refs", "missing_evidence_details"):
+        path_key = f"{field}_path"
+        relpath = payload.pop(path_key, None)
+        if relpath is None:
+            continue
+        if not isinstance(relpath, str):
+            fail(f"{path_key} is not a string")
+        payload[field] = load_sidecar_list(base / relpath)
+    return payload
+
+
+def load_sidecar_list(path: Path) -> list[Any]:
+    if path.is_file():
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            fail(f"invalid JSON in {path.relative_to(ROOT)}: {exc}")
+        if not isinstance(value, list):
+            fail(f"sharded sidecar is not a list: {path.relative_to(ROOT)}")
+        return value
+    index_path = path / "index.json"
+    if not index_path.is_file():
+        fail(f"missing sharded sidecar index: {index_path.relative_to(ROOT)}")
+    try:
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"invalid JSON in {index_path.relative_to(ROOT)}: {exc}")
+    item_files = index.get("item_files")
+    if not isinstance(item_files, list):
+        fail(f"sharded sidecar has no item_files: {index_path.relative_to(ROOT)}")
+    values = []
+    for relpath in item_files:
+        if not isinstance(relpath, str):
+            fail(f"invalid sharded sidecar item: {index_path.relative_to(ROOT)}")
+        item_path = path / relpath
+        try:
+            values.append(json.loads(item_path.read_text(encoding="utf-8")))
+        except FileNotFoundError:
+            fail(f"missing sharded sidecar item: {item_path.relative_to(ROOT)}")
+        except json.JSONDecodeError as exc:
+            fail(f"invalid JSON in {item_path.relative_to(ROOT)}: {exc}")
+    return values
 
 
 def logical_data_path_exists(root: Path, relpath: str) -> bool:
@@ -1521,7 +1567,7 @@ def validate_paper_readiness_audit(
     if audit.get("schema_version") != 1:
         fail("paper readiness audit schema_version must be 1")
     required_sources = {
-        "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix.json",
+        "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix/index.json",
         "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
         "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
         (

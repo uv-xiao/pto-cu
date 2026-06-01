@@ -106,9 +106,45 @@ def load_sharded_json(path: Path) -> dict:
     for relpath in record_files:
         record_path = path / relpath
         require_file(record_path)
-        records.append(json.loads(record_path.read_text(encoding="utf-8")))
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        records.append(expand_record_sidecars(path, record))
     payload[collection] = records
     return payload
+
+
+def expand_record_sidecars(base: Path, record: dict) -> dict:
+    payload = dict(record)
+    for field in ("current_evidence_refs", "missing_evidence_details"):
+        path_key = f"{field}_path"
+        relpath = payload.pop(path_key, None)
+        if relpath is None:
+            continue
+        if not isinstance(relpath, str):
+            fail(f"{path_key} is not a string")
+        payload[field] = load_sidecar_list(base / relpath)
+    return payload
+
+
+def load_sidecar_list(path: Path) -> list:
+    if path.is_file():
+        value = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(value, list):
+            fail(f"sidecar is not a list: {path.relative_to(ROOT)}")
+        return value
+    index_path = path / "index.json"
+    require_file(index_path)
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    item_files = index.get("item_files")
+    if not isinstance(item_files, list):
+        fail(f"sidecar index is missing item_files: {index_path.relative_to(ROOT)}")
+    values = []
+    for relpath in item_files:
+        if not isinstance(relpath, str):
+            fail(f"invalid sidecar item: {index_path.relative_to(ROOT)}")
+        item_path = path / relpath
+        require_file(item_path)
+        values.append(json.loads(item_path.read_text(encoding="utf-8")))
+    return values
 
 
 def check_evaluation_docs() -> None:

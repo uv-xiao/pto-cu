@@ -250,10 +250,10 @@ def main() -> None:
         args.results,
         merge_results(load_viewer_json(args.results), records),
     )
-    write_json(
+    write_viewer_json(
         args.matrix,
         ensure_matrix_ref(
-            json.loads(args.matrix.read_text(encoding="utf-8")),
+            load_viewer_json(args.matrix),
             raw_artifact=raw_artifact,
         ),
     )

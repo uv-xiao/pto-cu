@@ -1,0 +1,6 @@
+{
+  "kind": "viewer_result",
+  "benchmark_id": "tensor_core_tile",
+  "method_id": "cublas_sgemm_graph",
+  "gpu": "H200"
+}

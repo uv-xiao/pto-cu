@@ -1,0 +1,10 @@
+{
+  "kind": "raw_artifact",
+  "path": "tmp/cuda-backend/pto-serving-single-context-session-2026-06-02/qwen-decode-loop-runner.json",
+  "symbols": [
+    "single_context_launch_packet_session_ready",
+    "single_context_live_resource_session",
+    "one_cuda_context_for_all_resource_owners",
+    "resource_backed_launch_packet_workspace_bound"
+  ]
+}

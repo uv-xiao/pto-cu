@@ -1,0 +1,8 @@
+{
+  "kind": "viewer_result",
+  "benchmark_id": "llm_serving_decode",
+  "method_id": "mpk",
+  "gpu": "H200",
+  "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
+  "serving_coverage": "full_serving_latency_caveat"
+}

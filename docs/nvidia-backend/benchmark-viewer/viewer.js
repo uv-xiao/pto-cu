@@ -14,7 +14,9 @@ const DATA_FILES = {
   },
   servingCommandPlan: "data/serving_command_plan.json",
   servingWorkloads: "data/serving_workloads.json",
-  paperEvaluation: "data/paper_evaluation_matrix.json",
+  paperEvaluation: {
+    manifest: "data/paper_evaluation_matrix/index.json",
+  },
   paperReadinessAudit: "data/paper_readiness_audit.json",
   paperReadinessWorkQueue: "data/paper_readiness_work_queue.json",
   goalProgress: "data/goal_progress.json",
@@ -43,13 +45,38 @@ async function loadDataFile(spec) {
     `${base}/${manifest.record_files_path}`,
   );
   const records = await Promise.all(
-    recordFiles.map((path) => loadJson(`${base}/${path}`)),
+    recordFiles.map(async (path) => {
+      const record = await loadJson(`${base}/${path}`);
+      return expandRecord(base, record);
+    }),
   );
   const payload = Object.assign({}, manifest);
   delete payload.record_files;
   delete payload.collection;
   payload[manifest.collection] = records;
   return payload;
+}
+
+async function expandRecord(base, record) {
+  const payload = Object.assign({}, record);
+  for (const field of ["current_evidence_refs", "missing_evidence_details"]) {
+    const pathKey = `${field}_path`;
+    if (payload[pathKey]) {
+      payload[field] = await loadSidecarList(base, payload[pathKey]);
+      delete payload[pathKey];
+    }
+  }
+  return payload;
+}
+
+async function loadSidecarList(base, path) {
+  if (path.endsWith(".json")) {
+    return loadJson(`${base}/${path}`);
+  }
+  const index = await loadJson(`${base}/${path}/index.json`);
+  return Promise.all(
+    index.item_files.map((item) => loadJson(`${base}/${path}/${item}`)),
+  );
 }
 
 function text(value) {
@@ -851,7 +878,7 @@ async function main() {
       loadDataFile(DATA_FILES.paperBaselineExecutionAttempts),
       loadJson(DATA_FILES.servingCommandPlan),
       loadJson(DATA_FILES.servingWorkloads),
-      loadJson(DATA_FILES.paperEvaluation),
+      loadDataFile(DATA_FILES.paperEvaluation),
       loadJson(DATA_FILES.paperReadinessAudit),
       loadJson(DATA_FILES.paperReadinessWorkQueue),
       loadJson(DATA_FILES.goalProgress),

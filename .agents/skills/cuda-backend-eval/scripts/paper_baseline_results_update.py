@@ -241,7 +241,7 @@ def main() -> None:
     write_json(args.runs, updated_runs)
 
     audit = build_readiness_audit(
-        matrix=load_json(args.matrix),
+        matrix=load_viewer_json(args.matrix),
         runs=updated_runs,
         probes=load_json(args.probes),
         run_readiness=load_audit_json(args.run_readiness),

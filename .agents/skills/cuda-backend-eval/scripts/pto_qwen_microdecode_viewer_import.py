@@ -170,9 +170,9 @@ def main() -> None:
         commit=args.commit,
     )
     write_viewer_json(args.results, merge_result(load_viewer_json(args.results), record))
-    write_json(
+    write_viewer_json(
         args.matrix,
-        ensure_matrix_ref(json.loads(args.matrix.read_text(encoding="utf-8"))),
+        ensure_matrix_ref(load_viewer_json(args.matrix)),
     )
     print(f"imported {raw_artifact}")
 
