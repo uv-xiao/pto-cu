@@ -16,6 +16,9 @@ VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 TARGET_WORKLOAD_IDS = {"mpk_offline_decode", "vdcores_offline_decode"}
 LIFECYCLE_PLAN = ROOT / "examples" / "cuda" / "qwen_serving_lifecycle_plan.py"
 PROMPT_ACCOUNTING = ROOT / "examples" / "cuda" / "qwen_prompt_accounting.py"
+RUNTIME_INPUT_BINDING = (
+    ROOT / "examples" / "cuda" / "qwen_runtime_input_binding.py"
+)
 WEIGHT_INVENTORY = ROOT / "examples" / "cuda" / "qwen_weight_inventory.py"
 SAFETENSORS_FETCH = ROOT / "examples" / "cuda" / "qwen_safetensors_fetch.py"
 SAFETENSORS_METADATA = (
@@ -82,6 +85,14 @@ def load_prompt_accounting() -> dict[str, Any]:
         PROMPT_ACCOUNTING,
         "qwen_prompt_accounting",
         "build_prompt_accounting",
+    )
+
+
+def load_runtime_input_binding() -> dict[str, Any]:
+    return load_python_payload(
+        RUNTIME_INPUT_BINDING,
+        "qwen_runtime_input_binding",
+        "build_runtime_input_binding",
     )
 
 
@@ -206,6 +217,7 @@ def stage(
 def build_scaffold() -> dict[str, Any]:
     lifecycle_plan = load_lifecycle_plan()
     prompt_accounting = load_prompt_accounting()
+    runtime_input_binding = load_runtime_input_binding()
     weight_inventory = load_weight_inventory()
     safetensors_shards = load_safetensors_shards()
     safetensors_metadata = load_safetensors_metadata()
@@ -237,6 +249,9 @@ def build_scaffold() -> dict[str, Any]:
     resident_weight_table_ready = (
         resident_weight_table.get("status")
         == "resident_weight_table_lifecycle_ready"
+    )
+    runtime_input_binding_ready = (
+        runtime_input_binding.get("status") == "runtime_input_binding_plan_ready"
     )
     weight_next_action = (
         "Connect the resident weight table owner to the decode-loop runner and "
@@ -345,8 +360,26 @@ def build_scaffold() -> dict[str, Any]:
             else "missing",
             evidence="examples/cuda/qwen_prompt_accounting.py",
             next_action=(
-                "Bind token IDs and target prompt padding/regeneration policy "
-                "to the runtime decode loop."
+                "Keep tokenizer accounting synchronized with runtime input "
+                "binding and target prompt alignment policy."
+            ),
+        ),
+        stage(
+            stage_id="qwen_runtime_input_binding",
+            title="Qwen runtime token input binding",
+            owner="pto_serving_host",
+            required_for_full_serving=True,
+            status=(
+                "partial"
+                if runtime_input_binding_ready
+                else "missing"
+                if runtime_input_binding.get("kind") != "pto_qwen_runtime_input_binding"
+                else "fail"
+            ),
+            evidence="examples/cuda/qwen_runtime_input_binding.py",
+            next_action=(
+                "Allocate CUDA token buffers, copy the host-materialized "
+                "input_ids, and pass them to the persistent decode loop."
             ),
         ),
         stage(
@@ -501,6 +534,7 @@ def build_scaffold() -> dict[str, Any]:
         "serving_workloads": serving_workload_contracts(),
         "lifecycle_plan": lifecycle_plan,
         "prompt_accounting": prompt_accounting,
+        "runtime_input_binding": runtime_input_binding,
         "weight_inventory": weight_inventory,
         "safetensors_shards": safetensors_shards,
         "safetensors_metadata": safetensors_metadata,

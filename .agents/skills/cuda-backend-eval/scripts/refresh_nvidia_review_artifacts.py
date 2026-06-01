@@ -13,6 +13,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[4]
 SCRIPT_ROOT = ROOT / ".agents" / "skills" / "cuda-backend-eval" / "scripts"
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
+REVIEW_SNAPSHOT_ID = "current-working"
 
 
 def fail(message: str) -> None:
@@ -52,7 +53,7 @@ def main() -> None:
     work_queue_module = load_module("paper_readiness_work_queue")
     goal_progress_module = load_module("nvidia_goal_progress")
 
-    commit = run_readiness_module.git_commit()
+    commit = REVIEW_SNAPSHOT_ID
     env_output_root = (
         env_plan_module.DEFAULT_OUTPUT_ROOT / f"environment-plans-{commit}"
     )

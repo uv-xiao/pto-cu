@@ -202,6 +202,19 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_runtime_input_binding",
+            "status": "pass"
+            if serving_scaffold.get("runtime_input_binding", {}).get("status")
+            == "runtime_input_binding_plan_ready"
+            else "fail",
+            "evidence": "examples/cuda/qwen_runtime_input_binding.py",
+            "why": (
+                "Repo-owned runtime input binding turns tokenizer outputs "
+                "into host-materialized input_ids and output_ids buffer "
+                "descriptors for persistent decode-loop submission."
+            ),
+        },
+        {
             "id": "qwen_weight_inventory",
             "status": "pass"
             if serving_scaffold.get("weight_inventory", {}).get("kind")

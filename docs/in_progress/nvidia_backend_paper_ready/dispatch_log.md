@@ -4319,3 +4319,41 @@ Follow-up tracked-state closure after user confirmation:
   remaining PTO full-serving gaps are `cuda_live` decode-loop integration,
   runtime token-ID binding, KV-cache allocation and binding, Qwen kernel
   generation, decode-loop execution, and viewer-result import.
+
+### 2026-06-01 - Qwen Runtime Input Binding
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned runtime
+  token-buffer binding for Qwen/Qwen3-8B persistent decode submission.
+- Exact Codex command or script invocation:
+  `qwen_runtime_input_binding.py --output-json
+  tmp/cuda-backend/pto-serving-input-binding-2026-06-01/qwen-runtime-input-binding.json`,
+  plus refreshed scaffold/preflight artifacts under
+  `tmp/cuda-backend/pto-serving-scaffold-2026-06-01/` and
+  `tmp/cuda-backend/pto-serving-preflight-2026-06-01/`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: this artifact is
+  `host_materialized_not_cuda_allocated`. The decode-loop runner must still
+  allocate/copy CUDA token buffers and consume them during persistent DAG
+  execution.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_runtime_input_binding.py` did not exist; after
+  implementation the selected runtime input-binding, preflight, and scaffold
+  tests passed. The real artifact reports
+  `status=runtime_input_binding_plan_ready` and records input/output token
+  buffer descriptors for both paper serving policies.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves tokenizer output
+  can be converted into concrete runtime `input_ids` and decode `output_ids`
+  buffer plans. The remaining PTO full-serving gaps are target prompt shape
+  alignment, CUDA token-buffer allocation/copy, `cuda_live` decode-loop
+  integration for weights, KV-cache allocation and binding, Qwen kernel
+  generation, decode-loop execution, and viewer-result import.

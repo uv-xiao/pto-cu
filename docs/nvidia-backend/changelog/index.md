@@ -96,6 +96,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 serving baseline probe scope](2026-06-01-serving-baseline-probe-scope.md)
 - [2026-06-01 serving baseline environment plans](2026-06-01-serving-baseline-environment-plans.md)
 - [2026-06-01 serving baseline environment attempt](2026-06-01-serving-baseline-environment-attempt.md)
+- [2026-06-01 Qwen runtime input binding](2026-06-01-qwen-runtime-input-binding.md)
 - [2026-06-01 Qwen resident weight table](2026-06-01-qwen-resident-weight-table.md)
 - [2026-06-01 Qwen persistent weight materialization](2026-06-01-qwen-persistent-weight-materialization.md)
 - [2026-06-01 vLLM environment materialization](2026-06-01-vllm-environment-materialization.md)

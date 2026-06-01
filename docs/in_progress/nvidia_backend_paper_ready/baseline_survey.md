@@ -254,6 +254,7 @@ The current PTO serving comparison has explicit lifecycle artifacts at
 `tmp/cuda-backend/pto-serving-weight-args-21589e81/qwen-persistent-weight-args.json`,
 `tmp/cuda-backend/pto-serving-weight-materialization-2026-06-01/qwen-persistent-weight-materialization.json`,
 `tmp/cuda-backend/pto-serving-resident-weight-table-2026-06-01/qwen-resident-weight-table.json`,
+`tmp/cuda-backend/pto-serving-input-binding-2026-06-01/qwen-runtime-input-binding.json`,
 `tmp/cuda-backend/pto-serving-scaffold-2026-06-01/qwen-serving-scaffold.json`,
 and
 `tmp/cuda-backend/pto-serving-preflight-2026-06-01/pto-serving-preflight.json`.
@@ -261,7 +262,8 @@ They record the proxy-only execution state plus the new partial runtime plan:
 the benchmark viewer has a controlled attention-tile PTO serving-equivalent
 row, and the repo-owned PTO CUDA path now has a reviewable Qwen3-8B model
 shape, KV-cache capacity ladder, weight-binding plan, and persistent-device
-task mapping, tokenizer-observed prompt counts, safetensors shard/tensor
+task mapping, tokenizer-observed prompt counts, host-materialized
+`input_ids` and decode `output_ids` buffer plans, safetensors shard/tensor
 inventory, and the config-derived expected weight shape/dtype contract. It
 also has local Qwen shard placement plus actual safetensors shape/dtype
 validation for 399 tensors across five shards. The CUDA binding artifact maps
@@ -276,7 +278,7 @@ records the symbolic `resident_weight_ptrs[slot_id]` source for each weight
 argument. The resident table artifact adds a process-scoped owner that keeps
 399 dry-run pointers live through materialization and frees all of them after
 close. It still does not run that owner in `cuda_live` mode inside the
-decode-loop runner, bind token IDs to runtime buffers, bind real CUDA KV-cache
+decode-loop runner, allocate/copy CUDA token buffers, bind real CUDA KV-cache
 buffers, run generated Qwen kernel bodies, or execute a decode loop for
 `Qwen/Qwen3-8B`.
 

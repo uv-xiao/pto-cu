@@ -421,6 +421,19 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-tokenizer-$(git rev-parse --short HEAD)/qwen-prompt-accounting.json
 ```
 
+Use `examples/cuda/qwen_runtime_input_binding.py` after prompt accounting to
+turn Qwen tokenizer output into concrete host-side `input_ids`,
+decode-capacity `output_ids`, prompt-alignment metadata, and scalar bindings.
+It is still a host-materialized artifact; CUDA token-buffer allocation and
+decode-loop consumption remain runtime gaps:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_runtime_input_binding.py \
+    --mode offline \
+    --output-json tmp/cuda-backend/pto-serving-input-binding-$(git rev-parse --short HEAD)/qwen-runtime-input-binding.json
+```
+
 Use `examples/cuda/qwen_weight_inventory.py` to capture Qwen/Qwen3-8B
 safetensors shard and tensor binding groups plus the config-derived expected
 shape/dtype contract before implementing real tensor open and CUDA device
