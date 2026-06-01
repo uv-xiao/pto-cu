@@ -430,6 +430,19 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-decode-loop-$(git rev-parse --short HEAD)/qwen-decode-loop-runner.json
 ```
 
+Use `examples/cuda/qwen_persistent_task_bodies.py` when reviewers need the
+repo-owned Qwen persistent task-body source manifest. The current artifact
+renders through the existing persistent DAG source generator and records token,
+KV-cache, and weight field consumption; it is not yet a numerically correct
+Qwen kernel implementation:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_persistent_task_bodies.py \
+    --output-json tmp/cuda-backend/pto-serving-task-bodies-$(git rev-parse --short HEAD)/qwen-persistent-task-bodies.json \
+    --output-source tmp/cuda-backend/pto-serving-task-bodies-$(git rev-parse --short HEAD)/qwen-persistent-task-bodies.cu
+```
+
 Use `examples/cuda/qwen_prompt_accounting.py` to capture tokenizer-observed
 prompt counts for the shared MPK and VDCores serving policies. Use `--mode
 download` only for an intentional source capture into `tmp/`; use `--mode

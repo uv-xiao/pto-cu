@@ -546,6 +546,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["qwen_resident_weight_table_owner"]["status"] == "pass"
     assert checks["qwen_kv_cache_binding"]["status"] == "pass"
     assert checks["qwen_decode_loop_runner"]["status"] == "pass"
+    assert checks["qwen_persistent_task_bodies"]["status"] == "pass"
     assert checks["qwen3_8b_full_serving_rows_imported"]["status"] == "fail"
     assert checks["qwen_model_loader_or_token_loop"]["status"] == "fail"
     lifecycle = preflight["serving_lifecycle"]
@@ -618,6 +619,12 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert lifecycle["kv_cache_binding"]["status"] == "kv_cache_lifecycle_ready"
     assert lifecycle["decode_loop_runner"]["kind"] == "pto_qwen_decode_loop_runner"
     assert lifecycle["decode_loop_runner"]["status"] == "decode_loop_runner_plan_ready"
+    assert lifecycle["persistent_task_bodies"]["kind"] == (
+        "pto_qwen_persistent_task_bodies"
+    )
+    assert lifecycle["persistent_task_bodies"]["status"] == (
+        "generated_task_bodies_ready"
+    )
     assert {
         "qwen_tokenizer",
         "qwen_cuda_token_buffer_binding",
@@ -628,6 +635,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
         "qwen_resident_weight_table_owner",
         "kv_cache_lifecycle",
         "decode_loop_runner",
+        "qwen_persistent_task_bodies",
         "viewer_result_import",
     } <= set(lifecycle["missing_stage_ids"])
     assert any(
@@ -748,8 +756,15 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     assert scaffold["decode_loop_runner"]["kind"] == "pto_qwen_decode_loop_runner"
     assert scaffold["decode_loop_runner"]["status"] == "decode_loop_runner_plan_ready"
     assert scaffold["decode_loop_runner"]["mode"] == "dry_run_submission_plan"
+    assert scaffold["persistent_task_bodies"]["kind"] == (
+        "pto_qwen_persistent_task_bodies"
+    )
+    assert scaffold["persistent_task_bodies"]["status"] == (
+        "generated_task_bodies_ready"
+    )
     assert stages["kv_cache_lifecycle"]["status"] == "partial"
     assert stages["decode_loop_runner"]["status"] == "partial"
+    assert stages["qwen_persistent_task_bodies"]["status"] == "partial"
 
 
 def test_persistent_qwen_serving_lifecycle_plan_is_reviewable(tmp_path):
@@ -896,6 +911,62 @@ def test_qwen_decode_loop_runner_orders_resource_lifetimes():
         "generated_qwen_kernel_bodies",
         "qwen_kernel_token_consumption",
         "qwen_kernel_kv_cache_consumption",
+        "cuda_live_decode_loop_execution",
+        "viewer_result_import",
+    ]
+
+
+def test_qwen_persistent_task_bodies_render_generated_source():
+    script_path = ROOT / "examples" / "cuda" / "qwen_persistent_task_bodies.py"
+    spec = importlib.util.spec_from_file_location(
+        "qwen_persistent_task_bodies",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    manifest = module.build_task_body_manifest(num_hidden_layers=1)
+
+    assert manifest["kind"] == "pto_qwen_persistent_task_bodies"
+    assert manifest["status"] == "generated_task_bodies_ready"
+    assert manifest["source_kind"] == "generated-dispatch"
+    assert manifest["task_body_count"] == 10
+    assert manifest["rendered_source"]["entry_name"] == (
+        "pto_persistent_dag_f32_executor"
+    )
+    callable_names = {item["callable"] for item in manifest["task_bodies"]}
+    assert {
+        "qwen_embedding_lookup",
+        "qwen_attention_qkv",
+        "qwen_attention_o",
+        "qwen_mlp_gate_up",
+        "qwen_logits",
+    } <= callable_names
+    qkv = next(
+        item
+        for item in manifest["task_bodies"]
+        if item["callable"] == "qwen_attention_qkv"
+    )
+    assert qkv["consumes_fields"] == ["a", "b", "out", "c", "d", "tensor_args"]
+    assert {"key_cache", "value_cache"} <= set(qkv["consumes_roles"])
+    assert manifest["coverage"]["token_fields"] == ["a", "b", "out"]
+    assert manifest["coverage"]["kv_fields"] == ["c", "d"]
+    assert manifest["coverage"]["kv_write_policy"] == (
+        "current_abi_exposes_c_d_as_const_float_pointers"
+    )
+    assert manifest["coverage"]["weight_fields"] == ["tensor_args"]
+    source = manifest["rendered_source"]["preview"]
+    assert "__device__ void pto_task_qwen_attention_qkv" in source
+    assert "task->c" in source
+    assert "task->d" in source
+    assert "task->tensor_args[0]" in source
+    assert "generated_qwen_kernel_bodies" in manifest["implemented_contracts"]
+    assert manifest["remaining_runtime_gaps"] == [
+        "numerically_correct_qwen_kernel_bodies",
+        "mutable_kv_cache_writeback_abi",
         "cuda_live_decode_loop_execution",
         "viewer_result_import",
     ]
@@ -2008,6 +2079,12 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
+        == "tmp/cuda-backend/pto-serving-task-bodies-2026-06-01/qwen-persistent-task-bodies.json"
+        for ref in claim["current_evidence_refs"]
+    )
+    assert any(
+        ref.get("kind") == "raw_artifact"
+        and ref.get("path")
         == "tmp/cuda-backend/pto-serving-scaffold-2026-06-01/qwen-serving-scaffold.json"
         for ref in claim["current_evidence_refs"]
     )
@@ -2040,6 +2117,7 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "qwen_persistent_weight_args",
         "qwen_persistent_weight_materialization",
         "qwen_resident_weight_table",
+        "qwen_persistent_task_bodies",
         "local Qwen shard placement",
         "actual safetensors shape/dtype validation for 399 tensors",
         "stable CUDA weight binding slots and file offsets",
@@ -2055,6 +2133,8 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
             "preserving tensor_args for weights",
             "dry-run KV-cache key/value pointer binding",
             "persistent DAG c/d",
+            "generated persistent-device Qwen task-body source",
+            "mutable KV-cache writeback ABI",
             "decode-loop execution",
     ]:
         assert phrase in action

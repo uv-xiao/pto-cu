@@ -54,8 +54,8 @@ PYTHONPATH=$PWD:$PWD/python \
 ```
 
 Expected output: command exits 0; output JSON records `status=partial` until
-Qwen tokenizer, weight loader, KV-cache lifecycle, decode-loop runner, and
-full-serving viewer import stages exist.
+live Qwen tokenizer, weight loader, KV-cache lifecycle, task bodies,
+decode-loop execution, and full-serving viewer import stages are complete.
 
 This is not a benchmark result. It is the repo-owned lifecycle scaffold for
 the PTO `Qwen/Qwen3-8B` full-serving work queue item.
@@ -121,6 +121,29 @@ The artifact composes token pointer, KV-cache, and resident-weight owners into
 a decode-loop submission plan. It records owner open/materialize/submit/close
 ordering plus output-token accounting. It still does not execute generated
 Qwen kernels or launch a `cuda_live` decode loop.
+
+## Qwen Persistent Task Bodies
+
+- Benchmark id: `llm_serving_decode`
+- Runtime: `cuda/persistent_device`
+- Method id: `pto_persistent_device`
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_persistent_task_bodies.py \
+  --output-json tmp/cuda-backend/pto-serving-task-bodies/qwen-persistent-task-bodies.json \
+  --output-source tmp/cuda-backend/pto-serving-task-bodies/qwen-persistent-task-bodies.cu
+```
+
+Expected output: command exits 0; output JSON records generated
+persistent-device Qwen task bodies and token, KV-cache, and weight field
+consumption evidence.
+
+The artifact renders through the existing persistent DAG source generator.
+It is source-level integration evidence, not a numerically correct Qwen kernel
+implementation. The current ABI exposes `c` and `d` as `const float *`, so
+mutable KV-cache writeback remains a runtime ABI gap before `cuda_live`
+decode-loop execution.
 
 ## Qwen Prompt Accounting
 

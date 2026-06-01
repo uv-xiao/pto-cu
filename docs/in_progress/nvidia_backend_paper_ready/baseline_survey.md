@@ -284,8 +284,12 @@ records the symbolic `resident_weight_ptrs[slot_id]` source for each weight
 argument. The resident table artifact adds a process-scoped owner that keeps
 399 dry-run pointers live through materialization and frees all of them after
 close. The decode-loop runner artifact orders those owners around persistent
-DAG submission and output-token accounting. It still does not run generated
-Qwen kernel bodies or execute a `cuda_live` decode loop for `Qwen/Qwen3-8B`.
+DAG submission and output-token accounting. The task-body artifact renders
+source-level Qwen persistent-device callables through the existing persistent
+DAG source generator and records token, KV-cache, and weight field
+consumption. It still does not provide numerically correct Qwen kernels,
+mutable KV-cache writeback through the current `const float *` `c`/`d` ABI, or
+a `cuda_live` decode loop for `Qwen/Qwen3-8B`.
 
 ## Next Dispatcher Actions
 

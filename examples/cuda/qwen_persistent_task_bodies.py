@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""Emit Qwen persistent-device task body source-generation evidence."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+
+THIS_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(THIS_DIR))
+
+from qwen_persistent_task_bodies_impl.lifecycle import (  # noqa: E402
+    build_task_body_manifest,
+    repo_relative,
+    write_json,
+    write_source,
+)
+
+
+EVIDENCE_SYMBOLS = [
+    "pto_qwen_persistent_task_bodies",
+    "generated_qwen_kernel_bodies",
+    "qwen_kernel_token_field_consumption",
+    "qwen_kernel_kv_field_consumption",
+    "qwen_kernel_weight_tensor_arg_consumption",
+]
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--num-hidden-layers", type=int, default=36)
+    parser.add_argument("--output-json", type=Path)
+    parser.add_argument("--output-source", type=Path)
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    payload = build_task_body_manifest(num_hidden_layers=args.num_hidden_layers)
+    if args.output_source:
+        payload["rendered_source"]["artifact"] = write_source(args.output_source)
+    if args.output_json:
+        write_json(args.output_json, payload)
+        print(repo_relative(args.output_json))
+    else:
+        print(json.dumps(payload, indent=2, sort_keys=False))
+
+
+if __name__ == "__main__":
+    main()

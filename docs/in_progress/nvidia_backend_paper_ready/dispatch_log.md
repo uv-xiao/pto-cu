@@ -4513,3 +4513,38 @@ Follow-up tracked-state closure after user confirmation:
   DAG submission. Remaining PTO full-serving gaps are generated Qwen kernel
   bodies, token/KV consumption inside those kernels, `cuda_live` decode-loop
   execution, and viewer-result import.
+
+### 2026-06-01 - Qwen Persistent Task Body Source
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned Qwen
+  persistent task-body source generation for the PTO full-serving path.
+- Exact Codex command or script invocation:
+  `qwen_persistent_task_bodies.py --output-json
+  tmp/cuda-backend/pto-serving-task-bodies-2026-06-01/qwen-persistent-task-bodies.json
+  --output-source
+  tmp/cuda-backend/pto-serving-task-bodies-2026-06-01/qwen-persistent-task-bodies.cu`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: source-level task bodies prove field
+  consumption only. The current persistent DAG ABI exposes `c` and `d` as
+  `const float *`, so mutable KV-cache writeback remains unresolved.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_persistent_task_bodies.py` did not exist; after
+  implementation the artifact reported `status=generated_task_bodies_ready`,
+  10 task bodies, and rendered source sha256
+  `89a292d05f63fa5a70442428f8329da114050e5bad8f3ee420bae6757c8f8875`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves generated Qwen
+  task-body source through the existing persistent DAG source generator and
+  records token, KV-cache, and weight argument field consumption. Remaining
+  PTO full-serving gaps are numerically correct Qwen kernels, mutable KV-cache
+  writeback ABI support, `cuda_live` decode-loop execution, and
+  viewer-result import.

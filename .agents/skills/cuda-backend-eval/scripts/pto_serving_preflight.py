@@ -412,6 +412,20 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_persistent_task_bodies",
+            "status": "pass"
+            if serving_scaffold.get("persistent_task_bodies", {}).get("status")
+            == "generated_task_bodies_ready"
+            else "fail",
+            "evidence": "examples/cuda/qwen_persistent_task_bodies.py",
+            "why": (
+                "Repo-owned task-body source generation renders Qwen "
+                "persistent-device callables through the existing persistent "
+                "DAG source generator and records token, KV-cache, and "
+                "weight tensor-arg field consumption."
+            ),
+        },
+        {
             "id": "qwen_model_loader_or_token_loop",
             "status": "fail",
             "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",
