@@ -450,7 +450,7 @@ evidence for the Qwen unit math source path:
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/qwen_unit_math_live.py \
-    --device 0 --arch compute_80 \
+    --device 0 --arch compute_80 --repeat-runs 3 \
     --output-json tmp/cuda-backend/pto-serving-unit-math-live-$(git rev-parse --short HEAD)/qwen-unit-math-live.json
 ```
 

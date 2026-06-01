@@ -24,6 +24,7 @@ EVIDENCE_SYMBOLS = [
     "pto_qwen_unit_math_live_execution",
     "qwen_unit_math_cuda_live_execution_plan",
     "qwen_unit_math_cuda_live_execution",
+    "qwen_unit_math_decode_loop_reuse_execution",
     "persistent_device_unit_math_dag_launch_plan",
 ]
 
@@ -34,6 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--arch", default="compute_80")
     parser.add_argument("--cache-root", type=Path)
     parser.add_argument("--build-runtime", action="store_true")
+    parser.add_argument("--repeat-runs", type=int, default=1)
     parser.add_argument("--plan-only", action="store_true")
     parser.add_argument("--output-json", type=Path)
     return parser.parse_args()
@@ -42,13 +44,14 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     if args.plan_only:
-        payload = build_unit_math_live_plan()
+        payload = build_unit_math_live_plan(repeat_runs=args.repeat_runs)
     else:
         payload = run_unit_math_live(
             device=args.device,
             arch=args.arch,
             cache_root=args.cache_root,
             build_runtime=args.build_runtime,
+            repeat_runs=args.repeat_runs,
         )
     if args.output_json:
         write_json(args.output_json, payload)

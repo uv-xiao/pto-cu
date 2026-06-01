@@ -25,11 +25,28 @@ def load_unit_math_live_module():
 def test_unit_math_live_plan_matches_oracle_contract():
     module = load_unit_math_live_module()
 
-    plan = module.build_unit_math_live_plan()
+    plan = module.build_unit_math_live_plan(repeat_runs=3)
 
     assert plan["kind"] == "pto_qwen_unit_math_live_execution_plan"
     assert plan["scope"] == "single_token_hidden4_reference"
     assert plan["dag"]["task_count"] == 4
+    assert plan["decode_loop"] == {
+        "repeat_runs": 3,
+        "planned_task_executions": 12,
+        "prepared_callable_reuse": "single_prepare_multiple_run_prepared",
+        "reset_between_runs": [
+            "fanin",
+            "ready_flags",
+            "completion_flags",
+            "counters",
+            "unit_outputs",
+        ],
+        "carried_between_runs": [
+            "hidden_state_from_previous_logits",
+            "weight_buffers",
+            "kv_cache_buffers",
+        ],
+    }
     assert plan["tasks"] == [
         "qwen_rmsnorm_input",
         "qwen_attention_qkv",
@@ -41,6 +58,11 @@ def test_unit_math_live_plan_matches_oracle_contract():
         -0.237688,
         0.302409,
         -0.378139,
+    ]
+    assert len(plan["decode_iterations"]) == 3
+    assert plan["decode_iterations"][0]["expected"] == plan["expected"]
+    assert plan["decode_iterations"][1]["inputs"]["hidden"] == plan["expected"][
+        "logits"
     ]
     assert "qwen_unit_math_cuda_live_execution_plan" in plan[
         "implemented_contracts"
@@ -117,6 +139,17 @@ def test_unit_math_live_importer_marks_result_as_diagnostic(tmp_path):
             "error_count": 0,
             "scheduler_processed_count": 4,
         },
+        "decode_loop_observations": [
+            {"timing_ns": {"host_wall": 7, "device_wall": 3}},
+            {"timing_ns": {"host_wall": 9, "device_wall": 4}},
+            {"timing_ns": {"host_wall": 8, "device_wall": 5}},
+        ],
+        "decode_loop_summary": {
+            "repeat_runs": 3,
+            "total_completed_count": 12,
+            "total_error_count": 0,
+            "total_scheduler_processed_count": 12,
+        },
         "max_abs_error": 0.0,
     }
     record = module.build_result_record(
@@ -129,8 +162,36 @@ def test_unit_math_live_importer_marks_result_as_diagnostic(tmp_path):
     assert record["method_id"] == "pto_persistent_device"
     assert record["statistic"]["kind"] == "pto_qwen_unit_math_live"
     assert record["statistic"]["serving_coverage"] == "diagnostic_unit_math"
+    assert record["statistic"]["sample_count"] == 3
+    assert record["statistic"]["host_wall_ns"] == 8
+    assert record["statistic"]["completed_count"] == 12
     assert "unit math" in record["inputs"]["shape"]
 
     results = {"result_records": []}
     merged = module.merge_result(results, record)
     assert merged["result_records"] == [record]
+
+
+def test_viewer_results_import_repeated_unit_math_as_diagnostic():
+    results = json.loads(
+        (VIEWER_ROOT / "data" / "results.json").read_text(encoding="utf-8")
+    )["result_records"]
+
+    row = next(
+        record
+        for record in results
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "pto_persistent_device"
+        and record["raw_artifact"]
+        == (
+            "tmp/cuda-backend/pto-serving-unit-math-live-2026-06-01/"
+            "qwen-unit-math-live.json"
+        )
+    )
+
+    assert row["statistic"]["serving_coverage"] == "diagnostic_unit_math"
+    assert row["statistic"]["sample_count"] == 3
+    assert row["statistic"]["repeat_runs"] == 3
+    assert row["statistic"]["completed_count"] == 12
+    assert "reused across 3" in row["inputs"]["repeat_policy"]
+    assert row["correctness"] == "pass"

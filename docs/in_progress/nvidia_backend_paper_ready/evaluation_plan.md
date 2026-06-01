@@ -205,9 +205,9 @@ The current raw artifacts are
 `tmp/cuda-backend/pto-serving-scaffold-2026-06-01/qwen-serving-scaffold.json`,
 and
 `tmp/cuda-backend/pto-serving-preflight-2026-06-01/pto-serving-preflight.json`.
-They prove the current viewer has controlled attention-tile proxy, diagnostic
-unit-math, and diagnostic microdecode loop rows for PTO serving-equivalent
-evidence, plus a partial runtime plan for the
+They prove the current viewer has controlled attention-tile proxy, repeated
+diagnostic unit-math, and diagnostic microdecode loop rows for PTO
+serving-equivalent evidence, plus a partial runtime plan for the
 Qwen3-8B KV-cache and task mapping, tokenizer-observed prompt counts, a
 host-side runtime token-buffer plan with padded target-length `input_ids` and
 `attention_mask`, CUDA token-buffer allocation/copy-back verification,
@@ -220,6 +220,8 @@ one controlled QKV proxy task launched live through `cuda/persistent_device`
 on A100 with zero scheduler errors and exact copied-back `out`/`c`/`d` values,
 one controlled QKV-to-logits proxy DAG launched live through
 `cuda/persistent_device` with dependency release across three tasks,
+one controlled unit-math DAG reused across three prepared submissions with
+12 completed task executions,
 one controlled repeated proxy decode loop that reuses a prepared callable
 across three `run_prepared` submissions while carrying mutable KV state,
 safetensors shard/tensor inventory, and the expected weight shape/dtype

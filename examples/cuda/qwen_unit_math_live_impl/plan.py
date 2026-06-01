@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any
 
@@ -18,8 +19,74 @@ CALLABLES = [
 ]
 
 
+def _round(values: list[float]) -> list[float]:
+    return [round(value, 6) for value in values]
+
+
+def _rmsnorm(hidden: list[float], weight: list[float]) -> list[float]:
+    mean_square = sum(value * value for value in hidden) / len(hidden)
+    scale = 1.0 / math.sqrt(mean_square + 1e-6)
+    return [value * scale * weight[index] for index, value in enumerate(hidden)]
+
+
+def _unit_expected(hidden: list[float], inputs: dict[str, Any]) -> dict[str, list[float]]:
+    rmsnorm = _rmsnorm(hidden, inputs["norm_weight"])
+    key_cache = [
+        rmsnorm[index] * inputs["k_proj_weight"][index]
+        for index in range(4)
+    ]
+    value_cache = [
+        rmsnorm[index] * inputs["v_proj_weight"][index]
+        for index in range(4)
+    ]
+    silu_gate = [
+        gate / (1.0 + math.exp(-gate))
+        for gate in inputs["gate_proj_weight"]
+    ]
+    mlp = [
+        silu_gate[index] * inputs["up_proj_weight"][index]
+        for index in range(4)
+    ]
+    logits = [
+        mlp[index] * inputs["lm_head_weight"][index]
+        for index in range(4)
+    ]
+    return {
+        "rmsnorm": _round(rmsnorm),
+        "attention_context": _round(value_cache),
+        "key_cache": _round(key_cache),
+        "value_cache": _round(value_cache),
+        "mlp_swiglu": _round(mlp),
+        "logits": _round(logits),
+    }
+
+
+def _decode_iterations(
+    *,
+    repeat_runs: int,
+    initial_hidden: list[float],
+    inputs: dict[str, Any],
+) -> list[dict[str, Any]]:
+    if repeat_runs < 1:
+        raise ValueError("repeat_runs must be positive")
+    hidden = list(initial_hidden)
+    iterations = []
+    for index in range(repeat_runs):
+        expected = _unit_expected(hidden, inputs)
+        iterations.append(
+            {
+                "iteration": index,
+                "inputs": {"hidden": _round(hidden)},
+                "expected": expected,
+            }
+        )
+        hidden = list(expected["logits"])
+    return iterations
+
+
 def build_unit_math_live_plan(
     *,
+    repeat_runs: int = 1,
     scheduler_blocks: int = 1,
     worker_blocks: int = 1,
     queue_capacity: int = 8,
@@ -27,6 +94,21 @@ def build_unit_math_live_plan(
 ) -> dict[str, Any]:
     oracle = build_qwen_unit_math_oracle()
     steps = oracle["steps"]
+    inputs = {
+        "hidden": oracle["inputs"]["hidden"],
+        "norm_weight": oracle["inputs"]["norm_weight"],
+        "q_proj_weight": [0.5, 0.5, 0.5, 0.5],
+        "k_proj_weight": [0.25, 0.25, 0.25, 0.25],
+        "v_proj_weight": [0.4, 0.3, 0.3, 0.2],
+        "gate_proj_weight": steps["gate_projection"],
+        "up_proj_weight": steps["up_projection"],
+        "lm_head_weight": [3.4, 4.4, 5.0, 6.0],
+    }
+    decode_iterations = _decode_iterations(
+        repeat_runs=repeat_runs,
+        initial_hidden=inputs["hidden"],
+        inputs=inputs,
+    )
     return {
         "kind": "pto_qwen_unit_math_live_execution_plan",
         "status": "ready_to_run",
@@ -47,24 +129,26 @@ def build_unit_math_live_plan(
                 ["qwen_mlp_gate_up", "qwen_logits"],
             ],
         },
-        "inputs": {
-            "hidden": oracle["inputs"]["hidden"],
-            "norm_weight": oracle["inputs"]["norm_weight"],
-            "q_proj_weight": [0.5, 0.5, 0.5, 0.5],
-            "k_proj_weight": [0.25, 0.25, 0.25, 0.25],
-            "v_proj_weight": [0.4, 0.3, 0.3, 0.2],
-            "gate_proj_weight": steps["gate_projection"],
-            "up_proj_weight": steps["up_projection"],
-            "lm_head_weight": [3.4, 4.4, 5.0, 6.0],
+        "decode_loop": {
+            "repeat_runs": repeat_runs,
+            "planned_task_executions": repeat_runs * len(CALLABLES),
+            "prepared_callable_reuse": "single_prepare_multiple_run_prepared",
+            "reset_between_runs": [
+                "fanin",
+                "ready_flags",
+                "completion_flags",
+                "counters",
+                "unit_outputs",
+            ],
+            "carried_between_runs": [
+                "hidden_state_from_previous_logits",
+                "weight_buffers",
+                "kv_cache_buffers",
+            ],
         },
-        "expected": {
-            "rmsnorm": steps["rmsnorm_input"],
-            "attention_context": steps["attention_context"],
-            "key_cache": steps["key_cache_after"],
-            "value_cache": steps["value_cache_after"],
-            "mlp_swiglu": steps["mlp_swiglu"],
-            "logits": steps["logits"],
-        },
+        "decode_iterations": decode_iterations,
+        "inputs": inputs,
+        "expected": decode_iterations[0]["expected"],
         "implemented_contracts": [
             "qwen_unit_math_cuda_live_execution_plan",
             "persistent_device_unit_math_dag_launch_plan",

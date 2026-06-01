@@ -6494,20 +6494,21 @@
         "cuda_toolkit": "see raw artifact",
         "clock_policy": "not recorded in current snapshot"
       },
-      "commit": "4ff7b9b5",
+      "commit": "009de8f2",
       "inputs": {
         "shape": "Qwen/Qwen3-8B unit math, hidden=4, RMSNorm->QKV->SwiGLU->logits",
         "dtype": "float32 controlled unit arithmetic",
-        "repeat_policy": "single live A100 persistent-device DAG run"
+        "repeat_policy": "single prepared callable reused across 3 unit-math run_prepared submissions"
       },
       "statistic": {
         "kind": "pto_qwen_unit_math_live",
-        "sample_count": 1,
-        "host_wall_ns": 707621,
-        "device_wall_ns": 37888,
-        "completed_count": 4,
+        "sample_count": 3,
+        "host_wall_ns": 48836,
+        "device_wall_ns": 39936,
+        "repeat_runs": 3,
+        "completed_count": 12,
         "error_count": 0,
-        "scheduler_processed_count": 4,
+        "scheduler_processed_count": 12,
         "max_abs_error": 0.0,
         "task_count": 4,
         "serving_coverage": "diagnostic_unit_math"

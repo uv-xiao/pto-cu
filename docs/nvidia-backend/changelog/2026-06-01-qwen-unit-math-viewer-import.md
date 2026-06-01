@@ -7,6 +7,8 @@
 - Imported
   `tmp/cuda-backend/pto-serving-unit-math-live-2026-06-01/qwen-unit-math-live.json`
   as a `llm_serving_decode` PTO persistent-device diagnostic row.
+- The imported row now reports `sample_count=3`, `repeat_runs=3`, and
+  `completed_count=12` from the repeated live artifact.
 - Refreshed the paper-evaluation matrix, readiness audit, and work queue so
   reviewers can see that unit-math viewer evidence is present but not
   full-serving evidence.

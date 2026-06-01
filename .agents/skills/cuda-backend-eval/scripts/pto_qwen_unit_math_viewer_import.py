@@ -45,14 +45,50 @@ def current_commit() -> str:
     return result.stdout.strip()
 
 
+def median_int(values: list[int]) -> int:
+    ordered = sorted(values)
+    return ordered[len(ordered) // 2]
+
+
 def build_result_record(
     payload: dict[str, Any],
     *,
     raw_artifact: str,
     commit: str,
 ) -> dict[str, Any]:
-    timing = payload["timing_ns"]
-    counters = payload["scheduler_counters"]
+    observations = payload.get("decode_loop_observations", [])
+    summary = payload.get("decode_loop_summary", {})
+    if observations:
+        host_times = [
+            int(item["timing_ns"]["host_wall"])
+            for item in observations
+        ]
+        device_times = [
+            int(item["timing_ns"]["device_wall"])
+            for item in observations
+        ]
+        sample_count = int(summary["repeat_runs"])
+        host_wall_ns = median_int(host_times)
+        device_wall_ns = median_int(device_times)
+        completed_count = int(summary["total_completed_count"])
+        error_count = int(summary["total_error_count"])
+        scheduler_processed_count = int(
+            summary["total_scheduler_processed_count"]
+        )
+        repeat_policy = (
+            f"single prepared callable reused across {sample_count} "
+            "unit-math run_prepared submissions"
+        )
+    else:
+        timing = payload["timing_ns"]
+        counters = payload["scheduler_counters"]
+        sample_count = 1
+        host_wall_ns = int(timing["host_wall"])
+        device_wall_ns = int(timing["device_wall"])
+        completed_count = int(counters["completed_count"])
+        error_count = int(counters["error_count"])
+        scheduler_processed_count = int(counters["scheduler_processed_count"])
+        repeat_policy = "single live A100 persistent-device DAG run"
     device = payload["device"]
     return {
         "benchmark_id": "llm_serving_decode",
@@ -72,16 +108,17 @@ def build_result_record(
                 "RMSNorm->QKV->SwiGLU->logits"
             ),
             "dtype": "float32 controlled unit arithmetic",
-            "repeat_policy": "single live A100 persistent-device DAG run",
+            "repeat_policy": repeat_policy,
         },
         "statistic": {
             "kind": "pto_qwen_unit_math_live",
-            "sample_count": 1,
-            "host_wall_ns": int(timing["host_wall"]),
-            "device_wall_ns": int(timing["device_wall"]),
-            "completed_count": int(counters["completed_count"]),
-            "error_count": int(counters["error_count"]),
-            "scheduler_processed_count": int(counters["scheduler_processed_count"]),
+            "sample_count": sample_count,
+            "host_wall_ns": host_wall_ns,
+            "device_wall_ns": device_wall_ns,
+            "repeat_runs": sample_count,
+            "completed_count": completed_count,
+            "error_count": error_count,
+            "scheduler_processed_count": scheduler_processed_count,
             "max_abs_error": float(payload["max_abs_error"]),
             "task_count": int(payload["dag"]["task_count"]),
             "serving_coverage": "diagnostic_unit_math",

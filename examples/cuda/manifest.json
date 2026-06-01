@@ -140,12 +140,13 @@
       "benchmark_id": "llm_serving_decode",
       "method_id": "pto_persistent_device",
       "runtime": "cuda/persistent_device",
-      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_unit_math_live.py --device 0 --arch compute_80 --output-json tmp/cuda-backend/pto-serving-unit-math-live/qwen-unit-math-live.json",
-      "expected_output": "command exits 0 on a CUDA host; output JSON records status=pass for a Qwen unit-math DAG launched through cuda/persistent_device.",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_unit_math_live.py --device 0 --arch compute_80 --repeat-runs 3 --output-json tmp/cuda-backend/pto-serving-unit-math-live/qwen-unit-math-live.json",
+      "expected_output": "command exits 0 on a CUDA host; output JSON records status=pass for a Qwen unit-math DAG launched repeatedly through cuda/persistent_device with one prepared callable.",
       "evidence_symbols": [
         "pto_qwen_unit_math_live_execution",
         "qwen_unit_math_cuda_live_execution_plan",
         "qwen_unit_math_cuda_live_execution",
+        "qwen_unit_math_decode_loop_reuse_execution",
         "persistent_device_unit_math_dag_launch_plan"
       ]
     },
