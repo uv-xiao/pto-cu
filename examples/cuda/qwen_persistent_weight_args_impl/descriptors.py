@@ -1,0 +1,166 @@
+"""Qwen persistent task descriptor construction."""
+
+from __future__ import annotations
+
+from typing import Any
+
+
+def layer_tensor(layer: int, suffix: str) -> str:
+    return f"model.layers.{layer}.{suffix}.weight"
+
+
+def tensor_arg_records(
+    tensors: list[str],
+    bindings: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    records = []
+    for index, tensor in enumerate(tensors):
+        item = bindings.get(tensor)
+        if item is None:
+            records.append(
+                {
+                    "arg": f"tensor_args[{index}]",
+                    "tensor": tensor,
+                    "status": "missing_weight_binding",
+                }
+            )
+            continue
+        records.append(
+            {
+                "arg": f"tensor_args[{index}]",
+                "slot_id": item["slot_id"],
+                "tensor": tensor,
+            }
+        )
+    return records
+
+
+def descriptor(
+    *,
+    descriptor_id: str,
+    callable_name: str,
+    phase: str,
+    tensors: list[str],
+    bindings: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    tensor_args = tensor_arg_records(tensors, bindings)
+    missing = [
+        item["tensor"]
+        for item in tensor_args
+        if item.get("status") == "missing_weight_binding"
+    ]
+    return {
+        "id": descriptor_id,
+        "callable": callable_name,
+        "phase": phase,
+        "tensor_arg_count": len(tensor_args),
+        "tensor_args": tensor_args,
+        "status": "ready" if not missing else "missing_weight_binding",
+        "missing_tensors": missing,
+    }
+
+
+def layer_descriptors(
+    *,
+    layer: int,
+    bindings: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    prefix = f"layer_{layer}"
+    return [
+        descriptor(
+            descriptor_id=f"{prefix}_input_norm",
+            callable_name="qwen_rmsnorm_input",
+            phase="per_layer_decode",
+            tensors=[layer_tensor(layer, "input_layernorm")],
+            bindings=bindings,
+        ),
+        descriptor(
+            descriptor_id=f"{prefix}_attention_qkv",
+            callable_name="qwen_attention_qkv",
+            phase="per_layer_decode",
+            tensors=[
+                layer_tensor(layer, "self_attn.q_proj"),
+                layer_tensor(layer, "self_attn.k_proj"),
+                layer_tensor(layer, "self_attn.v_proj"),
+            ],
+            bindings=bindings,
+        ),
+        descriptor(
+            descriptor_id=f"{prefix}_attention_qk_norm",
+            callable_name="qwen_attention_qk_norm",
+            phase="per_layer_decode",
+            tensors=[
+                layer_tensor(layer, "self_attn.q_norm"),
+                layer_tensor(layer, "self_attn.k_norm"),
+            ],
+            bindings=bindings,
+        ),
+        descriptor(
+            descriptor_id=f"{prefix}_attention_o",
+            callable_name="qwen_attention_o",
+            phase="per_layer_decode",
+            tensors=[layer_tensor(layer, "self_attn.o_proj")],
+            bindings=bindings,
+        ),
+        descriptor(
+            descriptor_id=f"{prefix}_post_attention_norm",
+            callable_name="qwen_rmsnorm_post_attention",
+            phase="per_layer_decode",
+            tensors=[layer_tensor(layer, "post_attention_layernorm")],
+            bindings=bindings,
+        ),
+        descriptor(
+            descriptor_id=f"{prefix}_mlp_gate_up",
+            callable_name="qwen_mlp_gate_up",
+            phase="per_layer_decode",
+            tensors=[
+                layer_tensor(layer, "mlp.gate_proj"),
+                layer_tensor(layer, "mlp.up_proj"),
+            ],
+            bindings=bindings,
+        ),
+        descriptor(
+            descriptor_id=f"{prefix}_mlp_down",
+            callable_name="qwen_mlp_down",
+            phase="per_layer_decode",
+            tensors=[layer_tensor(layer, "mlp.down_proj")],
+            bindings=bindings,
+        ),
+    ]
+
+
+def build_task_descriptors(
+    *,
+    bindings: dict[str, dict[str, Any]],
+    num_hidden_layers: int,
+) -> list[dict[str, Any]]:
+    descriptors = [
+        descriptor(
+            descriptor_id="embedding_lookup",
+            callable_name="qwen_embedding_lookup",
+            phase="prefill_or_decode_input",
+            tensors=["model.embed_tokens.weight"],
+            bindings=bindings,
+        )
+    ]
+    for layer in range(num_hidden_layers):
+        descriptors.extend(layer_descriptors(layer=layer, bindings=bindings))
+    descriptors.extend(
+        [
+            descriptor(
+                descriptor_id="final_norm",
+                callable_name="qwen_final_norm",
+                phase="per_token_decode",
+                tensors=["model.norm.weight"],
+                bindings=bindings,
+            ),
+            descriptor(
+                descriptor_id="logits",
+                callable_name="qwen_logits",
+                phase="per_token_decode",
+                tensors=["lm_head.weight"],
+                bindings=bindings,
+            ),
+        ]
+    )
+    return descriptors
