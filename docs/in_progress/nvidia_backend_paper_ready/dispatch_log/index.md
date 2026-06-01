@@ -55,3 +55,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-22.md](entries/2026-06-02-part-22.md) | 1 | Qwen Serving Scaffold Split | Qwen Serving Scaffold Split |
 | [2026-06-02-part-23.md](entries/2026-06-02-part-23.md) | 1 | NVIDIA Review Guard Split | NVIDIA Review Guard Split |
 | [2026-06-02-part-24.md](entries/2026-06-02-part-24.md) | 1 | Legacy Capture History Split | Legacy Capture History Split |
+| [2026-06-02-part-25.md](entries/2026-06-02-part-25.md) | 1 | Benchmark Viewer JavaScript Split | Benchmark Viewer JavaScript Split |

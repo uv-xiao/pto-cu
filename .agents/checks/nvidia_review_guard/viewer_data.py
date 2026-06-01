@@ -17,7 +17,8 @@ def check_viewer_data() -> None:
     require_file(VIEWER_ROOT / "index.html")
     require_file(VIEWER_ROOT / "styles.css")
     require_file(VIEWER_ROOT / "viewer.js")
-    viewer_script = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
+    viewer_files = [VIEWER_ROOT / "viewer.js", *sorted((VIEWER_ROOT / "viewer").glob("*.js"))]
+    viewer_script = "\n".join(path.read_text(encoding="utf-8") for path in viewer_files)
     for needle in [
         "run.inputs.shape",
         "run.inputs.dtype",
@@ -28,6 +29,8 @@ def check_viewer_data() -> None:
         "paper_baseline_runs",
         "paperBaselineProbes",
         "paper_baseline_probes",
+        "paperBaselineEnvironmentPlans",
+        "paper_baseline_environment_plans",
         "paperBaselineRunReadiness",
         "paper_baseline_run_readiness",
         "servingWorkloads",
@@ -243,4 +246,3 @@ def check_viewer_data() -> None:
         fail("viewer full capture sample count must be 1350")
     if snapshot.get("compact_capture", {}).get("samples") != 108:
         fail("viewer compact capture sample count must be 108")
-

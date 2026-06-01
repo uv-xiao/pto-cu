@@ -5184,7 +5184,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "data" / "goal_progress.json").is_file()
     capture_imports_dir = VIEWER_ROOT / "data" / "capture_imports"
     assert (capture_imports_dir / "index.json").is_file()
-    viewer_js = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
+    viewer_files = [VIEWER_ROOT / "viewer.js", *sorted((VIEWER_ROOT / "viewer").glob("*.js"))]
+    viewer_js = "\n".join(path.read_text(encoding="utf-8") for path in viewer_files)
     for required in [
         "run.inputs.shape",
         "run.inputs.dtype",
