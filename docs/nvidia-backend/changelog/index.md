@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 ThunderKittens MHA capture script split](2026-06-02-thunderkittens-mha-capture-script-split.md)
 - [2026-06-02 paper baseline environment attempt script split](2026-06-02-paper-baseline-environment-attempt-script-split.md)
 - [2026-06-02 paper serving command plan script split](2026-06-02-paper-serving-command-plan-script-split.md)
 - [2026-06-02 paper baseline environment plan script split](2026-06-02-paper-baseline-environment-plan-script-split.md)

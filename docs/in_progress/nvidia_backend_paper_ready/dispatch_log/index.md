@@ -68,3 +68,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-35.md](entries/2026-06-02-part-35.md) | 1 | Paper Baseline Environment Plan Script Split | Paper Baseline Environment Plan Script Split |
 | [2026-06-02-part-36.md](entries/2026-06-02-part-36.md) | 1 | Paper Serving Command Plan Script Split | Paper Serving Command Plan Script Split |
 | [2026-06-02-part-37.md](entries/2026-06-02-part-37.md) | 1 | Paper Baseline Environment Attempt Script Split | Paper Baseline Environment Attempt Script Split |
+| [2026-06-02-part-38.md](entries/2026-06-02-part-38.md) | 1 | ThunderKittens MHA Capture Script Split | ThunderKittens MHA Capture Script Split |

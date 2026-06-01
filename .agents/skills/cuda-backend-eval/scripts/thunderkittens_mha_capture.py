@@ -5,214 +5,23 @@ from __future__ import annotations
 
 import argparse
 import json
-import statistics
-import subprocess
+import sys
 from pathlib import Path
-from typing import Any
 
 
-def percentile(values: list[float], fraction: float) -> float:
-    if not values:
-        raise ValueError("cannot compute percentile of empty values")
-    ordered = sorted(values)
-    index = min(len(ordered) - 1, max(0, round((len(ordered) - 1) * fraction)))
-    return ordered[index]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
-
-def read_gpu_metadata() -> dict[str, str]:
-    query = [
-        "nvidia-smi",
-        "--query-gpu=name,driver_version,compute_cap",
-        "--format=csv,noheader",
-    ]
-    try:
-        output = subprocess.check_output(query, text=True, stderr=subprocess.STDOUT)
-    except Exception as exc:  # pragma: no cover - depends on target machine.
-        return {
-            "gpu": "unknown",
-            "driver": "unknown",
-            "compute_target": "unknown",
-            "nvidia_smi_error": str(exc),
-        }
-    first = output.strip().splitlines()[0]
-    parts = [part.strip() for part in first.split(",")]
-    gpu = parts[0] if parts else "unknown"
-    driver = parts[1] if len(parts) > 1 else "unknown"
-    compute_cap = parts[2].replace(".", "") if len(parts) > 2 else "unknown"
-    compute_target = (
-        f"compute_{compute_cap}" if compute_cap != "unknown" else "unknown"
-    )
-    return {"gpu": gpu, "driver": driver, "compute_target": compute_target}
-
-
-def summarize_ns(samples_ns: list[float]) -> dict[str, float | int]:
-    return {
-        "sample_count": len(samples_ns),
-        "mean_ns": statistics.fmean(samples_ns),
-        "stdev_ns": statistics.stdev(samples_ns) if len(samples_ns) > 1 else 0.0,
-        "min_ns": min(samples_ns),
-        "max_ns": max(samples_ns),
-        "p50_ns": percentile(samples_ns, 0.50),
-        "p90_ns": percentile(samples_ns, 0.90),
-        "p99_ns": percentile(samples_ns, 0.99),
-    }
-
-
-def run_shape(
-    *,
-    torch: Any,
-    tk: Any,
-    b: int,
-    h: int,
-    n: int,
-    d: int,
-    causal: bool,
-    warmup: int,
-    repeats: int,
-    seed: int,
-) -> dict[str, Any]:
-    torch.manual_seed(seed)
-    q = torch.randn((b, h, n, d), dtype=torch.bfloat16, device="cuda")
-    k = torch.randn((b, h, n, d), dtype=torch.bfloat16, device="cuda")
-    v = torch.randn((b, h, n, d), dtype=torch.bfloat16, device="cuda")
-    torch.cuda.synchronize()
-
-    for _ in range(warmup):
-        tk.mha_forward(q, k, v, causal)
-    torch.cuda.synchronize()
-
-    samples_ms: list[float] = []
-    for _ in range(repeats):
-        start = torch.cuda.Event(enable_timing=True)
-        end = torch.cuda.Event(enable_timing=True)
-        start.record()
-        out, _ = tk.mha_forward(q, k, v, causal)
-        end.record()
-        torch.cuda.synchronize()
-        samples_ms.append(start.elapsed_time(end))
-
-    with torch.no_grad():
-        reference = torch.nn.functional.scaled_dot_product_attention(
-            q, k, v, is_causal=causal
-        )
-        max_abs_diff = (reference - out).abs().max().item()
-        mean_abs_diff = (reference - out).abs().float().mean().item()
-
-    samples_ns = [sample * 1_000_000 for sample in samples_ms]
-    summary = summarize_ns(samples_ns)
-    return {
-        "shape": {
-            "b": b,
-            "h": h,
-            "n": n,
-            "d": d,
-            "causal": causal,
-            "dtype": "bfloat16",
-        },
-        "correctness": {
-            "status": "pass",
-            "reference": "torch.nn.functional.scaled_dot_product_attention",
-            "max_abs_diff": max_abs_diff,
-            "mean_abs_diff": mean_abs_diff,
-        },
-        "latency": {
-            "warmup": warmup,
-            "repeats": repeats,
-            "samples_ns": samples_ns,
-            **summary,
-        },
-    }
-
-
-def normalized_gpu_name(gpu_metadata: dict[str, str]) -> str:
-    gpu = gpu_metadata["gpu"]
-    return "H200" if "H200" in gpu else gpu
-
-
-def build_raw_result_record(
-    *,
-    paper_baseline_run_id: str,
-    benchmark_id: str,
-    machine: str,
-    cuda_toolkit: str,
-    clock_policy: str,
-    gpu_metadata: dict[str, str],
-    shape: dict[str, Any],
-    latency: dict[str, Any],
-    correctness: dict[str, Any],
-    serving_workload_id: str = "",
-    prompt_tokens: int = 0,
-    decode_tokens: int = 0,
-) -> dict[str, Any]:
-    base_shape = (
-        "mha_h100,"
-        f"b={shape['b']},h={shape['h']},n={shape['n']},"
-        f"d={shape['d']},causal={shape['causal']}"
-    )
-    metrics: dict[str, Any] = {
-        "kind": "paper_baseline_capture",
-        "sample_count": latency["sample_count"],
-        "host_wall_ns": 0,
-        "device_wall_ns": int(latency["p50_ns"]),
-    }
-    if serving_workload_id:
-        if prompt_tokens <= 0 or decode_tokens <= 0:
-            raise ValueError("serving rows require prompt and decode tokens")
-        elapsed_ns = int(latency["p50_ns"])
-        decoded_tokens = int(shape["b"]) * decode_tokens
-        metrics = {
-            "kind": "paper_baseline_serving_tile_capture",
-            "serving_coverage": "controlled_attention_tile_proxy",
-            "sample_count": latency["sample_count"],
-            "host_wall_ns": elapsed_ns,
-            "device_wall_ns": elapsed_ns,
-            "end_to_end_latency_ns": elapsed_ns,
-            "time_to_first_token_ns": elapsed_ns,
-            "inter_token_latency_ns": elapsed_ns // decode_tokens,
-            "throughput_tokens_per_s": int(decoded_tokens * 1_000_000_000 / elapsed_ns),
-            "batch_size": int(shape["b"]),
-            "prompt_tokens": prompt_tokens,
-            "decode_tokens": decode_tokens,
-        }
-        base_shape = (
-            f"{serving_workload_id},{base_shape},"
-            f"prompt_tokens={prompt_tokens},decode_tokens={decode_tokens}"
-        )
-    return {
-        "paper_baseline_run_id": paper_baseline_run_id,
-        "benchmark_id": benchmark_id,
-        "hardware": {
-            "gpu": normalized_gpu_name(gpu_metadata),
-            "machine": machine,
-            "compute_target": gpu_metadata["compute_target"],
-            "driver": gpu_metadata["driver"],
-            "cuda_toolkit": cuda_toolkit,
-            "clock_policy": clock_policy,
-        },
-        "inputs": {
-            "shape": base_shape,
-            "dtype": shape["dtype"],
-            "repeat_policy": (
-                f"{latency['warmup']} warmup, {latency['repeats']} timed "
-                "CUDA-event repeats"
-            ),
-        },
-        "metrics": metrics,
-        "correctness": correctness["status"],
-    }
-
-
-def parse_shape(value: str) -> tuple[int, int, int, int]:
-    parts = value.lower().replace("x", ",").split(",")
-    if len(parts) != 4:
-        raise argparse.ArgumentTypeError("shape must be b,h,n,d")
-    try:
-        b, h, n, d = (int(part) for part in parts)
-    except ValueError as exc:
-        raise argparse.ArgumentTypeError("shape entries must be integers") from exc
-    if min(b, h, n, d) <= 0:
-        raise argparse.ArgumentTypeError("shape entries must be positive")
-    return b, h, n, d
+from thunderkittens_mha_capture_impl.gpu import read_gpu_metadata  # noqa: E402
+from thunderkittens_mha_capture_impl.records import (  # noqa: E402
+    build_raw_result_record,
+)
+from thunderkittens_mha_capture_impl.records import normalized_gpu_name  # noqa: E402
+from thunderkittens_mha_capture_impl.run import run_shape  # noqa: E402
+from thunderkittens_mha_capture_impl.shapes import parse_shape  # noqa: E402
+from thunderkittens_mha_capture_impl.stats import percentile  # noqa: E402
+from thunderkittens_mha_capture_impl.stats import summarize_ns  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
@@ -244,8 +53,6 @@ def main() -> None:
     if args.warmup < 0 or args.repeats <= 0:
         raise SystemExit("warmup must be non-negative and repeats must be positive")
 
-    import sys
-
     sys.path.insert(0, str(args.baseline_dir.resolve()))
     import torch  # type: ignore[import-not-found]
     import _C as tk  # type: ignore[import-not-found]
@@ -267,9 +74,6 @@ def main() -> None:
             seed=args.seed,
         )
         raw_shape_results.append(shape_result)
-        shape = shape_result["shape"]
-        latency = shape_result["latency"]
-        correctness = shape_result["correctness"]
         results.append(
             build_raw_result_record(
                 paper_baseline_run_id=args.paper_baseline_run_id,
@@ -278,9 +82,9 @@ def main() -> None:
                 cuda_toolkit=args.cuda_toolkit,
                 clock_policy=args.clock_policy,
                 gpu_metadata=gpu_metadata,
-                shape=shape,
-                latency=latency,
-                correctness=correctness,
+                shape=shape_result["shape"],
+                latency=shape_result["latency"],
+                correctness=shape_result["correctness"],
                 serving_workload_id=args.serving_workload_id,
                 prompt_tokens=args.prompt_tokens,
                 decode_tokens=args.decode_tokens,
