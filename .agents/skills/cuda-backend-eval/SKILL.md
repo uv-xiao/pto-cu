@@ -422,10 +422,11 @@ PYTHONPATH=$PWD:$PWD/python \
 ```
 
 Use `examples/cuda/qwen_runtime_input_binding.py` after prompt accounting to
-turn Qwen tokenizer output into concrete host-side `input_ids`,
-decode-capacity `output_ids`, prompt-alignment metadata, and scalar bindings.
-It is still a host-materialized artifact; CUDA token-buffer allocation and
-decode-loop consumption remain runtime gaps:
+turn Qwen tokenizer output into padded target-length host-side `input_ids`,
+matching `attention_mask`, decode-capacity `output_ids`,
+prompt-alignment metadata, and scalar bindings. It is still a host-materialized
+artifact; CUDA token-buffer allocation and decode-loop consumption remain
+runtime gaps:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

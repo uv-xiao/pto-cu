@@ -137,8 +137,8 @@ then frees pointers in reverse order. Its current checked artifact uses
 actual decode submission.
 The runtime input-binding artifact in
 `examples/cuda/qwen_runtime_input_binding.py` now converts tokenizer output
-into host-materialized `input_ids` and decode `output_ids` buffer descriptors
-for the MPK and VDCores serving policies.
+into padded target-length `input_ids`, matching `attention_mask`, and decode
+`output_ids` buffer descriptors for the MPK and VDCores serving policies.
 The current raw artifacts are
 `tmp/cuda-backend/pto-serving-lifecycle-b95ff321/qwen-serving-lifecycle-plan.json`,
 `tmp/cuda-backend/pto-serving-tokenizer-b95ff321/qwen-prompt-accounting.json`,
@@ -156,19 +156,19 @@ and
 They prove the current viewer has only the controlled attention-tile proxy row
 for PTO serving-equivalent evidence, plus a partial runtime plan for the
 Qwen3-8B KV-cache and task mapping, tokenizer-observed prompt counts, a
-host-side runtime token-buffer plan, safetensors shard/tensor inventory, and
-the expected weight shape/dtype contract. It also proves local Qwen shard
-placement and actual safetensors
+host-side runtime token-buffer plan with padded target-length `input_ids` and
+`attention_mask`, safetensors shard/tensor inventory, and the expected weight
+shape/dtype contract. It also proves local Qwen shard placement and actual
+safetensors
 shape/dtype validation for 399 tensors across five shards, plus full CUDA
 weight residency for all 399 tensors in a probe process and a persistent DAG
 weight-argument manifest that fits the current ABI. It also proves a
 ctypes-backed materialization plan for the resident weight pointer table and a
 dry-run owner lifecycle that binds 399 pointers and frees them after
-materialization. The repo-owned PTO CUDA path still lacks target prompt shape
-alignment, CUDA token-buffer allocation/copy, `cuda_live` decode-loop
-integration for that owner, real CUDA allocation and binding for the planned
-KV-cache layout, generated Qwen kernel bodies, decode-loop execution, and
-`viewer_result_import`, so no PTO
+materialization. The repo-owned PTO CUDA path still lacks CUDA token-buffer
+allocation/copy, `cuda_live` decode-loop integration for that owner, real CUDA
+allocation and binding for the planned KV-cache layout, generated Qwen kernel
+bodies, decode-loop execution, and `viewer_result_import`, so no PTO
 `Qwen/Qwen3-8B` full-serving row can be imported yet.
 Every serving baseline run record must reference one of these policy IDs and
 require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before

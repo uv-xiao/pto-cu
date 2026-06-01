@@ -3,9 +3,9 @@
 ## Code And Data Changed
 
 - Added `examples/cuda/qwen_runtime_input_binding.py`, which converts the Qwen
-  tokenizer output into host-materialized `input_ids` buffers, decode
-  `output_ids` capacity, prompt-alignment metadata, and scalar bindings for
-  the MPK and VDCores serving policies.
+  tokenizer output into padded target-length `input_ids`, matching
+  `attention_mask`, decode `output_ids` capacity, prompt-alignment metadata,
+  and scalar bindings for the MPK and VDCores serving policies.
 - Wired the runtime input-binding artifact into the Qwen serving scaffold,
   PTO serving preflight, CUDA example manifest, example README,
   benchmark-viewer matrix, in-progress paper-readiness docs, dispatch log, and
@@ -19,9 +19,10 @@
 ## Architecture Quality
 
 The runtime input binding separates tokenizer evidence from runtime buffer
-ownership. Prompt accounting still records tokenizer availability and prompt
-counts, while the new artifact records the concrete token IDs and buffer shapes
-that a persistent decode-loop runner must copy to CUDA memory.
+ownership. Prompt accounting still records tokenizer availability and observed
+prompt counts, while the new artifact records the padded token IDs, attention
+masks, and buffer shapes that a persistent decode-loop runner must copy to
+CUDA memory.
 
 The artifact deliberately stops at `host_materialized_not_cuda_allocated`.
 This makes the remaining boundary explicit: the decode-loop runner still has
@@ -39,10 +40,10 @@ PYTHONPATH=$PWD:$PWD/python \
 
 Result: `status=runtime_input_binding_plan_ready` with offline
 `Qwen2TokenizerFast`; both target serving policies have `input_ids_buffer`,
-`output_ids_buffer`, prompt-token checksums, batch-size ladders, and
-decode-token capacities. The observed chat prompt has 18 tokens, so the MPK
-64-token and VDCores 128-token paper policies still require target prompt
-shape alignment before full-serving rows can be imported.
+`attention_mask_buffer`, `output_ids_buffer`, prompt-token checksums,
+batch-size ladders, and decode-token capacities. The observed chat prompt has
+18 tokens, so the MPK 64-token and VDCores 128-token paper policies are padded
+to target length before CUDA allocation.
 
 The focused TDD selector first failed because the runtime input-binding script
 did not exist; after implementation the selected runtime input-binding,
@@ -50,7 +51,6 @@ preflight, and scaffold tests passed.
 
 ## Remaining Gaps
 
-- Resolve target prompt shape alignment for the paper workload rows.
 - Allocate CUDA token buffers, copy `input_ids`, and pass those buffers to the
   persistent decode loop.
 - Bind real CUDA KV-cache buffers, run the resident weight table in

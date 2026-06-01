@@ -797,16 +797,26 @@ def test_qwen_runtime_input_binding_materializes_token_buffers():
     mpk = records["mpk_offline_decode"]
     assert mpk["prompt_token_ids"][:3] == [0, 1, 2]
     assert mpk["prompt_token_count"] > 0
+    assert mpk["target_prompt_alignment"]["status"] == "padded_to_target"
+    assert mpk["runtime_prompt_token_count"] == mpk["target_prompt_tokens"]
     assert mpk["input_ids_buffer"]["dtype"] == "int32"
     assert mpk["input_ids_buffer"]["shape"] == [
         max(mpk["batch_sizes"]),
-        mpk["prompt_token_count"],
+        mpk["target_prompt_tokens"],
+    ]
+    assert mpk["attention_mask_buffer"]["shape"] == [
+        max(mpk["batch_sizes"]),
+        mpk["target_prompt_tokens"],
     ]
     assert mpk["output_ids_buffer"]["shape"] == [
         max(mpk["batch_sizes"]),
         mpk["decode_tokens"],
     ]
+    assert mpk["scalar_bindings"]["first_decode_position"] == (
+        mpk["target_prompt_tokens"]
+    )
     assert mpk["device_binding_state"] == "host_materialized_not_cuda_allocated"
+    assert "target_prompt_shape_alignment" not in binding["remaining_runtime_gaps"]
     assert "cuda_token_buffer_allocation" in binding["remaining_runtime_gaps"]
     assert "decode_loop_consumes_token_ids" in binding["remaining_runtime_gaps"]
 
@@ -1642,8 +1652,8 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "persistent DAG tensor_args manifest",
         "resident_weight_ptrs[slot_id]",
         "process-scoped resident weight table owner",
-        "host-materialized input_ids/output_ids buffer plans",
-        "target prompt shape alignment",
+        "padded target-length input_ids",
+        "attention_mask",
         "CUDA token-buffer allocation",
         "partial KV-cache lifecycle plan",
         "decode-loop execution",

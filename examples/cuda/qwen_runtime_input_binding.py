@@ -25,6 +25,7 @@ MODEL_REVISION = "d117af2f304f02a8647f88fe05b61cfb405a1d9e"
 EVIDENCE_SYMBOLS = [
     "pto_qwen_runtime_input_binding",
     "tokenizer_to_runtime_input_ids",
+    "attention_mask_buffer",
     "runtime_token_buffer_plan",
     "decode_output_buffer_plan",
 ]
@@ -87,6 +88,47 @@ def buffer_descriptor(
     }
 
 
+def tokenizer_pad_token_id(tokenizer: Any) -> int:
+    pad_token_id = getattr(tokenizer, "pad_token_id", None)
+    if isinstance(pad_token_id, int):
+        return pad_token_id
+    eos_token_id = getattr(tokenizer, "eos_token_id", None)
+    if isinstance(eos_token_id, int):
+        return eos_token_id
+    return 0
+
+
+def aligned_prompt_tokens(
+    *,
+    token_ids: list[int],
+    target_prompt_tokens: int,
+    pad_token_id: int,
+) -> tuple[list[int], list[int], dict[str, Any]]:
+    observed = len(token_ids)
+    if observed == target_prompt_tokens:
+        status = "exact"
+        runtime_ids = list(token_ids)
+    elif observed < target_prompt_tokens:
+        status = "padded_to_target"
+        runtime_ids = token_ids + [pad_token_id] * (target_prompt_tokens - observed)
+    else:
+        status = "requires_regenerated_prompt"
+        runtime_ids = list(token_ids)
+    attention_mask = [1] * observed + [0] * max(target_prompt_tokens - observed, 0)
+    return (
+        runtime_ids,
+        attention_mask,
+        {
+            "status": status,
+            "observed_prompt_tokens": observed,
+            "target_prompt_tokens": target_prompt_tokens,
+            "runtime_prompt_tokens": len(runtime_ids),
+            "delta_tokens": target_prompt_tokens - observed,
+            "pad_token_id": pad_token_id if status == "padded_to_target" else None,
+        },
+    )
+
+
 def workload_records(
     *,
     tokenizer: Any,
@@ -111,7 +153,13 @@ def workload_records(
         max_batch = max(batch_sizes) if batch_sizes else 0
         decode_tokens = int(decode_policy.get("decode_tokens", 0))
         target_prompt_tokens = int(prompt_policy.get("target_prompt_tokens", 0))
-        repeated_input_ids = token_ids * max_batch
+        runtime_ids, attention_mask, alignment = aligned_prompt_tokens(
+            token_ids=token_ids,
+            target_prompt_tokens=target_prompt_tokens,
+            pad_token_id=tokenizer_pad_token_id(tokenizer),
+        )
+        repeated_input_ids = runtime_ids * max_batch
+        repeated_attention_mask = attention_mask * max_batch
         output_ids = [-1] * max_batch * decode_tokens
         records.append(
             {
@@ -121,17 +169,22 @@ def workload_records(
                 "prompt_token_count": len(token_ids),
                 "prompt_token_ids": token_ids,
                 "prompt_token_checksum": token_checksum(token_ids),
-                "target_prompt_alignment": target_prompt_alignment(
-                    observed=len(token_ids),
-                    target=target_prompt_tokens,
-                ),
+                "runtime_prompt_token_count": len(runtime_ids),
+                "runtime_prompt_token_ids": runtime_ids,
+                "target_prompt_alignment": alignment,
                 "decode_tokens": decode_tokens,
                 "batch_sizes": batch_sizes,
                 "input_ids_buffer": buffer_descriptor(
                     name="input_ids",
                     dtype="int32",
-                    shape=[max_batch, len(token_ids)],
+                    shape=[max_batch, len(runtime_ids)],
                     values=repeated_input_ids,
+                ),
+                "attention_mask_buffer": buffer_descriptor(
+                    name="attention_mask",
+                    dtype="int32",
+                    shape=[max_batch, len(attention_mask)],
+                    values=repeated_attention_mask,
                 ),
                 "output_ids_buffer": buffer_descriptor(
                     name="output_ids",
@@ -141,30 +194,15 @@ def workload_records(
                     initializer=-1,
                 ),
                 "scalar_bindings": {
-                    "prompt_token_count": len(token_ids),
+                    "prompt_token_count": len(runtime_ids),
                     "decode_tokens": decode_tokens,
                     "max_batch_size": max_batch,
-                    "first_decode_position": len(token_ids),
+                    "first_decode_position": len(runtime_ids),
                 },
                 "device_binding_state": "host_materialized_not_cuda_allocated",
             }
         )
     return records
-
-
-def target_prompt_alignment(*, observed: int, target: int) -> dict[str, Any]:
-    if observed == target:
-        status = "exact"
-    elif observed < target:
-        status = "requires_padding_or_regenerated_prompt"
-    else:
-        status = "requires_truncation_or_regenerated_prompt"
-    return {
-        "status": status,
-        "observed_prompt_tokens": observed,
-        "target_prompt_tokens": target,
-        "delta_tokens": target - observed,
-    }
 
 
 def build_runtime_input_binding(
@@ -201,7 +239,8 @@ def build_runtime_input_binding(
         serving_workloads=serving_workloads,
     )
     has_target_mismatch = any(
-        item["target_prompt_alignment"]["status"] != "exact" for item in records
+        item["target_prompt_alignment"]["status"] == "requires_regenerated_prompt"
+        for item in records
     )
     gaps = [
         "cuda_token_buffer_allocation",
@@ -222,6 +261,7 @@ def build_runtime_input_binding(
         "workload_records": records,
         "implemented_contracts": [
             "tokenizer_to_runtime_input_ids",
+            "attention_mask_buffer",
             "runtime_token_buffer_plan",
             "decode_output_buffer_plan",
             "batch_repetition_policy",

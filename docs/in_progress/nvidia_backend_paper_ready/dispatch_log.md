@@ -4348,12 +4348,13 @@ Follow-up tracked-state closure after user confirmation:
   `examples/cuda/qwen_runtime_input_binding.py` did not exist; after
   implementation the selected runtime input-binding, preflight, and scaffold
   tests passed. The real artifact reports
-  `status=runtime_input_binding_plan_ready` and records input/output token
-  buffer descriptors for both paper serving policies.
+  `status=runtime_input_binding_plan_ready` and records padded target-length
+  input, attention-mask, and output token-buffer descriptors for both paper
+  serving policies.
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: the branch now proves tokenizer output
-  can be converted into concrete runtime `input_ids` and decode `output_ids`
-  buffer plans. The remaining PTO full-serving gaps are target prompt shape
-  alignment, CUDA token-buffer allocation/copy, `cuda_live` decode-loop
-  integration for weights, KV-cache allocation and binding, Qwen kernel
-  generation, decode-loop execution, and viewer-result import.
+  can be converted into padded target-length runtime `input_ids`, matching
+  `attention_mask`, and decode `output_ids` buffer plans. The remaining PTO
+  full-serving gaps are CUDA token-buffer allocation/copy, `cuda_live`
+  decode-loop integration for weights, KV-cache allocation and binding, Qwen
+  kernel generation, decode-loop execution, and viewer-result import.

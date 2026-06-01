@@ -88,10 +88,11 @@
       "method_id": "pto_persistent_device",
       "runtime": "cuda/persistent_device",
       "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_runtime_input_binding.py --mode offline --output-json tmp/cuda-backend/pto-serving-input-binding/qwen-runtime-input-binding.json",
-      "expected_output": "command exits 0; output JSON records concrete Qwen input_ids token buffers, decode output_ids capacity, prompt alignment status, and scalar bindings for the MPK and VDCores serving policies.",
+      "expected_output": "command exits 0; output JSON records padded target-length Qwen input_ids, matching attention_mask, decode output_ids capacity, prompt alignment status, and scalar bindings for the MPK and VDCores serving policies.",
       "evidence_symbols": [
         "pto_qwen_runtime_input_binding",
         "tokenizer_to_runtime_input_ids",
+        "attention_mask_buffer",
         "runtime_token_buffer_plan",
         "decode_output_buffer_plan"
       ]

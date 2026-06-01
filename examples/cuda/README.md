@@ -117,14 +117,15 @@ PYTHONPATH=$PWD:$PWD/python \
   --output-json tmp/cuda-backend/pto-serving-input-binding/qwen-runtime-input-binding.json
 ```
 
-Expected output: command exits 0; output JSON records concrete Qwen
-`input_ids` token buffers, decode `output_ids` capacity, prompt alignment
-status, and scalar bindings for the MPK and VDCores serving policies.
+Expected output: command exits 0; output JSON records padded target-length
+Qwen `input_ids`, matching `attention_mask`, decode `output_ids` capacity,
+prompt alignment status, and scalar bindings for the MPK and VDCores serving
+policies.
 
 This is a host-side runtime input artifact, not a CUDA allocation. It turns
-the tokenizer output into a `runtime_token_buffer_plan` and
-`decode_output_buffer_plan`; CUDA token-buffer allocation and decode-loop
-consumption remain runtime gaps.
+the tokenizer output into `runtime_token_buffer_plan`,
+`attention_mask_buffer`, and `decode_output_buffer_plan`; CUDA token-buffer
+allocation and decode-loop consumption remain runtime gaps.
 
 ## Qwen Weight Inventory
 
