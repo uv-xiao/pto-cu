@@ -361,6 +361,12 @@ prompt, decode, batch, and concurrency policy used for comparison.
 After a run is marked `imported_to_viewer`, its committed
 `expected_artifacts` must all exist under `tmp/`; future artifacts belong in a
 separate planned run record.
+All `llm_serving_decode` result rows must carry `metrics.serving_coverage`.
+Use `full_serving` for real framework/model serving rows,
+`full_serving_latency_caveat` for end-to-end rows with an explicit timing
+caveat, `controlled_attention_tile_proxy` for attention-tile proxies,
+`diagnostic_microdecode` for one-token diagnostics, and `native_bringup` for
+native-control bring-up rows.
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

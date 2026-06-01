@@ -146,6 +146,7 @@ def build_result_record(
         },
         "metrics": {
             "kind": "mpk_qwen3_persistent_decode_async_timing_caveat",
+            "serving_coverage": "full_serving_latency_caveat",
             "sample_count": 1,
             "host_wall_ns": total_latency_ns,
             "end_to_end_latency_ns": total_latency_ns,

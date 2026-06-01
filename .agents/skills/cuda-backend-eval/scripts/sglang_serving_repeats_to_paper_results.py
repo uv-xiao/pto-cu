@@ -119,6 +119,7 @@ def online_record(
         ),
         "metrics": {
             "kind": "paper_baseline_serving_repeat_capture",
+            "serving_coverage": "full_serving",
             "sample_count": len(samples),
             "host_wall_ns": ns_from_ms(mean(e2e_ms)),
             "device_wall_ns": 0,
@@ -197,6 +198,7 @@ def offline_record(
         ),
         "metrics": {
             "kind": "paper_baseline_offline_repeat_capture",
+            "serving_coverage": "full_serving",
             "sample_count": len(samples),
             "host_wall_ns": ns_from_s(mean(latency_s)),
             "device_wall_ns": 0,

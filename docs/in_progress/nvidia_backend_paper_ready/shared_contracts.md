@@ -200,6 +200,15 @@ Each audit claim must include:
 The viewer renders this audit before the matrix rows. The data validator
 regenerates the audit and fails when the committed JSON is stale.
 
+Serving rows under `results.json` must include
+`statistic.serving_coverage`. Allowed values are `full_serving`,
+`full_serving_latency_caveat`, `controlled_attention_tile_proxy`,
+`diagnostic_microdecode`, and `native_bringup`. Matrix `viewer_result`
+evidence refs for `llm_serving_decode` must name the same coverage value.
+This prevents controlled attention-tile proxy rows, native bring-up rows, or
+one-token diagnostics from satisfying a full-serving Qwen/Qwen3-8B evidence
+claim by shape alone.
+
 The generated paper-readiness work queue lives in
 `docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json`.
 It is derived from `paper_readiness_audit.json` by

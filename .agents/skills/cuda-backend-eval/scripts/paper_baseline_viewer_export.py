@@ -61,6 +61,31 @@ OPTIONAL_STRUCTURED_METRICS = (
     "throughput_tokens_per_s_samples",
     "last_gen_throughput_tokens_per_s_samples",
 )
+OPTIONAL_STRING_METRICS = (
+    "serving_coverage",
+)
+
+
+def infer_serving_coverage(benchmark_id: str, kind: str) -> str:
+    if benchmark_id != "llm_serving_decode":
+        return ""
+    if kind in {
+        "paper_baseline_capture",
+        "paper_baseline_serving_capture",
+        "paper_baseline_serving_repeat_capture",
+        "paper_baseline_offline_repeat_capture",
+        "paper_baseline_offline_throughput_capture",
+    }:
+        return "full_serving"
+    if kind == "paper_baseline_serving_tile_capture":
+        return "controlled_attention_tile_proxy"
+    if kind == "mpk_native_token_bringup":
+        return "native_bringup"
+    if kind == "mpk_qwen3_persistent_decode_async_timing_caveat":
+        return "full_serving_latency_caveat"
+    if kind in {"median_capture_group", "paper_baseline_scheduler_trace"}:
+        return "diagnostic_microdecode"
+    return ""
 
 
 def fail(message: str) -> None:
@@ -155,8 +180,9 @@ def result_record(
     if correctness not in {"pass", "fail", "skipped", "not_applicable"}:
         fail(f"{owner} has invalid correctness: {correctness}")
 
+    kind = require_string(metrics, "kind", owner)
     statistic = {
-        "kind": require_string(metrics, "kind", owner),
+        "kind": kind,
         "sample_count": require_number(metrics, "sample_count", owner),
         "host_wall_ns": int(optional_number(metrics, "host_wall_ns", owner))
         if "host_wall_ns" in metrics
@@ -175,6 +201,12 @@ def result_record(
             statistic[optional_key] = optional_structured_metric(
                 metrics, optional_key, owner
             )
+    for optional_key in OPTIONAL_STRING_METRICS:
+        if optional_key in metrics:
+            statistic[optional_key] = require_string(metrics, optional_key, owner)
+    inferred_coverage = infer_serving_coverage(benchmark_id, kind)
+    if inferred_coverage and "serving_coverage" not in statistic:
+        statistic["serving_coverage"] = inferred_coverage
 
     return {
         "benchmark_id": benchmark_id,

@@ -517,7 +517,8 @@ function renderPaperEvaluation() {
       if (ref.kind === "viewer_result") {
         const benchmark = benchmarkTitle(ref.benchmark_id);
         const method = methodName(ref.method_id);
-        return `${ref.kind}: ${benchmark} / ${method} / ${ref.gpu}`;
+        const coverage = ref.serving_coverage ? ` / ${ref.serving_coverage}` : "";
+        return `${ref.kind}: ${benchmark} / ${method} / ${ref.gpu}${coverage}`;
       }
       return `${ref.kind}: ${ref.path}`;
     });
@@ -757,6 +758,7 @@ function renderResults() {
       "Device ns",
       "Device p90 ns",
       "Correctness",
+      "Coverage",
       "Raw artifact",
     ],
     state.results.result_records.map((row) => [
@@ -770,6 +772,7 @@ function renderResults() {
       row.statistic.device_wall_ns,
       p90(row.statistic, "device_wall_p90_ns"),
       row.correctness,
+      row.statistic.serving_coverage || "-",
       row.raw_artifact,
     ]),
   ));

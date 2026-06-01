@@ -964,6 +964,7 @@ def test_paper_baseline_viewer_export_generates_contract_records(tmp_path):
             },
             "statistic": {
                 "kind": "paper_baseline_capture",
+                "serving_coverage": "full_serving",
                 "sample_count": 3,
                 "host_wall_ns": 1000000,
                 "device_wall_ns": 0,
@@ -1148,6 +1149,9 @@ def test_thunderkittens_capture_builds_serving_decode_result():
         == "vdcores_offline_decode,mha_h100,b=4,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64"
     )
     assert result["metrics"]["kind"] == "paper_baseline_serving_tile_capture"
+    assert result["metrics"]["serving_coverage"] == (
+        "controlled_attention_tile_proxy"
+    )
     assert result["metrics"]["end_to_end_latency_ns"] == 32000
     assert result["metrics"]["time_to_first_token_ns"] == 32000
     assert result["metrics"]["inter_token_latency_ns"] == 500
@@ -1313,6 +1317,7 @@ def test_mpk_native_token_capture_builds_importable_record():
         "decode_tokens=2,batch=1,mode=torch"
     )
     assert result["metrics"]["kind"] == "mpk_native_token_bringup"
+    assert result["metrics"]["serving_coverage"] == "native_bringup"
     assert result["metrics"]["sample_count"] == 1
     assert result["metrics"]["end_to_end_latency_ns"] == 476397766
     assert result["metrics"]["inter_token_latency_ns"] == 238198883
@@ -1383,6 +1388,7 @@ def test_mpk_qwen3_persistent_capture_builds_caveated_viewer_result(tmp_path):
     assert result["metrics"]["kind"] == (
         "mpk_qwen3_persistent_decode_async_timing_caveat"
     )
+    assert result["metrics"]["serving_coverage"] == "full_serving_latency_caveat"
     assert result["metrics"]["sample_count"] == 1
     assert result["metrics"]["decode_tokens"] == 1024
     assert result["metrics"]["time_to_first_token_ns"] > 0
@@ -3561,6 +3567,48 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert workload["required_metrics"]
         assert workload["evidence_refs"]
 
+    allowed_serving_coverage = {
+        "full_serving",
+        "full_serving_latency_caveat",
+        "controlled_attention_tile_proxy",
+        "diagnostic_microdecode",
+        "native_bringup",
+    }
+    llm_result_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "llm_serving_decode"
+    ]
+    assert llm_result_records
+    assert all(
+        record["statistic"].get("serving_coverage") in allowed_serving_coverage
+        for record in llm_result_records
+    )
+    proxy_rows = [
+        record
+        for record in llm_result_records
+        if record["statistic"]["serving_coverage"]
+        == "controlled_attention_tile_proxy"
+    ]
+    assert proxy_rows
+    assert all(
+        "proxy" in record["inputs"]["shape"] or record["method_id"] == "thunderkittens"
+        for record in proxy_rows
+    )
+
+    matrix_serving_refs = [
+        ref
+        for claim in paper_evaluation["paper_evaluation_matrix"]
+        for ref in claim["current_evidence_refs"]
+        if ref.get("kind") == "viewer_result"
+        and ref.get("benchmark_id") == "llm_serving_decode"
+    ]
+    assert matrix_serving_refs
+    assert all(
+        ref.get("serving_coverage") in allowed_serving_coverage
+        for ref in matrix_serving_refs
+    )
+
     run_ids = {item["id"] for item in paper_baseline_runs["paper_baseline_runs"]}
     assert {
         "mpk_qwen3_native_vs_persistent",
@@ -5636,6 +5684,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
         record["statistic"]["kind"] for record in thunderkittens_serving_records
     } == {"paper_baseline_serving_tile_capture"}
     assert {
+        record["statistic"]["serving_coverage"]
+        for record in thunderkittens_serving_records
+    } == {"controlled_attention_tile_proxy"}
+    assert {
         record["statistic"]["sample_count"]
         for record in thunderkittens_serving_records
     } == {20}
@@ -5691,6 +5743,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert vllm_h200_serving["statistic"]["kind"] == (
         "paper_baseline_serving_capture"
     )
+    assert vllm_h200_serving["statistic"]["serving_coverage"] == "full_serving"
     assert vllm_h200_serving["statistic"]["sample_count"] == 1
     assert vllm_h200_serving["statistic"]["host_wall_ns"] == 431678344
     assert vllm_h200_serving["statistic"]["time_to_first_token_ns"] == 64899392
@@ -5721,6 +5774,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paper_baseline_offline_throughput_capture",
     }
     sglang_online = sglang_by_mode["paper_baseline_serving_capture"]
+    assert sglang_online["statistic"]["serving_coverage"] == "full_serving"
     assert sglang_online["inputs"]["shape"] == (
         "vdcores_offline_decode,Qwen/Qwen3-8B,batch=1,"
         "prompt_tokens=128,decode_tokens=64,mode=online_serving"
@@ -5733,6 +5787,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert sglang_online["statistic"]["completed_requests"] == 1
     assert sglang_online["statistic"]["failed_requests"] == 0
     sglang_offline = sglang_by_mode["paper_baseline_offline_throughput_capture"]
+    assert sglang_offline["statistic"]["serving_coverage"] == "full_serving"
     assert sglang_offline["inputs"]["shape"] == (
         "vdcores_offline_decode,Qwen/Qwen3-8B,batch=1,"
         "prompt_tokens=128,decode_tokens=64,mode=offline_engine"
@@ -6324,6 +6379,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         pto_serving_equivalent[0]["statistic"]["kind"]
         == "pto_controlled_serving_equivalent"
     )
+    assert pto_serving_equivalent[0]["statistic"]["serving_coverage"] == (
+        "controlled_attention_tile_proxy"
+    )
     assert pto_serving_equivalent[0]["statistic"]["throughput_tokens_per_s"] > 0
     vdcores_guarded_bench = [
         record
@@ -6336,6 +6394,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "qwen3-1p7b-repeat-guard-bench-f6b16bac/"
     ]
     assert len(vdcores_guarded_bench) == 1
+    assert (
+        vdcores_guarded_bench[0]["statistic"]["serving_coverage"]
+        == "diagnostic_microdecode"
+    )
     assert vdcores_guarded_bench[0]["statistic"]["sample_count"] == 5
     assert vdcores_guarded_bench[0]["statistic"]["device_wall_ns"] == 1778528
     assert vdcores_guarded_bench[0]["correctness"] == "pass"

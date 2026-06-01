@@ -105,6 +105,12 @@ Every serving baseline run record must reference one of these policy IDs and
 require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before
 it can be imported. Imported rows must record actual tokenizer counts, model
 identity, decode count, and batch size in raw JSON.
+Every imported `llm_serving_decode` result must also record
+`statistic.serving_coverage`. `full_serving` and
+`full_serving_latency_caveat` are the only coverage classes that can support a
+full-serving paper comparison. `controlled_attention_tile_proxy`,
+`diagnostic_microdecode`, and `native_bringup` rows remain useful evidence,
+but they cannot close the PTO, VDCores, or ThunderKittens full-serving gaps.
 
 ## Workloads
 

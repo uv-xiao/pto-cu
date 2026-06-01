@@ -82,6 +82,7 @@ def build_result_record(
         },
         "metrics": {
             "kind": "mpk_native_token_bringup",
+            "serving_coverage": "native_bringup",
             "sample_count": 1,
             "host_wall_ns": total_latency_ns,
             "end_to_end_latency_ns": total_latency_ns,

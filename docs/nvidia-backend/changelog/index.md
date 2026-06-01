@@ -23,6 +23,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 MPK Qwen3 8B persistent import](2026-06-01-mpk-qwen3-8b-persistent-import.md)
 - [2026-06-01 MPK native token viewer import](2026-06-01-mpk-native-token-viewer-import.md)
 - [2026-06-01 PTO serving preflight](2026-06-01-pto-serving-preflight.md)
+- [2026-06-01 serving coverage guard](2026-06-01-serving-coverage-guard.md)
 - [2026-06-01 serving gap audit narrowing](2026-06-01-serving-gap-audit-narrowing.md)
 - [2026-06-01 serving work queue targets](2026-06-01-serving-work-queue-targets.md)
 - [2026-05-31 VDCores Qwen resource contract](2026-05-31-vdcores-qwen-resource-contract.md)

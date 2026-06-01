@@ -1123,6 +1123,14 @@ def validate_results(
     for key in ("headline_results", "selected_rows", "result_records"):
         require_list(data, key, "results")
 
+    allowed_serving_coverage = {
+        "full_serving",
+        "full_serving_latency_caveat",
+        "controlled_attention_tile_proxy",
+        "diagnostic_microdecode",
+        "native_bringup",
+    }
+
     for record in data["result_records"]:
         if not isinstance(record, dict):
             fail("result record is not an object")
@@ -1142,6 +1150,14 @@ def validate_results(
             require_string(inputs, key, owner)
         statistic = require_dict(record, "statistic", owner)
         require_string(statistic, "kind", owner)
+        if benchmark_id == "llm_serving_decode":
+            coverage = require_string(statistic, "serving_coverage", owner)
+            if coverage not in allowed_serving_coverage:
+                fail(f"{owner} has invalid statistic.serving_coverage")
+            if coverage != "full_serving" and "full-serving" in str(
+                inputs.get("shape", "")
+            ):
+                fail(f"{owner} has proxy coverage but claims full-serving shape")
         sample_count = statistic.get("sample_count")
         if not isinstance(sample_count, int) or sample_count <= 0:
             fail(f"{owner} has invalid statistic.sample_count")
@@ -1190,15 +1206,16 @@ def validate_paper_evaluation_matrix(
         missing = sorted(required_claims - matrix_ids)
         fail(f"missing paper evaluation matrix claims: {missing}")
 
-    result_index = {
+    result_index = [
         (
             result["benchmark_id"],
             result["method_id"],
             result["hardware"]["gpu"],
             result.get("inputs", {}).get("shape", ""),
+            result.get("statistic", {}).get("serving_coverage", ""),
         )
         for result in results["result_records"]
-    }
+    ]
     baseline_coverage: set[str] = set()
     method_coverage: set[str] = set()
     hardware_coverage: set[str] = set()
@@ -1343,11 +1360,24 @@ def validate_paper_evaluation_matrix(
                     not isinstance(shape_contains, str) or not shape_contains
                 ):
                     fail(f"{owner} viewer_result shape_contains is invalid")
+                serving_coverage = ref.get("serving_coverage")
+                if key[0] == "llm_serving_decode":
+                    if not isinstance(serving_coverage, str) or not serving_coverage:
+                        fail(
+                            f"{owner} llm_serving_decode viewer_result lacks "
+                            "serving_coverage"
+                        )
+                elif serving_coverage is not None:
+                    fail(f"{owner} non-serving viewer_result has serving_coverage")
                 if not any(
                     result_key[:3] == key
                     and (
                         shape_contains is None
                         or shape_contains in str(result_key[3])
+                    )
+                    and (
+                        serving_coverage is None
+                        or serving_coverage == result_key[4]
                     )
                     for result_key in result_index
                 ):

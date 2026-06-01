@@ -3180,7 +3180,8 @@
           "source_capture": "pto_persistent_dag_graph_tensor_core",
           "serving_workload_id": "vdcores_offline_decode",
           "serving_equivalent_scope": "controlled attention-tile proxy, not end-to-end LLM serving"
-        }
+        },
+        "serving_coverage": "controlled_attention_tile_proxy"
       },
       "raw_artifact": "tmp/cuda-backend/graph-tensor-core-compact-current-working/combined-current-493ce832/",
       "correctness": "pass"
@@ -3213,7 +3214,8 @@
         "throughput_tokens_per_s": 1992093,
         "batch_size": 1,
         "prompt_tokens": 128,
-        "decode_tokens": 64
+        "decode_tokens": 64,
+        "serving_coverage": "controlled_attention_tile_proxy"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/",
       "correctness": "pass"
@@ -3246,7 +3248,8 @@
         "throughput_tokens_per_s": 4449542,
         "batch_size": 2,
         "prompt_tokens": 128,
-        "decode_tokens": 64
+        "decode_tokens": 64,
+        "serving_coverage": "controlled_attention_tile_proxy"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/",
       "correctness": "pass"
@@ -3279,7 +3282,8 @@
         "throughput_tokens_per_s": 7905138,
         "batch_size": 4,
         "prompt_tokens": 128,
-        "decode_tokens": 64
+        "decode_tokens": 64,
+        "serving_coverage": "controlled_attention_tile_proxy"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/",
       "correctness": "pass"
@@ -3312,7 +3316,8 @@
         "throughput_tokens_per_s": 15841584,
         "batch_size": 8,
         "prompt_tokens": 128,
-        "decode_tokens": 64
+        "decode_tokens": 64,
+        "serving_coverage": "controlled_attention_tile_proxy"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/",
       "correctness": "pass"
@@ -3345,7 +3350,8 @@
         "throughput_tokens_per_s": 35556790,
         "batch_size": 16,
         "prompt_tokens": 128,
-        "decode_tokens": 64
+        "decode_tokens": 64,
+        "serving_coverage": "controlled_attention_tile_proxy"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/",
       "correctness": "pass"
@@ -3604,7 +3610,8 @@
         "device_wall_max_ns": 1785504,
         "correctness_artifact": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-correctness-712f88e8/",
         "correctness_check_count": 17,
-        "final_token": "ref=25, dae=25"
+        "final_token": "ref=25, dae=25",
+        "serving_coverage": "diagnostic_microdecode"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-bench-f6b16bac/",
       "correctness": "pass"
@@ -3709,7 +3716,8 @@
           "repeat_guard_writeback_wait_cycles_ns_max_per_sm": 104928.0,
           "repeat_guard_writeback_wait_cycles_ns_mean_per_sm": 8007.563636363637,
           "slot_capacity": 24
-        }
+        },
+        "serving_coverage": "diagnostic_microdecode"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/",
       "correctness": "pass"
@@ -3750,7 +3758,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 1,
         "p99_ttft_ns": 64899392,
-        "p99_itl_ns": 6297955
+        "p99_itl_ns": 6297955,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-batch1-840a847f-pandas/",
       "correctness": "pass"
@@ -3791,7 +3800,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 2,
         "p99_ttft_ns": 81515692,
-        "p99_itl_ns": 6507872
+        "p99_itl_ns": 6507872,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch2/",
       "correctness": "pass"
@@ -3832,7 +3842,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 4,
         "p99_ttft_ns": 36031903,
-        "p99_itl_ns": 6718967
+        "p99_itl_ns": 6718967,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch4/",
       "correctness": "pass"
@@ -3873,7 +3884,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 8,
         "p99_ttft_ns": 90574776,
-        "p99_itl_ns": 8523433
+        "p99_itl_ns": 8523433,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch8/",
       "correctness": "pass"
@@ -3914,7 +3926,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 16,
         "p99_ttft_ns": 123217107,
-        "p99_itl_ns": 10064776
+        "p99_itl_ns": 10064776,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-sweep-89fe1705/batch16/",
       "correctness": "pass"
@@ -3955,7 +3968,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 1,
         "p99_ttft_ns": 63156633,
-        "p99_itl_ns": 6583279
+        "p99_itl_ns": 6583279,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-mpk-qwen3-8b-batch1-7e939170/",
       "correctness": "pass"
@@ -3996,7 +4010,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 2,
         "p99_ttft_ns": 73441473,
-        "p99_itl_ns": 6310392
+        "p99_itl_ns": 6310392,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-mpk-qwen3-8b-sweep-908438de/batch2/",
       "correctness": "pass"
@@ -4037,7 +4052,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 4,
         "p99_ttft_ns": 39868313,
-        "p99_itl_ns": 6608661
+        "p99_itl_ns": 6608661,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-mpk-qwen3-8b-sweep-908438de/batch4/",
       "correctness": "pass"
@@ -4078,7 +4094,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 8,
         "p99_ttft_ns": 61855329,
-        "p99_itl_ns": 6604578
+        "p99_itl_ns": 6604578,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-mpk-qwen3-8b-sweep-908438de/batch8/",
       "correctness": "pass"
@@ -4119,7 +4136,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 16,
         "p99_ttft_ns": 104134505,
-        "p99_itl_ns": 6483625
+        "p99_itl_ns": 6483625,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-mpk-qwen3-8b-sweep-908438de/batch16/",
       "correctness": "pass"
@@ -4160,7 +4178,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 1,
         "p99_ttft_ns": 36877374,
-        "p99_itl_ns": 7103105
+        "p99_itl_ns": 7103105,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-fixedrange-bfc1c581/",
       "correctness": "pass"
@@ -4199,7 +4218,8 @@
         "decode_tokens": 64,
         "completed_requests": 1,
         "failed_requests": 0,
-        "max_concurrent_requests": 1
+        "max_concurrent_requests": 1,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-fixedrange-bfc1c581/",
       "correctness": "pass"
@@ -4242,7 +4262,8 @@
         "total_input_tokens": 256,
         "total_output_tokens": 128,
         "p99_ttft_ns": 315919557,
-        "p99_itl_ns": 41259423
+        "p99_itl_ns": 41259423,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
       "correctness": "pass"
@@ -4283,7 +4304,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 2,
         "total_input_tokens": 256,
-        "total_output_tokens": 128
+        "total_output_tokens": 128,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
       "correctness": "pass"
@@ -4326,7 +4348,8 @@
         "total_input_tokens": 512,
         "total_output_tokens": 256,
         "p99_ttft_ns": 133045152,
-        "p99_itl_ns": 20490022
+        "p99_itl_ns": 20490022,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
       "correctness": "pass"
@@ -4367,7 +4390,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 4,
         "total_input_tokens": 512,
-        "total_output_tokens": 256
+        "total_output_tokens": 256,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
       "correctness": "pass"
@@ -4410,7 +4434,8 @@
         "total_input_tokens": 1024,
         "total_output_tokens": 512,
         "p99_ttft_ns": 50796189,
-        "p99_itl_ns": 9235724
+        "p99_itl_ns": 9235724,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
       "correctness": "pass"
@@ -4451,7 +4476,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 8,
         "total_input_tokens": 1024,
-        "total_output_tokens": 512
+        "total_output_tokens": 512,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
       "correctness": "pass"
@@ -4494,7 +4520,8 @@
         "total_input_tokens": 2048,
         "total_output_tokens": 1024,
         "p99_ttft_ns": 125623167,
-        "p99_itl_ns": 60907871
+        "p99_itl_ns": 60907871,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
       "correctness": "pass"
@@ -4535,7 +4562,8 @@
         "failed_requests": 0,
         "max_concurrent_requests": 16,
         "total_input_tokens": 2048,
-        "total_output_tokens": 1024
+        "total_output_tokens": 1024,
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
       "correctness": "pass"
@@ -4592,7 +4620,8 @@
           155.90650297044363,
           161.7002780427098,
           165.45801814824634
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/",
       "correctness": "pass"
@@ -4650,7 +4679,8 @@
           40.59974081863936,
           40.66600406455308,
           46.23298571929109
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/",
       "correctness": "pass"
@@ -4707,7 +4737,8 @@
           303.87270173266575,
           311.2833730639584,
           308.9584419238415
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/",
       "correctness": "pass"
@@ -4765,7 +4796,8 @@
           76.16620173792184,
           79.68677227185398,
           80.48671540062267
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/",
       "correctness": "pass"
@@ -4822,7 +4854,8 @@
           577.980733119557,
           603.0088740765126,
           612.9285208066183
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/",
       "correctness": "pass"
@@ -4880,7 +4913,8 @@
           157.45890004999515,
           143.7909784386996,
           162.47665478187386
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/",
       "correctness": "pass"
@@ -4937,7 +4971,8 @@
           1192.3423823253988,
           1180.938040190603,
           1209.4831223277313
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/",
       "correctness": "pass"
@@ -4995,7 +5030,8 @@
           307.8963188761755,
           295.5991153619815,
           316.2899757586788
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/",
       "correctness": "pass"
@@ -5052,7 +5088,8 @@
           2125.180308192032,
           2169.522413038344,
           2220.5670863958585
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/",
       "correctness": "pass"
@@ -5110,7 +5147,8 @@
           621.4966029170671,
           673.4680486537486,
           401.71920912165456
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/",
       "correctness": "pass"
@@ -5167,7 +5205,8 @@
           151.17852313299974,
           143.4230094810302,
           170.44690513301217
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/",
       "correctness": "pass"
@@ -5224,7 +5263,8 @@
           278.401273279053,
           323.3919116146987,
           336.8161747975351
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/",
       "correctness": "pass"
@@ -5281,7 +5321,8 @@
           534.6878119488646,
           640.0324922904026,
           644.6226680266758
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/",
       "correctness": "pass"
@@ -5338,7 +5379,8 @@
           971.7352932746172,
           1221.7097965861367,
           1266.4017013477155
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/",
       "correctness": "pass"
@@ -5395,7 +5437,8 @@
           1839.7487736187843,
           2426.7646728798577,
           2212.820329715457
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/",
       "correctness": "pass"
@@ -5452,7 +5495,8 @@
           170.10867971592856,
           144.14149363863046,
           145.257633273992
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/",
       "correctness": "pass"
@@ -5509,7 +5553,8 @@
           317.6003579819346,
           340.94051104233404,
           289.78565001134666
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/",
       "correctness": "pass"
@@ -5566,7 +5611,8 @@
           634.8971364994038,
           679.6654807409355,
           573.2557810488503
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/",
       "correctness": "pass"
@@ -5623,7 +5669,8 @@
           1332.6215982408073,
           1292.1296703787157,
           1145.601594791004
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/",
       "correctness": "pass"
@@ -5680,7 +5727,8 @@
           2553.7216402133595,
           2403.350133180037,
           2277.1343481189674
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/",
       "correctness": "pass"
@@ -5772,7 +5820,8 @@
         "prompt_tokens": 39,
         "decode_tokens": 2,
         "completed_requests": 1,
-        "failed_requests": 0
+        "failed_requests": 0,
+        "serving_coverage": "native_bringup"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/",
       "correctness": "pass"
@@ -5829,7 +5878,8 @@
           174.19961858483842,
           174.25927571290356,
           173.9799213122637
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/",
       "correctness": "pass"
@@ -5887,7 +5937,8 @@
           174.97599519857326,
           174.9437258773626,
           174.8033541816037
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/",
       "correctness": "pass"
@@ -5944,7 +5995,8 @@
           336.53440160607585,
           340.89160069524434,
           340.9332748397633
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/",
       "correctness": "pass"
@@ -6002,7 +6054,8 @@
           341.79533272929797,
           341.68155877921015,
           341.1691050689514
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/",
       "correctness": "pass"
@@ -6059,7 +6112,8 @@
           674.7998984627565,
           674.3938233731726,
           672.0370568172306
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/",
       "correctness": "pass"
@@ -6117,7 +6171,8 @@
           670.352923738348,
           670.1823401173305,
           669.3690570396939
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/",
       "correctness": "pass"
@@ -6174,7 +6229,8 @@
           1318.280479235506,
           1321.8942671843022,
           1324.6538696234113
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/",
       "correctness": "pass"
@@ -6232,7 +6288,8 @@
           1296.711341134124,
           1296.548501911135,
           1296.7241113532193
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/",
       "correctness": "pass"
@@ -6289,7 +6346,8 @@
           2641.222856317362,
           2650.028089364109,
           2650.6738366008826
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/",
       "correctness": "pass"
@@ -6347,7 +6405,8 @@
           2564.2866889049205,
           2564.006466419819,
           2563.982210491823
-        ]
+        ],
+        "serving_coverage": "full_serving"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/",
       "correctness": "pass"
@@ -6385,7 +6444,8 @@
         "completed_requests": 1,
         "failed_requests": 0,
         "max_concurrent_requests": 1,
-        "total_output_tokens": 1024
+        "total_output_tokens": 1024,
+        "serving_coverage": "full_serving_latency_caveat"
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/",
       "correctness": "pass"

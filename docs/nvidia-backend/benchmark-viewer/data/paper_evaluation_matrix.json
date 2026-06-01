@@ -248,7 +248,8 @@
           "kind": "viewer_result",
           "benchmark_id": "llm_serving_decode",
           "method_id": "vdcores",
-          "gpu": "H200"
+          "gpu": "H200",
+          "serving_coverage": "diagnostic_microdecode"
         },
         {
           "kind": "raw_artifact",
@@ -435,42 +436,48 @@
           "benchmark_id": "llm_serving_decode",
           "method_id": "pto_persistent_device",
           "gpu": "H200",
-          "shape_contains": "vdcores_offline_decode attention tile proxy"
+          "shape_contains": "vdcores_offline_decode attention tile proxy",
+          "serving_coverage": "controlled_attention_tile_proxy"
         },
         {
           "kind": "viewer_result",
           "benchmark_id": "llm_serving_decode",
           "method_id": "mpk",
           "gpu": "H200",
-          "shape_contains": "Qwen/Qwen3-0.6B"
+          "shape_contains": "Qwen/Qwen3-0.6B",
+          "serving_coverage": "native_bringup"
         },
         {
           "kind": "viewer_result",
           "benchmark_id": "llm_serving_decode",
           "method_id": "vllm",
           "gpu": "H200",
-          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B"
+          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
+          "serving_coverage": "full_serving"
         },
         {
           "kind": "viewer_result",
           "benchmark_id": "llm_serving_decode",
           "method_id": "vllm",
           "gpu": "H200",
-          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B"
+          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
+          "serving_coverage": "full_serving"
         },
         {
           "kind": "viewer_result",
           "benchmark_id": "llm_serving_decode",
           "method_id": "sglang",
           "gpu": "H200",
-          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B"
+          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
+          "serving_coverage": "full_serving"
         },
         {
           "kind": "viewer_result",
           "benchmark_id": "llm_serving_decode",
           "method_id": "sglang",
           "gpu": "H200",
-          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B"
+          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
+          "serving_coverage": "full_serving"
         },
         {
           "kind": "raw_artifact",
@@ -497,7 +504,8 @@
           "benchmark_id": "llm_serving_decode",
           "method_id": "mpk",
           "gpu": "H200",
-          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B"
+          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
+          "serving_coverage": "full_serving_latency_caveat"
         },
         {
           "kind": "raw_artifact",

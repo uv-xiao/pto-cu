@@ -3738,3 +3738,37 @@ Follow-up tracked-state closure after user confirmation:
   persistent-device Qwen/Qwen3-8B model loading, tokenization, KV-cache, and
   decode-loop execution before importing `mpk_offline_decode` or
   `vdcores_offline_decode` PTO full-serving rows.
+
+### 2026-06-01 - LLM Serving Coverage Guard
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned evidence
+  guard for LLM-serving result coverage.
+- Exact Codex command or script invocation: updated serving result rows,
+  matrix evidence refs, the benchmark-viewer validator, result-producing
+  scripts, and the HTML viewer so `llm_serving_decode` rows declare
+  `serving_coverage`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, strict
+  code-document-evidence guardrails for paper-ready LLM-serving evaluation.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data and code, CUDA evaluation
+  scripts, in-progress evaluation docs, changelog docs, dispatch log,
+  validators, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled,
+  `.github/workflows/` stayed empty, and PR #1 remained a standalone
+  `uv-xiao/pto-cu:main` review. The guard does not produce new performance
+  rows; it prevents proxy rows from satisfying full-serving evidence.
+- Verification commands and results: `validate_benchmark_viewer_data.py` ->
+  passed; `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed; `jq empty
+  docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `git diff --check` -> passed; `pytest
+  tests/ut/py/test_nvidia_review_artifacts.py -q` -> `43 passed`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: full-serving rows must now use
+  `full_serving` or `full_serving_latency_caveat`; controlled attention-tile
+  proxies, native bring-up rows, and one-token diagnostics remain visible but
+  cannot close the PTO, VDCores, or ThunderKittens full-serving gaps.

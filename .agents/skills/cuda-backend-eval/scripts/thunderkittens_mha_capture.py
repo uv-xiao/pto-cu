@@ -162,6 +162,7 @@ def build_raw_result_record(
         decoded_tokens = int(shape["b"]) * decode_tokens
         metrics = {
             "kind": "paper_baseline_serving_tile_capture",
+            "serving_coverage": "controlled_attention_tile_proxy",
             "sample_count": latency["sample_count"],
             "host_wall_ns": elapsed_ns,
             "device_wall_ns": elapsed_ns,
