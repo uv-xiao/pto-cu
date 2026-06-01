@@ -87,15 +87,23 @@ def build_resources(
     *,
     mode: str,
     cache_dir: Path | None,
+    token_cuda_live: bool = False,
+    device: int = 0,
+    host_runtime: Path | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     token_module = load_module(TOKEN_POINTER, "qwen_token_pointer_for_runner")
     kv_module = load_module(KV_CACHE, "qwen_kv_cache_for_runner")
     resident_module = load_module(RESIDENT_WEIGHTS, "qwen_resident_weights_for_runner")
+    token_kwargs: dict[str, Any] = {
+        "mode": mode,
+        "cache_dir": cache_dir,
+        "cuda_live": token_cuda_live,
+        "device": device,
+    }
+    if host_runtime is not None:
+        token_kwargs["host_runtime"] = host_runtime
     return (
-        token_module.build_token_pointer_table_lifecycle(
-            mode=mode,
-            cache_dir=cache_dir,
-        ),
+        token_module.build_token_pointer_table_lifecycle(**token_kwargs),
         kv_module.build_kv_cache_lifecycle(),
         resident_module.build_resident_table_lifecycle(),
     )
@@ -241,39 +249,64 @@ def build_decode_loop_runner(
     mode: str = "offline",
     cache_dir: Path | None = None,
     unit_math_live_payload: dict[str, Any] | None = None,
+    token_cuda_live: bool = False,
+    device: int = 0,
+    host_runtime: Path | None = None,
 ) -> dict[str, Any]:
     token_lifecycle, kv_lifecycle, resident_lifecycle = build_resources(
         mode=mode,
         cache_dir=cache_dir,
+        token_cuda_live=token_cuda_live,
+        device=device,
+        host_runtime=host_runtime,
     )
     plans = build_submission_plans(
         token_lifecycle=token_lifecycle,
         kv_lifecycle=kv_lifecycle,
         resident_lifecycle=resident_lifecycle,
     )
+    resource_modes = {
+        "token_pointer_table": token_lifecycle.get("mode", "unknown"),
+        "kv_cache": kv_lifecycle.get("mode", "unknown"),
+        "resident_weight_table": resident_lifecycle.get("mode", "unknown"),
+    }
+    live_owners = [
+        name
+        for name, resource_mode in resource_modes.items()
+        if resource_mode == "cuda_live"
+    ]
+    implemented_contracts = [
+        "decode_loop_owner_lifetime_order",
+        "persistent_dag_submission_plan",
+        "output_token_accounting_plan",
+        "cuda_live_resource_bridge_contract",
+        "qwen_unit_math_live_bridge_contract",
+    ]
+    if token_lifecycle.get("mode") == "cuda_live":
+        implemented_contracts.append("cuda_live_token_pointer_table_in_runner")
     return {
         "schema_version": 1,
         "kind": "pto_qwen_decode_loop_runner",
         "status": "decode_loop_runner_plan_ready",
-        "mode": "dry_run_submission_plan",
+        "mode": (
+            "partial_cuda_live_submission_plan"
+            if live_owners
+            else "dry_run_submission_plan"
+        ),
         "resource_lifecycle_status": {
             "token_pointer_table": token_lifecycle.get("status"),
             "kv_cache": kv_lifecycle.get("status"),
             "resident_weight_table": resident_lifecycle.get("status"),
         },
+        "resource_lifecycle_modes": resource_modes,
+        "cuda_live_resource_owners": live_owners,
         "cuda_live_bridge_contract": cuda_live_bridge_contract(),
         "unit_math_live_bridge_contract": unit_math_live_bridge_contract(
             unit_math_live_payload,
         ),
         "dag_submission_plans": plans,
         "total_decode_iterations": sum(item["decode_steps"] for item in plans),
-        "implemented_contracts": [
-            "decode_loop_owner_lifetime_order",
-            "persistent_dag_submission_plan",
-            "output_token_accounting_plan",
-            "cuda_live_resource_bridge_contract",
-            "qwen_unit_math_live_bridge_contract",
-        ],
+        "implemented_contracts": implemented_contracts,
         "remaining_runtime_gaps": [
             "numerically_correct_qwen_kernel_bodies",
             "cuda_live_decode_loop_execution",

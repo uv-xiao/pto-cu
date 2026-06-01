@@ -140,6 +140,56 @@ def test_decode_loop_runner_attaches_unit_math_live_bridge():
     assert "qwen_unit_math_live_bridge_contract" in runner["implemented_contracts"]
 
 
+def test_decode_loop_runner_tracks_cuda_live_token_owner(monkeypatch):
+    module = load_decode_loop_runner_module()
+
+    token_lifecycle = {
+        "status": "token_pointer_table_lifecycle_ready",
+        "mode": "cuda_live",
+        "decode_args": {
+            "workload_decode_args": [
+                {
+                    "workload_id": "mpk_offline_decode",
+                    "scalar_fields": {"rows": 16, "cols": 1024, "inner": 64},
+                    "pointer_bindings": {"a": "input_ids"},
+                }
+            ],
+        },
+    }
+    kv_lifecycle = {
+        "status": "kv_cache_lifecycle_ready",
+        "mode": "dry_run_pointer_lifecycle",
+        "kv_cache_bindings": [
+            {
+                "workload_id": "mpk_offline_decode",
+                "batch_size": 16,
+                "key_cache": {"device_ptr_hex": "0x1"},
+                "value_cache": {"device_ptr_hex": "0x2"},
+            }
+        ],
+    }
+    resident_lifecycle = {
+        "status": "resident_weight_table_lifecycle_ready",
+        "mode": "dry_run_pointer_lifecycle",
+        "materialized_task_count": 1,
+        "bound_tensor_pointer_count": 4,
+    }
+
+    monkeypatch.setitem(
+        module.build_decode_loop_runner.__globals__,
+        "build_resources",
+        lambda **_kwargs: (token_lifecycle, kv_lifecycle, resident_lifecycle),
+    )
+    runner = module.build_decode_loop_runner(mode="mock", token_cuda_live=True)
+
+    assert runner["mode"] == "partial_cuda_live_submission_plan"
+    assert runner["resource_lifecycle_modes"]["token_pointer_table"] == "cuda_live"
+    assert runner["cuda_live_resource_owners"] == ["token_pointer_table"]
+    assert "cuda_live_token_pointer_table_in_runner" in runner[
+        "implemented_contracts"
+    ]
+
+
 def test_viewer_matrix_tracks_decode_loop_evidence():
     matrix_path = VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
     matrix = json.loads(matrix_path.read_text(encoding="utf-8"))[

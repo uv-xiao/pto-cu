@@ -163,6 +163,10 @@ diagnostic bridge from owner-owned fields into the repeated proxy live runner.
 It can also execute the repeated unit-math diagnostic from the runner entry
 point; the current bridge artifact is
 `tmp/cuda-backend/pto-serving-decode-loop-unit-math-bridge-2026-06-01/qwen-decode-loop-runner.json`.
+It can also open the token pointer table in CUDA-live mode from the runner;
+the current partial resource-owner artifact is
+`tmp/cuda-backend/pto-serving-decode-loop-token-live-2026-06-01/qwen-decode-loop-runner.json`.
+KV-cache and resident weight owners remain dry-run in that artifact.
 The task-body source artifact in
 `examples/cuda/qwen_persistent_task_bodies.py` now renders Qwen persistent
 task bodies through the existing persistent DAG source generator. It records

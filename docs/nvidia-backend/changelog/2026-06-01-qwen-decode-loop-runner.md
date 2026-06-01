@@ -11,6 +11,9 @@
   CUDA example manifest, example README, paper-readiness matrix, and tests.
 - Added a runner-owned unit-math live bridge so the decode-loop runner entry
   point can execute the repeated diagnostic unit-math DAG.
+- Added `--token-cuda-live` so the decode-loop runner can open the
+  process-scoped token pointer-table owner in CUDA-live mode while KV-cache
+  and resident weights remain dry-run.
 - Captured current evidence at
   `tmp/cuda-backend/pto-serving-decode-loop-2026-06-01/`
   `qwen-decode-loop-runner.json`.
@@ -54,8 +57,22 @@ Result: `unit_math_live_bridge_contract.status=diagnostic_bridge_executed`,
 `repeat_runs=3`, `total_completed_count=12`, `total_error_count=0`, and
 `max_abs_error=0.0`.
 
+Additional partial resource-owner command:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_decode_loop_runner.py \
+  --mode mock --token-cuda-live --device 0 --output-json \
+  tmp/cuda-backend/pto-serving-decode-loop-token-live-2026-06-01/\
+qwen-decode-loop-runner.json
+```
+
+Result: `mode=partial_cuda_live_submission_plan`,
+`cuda_live_resource_owners=["token_pointer_table"]`, and
+`resource_lifecycle_modes.token_pointer_table=cuda_live`.
+
 ## Remaining Gaps
 
 - Generate Qwen kernel bodies that consume token, KV-cache, and weight fields.
-- Replace the dry-run plan with a `cuda_live` decode loop and import
-  full-serving viewer rows.
+- Add CUDA-live KV-cache and resident weight owners, execute the full
+  `cuda_live` decode loop, and import full-serving viewer rows.
