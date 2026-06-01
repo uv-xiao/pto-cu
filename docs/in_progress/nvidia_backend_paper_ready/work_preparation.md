@@ -11,7 +11,8 @@
    focused files under `docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/`
 7. `docs/nvidia-backend/overall.md`
 8. `docs/nvidia-backend/flows.md`
-9. `docs/nvidia-backend/persistent-device.md`
+9. `docs/nvidia-backend/persistent-device.md` and the focused files under
+   `docs/nvidia-backend/persistent-device/`
 10. `docs/nvidia-backend/evaluation.md`
 11. `docs/nvidia-backend/status.md` and the focused files under
     `docs/nvidia-backend/status/`
