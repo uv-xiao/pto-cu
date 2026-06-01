@@ -242,7 +242,7 @@ def build_lifecycle_plan() -> dict[str, Any]:
             "persistent_device_task_mapping",
         ],
         "remaining_runtime_gaps": [
-            "tokenizer_adapter",
+            "runtime_token_id_binding",
             "safetensors_weight_loader",
             "cuda_device_allocation_and_binding",
             "generated_qwen_kernel_bodies",

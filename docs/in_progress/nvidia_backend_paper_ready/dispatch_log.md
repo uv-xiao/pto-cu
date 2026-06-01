@@ -3851,3 +3851,45 @@ Follow-up tracked-state closure after user confirmation:
   loading, CUDA allocation/binding, generated Qwen kernel bodies,
   decode-loop execution, and viewer-result import remain required before
   importing PTO Qwen/Qwen3-8B full-serving rows.
+
+### 2026-06-01 - Qwen Prompt Accounting
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned tokenizer
+  and prompt-accounting slice for the PTO persistent-device Qwen/Qwen3-8B
+  full-serving blocker.
+- Exact Codex command or script invocation:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  examples/cuda/qwen_prompt_accounting.py --mode offline --output-json
+  tmp/cuda-backend/pto-serving-tokenizer-b95ff321/qwen-prompt-accounting.json`,
+  then `persistent_qwen_serving_scaffold.py --output-json
+  tmp/cuda-backend/pto-serving-scaffold-b95ff321/qwen-serving-scaffold.json`,
+  then `pto_serving_preflight.py --output
+  tmp/cuda-backend/pto-serving-preflight-b95ff321/pto-serving-preflight.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The tokenizer files were cached under `tmp/hf-tokenizers/` for local
+  inspection; this slice records prompt accounting only and does not bind token
+  IDs into CUDA runtime buffers.
+- Verification commands and results: `validate_cuda_examples.py` -> passed;
+  `validate_benchmark_viewer_data.py` -> passed;
+  `validate_nvidia_changelog.py` -> passed; `check_nvidia_review_ready.py` ->
+  passed; `jq empty examples/cuda/manifest.json
+  docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `git diff --check` -> passed; `py_compile qwen_prompt_accounting.py
+  qwen_serving_lifecycle_plan.py persistent_qwen_serving_scaffold.py
+  pto_serving_preflight.py` -> passed; `pytest
+  tests/ut/py/test_nvidia_review_artifacts.py -q` -> `46 passed`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: runtime token-ID binding, safetensors
+  loading, CUDA allocation/binding, generated Qwen kernel bodies,
+  decode-loop execution, and viewer-result import remain required before
+  importing PTO Qwen/Qwen3-8B full-serving rows.

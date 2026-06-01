@@ -245,17 +245,18 @@ python test_correctness.py
 | Triton or torch.compile | generated-kernel baseline | compile path, launch path, and correctness |
 
 The current PTO serving comparison has explicit lifecycle artifacts at
-`tmp/cuda-backend/pto-serving-lifecycle-e3c977f8/qwen-serving-lifecycle-plan.json`,
-`tmp/cuda-backend/pto-serving-scaffold-e3c977f8/qwen-serving-scaffold.json`,
+`tmp/cuda-backend/pto-serving-lifecycle-b95ff321/qwen-serving-lifecycle-plan.json`,
+`tmp/cuda-backend/pto-serving-tokenizer-b95ff321/qwen-prompt-accounting.json`,
+`tmp/cuda-backend/pto-serving-scaffold-b95ff321/qwen-serving-scaffold.json`,
 and
-`tmp/cuda-backend/pto-serving-preflight-e3c977f8/pto-serving-preflight.json`.
+`tmp/cuda-backend/pto-serving-preflight-b95ff321/pto-serving-preflight.json`.
 They record the proxy-only execution state plus the new partial runtime plan:
 the benchmark viewer has a controlled attention-tile PTO serving-equivalent
 row, and the repo-owned PTO CUDA path now has a reviewable Qwen3-8B model
 shape, KV-cache capacity ladder, weight-binding plan, and persistent-device
-task mapping. It still does not load Qwen weights, tokenize prompts, bind real
-CUDA buffers, run generated Qwen kernel bodies, or execute a decode loop for
-`Qwen/Qwen3-8B`.
+task mapping plus tokenizer-observed prompt counts. It still does not load
+Qwen weights, bind token IDs to runtime buffers, bind real CUDA buffers, run
+generated Qwen kernel bodies, or execute a decode loop for `Qwen/Qwen3-8B`.
 
 ## Next Dispatcher Actions
 

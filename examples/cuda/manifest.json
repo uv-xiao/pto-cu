@@ -63,6 +63,22 @@
         "persistent_task_mapping",
         "remaining_runtime_gaps"
       ]
+    },
+    {
+      "id": "qwen_prompt_accounting",
+      "title": "Qwen Prompt Accounting",
+      "script": "examples/cuda/qwen_prompt_accounting.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_prompt_accounting.py --mode offline --output-json tmp/cuda-backend/pto-serving-tokenizer/qwen-prompt-accounting.json",
+      "expected_output": "command exits 0; output JSON records tokenizer class, chat-template status, observed prompt-token counts, target deltas, and whether padding or prompt regeneration is required for the MPK and VDCores serving policies.",
+      "evidence_symbols": [
+        "pto_qwen_prompt_accounting",
+        "target_prompt_tokens",
+        "chat_prompt_tokens",
+        "padding_or_regeneration_required"
+      ]
     }
   ]
 }

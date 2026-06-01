@@ -409,6 +409,18 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-lifecycle-$(git rev-parse --short HEAD)/qwen-serving-lifecycle-plan.json
 ```
 
+Use `examples/cuda/qwen_prompt_accounting.py` to capture tokenizer-observed
+prompt counts for the shared MPK and VDCores serving policies. Use `--mode
+download` only for an intentional source capture into `tmp/`; use `--mode
+offline` for repeatable local evidence after the tokenizer is cached:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_prompt_accounting.py \
+    --mode offline \
+    --output-json tmp/cuda-backend/pto-serving-tokenizer-$(git rev-parse --short HEAD)/qwen-prompt-accounting.json
+```
+
 Use `paper_baseline_run_readiness.py` before spending H200 time on planned
 paper-baseline runs. It does not execute long baselines; it records source
 path, reproduction-command presence, Python entrypoints, expected artifact,

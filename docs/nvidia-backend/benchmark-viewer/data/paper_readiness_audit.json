@@ -268,7 +268,7 @@
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
         "baseline_survey": 1,
-        "raw_artifact": 9,
+        "raw_artifact": 10,
         "viewer_data": 3,
         "viewer_result": 7
       },
@@ -283,7 +283,7 @@
           ],
           "shape_contains": "Qwen/Qwen3-8B",
           "status": "missing",
-          "action": "Continue from the repo-owned qwen_serving_lifecycle_plan and persistent_qwen_serving_scaffold: tokenizer, safetensors weight loading, CUDA allocation/binding for the partial KV-cache lifecycle plan, generated Qwen kernel bodies, decode-loop execution, and viewer_result_import remain required. Then import persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current scaffold and preflight prove persistent-device ABI/codegen, concrete Qwen3-8B KV-cache/task mapping, and the controlled attention-tile proxy only."
+          "action": "Continue from the repo-owned qwen_serving_lifecycle_plan, qwen_prompt_accounting, and persistent_qwen_serving_scaffold: runtime token-ID binding, safetensors weight loading, CUDA allocation/binding for the partial KV-cache lifecycle plan, generated Qwen kernel bodies, decode-loop execution, and viewer_result_import remain required. Then import persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current scaffold and preflight prove persistent-device ABI/codegen, concrete Qwen3-8B KV-cache/task mapping, tokenizer-observed prompt counts, and the controlled attention-tile proxy only."
         },
         {
           "id": "vdcores_full_serving_qwen3_8b",
@@ -451,7 +451,7 @@
           "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
           "paper_baseline_id": "vdcores",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e3c977f8/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b95ff321/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }
@@ -592,7 +592,7 @@
           ],
           "shape_contains": "Qwen/Qwen3-8B",
           "status": "missing",
-          "action": "Continue from the repo-owned qwen_serving_lifecycle_plan and persistent_qwen_serving_scaffold: tokenizer, safetensors weight loading, CUDA allocation/binding for the partial KV-cache lifecycle plan, generated Qwen kernel bodies, decode-loop execution, and viewer_result_import remain required. Then import persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current scaffold and preflight prove persistent-device ABI/codegen, concrete Qwen3-8B KV-cache/task mapping, and the controlled attention-tile proxy only."
+          "action": "Continue from the repo-owned qwen_serving_lifecycle_plan, qwen_prompt_accounting, and persistent_qwen_serving_scaffold: runtime token-ID binding, safetensors weight loading, CUDA allocation/binding for the partial KV-cache lifecycle plan, generated Qwen kernel bodies, decode-loop execution, and viewer_result_import remain required. Then import persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current scaffold and preflight prove persistent-device ABI/codegen, concrete Qwen3-8B KV-cache/task mapping, tokenizer-observed prompt counts, and the controlled attention-tile proxy only."
         },
         {
           "source": "matrix_missing_evidence",

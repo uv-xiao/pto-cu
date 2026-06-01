@@ -459,6 +459,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["pto_controlled_serving_proxy_imported"]["status"] == "pass"
     assert checks["qwen_serving_lifecycle_scaffold"]["status"] == "pass"
     assert checks["qwen_serving_lifecycle_plan"]["status"] == "pass"
+    assert checks["qwen_prompt_accounting"]["status"] == "pass"
     assert checks["qwen3_8b_full_serving_rows_imported"]["status"] == "fail"
     assert checks["qwen_model_loader_or_token_loop"]["status"] == "fail"
     lifecycle = preflight["serving_lifecycle"]
@@ -468,6 +469,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
         lifecycle["lifecycle_plan"]["kind"]
         == "pto_qwen_persistent_serving_lifecycle_plan"
     )
+    assert lifecycle["prompt_accounting"]["kind"] == "pto_qwen_prompt_accounting"
     assert {
         "qwen_tokenizer",
         "qwen_weight_loader",
@@ -516,7 +518,7 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     assert stages["persistent_device_task_abi"]["status"] == "pass"
     assert stages["persistent_dag_codegen"]["status"] == "pass"
     assert stages["qwen_serving_lifecycle_plan"]["status"] == "pass"
-    assert stages["qwen_tokenizer"]["status"] == "missing"
+    assert stages["qwen_tokenizer"]["status"] == "partial"
     assert stages["qwen_weight_loader"]["status"] == "missing"
     assert stages["kv_cache_lifecycle"]["status"] == "partial"
     assert stages["decode_loop_runner"]["status"] == "missing"
@@ -566,6 +568,42 @@ def test_persistent_qwen_serving_lifecycle_plan_is_reviewable(tmp_path):
     assert "decode_loop_execution" in plan["remaining_runtime_gaps"]
 
 
+def test_persistent_qwen_prompt_accounting_is_reviewable(tmp_path):
+    output = tmp_path / "qwen-prompt-accounting.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/cuda/qwen_prompt_accounting.py",
+            "--mode",
+            "mock",
+            "--output-json",
+            str(output),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    accounting = json.loads(output.read_text(encoding="utf-8"))
+    assert accounting["kind"] == "pto_qwen_prompt_accounting"
+    assert accounting["status"] == "pass"
+    assert accounting["model_id"] == "Qwen/Qwen3-8B"
+    assert accounting["model_revision"] == "d117af2f304f02a8647f88fe05b61cfb405a1d9e"
+    records = {
+        item["workload_id"]: item
+        for item in accounting["prompt_records"]
+    }
+    assert set(records) == {"mpk_offline_decode", "vdcores_offline_decode"}
+    assert records["mpk_offline_decode"]["target_prompt_tokens"] == 64
+    assert records["vdcores_offline_decode"]["target_prompt_tokens"] == 128
+    assert records["mpk_offline_decode"]["chat_prompt_tokens"] > 0
+    assert records["mpk_offline_decode"]["padding_or_regeneration_required"]
+    assert "decode_loop_consumes_token_ids" in accounting["remaining_runtime_gaps"]
+
+
 def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     matrix = json.loads(
         (
@@ -580,19 +618,25 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-lifecycle-e3c977f8/qwen-serving-lifecycle-plan.json"
+        == "tmp/cuda-backend/pto-serving-lifecycle-b95ff321/qwen-serving-lifecycle-plan.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-scaffold-e3c977f8/qwen-serving-scaffold.json"
+        == "tmp/cuda-backend/pto-serving-tokenizer-b95ff321/qwen-prompt-accounting.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-preflight-e3c977f8/pto-serving-preflight.json"
+        == "tmp/cuda-backend/pto-serving-scaffold-b95ff321/qwen-serving-scaffold.json"
+        for ref in claim["current_evidence_refs"]
+    )
+    assert any(
+        ref.get("kind") == "raw_artifact"
+        and ref.get("path")
+        == "tmp/cuda-backend/pto-serving-preflight-b95ff321/pto-serving-preflight.json"
         for ref in claim["current_evidence_refs"]
     )
     pto_gap = next(
@@ -606,6 +650,7 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "controlled attention-tile proxy",
         "persistent_qwen_serving_scaffold",
         "qwen_serving_lifecycle_plan",
+        "qwen_prompt_accounting",
         "safetensors weight loading",
         "partial KV-cache lifecycle plan",
         "decode-loop execution",

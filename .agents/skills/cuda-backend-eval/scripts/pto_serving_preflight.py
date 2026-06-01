@@ -190,6 +190,18 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_prompt_accounting",
+            "status": "pass"
+            if serving_scaffold.get("prompt_accounting", {}).get("kind")
+            == "pto_qwen_prompt_accounting"
+            else "fail",
+            "evidence": "examples/cuda/qwen_prompt_accounting.py",
+            "why": (
+                "Repo-owned prompt-accounting adapter records tokenizer "
+                "availability and Qwen3-8B prompt counts for the serving policies."
+            ),
+        },
+        {
             "id": "qwen_model_loader_or_token_loop",
             "status": "fail",
             "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",

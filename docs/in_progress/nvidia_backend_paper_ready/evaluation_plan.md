@@ -99,17 +99,22 @@ repo-owned lifecycle scaffold in
 `examples/cuda/qwen_serving_lifecycle_plan.py` now maps the shared MPK and
 VDCores Qwen/Qwen3-8B serving policies to a concrete model shape, KV-cache
 capacity ladder, weight-binding plan, and persistent-device callable roles.
+The prompt-accounting contract in `examples/cuda/qwen_prompt_accounting.py`
+now records tokenizer-observed chat-template prompt lengths for those same
+serving policies.
 The current raw artifacts are
-`tmp/cuda-backend/pto-serving-lifecycle-e3c977f8/qwen-serving-lifecycle-plan.json`,
-`tmp/cuda-backend/pto-serving-scaffold-e3c977f8/qwen-serving-scaffold.json`,
+`tmp/cuda-backend/pto-serving-lifecycle-b95ff321/qwen-serving-lifecycle-plan.json`,
+`tmp/cuda-backend/pto-serving-tokenizer-b95ff321/qwen-prompt-accounting.json`,
+`tmp/cuda-backend/pto-serving-scaffold-b95ff321/qwen-serving-scaffold.json`,
 and
-`tmp/cuda-backend/pto-serving-preflight-e3c977f8/pto-serving-preflight.json`.
+`tmp/cuda-backend/pto-serving-preflight-b95ff321/pto-serving-preflight.json`.
 They prove the current viewer has only the controlled attention-tile proxy row
 for PTO serving-equivalent evidence, plus a partial runtime plan for the
-Qwen3-8B KV-cache and task mapping. The repo-owned PTO CUDA path still lacks
-tokenizer integration, safetensors weight loading, real CUDA allocation and
-binding for the planned KV-cache layout, generated Qwen kernel bodies,
-decode-loop execution, and `viewer_result_import`, so no PTO
+Qwen3-8B KV-cache and task mapping and tokenizer-observed prompt counts. The
+repo-owned PTO CUDA path still lacks runtime token-ID binding, safetensors
+weight loading, real CUDA allocation and binding for the planned KV-cache
+layout, generated Qwen kernel bodies, decode-loop execution, and
+`viewer_result_import`, so no PTO
 `Qwen/Qwen3-8B` full-serving row can be imported yet.
 Every serving baseline run record must reference one of these policy IDs and
 require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before

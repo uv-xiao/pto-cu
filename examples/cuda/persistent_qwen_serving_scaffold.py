@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 TARGET_WORKLOAD_IDS = {"mpk_offline_decode", "vdcores_offline_decode"}
 LIFECYCLE_PLAN = ROOT / "examples" / "cuda" / "qwen_serving_lifecycle_plan.py"
+PROMPT_ACCOUNTING = ROOT / "examples" / "cuda" / "qwen_prompt_accounting.py"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -41,17 +42,34 @@ def text_contains(path: str, needles: list[str]) -> bool:
     return all(needle in text for needle in needles)
 
 
-def load_lifecycle_plan() -> dict[str, Any]:
+def load_python_payload(path: Path, module_name: str, build_name: str) -> dict[str, Any]:
     spec = importlib.util.spec_from_file_location(
-        "qwen_serving_lifecycle_plan",
-        LIFECYCLE_PLAN,
+        module_name,
+        path,
     )
     if spec is None or spec.loader is None:
         return {}
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
-    return module.build_lifecycle_plan()
+    build = getattr(module, build_name)
+    return build()
+
+
+def load_lifecycle_plan() -> dict[str, Any]:
+    return load_python_payload(
+        LIFECYCLE_PLAN,
+        "qwen_serving_lifecycle_plan",
+        "build_lifecycle_plan",
+    )
+
+
+def load_prompt_accounting() -> dict[str, Any]:
+    return load_python_payload(
+        PROMPT_ACCOUNTING,
+        "qwen_prompt_accounting",
+        "build_prompt_accounting",
+    )
 
 
 def serving_workload_contracts() -> list[dict[str, Any]]:
@@ -98,6 +116,7 @@ def stage(
 
 def build_scaffold() -> dict[str, Any]:
     lifecycle_plan = load_lifecycle_plan()
+    prompt_accounting = load_prompt_accounting()
     persistent_abi_ready = text_contains(
         "src/cuda/platform/include/host/pto_cuda_persistent_device_abi.h",
         ["PtoCudaPersistentDagTask", "tensor_args", "scalar_args"],
@@ -157,9 +176,14 @@ def build_scaffold() -> dict[str, Any]:
             title="Qwen tokenizer and prompt accounting",
             owner="pto_serving_host",
             required_for_full_serving=True,
-            status="missing",
-            evidence="none",
-            next_action="Add repo-owned tokenizer or validated tokenizer adapter for Qwen prompts.",
+            status="partial"
+            if prompt_accounting.get("kind") == "pto_qwen_prompt_accounting"
+            else "missing",
+            evidence="examples/cuda/qwen_prompt_accounting.py",
+            next_action=(
+                "Bind token IDs and target prompt padding/regeneration policy "
+                "to the runtime decode loop."
+            ),
         ),
         stage(
             stage_id="qwen_weight_loader",
@@ -218,6 +242,7 @@ def build_scaffold() -> dict[str, Any]:
         "runtime": "cuda/persistent_device",
         "serving_workloads": serving_workload_contracts(),
         "lifecycle_plan": lifecycle_plan,
+        "prompt_accounting": prompt_accounting,
         "stages": stages,
         "missing_stage_ids": [item["id"] for item in missing],
         "next_action": (
