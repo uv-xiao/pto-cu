@@ -3100,3 +3100,56 @@ Each entry must include:
   environment and benchmark-module import evidence. The next slice should run
   SGLang server launch, serving benchmark, offline throughput, and one-batch
   captures under the shared Qwen3-8B workload policy.
+
+### 2026-06-01 - SGLang H200 Serving Bring-Up
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned SGLang H200
+  serving bring-up for the paper baseline evaluation track.
+- Exact Codex command or script invocation: used the documented tree-sync
+  fallback to refresh the standalone pto-cu checkout on `bizhaoh200`, then ran
+  bounded SGLang server and benchmark commands from the isolated
+  `tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15` environment on
+  `CUDA_VISIBLE_DEVICES=7`. The final online attempt started
+  `sglang.launch_server` with `--disable-piecewise-cuda-graph`, then ran
+  `sglang.bench_serving` with `--dataset-name random-ids`,
+  `--tokenize-prompt`, requested input length `128`, requested output length
+  `64`, `num_prompts=1`, `max_concurrency=1`, `request_rate=inf`, and
+  `warmup_requests=0`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready SGLang
+  serving-baseline execution.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer execution-attempt data,
+  generated paper-readiness data, changelog docs, dispatch log, tests, and
+  local `tmp/` SGLang serving artifacts. No upstream repositories were edited
+  or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  SGLang online serving now reaches H200 readiness, but the result is not a
+  paper row because the measured token shape does not match the planned
+  VDCores policy and offline/one-batch remain unresolved.
+- Verification commands and results:
+  initial artifact
+  `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-8a61669c/`
+  -> server failed during piecewise CUDA graph warmup with an illegal memory
+  access; retry artifact
+  `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-disablepwcg-8a61669c/`
+  -> server reached readiness but `bench_serving` tried to fetch an uncached
+  ShareGPT helper file in offline mode; local-data artifact
+  `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-localdata-8a61669c/`
+  -> online serving passed but measured `38/44` tokens, offline failed with a
+  context-length/tokenization error, and one-batch failed with `input_ids`
+  `None`; final random-ids artifact
+  `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-randomids-8a61669c/`
+  -> online serving passed with one completed request, zero failed requests,
+  request throughput `0.9697372581994511 req/s`, output throughput
+  `42.66843936077585 tok/s`, mean TTFT `771.7542587779462 ms`, and mean ITL
+  `5.566300629356572 ms`, but still measured `38/44` tokens instead of the
+  requested `128/64`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the next SGLang slice should fix the
+  token-shape contract before importing viewer result rows, then resolve
+  offline throughput and one-batch command failures before running the full
+  batch ladder.

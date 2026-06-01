@@ -2638,9 +2638,9 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 9
+    assert committed["summary"]["total_work_items"] == 10
     assert committed["summary"]["work_items_by_source"] == {
-        "execution_attempt": 1,
+        "execution_attempt": 2,
         "matrix_missing_evidence": 3,
         "probe": 2,
         "run_readiness": 3,
@@ -2688,6 +2688,16 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and "repeated samples for variance" in item["action"]
         for item in work_items
     )
+    assert any(
+        item["claim_id"] == "llm_serving_paper_baselines"
+        and item["source"] == "execution_attempt"
+        and item["paper_baseline_id"] == "sglang"
+        and item["paper_baseline_run_id"] == "sglang_serving_and_offline"
+        and item["execution_attempt_id"]
+        == "sglang_qwen3_8b_vdcores_batch1_randomids_h200"
+        and "measured token counts do not match" in item["action"]
+        for item in work_items
+    )
 
 
 def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
@@ -2721,7 +2731,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 9
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 10
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -3444,6 +3454,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vllm_qwen3_8b_vdcores_sweep_h200",
         "vllm_qwen3_8b_mpk_batch1_h200",
         "vllm_qwen3_8b_mpk_sweep_h200",
+        "sglang_qwen3_8b_vdcores_batch1_randomids_h200",
     } <= set(attempts_by_id)
     environment_attempts = paper_baseline_environment_attempts[
         "paper_baseline_environment_attempts"
@@ -3536,6 +3547,25 @@ def test_benchmark_viewer_has_json_backed_review_data():
             f"importlib.import_module('{module_name}')" in command
             for command in validation_commands
         )
+    sglang_serving_attempt = attempts_by_id[
+        "sglang_qwen3_8b_vdcores_batch1_randomids_h200"
+    ]
+    assert sglang_serving_attempt["status"] == "partial"
+    assert sglang_serving_attempt["paper_baseline_id"] == "sglang"
+    assert (
+        sglang_serving_attempt["paper_baseline_run_id"]
+        == "sglang_serving_and_offline"
+    )
+    assert sglang_serving_attempt["summary"]["server_ready"]
+    assert sglang_serving_attempt["summary"]["completed_requests"] == 1
+    assert sglang_serving_attempt["summary"]["failed_requests"] == 0
+    assert sglang_serving_attempt["summary"]["viewer_result_imported"] is False
+    assert sglang_serving_attempt["summary"]["requested_input_tokens"] == 128
+    assert sglang_serving_attempt["summary"]["requested_output_tokens"] == 64
+    assert sglang_serving_attempt["summary"]["measured_input_tokens"] == 38
+    assert sglang_serving_attempt["summary"]["measured_output_tokens"] == 44
+    assert "--disable-piecewise-cuda-graph" in sglang_serving_attempt["command"]
+    assert "not imported as a paper result" in sglang_serving_attempt["blocker"]
     vllm_h200_attempt = attempts_by_id["vllm_qwen3_8b_vdcores_batch1_h200"]
     assert vllm_h200_attempt["status"] == "partial"
     assert vllm_h200_attempt["hardware"]["gpu"] == "H200"
