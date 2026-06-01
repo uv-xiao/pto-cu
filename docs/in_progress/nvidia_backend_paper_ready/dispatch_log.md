@@ -3511,3 +3511,38 @@ Follow-up tracked-state closure after user confirmation:
   execution blocker. Remaining work is to rebuild `dae.runtime` with that
   `DAE_COMPUTE_OPS` superset, rerun correctness, then build a paper-serving
   harness that imports Qwen3-8B latency/throughput rows.
+
+### 2026-06-01 - VDCores Qwen3 8B Rebuild And Correctness
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  Qwen3-8B runtime rebuild and bounded execution validation.
+- Exact Codex command or script invocation: on `bizhaoh200`, built
+  `dae.runtime` with `DAE_COMPUTE_OPS_FILE=<artifact>/qwen3-8b-compute-ops.vdcore.build`,
+  the H200 CUTLASS include path, and `-include cfloat`; then ran
+  `app/python/qwen3/sched.py --hf-cache-dir <shared-hf-cache>/hub --correctness`,
+  `-N 1 -b 5`, and the paper-policy `-N 64 -b 5` command.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, VDCores full-serving
+  evidence for the paper-readiness matrix.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, in-progress evaluation docs,
+  changelog docs, dispatch log, and tests. No upstream repositories were
+  edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The runtime rebuild and bounded correctness passed, but the 64-token
+  VDCores serving policy still fails before launch with
+  `assert len(self.cinsts) <= ctensor.shape[0]` in the instruction builder.
+- Verification commands and results: `validate_benchmark_viewer_data.py` ->
+  passed; `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed;
+  `pytest tests/ut/py/test_nvidia_review_artifacts.py -q` -> `41 passed`;
+  `jq empty docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `git diff --check` -> passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: VDCores Qwen3-8B no longer has a
+  missing-operator blocker. It now needs instruction-capacity work before the
+  full `vdcores_offline_decode` 64-token row can be imported with final
+  latency/throughput metrics.

@@ -2925,7 +2925,7 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_qwen3_8b_decode_preflight"
         and item["execution_attempt_id"]
-        == "vdcores_qwen3_8b_missing_ops_preflight_h200"
+        == "vdcores_qwen3_8b_rebuild_correctness_token1_h200"
         for item in work_items
     )
 
@@ -3814,6 +3814,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_repeat_guard_bench_h200",
         "vdcores_qwen3_1p7b_repeat_guard_correctness_h200",
         "vdcores_qwen3_8b_missing_ops_preflight_h200",
+        "vdcores_qwen3_8b_rebuild_correctness_token1_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
         "vllm_qwen3_8b_vdcores_batch1_h200",
         "vllm_qwen3_8b_vdcores_sweep_h200",
@@ -4386,6 +4387,21 @@ def test_benchmark_viewer_has_json_backed_review_data():
         == "missing_compiled_compute_operators"
     )
     assert "OP_RMS_NORM_F16_K_4096_SMEM" in vdcores_qwen3_8b["blocker"]
+    vdcores_qwen3_8b_rebuilt = attempts_by_id[
+        "vdcores_qwen3_8b_rebuild_correctness_token1_h200"
+    ]
+    assert vdcores_qwen3_8b_rebuilt["status"] == "partial"
+    assert vdcores_qwen3_8b_rebuilt["paper_baseline_run_id"] == (
+        "vdcores_qwen3_8b_decode_preflight"
+    )
+    assert vdcores_qwen3_8b_rebuilt["summary"]["runtime_rebuild_status"] == "pass"
+    assert vdcores_qwen3_8b_rebuilt["summary"]["correctness_status"] == "pass"
+    assert vdcores_qwen3_8b_rebuilt["summary"]["final_token_match"]
+    assert vdcores_qwen3_8b_rebuilt["summary"]["token1_benchmark_status"] == "pass"
+    assert (
+        vdcores_qwen3_8b_rebuilt["summary"]["failure_kind"]
+        == "instruction_buffer_capacity_assertion"
+    )
     vdcores_rebuild_attempt = attempts_by_id[
         "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200"
     ]

@@ -210,7 +210,8 @@
         "raw_artifacts"
       ],
       "current_blockers": [
-        "VDCores Qwen3-8B loads from the H200 offline cache, but dae.runtime must be rebuilt with the Qwen3-8B compute-operator set before correctness or serving timing can run.",
+        "VDCores Qwen3-8B now rebuilds with the required compute-operator set and passes the bounded correctness preflight.",
+        "A token-1 benchmark emits timing, but the 64-token VDCores paper policy fails before launch in dae.launcher.Builder.build with assert len(self.cinsts) <= ctensor.shape[0].",
         "ThunderKittens has imported padded H100 MHA decode-attention tile rows for the policy batch ladder, but not the full Qwen serving-family sweep.",
         "PTO persistent_device has an imported controlled attention-tile proxy; a full Qwen serving-family PTO sweep remains absent."
       ],
@@ -252,6 +253,14 @@
             "\"model_load\": \"pass\"",
             "missing_compiled_compute_operators",
             "DAE_COMPUTE_OPS"
+          ]
+        },
+        {
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-rebuild-correctness-bench-summary.json",
+          "symbols": [
+            "\"correctness\": {",
+            "\"status\": \"pass\"",
+            "instruction_buffer_capacity_assertion"
           ]
         }
       ]

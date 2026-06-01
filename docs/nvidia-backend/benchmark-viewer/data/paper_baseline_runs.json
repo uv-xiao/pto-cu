@@ -156,18 +156,28 @@
       },
       "setup_commands": [
         "cd tmp/baselines/vdcores && make pyext",
-        "For the Qwen3-8B path, rebuild dae.runtime with the DAE_COMPUTE_OPS set reported by app/python/qwen3/sched.py before importing serving rows."
+        "cd tmp/baselines/vdcores && CPATH=<cutlass>/include DAE_COMPUTE_OPS_FILE=<artifact>/qwen3-8b-compute-ops.vdcore.build make clean pyext NVCC_FLAGS=\"-O3 -Iinclude/dae -Iinclude -Ibuild/generated -I<cutlass>/include -std=c++20 -Xptxas=-v -use_fast_math -lineinfo -DNDEBUG -include cfloat\""
       ],
       "run_commands": [
         "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir <shared-hf-cache>/hub --correctness",
-        "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir <shared-hf-cache>/hub -N 64 -b 1"
+        "cd tmp/baselines/vdcores && DAE_BENCH_WARMUP=1 HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir <shared-hf-cache>/hub -N 1 -b 5",
+        "cd tmp/baselines/vdcores && DAE_BENCH_WARMUP=1 HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir <shared-hf-cache>/hub -N 64 -b 5"
       ],
       "expected_artifacts": [
         "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
         "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-preflight-summary.json",
         "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight-hub-cache.log",
         "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight-hub-cache-status.txt",
-        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight.log"
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-rebuild-correctness-bench-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-compute-ops.vdcore.build",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/rebuild-qwen3-8b-runtime-cfloat.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/rebuild-qwen3-8b-runtime-cfloat-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-correctness-after-rebuild.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-correctness-after-rebuild-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-token1-after-rebuild.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-token1-after-rebuild-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-after-rebuild.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-after-rebuild-status.txt"
       ],
       "required_metrics": [
         "correctness",
@@ -182,7 +192,7 @@
       "import_target": {
         "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
         "result_kind": "paper_baseline_result_record",
-        "notes": "Importer must preserve VDCores queue/resource metadata so it can be compared with PTO persistent-device resource policy."
+        "notes": "Importer must preserve VDCores queue/resource metadata. Current Qwen3-8B evidence proves rebuild plus correctness and bounded token-1 timing, but full 64-token serving remains blocked by the instruction-buffer capacity assertion before launch."
       }
     },
     {

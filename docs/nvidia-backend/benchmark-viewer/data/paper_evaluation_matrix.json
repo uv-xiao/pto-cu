@@ -482,7 +482,7 @@
         }
       ],
       "missing_evidence": [
-        "PTO persistent-device full-serving, VDCores Qwen3-8B full serving after the required DAE_COMPUTE_OPS rebuild, and ThunderKittens-family full serving rows are not yet imported for the shared Qwen3-8B serving policies."
+        "PTO persistent-device full-serving, VDCores Qwen3-8B full serving after the current 64-token instruction-capacity blocker, and ThunderKittens-family full serving rows are not yet imported for the shared Qwen3-8B serving policies."
       ],
       "missing_evidence_details": [
         {
@@ -506,7 +506,7 @@
           ],
           "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
           "status": "missing",
-          "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row for the VDCores-comparable serving policy after rebuilding dae.runtime with the Qwen3-8B compute-operator set."
+          "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after increasing the qwen3 schedule instruction capacity enough for the 64-token policy."
         },
         {
           "id": "thunderkittens_full_serving_qwen3_8b",

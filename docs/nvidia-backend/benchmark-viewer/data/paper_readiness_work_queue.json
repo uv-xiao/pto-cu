@@ -87,7 +87,7 @@
       ],
       "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
       "status": "missing",
-      "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row for the VDCores-comparable serving policy after rebuilding dae.runtime with the Qwen3-8B compute-operator set.",
+      "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after increasing the qwen3 schedule instruction capacity enough for the 64-token policy.",
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
@@ -130,13 +130,13 @@
       "owner": "vdcores_qwen3_8b_decode_preflight",
       "paper_baseline_id": "vdcores",
       "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
-      "execution_attempt_id": "vdcores_qwen3_8b_missing_ops_preflight_h200",
+      "execution_attempt_id": "vdcores_qwen3_8b_rebuild_correctness_token1_h200",
       "missing_evidence_id": "",
       "method_id": "",
       "serving_workload_ids": [],
       "shape_contains": "",
-      "status": "blocked",
-      "action": "Resolve latest execution attempt vdcores_qwen3_8b_missing_ops_preflight_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: dae.runtime lacks the Qwen3-8B compute operators reported by the launcher, including OP_RMS_NORM_F16_K_4096_SMEM and OP_SILU_MUL_SHARED_BF16_K_64_SW128; rebuild with the full DAE_COMPUTE_OPS set before running correctness or serving timing.",
+      "status": "partial",
+      "action": "Resolve latest execution attempt vdcores_qwen3_8b_rebuild_correctness_token1_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: The full VDCores paper decode policy is still not importable: app/python/qwen3/sched.py -N 64 -b 5 fails before launch in dae.launcher.Builder.build with assert len(self.cinsts) <= ctensor.shape[0].",
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     }
   ]

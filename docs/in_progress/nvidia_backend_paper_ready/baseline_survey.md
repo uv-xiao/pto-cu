@@ -122,11 +122,13 @@ HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
   --correctness
 ```
 
-The latest Qwen3-8B preflight loaded the offline H200 checkpoint and reached
+The first Qwen3-8B preflight loaded the offline H200 checkpoint and reached
 `dae.launch()`, then stopped because the compiled `dae.runtime` did not include
-the Qwen3-8B compute-operator set reported by the launcher. Rebuild with the
-reported `DAE_COMPUTE_OPS` superset before collecting correctness or timing
-rows.
+the Qwen3-8B compute-operator set reported by the launcher. After rebuilding
+with that operator set, the bounded correctness path passed and a token-1
+benchmark emitted timing. The remaining VDCores paper-serving blocker is the
+`-N 64 -b 5` instruction-capacity assertion in
+`dae.launcher.Builder.build`.
 
 ## vLLM Notes
 
