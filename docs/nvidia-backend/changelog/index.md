@@ -97,6 +97,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 serving baseline environment plans](2026-06-01-serving-baseline-environment-plans.md)
 - [2026-06-01 serving baseline environment attempt](2026-06-01-serving-baseline-environment-attempt.md)
 - [2026-06-01 mutable KV-cache ABI](2026-06-01-mutable-kv-cache-abi.md)
+- [2026-06-01 CUDA codegen test guard](2026-06-01-cuda-codegen-test-guard.md)
 - [2026-06-01 Qwen persistent task bodies](2026-06-01-qwen-persistent-task-bodies.md)
 - [2026-06-01 Qwen decode loop runner plan](2026-06-01-qwen-decode-loop-runner.md)
 - [2026-06-01 Qwen KV-cache binding](2026-06-01-qwen-kv-cache-binding.md)
