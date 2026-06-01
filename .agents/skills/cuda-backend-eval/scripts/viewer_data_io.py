@@ -12,6 +12,7 @@ from typing import Any
 
 
 COLLECTION_KEYS = (
+    "claim_audits",
     "result_records",
     "paper_baseline_execution_attempts",
     "paper_baseline_environment_attempts",
@@ -21,6 +22,14 @@ COLLECTION_KEYS = (
     "serving_command_plans",
 )
 SIDECAR_LIST_FIELDS = {
+    "claim_audits": (
+        "missing_evidence_details",
+        "paper_baseline_run_statuses",
+        "paper_baseline_run_readiness_statuses",
+        "execution_attempt_statuses",
+        "probe_statuses",
+        "next_actions",
+    ),
     "paper_evaluation_matrix": (
         "current_evidence_refs",
         "missing_evidence_details",
@@ -99,6 +108,8 @@ def sharded_target(path: Path, payload: dict[str, Any]) -> Path | None:
         path.name == "paper_baseline_run_readiness.json"
         and "paper_baseline_run_readiness" in payload
     ):
+        return path.with_suffix("")
+    if path.name == "paper_readiness_audit.json" and "claim_audits" in payload:
         return path.with_suffix("")
     return None
 

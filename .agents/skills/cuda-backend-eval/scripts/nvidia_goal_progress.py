@@ -29,17 +29,14 @@ def fail(message: str) -> None:
 
 
 def load_json(path: Path) -> dict[str, Any]:
-    if path.name == "paper_evaluation_matrix.json":
-        try:
-            return load_viewer_json(path)
-        except FileNotFoundError:
-            fail(f"missing JSON file: {path}")
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = load_viewer_json(path)
     except FileNotFoundError:
         fail(f"missing JSON file: {path}")
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in {path}: {exc}")
+    except ValueError as exc:
+        fail(str(exc))
     if not isinstance(data, dict):
         fail(f"JSON root is not an object: {path}")
     return data

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "source_files": [
+    "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix/index.json",
+    "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
+    "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
+    "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness/index.json",
+    "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_execution_attempts/index.json",
+    "docs/nvidia-backend/benchmark-viewer/data/results/index.json"
+  ],
+  "overall_status": "not_paper_ready",
+  "ready_claims": 3,
+  "blocked_claims": 1,
+  "collection": "claim_audits",
+  "record_files": [
+    "records/host_schedule_launch_overhead.json",
+    "records/persistent_device_scheduler_overhead.json",
+    "records/tensor_core_tile_baselines.json",
+    "records/llm_serving_paper_baselines.json"
+  ]
+}

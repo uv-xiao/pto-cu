@@ -1,0 +1,14 @@
+{
+  "id": "thunderkittens_tile_kernel",
+  "paper_baseline_id": "thunderkittens",
+  "status": "imported_to_viewer",
+  "serving_workload_ids": [
+    "vdcores_offline_decode"
+  ],
+  "expected_artifacts": [
+    "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/build.log",
+    "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/quick-smoke.json",
+    "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/capture.json",
+    "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/viewer-result-records.json"
+  ]
+}

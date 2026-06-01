@@ -52,7 +52,15 @@ def load_viewer_collection(path):
 
 def expand_viewer_record(base, record):
     payload = dict(record)
-    for field in ("current_evidence_refs", "missing_evidence_details"):
+    for field in (
+        "current_evidence_refs",
+        "missing_evidence_details",
+        "paper_baseline_run_statuses",
+        "paper_baseline_run_readiness_statuses",
+        "execution_attempt_statuses",
+        "probe_statuses",
+        "next_actions",
+    ):
         path_key = f"{field}_path"
         relpath = payload.pop(path_key, None)
         if relpath is not None:
@@ -4577,10 +4585,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert result.returncode == 0, result.stdout
 
     generated = json.loads(output_path.read_text(encoding="utf-8"))
-    committed = json.loads(
-        (VIEWER_ROOT / "data" / "paper_readiness_audit.json").read_text(
-            encoding="utf-8"
-        )
+    committed = load_viewer_collection(
+        VIEWER_ROOT / "data" / "paper_readiness_audit.json"
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
@@ -4933,10 +4939,8 @@ def test_nvidia_review_artifact_refresh_regenerates_all_generated_json(tmp_path)
         "paper_readiness_work_queue.json",
         "goal_progress.json",
     ]:
-        generated = json.loads((output_dir / filename).read_text(encoding="utf-8"))
-        committed = json.loads(
-            (VIEWER_ROOT / "data" / filename).read_text(encoding="utf-8")
-        )
+        generated = load_viewer_collection(output_dir / filename)
+        committed = load_viewer_collection(VIEWER_ROOT / "data" / filename)
         assert generated == committed
     assert "paper_readiness_audit.json" in result.stdout
     assert "paper_readiness_work_queue.json" in result.stdout
@@ -5173,7 +5177,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "data" / "serving_workloads.json").is_file()
     paper_evaluation_dir = VIEWER_ROOT / "data" / "paper_evaluation_matrix"
     assert (paper_evaluation_dir / "index.json").is_file()
-    assert (VIEWER_ROOT / "data" / "paper_readiness_audit.json").is_file()
+    paper_readiness_audit_dir = VIEWER_ROOT / "data" / "paper_readiness_audit"
+    assert (paper_readiness_audit_dir / "index.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_readiness_work_queue.json").is_file()
     assert (VIEWER_ROOT / "data" / "goal_progress.json").is_file()
     assert (VIEWER_ROOT / "data" / "capture_imports.json").is_file()
@@ -5217,6 +5222,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paper_evaluation_matrix",
         "paperReadinessAudit",
         "paper_readiness_audit",
+        "data/paper_readiness_audit/index.json",
         "paperReadinessWorkQueue",
         "paper_readiness_work_queue",
         "Paper Work Queue",
@@ -5273,10 +5279,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     paper_evaluation = load_viewer_collection(
         VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
     )
-    paper_readiness_audit = json.loads(
-        (VIEWER_ROOT / "data" / "paper_readiness_audit.json").read_text(
-            encoding="utf-8"
-        )
+    paper_readiness_audit = load_viewer_collection(
+        VIEWER_ROOT / "data" / "paper_readiness_audit.json"
     )
     paper_readiness_work_queue = json.loads(
         (VIEWER_ROOT / "data" / "paper_readiness_work_queue.json").read_text(

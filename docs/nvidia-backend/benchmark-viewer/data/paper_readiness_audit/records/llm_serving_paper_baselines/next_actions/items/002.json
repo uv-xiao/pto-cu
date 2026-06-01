@@ -1,0 +1,15 @@
+{
+  "source": "matrix_missing_evidence",
+  "missing_evidence_id": "thunderkittens_full_serving_qwen3_8b",
+  "paper_baseline_id": "thunderkittens",
+  "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
+  "method_id": "thunderkittens",
+  "serving_workload_ids": [
+    "mpk_offline_decode",
+    "vdcores_offline_decode"
+  ],
+  "shape_contains": "Qwen/Qwen3-8B",
+  "status": "missing",
+  "action": "Import ThunderKittens-family full-serving Qwen/Qwen3-8B rows beyond the current attention-tile proxy.",
+  "evidence_summary": []
+}

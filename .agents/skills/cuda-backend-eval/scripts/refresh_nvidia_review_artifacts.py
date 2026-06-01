@@ -106,7 +106,7 @@ def main() -> None:
         results=results,
     )
     audit_path = output_dir / "paper_readiness_audit.json"
-    audit_module.write_json(audit_path, audit)
+    viewer_data_module.write_json(audit_path, audit)
     print(f"wrote {audit_path}")
 
     work_queue = work_queue_module.build_work_queue(

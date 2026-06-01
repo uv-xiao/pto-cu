@@ -5,12 +5,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[4]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from viewer_data_io import load_json as load_viewer_json
+
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 DEFAULT_AUDIT = VIEWER_DATA / "paper_readiness_audit.json"
 
@@ -21,11 +28,13 @@ def fail(message: str) -> None:
 
 def load_json(path: Path) -> dict[str, Any]:
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = load_viewer_json(path)
     except FileNotFoundError:
         fail(f"missing JSON file: {path}")
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in {path}: {exc}")
+    except ValueError as exc:
+        fail(str(exc))
     if not isinstance(data, dict):
         fail(f"JSON root is not an object: {path}")
     return data

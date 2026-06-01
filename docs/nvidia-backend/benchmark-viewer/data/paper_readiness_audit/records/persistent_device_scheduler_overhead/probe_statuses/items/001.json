@@ -1,0 +1,17 @@
+{
+  "paper_baseline_id": "vdcores",
+  "latest_status": "pass",
+  "next_action": "Run the Qwen3-1.7B dry-build, correctness, and benchmark commands, then import measured resource-policy artifacts.",
+  "machines": [
+    {
+      "gpu": "A100",
+      "status": "pass",
+      "blocking_gaps": []
+    },
+    {
+      "gpu": "H200",
+      "status": "pass",
+      "blocking_gaps": []
+    }
+  ]
+}

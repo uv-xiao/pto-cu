@@ -1,0 +1,26 @@
+{
+  "id": "mpk_qwen3_native_vs_persistent",
+  "paper_baseline_id": "mpk",
+  "status": "imported_to_viewer",
+  "serving_workload_ids": [
+    "mpk_offline_decode"
+  ],
+  "expected_artifacts": [
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/attempt-summary.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/paper-baseline-results.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/viewer-result-records.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2-status.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2.log",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2-status.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.json.predecode.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.log",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024-status.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.json.predecode.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.log",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/pto-commit.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/remote-refresh-path.txt"
+  ]
+}

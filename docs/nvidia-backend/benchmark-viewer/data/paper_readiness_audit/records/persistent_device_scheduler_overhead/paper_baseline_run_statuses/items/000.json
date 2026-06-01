@@ -1,0 +1,10 @@
+{
+  "id": "mpk_persistent_scheduler_trace",
+  "paper_baseline_id": "mpk",
+  "status": "imported_to_viewer",
+  "serving_workload_ids": [],
+  "expected_artifacts": [
+    "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-trace.json",
+    "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-profile.log"
+  ]
+}

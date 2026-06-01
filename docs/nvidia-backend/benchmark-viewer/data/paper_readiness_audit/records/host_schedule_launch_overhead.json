@@ -1,0 +1,22 @@
+{
+  "id": "host_schedule_launch_overhead",
+  "title": "Host-Schedule Launch Overhead",
+  "matrix_status": "ready_for_paper_claim",
+  "ready_for_paper_claim": true,
+  "evidence_ref_counts": {
+    "raw_artifact": 9,
+    "viewer_data": 1,
+    "viewer_result": 18
+  },
+  "missing_evidence_count": 0,
+  "evidence_policy_exceptions": [],
+  "missing_viewer_results": [],
+  "blockers": [],
+  "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, stream-concurrency sweeps, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts for each launch family.",
+  "missing_evidence_details_path": "records/host_schedule_launch_overhead/missing_evidence_details",
+  "paper_baseline_run_statuses_path": "records/host_schedule_launch_overhead/paper_baseline_run_statuses",
+  "paper_baseline_run_readiness_statuses_path": "records/host_schedule_launch_overhead/paper_baseline_run_readiness_statuses",
+  "execution_attempt_statuses_path": "records/host_schedule_launch_overhead/execution_attempt_statuses",
+  "probe_statuses_path": "records/host_schedule_launch_overhead/probe_statuses",
+  "next_actions_path": "records/host_schedule_launch_overhead/next_actions"
+}

@@ -5,12 +5,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[4]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from viewer_data_io import write_json as write_viewer_json
+
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 DEFAULT_MATRIX = VIEWER_DATA / "paper_evaluation_matrix.json"
 DEFAULT_RUNS = VIEWER_DATA / "paper_baseline_runs.json"
@@ -87,7 +94,15 @@ def load_sharded_collection(path: Path) -> dict[str, Any]:
 
 def expand_record_sidecars(base: Path, record: dict[str, Any]) -> dict[str, Any]:
     payload = dict(record)
-    for field in ("current_evidence_refs", "missing_evidence_details"):
+    for field in (
+        "current_evidence_refs",
+        "missing_evidence_details",
+        "paper_baseline_run_statuses",
+        "paper_baseline_run_readiness_statuses",
+        "execution_attempt_statuses",
+        "probe_statuses",
+        "next_actions",
+    ):
         path_key = f"{field}_path"
         relpath = payload.pop(path_key, None)
         if relpath is None:
@@ -136,6 +151,16 @@ def load_sidecar_list(path: Path) -> list[Any]:
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n")
+
+
+def write_output(path: Path, payload: dict[str, Any]) -> None:
+    if (
+        path.resolve().parent == VIEWER_DATA.resolve()
+        or path.with_suffix("").is_dir()
+    ):
+        write_viewer_json(path, payload)
+        return
+    write_json(path, payload)
 
 
 def repo_relative(path: Path) -> str:
@@ -726,7 +751,7 @@ def main() -> None:
         results=load_json(args.results),
     )
     if args.output:
-        write_json(args.output, audit)
+        write_output(args.output, audit)
         print(f"wrote {repo_relative(args.output)}")
     else:
         print(json.dumps(audit, indent=2, sort_keys=False))

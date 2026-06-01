@@ -1,0 +1,22 @@
+{
+  "id": "persistent_device_scheduler_overhead",
+  "title": "Persistent-Device Scheduler Overhead",
+  "matrix_status": "ready_for_paper_claim",
+  "ready_for_paper_claim": true,
+  "evidence_ref_counts": {
+    "raw_artifact": 4,
+    "stable_doc": 1,
+    "viewer_result": 4
+  },
+  "missing_evidence_count": 0,
+  "evidence_policy_exceptions": [],
+  "missing_viewer_results": [],
+  "blockers": [],
+  "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, latency distributions, and an explicit measurement scope separating diagnostic instrumentation from final baseline timing rows.",
+  "missing_evidence_details_path": "records/persistent_device_scheduler_overhead/missing_evidence_details",
+  "paper_baseline_run_statuses_path": "records/persistent_device_scheduler_overhead/paper_baseline_run_statuses",
+  "paper_baseline_run_readiness_statuses_path": "records/persistent_device_scheduler_overhead/paper_baseline_run_readiness_statuses",
+  "execution_attempt_statuses_path": "records/persistent_device_scheduler_overhead/execution_attempt_statuses",
+  "probe_statuses_path": "records/persistent_device_scheduler_overhead/probe_statuses",
+  "next_actions_path": "records/persistent_device_scheduler_overhead/next_actions"
+}

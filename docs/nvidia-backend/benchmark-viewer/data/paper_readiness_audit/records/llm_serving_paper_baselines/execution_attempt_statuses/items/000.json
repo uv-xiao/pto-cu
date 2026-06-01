@@ -1,0 +1,28 @@
+{
+  "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
+  "paper_baseline_id": "vdcores",
+  "execution_attempt_id": "vdcores_qwen3_8b_shared_instruction_window_plan_h200",
+  "title": "VDCores Qwen3-8B Shared-Instruction Window Plan",
+  "status": "partial",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-shared-window-plan-0a0392d2/",
+  "blocker": "This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing.",
+  "summary": {
+    "model": "Qwen/Qwen3-8B",
+    "analysis_status": "pass",
+    "shared_instruction_limit": 512,
+    "num_sms": 132,
+    "max_cinsts_per_sm_required": 2177,
+    "max_minsts_per_sm_required": 15042,
+    "minimum_compute_instruction_windows": 5,
+    "minimum_memory_instruction_windows": 30,
+    "minimum_worst_case_windows_per_sm": 30,
+    "segmented_window_manifest_status": "generated",
+    "segmented_window_manifest_kind": "per_sm_uniform_lower_bound",
+    "max_compute_window_instruction_count": 512,
+    "max_memory_window_instruction_count": 512,
+    "pre_import_check_count": 4,
+    "preferred_path": "segmented_token_windowed_shared_instruction_schedule",
+    "paper_row_importable": false,
+    "failure_kind": "shared_instruction_windowing_not_implemented"
+  }
+}

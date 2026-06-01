@@ -1,0 +1,18 @@
+{
+  "id": "vdcores_resource_policy_trace",
+  "paper_baseline_id": "vdcores",
+  "status": "imported_to_viewer",
+  "serving_workload_ids": [],
+  "expected_artifacts": [
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/viewer-import.json",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-summary.json",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-bench-only.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-bench-only-status.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-correctness-fresh.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-correctness-fresh-status.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/rebuild-qwen-compute-ops.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/rebuild-qwen-compute-ops-status.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/qwen3-1p7b-compute-ops.vdcore.build",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/vdcores-queue-scheduler-diagnostics.patch"
+  ]
+}

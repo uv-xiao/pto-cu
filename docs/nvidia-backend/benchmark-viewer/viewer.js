@@ -23,7 +23,9 @@ const DATA_FILES = {
   paperEvaluation: {
     manifest: "data/paper_evaluation_matrix/index.json",
   },
-  paperReadinessAudit: "data/paper_readiness_audit.json",
+  paperReadinessAudit: {
+    manifest: "data/paper_readiness_audit/index.json",
+  },
   paperReadinessWorkQueue: "data/paper_readiness_work_queue.json",
   goalProgress: "data/goal_progress.json",
   results: {
@@ -65,7 +67,15 @@ async function loadDataFile(spec) {
 
 async function expandRecord(base, record) {
   const payload = Object.assign({}, record);
-  for (const field of ["current_evidence_refs", "missing_evidence_details"]) {
+  for (const field of [
+    "current_evidence_refs",
+    "missing_evidence_details",
+    "paper_baseline_run_statuses",
+    "paper_baseline_run_readiness_statuses",
+    "execution_attempt_statuses",
+    "probe_statuses",
+    "next_actions",
+  ]) {
     const pathKey = `${field}_path`;
     if (payload[pathKey]) {
       payload[field] = await loadSidecarList(base, payload[pathKey]);
@@ -887,7 +897,7 @@ async function main() {
       loadDataFile(DATA_FILES.servingCommandPlan),
       loadJson(DATA_FILES.servingWorkloads),
       loadDataFile(DATA_FILES.paperEvaluation),
-      loadJson(DATA_FILES.paperReadinessAudit),
+      loadDataFile(DATA_FILES.paperReadinessAudit),
       loadJson(DATA_FILES.paperReadinessWorkQueue),
       loadJson(DATA_FILES.goalProgress),
       loadDataFile(DATA_FILES.results),

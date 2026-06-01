@@ -114,7 +114,15 @@ def load_sharded_json(path: Path) -> dict:
 
 def expand_record_sidecars(base: Path, record: dict) -> dict:
     payload = dict(record)
-    for field in ("current_evidence_refs", "missing_evidence_details"):
+    for field in (
+        "current_evidence_refs",
+        "missing_evidence_details",
+        "paper_baseline_run_statuses",
+        "paper_baseline_run_readiness_statuses",
+        "execution_attempt_statuses",
+        "probe_statuses",
+        "next_actions",
+    ):
         path_key = f"{field}_path"
         relpath = payload.pop(path_key, None)
         if relpath is None:

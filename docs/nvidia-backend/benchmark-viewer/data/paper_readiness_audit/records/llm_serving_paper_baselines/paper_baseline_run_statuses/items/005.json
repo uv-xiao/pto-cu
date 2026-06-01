@@ -1,0 +1,16 @@
+{
+  "id": "thunderkittens_decode_attention_tile",
+  "paper_baseline_id": "thunderkittens",
+  "status": "imported_to_viewer",
+  "serving_workload_ids": [
+    "vdcores_offline_decode"
+  ],
+  "expected_artifacts": [
+    "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
+    "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch1.json",
+    "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch2.json",
+    "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch4.json",
+    "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch8.json",
+    "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch16.json"
+  ]
+}

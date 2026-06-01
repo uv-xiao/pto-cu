@@ -1,0 +1,8 @@
+{
+  "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
+  "paper_baseline_id": "vdcores",
+  "latest_status": "pass",
+  "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-current-working/",
+  "blocking_gaps": [],
+  "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
+}

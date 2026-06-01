@@ -1,0 +1,17 @@
+{
+  "paper_baseline_id": "mpk",
+  "latest_status": "pass",
+  "next_action": "Install MPK dependencies, run the Qwen3 native and --use-mirage commands, then export raw latency and throughput JSON.",
+  "machines": [
+    {
+      "gpu": "A100",
+      "status": "pass",
+      "blocking_gaps": []
+    },
+    {
+      "gpu": "H200",
+      "status": "pass",
+      "blocking_gaps": []
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "thunderkittens_non_mha_rotary",
+  "paper_baseline_id": "thunderkittens",
+  "status": "imported_to_viewer",
+  "serving_workload_ids": [],
+  "expected_artifacts": [
+    "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/build.log",
+    "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/correctness.log",
+    "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/capture.json",
+    "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/nvidia-smi-gpus.txt"
+  ]
+}
