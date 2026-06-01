@@ -94,6 +94,29 @@ function paperBaselineRunTitle(id) {
   return run ? run.title : id;
 }
 
+function formatServingAction(action) {
+  const parts = [];
+  if (action.method_id) {
+    parts.push(`method=${methodName(action.method_id)}`);
+  }
+  if (action.paper_baseline_id) {
+    parts.push(`baseline=${paperBaselineName(action.paper_baseline_id)}`);
+  }
+  if (action.paper_baseline_run_id) {
+    parts.push(`run=${paperBaselineRunTitle(action.paper_baseline_run_id)}`);
+  }
+  if (action.serving_workload_ids && action.serving_workload_ids.length) {
+    parts.push(
+      `serving=${action.serving_workload_ids.map(servingWorkloadTitle).join(", ")}`,
+    );
+  }
+  if (action.shape_contains) {
+    parts.push(`shape=${action.shape_contains}`);
+  }
+  const prefix = parts.length ? `${parts.join(" | ")}: ` : "";
+  return `${prefix}${action.action}`;
+}
+
 function renderSnapshot() {
   const snapshot = state.results.snapshot;
   const root = document.getElementById("snapshot");
@@ -498,12 +521,19 @@ function renderPaperEvaluation() {
       }
       return `${ref.kind}: ${ref.path}`;
     });
+    const missingDetails = (claim.missing_evidence_details || []).map((item) => (
+      formatServingAction(item)
+    ));
     details.append(
       summary,
       claimText,
       metadata,
       ...namedList("Current Evidence", evidence),
       ...namedList("Missing Evidence", claim.missing_evidence),
+      ...namedList(
+        "Missing Evidence Details",
+        missingDetails.length ? missingDetails : ["none"],
+      ),
       promotion,
     );
     return details;
@@ -533,6 +563,8 @@ function renderPaperWorkQueue() {
     item.claim_title,
     item.source,
     item.owner,
+    (item.serving_workload_ids || []).map(servingWorkloadTitle).join(", ") || "-",
+    item.shape_contains || "-",
     item.status,
     item.action,
   ]);
@@ -541,7 +573,19 @@ function renderPaperWorkQueue() {
   root.replaceChildren(
     heading,
     summary,
-    table(["Priority", "Claim", "Source", "Owner", "Status", "Action"], rows),
+    table(
+      [
+        "Priority",
+        "Claim",
+        "Source",
+        "Owner",
+        "Serving",
+        "Shape",
+        "Status",
+        "Action",
+      ],
+      rows,
+    ),
   );
 }
 
@@ -625,12 +669,9 @@ function renderPaperReadinessAudit() {
       )).join(", ");
       return `${probe.paper_baseline_id}: ${probe.latest_status} (${machines})`;
     });
-    const nextActions = claim.next_actions.map((action) => {
-      const owner = action.paper_baseline_run_id
-        || action.paper_baseline_id
-        || action.source;
-      return `${action.source}/${owner}: ${action.action}`;
-    });
+    const nextActions = claim.next_actions.map((action) => (
+      `${action.source}: ${formatServingAction(action)}`
+    ));
     item.append(
       summaryLine,
       fieldList([

@@ -23,6 +23,7 @@
         "viewer_result": 18
       },
       "missing_evidence_count": 0,
+      "missing_evidence_details": [],
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [],
       "paper_baseline_run_readiness_statuses": [],
@@ -43,6 +44,7 @@
         "viewer_result": 4
       },
       "missing_evidence_count": 0,
+      "missing_evidence_details": [],
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {
@@ -126,6 +128,7 @@
         "viewer_result": 9
       },
       "missing_evidence_count": 1,
+      "missing_evidence_details": [],
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {
@@ -213,6 +216,68 @@
         "viewer_result": 5
       },
       "missing_evidence_count": 1,
+      "missing_evidence_details": [
+        {
+          "id": "pto_full_serving_qwen3_8b",
+          "method_id": "pto_persistent_device",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Import PTO persistent-device full-serving rows for Qwen/Qwen3-8B under both MPK-comparable and VDCores-comparable serving policies."
+        },
+        {
+          "id": "mpk_persistent_qwen3_8b",
+          "paper_baseline_id": "mpk",
+          "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
+          "method_id": "mpk",
+          "serving_workload_ids": [
+            "mpk_offline_decode"
+          ],
+          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Run and import the MPK persistent-kernel Qwen/Qwen3-8B offline-decode row for the MPK-comparable serving policy."
+        },
+        {
+          "id": "vdcores_full_serving_qwen3_8b",
+          "paper_baseline_id": "vdcores",
+          "paper_baseline_run_id": "vdcores_llama_decode_correctness",
+          "method_id": "vdcores",
+          "serving_workload_ids": [
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row for the VDCores-comparable serving policy."
+        },
+        {
+          "id": "sglang_mpk_policy_qwen3_8b",
+          "paper_baseline_id": "sglang",
+          "paper_baseline_run_id": "sglang_serving_and_offline",
+          "method_id": "sglang",
+          "serving_workload_ids": [
+            "mpk_offline_decode"
+          ],
+          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Run and import the SGLang Qwen/Qwen3-8B rows for the MPK-comparable serving policy."
+        },
+        {
+          "id": "thunderkittens_full_serving_qwen3_8b",
+          "paper_baseline_id": "thunderkittens",
+          "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
+          "method_id": "thunderkittens",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Import ThunderKittens-family full-serving Qwen/Qwen3-8B rows beyond the current attention-tile proxy."
+        }
+      ],
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {
@@ -317,7 +382,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-9a231a7a/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-814c4903/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -325,7 +390,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-9a231a7a/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-814c4903/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -445,8 +510,70 @@
       "next_actions": [
         {
           "source": "matrix_missing_evidence",
+          "missing_evidence_id": "pto_full_serving_qwen3_8b",
+          "paper_baseline_id": "",
+          "paper_baseline_run_id": "",
+          "method_id": "pto_persistent_device",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "Qwen/Qwen3-8B",
           "status": "missing",
-          "action": "MPK persistent-kernel, VDCores full serving, SGLang MPK-policy, ThunderKittens-family full serving, and PTO full-serving rows are not yet imported for the shared Qwen3-8B serving policies."
+          "action": "Import PTO persistent-device full-serving rows for Qwen/Qwen3-8B under both MPK-comparable and VDCores-comparable serving policies."
+        },
+        {
+          "source": "matrix_missing_evidence",
+          "missing_evidence_id": "mpk_persistent_qwen3_8b",
+          "paper_baseline_id": "mpk",
+          "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
+          "method_id": "mpk",
+          "serving_workload_ids": [
+            "mpk_offline_decode"
+          ],
+          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Run and import the MPK persistent-kernel Qwen/Qwen3-8B offline-decode row for the MPK-comparable serving policy."
+        },
+        {
+          "source": "matrix_missing_evidence",
+          "missing_evidence_id": "vdcores_full_serving_qwen3_8b",
+          "paper_baseline_id": "vdcores",
+          "paper_baseline_run_id": "vdcores_llama_decode_correctness",
+          "method_id": "vdcores",
+          "serving_workload_ids": [
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row for the VDCores-comparable serving policy."
+        },
+        {
+          "source": "matrix_missing_evidence",
+          "missing_evidence_id": "sglang_mpk_policy_qwen3_8b",
+          "paper_baseline_id": "sglang",
+          "paper_baseline_run_id": "sglang_serving_and_offline",
+          "method_id": "sglang",
+          "serving_workload_ids": [
+            "mpk_offline_decode"
+          ],
+          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Run and import the SGLang Qwen/Qwen3-8B rows for the MPK-comparable serving policy."
+        },
+        {
+          "source": "matrix_missing_evidence",
+          "missing_evidence_id": "thunderkittens_full_serving_qwen3_8b",
+          "paper_baseline_id": "thunderkittens",
+          "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
+          "method_id": "thunderkittens",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Import ThunderKittens-family full-serving Qwen/Qwen3-8B rows beyond the current attention-tile proxy."
         },
         {
           "source": "run_readiness",

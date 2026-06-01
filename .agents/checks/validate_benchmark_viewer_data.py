@@ -1150,6 +1150,7 @@ def validate_paper_evaluation_matrix(
     benchmark_ids: set[str],
     method_ids: set[str],
     baseline_ids: set[str],
+    serving_workload_ids: set[str],
     results: dict[str, Any],
     root: Path,
 ) -> set[str]:
@@ -1210,6 +1211,48 @@ def validate_paper_evaluation_matrix(
             fail(f"{owner} is ready but still has missing_evidence")
         if record["status"] != "ready_for_paper_claim" and not missing_evidence:
             fail(f"{owner} is not ready but has no missing_evidence")
+        missing_details = record.get("missing_evidence_details", [])
+        if not isinstance(missing_details, list):
+            fail(f"{owner} missing_evidence_details is not a list")
+        for detail in missing_details:
+            if not isinstance(detail, dict):
+                fail(f"{owner} missing_evidence_details item is not an object")
+            for key in ("id", "status", "action"):
+                require_string(detail, key, owner)
+            method_id = detail.get("method_id", "")
+            if not isinstance(method_id, str):
+                fail(f"{owner} missing detail method_id is not a string")
+            if method_id and method_id not in method_ids:
+                fail(
+                    f"{owner} missing detail references unknown "
+                    f"method_id: {method_id}"
+                )
+            baseline_id = detail.get("paper_baseline_id", "")
+            if not isinstance(baseline_id, str):
+                fail(f"{owner} missing detail paper_baseline_id is not a string")
+            if baseline_id and baseline_id not in baseline_ids:
+                fail(
+                    f"{owner} missing detail references unknown "
+                    f"paper_baseline_id: {baseline_id}"
+                )
+            run_id = detail.get("paper_baseline_run_id", "")
+            if not isinstance(run_id, str):
+                fail(f"{owner} missing detail paper_baseline_run_id is not a string")
+            shape_contains = detail.get("shape_contains", "")
+            if not isinstance(shape_contains, str):
+                fail(f"{owner} missing detail shape_contains is not a string")
+            serving_ids = detail.get("serving_workload_ids")
+            if not isinstance(serving_ids, list) or not all(
+                isinstance(serving_id, str) and serving_id
+                for serving_id in serving_ids
+            ):
+                fail(f"{owner} missing detail serving_workload_ids is invalid")
+            for serving_id in serving_ids:
+                if serving_id not in serving_workload_ids:
+                    fail(
+                        f"{owner} missing detail references unknown "
+                        f"serving_workload_id: {serving_id}"
+                    )
 
         for workload_id in workloads:
             if workload_id not in benchmark_ids:
@@ -1294,6 +1337,7 @@ def validate_paper_readiness_audit(
     run_readiness: dict[str, Any],
     execution_attempts: dict[str, Any],
     results: dict[str, Any],
+    serving_workload_ids: set[str],
 ) -> None:
     if audit.get("schema_version") != 1:
         fail("paper readiness audit schema_version must be 1")
@@ -1351,12 +1395,40 @@ def validate_paper_readiness_audit(
                 fail(f"{owner} has invalid next action source: {source}")
             require_string(action, "status", owner)
             require_string(action, "action", owner)
+            serving_ids = action.get("serving_workload_ids", [])
+            if not isinstance(serving_ids, list) or not all(
+                isinstance(item, str) and item for item in serving_ids
+            ):
+                fail(f"{owner} next action serving_workload_ids is invalid")
+            for serving_id in serving_ids:
+                if serving_id not in serving_workload_ids:
+                    fail(
+                        f"{owner} next action references unknown "
+                        f"serving_workload_id: {serving_id}"
+                    )
+            for key in ("missing_evidence_id", "method_id", "shape_contains"):
+                value = action.get(key, "")
+                if not isinstance(value, str):
+                    fail(f"{owner} next action {key} is not a string")
             if source in {"run_readiness", "execution_attempt", "probe"}:
                 require_string(action, "paper_baseline_id", owner)
             if source in {"run_readiness", "execution_attempt"}:
                 require_string(action, "paper_baseline_run_id", owner)
             if source == "execution_attempt":
                 require_string(action, "execution_attempt_id", owner)
+            if source == "matrix_missing_evidence":
+                has_structured_target = any(
+                    action.get(key)
+                    for key in (
+                        "missing_evidence_id",
+                        "method_id",
+                        "shape_contains",
+                    )
+                ) or bool(serving_ids)
+                if has_structured_target:
+                    require_string(action, "missing_evidence_id", owner)
+                if serving_ids and not action.get("shape_contains"):
+                    fail(f"{owner} matrix action with serving ids lacks shape")
         missing_count = claim.get("missing_evidence_count")
         if isinstance(missing_count, bool) or not isinstance(missing_count, int):
             fail(f"{owner} missing_evidence_count is not an integer")
@@ -1383,6 +1455,7 @@ def validate_paper_readiness_work_queue(
     work_queue: dict[str, Any],
     *,
     audit: dict[str, Any],
+    serving_workload_ids: set[str],
 ) -> None:
     if work_queue.get("schema_version") != 1:
         fail("paper readiness work queue schema_version must be 1")
@@ -1444,9 +1517,24 @@ def validate_paper_readiness_work_queue(
             "paper_baseline_id",
             "paper_baseline_run_id",
             "execution_attempt_id",
+            "missing_evidence_id",
+            "method_id",
+            "shape_contains",
         ):
             if not isinstance(item.get(key), str):
                 fail(f"{owner} {key} is not a string")
+        serving_ids = item.get("serving_workload_ids")
+        if not isinstance(serving_ids, list) or not all(
+            isinstance(serving_id, str) and serving_id
+            for serving_id in serving_ids
+        ):
+            fail(f"{owner} serving_workload_ids is not a string list")
+        for serving_id in serving_ids:
+            if serving_id not in serving_workload_ids:
+                fail(
+                    f"{owner} references unknown serving_workload_id: "
+                    f"{serving_id}"
+                )
         if item["ready_for_paper_claim"]:
             fail(f"{owner} points at a ready paper claim")
     generated = load_work_queue_builder()(audit)
@@ -1625,6 +1713,7 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         benchmark_ids,
         method_ids,
         baseline_ids,
+        serving_workload_ids,
         results,
         root,
     )
@@ -1643,10 +1732,12 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         run_readiness=paper_baseline_run_readiness,
         execution_attempts=paper_baseline_execution_attempts,
         results=results,
+        serving_workload_ids=serving_workload_ids,
     )
     validate_paper_readiness_work_queue(
         paper_readiness_work_queue,
         audit=paper_readiness_audit,
+        serving_workload_ids=serving_workload_ids,
     )
     validate_goal_progress(
         goal_progress,

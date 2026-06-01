@@ -77,6 +77,11 @@ def build_work_queue(
             paper_baseline_id = str(action.get("paper_baseline_id", ""))
             paper_baseline_run_id = str(action.get("paper_baseline_run_id", ""))
             execution_attempt_id = str(action.get("execution_attempt_id", ""))
+            serving_workload_ids = action.get("serving_workload_ids", [])
+            if not isinstance(serving_workload_ids, list) or not all(
+                isinstance(item, str) for item in serving_workload_ids
+            ):
+                fail(f"{claim_id} next action has invalid serving_workload_ids")
             owner = paper_baseline_run_id or paper_baseline_id or source
             item_index = len(work_items) + 1
             work_items.append(
@@ -101,6 +106,12 @@ def build_work_queue(
                     "paper_baseline_id": paper_baseline_id,
                     "paper_baseline_run_id": paper_baseline_run_id,
                     "execution_attempt_id": execution_attempt_id,
+                    "missing_evidence_id": str(
+                        action.get("missing_evidence_id", "")
+                    ),
+                    "method_id": str(action.get("method_id", "")),
+                    "serving_workload_ids": serving_workload_ids,
+                    "shape_contains": str(action.get("shape_contains", "")),
                     "status": require_string(action, "status", claim_id),
                     "action": require_string(action, "action", claim_id),
                     "promotion_gate": require_string(

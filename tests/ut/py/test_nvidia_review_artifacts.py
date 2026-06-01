@@ -2785,13 +2785,39 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 3
+    assert committed["summary"]["total_work_items"] == 7
     assert committed["summary"]["work_items_by_source"] == {
-        "matrix_missing_evidence": 2,
+        "matrix_missing_evidence": 6,
         "run_readiness": 1,
     }
     work_items = committed["work_items"]
     assert all(not item["ready_for_paper_claim"] for item in work_items)
+    llm_items = [
+        item
+        for item in work_items
+        if item["claim_id"] == "llm_serving_paper_baselines"
+        and item["source"] == "matrix_missing_evidence"
+    ]
+    assert {item["missing_evidence_id"] for item in llm_items} == {
+        "pto_full_serving_qwen3_8b",
+        "mpk_persistent_qwen3_8b",
+        "vdcores_full_serving_qwen3_8b",
+        "sglang_mpk_policy_qwen3_8b",
+        "thunderkittens_full_serving_qwen3_8b",
+    }
+    sglang_mpk_item = next(
+        item
+        for item in llm_items
+        if item["missing_evidence_id"] == "sglang_mpk_policy_qwen3_8b"
+    )
+    assert sglang_mpk_item["method_id"] == "sglang"
+    assert sglang_mpk_item["paper_baseline_run_id"] == (
+        "sglang_serving_and_offline"
+    )
+    assert sglang_mpk_item["serving_workload_ids"] == ["mpk_offline_decode"]
+    assert sglang_mpk_item["shape_contains"] == (
+        "mpk_offline_decode,Qwen/Qwen3-8B"
+    )
     assert not any(
         item["claim_id"] == "llm_serving_paper_baselines"
         and item["source"] == "probe"
@@ -2874,7 +2900,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 3
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 7
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )

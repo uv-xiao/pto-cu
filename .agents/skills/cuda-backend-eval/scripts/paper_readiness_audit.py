@@ -312,25 +312,51 @@ def claim_blockers(
 def claim_next_actions(
     *,
     missing_evidence: list[str],
+    missing_evidence_details: list[dict[str, Any]],
     run_readiness_statuses: list[dict[str, Any]],
     execution_attempts: list[dict[str, Any]],
     probes: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
-    seen: set[tuple[str, str, str]] = set()
+    seen: set[tuple[str, str, str, str, str, str]] = set()
 
     def append_action(action: dict[str, Any]) -> None:
         key = (
             str(action.get("source", "")),
+            str(action.get("missing_evidence_id", "")),
             str(action.get("paper_baseline_run_id", "")),
             str(action.get("paper_baseline_id", "")),
+            str(action.get("method_id", "")),
+            str(action.get("shape_contains", "")),
         )
         if key in seen:
             return
         seen.add(key)
         actions.append(action)
 
-    for item in missing_evidence:
+    if missing_evidence_details:
+        for detail in missing_evidence_details:
+            action = detail.get("action", "")
+            append_action(
+                {
+                    "source": "matrix_missing_evidence",
+                    "missing_evidence_id": str(detail.get("id", "")),
+                    "paper_baseline_id": str(
+                        detail.get("paper_baseline_id", "")
+                    ),
+                    "paper_baseline_run_id": str(
+                        detail.get("paper_baseline_run_id", "")
+                    ),
+                    "method_id": str(detail.get("method_id", "")),
+                    "serving_workload_ids": detail.get(
+                        "serving_workload_ids", []
+                    ),
+                    "shape_contains": str(detail.get("shape_contains", "")),
+                    "status": str(detail.get("status", "missing")),
+                    "action": str(action),
+                }
+            )
+    for item in [] if missing_evidence_details else missing_evidence:
         append_action(
             {
                 "source": "matrix_missing_evidence",
@@ -447,6 +473,45 @@ def build_readiness_audit(
             isinstance(item, str) for item in missing_evidence
         ):
             fail(f"{claim.get('id', '<unknown>')} missing_evidence is invalid")
+        missing_evidence_details = claim.get("missing_evidence_details", [])
+        if not isinstance(missing_evidence_details, list):
+            fail(
+                f"{claim.get('id', '<unknown>')} "
+                "missing_evidence_details is invalid"
+            )
+        for detail in missing_evidence_details:
+            if not isinstance(detail, dict):
+                fail(
+                    f"{claim.get('id', '<unknown>')} "
+                    "missing_evidence_details contains a non-object"
+                )
+            for key in ("id", "status", "action"):
+                value = detail.get(key)
+                if not isinstance(value, str) or not value.strip():
+                    fail(
+                        f"{claim.get('id', '<unknown>')} "
+                        f"missing_evidence_details has invalid {key}"
+                    )
+            serving_ids = detail.get("serving_workload_ids", [])
+            if not isinstance(serving_ids, list) or not all(
+                isinstance(item, str) and item for item in serving_ids
+            ):
+                fail(
+                    f"{claim.get('id', '<unknown>')} "
+                    "missing_evidence_details has invalid serving_workload_ids"
+                )
+            for key in (
+                "paper_baseline_id",
+                "paper_baseline_run_id",
+                "method_id",
+                "shape_contains",
+            ):
+                value = detail.get(key, "")
+                if not isinstance(value, str):
+                    fail(
+                        f"{claim.get('id', '<unknown>')} "
+                        f"missing_evidence_details has invalid {key}"
+                    )
         paper_baseline_ids = claim.get("paper_baseline_ids", [])
         if not isinstance(paper_baseline_ids, list) or not all(
             isinstance(item, str) for item in paper_baseline_ids
@@ -478,6 +543,7 @@ def build_readiness_audit(
         )
         next_actions = claim_next_actions(
             missing_evidence=missing_evidence,
+            missing_evidence_details=missing_evidence_details,
             run_readiness_statuses=run_readiness_items,
             execution_attempts=execution_attempt_items,
             probes=probe_items,
@@ -491,6 +557,7 @@ def build_readiness_audit(
                 "ready_for_paper_claim": ready,
                 "evidence_ref_counts": evidence_counts,
                 "missing_evidence_count": len(missing_evidence),
+                "missing_evidence_details": missing_evidence_details,
                 "missing_viewer_results": missing_results,
                 "paper_baseline_run_statuses": run_statuses,
                 "paper_baseline_run_readiness_statuses": run_readiness_items,
