@@ -166,9 +166,9 @@
       "owner": "sglang_serving_and_offline",
       "paper_baseline_id": "sglang",
       "paper_baseline_run_id": "sglang_serving_and_offline",
-      "execution_attempt_id": "sglang_qwen3_8b_vdcores_batch1_fixedrange_h200",
+      "execution_attempt_id": "sglang_qwen3_8b_vdcores_fixedrange_sweep_h200",
       "status": "partial",
-      "action": "Resolve latest execution attempt sglang_qwen3_8b_vdcores_batch1_fixedrange_h200 before importing sglang_serving_and_offline. Diagnostic blocker: Online serving and offline engine throughput are imported as partial SGLang viewer results, but the run remains partial because bench_one_batch still fails before emitting a latency row and batch 2/4/8/16 sweeps plus repeats are not captured.",
+      "action": "Resolve latest execution attempt sglang_qwen3_8b_vdcores_fixedrange_sweep_h200 before importing sglang_serving_and_offline. Diagnostic blocker: Online serving and offline engine throughput for batch 2/4/8/16 are imported as partial SGLang viewer results, but the run remains partial because bench_one_batch still fails before emitting a latency row and repeated samples are not captured.",
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {

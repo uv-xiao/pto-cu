@@ -14,6 +14,7 @@ full benchmark matrix and the compact selected gate.
 | Graph replay sweep | `tmp/cuda-backend/graph-replay-sweep-01e30e99/` | 120 | Ten-repeat A100/H200 CUDA Driver graph replay sweep for vector sizes 1024, 4096, 65536 and matching naive SGEMM graph replay. |
 | Direct launch sweep | `tmp/cuda-backend/direct-launch-sweep-626b8c75/` | 240 | Ten-repeat A100/H200 CUDA Runtime and CUDA Driver direct-launch sweep for the same vector sizes and naive SGEMM tile shape. |
 | SGLang fixed-range serving | `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-fixedrange-bfc1c581/` | 2 result rows | H200 Qwen3-8B batch-1 online serving and offline engine throughput for the VDCores `128/64` policy. |
+| SGLang fixed-range serving sweep | `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/` | 8 result rows | H200 Qwen3-8B batch `2`, `4`, `8`, and `16` online serving and offline engine throughput for the VDCores `128/64` policy. |
 
 These captures passed `cuda_validate_capture.py` with the matching current
 presets during the latest verification run.

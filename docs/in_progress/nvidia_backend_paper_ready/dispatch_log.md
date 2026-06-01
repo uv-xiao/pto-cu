@@ -3205,3 +3205,49 @@ Each entry must include:
   the one-batch synthetic-input path, then run batch `2`, `4`, `8`, and `16`
   with repeated samples before upgrading SGLang from partial evidence to a
   paper-ready baseline.
+
+### 2026-06-01 - SGLang Fixed-Range H200 Batch Sweep
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned SGLang
+  fixed-range batch-ladder evidence import.
+- Exact Codex command or script invocation: used the documented tree-sync
+  fallback to refresh the remote standalone checkout on `bizhaoh200`, started
+  one SGLang `Qwen/Qwen3-8B` server on `CUDA_VISIBLE_DEVICES=0` with
+  `bfloat16`, `--context-length 256`, and
+  `--disable-piecewise-cuda-graph`, then ran
+  `sglang.bench_serving` for batches `2`, `4`, `8`, and `16` with
+  `--dataset-name random-ids`, `--tokenize-prompt`,
+  `--random-range-ratio 1.0`, prompt length `128`, output length `64`,
+  `max_concurrency=batch`, and `request_rate=inf`. After stopping the server,
+  ran `sglang.bench_offline_throughput` for the same batch ladder with
+  `--context-length 384`, `--skip-warmup`, and a local ShareGPT-shaped seed
+  file.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready SGLang
+  serving-baseline execution.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer result data,
+  benchmark-viewer execution-attempt data, generated paper-readiness data,
+  changelog docs, dispatch log, tests, and local `tmp/` SGLang serving sweep
+  artifacts. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The SGLang online/offline batch ladder now has exact `128/64` H200 result
+  rows for batches `2`, `4`, `8`, and `16`, but `bench_one_batch` remains
+  unresolved and the sweep has only one sample per batch.
+- Verification commands and results: artifact
+  `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/`
+  -> `server_ready_status=0`, online batch statuses all `0`, offline batch
+  statuses all `0`. Online serving captured zero failed requests for every
+  batch; output throughput was `173.9169706505443`, `484.47103616685513`,
+  `1177.5193163104066`, and `1793.5576766141346` tok/s for batches `2`,
+  `4`, `8`, and `16`. Offline output throughput was
+  `288.98312805396284`, `562.3668373531619`, `1141.1108121634202`, and
+  `2170.7243728274034` tok/s.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: next SGLang work should fix or bypass
+  the one-batch synthetic-input path and then add repeated samples for
+  variance before upgrading SGLang from partial evidence to a paper-ready
+  baseline.

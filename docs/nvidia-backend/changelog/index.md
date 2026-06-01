@@ -39,6 +39,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 VDCores RepeatM guard correctness](2026-06-01-vdcores-repeat-guard-correctness.md)
 - [2026-06-01 VDCores queue/scheduler trace](2026-06-01-vdcores-queue-scheduler-trace.md)
 - [2026-06-01 VDCores diagnostic scope contract](2026-06-01-vdcores-diagnostic-scope-contract.md)
+- [2026-06-01 SGLang fixed-range H200 sweep](2026-06-01-sglang-fixedrange-sweep.md)
 - [2026-06-01 SGLang fixed-range H200 capture](2026-06-01-sglang-fixedrange-h200-capture.md)
 - [2026-06-01 SGLang H200 serving bring-up](2026-06-01-sglang-h200-serving-bringup.md)
 - [2026-06-01 SGLang H200 environment validation](2026-06-01-sglang-h200-environment-validation.md)

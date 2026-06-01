@@ -4203,6 +4203,342 @@
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-fixedrange-bfc1c581/",
       "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "sglang",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "cfbdcf0c",
+      "inputs": {
+        "shape": "vdcores_offline_decode,Qwen/Qwen3-8B,batch=2,prompt_tokens=128,decode_tokens=64,mode=online_serving",
+        "dtype": "bfloat16",
+        "repeat_policy": "single sglang bench_serving sweep sample, random-ids fixed range, max_concurrency=2, request_rate=inf"
+      },
+      "statistic": {
+        "kind": "paper_baseline_serving_capture",
+        "sample_count": 1,
+        "host_wall_ns": 721034131,
+        "device_wall_ns": 0,
+        "end_to_end_latency_ns": 721034131,
+        "time_to_first_token_ns": 313525856,
+        "inter_token_latency_ns": 6519593,
+        "time_per_output_token_ns": 6468385,
+        "throughput": 2.7174526664147547,
+        "throughput_tokens_per_s": 173.9169706505443,
+        "total_token_throughput_tokens_per_s": 521.7509119516329,
+        "batch_size": 2,
+        "prompt_tokens": 128,
+        "decode_tokens": 64,
+        "completed_requests": 2,
+        "failed_requests": 0,
+        "max_concurrent_requests": 2,
+        "total_input_tokens": 256,
+        "total_output_tokens": 128,
+        "p99_ttft_ns": 315919557,
+        "p99_itl_ns": 41259423
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "sglang",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "cfbdcf0c",
+      "inputs": {
+        "shape": "vdcores_offline_decode,Qwen/Qwen3-8B,batch=2,prompt_tokens=128,decode_tokens=64,mode=offline_engine",
+        "dtype": "bfloat16",
+        "repeat_policy": "single sglang bench_offline_throughput sweep sample, fixed random length, skip warmup, local ShareGPT-shaped seed file"
+      },
+      "statistic": {
+        "kind": "paper_baseline_offline_throughput_capture",
+        "sample_count": 1,
+        "host_wall_ns": 442932433,
+        "device_wall_ns": 0,
+        "end_to_end_latency_ns": 442932433,
+        "time_to_first_token_ns": 0,
+        "inter_token_latency_ns": 3460410,
+        "throughput": 4.515361375843169,
+        "throughput_tokens_per_s": 288.98312805396284,
+        "total_token_throughput_tokens_per_s": 866.9493841618885,
+        "last_gen_throughput_tokens_per_s": 84.99621759004239,
+        "batch_size": 2,
+        "prompt_tokens": 128,
+        "decode_tokens": 64,
+        "completed_requests": 2,
+        "failed_requests": 0,
+        "max_concurrent_requests": 2,
+        "total_input_tokens": 256,
+        "total_output_tokens": 128
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "sglang",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "cfbdcf0c",
+      "inputs": {
+        "shape": "vdcores_offline_decode,Qwen/Qwen3-8B,batch=4,prompt_tokens=128,decode_tokens=64,mode=online_serving",
+        "dtype": "bfloat16",
+        "repeat_policy": "single sglang bench_serving sweep sample, random-ids fixed range, max_concurrency=4, request_rate=inf"
+      },
+      "statistic": {
+        "kind": "paper_baseline_serving_capture",
+        "sample_count": 1,
+        "host_wall_ns": 507570679,
+        "device_wall_ns": 0,
+        "end_to_end_latency_ns": 507570679,
+        "time_to_first_token_ns": 128435361,
+        "inter_token_latency_ns": 6041538,
+        "time_per_output_token_ns": 6018021,
+        "throughput": 7.569859940107111,
+        "throughput_tokens_per_s": 484.47103616685513,
+        "total_token_throughput_tokens_per_s": 1453.4131085005654,
+        "batch_size": 4,
+        "prompt_tokens": 128,
+        "decode_tokens": 64,
+        "completed_requests": 4,
+        "failed_requests": 0,
+        "max_concurrent_requests": 4,
+        "total_input_tokens": 512,
+        "total_output_tokens": 256,
+        "p99_ttft_ns": 133045152,
+        "p99_itl_ns": 20490022
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "sglang",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "cfbdcf0c",
+      "inputs": {
+        "shape": "vdcores_offline_decode,Qwen/Qwen3-8B,batch=4,prompt_tokens=128,decode_tokens=64,mode=offline_engine",
+        "dtype": "bfloat16",
+        "repeat_policy": "single sglang bench_offline_throughput sweep sample, fixed random length, skip warmup, local ShareGPT-shaped seed file"
+      },
+      "statistic": {
+        "kind": "paper_baseline_offline_throughput_capture",
+        "sample_count": 1,
+        "host_wall_ns": 455218877,
+        "device_wall_ns": 0,
+        "end_to_end_latency_ns": 455218877,
+        "time_to_first_token_ns": 0,
+        "inter_token_latency_ns": 1778199,
+        "throughput": 8.786981833643155,
+        "throughput_tokens_per_s": 562.3668373531619,
+        "total_token_throughput_tokens_per_s": 1687.100512059486,
+        "last_gen_throughput_tokens_per_s": 151.42880755656023,
+        "batch_size": 4,
+        "prompt_tokens": 128,
+        "decode_tokens": 64,
+        "completed_requests": 4,
+        "failed_requests": 0,
+        "max_concurrent_requests": 4,
+        "total_input_tokens": 512,
+        "total_output_tokens": 256
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "sglang",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "cfbdcf0c",
+      "inputs": {
+        "shape": "vdcores_offline_decode,Qwen/Qwen3-8B,batch=8,prompt_tokens=128,decode_tokens=64,mode=online_serving",
+        "dtype": "bfloat16",
+        "repeat_policy": "single sglang bench_serving sweep sample, random-ids fixed range, max_concurrency=8, request_rate=inf"
+      },
+      "statistic": {
+        "kind": "paper_baseline_serving_capture",
+        "sample_count": 1,
+        "host_wall_ns": 414909308,
+        "device_wall_ns": 0,
+        "end_to_end_latency_ns": 414909308,
+        "time_to_first_token_ns": 45523699,
+        "inter_token_latency_ns": 5874533,
+        "time_per_output_token_ns": 5863264,
+        "throughput": 18.398739317350103,
+        "throughput_tokens_per_s": 1177.5193163104066,
+        "total_token_throughput_tokens_per_s": 3532.55794893122,
+        "batch_size": 8,
+        "prompt_tokens": 128,
+        "decode_tokens": 64,
+        "completed_requests": 8,
+        "failed_requests": 0,
+        "max_concurrent_requests": 8,
+        "total_input_tokens": 1024,
+        "total_output_tokens": 512,
+        "p99_ttft_ns": 50796189,
+        "p99_itl_ns": 9235724
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "sglang",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "cfbdcf0c",
+      "inputs": {
+        "shape": "vdcores_offline_decode,Qwen/Qwen3-8B,batch=8,prompt_tokens=128,decode_tokens=64,mode=offline_engine",
+        "dtype": "bfloat16",
+        "repeat_policy": "single sglang bench_offline_throughput sweep sample, fixed random length, skip warmup, local ShareGPT-shaped seed file"
+      },
+      "statistic": {
+        "kind": "paper_baseline_offline_throughput_capture",
+        "sample_count": 1,
+        "host_wall_ns": 448685609,
+        "device_wall_ns": 0,
+        "end_to_end_latency_ns": 448685609,
+        "time_to_first_token_ns": 0,
+        "inter_token_latency_ns": 876339,
+        "throughput": 17.82985644005344,
+        "throughput_tokens_per_s": 1141.1108121634202,
+        "total_token_throughput_tokens_per_s": 3423.3324364902605,
+        "last_gen_throughput_tokens_per_s": 309.06627938735886,
+        "batch_size": 8,
+        "prompt_tokens": 128,
+        "decode_tokens": 64,
+        "completed_requests": 8,
+        "failed_requests": 0,
+        "max_concurrent_requests": 8,
+        "total_input_tokens": 1024,
+        "total_output_tokens": 512
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "sglang",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "cfbdcf0c",
+      "inputs": {
+        "shape": "vdcores_offline_decode,Qwen/Qwen3-8B,batch=16,prompt_tokens=128,decode_tokens=64,mode=online_serving",
+        "dtype": "bfloat16",
+        "repeat_policy": "single sglang bench_serving sweep sample, random-ids fixed range, max_concurrency=16, request_rate=inf"
+      },
+      "statistic": {
+        "kind": "paper_baseline_serving_capture",
+        "sample_count": 1,
+        "host_wall_ns": 543732697,
+        "device_wall_ns": 0,
+        "end_to_end_latency_ns": 543732697,
+        "time_to_first_token_ns": 115733937,
+        "inter_token_latency_ns": 6806778,
+        "time_per_output_token_ns": 6793631,
+        "throughput": 28.024338697095853,
+        "throughput_tokens_per_s": 1793.5576766141346,
+        "total_token_throughput_tokens_per_s": 5380.673029842404,
+        "batch_size": 16,
+        "prompt_tokens": 128,
+        "decode_tokens": 64,
+        "completed_requests": 16,
+        "failed_requests": 0,
+        "max_concurrent_requests": 16,
+        "total_input_tokens": 2048,
+        "total_output_tokens": 1024,
+        "p99_ttft_ns": 125623167,
+        "p99_itl_ns": 60907871
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "sglang",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "cfbdcf0c",
+      "inputs": {
+        "shape": "vdcores_offline_decode,Qwen/Qwen3-8B,batch=16,prompt_tokens=128,decode_tokens=64,mode=offline_engine",
+        "dtype": "bfloat16",
+        "repeat_policy": "single sglang bench_offline_throughput sweep sample, fixed random length, skip warmup, local ShareGPT-shaped seed file"
+      },
+      "statistic": {
+        "kind": "paper_baseline_offline_throughput_capture",
+        "sample_count": 1,
+        "host_wall_ns": 471731931,
+        "device_wall_ns": 0,
+        "end_to_end_latency_ns": 471731931,
+        "time_to_first_token_ns": 0,
+        "inter_token_latency_ns": 460676,
+        "throughput": 33.91756832542818,
+        "throughput_tokens_per_s": 2170.7243728274034,
+        "total_token_throughput_tokens_per_s": 6512.17311848221,
+        "last_gen_throughput_tokens_per_s": 580.1952601733853,
+        "batch_size": 16,
+        "prompt_tokens": 128,
+        "decode_tokens": 64,
+        "completed_requests": 16,
+        "failed_requests": 0,
+        "max_concurrent_requests": 16,
+        "total_input_tokens": 2048,
+        "total_output_tokens": 1024
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
+      "correctness": "pass"
     }
   ]
 }

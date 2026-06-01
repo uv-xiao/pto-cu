@@ -2694,8 +2694,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["paper_baseline_id"] == "sglang"
         and item["paper_baseline_run_id"] == "sglang_serving_and_offline"
         and item["execution_attempt_id"]
-        == "sglang_qwen3_8b_vdcores_batch1_fixedrange_h200"
-        and "bench_one_batch still fails" in item["action"]
+        == "sglang_qwen3_8b_vdcores_fixedrange_sweep_h200"
+        and "repeated samples are not captured" in item["action"]
         for item in work_items
     )
 
@@ -3474,6 +3474,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vllm_qwen3_8b_mpk_sweep_h200",
         "sglang_qwen3_8b_vdcores_batch1_randomids_h200",
         "sglang_qwen3_8b_vdcores_batch1_fixedrange_h200",
+        "sglang_qwen3_8b_vdcores_fixedrange_sweep_h200",
     } <= set(attempts_by_id)
     environment_attempts = paper_baseline_environment_attempts[
         "paper_baseline_environment_attempts"
@@ -3601,6 +3602,31 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert sglang_fixedrange_attempt["summary"]["viewer_result_imported"]
     assert "random_range_ratio=1.0" in sglang_fixedrange_attempt["command"]
     assert "bench_one_batch still fails" in sglang_fixedrange_attempt["blocker"]
+    sglang_sweep_attempt = attempts_by_id[
+        "sglang_qwen3_8b_vdcores_fixedrange_sweep_h200"
+    ]
+    assert sglang_sweep_attempt["status"] == "partial"
+    assert sglang_sweep_attempt["summary"]["batches"] == [2, 4, 8, 16]
+    assert sglang_sweep_attempt["summary"]["prompt_tokens_per_request"] == 128
+    assert sglang_sweep_attempt["summary"]["decode_tokens_per_request"] == 64
+    assert sglang_sweep_attempt["summary"]["batch_ladder_measured"]
+    assert sglang_sweep_attempt["summary"]["serving_latency_measured"]
+    assert sglang_sweep_attempt["summary"]["offline_throughput_measured"]
+    assert not sglang_sweep_attempt["summary"]["one_batch_measured"]
+    assert not sglang_sweep_attempt["summary"]["repeated_samples_measured"]
+    assert sglang_sweep_attempt["summary"]["viewer_result_imported"]
+    assert set(
+        sglang_sweep_attempt["summary"][
+            "online_completed_requests_by_batch"
+        ].values()
+    ) == {2, 4, 8, 16}
+    assert set(
+        sglang_sweep_attempt["summary"][
+            "offline_successful_requests_by_batch"
+        ].values()
+    ) == {2, 4, 8, 16}
+    assert "batch 2/4/8/16" in sglang_sweep_attempt["blocker"]
+    assert "repeated samples are not captured" in sglang_sweep_attempt["blocker"]
     vllm_h200_attempt = attempts_by_id["vllm_qwen3_8b_vdcores_batch1_h200"]
     assert vllm_h200_attempt["status"] == "partial"
     assert vllm_h200_attempt["hardware"]["gpu"] == "H200"
@@ -4944,6 +4970,50 @@ def test_benchmark_viewer_has_json_backed_review_data():
         and record["statistic"]["throughput_tokens_per_s"] > 0
         and record["correctness"] == "pass"
         for record in sglang_h200_records
+    )
+    sglang_sweep_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "sglang"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/paper-baselines/serving-runs/sglang/"
+        "h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/"
+    ]
+    assert len(sglang_sweep_records) == 8
+    assert {
+        record["statistic"]["batch_size"] for record in sglang_sweep_records
+    } == {2, 4, 8, 16}
+    assert {
+        record["statistic"]["prompt_tokens"] for record in sglang_sweep_records
+    } == {128}
+    assert {
+        record["statistic"]["decode_tokens"] for record in sglang_sweep_records
+    } == {64}
+    assert all(
+        record["statistic"]["completed_requests"]
+        == record["statistic"]["batch_size"]
+        and record["statistic"]["failed_requests"] == 0
+        and record["statistic"]["throughput_tokens_per_s"] > 0
+        and record["correctness"] == "pass"
+        for record in sglang_sweep_records
+    )
+    sglang_sweep_by_mode_batch = {
+        (record["statistic"]["kind"], record["statistic"]["batch_size"]): record
+        for record in sglang_sweep_records
+    }
+    assert (
+        sglang_sweep_by_mode_batch[
+            ("paper_baseline_serving_capture", 16)
+        ]["statistic"]["throughput_tokens_per_s"]
+        == 1793.5576766141346
+    )
+    assert (
+        sglang_sweep_by_mode_batch[
+            ("paper_baseline_offline_throughput_capture", 16)
+        ]["statistic"]["throughput_tokens_per_s"]
+        == 2170.7243728274034
     )
     vllm_h200_sweep_records = [
         record
