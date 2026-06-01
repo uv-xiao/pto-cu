@@ -178,6 +178,18 @@ def build_preflight() -> dict[str, Any]:
             "why": "Repo-owned scaffold declares the PTO Qwen full-serving lifecycle stages.",
         },
         {
+            "id": "qwen_serving_lifecycle_plan",
+            "status": "pass"
+            if serving_scaffold.get("lifecycle_plan", {}).get("kind")
+            == "pto_qwen_persistent_serving_lifecycle_plan"
+            else "fail",
+            "evidence": "examples/cuda/qwen_serving_lifecycle_plan.py",
+            "why": (
+                "Repo-owned plan maps Qwen3-8B serving policies to KV-cache "
+                "capacity and persistent-device task roles."
+            ),
+        },
+        {
             "id": "qwen_model_loader_or_token_loop",
             "status": "fail",
             "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",

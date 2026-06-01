@@ -398,6 +398,17 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-scaffold-$(git rev-parse --short HEAD)/qwen-serving-scaffold.json
 ```
 
+Use `examples/cuda/qwen_serving_lifecycle_plan.py` when reviewers need the
+current Qwen/Qwen3-8B model-shape, KV-cache capacity ladder, weight-binding
+plan, and persistent-device task mapping for the MPK and VDCores serving
+policies without claiming a full-serving result:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_serving_lifecycle_plan.py \
+    --output-json tmp/cuda-backend/pto-serving-lifecycle-$(git rev-parse --short HEAD)/qwen-serving-lifecycle-plan.json
+```
+
 Use `paper_baseline_run_readiness.py` before spending H200 time on planned
 paper-baseline runs. It does not execute long baselines; it records source
 path, reproduction-command presence, Python entrypoints, expected artifact,

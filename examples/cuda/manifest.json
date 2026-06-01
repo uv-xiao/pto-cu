@@ -47,6 +47,22 @@
         "kv_cache_lifecycle",
         "decode_loop_runner"
       ]
+    },
+    {
+      "id": "qwen_serving_lifecycle_plan",
+      "title": "Qwen Serving Lifecycle Plan",
+      "script": "examples/cuda/qwen_serving_lifecycle_plan.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_serving_lifecycle_plan.py --output-json tmp/cuda-backend/pto-serving-lifecycle/qwen-serving-lifecycle-plan.json",
+      "expected_output": "command exits 0; output JSON records the Qwen3-8B model shape, KV-cache capacity ladder, weight-binding plan, and persistent-device task mapping for the MPK and VDCores serving policies.",
+      "evidence_symbols": [
+        "pto_qwen_persistent_serving_lifecycle_plan",
+        "kv_cache_plans",
+        "persistent_task_mapping",
+        "remaining_runtime_gaps"
+      ]
     }
   ]
 }

@@ -24,6 +24,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 MPK native token viewer import](2026-06-01-mpk-native-token-viewer-import.md)
 - [2026-06-01 PTO serving preflight](2026-06-01-pto-serving-preflight.md)
 - [2026-06-01 PTO Qwen serving scaffold](2026-06-01-pto-qwen-serving-scaffold.md)
+- [2026-06-01 Qwen serving lifecycle plan](2026-06-01-qwen-serving-lifecycle-plan.md)
 - [2026-06-01 serving coverage guard](2026-06-01-serving-coverage-guard.md)
 - [2026-06-01 serving gap audit narrowing](2026-06-01-serving-gap-audit-narrowing.md)
 - [2026-06-01 serving work queue targets](2026-06-01-serving-work-queue-targets.md)

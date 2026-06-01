@@ -513,11 +513,15 @@
         },
         {
           "kind": "raw_artifact",
-          "path": "tmp/cuda-backend/pto-serving-scaffold-76d4fca4/qwen-serving-scaffold.json"
+          "path": "tmp/cuda-backend/pto-serving-lifecycle-e3c977f8/qwen-serving-lifecycle-plan.json"
         },
         {
           "kind": "raw_artifact",
-          "path": "tmp/cuda-backend/pto-serving-preflight-76d4fca4/pto-serving-preflight.json"
+          "path": "tmp/cuda-backend/pto-serving-scaffold-e3c977f8/qwen-serving-scaffold.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-preflight-e3c977f8/pto-serving-preflight.json"
         }
       ],
       "missing_evidence": [
@@ -533,7 +537,7 @@
           ],
           "shape_contains": "Qwen/Qwen3-8B",
           "status": "missing",
-          "action": "Implement the missing PTO Qwen lifecycle stages from the repo-owned persistent_qwen_serving_scaffold: qwen_tokenizer, qwen_weight_loader, kv_cache_lifecycle, decode_loop_runner, and viewer_result_import. Then import persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current scaffold and preflight prove only persistent-device ABI/codegen and the controlled attention-tile proxy exist today."
+          "action": "Continue from the repo-owned qwen_serving_lifecycle_plan and persistent_qwen_serving_scaffold: tokenizer, safetensors weight loading, CUDA allocation/binding for the partial KV-cache lifecycle plan, generated Qwen kernel bodies, decode-loop execution, and viewer_result_import remain required. Then import persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current scaffold and preflight prove persistent-device ABI/codegen, concrete Qwen3-8B KV-cache/task mapping, and the controlled attention-tile proxy only."
         },
         {
           "id": "vdcores_full_serving_qwen3_8b",

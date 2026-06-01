@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +14,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 TARGET_WORKLOAD_IDS = {"mpk_offline_decode", "vdcores_offline_decode"}
+LIFECYCLE_PLAN = ROOT / "examples" / "cuda" / "qwen_serving_lifecycle_plan.py"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -36,6 +39,19 @@ def text_contains(path: str, needles: list[str]) -> bool:
         return False
     text = full_path.read_text(encoding="utf-8", errors="replace")
     return all(needle in text for needle in needles)
+
+
+def load_lifecycle_plan() -> dict[str, Any]:
+    spec = importlib.util.spec_from_file_location(
+        "qwen_serving_lifecycle_plan",
+        LIFECYCLE_PLAN,
+    )
+    if spec is None or spec.loader is None:
+        return {}
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.build_lifecycle_plan()
 
 
 def serving_workload_contracts() -> list[dict[str, Any]]:
@@ -81,6 +97,7 @@ def stage(
 
 
 def build_scaffold() -> dict[str, Any]:
+    lifecycle_plan = load_lifecycle_plan()
     persistent_abi_ready = text_contains(
         "src/cuda/platform/include/host/pto_cuda_persistent_device_abi.h",
         ["PtoCudaPersistentDagTask", "tensor_args", "scalar_args"],
@@ -121,6 +138,21 @@ def build_scaffold() -> dict[str, Any]:
             next_action="Add generated Qwen decode task bodies once kernels are selected.",
         ),
         stage(
+            stage_id="qwen_serving_lifecycle_plan",
+            title="Qwen persistent-device lifecycle plan",
+            owner="pto_serving_host",
+            required_for_full_serving=False,
+            status="pass"
+            if lifecycle_plan.get("kind")
+            == "pto_qwen_persistent_serving_lifecycle_plan"
+            else "fail",
+            evidence="examples/cuda/qwen_serving_lifecycle_plan.py",
+            next_action=(
+                "Keep the model-shape, KV-cache, and task-mapping plan in "
+                "sync with the runtime implementation."
+            ),
+        ),
+        stage(
             stage_id="qwen_tokenizer",
             title="Qwen tokenizer and prompt accounting",
             owner="pto_serving_host",
@@ -143,9 +175,12 @@ def build_scaffold() -> dict[str, Any]:
             title="KV-cache allocation and token-position lifecycle",
             owner="pto_serving_runtime",
             required_for_full_serving=True,
-            status="missing",
-            evidence="none",
-            next_action="Represent paged or contiguous KV cache buffers in the persistent-device graph.",
+            status="partial" if lifecycle_plan.get("workload_plans") else "missing",
+            evidence="examples/cuda/qwen_serving_lifecycle_plan.py",
+            next_action=(
+                "Bind the planned KV-cache layout to real CUDA allocations "
+                "and persistent-device task args."
+            ),
         ),
         stage(
             stage_id="decode_loop_runner",
@@ -182,6 +217,7 @@ def build_scaffold() -> dict[str, Any]:
         "method_id": "pto_persistent_device",
         "runtime": "cuda/persistent_device",
         "serving_workloads": serving_workload_contracts(),
+        "lifecycle_plan": lifecycle_plan,
         "stages": stages,
         "missing_stage_ids": [item["id"] for item in missing],
         "next_action": (

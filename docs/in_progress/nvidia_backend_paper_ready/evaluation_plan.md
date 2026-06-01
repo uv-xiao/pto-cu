@@ -95,16 +95,22 @@ leaving the shared-instruction runtime.
 The PTO full-serving gap is tracked by
 `.agents/skills/cuda-backend-eval/scripts/pto_serving_preflight.py` and the
 repo-owned lifecycle scaffold in
-`examples/cuda/persistent_qwen_serving_scaffold.py`. The current raw artifacts
-are
-`tmp/cuda-backend/pto-serving-scaffold-76d4fca4/qwen-serving-scaffold.json`
+`examples/cuda/persistent_qwen_serving_scaffold.py`. The lifecycle contract in
+`examples/cuda/qwen_serving_lifecycle_plan.py` now maps the shared MPK and
+VDCores Qwen/Qwen3-8B serving policies to a concrete model shape, KV-cache
+capacity ladder, weight-binding plan, and persistent-device callable roles.
+The current raw artifacts are
+`tmp/cuda-backend/pto-serving-lifecycle-e3c977f8/qwen-serving-lifecycle-plan.json`,
+`tmp/cuda-backend/pto-serving-scaffold-e3c977f8/qwen-serving-scaffold.json`,
 and
-`tmp/cuda-backend/pto-serving-preflight-76d4fca4/pto-serving-preflight.json`.
+`tmp/cuda-backend/pto-serving-preflight-e3c977f8/pto-serving-preflight.json`.
 They prove the current viewer has only the controlled attention-tile proxy row
-for PTO serving-equivalent evidence. The repo-owned PTO CUDA path still lacks
-the scaffold stages `qwen_tokenizer`, `qwen_weight_loader`,
-`kv_cache_lifecycle`, `decode_loop_runner`, and `viewer_result_import`, so no
-PTO `Qwen/Qwen3-8B` full-serving row can be imported yet.
+for PTO serving-equivalent evidence, plus a partial runtime plan for the
+Qwen3-8B KV-cache and task mapping. The repo-owned PTO CUDA path still lacks
+tokenizer integration, safetensors weight loading, real CUDA allocation and
+binding for the planned KV-cache layout, generated Qwen kernel bodies,
+decode-loop execution, and `viewer_result_import`, so no PTO
+`Qwen/Qwen3-8B` full-serving row can be imported yet.
 Every serving baseline run record must reference one of these policy IDs and
 require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before
 it can be imported. Imported rows must record actual tokenizer counts, model
