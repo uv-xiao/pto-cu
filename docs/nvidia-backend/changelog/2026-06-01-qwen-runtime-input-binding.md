@@ -51,8 +51,9 @@ preflight, and scaffold tests passed.
 
 ## Remaining Gaps
 
-- Allocate CUDA token buffers, copy `input_ids`, and pass those buffers to the
-  persistent decode loop.
+- CUDA token-buffer allocation/copy is now tracked by
+  [2026-06-01 Qwen CUDA token buffer binding](2026-06-01-qwen-cuda-token-buffer-binding.md);
+  the persistent decode loop still needs to consume those device buffers.
 - Bind real CUDA KV-cache buffers, run the resident weight table in
   `cuda_live` mode through DAG submission, generate Qwen kernels, execute the
   decode loop, and import full-serving viewer rows for `Qwen/Qwen3-8B`.

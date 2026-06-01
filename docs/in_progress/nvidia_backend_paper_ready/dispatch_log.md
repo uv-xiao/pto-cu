@@ -4354,7 +4354,38 @@ Follow-up tracked-state closure after user confirmation:
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: the branch now proves tokenizer output
   can be converted into padded target-length runtime `input_ids`, matching
-  `attention_mask`, and decode `output_ids` buffer plans. The remaining PTO
-  full-serving gaps are CUDA token-buffer allocation/copy, `cuda_live`
-  decode-loop integration for weights, KV-cache allocation and binding, Qwen
-  kernel generation, decode-loop execution, and viewer-result import.
+  `attention_mask`, and decode `output_ids` buffer plans. The following
+  CUDA token-buffer slice supersedes the allocation/copy gap from this entry.
+
+### 2026-06-01 - Qwen CUDA Token Buffer Binding
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned CUDA
+  token-buffer allocation/copy artifact for Qwen/Qwen3-8B decode submission.
+- Exact Codex command or script invocation:
+  `qwen_cuda_token_buffer_binding.py --output-json
+  tmp/cuda-backend/pto-serving-token-buffer-2026-06-01/qwen-cuda-token-buffer-binding.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the live probe allocates and verifies
+  CUDA token buffers, but the persistent decode-loop runner must still consume
+  those device pointers during DAG execution.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_cuda_token_buffer_binding.py` did not exist; after
+  implementation the live artifact reported
+  `status=cuda_token_buffer_binding_ready`, six verified buffers, and 94,208
+  copied bytes.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves CUDA allocation
+  and copy-back verification for paper-policy token buffers. The remaining PTO
+  full-serving gaps are decode-loop consumption of token device pointers,
+  `cuda_live` decode-loop integration for weights, KV-cache allocation and
+  binding, Qwen kernel generation, decode-loop execution, and viewer-result
+  import.

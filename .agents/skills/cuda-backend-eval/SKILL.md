@@ -435,6 +435,17 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-input-binding-$(git rev-parse --short HEAD)/qwen-runtime-input-binding.json
 ```
 
+Use `examples/cuda/qwen_cuda_token_buffer_binding.py` after runtime input
+binding to allocate and copy the target-length token buffers with the CUDA host
+runtime. Use `--no-cuda-probe` only for dependency-free review scaffolds:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_cuda_token_buffer_binding.py \
+    --mode offline \
+    --output-json tmp/cuda-backend/pto-serving-token-buffer-$(git rev-parse --short HEAD)/qwen-cuda-token-buffer-binding.json
+```
+
 Use `examples/cuda/qwen_weight_inventory.py` to capture Qwen/Qwen3-8B
 safetensors shard and tensor binding groups plus the config-derived expected
 shape/dtype contract before implementing real tensor open and CUDA device

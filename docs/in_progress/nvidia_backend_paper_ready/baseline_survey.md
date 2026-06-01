@@ -264,9 +264,9 @@ row, and the repo-owned PTO CUDA path now has a reviewable Qwen3-8B model
 shape, KV-cache capacity ladder, weight-binding plan, and persistent-device
 task mapping, tokenizer-observed prompt counts, padded target-length
 `input_ids`, matching `attention_mask`, and decode `output_ids` buffer plans,
-safetensors shard/tensor inventory, and the config-derived expected weight
-shape/dtype contract. It also has local Qwen shard placement plus actual
-safetensors shape/dtype
+CUDA token-buffer allocation/copy-back verification, safetensors shard/tensor
+inventory, and the config-derived expected weight shape/dtype contract. It
+also has local Qwen shard placement plus actual safetensors shape/dtype
 validation for 399 tensors across five shards. The CUDA binding artifact maps
 all 399 tensors to stable binding slots, file byte ranges, and readonly
 persistent-device argument roles, held all 16.38 GB of Qwen weights resident

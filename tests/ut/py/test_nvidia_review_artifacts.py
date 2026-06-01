@@ -533,6 +533,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["qwen_serving_lifecycle_plan"]["status"] == "pass"
     assert checks["qwen_prompt_accounting"]["status"] == "pass"
     assert checks["qwen_runtime_input_binding"]["status"] == "pass"
+    assert checks["qwen_cuda_token_buffer_binding"]["status"] == "pass"
     assert checks["qwen_weight_inventory"]["status"] == "pass"
     assert checks["qwen_safetensors_shard_plan"]["status"] == "pass"
     assert checks["qwen_safetensors_shards_present"]["status"] == "pass"
@@ -556,6 +557,12 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     )
     assert lifecycle["runtime_input_binding"]["status"] == (
         "runtime_input_binding_plan_ready"
+    )
+    assert lifecycle["cuda_token_buffer_binding"]["kind"] == (
+        "pto_qwen_cuda_token_buffer_binding"
+    )
+    assert lifecycle["cuda_token_buffer_binding"]["status"] == (
+        "token_buffer_binding_plan_ready"
     )
     assert lifecycle["weight_inventory"]["kind"] == "pto_qwen_weight_inventory"
     assert (
@@ -593,7 +600,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["qwen_persistent_weight_arg_manifest"]["status"] == "pass"
     assert {
         "qwen_tokenizer",
-        "qwen_runtime_input_binding",
+        "qwen_cuda_token_buffer_binding",
         "qwen_weight_loader",
         "qwen_persistent_weight_materialization",
         "qwen_resident_weight_table_owner",
@@ -643,7 +650,8 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     assert stages["persistent_dag_codegen"]["status"] == "pass"
     assert stages["qwen_serving_lifecycle_plan"]["status"] == "pass"
     assert stages["qwen_tokenizer"]["status"] == "partial"
-    assert stages["qwen_runtime_input_binding"]["status"] == "partial"
+    assert stages["qwen_runtime_input_binding"]["status"] == "pass"
+    assert stages["qwen_cuda_token_buffer_binding"]["status"] == "partial"
     assert stages["qwen_weight_loader"]["status"] == "partial"
     assert "cuda_live table ownership" in stages[
         "qwen_weight_loader"
@@ -690,6 +698,12 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     )
     assert scaffold["runtime_input_binding"]["status"] == (
         "runtime_input_binding_plan_ready"
+    )
+    assert scaffold["cuda_token_buffer_binding"]["kind"] == (
+        "pto_qwen_cuda_token_buffer_binding"
+    )
+    assert scaffold["cuda_token_buffer_binding"]["status"] == (
+        "token_buffer_binding_plan_ready"
     )
     assert stages["kv_cache_lifecycle"]["status"] == "partial"
     assert stages["decode_loop_runner"]["status"] == "missing"
@@ -817,6 +831,41 @@ def test_qwen_runtime_input_binding_materializes_token_buffers():
     )
     assert mpk["device_binding_state"] == "host_materialized_not_cuda_allocated"
     assert "target_prompt_shape_alignment" not in binding["remaining_runtime_gaps"]
+    assert "cuda_token_buffer_allocation" in binding["remaining_runtime_gaps"]
+    assert "decode_loop_consumes_token_ids" in binding["remaining_runtime_gaps"]
+
+
+def test_qwen_cuda_token_buffer_binding_plans_device_buffers():
+    script_path = ROOT / "examples" / "cuda" / "qwen_cuda_token_buffer_binding.py"
+    spec = importlib.util.spec_from_file_location(
+        "qwen_cuda_token_buffer_binding",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    binding = module.build_cuda_token_buffer_binding(
+        mode="mock",
+        no_cuda_probe=True,
+    )
+
+    assert binding["kind"] == "pto_qwen_cuda_token_buffer_binding"
+    assert binding["status"] == "token_buffer_binding_plan_ready"
+    assert "cuda_token_buffer_plan" in binding["implemented_contracts"]
+    records = {item["workload_id"]: item for item in binding["workload_records"]}
+    mpk = records["mpk_offline_decode"]
+    assert mpk["input_ids_device_buffer"]["shape"] == [16, 64]
+    assert mpk["attention_mask_device_buffer"]["shape"] == [16, 64]
+    assert mpk["output_ids_device_buffer"]["shape"] == [16, 1024]
+    assert mpk["copy_plan"]["host_to_device_buffers"] == [
+        "input_ids",
+        "attention_mask",
+    ]
+    assert mpk["copy_plan"]["device_to_host_buffers"] == ["output_ids"]
+    assert binding["cuda_probe"]["reason"] == "disabled_by_no_cuda_probe"
     assert "cuda_token_buffer_allocation" in binding["remaining_runtime_gaps"]
     assert "decode_loop_consumes_token_ids" in binding["remaining_runtime_gaps"]
 
@@ -1573,6 +1622,12 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
+        == "tmp/cuda-backend/pto-serving-token-buffer-2026-06-01/qwen-cuda-token-buffer-binding.json"
+        for ref in claim["current_evidence_refs"]
+    )
+    assert any(
+        ref.get("kind") == "raw_artifact"
+        and ref.get("path")
         == "tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json"
         for ref in claim["current_evidence_refs"]
     )
@@ -1637,6 +1692,7 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "qwen_serving_lifecycle_plan",
         "qwen_prompt_accounting",
         "qwen_runtime_input_binding",
+        "qwen_cuda_token_buffer_binding",
         "qwen_weight_inventory",
         "qwen_safetensors_fetch",
         "qwen_safetensors_metadata",
@@ -1654,7 +1710,7 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "process-scoped resident weight table owner",
         "padded target-length input_ids",
         "attention_mask",
-        "CUDA token-buffer allocation",
+        "CUDA token-buffer allocation/copy-back verification",
         "partial KV-cache lifecycle plan",
         "decode-loop execution",
     ]:

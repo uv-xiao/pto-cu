@@ -210,8 +210,26 @@ def build_preflight() -> dict[str, Any]:
             "evidence": "examples/cuda/qwen_runtime_input_binding.py",
             "why": (
                 "Repo-owned runtime input binding turns tokenizer outputs "
-                "into host-materialized input_ids and output_ids buffer "
+                "into padded input_ids, attention_mask, and output_ids "
                 "descriptors for persistent decode-loop submission."
+            ),
+        },
+        {
+            "id": "qwen_cuda_token_buffer_binding",
+            "status": "pass"
+            if serving_scaffold.get("cuda_token_buffer_binding", {}).get(
+                "status"
+            )
+            in {
+                "token_buffer_binding_plan_ready",
+                "cuda_token_buffer_binding_ready",
+            }
+            else "fail",
+            "evidence": "examples/cuda/qwen_cuda_token_buffer_binding.py",
+            "why": (
+                "Repo-owned CUDA token-buffer binding maps input_ids, "
+                "attention_mask, and output_ids into planned CUDA buffers "
+                "and can run a live allocation/copy verification probe."
             ),
         },
         {

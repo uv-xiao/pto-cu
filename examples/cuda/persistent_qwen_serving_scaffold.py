@@ -19,6 +19,9 @@ PROMPT_ACCOUNTING = ROOT / "examples" / "cuda" / "qwen_prompt_accounting.py"
 RUNTIME_INPUT_BINDING = (
     ROOT / "examples" / "cuda" / "qwen_runtime_input_binding.py"
 )
+CUDA_TOKEN_BUFFER_BINDING = (
+    ROOT / "examples" / "cuda" / "qwen_cuda_token_buffer_binding.py"
+)
 WEIGHT_INVENTORY = ROOT / "examples" / "cuda" / "qwen_weight_inventory.py"
 SAFETENSORS_FETCH = ROOT / "examples" / "cuda" / "qwen_safetensors_fetch.py"
 SAFETENSORS_METADATA = (
@@ -94,6 +97,19 @@ def load_runtime_input_binding() -> dict[str, Any]:
         "qwen_runtime_input_binding",
         "build_runtime_input_binding",
     )
+
+
+def load_cuda_token_buffer_binding() -> dict[str, Any]:
+    spec = importlib.util.spec_from_file_location(
+        "qwen_cuda_token_buffer_binding",
+        CUDA_TOKEN_BUFFER_BINDING,
+    )
+    if spec is None or spec.loader is None:
+        return {}
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.build_cuda_token_buffer_binding(no_cuda_probe=True)
 
 
 def load_weight_inventory() -> dict[str, Any]:
@@ -218,6 +234,7 @@ def build_scaffold() -> dict[str, Any]:
     lifecycle_plan = load_lifecycle_plan()
     prompt_accounting = load_prompt_accounting()
     runtime_input_binding = load_runtime_input_binding()
+    cuda_token_buffer_binding = load_cuda_token_buffer_binding()
     weight_inventory = load_weight_inventory()
     safetensors_shards = load_safetensors_shards()
     safetensors_metadata = load_safetensors_metadata()
@@ -253,6 +270,7 @@ def build_scaffold() -> dict[str, Any]:
     runtime_input_binding_ready = (
         runtime_input_binding.get("status") == "runtime_input_binding_plan_ready"
     )
+    cuda_token_buffer_status = cuda_token_buffer_binding.get("status")
     weight_next_action = (
         "Connect the resident weight table owner to the decode-loop runner and "
         "replace dry-run pointers with cuda_live table ownership."
@@ -370,7 +388,7 @@ def build_scaffold() -> dict[str, Any]:
             owner="pto_serving_host",
             required_for_full_serving=True,
             status=(
-                "partial"
+                "pass"
                 if runtime_input_binding_ready
                 else "missing"
                 if runtime_input_binding.get("kind") != "pto_qwen_runtime_input_binding"
@@ -378,8 +396,29 @@ def build_scaffold() -> dict[str, Any]:
             ),
             evidence="examples/cuda/qwen_runtime_input_binding.py",
             next_action=(
-                "Allocate CUDA token buffers, copy the host-materialized "
-                "input_ids, and pass them to the persistent decode loop."
+                "Keep target-length input_ids and attention masks in sync "
+                "with CUDA token-buffer binding."
+            ),
+        ),
+        stage(
+            stage_id="qwen_cuda_token_buffer_binding",
+            title="Qwen CUDA token buffer binding",
+            owner="pto_serving_host",
+            required_for_full_serving=True,
+            status=(
+                "pass"
+                if cuda_token_buffer_status == "cuda_token_buffer_binding_ready"
+                else "partial"
+                if cuda_token_buffer_status == "token_buffer_binding_plan_ready"
+                else "missing"
+                if cuda_token_buffer_binding.get("kind")
+                != "pto_qwen_cuda_token_buffer_binding"
+                else "fail"
+            ),
+            evidence="examples/cuda/qwen_cuda_token_buffer_binding.py",
+            next_action=(
+                "Run the live CUDA token-buffer copy probe, then pass those "
+                "device buffers to the persistent decode loop."
             ),
         ),
         stage(
@@ -535,6 +574,7 @@ def build_scaffold() -> dict[str, Any]:
         "lifecycle_plan": lifecycle_plan,
         "prompt_accounting": prompt_accounting,
         "runtime_input_binding": runtime_input_binding,
+        "cuda_token_buffer_binding": cuda_token_buffer_binding,
         "weight_inventory": weight_inventory,
         "safetensors_shards": safetensors_shards,
         "safetensors_metadata": safetensors_metadata,

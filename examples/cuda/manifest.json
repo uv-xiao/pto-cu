@@ -98,6 +98,22 @@
       ]
     },
     {
+      "id": "qwen_cuda_token_buffer_binding",
+      "title": "Qwen CUDA Token Buffer Binding",
+      "script": "examples/cuda/qwen_cuda_token_buffer_binding.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_cuda_token_buffer_binding.py --mode offline --output-json tmp/cuda-backend/pto-serving-token-buffer/qwen-cuda-token-buffer-binding.json",
+      "expected_output": "command exits 0; output JSON records CUDA allocation and copy verification for Qwen input_ids, attention_mask, and output_ids token buffers when the host runtime is available.",
+      "evidence_symbols": [
+        "pto_qwen_cuda_token_buffer_binding",
+        "cuda_token_buffer_plan",
+        "cuda_token_buffer_allocation_and_copy",
+        "decode_loop_consumes_token_ids"
+      ]
+    },
+    {
       "id": "qwen_weight_inventory",
       "title": "Qwen Weight Inventory",
       "script": "examples/cuda/qwen_weight_inventory.py",

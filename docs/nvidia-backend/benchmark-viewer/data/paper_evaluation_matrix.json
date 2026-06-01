@@ -525,6 +525,10 @@
         },
         {
           "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-token-buffer-2026-06-01/qwen-cuda-token-buffer-binding.json"
+        },
+        {
+          "kind": "raw_artifact",
           "path": "tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json"
         },
         {
@@ -573,7 +577,7 @@
           ],
           "shape_contains": "Qwen/Qwen3-8B",
           "status": "missing",
-          "action": "Continue from the repo-owned qwen_serving_lifecycle_plan, qwen_prompt_accounting, qwen_runtime_input_binding, qwen_weight_inventory, qwen_safetensors_fetch, qwen_safetensors_metadata, qwen_cuda_weight_binding, qwen_persistent_weight_args, qwen_persistent_weight_materialization, qwen_resident_weight_table, and persistent_qwen_serving_scaffold: CUDA token-buffer allocation/copy, cuda_live decode-loop resident table integration, CUDA allocation/binding for the partial KV-cache lifecycle plan, generated Qwen kernel bodies, decode-loop execution, and viewer_result_import remain required. Then import persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current scaffold and preflight prove persistent-device ABI/codegen, concrete Qwen3-8B KV-cache/task mapping, tokenizer-observed prompt counts, padded target-length input_ids, attention_mask, and output_ids buffer plans for both serving policies, Qwen3-8B safetensors shard/tensor inventory, config-derived expected weight shape/dtype contract, local Qwen shard placement, actual safetensors shape/dtype validation for 399 tensors across five shards, stable CUDA weight binding slots and file offsets for all 399 tensors, full CUDA residency for 16.38 GB of weights, copy-back verification for 16 small tensors, a persistent DAG tensor_args manifest that covers all 399 weights within the four-pointer ABI, a ctypes-backed materialization plan for resident_weight_ptrs[slot_id], a process-scoped resident weight table owner that binds 399 dry-run pointers and frees them after materialization, and the controlled attention-tile proxy only."
+          "action": "Continue from the repo-owned qwen_serving_lifecycle_plan, qwen_prompt_accounting, qwen_runtime_input_binding, qwen_cuda_token_buffer_binding, qwen_weight_inventory, qwen_safetensors_fetch, qwen_safetensors_metadata, qwen_cuda_weight_binding, qwen_persistent_weight_args, qwen_persistent_weight_materialization, qwen_resident_weight_table, and persistent_qwen_serving_scaffold: decode-loop consumption of CUDA token buffers, cuda_live decode-loop resident table integration, CUDA allocation/binding for the partial KV-cache lifecycle plan, generated Qwen kernel bodies, decode-loop execution, and viewer_result_import remain required. Then import persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current scaffold, preflight, and raw artifacts prove persistent-device ABI/codegen, concrete Qwen3-8B KV-cache/task mapping, tokenizer-observed prompt counts, padded target-length input_ids, attention_mask, output_ids buffer plans, CUDA token-buffer allocation/copy-back verification for both serving policies, Qwen3-8B safetensors shard/tensor inventory, config-derived expected weight shape/dtype contract, local Qwen shard placement, actual safetensors shape/dtype validation for 399 tensors across five shards, stable CUDA weight binding slots and file offsets for all 399 tensors, full CUDA residency for 16.38 GB of weights, copy-back verification for 16 small tensors, a persistent DAG tensor_args manifest that covers all 399 weights within the four-pointer ABI, a ctypes-backed materialization plan for resident_weight_ptrs[slot_id], a process-scoped resident weight table owner that binds 399 dry-run pointers and frees them after materialization, and the controlled attention-tile proxy only."
         },
         {
           "id": "vdcores_full_serving_qwen3_8b",
