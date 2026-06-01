@@ -443,6 +443,13 @@
           "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B"
         },
         {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "sglang",
+          "gpu": "H200",
+          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B"
+        },
+        {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/graph-tensor-core-compact-current-working/combined-current-493ce832/"
         },
@@ -457,10 +464,14 @@
         {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/"
         }
       ],
       "missing_evidence": [
-        "MPK persistent-kernel, VDCores full serving, SGLang MPK-policy, ThunderKittens-family full serving, and PTO full-serving rows are not yet imported for the shared Qwen3-8B serving policies."
+        "MPK persistent-kernel, VDCores full serving, ThunderKittens-family full serving, and PTO full-serving rows are not yet imported for the shared Qwen3-8B serving policies."
       ],
       "missing_evidence_details": [
         {
@@ -497,18 +508,6 @@
           "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
           "status": "missing",
           "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row for the VDCores-comparable serving policy."
-        },
-        {
-          "id": "sglang_mpk_policy_qwen3_8b",
-          "paper_baseline_id": "sglang",
-          "paper_baseline_run_id": "sglang_serving_and_offline",
-          "method_id": "sglang",
-          "serving_workload_ids": [
-            "mpk_offline_decode"
-          ],
-          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
-          "status": "missing",
-          "action": "Run and import the SGLang Qwen/Qwen3-8B rows for the MPK-comparable serving policy."
         },
         {
           "id": "thunderkittens_full_serving_qwen3_8b",

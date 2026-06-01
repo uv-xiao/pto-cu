@@ -5,13 +5,13 @@
   "ready_claims": 2,
   "blocked_claims": 2,
   "summary": {
-    "total_work_items": 7,
+    "total_work_items": 6,
     "work_items_by_source": {
-      "matrix_missing_evidence": 6,
+      "matrix_missing_evidence": 5,
       "run_readiness": 1
     },
     "work_items_by_claim": {
-      "llm_serving_paper_baselines": 6,
+      "llm_serving_paper_baselines": 5,
       "tensor_core_tile_baselines": 1
     }
   },
@@ -126,31 +126,6 @@
       "missing_evidence_count": 1,
       "action_index": 4,
       "source": "matrix_missing_evidence",
-      "owner": "sglang_serving_and_offline",
-      "paper_baseline_id": "sglang",
-      "paper_baseline_run_id": "sglang_serving_and_offline",
-      "execution_attempt_id": "",
-      "missing_evidence_id": "sglang_mpk_policy_qwen3_8b",
-      "method_id": "sglang",
-      "serving_workload_ids": [
-        "mpk_offline_decode"
-      ],
-      "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
-      "status": "missing",
-      "action": "Run and import the SGLang Qwen/Qwen3-8B rows for the MPK-comparable serving policy.",
-      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
-    },
-    {
-      "id": "paper_readiness_work_item_006",
-      "priority": 6,
-      "claim_id": "llm_serving_paper_baselines",
-      "claim_title": "LLM Serving Paper Baselines",
-      "matrix_status": "partial_current_capture",
-      "ready_for_paper_claim": false,
-      "blocker_count": 4,
-      "missing_evidence_count": 1,
-      "action_index": 5,
-      "source": "matrix_missing_evidence",
       "owner": "thunderkittens_decode_attention_tile",
       "paper_baseline_id": "thunderkittens",
       "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
@@ -167,15 +142,15 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_007",
-      "priority": 7,
+      "id": "paper_readiness_work_item_006",
+      "priority": 6,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
       "blocker_count": 4,
       "missing_evidence_count": 1,
-      "action_index": 6,
+      "action_index": 5,
       "source": "run_readiness",
       "owner": "vdcores_llama_decode_correctness",
       "paper_baseline_id": "vdcores",

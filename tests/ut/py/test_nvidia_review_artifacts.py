@@ -2619,9 +2619,10 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         for blocker in llm_claim["blockers"]
     )
     assert any(
-        "MPK persistent-kernel" in blocker
-        and "SGLang MPK-policy" in blocker
-        for blocker in llm_claim["blockers"]
+        "MPK persistent-kernel" in blocker for blocker in llm_claim["blockers"]
+    )
+    assert not any(
+        "SGLang MPK-policy" in blocker for blocker in llm_claim["blockers"]
     )
     assert not any(
         "vLLM, SGLang" in blocker
@@ -2785,9 +2786,9 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 7
+    assert committed["summary"]["total_work_items"] == 6
     assert committed["summary"]["work_items_by_source"] == {
-        "matrix_missing_evidence": 6,
+        "matrix_missing_evidence": 5,
         "run_readiness": 1,
     }
     work_items = committed["work_items"]
@@ -2802,22 +2803,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         "pto_full_serving_qwen3_8b",
         "mpk_persistent_qwen3_8b",
         "vdcores_full_serving_qwen3_8b",
-        "sglang_mpk_policy_qwen3_8b",
         "thunderkittens_full_serving_qwen3_8b",
     }
-    sglang_mpk_item = next(
-        item
-        for item in llm_items
-        if item["missing_evidence_id"] == "sglang_mpk_policy_qwen3_8b"
-    )
-    assert sglang_mpk_item["method_id"] == "sglang"
-    assert sglang_mpk_item["paper_baseline_run_id"] == (
-        "sglang_serving_and_offline"
-    )
-    assert sglang_mpk_item["serving_workload_ids"] == ["mpk_offline_decode"]
-    assert sglang_mpk_item["shape_contains"] == (
-        "mpk_offline_decode,Qwen/Qwen3-8B"
-    )
     assert not any(
         item["claim_id"] == "llm_serving_paper_baselines"
         and item["source"] == "probe"
@@ -2900,15 +2887,15 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 7
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 6
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
     assert any(
-        "remaining queued MPK persistent" in gap
+        "remaining queued paper-readiness artifacts" in gap
         for gap in by_id["paper_grade_results"]["gaps"]
     )
-    assert any(
+    assert not any(
         "SGLang MPK-policy" in gap
         for gap in by_id["paper_grade_results"]["gaps"]
     )
@@ -5068,7 +5055,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 == "vdcores_offline_decode,Qwen/Qwen3-8B"
                 for ref in item["current_evidence_refs"]
             )
-            assert not any(
+            assert any(
                 ref.get("kind") == "viewer_result"
                 and ref.get("method_id") == "sglang"
                 and ref.get("shape_contains")
@@ -5090,10 +5077,15 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 == "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/"
                 for ref in item["current_evidence_refs"]
             )
+            assert any(
+                ref.get("path")
+                == "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/"
+                for ref in item["current_evidence_refs"]
+            )
             assert not any(
                 "vLLM, SGLang" in gap for gap in item["missing_evidence"]
             )
-            assert any(
+            assert not any(
                 "SGLang MPK-policy" in gap for gap in item["missing_evidence"]
             )
 
@@ -5638,6 +5630,38 @@ def test_benchmark_viewer_has_json_backed_review_data():
         and record["statistic"]["inter_token_latency_ns"] > 0
         and record["correctness"] == "pass"
         for record in vllm_h200_mpk_sweep_records
+    )
+    sglang_h200_mpk_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "sglang"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/paper-baselines/serving-runs/sglang/"
+        "h200-mpk-qwen3-8b-repeats-91ddaf86/"
+    ]
+    assert len(sglang_h200_mpk_records) == 10
+    assert {
+        record["statistic"]["batch_size"]
+        for record in sglang_h200_mpk_records
+    } == {1, 2, 4, 8, 16}
+    assert {
+        record["inputs"]["shape"].split("mode=", 1)[1].split(",", 1)[0]
+        for record in sglang_h200_mpk_records
+    } == {"online_serving", "offline_engine"}
+    assert all(
+        record["inputs"]["dtype"] == "bfloat16"
+        and record["inputs"]["shape"].startswith(
+            "mpk_offline_decode,Qwen/Qwen3-8B"
+        )
+        and record["statistic"]["sample_count"] == 3
+        and record["statistic"]["throughput_tokens_per_s"] > 0
+        and record["statistic"]["completed_requests"]
+        == record["statistic"]["batch_size"]
+        and record["statistic"]["failed_requests"] == 0
+        and record["correctness"] == "pass"
+        for record in sglang_h200_mpk_records
     )
     driver_graph_records = [
         record
