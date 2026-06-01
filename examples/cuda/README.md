@@ -115,6 +115,7 @@ PYTHONPATH=$PWD:$PWD/python \
   --run-unit-math-live \
   --run-submission-smoke \
   --single-context-live-session \
+  --run-resource-backed-smoke \
   --token-cuda-live \
   --kv-cuda-live \
   --resident-cuda-live \
@@ -128,8 +129,9 @@ PYTHONPATH=$PWD:$PWD/python \
 Expected output: command exits 0; output JSON records a single CUDA-context
 resource session, runner-owned cuda_live token, KV-cache, resident-weight, and
 activation-workspace owners, resource-backed Qwen submission descriptors,
-compact graph materialization, workspace-bound launch-packet preflight blockers,
-diagnostic bridge contracts, and a diagnostic Qwen descriptor smoke execution.
+compact graph materialization, workspace-bound launch-packet preflight,
+diagnostic bridge contracts, a diagnostic Qwen descriptor smoke execution, and
+a diagnostic resource-backed `run_prepared` execution.
 
 The artifact composes token pointer, KV-cache, and resident-weight owners into
 a decode-loop submission plan. It records owner open/materialize/submit/close
@@ -147,6 +149,11 @@ preflight capture. With `--single-context-live-session`, token buffers,
 KV-cache, resident weights, and activation workspace are allocated under one
 CUDA context before graph materialization and launch-packet preflight, then
 closed after the preflight evidence is recorded.
+With `--run-resource-backed-smoke`, the runner prepares the generated Qwen
+task-function set and launches the resource-backed DAG packets for both
+serving policies while that same CUDA context is open. This is still
+diagnostic: it proves scheduler completion and pointer wiring for the planned
+DAG, not full Qwen numerical correctness.
 The `cuda_live_submission_descriptor_contract` maps those resource pointers
 to Qwen task function ids 7100 through 7109 and records the `run_prepared`
 repetition count. With `--run-submission-smoke`, it also compiles those same

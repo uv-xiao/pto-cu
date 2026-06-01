@@ -17,6 +17,9 @@ from qwen_decode_loop_runner_impl.graph_materialization import (
     graph_materialization_contract,
 )
 from qwen_decode_loop_runner_impl.resources import build_resources
+from qwen_decode_loop_runner_impl.resource_backed_execution import (
+    run_resource_backed_execution,
+)
 from qwen_decode_loop_runner_impl.single_context_session import (
     open_single_context_live_session,
 )
@@ -51,8 +54,11 @@ def build_decode_loop_runner(
     submission_smoke_payload: dict[str, Any] | None = None,
     workspace_cuda_live: bool = False,
     single_context_live_session: bool = False,
+    run_resource_backed_smoke: bool = False,
+    arch: str = "compute_80",
 ) -> dict[str, Any]:
     session_payload: dict[str, Any] | None = None
+    resource_backed_execution: dict[str, Any] | None = None
     if single_context_live_session:
         session = open_single_context_live_session(
             mode=mode,
@@ -131,6 +137,22 @@ def build_decode_loop_runner(
         resident_lifecycle=resident_lifecycle,
         activation_workspace=activation_workspace,
     )
+    if run_resource_backed_smoke:
+        resource_backed_execution = (
+            run_resource_backed_execution(
+                session=session,
+                plans=plans,
+                resident_lifecycle=resident_lifecycle,
+                activation_workspace=activation_workspace,
+                arch=arch,
+                cache_root=cache_dir,
+            )
+            if session is not None
+            else {
+                "status": "not_run",
+                "reason": "single_context_live_session_required",
+            }
+        )
     if session is not None:
         close_summary = session.close()
         activation_workspace["pointer_table"] = session.closed_table(
@@ -168,6 +190,8 @@ def build_decode_loop_runner(
             "activation_workspace": activation_workspace.get("status"),
         }
         implemented_contracts.append("single_context_live_resource_session")
+        if resource_backed_execution and resource_backed_execution.get("status") == "pass":
+            implemented_contracts.append("qwen_resource_backed_diagnostic_execution")
     submission_descriptors = submission_descriptor_contract(
         plans=plans,
         resource_modes=resource_modes,
@@ -213,6 +237,7 @@ def build_decode_loop_runner(
         "cuda_live_resource_owners": live_owners,
         "activation_workspace_lifecycle": activation_workspace,
         "single_context_live_session": session_payload,
+        "resource_backed_execution": resource_backed_execution,
         "cuda_live_submission_descriptor_contract": submission_descriptors,
         "resource_backed_graph_materialization": graph_materialization,
         "cuda_live_bridge_contract": cuda_live_bridge_contract(),

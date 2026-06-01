@@ -37,6 +37,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_resource_backed_launch_packet_preflight",
     "qwen_activation_workspace_launch_packet_binding",
     "single_context_live_resource_session",
+    "qwen_resource_backed_diagnostic_execution",
 ]
 
 
@@ -56,6 +57,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workspace-cuda-live", action="store_true")
     parser.add_argument("--single-context-live-session", action="store_true")
     parser.add_argument("--run-submission-smoke", action="store_true")
+    parser.add_argument("--run-resource-backed-smoke", action="store_true")
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--arch", default="compute_80")
     parser.add_argument("--cache-root", type=Path)
@@ -109,6 +111,8 @@ def main() -> None:
         submission_smoke_payload=load_submission_smoke_payload(args),
         workspace_cuda_live=args.workspace_cuda_live,
         single_context_live_session=args.single_context_live_session,
+        run_resource_backed_smoke=args.run_resource_backed_smoke,
+        arch=args.arch,
     )
     if args.output_json:
         write_json(args.output_json, payload)

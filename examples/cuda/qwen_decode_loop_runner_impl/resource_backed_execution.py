@@ -1,0 +1,188 @@
+"""Run diagnostic Qwen DAG packets against live resource-backed pointers."""
+
+from __future__ import annotations
+
+import ctypes
+from pathlib import Path
+from typing import Any
+
+from simpler_setup.cuda_callable_compiler import (
+    CudaPersistentDagArgs,
+    compile_cuda_persistent_device,
+    prepare_cuda_persistent_device_callable,
+)
+
+from qwen_decode_loop_runner_impl.launch_preflight import (
+    build_host_task_packet,
+    keyed_fields,
+    workspace_for_workload,
+)
+from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph
+from qwen_persistent_proxy_live_impl.runtime import (
+    PtoRunTiming,
+    bind_persistent_runtime,
+    device_name,
+)
+from qwen_persistent_task_bodies_impl.lifecycle import task_functions
+from qwen_persistent_weight_materialization import build_materialization_manifest
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def repo_relative(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+def run_resource_backed_execution(
+    *,
+    session: Any,
+    plans: list[dict[str, Any]],
+    resident_lifecycle: dict[str, Any],
+    activation_workspace: dict[str, Any],
+    arch: str,
+    cache_root: Path | None,
+) -> dict[str, Any]:
+    runtime = session.runtime
+    ctx = session.ctx
+    if runtime is None or ctx is None:
+        return {"status": "not_run", "reason": "session_not_open"}
+    bind_persistent_runtime(runtime)
+    materialization = build_materialization_manifest(
+        pointer_table=resident_lifecycle.get("pointer_table"),
+    )
+    descriptors = [
+        item
+        for item in materialization.get("materialized_task_descriptors", [])
+        if item.get("status") == "ready"
+    ]
+    if not descriptors:
+        return {"status": "not_run", "reason": "no_ready_descriptors"}
+
+    prepared = None
+    callable_prepared = False
+    try:
+        artifact = compile_cuda_persistent_device(
+            task_functions(),
+            arch=arch,
+            cache_root=cache_root,
+        )
+        prepared = prepare_cuda_persistent_device_callable(
+            artifact,
+            grid_dim=2,
+            block_dim=64,
+        )
+        if runtime.prepare_callable(ctx, 0, prepared.byref()) != 0:
+            return {"status": "fail", "reason": "prepare_callable_failed"}
+        callable_prepared = True
+        workload_results = [
+            run_workload(
+                session=session,
+                plan=plan,
+                descriptors=descriptors,
+                activation_workspace=activation_workspace,
+            )
+            for plan in plans
+        ]
+    except Exception as exc:  # noqa: BLE001 - artifact should capture failure.
+        return {"status": "fail", "reason": type(exc).__name__, "message": str(exc)}
+    finally:
+        if callable_prepared:
+            runtime.unregister_callable(ctx, 0)
+
+    passed = workload_results and all(item["status"] == "pass" for item in workload_results)
+    return {
+        "schema_version": 1,
+        "kind": "pto_qwen_resource_backed_execution",
+        "status": "pass" if passed else "fail",
+        "runtime": "cuda/persistent_device",
+        "serving_coverage": "diagnostic_resource_backed_qwen_dag",
+        "device": {
+            "ordinal": session.device,
+            "name": device_name(session.device),
+            "arch": arch,
+        },
+        "artifact": artifact_summary(prepared),
+        "context_policy": "one_cuda_context_for_all_resource_owners",
+        "workloads": workload_results,
+        "implemented_contracts": ["qwen_resource_backed_diagnostic_execution"],
+        "remaining_runtime_gaps": [
+            "full_qwen_numerical_correctness",
+            "full_serving_viewer_result_import",
+        ],
+    }
+
+
+def run_workload(
+    *,
+    session: Any,
+    plan: dict[str, Any],
+    descriptors: list[dict[str, Any]],
+    activation_workspace: dict[str, Any],
+) -> dict[str, Any]:
+    workspace = workspace_for_workload(
+        activation_workspace=activation_workspace,
+        workload_id=plan["workload_id"],
+        task_count=len(descriptors),
+    )
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=keyed_fields(plan.get("token_pointer_fields", [])),
+        kv_fields=plan.get("kv_pointer_fields", {}),
+        workspace=workspace,
+    )
+    if packet is None or workspace is None:
+        return {"workload_id": plan["workload_id"], "status": "not_run"}
+
+    graph = MaterializedGraph(session, packet)
+    timing = PtoRunTiming()
+    args = CudaPersistentDagArgs(state=graph.ptrs["state"])
+    status = session.runtime.run_prepared(
+        session.ctx,
+        None,
+        0,
+        ctypes.byref(args),
+        graph.block_dim,
+        0,
+        0,
+        0,
+        0,
+        0,
+        None,
+        ctypes.byref(timing),
+    )
+    counters = graph.read_counters()
+    result = {
+        "workload_id": plan["workload_id"],
+        "status": (
+            "pass"
+            if status == 0
+            and counters["completed_count"] == len(packet)
+            and counters["error_count"] == 0
+            else "fail"
+        ),
+        "run_prepared_status": int(status),
+        "graph_task_count": len(packet),
+        "scheduler_counters": counters,
+        "output_sample": graph.read_output_sample(workspace),
+        "timing_ns": {
+            "host_wall": int(timing.host_wall_ns),
+            "device_wall": int(timing.device_wall_ns),
+        },
+    }
+    return result
+
+
+def artifact_summary(prepared: Any) -> dict[str, Any]:
+    artifact = prepared.artifact
+    return {
+        "cache_key": artifact.cache_key,
+        "cache_hit": artifact.cache_hit,
+        "source_path": repo_relative(Path(artifact.source_path)),
+        "ptx_path": repo_relative(Path(artifact.ptx_path)),
+        "entry_name": artifact.entry_name,
+        "source_kind": artifact.source_kind,
+    }
