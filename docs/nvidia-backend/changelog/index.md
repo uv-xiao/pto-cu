@@ -11,6 +11,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-02 paper readiness audit script split](2026-06-02-paper-readiness-audit-script-split.md)
 - [2026-06-02 paper baseline run readiness script split](2026-06-02-paper-baseline-run-readiness-script-split.md)
 - [2026-06-02 paper baseline probe script split](2026-06-02-paper-baseline-probe-script-split.md)
+- [2026-06-02 viewer data I/O split](2026-06-02-viewer-data-io-split.md)
 - [2026-06-02 overall design split](2026-06-02-overall-design-split.md)
 - [2026-06-02 Qwen persistent weight arguments split](2026-06-02-qwen-persistent-weight-args-split.md)
 - [2026-06-02 Qwen persistent weight materialization split](2026-06-02-qwen-persistent-weight-materialization-split.md)
