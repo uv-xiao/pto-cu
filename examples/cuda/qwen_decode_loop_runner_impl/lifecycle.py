@@ -17,6 +17,10 @@ LIVE_MICRODECODE_ARTIFACT = (
     "tmp/cuda-backend/pto-serving-decode-loop-live-2026-06-01/"
     "qwen-microdecode-loop.json"
 )
+LIVE_UNIT_MATH_ARTIFACT = (
+    "tmp/cuda-backend/pto-serving-unit-math-live-2026-06-01/"
+    "qwen-unit-math-live.json"
+)
 
 OWNER_LIFETIME_ORDER = [
     "open_token_pointer_table",
@@ -186,10 +190,57 @@ def cuda_live_bridge_contract() -> dict[str, Any]:
     }
 
 
+def unit_math_live_bridge_contract(
+    payload: dict[str, Any] | None,
+) -> dict[str, Any]:
+    contract: dict[str, Any] = {
+        "status": "diagnostic_bridge_ready",
+        "runtime": "cuda/persistent_device",
+        "source_live_artifact": LIVE_UNIT_MATH_ARTIFACT,
+        "submission_to_live_fields": {
+            "a": "hidden_state",
+            "out": "logits_out",
+            "c": "key_cache_mutable",
+            "d": "value_cache_mutable",
+            "tensor_args": "unit_weight_tensors",
+        },
+        "decode_loop_reuse": {
+            "prepared_callable_reuse": "single_prepare_multiple_run_prepared",
+            "reset_between_runs": [
+                "fanin",
+                "ready_flags",
+                "completion_flags",
+                "counters",
+                "unit_outputs",
+            ],
+            "carried_between_runs": [
+                "hidden_state_from_previous_logits",
+                "weight_buffers",
+                "kv_cache_buffers",
+            ],
+        },
+        "serving_coverage": "diagnostic_unit_math",
+        "remaining_gap": "full_qwen_decode_loop_execution",
+    }
+    if payload is None:
+        return contract
+    summary = payload.get("decode_loop_summary", {})
+    contract["status"] = "diagnostic_bridge_executed"
+    contract["live_summary"] = {
+        "status": payload.get("status", "unknown"),
+        "repeat_runs": int(summary.get("repeat_runs", 1)),
+        "total_completed_count": int(summary.get("total_completed_count", 0)),
+        "total_error_count": int(summary.get("total_error_count", 0)),
+        "max_abs_error": float(payload.get("max_abs_error", 0.0)),
+    }
+    return contract
+
+
 def build_decode_loop_runner(
     *,
     mode: str = "offline",
     cache_dir: Path | None = None,
+    unit_math_live_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     token_lifecycle, kv_lifecycle, resident_lifecycle = build_resources(
         mode=mode,
@@ -211,6 +262,9 @@ def build_decode_loop_runner(
             "resident_weight_table": resident_lifecycle.get("status"),
         },
         "cuda_live_bridge_contract": cuda_live_bridge_contract(),
+        "unit_math_live_bridge_contract": unit_math_live_bridge_contract(
+            unit_math_live_payload,
+        ),
         "dag_submission_plans": plans,
         "total_decode_iterations": sum(item["decode_steps"] for item in plans),
         "implemented_contracts": [
@@ -218,6 +272,7 @@ def build_decode_loop_runner(
             "persistent_dag_submission_plan",
             "output_token_accounting_plan",
             "cuda_live_resource_bridge_contract",
+            "qwen_unit_math_live_bridge_contract",
         ],
         "remaining_runtime_gaps": [
             "numerically_correct_qwen_kernel_bodies",

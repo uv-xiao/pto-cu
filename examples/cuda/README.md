@@ -110,18 +110,24 @@ owner before Qwen attention kernels can consume those fields.
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/qwen_decode_loop_runner.py \
-  --mode offline \
-  --output-json tmp/cuda-backend/pto-serving-decode-loop/qwen-decode-loop-runner.json
+  --mode mock \
+  --run-unit-math-live \
+  --device 0 \
+  --arch compute_80 \
+  --repeat-runs 3 \
+  --output-json tmp/cuda-backend/pto-serving-decode-loop-unit-math-bridge/qwen-decode-loop-runner.json
 ```
 
 Expected output: command exits 0; output JSON records dry-run decode-loop
-resource owner ordering, persistent DAG submission plans, and the diagnostic
-`cuda_live` bridge contract.
+resource owner ordering, persistent DAG submission plans, and diagnostic
+`cuda_live` bridge contracts.
 
 The artifact composes token pointer, KV-cache, and resident-weight owners into
 a decode-loop submission plan. It records owner open/materialize/submit/close
 ordering plus output-token accounting, and maps the owner-owned `a`, `b`,
 `out`, `c`, `d`, and `tensor_args` fields into the repeated proxy live runner.
+With `--run-unit-math-live`, it also executes the repeated unit-math
+diagnostic from the runner entry point and records the bridge summary.
 It still does not execute full Qwen kernels or a full-serving decode loop.
 
 ## Qwen Persistent Task Bodies

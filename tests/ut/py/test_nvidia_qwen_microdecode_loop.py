@@ -106,6 +106,40 @@ def test_decode_loop_runner_tracks_cuda_live_bridge_contract():
     assert "cuda_live_resource_bridge_contract" in runner["implemented_contracts"]
 
 
+def test_decode_loop_runner_attaches_unit_math_live_bridge():
+    module = load_decode_loop_runner_module()
+
+    runner = module.build_decode_loop_runner(
+        mode="mock",
+        unit_math_live_payload={
+            "kind": "pto_qwen_unit_math_live_execution",
+            "status": "pass",
+            "runtime": "cuda/persistent_device",
+            "decode_loop_summary": {
+                "repeat_runs": 3,
+                "total_completed_count": 12,
+                "total_error_count": 0,
+                "total_scheduler_processed_count": 12,
+            },
+            "max_abs_error": 0.0,
+        },
+    )
+
+    bridge = runner["unit_math_live_bridge_contract"]
+    assert bridge["status"] == "diagnostic_bridge_executed"
+    assert bridge["runtime"] == "cuda/persistent_device"
+    assert bridge["serving_coverage"] == "diagnostic_unit_math"
+    assert bridge["live_summary"] == {
+        "status": "pass",
+        "repeat_runs": 3,
+        "total_completed_count": 12,
+        "total_error_count": 0,
+        "max_abs_error": 0.0,
+    }
+    assert bridge["remaining_gap"] == "full_qwen_decode_loop_execution"
+    assert "qwen_unit_math_live_bridge_contract" in runner["implemented_contracts"]
+
+
 def test_viewer_matrix_tracks_decode_loop_evidence():
     matrix_path = VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
     matrix = json.loads(matrix_path.read_text(encoding="utf-8"))[
