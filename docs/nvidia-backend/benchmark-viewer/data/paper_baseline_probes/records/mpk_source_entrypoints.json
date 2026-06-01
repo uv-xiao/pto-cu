@@ -1,0 +1,55 @@
+{
+  "id": "mpk_source_entrypoints",
+  "paper_baseline_id": "mpk",
+  "title": "MPK Source Entrypoints",
+  "latest_status": "pass",
+  "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/",
+  "checks": [
+    {
+      "kind": "path_exists",
+      "path": "demo/qwen3/demo.py",
+      "why": "MPK Qwen3 native and persistent-kernel demo command."
+    },
+    {
+      "kind": "py_compile",
+      "path": "demo/qwen3/demo.py",
+      "why": "The selected MPK demo entrypoint must at least parse before setup or model-loading runs."
+    },
+    {
+      "kind": "python_module",
+      "module": "torch",
+      "why": "MPK native and persistent paths depend on PyTorch model execution."
+    },
+    {
+      "kind": "python_module",
+      "module": "transformers",
+      "why": "MPK Qwen3 demo imports AutoTokenizer and AutoConfig from Transformers."
+    },
+    {
+      "kind": "python_module",
+      "module": "triton",
+      "why": "The MPK paper compares against Triton-style operator paths."
+    },
+    {
+      "kind": "python_import",
+      "module": "mirage.mpk.base_dynamic_shard_loader",
+      "pythonpath": "python",
+      "why": "MPK Qwen3 persistent runs import the Mirage MPK dynamic shard loader from the pinned source checkout."
+    }
+  ],
+  "next_action": "Install MPK dependencies, run the Qwen3 native and --use-mirage commands, then export raw latency and throughput JSON.",
+  "latest_machine_status": [
+    {
+      "gpu": "A100",
+      "status": "pass",
+      "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/a100-probe.json",
+      "blocking_gaps": []
+    },
+    {
+      "gpu": "H200",
+      "status": "pass",
+      "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/h200-probe.json",
+      "blocking_gaps": []
+    }
+  ]
+}

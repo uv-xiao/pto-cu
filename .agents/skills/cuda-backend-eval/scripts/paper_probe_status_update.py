@@ -5,11 +5,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[4]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from viewer_data_io import load_json as load_viewer_json
+from viewer_data_io import write_json as write_viewer_json
+
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 DEFAULT_PROBES = VIEWER_DATA / "paper_baseline_probes.json"
 MACHINE_ARTIFACTS = {
@@ -24,11 +32,13 @@ def fail(message: str) -> None:
 
 def load_json(path: Path) -> dict[str, Any]:
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = load_viewer_json(path)
     except FileNotFoundError:
         fail(f"missing JSON file: {path}")
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in {path}: {exc}")
+    except ValueError as exc:
+        fail(str(exc))
     if not isinstance(data, dict):
         fail(f"JSON root is not an object: {path}")
     return data
@@ -37,6 +47,16 @@ def load_json(path: Path) -> dict[str, Any]:
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n")
+
+
+def write_output(path: Path, payload: dict[str, Any]) -> None:
+    if (
+        path.resolve().parent == VIEWER_DATA.resolve()
+        or path.with_suffix("").is_dir()
+    ):
+        write_viewer_json(path, payload)
+        return
+    write_json(path, payload)
 
 
 def repo_relative(path: Path) -> str:
@@ -136,7 +156,7 @@ def main() -> None:
         load_json(args.probes),
         paired_artifact_root=args.paired_artifact_root,
     )
-    write_json(args.output, updated)
+    write_output(args.output, updated)
     print(f"wrote {args.output}")
 
 

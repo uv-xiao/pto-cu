@@ -16,6 +16,7 @@ COLLECTION_KEYS = (
     "result_records",
     "paper_baseline_execution_attempts",
     "paper_baseline_environment_attempts",
+    "paper_baseline_probes",
     "paper_baseline_runs",
     "paper_baseline_run_readiness",
     "paper_evaluation_matrix",
@@ -110,6 +111,11 @@ def sharded_target(path: Path, payload: dict[str, Any]) -> Path | None:
     ):
         return path.with_suffix("")
     if path.name == "paper_readiness_audit.json" and "claim_audits" in payload:
+        return path.with_suffix("")
+    if (
+        path.name == "paper_baseline_probes.json"
+        and "paper_baseline_probes" in payload
+    ):
         return path.with_suffix("")
     return None
 

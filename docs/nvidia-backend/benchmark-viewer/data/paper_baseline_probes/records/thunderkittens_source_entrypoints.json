@@ -1,0 +1,79 @@
+{
+  "id": "thunderkittens_source_entrypoints",
+  "paper_baseline_id": "thunderkittens",
+  "title": "ThunderKittens Source Entrypoints",
+  "latest_status": "pass",
+  "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/",
+  "checks": [
+    {
+      "kind": "path_exists",
+      "path": "kernels/attention/mha_h100/Makefile",
+      "why": "Selected attention-kernel build target for Hopper-class comparison."
+    },
+    {
+      "kind": "path_exists",
+      "path": "kernels/attention/mha_h100/benchmark.py",
+      "why": "Selected attention-kernel benchmark script."
+    },
+    {
+      "kind": "py_compile",
+      "path": "kernels/attention/mha_h100/benchmark.py",
+      "why": "The selected benchmark script must parse before make or CUDA execution."
+    },
+    {
+      "kind": "path_exists",
+      "path": "kernels/attention/mha_h100/test_correctness.py",
+      "why": "Selected attention-kernel correctness script."
+    },
+    {
+      "kind": "py_compile",
+      "path": "kernels/attention/mha_h100/test_correctness.py",
+      "why": "The selected correctness script must parse before make or CUDA execution."
+    },
+    {
+      "kind": "python_module",
+      "module": "torch",
+      "why": "The selected ThunderKittens kernel builds as a PyTorch extension and benchmark.py imports torch."
+    },
+    {
+      "kind": "python_module",
+      "module": "pybind11",
+      "why": "ThunderKittens common.mk calls python3 -m pybind11 --includes for PyTorch extension builds."
+    },
+    {
+      "kind": "python_module",
+      "module": "numpy",
+      "why": "benchmark.py and test_correctness.py import numpy for tabulation and correctness checks."
+    },
+    {
+      "kind": "python_module",
+      "module": "pandas",
+      "why": "benchmark.py imports pandas to render benchmark tables."
+    },
+    {
+      "kind": "python_module",
+      "module": "matplotlib",
+      "why": "test_correctness.py imports matplotlib to write correctness plots."
+    },
+    {
+      "kind": "python_module",
+      "module": "tqdm",
+      "why": "test_correctness.py imports tqdm for correctness sweep progress."
+    }
+  ],
+  "next_action": "Build the selected ThunderKittens kernel on H200/H100-class hardware and capture correctness plus benchmark JSON.",
+  "latest_machine_status": [
+    {
+      "gpu": "A100",
+      "status": "pass",
+      "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/a100-probe.json",
+      "blocking_gaps": []
+    },
+    {
+      "gpu": "H200",
+      "status": "pass",
+      "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/h200-probe.json",
+      "blocking_gaps": []
+    }
+  ]
+}

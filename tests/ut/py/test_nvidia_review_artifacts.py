@@ -5162,7 +5162,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "data" / "paper_baselines.json").is_file()
     paper_baseline_runs_dir = VIEWER_ROOT / "data" / "paper_baseline_runs"
     assert (paper_baseline_runs_dir / "index.json").is_file()
-    assert (VIEWER_ROOT / "data" / "paper_baseline_probes.json").is_file()
+    paper_baseline_probes_dir = VIEWER_ROOT / "data" / "paper_baseline_probes"
+    assert (paper_baseline_probes_dir / "index.json").is_file()
     assert (
         VIEWER_ROOT / "data" / "paper_baseline_environment_plans.json"
     ).is_file()
@@ -5194,6 +5195,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "data/paper_baseline_runs/index.json",
         "paperBaselineProbes",
         "paper_baseline_probes",
+        "data/paper_baseline_probes/index.json",
         "paperBaselineEnvironmentPlans",
         "paper_baseline_environment_plans",
         "Environment Plans",
@@ -5254,10 +5256,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     paper_baseline_runs = load_viewer_collection(
         VIEWER_ROOT / "data" / "paper_baseline_runs.json"
     )
-    paper_baseline_probes = json.loads(
-        (VIEWER_ROOT / "data" / "paper_baseline_probes.json").read_text(
-            encoding="utf-8"
-        )
+    paper_baseline_probes = load_viewer_collection(
+        VIEWER_ROOT / "data" / "paper_baseline_probes.json"
     )
     paper_baseline_run_readiness = load_viewer_collection(
         VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json"

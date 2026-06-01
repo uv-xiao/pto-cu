@@ -1,0 +1,10 @@
+{
+  "collection": "paper_baseline_probes",
+  "record_files": [
+    "records/mpk_source_entrypoints.json",
+    "records/vdcores_source_entrypoints.json",
+    "records/vllm_source_entrypoints.json",
+    "records/sglang_source_entrypoints.json",
+    "records/thunderkittens_source_entrypoints.json"
+  ]
+}

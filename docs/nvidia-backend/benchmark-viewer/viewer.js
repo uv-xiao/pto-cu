@@ -5,7 +5,9 @@ const DATA_FILES = {
   paperBaselineRuns: {
     manifest: "data/paper_baseline_runs/index.json",
   },
-  paperBaselineProbes: "data/paper_baseline_probes.json",
+  paperBaselineProbes: {
+    manifest: "data/paper_baseline_probes/index.json",
+  },
   paperBaselineEnvironmentPlans: "data/paper_baseline_environment_plans.json",
   paperBaselineEnvironmentAttempts: {
     manifest: "data/paper_baseline_environment_attempts/index.json",
@@ -890,7 +892,7 @@ async function main() {
       loadJson(DATA_FILES.methods),
       loadJson(DATA_FILES.paperBaselines),
       loadDataFile(DATA_FILES.paperBaselineRuns),
-      loadJson(DATA_FILES.paperBaselineProbes),
+      loadDataFile(DATA_FILES.paperBaselineProbes),
       loadDataFile(DATA_FILES.paperBaselineEnvironmentAttempts),
       loadDataFile(DATA_FILES.paperBaselineRunReadiness),
       loadDataFile(DATA_FILES.paperBaselineExecutionAttempts),

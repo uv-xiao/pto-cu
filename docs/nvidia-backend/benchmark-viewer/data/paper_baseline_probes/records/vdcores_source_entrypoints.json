@@ -1,0 +1,49 @@
+{
+  "id": "vdcores_source_entrypoints",
+  "paper_baseline_id": "vdcores",
+  "title": "VDCores Source Entrypoints",
+  "latest_status": "pass",
+  "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/",
+  "checks": [
+    {
+      "kind": "path_exists",
+      "path": "app/python/qwen3_1p7b/sched.py",
+      "why": "Selected VDCores public Qwen resource-policy entrypoint."
+    },
+    {
+      "kind": "py_compile",
+      "path": "app/python/qwen3_1p7b/sched.py",
+      "why": "The selected scheduler entrypoint must parse before model-loading runs."
+    },
+    {
+      "kind": "py_compile",
+      "path": "app/python/qwen3_1p7b/runtime_context.py",
+      "why": "The public Qwen runtime context owns HF auth and dry-build behavior."
+    },
+    {
+      "kind": "python_module",
+      "module": "torch",
+      "why": "VDCores Qwen materialization, dry-build tensors, and correctness paths depend on PyTorch."
+    },
+    {
+      "kind": "python_module",
+      "module": "transformers",
+      "why": "VDCores Qwen runtime context imports AutoModelForCausalLM and AutoConfig from Transformers."
+    }
+  ],
+  "next_action": "Run the Qwen3-1.7B dry-build, correctness, and benchmark commands, then import measured resource-policy artifacts.",
+  "latest_machine_status": [
+    {
+      "gpu": "A100",
+      "status": "pass",
+      "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/a100-probe.json",
+      "blocking_gaps": []
+    },
+    {
+      "gpu": "H200",
+      "status": "pass",
+      "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/h200-probe.json",
+      "blocking_gaps": []
+    }
+  ]
+}

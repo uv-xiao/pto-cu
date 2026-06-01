@@ -43,3 +43,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-10.md](entries/2026-06-02-part-10.md) | 1 | Environment Attempt Shard Split | Environment Attempt Shard Split |
 | [2026-06-02-part-11.md](entries/2026-06-02-part-11.md) | 1 | Paper Baseline Run Shard Split | Paper Baseline Run Shard Split |
 | [2026-06-02-part-12.md](entries/2026-06-02-part-12.md) | 1 | Paper Readiness Audit Shard Split | Paper Readiness Audit Shard Split |
+| [2026-06-02-part-13.md](entries/2026-06-02-part-13.md) | 1 | Paper Baseline Probe Shard Split | Paper Baseline Probe Shard Split |
