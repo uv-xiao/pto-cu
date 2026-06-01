@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 flow details split](2026-06-02-flow-details-split.md)
 - [2026-06-02 persistent device design split](2026-06-02-persistent-device-design-split.md)
 - [2026-06-02 CUDA status split](2026-06-02-cuda-status-split.md)
 - [2026-06-02 evaluation plan split](2026-06-02-evaluation-plan-split.md)
