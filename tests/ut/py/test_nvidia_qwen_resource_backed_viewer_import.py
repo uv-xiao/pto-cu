@@ -50,6 +50,10 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                     },
                     "total_completed_count": 765,
                     "total_error_count": 0,
+                    "execution_mode": "bounded_decode_steps",
+                    "planned_decode_steps": 1024,
+                    "executed_decode_steps": 3,
+                    "decode_step_limit": 3,
                     "logits_summary": {
                         "coverage": "full_logits_buffer_prefix_sampled",
                         "written_element_count": 65536,
@@ -115,6 +119,10 @@ def test_resource_backed_importer_emits_diagnostic_rows():
         assert record["statistic"]["error_count"] == 0
         assert record["statistic"]["repeat_runs"] in {1, 3}
         assert record["statistic"]["sample_count"] in {1, 3}
+        assert record["statistic"]["execution_mode"] in {
+            "repeat_submissions",
+            "bounded_decode_steps",
+        }
         assert record["correctness"] == "pass"
         assert "resource-backed diagnostic" in record["inputs"]["shape"]
         assert "prepared callable reused" in record["inputs"]["repeat_policy"]
@@ -283,7 +291,16 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
         == 255
         for row in rows
     )
-    assert all(row["statistic"]["completed_count"] in {255, 765} for row in rows)
+    assert all(
+        row["statistic"]["completed_count"] in {255, 510, 765}
+        for row in rows
+    )
+    assert any(
+        row["statistic"].get("execution_mode") == "bounded_decode_steps"
+        and row["statistic"].get("executed_decode_steps") == 2
+        and row["statistic"]["completed_count"] == 510
+        for row in rows
+    )
     assert all(row["statistic"]["error_count"] == 0 for row in rows)
     assert any(row["correctness"] == "pass" for row in rows)
     assert any(

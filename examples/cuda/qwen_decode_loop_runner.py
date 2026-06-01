@@ -38,6 +38,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_activation_workspace_launch_packet_binding",
     "single_context_live_resource_session",
     "qwen_resource_backed_diagnostic_execution",
+    "qwen_resource_backed_decode_step_execution",
 ]
 
 
@@ -59,6 +60,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-submission-smoke", action="store_true")
     parser.add_argument("--run-resource-backed-smoke", action="store_true")
     parser.add_argument("--resource-backed-repeat-runs", type=int, default=1)
+    parser.add_argument("--resource-backed-decode-steps", type=int)
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--arch", default="compute_80")
     parser.add_argument("--cache-root", type=Path)
@@ -114,6 +116,7 @@ def main() -> None:
         single_context_live_session=args.single_context_live_session,
         run_resource_backed_smoke=args.run_resource_backed_smoke,
         resource_backed_repeat_runs=args.resource_backed_repeat_runs,
+        resource_backed_decode_steps=args.resource_backed_decode_steps,
         arch=args.arch,
     )
     if args.output_json:

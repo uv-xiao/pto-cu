@@ -253,8 +253,8 @@ def test_viewer_matrix_tracks_decode_loop_evidence():
         if item["id"] == "pto_full_serving_qwen3_8b"
     )
     assert (
-        "resource-backed Qwen submission descriptors"
-        in pto_gap["action"]
+        "resource-backed diagnostic execution"
+        in " ".join(pto_gap.get("evidence_summary", []))
     )
 
 

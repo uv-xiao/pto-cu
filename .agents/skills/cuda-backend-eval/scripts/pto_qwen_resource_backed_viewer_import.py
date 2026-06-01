@@ -104,6 +104,17 @@ def build_result_records(
                         counters["scheduler_processed_count"],
                     ),
                     "repeat_runs": repeat_runs,
+                    "execution_mode": workload.get(
+                        "execution_mode",
+                        "repeat_submissions",
+                    ),
+                    "planned_decode_steps": int(
+                        workload.get("planned_decode_steps", 0),
+                    ),
+                    "executed_decode_steps": int(
+                        workload.get("executed_decode_steps", 0),
+                    ),
+                    "decode_step_limit": workload.get("decode_step_limit"),
                     "task_count": int(workload["graph_task_count"]),
                     "serving_coverage": COVERAGE,
                     "workload_id": workload["workload_id"],
@@ -198,6 +209,7 @@ def ensure_matrix_ref(
             "symbols": [
                 "pto_qwen_resource_backed_execution",
                 "qwen_resource_backed_diagnostic_execution",
+                "qwen_resource_backed_decode_step_execution",
                 "diagnostic_resource_backed_qwen_dag",
                 "repeat_runs",
                 "partial_logits_not_full_vocab",

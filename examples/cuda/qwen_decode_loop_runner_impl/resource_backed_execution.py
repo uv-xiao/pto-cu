@@ -17,6 +17,11 @@ from qwen_decode_loop_runner_impl.launch_preflight import (
     keyed_fields,
     workspace_for_workload,
 )
+from qwen_decode_loop_runner_impl.resource_execution_policy import (
+    decode_step_execution_summary,
+    implemented_contracts,
+    resource_backed_execution_count,
+)
 from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph
 from qwen_persistent_proxy_live_impl.runtime import (
     PtoRunTiming,
@@ -46,6 +51,7 @@ def run_resource_backed_execution(
     arch: str,
     cache_root: Path | None,
     repeat_runs: int = 1,
+    decode_step_limit: int | None = None,
 ) -> dict[str, Any]:
     runtime = session.runtime
     ctx = session.ctx
@@ -86,6 +92,7 @@ def run_resource_backed_execution(
                 descriptors=descriptors,
                 activation_workspace=activation_workspace,
                 repeat_runs=repeat_runs,
+                decode_step_limit=decode_step_limit,
             )
             for plan in plans
         ]
@@ -114,10 +121,15 @@ def run_resource_backed_execution(
         "repeat_policy": {
             "prepared_callable_reuse": "single_prepare_multiple_run_prepared",
             "repeat_runs_per_workload": max(1, int(repeat_runs)),
+            "decode_step_limit": decode_step_limit,
             "graph_state_policy": "fresh_graph_state_per_repeat",
         },
+        "decode_step_execution": decode_step_execution_summary(
+            workload_results,
+            decode_step_limit=decode_step_limit,
+        ),
         "workloads": workload_results,
-        "implemented_contracts": ["qwen_resource_backed_diagnostic_execution"],
+        "implemented_contracts": implemented_contracts(decode_step_limit),
         "remaining_runtime_gaps": [
             "full_qwen_numerical_correctness",
             "full_serving_viewer_result_import",
@@ -132,6 +144,7 @@ def run_workload(
     descriptors: list[dict[str, Any]],
     activation_workspace: dict[str, Any],
     repeat_runs: int,
+    decode_step_limit: int | None,
 ) -> dict[str, Any]:
     workspace = workspace_for_workload(
         activation_workspace=activation_workspace,
@@ -147,8 +160,13 @@ def run_workload(
     if packet is None or workspace is None:
         return {"workload_id": plan["workload_id"], "status": "not_run"}
 
+    execution_count = resource_backed_execution_count(
+        plan=plan,
+        repeat_runs=repeat_runs,
+        decode_step_limit=decode_step_limit,
+    )
     repeat_results = []
-    for repeat_index in range(max(1, int(repeat_runs))):
+    for repeat_index in range(execution_count):
         graph = MaterializedGraph(session, packet)
         timing = PtoRunTiming()
         args = CudaPersistentDagArgs(state=graph.ptrs["state"])
@@ -170,6 +188,9 @@ def run_workload(
         repeat_results.append(
             {
                 "repeat_index": repeat_index,
+                "decode_step_index": (
+                    repeat_index if decode_step_limit is not None else None
+                ),
                 "status": (
                     "pass"
                     if status == 0
@@ -203,6 +224,16 @@ def run_workload(
         ),
         "run_prepared_status": int(last["run_prepared_status"]),
         "repeat_runs": len(repeat_results),
+        "planned_decode_steps": int(plan["decode_steps"]),
+        "executed_decode_steps": (
+            len(repeat_results) if decode_step_limit is not None else 0
+        ),
+        "decode_step_limit": decode_step_limit,
+        "execution_mode": (
+            "bounded_decode_steps"
+            if decode_step_limit is not None
+            else "repeat_submissions"
+        ),
         "repeat_results": repeat_results,
         "graph_task_count": len(packet),
         "scheduler_counters": last["scheduler_counters"],

@@ -220,6 +220,7 @@ def test_resource_backed_smoke_runs_before_single_context_close(monkeypatch):
         assert kwargs["plans"][0]["workload_id"] == "mpk_offline_decode"
         assert kwargs["activation_workspace"] is session.workspace
         assert kwargs["repeat_runs"] == 4
+        assert kwargs["decode_step_limit"] is None
         return {
             "status": "pass",
             "serving_coverage": "diagnostic_resource_backed_qwen_dag",
@@ -249,6 +250,65 @@ def test_resource_backed_smoke_runs_before_single_context_close(monkeypatch):
     assert execution_seen_before_close["value"]
     assert runner["resource_backed_execution"]["status"] == "pass"
     assert "qwen_resource_backed_diagnostic_execution" in runner[
+        "implemented_contracts"
+    ]
+
+
+def test_resource_backed_decode_step_limit_runs_before_close(monkeypatch):
+    module = load_decode_loop_runner_module()
+    session = FakeSingleContextSession()
+
+    monkeypatch.setitem(
+        module.build_decode_loop_runner.__globals__,
+        "open_single_context_live_session",
+        lambda **_kwargs: session,
+    )
+    monkeypatch.setitem(
+        module.build_decode_loop_runner.__globals__,
+        "graph_materialization_contract",
+        lambda **_kwargs: {
+            "status": "resource_backed_graph_materialized",
+            "runtime": "cuda/persistent_device",
+            "workloads": [
+                {
+                    "workload_id": "mpk_offline_decode",
+                    "launch_packet_preflight": {
+                        "status": "resource_backed_launch_packet_workspace_bound",
+                    },
+                },
+            ],
+        },
+    )
+
+    def fake_resource_backed_execution(**kwargs):
+        assert not session.closed
+        assert kwargs["decode_step_limit"] == 2
+        return {
+            "status": "pass",
+            "decode_step_execution": {
+                "status": "bounded_decode_steps_executed",
+                "total_planned_decode_steps": 4,
+                "total_executed_decode_steps": 2,
+            },
+            "serving_coverage": "diagnostic_resource_backed_qwen_dag",
+            "workloads": [],
+        }
+
+    monkeypatch.setitem(
+        module.build_decode_loop_runner.__globals__,
+        "run_resource_backed_execution",
+        fake_resource_backed_execution,
+    )
+
+    runner = module.build_decode_loop_runner(
+        mode="mock",
+        single_context_live_session=True,
+        run_resource_backed_smoke=True,
+        resource_backed_decode_steps=2,
+    )
+
+    assert session.closed
+    assert "qwen_resource_backed_decode_step_execution" in runner[
         "implemented_contracts"
     ]
 

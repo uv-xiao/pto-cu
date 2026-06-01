@@ -56,6 +56,7 @@ def build_decode_loop_runner(
     single_context_live_session: bool = False,
     run_resource_backed_smoke: bool = False,
     resource_backed_repeat_runs: int = 1,
+    resource_backed_decode_steps: int | None = None,
     arch: str = "compute_80",
 ) -> dict[str, Any]:
     session_payload: dict[str, Any] | None = None
@@ -148,6 +149,7 @@ def build_decode_loop_runner(
                 arch=arch,
                 cache_root=cache_dir,
                 repeat_runs=resource_backed_repeat_runs,
+                decode_step_limit=resource_backed_decode_steps,
             )
             if session is not None
             else {
@@ -194,6 +196,12 @@ def build_decode_loop_runner(
         implemented_contracts.append("single_context_live_resource_session")
         if resource_backed_execution and resource_backed_execution.get("status") == "pass":
             implemented_contracts.append("qwen_resource_backed_diagnostic_execution")
+            if resource_backed_execution.get("decode_step_execution", {}).get(
+                "status",
+            ) == "bounded_decode_steps_executed":
+                implemented_contracts.append(
+                    "qwen_resource_backed_decode_step_execution",
+                )
     submission_descriptors = submission_descriptor_contract(
         plans=plans,
         resource_modes=resource_modes,
@@ -251,7 +259,7 @@ def build_decode_loop_runner(
         "implemented_contracts": implemented_contracts,
         "remaining_runtime_gaps": [
             "numerically_correct_qwen_kernel_bodies",
-            "cuda_live_decode_loop_execution",
+            "full_cuda_live_decode_loop_execution",
             "viewer_result_import",
         ],
     }
