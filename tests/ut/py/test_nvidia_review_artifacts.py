@@ -463,9 +463,9 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["qwen_prompt_accounting"]["status"] == "pass"
     assert checks["qwen_weight_inventory"]["status"] == "pass"
     assert checks["qwen_safetensors_shard_plan"]["status"] == "pass"
-    assert checks["qwen_safetensors_shards_present"]["status"] == "fail"
+    assert checks["qwen_safetensors_shards_present"]["status"] == "pass"
     assert checks["qwen_safetensors_metadata_probe"]["status"] == "pass"
-    assert checks["qwen_actual_safetensors_metadata"]["status"] == "fail"
+    assert checks["qwen_actual_safetensors_metadata"]["status"] == "pass"
     assert checks["qwen3_8b_full_serving_rows_imported"]["status"] == "fail"
     assert checks["qwen_model_loader_or_token_loop"]["status"] == "fail"
     lifecycle = preflight["serving_lifecycle"]
@@ -481,12 +481,12 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
         lifecycle["safetensors_shards"]["kind"]
         == "pto_qwen_safetensors_shard_status"
     )
-    assert lifecycle["safetensors_shards"]["status"] == "shards_missing"
+    assert lifecycle["safetensors_shards"]["status"] == "ready_for_metadata_probe"
     assert (
         lifecycle["safetensors_metadata"]["kind"]
         == "pto_qwen_safetensors_metadata_probe"
     )
-    assert lifecycle["safetensors_metadata"]["status"] == "shards_missing"
+    assert lifecycle["safetensors_metadata"]["status"] == "metadata_validated"
     assert {
         "qwen_tokenizer",
         "qwen_weight_loader",
@@ -537,20 +537,21 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     assert stages["qwen_serving_lifecycle_plan"]["status"] == "pass"
     assert stages["qwen_tokenizer"]["status"] == "partial"
     assert stages["qwen_weight_loader"]["status"] == "partial"
-    assert (
-        "expected shape/dtype contract"
-        in stages["qwen_weight_loader"]["next_action"]
-    )
-    assert stages["qwen_safetensors_shards"]["status"] == "partial"
-    assert "download" in stages["qwen_safetensors_shards"]["next_action"]
+    assert "Bind validated Qwen safetensors tensors" in stages[
+        "qwen_weight_loader"
+    ]["next_action"]
+    assert stages["qwen_safetensors_shards"]["status"] == "pass"
+    assert "rerun the metadata probe" in stages["qwen_safetensors_shards"][
+        "next_action"
+    ]
     assert scaffold["safetensors_shards"]["kind"] == (
         "pto_qwen_safetensors_shard_status"
     )
-    assert scaffold["safetensors_shards"]["status"] == "shards_missing"
+    assert scaffold["safetensors_shards"]["status"] == "ready_for_metadata_probe"
     assert scaffold["safetensors_metadata"]["kind"] == (
         "pto_qwen_safetensors_metadata_probe"
     )
-    assert scaffold["safetensors_metadata"]["status"] == "shards_missing"
+    assert scaffold["safetensors_metadata"]["status"] == "metadata_validated"
     assert stages["kv_cache_lifecycle"]["status"] == "partial"
     assert stages["decode_loop_runner"]["status"] == "missing"
 
@@ -964,25 +965,25 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-shards-80373a64/qwen-safetensors-shards.json"
+        == "tmp/cuda-backend/pto-serving-shards-a16851f6/qwen-safetensors-shards.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-safetensors-ff252c1f/qwen-safetensors-metadata.json"
+        == "tmp/cuda-backend/pto-serving-safetensors-a16851f6/qwen-safetensors-metadata.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-scaffold-80373a64/qwen-serving-scaffold.json"
+        == "tmp/cuda-backend/pto-serving-scaffold-a16851f6/qwen-serving-scaffold.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-preflight-80373a64/pto-serving-preflight.json"
+        == "tmp/cuda-backend/pto-serving-preflight-a16851f6/pto-serving-preflight.json"
         for ref in claim["current_evidence_refs"]
     )
     pto_gap = next(
@@ -1000,9 +1001,8 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "qwen_weight_inventory",
         "qwen_safetensors_fetch",
         "qwen_safetensors_metadata",
-        "Qwen safetensors shard download/placement/open",
-        "resumable fetch commands",
-        "actual safetensors shape/dtype validation",
+        "local Qwen shard placement",
+        "actual safetensors shape/dtype validation for 399 tensors",
         "CUDA weight binding",
         "partial KV-cache lifecycle plan",
         "decode-loop execution",

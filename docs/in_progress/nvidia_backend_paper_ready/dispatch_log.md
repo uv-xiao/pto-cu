@@ -4079,3 +4079,48 @@ Follow-up tracked-state closure after user confirmation:
   placement before metadata validation, CUDA weight binding, token-ID binding,
   KV-cache allocation/binding, Qwen kernel generation, decode-loop execution,
   and viewer-result import.
+
+### 2026-06-01 - Qwen Safetensors Real Metadata
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned shard
+  placement and actual metadata-validation slice for the PTO persistent-device
+  Qwen/Qwen3-8B full-serving blocker.
+- Exact Codex command or script invocation: used the shard-status artifact's
+  resumable `curl -L -C -` commands to place the five Qwen safetensors shards
+  under `tmp/sources/qwen3-8b-safetensors/`, then ran
+  `qwen_safetensors_fetch.py --output-json
+  tmp/cuda-backend/pto-serving-shards-a16851f6/qwen-safetensors-shards.json`,
+  `qwen_safetensors_metadata.py --weight-inventory-json
+  tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json
+  --output-json
+  tmp/cuda-backend/pto-serving-safetensors-a16851f6/qwen-safetensors-metadata.json`,
+  `persistent_qwen_serving_scaffold.py --output-json
+  tmp/cuda-backend/pto-serving-scaffold-a16851f6/qwen-serving-scaffold.json`,
+  `pto_serving_preflight.py --output
+  tmp/cuda-backend/pto-serving-preflight-a16851f6/pto-serving-preflight.json`,
+  and `refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled,
+  `.github/workflows/` stayed empty on this branch, and PR #1 reported no
+  checks. The large safetensors shards are local tmp evidence and are not
+  committed.
+- Verification commands and results: the focused scaffold/preflight tests first
+  failed because they still expected missing shards; after updating the current
+  contract, they passed with `2 passed`. The real metadata artifact reports
+  `status=metadata_validated`, `opened_shard_count=5`,
+  `validated_tensor_count=399`, and `mismatch_count=0`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: Qwen safetensors shard placement and
+  actual metadata validation are no longer blockers. The remaining PTO
+  full-serving gaps are CUDA weight binding, runtime token-ID binding,
+  KV-cache allocation/binding, Qwen kernel generation, decode-loop execution,
+  and viewer-result import.

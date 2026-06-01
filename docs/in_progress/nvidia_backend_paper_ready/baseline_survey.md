@@ -248,23 +248,21 @@ The current PTO serving comparison has explicit lifecycle artifacts at
 `tmp/cuda-backend/pto-serving-lifecycle-b95ff321/qwen-serving-lifecycle-plan.json`,
 `tmp/cuda-backend/pto-serving-tokenizer-b95ff321/qwen-prompt-accounting.json`,
 `tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json`,
-`tmp/cuda-backend/pto-serving-shards-80373a64/qwen-safetensors-shards.json`,
-`tmp/cuda-backend/pto-serving-safetensors-ff252c1f/qwen-safetensors-metadata.json`,
-`tmp/cuda-backend/pto-serving-scaffold-80373a64/qwen-serving-scaffold.json`,
+`tmp/cuda-backend/pto-serving-shards-a16851f6/qwen-safetensors-shards.json`,
+`tmp/cuda-backend/pto-serving-safetensors-a16851f6/qwen-safetensors-metadata.json`,
+`tmp/cuda-backend/pto-serving-scaffold-a16851f6/qwen-serving-scaffold.json`,
 and
-`tmp/cuda-backend/pto-serving-preflight-80373a64/pto-serving-preflight.json`.
+`tmp/cuda-backend/pto-serving-preflight-a16851f6/pto-serving-preflight.json`.
 They record the proxy-only execution state plus the new partial runtime plan:
 the benchmark viewer has a controlled attention-tile PTO serving-equivalent
 row, and the repo-owned PTO CUDA path now has a reviewable Qwen3-8B model
 shape, KV-cache capacity ladder, weight-binding plan, and persistent-device
 task mapping, tokenizer-observed prompt counts, safetensors shard/tensor
 inventory, and the config-derived expected weight shape/dtype contract. It
-also has a shard-status artifact with Qwen shard URLs, target paths, and
-resumable fetch commands, plus a safetensors metadata probe that reports the
-five real Qwen shards missing locally. It still does not download/place and
-open the real Qwen safetensors tensors, validate actual safetensors metadata,
-bind Qwen weights to CUDA buffers, bind token IDs to runtime buffers, bind real
-CUDA buffers, run generated Qwen kernel bodies, or execute a decode loop for
+also has local Qwen shard placement plus actual safetensors shape/dtype
+validation for 399 tensors across five shards. It still does not bind Qwen
+weights to CUDA buffers, bind token IDs to runtime buffers, bind real CUDA
+buffers, run generated Qwen kernel bodies, or execute a decode loop for
 `Qwen/Qwen3-8B`.
 
 ## Next Dispatcher Actions

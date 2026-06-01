@@ -110,27 +110,27 @@ The shard-status contract in `examples/cuda/qwen_safetensors_fetch.py` now
 records the Hugging Face resolve URLs, local target paths, present/missing
 counts, and resumable fetch commands for the five Qwen/Qwen3-8B safetensors
 shards without downloading by default.
+The metadata probe in `examples/cuda/qwen_safetensors_metadata.py` has now
+opened the real local shards and validated actual shape/dtype metadata for all
+399 Qwen/Qwen3-8B tensors with zero mismatches.
 The current raw artifacts are
 `tmp/cuda-backend/pto-serving-lifecycle-b95ff321/qwen-serving-lifecycle-plan.json`,
 `tmp/cuda-backend/pto-serving-tokenizer-b95ff321/qwen-prompt-accounting.json`,
 `tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json`,
-`tmp/cuda-backend/pto-serving-shards-80373a64/qwen-safetensors-shards.json`,
-`tmp/cuda-backend/pto-serving-safetensors-ff252c1f/qwen-safetensors-metadata.json`,
-`tmp/cuda-backend/pto-serving-scaffold-80373a64/qwen-serving-scaffold.json`,
+`tmp/cuda-backend/pto-serving-shards-a16851f6/qwen-safetensors-shards.json`,
+`tmp/cuda-backend/pto-serving-safetensors-a16851f6/qwen-safetensors-metadata.json`,
+`tmp/cuda-backend/pto-serving-scaffold-a16851f6/qwen-serving-scaffold.json`,
 and
-`tmp/cuda-backend/pto-serving-preflight-80373a64/pto-serving-preflight.json`.
+`tmp/cuda-backend/pto-serving-preflight-a16851f6/pto-serving-preflight.json`.
 They prove the current viewer has only the controlled attention-tile proxy row
 for PTO serving-equivalent evidence, plus a partial runtime plan for the
 Qwen3-8B KV-cache and task mapping, tokenizer-observed prompt counts, a
 safetensors shard/tensor inventory, and the expected weight shape/dtype
-contract. It also has a shard-status artifact that names the five missing
-Qwen shard URLs and target paths, plus a safetensors metadata probe that
-reports the five real Qwen shards missing locally. The repo-owned PTO CUDA
-path still lacks runtime token-ID binding, real Qwen safetensors
-download/placement/open, actual
-safetensors shape/dtype validation, CUDA weight binding, real CUDA allocation
-and binding for the planned KV-cache layout, generated Qwen kernel bodies,
-decode-loop execution, and `viewer_result_import`, so no PTO
+contract. It also proves local Qwen shard placement and actual safetensors
+shape/dtype validation for 399 tensors across five shards. The repo-owned PTO
+CUDA path still lacks runtime token-ID binding, CUDA weight binding, real CUDA
+allocation and binding for the planned KV-cache layout, generated Qwen kernel
+bodies, decode-loop execution, and `viewer_result_import`, so no PTO
 `Qwen/Qwen3-8B` full-serving row can be imported yet.
 Every serving baseline run record must reference one of these policy IDs and
 require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before

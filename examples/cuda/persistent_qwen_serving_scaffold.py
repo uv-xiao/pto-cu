@@ -149,6 +149,35 @@ def build_scaffold() -> dict[str, Any]:
     weight_inventory = load_weight_inventory()
     safetensors_shards = load_safetensors_shards()
     safetensors_metadata = load_safetensors_metadata()
+    shards_ready = (
+        safetensors_shards.get("status") == "ready_for_metadata_probe"
+    )
+    metadata_validated = (
+        safetensors_metadata.get("status") == "metadata_validated"
+    )
+    weight_next_action = (
+        "Bind validated Qwen safetensors tensors to CUDA buffers and "
+        "persistent-device task args."
+        if metadata_validated
+        else (
+            "Run the safetensors metadata probe against the placed Qwen "
+            "shards, then bind validated tensors to CUDA buffers."
+            if shards_ready
+            else (
+                "Keep the safetensors index and expected shape/dtype contract "
+                "in sync with the shard placement and metadata probes."
+            )
+        )
+    )
+    shard_next_action = (
+        "Keep the local Qwen safetensors shards under tmp/sources and rerun "
+        "the metadata probe when shard files change."
+        if shards_ready
+        else (
+            "Place or download the real Qwen safetensors shards under "
+            "tmp/sources/qwen3-8b-safetensors, then rerun the metadata probe."
+        )
+    )
     persistent_abi_ready = text_contains(
         "src/cuda/platform/include/host/pto_cuda_persistent_device_abi.h",
         ["PtoCudaPersistentDagTask", "tensor_args", "scalar_args"],
@@ -226,10 +255,7 @@ def build_scaffold() -> dict[str, Any]:
             if weight_inventory.get("kind") == "pto_qwen_weight_inventory"
             else "missing",
             evidence="examples/cuda/qwen_weight_inventory.py",
-            next_action=(
-                "Keep the safetensors index and expected shape/dtype contract "
-                "in sync with the shard placement and metadata probes."
-            ),
+            next_action=weight_next_action,
         ),
         stage(
             stage_id="qwen_safetensors_shards",
@@ -245,10 +271,7 @@ def build_scaffold() -> dict[str, Any]:
                 else "missing"
             ),
             evidence="examples/cuda/qwen_safetensors_fetch.py",
-            next_action=(
-                "Place or download the real Qwen safetensors shards under "
-                "tmp/sources/qwen3-8b-safetensors, then rerun the metadata probe."
-            ),
+            next_action=shard_next_action,
         ),
         stage(
             stage_id="kv_cache_lifecycle",

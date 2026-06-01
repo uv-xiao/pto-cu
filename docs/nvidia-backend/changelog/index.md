@@ -30,6 +30,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 Qwen weight shape contract](2026-06-01-qwen-weight-shape-contract.md)
 - [2026-06-01 Qwen safetensors shard status](2026-06-01-qwen-safetensors-shard-status.md)
 - [2026-06-01 Qwen safetensors metadata probe](2026-06-01-qwen-safetensors-metadata-probe.md)
+- [2026-06-01 Qwen safetensors real metadata](2026-06-01-qwen-safetensors-real-metadata.md)
 - [2026-06-01 serving coverage guard](2026-06-01-serving-coverage-guard.md)
 - [2026-06-01 serving gap audit narrowing](2026-06-01-serving-gap-audit-narrowing.md)
 - [2026-06-01 serving work queue targets](2026-06-01-serving-work-queue-targets.md)
