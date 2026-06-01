@@ -250,7 +250,7 @@ The current PTO serving comparison has explicit lifecycle artifacts at
 `tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json`,
 `tmp/cuda-backend/pto-serving-shards-a16851f6/qwen-safetensors-shards.json`,
 `tmp/cuda-backend/pto-serving-safetensors-a16851f6/qwen-safetensors-metadata.json`,
-`tmp/cuda-backend/pto-serving-weight-binding-35f713e9/qwen-cuda-weight-binding.json`,
+`tmp/cuda-backend/pto-serving-weight-residency-1ae913c9/qwen-cuda-weight-residency.json`,
 `tmp/cuda-backend/pto-serving-scaffold-35f713e9/qwen-serving-scaffold.json`,
 and
 `tmp/cuda-backend/pto-serving-preflight-35f713e9/pto-serving-preflight.json`.
@@ -263,10 +263,12 @@ inventory, and the config-derived expected weight shape/dtype contract. It
 also has local Qwen shard placement plus actual safetensors shape/dtype
 validation for 399 tensors across five shards. The CUDA binding artifact maps
 all 399 tensors to stable binding slots, file byte ranges, and readonly
-persistent-device argument roles, and copied 16 small norm tensors through the
-CUDA runtime allocation/copy API. It still does not provide full CUDA weight
-residency, bind token IDs to runtime buffers, bind real CUDA KV-cache buffers,
-run generated Qwen kernel bodies, or execute a decode loop for
+persistent-device argument roles, held all 16.38 GB of Qwen weights resident
+on an A100 at once, and verified 16 small norm tensors by copying them back
+from device memory. It still does not bind resident weight pointers to
+persistent-device task arguments, bind token IDs to runtime buffers, bind real
+CUDA KV-cache buffers, run generated Qwen kernel bodies, or execute a decode
+loop for
 `Qwen/Qwen3-8B`.
 
 ## Next Dispatcher Actions

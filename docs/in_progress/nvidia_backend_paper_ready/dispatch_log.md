@@ -4164,3 +4164,39 @@ Follow-up tracked-state closure after user confirmation:
   persistent-task pointer binding, runtime token-ID binding,
   KV-cache allocation/binding, Qwen kernel generation, decode-loop execution,
   and viewer-result import.
+
+### 2026-06-01 - Qwen CUDA Full Weight Residency
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned full CUDA
+  residency probe for Qwen/Qwen3-8B weights after safetensors-to-slot binding.
+- Exact Codex command or script invocation:
+  `qwen_cuda_weight_binding.py --cuda-probe-mode full --device 4
+  --verify-tensors 16 --output-json
+  tmp/cuda-backend/pto-serving-weight-residency-1ae913c9/qwen-cuda-weight-residency.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled,
+  `.github/workflows/` stayed empty on this branch, and PR #1 reported no
+  checks. The large safetensors shards and residency artifact are local tmp
+  evidence and are not committed.
+- Verification commands and results: focused TDD test first failed because
+  `qwen_cuda_weight_binding.py` did not accept `--cuda-probe-mode full`; after
+  implementation it passed. The real residency artifact reports
+  `cuda_probe.status=pass`, `resident_tensor_count=399`,
+  `resident_bytes=16381470720`, `freed_tensor_count=399`, and
+  `verified_tensor_count=16`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves all Qwen3-8B
+  weights can be allocated and copied to one CUDA device at once through the
+  repo runtime API. The remaining PTO full-serving gaps are persistent-task
+  weight-pointer binding, runtime token-ID binding, KV-cache allocation and
+  binding, Qwen kernel generation, decode-loop execution, and viewer-result
+  import.

@@ -28,6 +28,7 @@ DTYPE_ALIASES = {
     "F16": "float16",
     "F32": "float32",
 }
+DEFAULT_COPY_CHUNK_BYTES = 64 * 1024 * 1024
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -322,7 +323,86 @@ def load_cuda_runtime(host_runtime: Path) -> Any:
         ctypes.c_size_t,
     ]
     runtime.copy_to_device_ctx.restype = ctypes.c_int
+    runtime.copy_from_device_ctx.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+    ]
+    runtime.copy_from_device_ctx.restype = ctypes.c_int
     return runtime
+
+
+def copy_file_range_to_device(
+    *,
+    runtime: Any,
+    ctx: Any,
+    binding: dict[str, Any],
+    dev_ptr: int,
+    chunk_bytes: int,
+) -> None:
+    path = ROOT / binding["shard_path"]
+    if not path.is_file():
+        path = Path(binding["shard_path"])
+    start, end = binding["file_absolute_offsets"]
+    copied = 0
+    remaining = end - start
+    with path.open("rb") as handle:
+        handle.seek(start)
+        while remaining:
+            chunk = handle.read(min(chunk_bytes, remaining))
+            if not chunk:
+                raise ValueError(
+                    f"{path} ended before {binding['tensor']} tensor bytes"
+                )
+            buffer = ctypes.create_string_buffer(chunk, len(chunk))
+            status = runtime.copy_to_device_ctx(
+                ctx,
+                ctypes.c_void_p(dev_ptr + copied),
+                ctypes.cast(buffer, ctypes.c_void_p),
+                len(chunk),
+            )
+            if status != 0:
+                raise RuntimeError(
+                    f"copy_to_device failed for {binding['tensor']} "
+                    f"at offset {copied}: {status}"
+                )
+            copied += len(chunk)
+            remaining -= len(chunk)
+
+
+def verify_device_prefix(
+    *,
+    runtime: Any,
+    ctx: Any,
+    binding: dict[str, Any],
+    dev_ptr: int,
+    verify_bytes: int,
+) -> bool:
+    expected = read_tensor_bytes(
+        {
+            **binding,
+            "file_absolute_offsets": [
+                binding["file_absolute_offsets"][0],
+                min(
+                    binding["file_absolute_offsets"][1],
+                    binding["file_absolute_offsets"][0] + verify_bytes,
+                ),
+            ],
+        }
+    )
+    output = ctypes.create_string_buffer(len(expected))
+    status = runtime.copy_from_device_ctx(
+        ctx,
+        ctypes.cast(output, ctypes.c_void_p),
+        ctypes.c_void_p(dev_ptr),
+        len(expected),
+    )
+    if status != 0:
+        raise RuntimeError(
+            f"copy_from_device failed for {binding['tensor']}: {status}"
+        )
+    return output.raw == expected
 
 
 def run_cuda_copy_probe(
@@ -426,12 +506,149 @@ def run_cuda_copy_probe(
         runtime.destroy_device_context(ctx)
 
     return {
+        "mode": "bounded_copy",
         "status": "pass",
         "device": device,
         "host_runtime": repo_relative(host_runtime),
         "copied_tensor_count": len(copied),
         "copied_bytes": sum(item["size_bytes"] for item in copied),
         "copied_tensors": copied,
+    }
+
+
+def run_cuda_full_residency_probe(
+    *,
+    bindings: list[dict[str, Any]],
+    device: int,
+    host_runtime: Path,
+    chunk_bytes: int,
+    verify_tensors: int,
+    verify_bytes: int,
+) -> dict[str, Any]:
+    if not host_runtime.is_file():
+        return {
+            "mode": "full_residency",
+            "status": "skipped",
+            "reason": "host_runtime_missing",
+            "host_runtime": repo_relative(host_runtime),
+        }
+    if not bindings:
+        return {
+            "mode": "full_residency",
+            "status": "skipped",
+            "reason": "no_bindings",
+        }
+
+    runtime = load_cuda_runtime(host_runtime)
+    ctx = runtime.create_device_context()
+    if not ctx:
+        return {
+            "mode": "full_residency",
+            "status": "fail",
+            "reason": "create_device_context_failed",
+        }
+
+    resident = []
+    device_ptrs: list[int] = []
+    try:
+        init_status = runtime.simpler_init(ctx, device, None, 0, None, 0)
+        if init_status != 0:
+            return {
+                "mode": "full_residency",
+                "status": "fail",
+                "reason": "simpler_init_failed",
+                "return_code": init_status,
+            }
+
+        for item in bindings:
+            size_bytes = int(item["size_bytes"])
+            dev_ptr = runtime.device_malloc_ctx(ctx, size_bytes)
+            if not dev_ptr:
+                return {
+                    "mode": "full_residency",
+                    "status": "fail",
+                    "reason": "device_malloc_failed",
+                    "tensor": item["tensor"],
+                    "size_bytes": size_bytes,
+                    "resident_tensor_count": len(resident),
+                    "resident_bytes": sum(
+                        record["size_bytes"] for record in resident
+                    ),
+                }
+            ptr_value = int(dev_ptr)
+            device_ptrs.append(ptr_value)
+            copy_file_range_to_device(
+                runtime=runtime,
+                ctx=ctx,
+                binding=item,
+                dev_ptr=ptr_value,
+                chunk_bytes=chunk_bytes,
+            )
+            resident.append(
+                {
+                    "slot_id": item["slot_id"],
+                    "tensor": item["tensor"],
+                    "size_bytes": size_bytes,
+                    "binding_group": item["binding_group"],
+                }
+            )
+
+        verified = []
+        small_first = sorted(resident, key=lambda item: (item["size_bytes"], item["tensor"]))
+        resident_by_slot = {item["slot_id"]: item for item in bindings}
+        ptr_by_slot = {
+            item["slot_id"]: ptr for item, ptr in zip(bindings, device_ptrs, strict=True)
+        }
+        for record in small_first[:verify_tensors]:
+            binding = resident_by_slot[record["slot_id"]]
+            if not verify_device_prefix(
+                runtime=runtime,
+                ctx=ctx,
+                binding=binding,
+                dev_ptr=ptr_by_slot[record["slot_id"]],
+                verify_bytes=verify_bytes,
+            ):
+                return {
+                    "mode": "full_residency",
+                    "status": "fail",
+                    "reason": "verification_mismatch",
+                    "tensor": record["tensor"],
+                }
+            verified.append(
+                {
+                    "slot_id": record["slot_id"],
+                    "tensor": record["tensor"],
+                    "verified_bytes": min(verify_bytes, record["size_bytes"]),
+                    "binding_group": record["binding_group"],
+                }
+            )
+    except Exception as exc:  # noqa: BLE001 - artifact records the runtime error.
+        return {
+            "mode": "full_residency",
+            "status": "fail",
+            "reason": "exception",
+            "message": str(exc),
+            "resident_tensor_count": len(resident),
+            "resident_bytes": sum(record["size_bytes"] for record in resident),
+        }
+    finally:
+        for dev_ptr in reversed(device_ptrs):
+            runtime.device_free_ctx(ctx, ctypes.c_void_p(dev_ptr))
+        runtime.finalize_device(ctx)
+        runtime.destroy_device_context(ctx)
+
+    return {
+        "mode": "full_residency",
+        "status": "pass",
+        "device": device,
+        "host_runtime": repo_relative(host_runtime),
+        "copy_chunk_bytes": chunk_bytes,
+        "resident_tensor_count": len(resident),
+        "resident_bytes": sum(item["size_bytes"] for item in resident),
+        "freed_tensor_count": len(device_ptrs),
+        "verified_tensor_count": len(verified),
+        "verified_tensors": verified,
+        "resident_bindings_sample": resident[:16],
     }
 
 
@@ -444,9 +661,13 @@ def build_weight_binding(
     no_cuda_probe: bool = False,
     device: int = 0,
     host_runtime: Path = DEFAULT_HOST_RUNTIME,
+    cuda_probe_mode: str = "bounded",
     max_probe_tensor_bytes: int = 16 * 1024,
     max_probe_total_bytes: int = 256 * 1024,
     max_probe_tensors: int = 16,
+    copy_chunk_bytes: int = DEFAULT_COPY_CHUNK_BYTES,
+    verify_tensors: int = 8,
+    verify_bytes: int = 4096,
 ) -> dict[str, Any]:
     summary, bindings = build_bindings(
         index_json=index_json,
@@ -456,10 +677,24 @@ def build_weight_binding(
     )
     cuda_probe = (
         {
+            "mode": (
+                "full_residency"
+                if cuda_probe_mode == "full"
+                else "bounded_copy"
+            ),
             "status": "skipped",
             "reason": "disabled_by_no_cuda_probe",
         }
         if no_cuda_probe
+        else run_cuda_full_residency_probe(
+            bindings=bindings,
+            device=device,
+            host_runtime=host_runtime,
+            chunk_bytes=copy_chunk_bytes,
+            verify_tensors=verify_tensors,
+            verify_bytes=verify_bytes,
+        )
+        if cuda_probe_mode == "full"
         else run_cuda_copy_probe(
             bindings=bindings,
             device=device,
@@ -474,7 +709,11 @@ def build_weight_binding(
         "persistent_task_weight_arg_binding_plan",
     ]
     if cuda_probe.get("status") == "pass":
-        implemented_contracts.append("cuda_device_weight_copy_probe")
+        implemented_contracts.append(
+            "cuda_full_weight_residency_probe"
+            if cuda_probe.get("mode") == "full_residency"
+            else "cuda_device_weight_copy_probe"
+        )
     status = (
         "binding_plan_ready"
         if summary["binding_mismatch_count"] == 0
@@ -500,11 +739,19 @@ def build_weight_binding(
         "cuda_probe": cuda_probe,
         "bindings": bindings,
         "implemented_contracts": implemented_contracts,
-        "remaining_runtime_gaps": [
-            "full_cuda_weight_residency",
-            "persistent_task_weight_arg_runtime_binding",
-            "qwen_kernel_weight_consumption",
-        ],
+        "remaining_runtime_gaps": (
+            [
+                "persistent_task_weight_arg_runtime_binding",
+                "qwen_kernel_weight_consumption",
+            ]
+            if cuda_probe.get("mode") == "full_residency"
+            and cuda_probe.get("status") == "pass"
+            else [
+                "full_cuda_weight_residency",
+                "persistent_task_weight_arg_runtime_binding",
+                "qwen_kernel_weight_consumption",
+            ]
+        ),
     }
 
 
@@ -516,9 +763,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--shard-dir", type=Path, default=DEFAULT_SHARD_DIR)
     parser.add_argument("--host-runtime", type=Path, default=DEFAULT_HOST_RUNTIME)
     parser.add_argument("--device", type=int, default=0)
+    parser.add_argument(
+        "--cuda-probe-mode",
+        choices=("bounded", "full"),
+        default="bounded",
+    )
     parser.add_argument("--max-probe-tensor-bytes", type=int, default=16 * 1024)
     parser.add_argument("--max-probe-total-bytes", type=int, default=256 * 1024)
     parser.add_argument("--max-probe-tensors", type=int, default=16)
+    parser.add_argument("--copy-chunk-bytes", type=int, default=DEFAULT_COPY_CHUNK_BYTES)
+    parser.add_argument("--verify-tensors", type=int, default=8)
+    parser.add_argument("--verify-bytes", type=int, default=4096)
     parser.add_argument("--no-cuda-probe", action="store_true")
     parser.add_argument("--output-json", type=Path)
     return parser.parse_args()
@@ -534,9 +789,13 @@ def main() -> None:
         no_cuda_probe=args.no_cuda_probe,
         device=args.device,
         host_runtime=args.host_runtime,
+        cuda_probe_mode=args.cuda_probe_mode,
         max_probe_tensor_bytes=args.max_probe_tensor_bytes,
         max_probe_total_bytes=args.max_probe_total_bytes,
         max_probe_tensors=args.max_probe_tensors,
+        copy_chunk_bytes=args.copy_chunk_bytes,
+        verify_tensors=args.verify_tensors,
+        verify_bytes=args.verify_bytes,
     )
     if args.output_json:
         write_json(args.output_json, payload)

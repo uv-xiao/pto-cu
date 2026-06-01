@@ -468,6 +468,18 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-weight-binding-$(git rev-parse --short HEAD)/qwen-cuda-weight-binding.json
 ```
 
+Use `--cuda-probe-mode full` on a GPU with enough free memory when the PTO
+serving evidence needs full Qwen/Qwen3-8B weight residency. This keeps all
+399 tensor allocations live until 16.38 GB has been copied, verifies selected
+small tensors by copy-back, then frees every allocation:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_cuda_weight_binding.py \
+    --cuda-probe-mode full --device 4 --verify-tensors 16 \
+    --output-json tmp/cuda-backend/pto-serving-weight-residency-$(git rev-parse --short HEAD)/qwen-cuda-weight-residency.json
+```
+
 Use `paper_baseline_run_readiness.py` before spending H200 time on planned
 paper-baseline runs. It does not execute long baselines; it records source
 path, reproduction-command presence, Python entrypoints, expected artifact,

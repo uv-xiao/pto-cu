@@ -980,6 +980,8 @@ def test_persistent_qwen_cuda_weight_binding_is_reviewable(tmp_path):
             str(metadata),
             "--shard-dir",
             str(shard_dir),
+            "--cuda-probe-mode",
+            "full",
             "--no-cuda-probe",
             "--output-json",
             str(output),
@@ -1000,6 +1002,8 @@ def test_persistent_qwen_cuda_weight_binding_is_reviewable(tmp_path):
     assert binding["total_weight_bytes"] == 264
     assert binding["metadata_status"] == "metadata_validated"
     assert binding["cuda_probe"]["status"] == "skipped"
+    assert binding["cuda_probe"]["mode"] == "full_residency"
+    assert binding["cuda_probe"]["reason"] == "disabled_by_no_cuda_probe"
     assert "safetensors_tensor_data_offsets" in binding["implemented_contracts"]
     assert "persistent_task_weight_arg_binding_plan" in binding[
         "implemented_contracts"
@@ -1137,7 +1141,7 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-weight-binding-35f713e9/qwen-cuda-weight-binding.json"
+        == "tmp/cuda-backend/pto-serving-weight-residency-1ae913c9/qwen-cuda-weight-residency.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
@@ -1171,7 +1175,8 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "local Qwen shard placement",
         "actual safetensors shape/dtype validation for 399 tensors",
         "stable CUDA weight binding slots and file offsets",
-        "bounded CUDA copy probe for 16 small tensors",
+        "full CUDA residency for 16.38 GB of weights",
+        "copy-back verification for 16 small tensors",
         "partial KV-cache lifecycle plan",
         "decode-loop execution",
     ]:
