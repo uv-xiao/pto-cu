@@ -1,0 +1,60 @@
+{
+  "id": "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck_h200",
+  "paper_baseline_id": "mpk",
+  "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+  "title": "MPK Qwen3 0.6B Snapshot-Pointer Patch Memcheck",
+  "status": "partial",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "sm_90a"
+  },
+  "command": "cd tmp/baselines/mirage-mpk && apply local RuntimeConfig::paged_kv_indices_snapshot pointer patch, then HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 compute-sanitizer --tool memcheck --target-processes all python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 1 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --use-mirage --output-dir ../../cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/build --save-tokens ../../cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/tokens.json",
+  "observation": "The snapshot pointer patch removes the previous invalid global write from compute-sanitizer output: the patched memcheck log has no invalid global access records and only reports the existing cudaDeviceSetLimit API error before the demo later fails while decoding generated token IDs.",
+  "blocker": "The snapshot pointer patch is still local to the ignored MPK clone and the sanitized run remains partial because the demo raises OverflowError at demo.py:846 during tokenizer.decode under compute-sanitizer; import paper-grade MPK rows only after the patch is reproducible and the sanitized run reaches token export.",
+  "reproducibility_patches": [
+    "docs/nvidia-backend/baseline-patches/mpk-snapshot-pointer-runtime-config.patch"
+  ],
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/memcheck-summary.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/metadata.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/status.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/memcheck.log",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/build/kernel_metadata_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/build/task_graph_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_memcheck/build/test_rank0.cu"
+  ],
+  "summary": {
+    "mode": "mpk_qwen3_0p6b_snapshot_pointer_patch_memcheck",
+    "model": "Qwen/Qwen3-0.6B",
+    "offline_cache_used": true,
+    "max_new_tokens": 1,
+    "max_seq_length": 128,
+    "max_num_batched_requests": 1,
+    "max_num_batched_tokens": 1,
+    "total_tasks": 7261,
+    "total_events": 1870,
+    "tool": "compute-sanitizer memcheck",
+    "target_processes": "all",
+    "sanitizer_exit_status": 1,
+    "error_summary_count": 1,
+    "invalid_global_access_count": 0,
+    "null_snapshot_write_cleared": true,
+    "init_api_error": {
+      "api": "cudaDeviceSetLimit",
+      "cuda_error": "cudaErrorInvalidValue",
+      "host_entry": "init_persistent_kernel",
+      "host_source": "persistent_kernel.py:2549"
+    },
+    "application_error": {
+      "type": "OverflowError",
+      "host_source": "demo.py:846",
+      "message": "out of range integral type conversion attempted"
+    },
+    "compiled": true,
+    "launched": true,
+    "correctness_completed": false,
+    "resource_policy_measured": false
+  }
+}

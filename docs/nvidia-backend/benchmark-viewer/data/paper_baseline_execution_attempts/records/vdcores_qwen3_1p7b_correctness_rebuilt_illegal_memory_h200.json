@@ -1,0 +1,33 @@
+{
+  "id": "vdcores_qwen3_1p7b_correctness_rebuilt_illegal_memory_h200",
+  "paper_baseline_id": "vdcores",
+  "paper_baseline_run_id": "vdcores_resource_policy_trace",
+  "title": "VDCores Qwen3 1.7B Rebuilt Correctness Launch",
+  "status": "failed_after_kernel_launch",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-correctness-rebuilt-f300a3b7/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90"
+  },
+  "command": "HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> --correctness",
+  "observation": "After the model cache was synced and dae.runtime was rebuilt with the Qwen compute-op list, VDCores loaded Qwen/Qwen3-1.7B and reached launch_dae.",
+  "blocker": "The rebuilt VDCores runtime failed inside launch_dae with CUDA illegal memory access before correctness or resource-policy measurements could complete.",
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-correctness-rebuilt-f300a3b7/correctness-summary.json",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-correctness-rebuilt-f300a3b7/metadata.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-correctness-rebuilt-f300a3b7/correctness.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-correctness-rebuilt-f300a3b7/correctness-status.txt"
+  ],
+  "summary": {
+    "mode": "vdcores_qwen_correctness",
+    "model": "Qwen/Qwen3-1.7B",
+    "offline_cache_used": true,
+    "model_loaded": true,
+    "runtime_rebuilt_with_required_ops": true,
+    "launched": true,
+    "correctness_completed": false,
+    "resource_policy_measured": false,
+    "error": "launch_dae failed: an illegal memory access was encountered"
+  }
+}

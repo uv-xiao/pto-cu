@@ -1,0 +1,35 @@
+{
+  "id": "mpk_qwen3_0p6b_launch_blocking_token2_h200",
+  "paper_baseline_id": "mpk",
+  "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+  "title": "MPK Qwen3 0.6B Persistent Launch-Blocking Diagnostic",
+  "status": "blocked",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/launch_blocking_token2/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90"
+  },
+  "command": "cd tmp/baselines/mirage-mpk && CUDA_LAUNCH_BLOCKING=1 python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 2 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --use-mirage --output-dir ../../cuda-backend/paper-baselines/mpk/debug-463686af/launch_blocking_token2/build --save-tokens ../../cuda-backend/paper-baselines/mpk/debug-463686af/launch_blocking_token2/tokens.json",
+  "observation": "The launch-blocking diagnostic generated the same 7261-task, 1870-event MPK graph and left build artifacts, but the run did not advance past MPK INIT before termination.",
+  "blocker": "CUDA_LAUNCH_BLOCKING=1 did not expose a later synchronous error; the process stalled after MPK INIT and was terminated before a paper-grade persistent result could be captured.",
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/diagnostic-summary.json",
+    "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/launch_blocking_token2/run.log",
+    "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/launch_blocking_token2/status.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/launch_blocking_token2/build/kernel_metadata_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/launch_blocking_token2/build/task_graph_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/launch_blocking_token2/build/test_rank0.cu"
+  ],
+  "summary": {
+    "mode": "mpk",
+    "max_new_tokens": 2,
+    "max_num_batched_tokens": 1,
+    "cuda_launch_blocking": true,
+    "total_tasks": 7261,
+    "total_events": 1870,
+    "compiled_artifacts_present": true,
+    "launched": false,
+    "terminated": true
+  }
+}

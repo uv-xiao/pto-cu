@@ -7,7 +7,10 @@ const DATA_FILES = {
   paperBaselineEnvironmentPlans: "data/paper_baseline_environment_plans.json",
   paperBaselineEnvironmentAttempts: "data/paper_baseline_environment_attempts.json",
   paperBaselineRunReadiness: "data/paper_baseline_run_readiness.json",
-  paperBaselineExecutionAttempts: "data/paper_baseline_execution_attempts.json",
+  paperBaselineExecutionAttempts: {
+    manifest: "data/paper_baseline_execution_attempts/index.json",
+    key: "paper_baseline_execution_attempts",
+  },
   servingCommandPlan: "data/serving_command_plan.json",
   servingWorkloads: "data/serving_workloads.json",
   paperEvaluation: "data/paper_evaluation_matrix.json",
@@ -25,6 +28,21 @@ async function loadJson(path) {
     throw new Error(`failed to load ${path}: ${response.status}`);
   }
   return response.json();
+}
+
+async function loadDataFile(spec) {
+  if (typeof spec === "string") {
+    return loadJson(spec);
+  }
+  const manifest = await loadJson(spec.manifest);
+  const base = spec.manifest.replace(/\/[^/]+$/, "");
+  const records = await Promise.all(
+    manifest.record_files.map((path) => loadJson(`${base}/${path}`)),
+  );
+  return {
+    schema_version: manifest.schema_version,
+    [spec.key]: records,
+  };
 }
 
 function text(value) {
@@ -823,7 +841,7 @@ async function main() {
       loadJson(DATA_FILES.paperBaselineRuns),
       loadJson(DATA_FILES.paperBaselineProbes),
       loadJson(DATA_FILES.paperBaselineRunReadiness),
-      loadJson(DATA_FILES.paperBaselineExecutionAttempts),
+      loadDataFile(DATA_FILES.paperBaselineExecutionAttempts),
       loadJson(DATA_FILES.servingCommandPlan),
       loadJson(DATA_FILES.servingWorkloads),
       loadJson(DATA_FILES.paperEvaluation),

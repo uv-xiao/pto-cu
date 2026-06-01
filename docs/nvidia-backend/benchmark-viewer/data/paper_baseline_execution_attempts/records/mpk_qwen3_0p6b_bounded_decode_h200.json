@@ -1,0 +1,88 @@
+{
+  "id": "mpk_qwen3_0p6b_bounded_decode_h200",
+  "paper_baseline_id": "mpk",
+  "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+  "title": "MPK Qwen3 0.6B Bounded Decode Smoke",
+  "status": "partial",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "sm_90a"
+  },
+  "command": "cd tmp/baselines/mirage-mpk with local snapshot-pointer and predecode patches, then run HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens <1|2> --max-seq-length <40|41> --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --use-mirage --output-dir <artifact-root>/max_new_tokens_<N>_max_seq_<S>/build --save-tokens <artifact-root>/max_new_tokens_<N>_max_seq_<S>/tokens.json",
+  "observation": "Bounding max_seq_length to prompt_length plus requested decode tokens made the patched MPK persistent demo honor one-token and two-token decode lengths. Both runs exited 0, produced generate_length=[1,2], kept the 7261-task/1870-event graph shape, and ended in the same output_token argmax-reduce task.",
+  "blocker": "This resolves the immediate MPK matching-workload decode-length mismatch, but the attempt is still partial because scheduler/resource/latency distributions are not imported and the run depends on carried local baseline patches. Import paper-grade MPK rows only after those metrics are captured for the bounded-decode workload.",
+  "reproducibility_patches": [
+    "docs/nvidia-backend/baseline-patches/mpk-snapshot-pointer-runtime-config.patch",
+    "docs/nvidia-backend/baseline-patches/mpk-predecode-token-dump.patch"
+  ],
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/bounded-decode-summary.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/metadata.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/max_new_tokens_1_max_seq_40/run.log",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/max_new_tokens_1_max_seq_40/tokens.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/max_new_tokens_1_max_seq_40/tokens.json.predecode.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/max_new_tokens_1_max_seq_40/build/task_graph_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/max_new_tokens_1_max_seq_40/build/kernel_metadata_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/max_new_tokens_1_max_seq_40/build/test_rank0.cu",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/max_new_tokens_2_max_seq_41/run.log",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/max_new_tokens_2_max_seq_41/tokens.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/max_new_tokens_2_max_seq_41/tokens.json.predecode.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/max_new_tokens_2_max_seq_41/build/task_graph_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/max_new_tokens_2_max_seq_41/build/kernel_metadata_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/bounded-decode-901ec9c1/max_new_tokens_2_max_seq_41/build/test_rank0.cu"
+  ],
+  "summary": {
+    "mode": "mpk_qwen3_0p6b_bounded_decode",
+    "model": "Qwen/Qwen3-0.6B",
+    "offline_cache_used": true,
+    "max_num_batched_requests": 1,
+    "max_num_batched_tokens": 1,
+    "requested_max_new_tokens": [
+      1,
+      2
+    ],
+    "bounded_max_seq_lengths": [
+      40,
+      41
+    ],
+    "observed_prompt_lengths": [
+      39,
+      39
+    ],
+    "observed_generate_lengths": [
+      1,
+      2
+    ],
+    "observed_predecode_steps": [
+      39,
+      40
+    ],
+    "observed_first_generated_token_ids": [
+      151667,
+      151667
+    ],
+    "all_runs_exit_zero": true,
+    "requested_decode_lengths_honored": true,
+    "max_seq_length_used_as_decode_bound": true,
+    "total_tasks": [
+      7261,
+      7261
+    ],
+    "total_events": [
+      1870,
+      1870
+    ],
+    "last_task_types": [
+      111,
+      111
+    ],
+    "output_token_last_task": true,
+    "compiled": true,
+    "launched": true,
+    "correctness_completed": true,
+    "scheduler_trace_available": true,
+    "resource_policy_measured": false
+  }
+}

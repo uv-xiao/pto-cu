@@ -11,6 +11,20 @@ DOC_ROOT = ROOT / "docs" / "nvidia-backend"
 VIEWER_ROOT = DOC_ROOT / "benchmark-viewer"
 
 
+def load_viewer_collection(path):
+    if path.is_dir():
+        index = json.loads((path / "index.json").read_text(encoding="utf-8"))
+        records = [
+            json.loads((path / relpath).read_text(encoding="utf-8"))
+            for relpath in index["record_files"]
+        ]
+        return {
+            "schema_version": index["schema_version"],
+            index["collection"]: records,
+        }
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def qwen_one_layer_bindings():
     tensors = [
         ("model.embed_tokens.weight", "embedding"),
@@ -5103,7 +5117,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
         VIEWER_ROOT / "data" / "paper_baseline_environment_attempts.json"
     ).is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json").is_file()
-    assert (VIEWER_ROOT / "data" / "paper_baseline_execution_attempts.json").is_file()
+    execution_attempts_dir = VIEWER_ROOT / "data" / "paper_baseline_execution_attempts"
+    assert (execution_attempts_dir / "index.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_command_plan.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_workloads.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_evaluation_matrix.json").is_file()
@@ -5200,12 +5215,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
             / "paper_baseline_environment_attempts.json"
         ).read_text(encoding="utf-8")
     )
-    paper_baseline_execution_attempts = json.loads(
-        (
-            VIEWER_ROOT
-            / "data"
-            / "paper_baseline_execution_attempts.json"
-        ).read_text(encoding="utf-8")
+    paper_baseline_execution_attempts = load_viewer_collection(
+        execution_attempts_dir
     )
     serving_command_plan = json.loads(
         (VIEWER_ROOT / "data" / "serving_command_plan.json").read_text(

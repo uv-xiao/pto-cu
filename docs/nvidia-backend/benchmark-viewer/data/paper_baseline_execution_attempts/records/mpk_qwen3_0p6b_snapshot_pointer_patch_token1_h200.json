@@ -1,0 +1,47 @@
+{
+  "id": "mpk_qwen3_0p6b_snapshot_pointer_patch_token1_h200",
+  "paper_baseline_id": "mpk",
+  "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+  "title": "MPK Qwen3 0.6B Snapshot-Pointer Patch Smoke",
+  "status": "partial",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "sm_90a"
+  },
+  "command": "cd tmp/baselines/mirage-mpk && apply local RuntimeConfig::paged_kv_indices_snapshot pointer patch, then HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 1 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --use-mirage --output-dir ../../cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/build --save-tokens ../../cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/tokens.json",
+  "observation": "Assigning meta_tensors[10] to RuntimeConfig::paged_kv_indices_snapshot in the local MPK clone clears the previous scheduler null-write symptom for the smallest Qwen3-0.6B persistent run; the run exits 0 and saves token output.",
+  "blocker": "The result is still partial because it depends on a local patch in the ignored MPK baseline clone; the patch must be upstreamed or carried as an explicit reproducibility patch before paper-grade MPK rows can be imported.",
+  "reproducibility_patches": [
+    "docs/nvidia-backend/baseline-patches/mpk-snapshot-pointer-runtime-config.patch"
+  ],
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/tokens.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/metadata.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/status.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/run.log",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/build/kernel_metadata_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/build/task_graph_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/patched-snapshot-pointer/token1_nosan/build/test_rank0.cu"
+  ],
+  "summary": {
+    "mode": "mpk_qwen3_0p6b_snapshot_pointer_patch",
+    "model": "Qwen/Qwen3-0.6B",
+    "offline_cache_used": true,
+    "max_new_tokens": 1,
+    "max_seq_length": 128,
+    "max_num_batched_requests": 1,
+    "max_num_batched_tokens": 1,
+    "total_tasks": 7261,
+    "total_events": 1870,
+    "exit_status": 0,
+    "null_snapshot_write_cleared": true,
+    "local_patch": "global_runtime_config.paged_kv_indices_snapshot = static_cast<int *>(meta_tensors[10])",
+    "tokens_saved": true,
+    "compiled": true,
+    "launched": true,
+    "correctness_completed": true,
+    "resource_policy_measured": false
+  }
+}

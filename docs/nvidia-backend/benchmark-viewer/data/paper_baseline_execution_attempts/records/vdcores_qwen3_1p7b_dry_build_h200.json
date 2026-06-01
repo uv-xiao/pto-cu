@@ -1,0 +1,36 @@
+{
+  "id": "vdcores_qwen3_1p7b_dry_build_h200",
+  "paper_baseline_id": "vdcores",
+  "paper_baseline_run_id": "vdcores_resource_policy_trace",
+  "title": "VDCores Qwen3 1.7B Synthetic Schedule Dry-Build",
+  "status": "partial",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90"
+  },
+  "command": "python tmp/baselines/vdcores/app/python/qwen3_1p7b/sched.py --dry-build -w tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/compute_ops_full.txt",
+  "observation": "VDCores built the full synthetic Qwen3-1.7B schedule with 28 layers, hidden size 2048, max sequence length 512, and nine selected compute operators without requiring gated Llama access.",
+  "blocker": "This is a schedule-construction and operator-contract probe, not a correctness or latency run; measured resource-policy artifacts still need a real Qwen execution.",
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/dry-build-summary.json",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/dry-build-full.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/compute_ops_full.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/dry-build-layer1.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-contract/compute_ops_layer1.txt"
+  ],
+  "summary": {
+    "mode": "vdcores_dry_build",
+    "model": "Qwen/Qwen3-1.7B",
+    "layers": 28,
+    "hidden": 2048,
+    "intermediate": 6144,
+    "head_dim": 128,
+    "max_seq_len": 512,
+    "compute_operators": 9,
+    "requires_hf_token": false,
+    "compiled_extension": true,
+    "launched": false
+  }
+}

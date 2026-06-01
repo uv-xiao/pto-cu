@@ -46,12 +46,67 @@ def load_json(root: Path, name: str) -> dict[str, Any]:
     path = (
         root / "docs" / "nvidia-backend" / "benchmark-viewer" / "data" / name
     )
+    if path.is_dir():
+        return load_sharded_collection(path)
+    if not path.is_file() and path.suffix == ".json":
+        sharded = path.with_suffix("")
+        if sharded.is_dir():
+            return load_sharded_collection(sharded)
     if not path.is_file():
         fail(f"missing data file: {path.relative_to(root)}")
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in {path.relative_to(root)}: {exc}")
+
+
+def load_sharded_collection(path: Path) -> dict[str, Any]:
+    index_path = path / "index.json"
+    if not index_path.is_file():
+        fail(f"missing sharded collection index: {index_path.relative_to(ROOT)}")
+    try:
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"invalid JSON in {index_path.relative_to(ROOT)}: {exc}")
+    if not isinstance(index, dict):
+        fail(
+            "sharded collection index is not an object: "
+            f"{index_path.relative_to(ROOT)}"
+        )
+    collection = index.get("collection")
+    record_files = index.get("record_files")
+    if not isinstance(collection, str) or not collection:
+        fail(
+            "sharded collection has no collection name: "
+            f"{index_path.relative_to(ROOT)}"
+        )
+    if not isinstance(record_files, list) or not record_files:
+        fail(
+            "sharded collection has no record_files: "
+            f"{index_path.relative_to(ROOT)}"
+        )
+    records: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for relpath in record_files:
+        if not isinstance(relpath, str) or not relpath.endswith(".json"):
+            fail(f"invalid sharded record path in {index_path.relative_to(ROOT)}")
+        if relpath in seen:
+            fail(f"duplicate sharded record path: {relpath}")
+        seen.add(relpath)
+        record_path = path / relpath
+        if not record_path.is_file():
+            fail(f"missing sharded record: {record_path.relative_to(ROOT)}")
+        try:
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            fail(f"invalid JSON in {record_path.relative_to(ROOT)}: {exc}")
+        if not isinstance(record, dict):
+            fail(f"sharded record is not an object: {record_path.relative_to(ROOT)}")
+        records.append(record)
+    return {
+        "schema_version": index.get("schema_version", 1),
+        collection: records,
+    }
 
 
 def require_string(record: dict[str, Any], key: str, owner: str) -> str:
@@ -1437,7 +1492,10 @@ def validate_paper_readiness_audit(
         "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
         "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
         "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json",
-        "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_execution_attempts.json",
+        (
+            "docs/nvidia-backend/benchmark-viewer/data/"
+            "paper_baseline_execution_attempts/index.json"
+        ),
         "docs/nvidia-backend/benchmark-viewer/data/results.json",
     }
     sources = audit.get("source_files")

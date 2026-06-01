@@ -16,7 +16,7 @@ DEFAULT_MATRIX = VIEWER_DATA / "paper_evaluation_matrix.json"
 DEFAULT_RUNS = VIEWER_DATA / "paper_baseline_runs.json"
 DEFAULT_PROBES = VIEWER_DATA / "paper_baseline_probes.json"
 DEFAULT_RUN_READINESS = VIEWER_DATA / "paper_baseline_run_readiness.json"
-DEFAULT_ATTEMPTS = VIEWER_DATA / "paper_baseline_execution_attempts.json"
+DEFAULT_ATTEMPTS = VIEWER_DATA / "paper_baseline_execution_attempts"
 DEFAULT_RESULTS = VIEWER_DATA / "results.json"
 
 
@@ -25,6 +25,12 @@ def fail(message: str) -> None:
 
 
 def load_json(path: Path) -> dict[str, Any]:
+    if path.is_dir():
+        return load_sharded_collection(path)
+    if not path.is_file() and path.suffix == ".json":
+        sharded = path.with_suffix("")
+        if sharded.is_dir():
+            return load_sharded_collection(sharded)
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
@@ -34,6 +40,42 @@ def load_json(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         fail(f"JSON root is not an object: {path}")
     return data
+
+
+def load_sharded_collection(path: Path) -> dict[str, Any]:
+    index_path = path / "index.json"
+    try:
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        fail(f"missing sharded collection index: {index_path}")
+    except json.JSONDecodeError as exc:
+        fail(f"invalid JSON in {index_path}: {exc}")
+    if not isinstance(index, dict):
+        fail(f"sharded collection index is not an object: {index_path}")
+    collection = index.get("collection")
+    record_files = index.get("record_files")
+    if not isinstance(collection, str) or not collection:
+        fail(f"sharded collection missing collection name: {index_path}")
+    if not isinstance(record_files, list):
+        fail(f"sharded collection missing record_files list: {index_path}")
+    records: list[dict[str, Any]] = []
+    for relpath in record_files:
+        if not isinstance(relpath, str) or not relpath.endswith(".json"):
+            fail(f"invalid sharded record path in {index_path}: {relpath}")
+        record_path = path / relpath
+        try:
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            fail(f"missing sharded record: {record_path}")
+        except json.JSONDecodeError as exc:
+            fail(f"invalid JSON in {record_path}: {exc}")
+        if not isinstance(record, dict):
+            fail(f"sharded record is not an object: {record_path}")
+        records.append(record)
+    return {
+        "schema_version": index.get("schema_version", 1),
+        collection: records,
+    }
 
 
 def write_json(path: Path, payload: Any) -> None:
@@ -594,7 +636,7 @@ def build_readiness_audit(
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json",
-            "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_execution_attempts.json",
+            "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_execution_attempts/index.json",
             "docs/nvidia-backend/benchmark-viewer/data/results.json",
         ],
         "overall_status": "paper_ready"

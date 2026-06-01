@@ -1,0 +1,26 @@
+{
+  "id": "mpk_qwen3_0p6b_native_token2_h200",
+  "paper_baseline_id": "mpk",
+  "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
+  "title": "MPK Qwen3 0.6B Native Bring-Up",
+  "status": "pass",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90"
+  },
+  "command": "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 2 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --save-tokens ../../cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json",
+  "observation": "Native torch path loaded Qwen/Qwen3-0.6B from the shared H200 Hugging Face cache and saved a two-token output JSON.",
+  "blocker": "",
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json",
+    "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.log"
+  ],
+  "summary": {
+    "mode": "torch",
+    "prompt_length": 39,
+    "generate_length": 2,
+    "latency_ms_per_token": 238.19888305664062
+  }
+}

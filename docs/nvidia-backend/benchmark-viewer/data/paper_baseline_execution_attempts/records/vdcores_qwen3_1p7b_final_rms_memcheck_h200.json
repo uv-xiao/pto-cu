@@ -1,0 +1,51 @@
+{
+  "id": "vdcores_qwen3_1p7b_final_rms_memcheck_h200",
+  "paper_baseline_id": "vdcores",
+  "paper_baseline_run_id": "vdcores_resource_policy_trace",
+  "title": "VDCores Qwen3 1.7B Final-RMS Memcheck",
+  "status": "failed_after_kernel_launch",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-compute-sanitizer-f300a3b7/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90"
+  },
+  "command": "compute-sanitizer --tool memcheck python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> --debug-num-layers 1 --debug-stop-after final_rms -N 1 --launch",
+  "observation": "compute-sanitizer reproduced the rebuilt VDCores Qwen3-1.7B one-layer final_rms launch failure and reported device-side invalid global reads before the host raised launch_dae illegal memory access.",
+  "blocker": "The earliest launched final_rms cut performs invalid 4096-byte global reads in cp_async_bulk through ldwarp_execute_singlethread, followed by warp illegal-address reports in the VDCores load warp.",
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-compute-sanitizer-f300a3b7/memcheck-summary.json",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-compute-sanitizer-f300a3b7/metadata.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-compute-sanitizer-f300a3b7/memcheck-final-rms.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-compute-sanitizer-f300a3b7/memcheck-final-rms-status.txt"
+  ],
+  "summary": {
+    "mode": "vdcores_qwen_final_rms_memcheck",
+    "model": "Qwen/Qwen3-1.7B",
+    "offline_cache_used": true,
+    "runtime_rebuilt_with_required_ops": true,
+    "debug_num_layers": 1,
+    "debug_stop_after": "final_rms",
+    "tool": "compute-sanitizer memcheck",
+    "sanitizer_exit_status": 99,
+    "error_summary_count": 130,
+    "invalid_read_size_bytes": 4096,
+    "first_invalid_read": {
+      "function": "cuda::ptx::cp_async_bulk",
+      "source": "cp_async_bulk.h:62",
+      "device_frame": "ldwarp_execute_singlethread",
+      "device_source": "ldwarp.cuh:52",
+      "kernel_source": "dae2.cuh:167",
+      "thread": "(192,0,0)",
+      "example_block": "(68,0,0)"
+    },
+    "warp_illegal_address": {
+      "device_frame": "ldwarp_execute_singlethread",
+      "device_source": "ldwarp.cuh:113",
+      "thread": "(192,0,0)"
+    },
+    "host_entry": "launch_dae",
+    "correctness_completed": false,
+    "resource_policy_measured": false
+  }
+}

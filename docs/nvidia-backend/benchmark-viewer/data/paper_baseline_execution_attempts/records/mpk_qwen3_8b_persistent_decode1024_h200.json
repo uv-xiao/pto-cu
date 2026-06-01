@@ -1,0 +1,56 @@
+{
+  "id": "mpk_qwen3_8b_persistent_decode1024_h200",
+  "paper_baseline_id": "mpk",
+  "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
+  "title": "MPK Qwen3 8B Persistent Decode-1024 H200 Capture",
+  "status": "pass",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90a"
+  },
+  "command": "Tree-sync standalone pto-cu to bizhaoh200, run native torch control and MPK persistent Qwen/Qwen3-8B demo on CUDA_VISIBLE_DEVICES=0 with offline Hugging Face cache, max_seq_length=1063, max_num_batched_requests=1, max_num_batched_tokens=1, ignore_eos, and temperature=0, then normalize the token artifacts with mpk_qwen3_persistent_capture.py.",
+  "observation": "Native torch control and MPK persistent decode both exited with status 0. The persistent run generated 1024 tokens for a 39-token prompt and wrote decoded text plus predecode debug output. The MPK demo reports one combined prefill+decode per-token timing around asynchronous persistent-kernel launch, so the imported viewer row is execution coverage with an explicit latency caveat rather than a final repeated latency distribution.",
+  "blocker": "",
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/attempt-summary.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/paper-baseline-results.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/viewer-result-records.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2-status.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2.log",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2-status.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.json.predecode.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.log",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024-status.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.json.predecode.json",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.log",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/pto-commit.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/remote-refresh-path.txt"
+  ],
+  "summary": {
+    "mode": "mpk_qwen3_8b_persistent_decode1024",
+    "model": "Qwen/Qwen3-8B",
+    "serving_workload_id": "mpk_offline_decode",
+    "offline_cache_used": true,
+    "remote_refresh_path": "tree-sync fallback",
+    "pto_commit": "072cc513",
+    "prompt_tokens_actual": 39,
+    "prompt_tokens_target": 64,
+    "decode_tokens": 1024,
+    "batch_size": 1,
+    "max_seq_length": 1063,
+    "native_control_status": 0,
+    "persistent_status": 0,
+    "persistent_kernel_evidence": true,
+    "viewer_result_imported": true,
+    "latency_scope": "single combined prefill+decode per-token MPK demo timing; asynchronous persistent-kernel launch caveat",
+    "remaining_paper_gaps": [
+      "repeat MPK Qwen3-8B serving rows across the full batch ladder if final latency distributions are claimed",
+      "align MPK serving rows with matching PTO persistent-device, VDCores, vLLM, SGLang, and ThunderKittens serving-policy evidence"
+    ]
+  }
+}

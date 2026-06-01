@@ -63,15 +63,21 @@ def test_vdcores_instruction_window_plan_emits_bounded_manifest(tmp_path):
 def test_vdcores_execution_attempt_records_window_manifest_status():
     import json
 
-    data_path = (
+    data_dir = (
         ROOT
         / "docs"
         / "nvidia-backend"
         / "benchmark-viewer"
         / "data"
-        / "paper_baseline_execution_attempts.json"
+        / "paper_baseline_execution_attempts"
     )
-    data = json.loads(data_path.read_text(encoding="utf-8"))
+    index = json.loads((data_dir / "index.json").read_text(encoding="utf-8"))
+    data = {
+        "paper_baseline_execution_attempts": [
+            json.loads((data_dir / relpath).read_text(encoding="utf-8"))
+            for relpath in index["record_files"]
+        ]
+    }
     attempts = {
         attempt["id"]: attempt
         for attempt in data["paper_baseline_execution_attempts"]

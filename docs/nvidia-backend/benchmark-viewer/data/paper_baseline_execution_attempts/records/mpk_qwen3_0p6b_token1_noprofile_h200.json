@@ -1,0 +1,34 @@
+{
+  "id": "mpk_qwen3_0p6b_token1_noprofile_h200",
+  "paper_baseline_id": "mpk",
+  "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+  "title": "MPK Qwen3 0.6B Persistent One-Token Diagnostic",
+  "status": "failed_after_kernel_launch",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/token1_noprofile/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90"
+  },
+  "command": "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 1 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --use-mirage --output-dir ../../cuda-backend/paper-baselines/mpk/debug-463686af/token1_noprofile/build --save-tokens ../../cuda-backend/paper-baselines/mpk/debug-463686af/token1_noprofile/tokens.json",
+  "observation": "Reducing generation to one token still generated 7261 tasks, compiled an sm_90a megakernel, launched the persistent kernel asynchronously, and failed at synchronize.",
+  "blocker": "The one-token persistent run still reported CUDA illegal memory access after persistent-kernel launch.",
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/diagnostic-summary.json",
+    "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/token1_noprofile/run.log",
+    "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/token1_noprofile/status.txt",
+    "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/token1_noprofile/build/kernel_metadata_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/token1_noprofile/build/task_graph_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/debug-463686af/token1_noprofile/build/test_rank0.cu"
+  ],
+  "summary": {
+    "mode": "mpk",
+    "max_new_tokens": 1,
+    "max_num_batched_tokens": 1,
+    "use_cutlass_kernel": true,
+    "total_tasks": 7261,
+    "total_events": 1870,
+    "compiled": true,
+    "launched": true
+  }
+}

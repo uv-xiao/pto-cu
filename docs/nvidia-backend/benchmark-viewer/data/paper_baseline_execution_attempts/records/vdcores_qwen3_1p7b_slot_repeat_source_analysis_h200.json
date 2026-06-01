@@ -1,0 +1,79 @@
+{
+  "id": "vdcores_qwen3_1p7b_slot_repeat_source_analysis_h200",
+  "paper_baseline_id": "vdcores",
+  "paper_baseline_run_id": "vdcores_resource_policy_trace",
+  "title": "VDCores Qwen3 1.7B Slot/Repeat Source Analysis",
+  "status": "blocked",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-slot-repeat-source-analysis-858717e4/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90"
+  },
+  "command": "Analyze the prior co-located logits split-6 failure log and VDCores source paths for allocator, STU/LDU, GEMV, and RepeatM semantics; no upstream repository was edited and no launch was rerun.",
+  "observation": "The source/log analysis localizes the logits failure to VDCores runtime metadata lifetime plus RepeatM coordinate mutation. SM64 pc48 allocates the desc34 storeC writeback into slot 0. After pc49 RepeatM, pc50 reuses slot 0 for the desc33 loadB and overwrites st_insts[0] before STU consumes the pc48 writeback metadata. STU then reports Unknown mem wb opcode op=12 opcode=0301, and LDU consumes desc33 coordinates (65535,127,0), which are absent from the build-only schedule.",
+  "blocker": "VDCores still cannot import queue/resource-policy timing: the co-located logits failure now points to slot metadata reuse before STU consumption and RepeatM-fed invalid desc33 coordinates in the direct GEMV window. The next diagnostic must instrument allocwarp GPR lanes and slot reuse around pc48-pc51, then test a VDCores-local change that prevents writeback-slot metadata reuse before STU has copied it.",
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-slot-repeat-source-analysis-858717e4/slot-repeat-source-summary.json",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-slot-repeat-source-analysis-858717e4/slot-repeat-source-report.md",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-slot-repeat-source-analysis-858717e4/vdcores_slot_repeat_analysis.py",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-logits-split-bisect-cec118fe/logits-split-6.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-logits-schedule-introspection-e5d6786f/logits-schedule-summary.json"
+  ],
+  "summary": {
+    "mode": "vdcores_qwen_slot_repeat_source_analysis",
+    "model": "Qwen/Qwen3-1.7B",
+    "offline_cache_used": true,
+    "cuda_visible_devices": "7",
+    "debug_num_layers": 1,
+    "debug_stop_after": "logits",
+    "no_prefetch": "all",
+    "launch_executed": false,
+    "source_analysis_only": true,
+    "slot_size_bytes": 8192,
+    "regular_slots": 24,
+    "initial_availability_mask": "0x00ffffff",
+    "slot_metadata_hazard_observed": true,
+    "pc48_desc34_store_slot": 0,
+    "pc49_repeat_count": 2,
+    "pc50_desc33_load_reuses_slot": 0,
+    "pc50_overwrites_st_insts_slot0_before_stu": true,
+    "stu_unknown_writeback_opcode": "opcode=0301 op=12",
+    "repeat_coord_hazard_observed": true,
+    "pc50_repeat_updated_address": "0x7fffff",
+    "pc50_desc33_invalid_cords": [
+      65535,
+      127,
+      0
+    ],
+    "expected_pc50_desc33_cords_from_build_only_schedule": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "descriptor_map": {
+      "32": "logits GEMV loadA matLogitsW[epoch]",
+      "33": "logits GEMV loadB matRMSHidden",
+      "34": "logits GEMV storeC matLogits[epoch]"
+    },
+    "source_evidence_files": [
+      "tmp/baselines/vdcores/include/dae/context.cuh",
+      "tmp/baselines/vdcores/include/dae/allocator.cuh",
+      "tmp/baselines/vdcores/include/dae/pipeline/allocwarp.cuh",
+      "tmp/baselines/vdcores/include/dae/pipeline/stwarp.cuh",
+      "tmp/baselines/vdcores/include/dae/pipeline/ldwarp.cuh",
+      "tmp/baselines/vdcores/include/task/gemv.cuh",
+      "tmp/baselines/vdcores/python/dae/instructions.py",
+      "tmp/baselines/vdcores/python/dae/schedule.py"
+    ],
+    "rules_out": [
+      "missing desc32/33/34 schedule materialization as the cause",
+      "cross-device placement as the remaining logits-stage cause",
+      "argmax or restore scheduling as the first failing co-located stage"
+    ],
+    "next_debug_target": "instrument allocwarp gpr lanes and slot reuse around pc48-pc51, then test a VDCores-local diagnostic that delays writeback slot reuse until STU has copied MInst metadata",
+    "correctness_completed": false,
+    "resource_policy_measured": false
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "mpk_qwen3_0p6b_native_token_viewer_import",
+  "paper_baseline_id": "mpk",
+  "paper_baseline_run_id": "mpk_qwen3_native_token_bringup",
+  "title": "MPK Native Qwen3 0.6B Token Viewer Import",
+  "status": "pass",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90"
+  },
+  "command": "Normalize native-token2.json with mpk_native_token_capture.py, then import native-token2-paper-results.json through paper_baseline_results_update.py.",
+  "observation": "The native MPK torch bring-up artifact imported one llm_serving_decode viewer row with prompt/decode tokens, end-to-end latency, inter-token latency, and output-token throughput. This is native bring-up evidence only, not persistent-kernel paper evidence.",
+  "blocker": "",
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json",
+    "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.log",
+    "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2-paper-results.json",
+    "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2-viewer-result-records.json"
+  ],
+  "summary": {
+    "mode": "mpk_native_token_bringup",
+    "model": "Qwen/Qwen3-0.6B",
+    "prompt_length": 39,
+    "generate_length": 2,
+    "latency_ms_per_token": 238.19888305664062,
+    "viewer_rows_imported": 1,
+    "persistent_kernel_evidence": false
+  }
+}

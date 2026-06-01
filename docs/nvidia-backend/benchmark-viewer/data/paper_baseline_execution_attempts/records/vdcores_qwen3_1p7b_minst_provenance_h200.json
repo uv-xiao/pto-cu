@@ -1,0 +1,68 @@
+{
+  "id": "vdcores_qwen3_1p7b_minst_provenance_h200",
+  "paper_baseline_id": "vdcores",
+  "paper_baseline_run_id": "vdcores_resource_policy_trace",
+  "title": "VDCores Qwen3 1.7B MInst Provenance Diagnostic",
+  "status": "partial",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-minst-provenance-83e8135b/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90"
+  },
+  "command": "QWEN1P7B_NO_PREFETCH=all python app/python/qwen3_1p7b/sched.py --hf-cache-dir <shared-hf-cache> --debug-num-layers 1 --debug-stop-after final_rms -N 1 -i 68; then run a structured runpy provenance dump without launch",
+  "observation": "SM64-SM71 generated the direct 4096-byte embedding load as OP_CC0 plus a jumped OP_ALLOC_TMA_LOAD_1D at pc1; SM0-SM7 generated 4096-byte RMS and hidden direct 1D loads. Every sampled 4096-byte direct load maps to a live tensor range before launch.",
+  "blocker": "The generated Python-side MInst effective addresses are live tensor ranges before launch, so the VDCores blocker shifts from MInst provenance to runtime/device-side mutation, instruction upload, or CUDA memcheck allocator visibility for direct 1D cp_async_bulk loads. This is still not paper-grade correctness or resource-policy evidence.",
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-minst-provenance-83e8135b/minst-provenance-summary.json",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-minst-provenance-83e8135b/instdump-sm68.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-minst-provenance-83e8135b/instdump-sm68.status.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-minst-provenance-83e8135b/instdump-sm68.lines.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-minst-provenance-83e8135b/metadata.txt"
+  ],
+  "summary": {
+    "mode": "vdcores_qwen_minst_provenance",
+    "model": "Qwen/Qwen3-1.7B",
+    "offline_cache_used": true,
+    "runtime_rebuilt_with_required_ops": true,
+    "debug_num_layers": 1,
+    "debug_stop_after": "final_rms",
+    "no_prefetch": "all",
+    "tool": "instdump plus structured runpy provenance",
+    "launch_executed": false,
+    "token_id": 52,
+    "token_embedding_row_bytes": 4096,
+    "sampled_sms": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71
+    ],
+    "direct_1d_loads_without_owner": 0,
+    "sm64_to_sm71_embedding_load_pc": 1,
+    "sm0_rms_weight_load_pc": 0,
+    "sm0_hidden_load_pcs": [
+      23,
+      54
+    ],
+    "proves_generated_effective_addresses_live_before_launch": true,
+    "rules_out": [
+      "static Python-side MInst address provenance as sole cause"
+    ],
+    "next_debug_target": "runtime/device-side mutation, instruction upload, or CUDA memcheck allocator visibility for direct 1D cp_async_bulk loads",
+    "correctness_completed": false,
+    "resource_policy_measured": false
+  }
+}

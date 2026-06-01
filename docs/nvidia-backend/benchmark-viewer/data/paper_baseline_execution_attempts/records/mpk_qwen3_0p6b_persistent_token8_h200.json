@@ -1,0 +1,29 @@
+{
+  "id": "mpk_qwen3_0p6b_persistent_token8_h200",
+  "paper_baseline_id": "mpk",
+  "paper_baseline_run_id": "mpk_persistent_scheduler_trace",
+  "title": "MPK Qwen3 0.6B Persistent Token-Batch-8 Bring-Up",
+  "status": "failed_after_kernel_launch",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90"
+  },
+  "command": "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 2 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 8 --ignore-eos --use-mirage --output-dir ../../cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build-token8 --save-tokens ../../cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/persistent-token2-token8.json",
+  "observation": "Using the upstream default max_num_batched_tokens=8 generated 7660 tasks, compiled an sm_90a megakernel, saved the rank-0 launcher, and launched the persistent kernel asynchronously.",
+  "blocker": "CUDA synchronize reported illegal memory access after persistent-kernel launch.",
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/persistent-token2-token8.log",
+    "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build-token8/kernel_metadata_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build-token8/task_graph_rank0.json",
+    "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/mpk-build-token8/test_rank0.cu"
+  ],
+  "summary": {
+    "mode": "mpk",
+    "total_tasks": 7660,
+    "total_events": 1870,
+    "compiled": true,
+    "launched": true
+  }
+}
