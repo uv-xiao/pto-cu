@@ -88,10 +88,11 @@
       "method_id": "pto_persistent_device",
       "runtime": "cuda/persistent_device",
       "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_weight_inventory.py --output-json tmp/cuda-backend/pto-serving-weights/qwen-weight-inventory.json",
-      "expected_output": "command exits 0; output JSON records safetensors shard count, tensor count, binding groups, total size, and the remaining tensor-open and CUDA weight-binding gaps.",
+      "expected_output": "command exits 0; output JSON records safetensors shard count, tensor count, binding groups, total size, the config-derived expected shape/dtype contract, and the remaining tensor-open and CUDA weight-binding gaps.",
       "evidence_symbols": [
         "pto_qwen_weight_inventory",
         "binding_groups",
+        "expected_shape_dtype_contract",
         "safetensors_tensor_open",
         "cuda_device_weight_binding"
       ]

@@ -104,22 +104,24 @@ now records tokenizer-observed chat-template prompt lengths for those same
 serving policies.
 The weight-inventory contract in `examples/cuda/qwen_weight_inventory.py` now
 records the Qwen/Qwen3-8B safetensors shard count, tensor count, binding
-groups, and total index size from the captured index.
+groups, total index size from the captured index, and a config-derived
+expected shape/dtype contract whose byte total matches the index.
 The current raw artifacts are
 `tmp/cuda-backend/pto-serving-lifecycle-b95ff321/qwen-serving-lifecycle-plan.json`,
 `tmp/cuda-backend/pto-serving-tokenizer-b95ff321/qwen-prompt-accounting.json`,
-`tmp/cuda-backend/pto-serving-weights-edbd4390/qwen-weight-inventory.json`,
-`tmp/cuda-backend/pto-serving-scaffold-edbd4390/qwen-serving-scaffold.json`,
+`tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json`,
+`tmp/cuda-backend/pto-serving-scaffold-e06636e9/qwen-serving-scaffold.json`,
 and
-`tmp/cuda-backend/pto-serving-preflight-edbd4390/pto-serving-preflight.json`.
+`tmp/cuda-backend/pto-serving-preflight-e06636e9/pto-serving-preflight.json`.
 They prove the current viewer has only the controlled attention-tile proxy row
 for PTO serving-equivalent evidence, plus a partial runtime plan for the
-Qwen3-8B KV-cache and task mapping, tokenizer-observed prompt counts, and a
-safetensors shard/tensor inventory. The repo-owned PTO CUDA path still lacks
-runtime token-ID binding, safetensors tensor open, tensor shape/dtype
-validation, CUDA weight binding, real CUDA allocation and binding for the
-planned KV-cache layout, generated Qwen kernel bodies, decode-loop execution,
-and `viewer_result_import`, so no PTO
+Qwen3-8B KV-cache and task mapping, tokenizer-observed prompt counts, a
+safetensors shard/tensor inventory, and the expected weight shape/dtype
+contract. The repo-owned PTO CUDA path still lacks runtime token-ID binding,
+safetensors tensor open, actual safetensors shape/dtype validation, CUDA weight
+binding, real CUDA allocation and binding for the planned KV-cache layout,
+generated Qwen kernel bodies, decode-loop execution, and `viewer_result_import`,
+so no PTO
 `Qwen/Qwen3-8B` full-serving row can be imported yet.
 Every serving baseline run record must reference one of these policy IDs and
 require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before

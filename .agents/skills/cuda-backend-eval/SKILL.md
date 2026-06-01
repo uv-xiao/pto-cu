@@ -422,8 +422,9 @@ PYTHONPATH=$PWD:$PWD/python \
 ```
 
 Use `examples/cuda/qwen_weight_inventory.py` to capture Qwen/Qwen3-8B
-safetensors shard and tensor binding groups before implementing real tensor
-open and CUDA device binding:
+safetensors shard and tensor binding groups plus the config-derived expected
+shape/dtype contract before implementing real tensor open and CUDA device
+binding:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

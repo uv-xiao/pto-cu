@@ -205,8 +205,9 @@ def build_scaffold() -> dict[str, Any]:
             else "missing",
             evidence="examples/cuda/qwen_weight_inventory.py",
             next_action=(
-                "Open safetensors shards, validate tensor shapes/dtypes, "
-                "and bind device weights to persistent-device task args."
+                "Open safetensors shards, validate actual tensor metadata "
+                "against the expected shape/dtype contract, and bind device "
+                "weights to persistent-device task args."
             ),
         ),
         stage(

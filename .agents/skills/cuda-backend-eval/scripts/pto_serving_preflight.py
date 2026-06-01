@@ -209,8 +209,9 @@ def build_preflight() -> dict[str, Any]:
             else "fail",
             "evidence": "examples/cuda/qwen_weight_inventory.py",
             "why": (
-                "Repo-owned safetensors inventory maps Qwen3-8B shards and "
-                "weight groups before runtime tensor binding."
+                "Repo-owned safetensors inventory maps Qwen3-8B shards, "
+                "weight groups, and expected shapes before runtime tensor "
+                "binding."
             ),
         },
         {

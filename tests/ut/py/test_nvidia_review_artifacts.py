@@ -608,10 +608,26 @@ def test_persistent_qwen_prompt_accounting_is_reviewable(tmp_path):
 
 def test_persistent_qwen_weight_inventory_is_reviewable(tmp_path):
     index = tmp_path / "model.safetensors.index.json"
+    config = tmp_path / "config.json"
+    config.write_text(
+        json.dumps(
+            {
+                "hidden_size": 4,
+                "intermediate_size": 8,
+                "vocab_size": 16,
+                "num_hidden_layers": 1,
+                "num_attention_heads": 2,
+                "num_key_value_heads": 1,
+                "head_dim": 2,
+                "torch_dtype": "bfloat16",
+            }
+        ),
+        encoding="utf-8",
+    )
     index.write_text(
         json.dumps(
             {
-                "metadata": {"total_size": 123456},
+                "metadata": {"total_size": 552},
                 "weight_map": {
                     "model.embed_tokens.weight": "model-00001-of-00002.safetensors",
                     "model.layers.0.self_attn.q_proj.weight": (
@@ -649,6 +665,8 @@ def test_persistent_qwen_weight_inventory_is_reviewable(tmp_path):
             "examples/cuda/qwen_weight_inventory.py",
             "--index-json",
             str(index),
+            "--config-json",
+            str(config),
             "--output-json",
             str(output),
         ],
@@ -666,11 +684,34 @@ def test_persistent_qwen_weight_inventory_is_reviewable(tmp_path):
     assert inventory["model_id"] == "Qwen/Qwen3-8B"
     assert inventory["tensor_count"] == 10
     assert inventory["shard_count"] == 2
+    shape_contract = inventory["weight_shape_contract"]
+    assert shape_contract["status"] == "complete_for_index"
+    assert shape_contract["dtype"] == "bfloat16"
+    assert shape_contract["expected_total_size_bytes"] == 552
+    assert shape_contract["index_total_size_bytes"] == 552
+    assert shape_contract["size_matches_index"] is True
+    tensor_shapes = {
+        item["name"]: item for item in shape_contract["tensor_shapes"]
+    }
+    assert tensor_shapes["model.embed_tokens.weight"]["shape"] == [16, 4]
+    assert tensor_shapes["model.layers.0.self_attn.q_proj.weight"]["shape"] == [
+        4,
+        4,
+    ]
+    assert tensor_shapes["model.layers.0.self_attn.k_proj.weight"]["shape"] == [
+        2,
+        4,
+    ]
+    assert tensor_shapes["model.layers.0.mlp.down_proj.weight"]["shape"] == [
+        4,
+        8,
+    ]
     groups = {item["id"]: item for item in inventory["binding_groups"]}
     assert groups["embedding"]["tensor_count"] == 1
     assert groups["attention_qkv_o"]["tensor_count"] == 4
     assert groups["mlp_gate_up_down"]["tensor_count"] == 3
     assert groups["norm_and_logits"]["tensor_count"] == 2
+    assert "expected_shape_dtype_contract" in inventory["implemented_contracts"]
     assert "safetensors_tensor_open" in inventory["remaining_runtime_gaps"]
     assert "cuda_device_weight_binding" in inventory["remaining_runtime_gaps"]
 
@@ -701,19 +742,19 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-weights-edbd4390/qwen-weight-inventory.json"
+        == "tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-scaffold-edbd4390/qwen-serving-scaffold.json"
+        == "tmp/cuda-backend/pto-serving-scaffold-e06636e9/qwen-serving-scaffold.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-preflight-edbd4390/pto-serving-preflight.json"
+        == "tmp/cuda-backend/pto-serving-preflight-e06636e9/pto-serving-preflight.json"
         for ref in claim["current_evidence_refs"]
     )
     pto_gap = next(
@@ -730,6 +771,7 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "qwen_prompt_accounting",
         "qwen_weight_inventory",
         "safetensors tensor open",
+        "actual safetensors shape/dtype validation",
         "CUDA weight binding",
         "partial KV-cache lifecycle plan",
         "decode-loop execution",

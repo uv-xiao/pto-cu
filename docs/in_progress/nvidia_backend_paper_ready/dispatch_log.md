@@ -3939,3 +3939,49 @@ Follow-up tracked-state closure after user confirmation:
   KV-cache allocation/binding, generated Qwen kernel bodies, decode-loop
   execution, and viewer-result import remain required before importing PTO
   Qwen/Qwen3-8B full-serving rows.
+
+### 2026-06-01 - Qwen Weight Shape Contract
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned expected
+  shape/dtype contract slice for the PTO persistent-device Qwen/Qwen3-8B
+  full-serving blocker.
+- Exact Codex command or script invocation:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  examples/cuda/qwen_weight_inventory.py --output-json
+  tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json`,
+  then `persistent_qwen_serving_scaffold.py --output-json
+  tmp/cuda-backend/pto-serving-scaffold-e06636e9/qwen-serving-scaffold.json`,
+  then `pto_serving_preflight.py --output
+  tmp/cuda-backend/pto-serving-preflight-e06636e9/pto-serving-preflight.json`,
+  then `refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The Qwen config and safetensors index were saved under `tmp/sources/` for
+  local inspection; this slice derives expected tensor shapes from config and
+  still does not open safetensors shards or bind weights into CUDA memory.
+- Verification commands and results: focused TDD test first failed because
+  `qwen_weight_inventory.py` did not accept `--config-json`; after
+  implementation, passed `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest
+  tests/ut/py/test_nvidia_review_artifacts.py -q` with `47 passed`; passed
+  `validate_cuda_examples.py`, `validate_benchmark_viewer_data.py`,
+  `validate_nvidia_changelog.py`, `check_nvidia_review_ready.py`,
+  `jq empty examples/cuda/manifest.json
+  docs/nvidia-backend/benchmark-viewer/data/*.json`, `py_compile` for the
+  Qwen serving/inventory scripts and PTO serving preflight, and
+  `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: safetensors tensor open, actual
+  safetensors shape/dtype validation, CUDA weight binding, runtime token-ID
+  binding, CUDA KV-cache allocation/binding, generated Qwen kernel bodies,
+  decode-loop execution, and viewer-result import remain required before
+  importing PTO Qwen/Qwen3-8B full-serving rows.

@@ -27,6 +27,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 Qwen serving lifecycle plan](2026-06-01-qwen-serving-lifecycle-plan.md)
 - [2026-06-01 Qwen prompt accounting](2026-06-01-qwen-prompt-accounting.md)
 - [2026-06-01 Qwen weight inventory](2026-06-01-qwen-weight-inventory.md)
+- [2026-06-01 Qwen weight shape contract](2026-06-01-qwen-weight-shape-contract.md)
 - [2026-06-01 serving coverage guard](2026-06-01-serving-coverage-guard.md)
 - [2026-06-01 serving gap audit narrowing](2026-06-01-serving-gap-audit-narrowing.md)
 - [2026-06-01 serving work queue targets](2026-06-01-serving-work-queue-targets.md)

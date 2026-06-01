@@ -247,16 +247,17 @@ python test_correctness.py
 The current PTO serving comparison has explicit lifecycle artifacts at
 `tmp/cuda-backend/pto-serving-lifecycle-b95ff321/qwen-serving-lifecycle-plan.json`,
 `tmp/cuda-backend/pto-serving-tokenizer-b95ff321/qwen-prompt-accounting.json`,
-`tmp/cuda-backend/pto-serving-weights-edbd4390/qwen-weight-inventory.json`,
-`tmp/cuda-backend/pto-serving-scaffold-edbd4390/qwen-serving-scaffold.json`,
+`tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json`,
+`tmp/cuda-backend/pto-serving-scaffold-e06636e9/qwen-serving-scaffold.json`,
 and
-`tmp/cuda-backend/pto-serving-preflight-edbd4390/pto-serving-preflight.json`.
+`tmp/cuda-backend/pto-serving-preflight-e06636e9/pto-serving-preflight.json`.
 They record the proxy-only execution state plus the new partial runtime plan:
 the benchmark viewer has a controlled attention-tile PTO serving-equivalent
 row, and the repo-owned PTO CUDA path now has a reviewable Qwen3-8B model
 shape, KV-cache capacity ladder, weight-binding plan, and persistent-device
-task mapping, tokenizer-observed prompt counts, and safetensors shard/tensor
-inventory. It still does not open safetensors tensors, validate shapes/dtypes,
+task mapping, tokenizer-observed prompt counts, safetensors shard/tensor
+inventory, and the config-derived expected weight shape/dtype contract. It
+still does not open safetensors tensors, validate actual safetensors metadata,
 bind Qwen weights to CUDA buffers, bind token IDs to runtime buffers, bind real
 CUDA buffers, run generated Qwen kernel bodies, or execute a decode loop for
 `Qwen/Qwen3-8B`.
