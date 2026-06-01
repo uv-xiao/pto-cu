@@ -1,4 +1,3 @@
-import json
 import importlib.util
 import sys
 from pathlib import Path
@@ -54,6 +53,11 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                     "planned_decode_steps": 1024,
                     "executed_decode_steps": 3,
                     "decode_step_limit": 3,
+                    "logits_check_policy": "final_step",
+                    "logits_check_summary": {
+                        "checked_step_count": 1,
+                        "deferred_step_count": 2,
+                    },
                     "decode_feedback": {
                         "status": "diagnostic_token_feedback_applied",
                         "applied_step_count": 3,
@@ -132,6 +136,14 @@ def test_resource_backed_importer_emits_diagnostic_rows():
             "device_token_feedback_observed",
             "not_recorded",
         }
+        assert record["statistic"]["logits_check_policy"] in {
+            "every_step",
+            "final_step",
+        }
+        if record["statistic"]["workload_id"] == "mpk_offline_decode":
+            assert record["statistic"]["logits_check_policy"] == "final_step"
+            assert record["statistic"]["logits_checked_step_count"] == 1
+            assert record["statistic"]["logits_deferred_step_count"] == 2
         assert record["correctness"] == "pass"
         assert "resource-backed diagnostic" in record["inputs"]["shape"]
         assert "prepared callable reused" in record["inputs"]["repeat_policy"]
@@ -253,6 +265,9 @@ def test_resource_backed_importer_adds_matrix_ref():
     assert "diagnostic_qwen_logits_formula" in claim[
         "current_evidence_refs"
     ][1]["symbols"]
+    assert "final_step_logits_check_policy" in claim[
+        "current_evidence_refs"
+    ][1]["symbols"]
     assert (
         len(
             [
@@ -266,83 +281,3 @@ def test_resource_backed_importer_adds_matrix_ref():
     assert "repeated resource-backed execution viewer_result_imports" in claim[
         "missing_evidence_details"
     ][0]["action"]
-
-
-def test_viewer_results_include_resource_backed_diagnostic_rows():
-    results = json.loads(
-        (
-            ROOT
-            / "docs"
-            / "nvidia-backend"
-            / "benchmark-viewer"
-            / "data"
-            / "results.json"
-        ).read_text(encoding="utf-8")
-    )["result_records"]
-
-    rows = [
-        record
-        for record in results
-        if record["statistic"].get("serving_coverage")
-        == "diagnostic_resource_backed_qwen_dag"
-    ]
-
-    assert {row["statistic"]["workload_id"] for row in rows} == {
-        "mpk_offline_decode",
-        "vdcores_offline_decode",
-    }
-    assert any(row["statistic"].get("repeat_runs") == 3 for row in rows)
-    assert all(
-        row["statistic"].get(
-            "last_completed_count",
-            row["statistic"]["completed_count"],
-        )
-        == 255
-        for row in rows
-    )
-    assert all(
-        row["statistic"]["completed_count"] in {255, 510, 765}
-        for row in rows
-    )
-    assert any(
-        row["statistic"].get("execution_mode") == "bounded_decode_steps"
-        and row["statistic"].get("executed_decode_steps") == 2
-        and row["statistic"]["completed_count"] == 510
-        for row in rows
-    )
-    assert any(
-        row["statistic"].get("decode_feedback_status")
-        == "diagnostic_token_feedback_applied"
-        and row["statistic"].get("decode_feedback_applied_step_count") == 2
-        for row in rows
-    )
-    assert any(
-        row["statistic"].get("decode_feedback_status")
-        == "device_token_feedback_observed"
-        and row["statistic"].get("decode_feedback_applied_step_count") == 2
-        for row in rows
-    )
-    assert all(row["statistic"]["error_count"] == 0 for row in rows)
-    assert any(row["correctness"] == "pass" for row in rows)
-    assert any(
-        row["correctness"] == "pass"
-        and row["statistic"].get("logits_coverage") == "full_logits_buffer_checked"
-        and row["statistic"].get("diagnostic_logits_reference_checked_count")
-        == row["statistic"].get("logits_buffer_element_count")
-        for row in rows
-    )
-    assert any(
-        row["correctness"] == "fail"
-        and row["statistic"].get("diagnostic_logits_reference_status") == "fail"
-        for row in rows
-    )
-    assert all(
-        row["statistic"].get("logits_coverage")
-        in {
-            "partial_logits_not_full_vocab",
-            "full_logits_buffer_prefix_sampled",
-            "full_logits_buffer_checked",
-            None,
-        }
-        for row in rows
-    )

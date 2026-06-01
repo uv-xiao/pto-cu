@@ -20,7 +20,7 @@ def apply_decode_feedback(
     token_id = sampled_token_id(logits_summary)
     if decode_step_index is None:
         return {"status": "not_requested"}
-    if token_id is None:
+    if token_id is None and not device_committed:
         return {"status": "not_applied", "reason": "no_sampled_token"}
     if "out" not in token_fields or "a" not in token_fields:
         return {"status": "not_applied", "reason": "missing_token_fields"}
@@ -55,15 +55,23 @@ def observed_device_feedback(
     input_ptr: int,
     output_ptr: int,
     output_index: int,
-    token_id: int,
+    token_id: int | None,
 ) -> dict[str, Any]:
     output_value = read_i32(session, output_ptr, output_index, "output_ids")
     input_value = read_i32(session, input_ptr, 0, "next_input_id")
-    status = (
-        "device_feedback_observed"
-        if output_value == int(token_id) and input_value == int(token_id)
-        else "device_feedback_mismatch"
-    )
+    if token_id is None:
+        status = (
+            "device_feedback_observed_unchecked"
+            if output_value == input_value
+            else "device_feedback_mismatch"
+        )
+        token_id = output_value
+    else:
+        status = (
+            "device_feedback_observed"
+            if output_value == int(token_id) and input_value == int(token_id)
+            else "device_feedback_mismatch"
+        )
     return {
         "status": status,
         "sampled_token_id": int(token_id),
@@ -121,13 +129,22 @@ def feedback_summary(repeat_results: list[dict[str, Any]]) -> dict[str, Any]:
     applied = [
         item
         for item in feedback
-        if item.get("status") in {"feedback_applied", "device_feedback_observed"}
+        if item.get("status")
+        in {
+            "feedback_applied",
+            "device_feedback_observed",
+            "device_feedback_observed_unchecked",
+        }
     ]
     if not feedback or all(item.get("status") == "not_requested" for item in feedback):
         return {"status": "not_requested"}
     return {
         "status": "device_token_feedback_observed"
-        if all(item.get("status") == "device_feedback_observed" for item in feedback)
+        if all(
+            item.get("status")
+            in {"device_feedback_observed", "device_feedback_observed_unchecked"}
+            for item in feedback
+        )
         else "diagnostic_token_feedback_applied"
         if len(applied) == len(feedback)
         else "partial_or_failed",

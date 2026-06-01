@@ -64,6 +64,7 @@ def raw_artifact_ref(raw_artifact: str) -> dict[str, Any]:
             "partial_logits_not_full_vocab",
             "full_logits_buffer_prefix_sampled",
             "full_logits_buffer_checked",
+            "final_step_logits_check_policy",
             "diagnostic_qwen_logits_formula",
             "logits_summary_stable",
         ],
@@ -86,7 +87,8 @@ def current_action_phrase() -> str:
         "resource-backed execution, and repeated resource-backed execution "
         "viewer_result_imports with full-logits-buffer diagnostic writes and "
         "bounded-prefix diagnostic reference checks plus device-side "
-        "diagnostic sampled-token feedback are present."
+        "diagnostic sampled-token feedback and final-step logits-check "
+        "policy are present."
     )
 
 
@@ -110,4 +112,9 @@ def old_action_phrases() -> tuple[str, ...]:
         "resource-backed execution, and repeated resource-backed execution "
         "viewer_result_imports with full-logits-buffer diagnostic writes and "
         "bounded-prefix diagnostic reference checks are present.",
+        "diagnostic proxy, unit-math, descriptor-smoke, "
+        "resource-backed execution, and repeated resource-backed execution "
+        "viewer_result_imports with full-logits-buffer diagnostic writes and "
+        "bounded-prefix diagnostic reference checks plus device-side "
+        "diagnostic sampled-token feedback are present.",
     )

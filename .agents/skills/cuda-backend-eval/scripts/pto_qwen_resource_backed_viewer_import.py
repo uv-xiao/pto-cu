@@ -64,6 +64,7 @@ def build_result_records(
         logits_summary = workload.get("logits_summary", {})
         decode_feedback = workload.get("decode_feedback", {})
         diagnostic_reference = logits_summary.get("diagnostic_reference", {})
+        logits_check = workload.get("logits_check_summary", {})
         topk = logits_summary.get("topk", [])
         repeat_runs = int(workload.get("repeat_runs", 1))
         completed_count = int(
@@ -122,6 +123,16 @@ def build_result_records(
                         workload.get("executed_decode_steps", 0),
                     ),
                     "decode_step_limit": workload.get("decode_step_limit"),
+                    "logits_check_policy": workload.get(
+                        "logits_check_policy",
+                        "every_step",
+                    ),
+                    "logits_checked_step_count": int(
+                        logits_check.get("checked_step_count", repeat_runs),
+                    ),
+                    "logits_deferred_step_count": int(
+                        logits_check.get("deferred_step_count", 0),
+                    ),
                     "decode_feedback_status": decode_feedback.get(
                         "status",
                         "not_recorded",

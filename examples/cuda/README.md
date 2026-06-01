@@ -157,6 +157,9 @@ diagnostic: it proves scheduler completion and pointer wiring for the planned
 DAG, not full Qwen numerical correctness.
 Use `--resource-backed-repeat-runs` to submit fresh resource-backed graph
 state repeatedly through the same prepared callable and CUDA context.
+Use `--resource-backed-workload` to narrow the diagnostic to a single serving
+policy, and `--resource-backed-logits-check-policy final_step` to defer the
+full logits-buffer readback until the last bounded decode step.
 The `cuda_live_submission_descriptor_contract` maps those resource pointers
 to Qwen task function ids 7100 through 7109 and records the `run_prepared`
 repetition count. With `--run-submission-smoke`, it also compiles those same

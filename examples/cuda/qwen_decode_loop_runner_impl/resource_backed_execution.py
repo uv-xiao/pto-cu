@@ -14,7 +14,6 @@ from simpler_setup.cuda_callable_compiler import (
 
 from qwen_decode_loop_runner_impl.decode_feedback import (
     apply_decode_feedback,
-    feedback_summary,
 )
 from qwen_decode_loop_runner_impl.launch_preflight import (
     build_host_task_packet,
@@ -23,16 +22,22 @@ from qwen_decode_loop_runner_impl.launch_preflight import (
     workspace_for_workload,
 )
 from qwen_decode_loop_runner_impl.resource_execution_policy import (
-    decode_step_execution_summary,
-    implemented_contracts,
-    logits_summary_stable,
     resource_backed_execution_count,
+)
+from qwen_decode_loop_runner_impl.resource_check_policy import (
+    normalize_logits_check_policy,
+    select_workload_plans,
+    should_check_logits,
+    unchecked_logits_summary,
+)
+from qwen_decode_loop_runner_impl.resource_backed_results import (
+    build_execution_result,
+    build_workload_result,
 )
 from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph
 from qwen_persistent_proxy_live_impl.runtime import (
     PtoRunTiming,
     bind_persistent_runtime,
-    device_name,
 )
 from qwen_persistent_task_bodies_impl.lifecycle import task_functions
 from qwen_persistent_weight_materialization import build_materialization_manifest
@@ -58,6 +63,8 @@ def run_resource_backed_execution(
     cache_root: Path | None,
     repeat_runs: int = 1,
     decode_step_limit: int | None = None,
+    workload_ids: list[str] | None = None,
+    logits_check_policy: str = "every_step",
 ) -> dict[str, Any]:
     runtime = session.runtime
     ctx = session.ctx
@@ -74,6 +81,14 @@ def run_resource_backed_execution(
     ]
     if not descriptors:
         return {"status": "not_run", "reason": "no_ready_descriptors"}
+    logits_check_policy = normalize_logits_check_policy(logits_check_policy)
+    selected_plans = select_workload_plans(plans, workload_ids)
+    if not selected_plans:
+        return {
+            "status": "not_run",
+            "reason": "no_matching_resource_backed_workloads",
+            "requested_workloads": workload_ids or [],
+        }
 
     prepared = None
     callable_prepared = False
@@ -99,8 +114,9 @@ def run_resource_backed_execution(
                 activation_workspace=activation_workspace,
                 repeat_runs=repeat_runs,
                 decode_step_limit=decode_step_limit,
+                logits_check_policy=logits_check_policy,
             )
-            for plan in plans
+            for plan in selected_plans
         ]
     except Exception as exc:  # noqa: BLE001 - artifact should capture failure.
         return {"status": "fail", "reason": type(exc).__name__, "message": str(exc)}
@@ -108,42 +124,17 @@ def run_resource_backed_execution(
         if callable_prepared:
             runtime.unregister_callable(ctx, 0)
 
-    passed = workload_results and all(
-        item["status"] == "pass" for item in workload_results
+    return build_execution_result(
+        session=session,
+        arch=arch,
+        prepared=prepared,
+        workload_results=workload_results,
+        repeat_runs=repeat_runs,
+        decode_step_limit=decode_step_limit,
+        workload_ids=workload_ids,
+        logits_check_policy=logits_check_policy,
+        repo_relative=repo_relative,
     )
-    return {
-        "schema_version": 1,
-        "kind": "pto_qwen_resource_backed_execution",
-        "status": "pass" if passed else "fail",
-        "runtime": "cuda/persistent_device",
-        "serving_coverage": "diagnostic_resource_backed_qwen_dag",
-        "device": {
-            "ordinal": session.device,
-            "name": device_name(session.device),
-            "arch": arch,
-        },
-        "artifact": artifact_summary(prepared),
-        "context_policy": "one_cuda_context_for_all_resource_owners",
-        "repeat_policy": {
-            "prepared_callable_reuse": "single_prepare_multiple_run_prepared",
-            "repeat_runs_per_workload": max(1, int(repeat_runs)),
-            "decode_step_limit": decode_step_limit,
-            "graph_state_policy": "fresh_graph_state_per_repeat",
-        },
-        "decode_step_execution": decode_step_execution_summary(
-            workload_results,
-            decode_step_limit=decode_step_limit,
-        ),
-        "workloads": workload_results,
-        "implemented_contracts": implemented_contracts(
-            decode_step_limit,
-            token_feedback_status=decode_feedback_contract_status(workload_results),
-        ),
-        "remaining_runtime_gaps": [
-            "full_qwen_numerical_correctness",
-            "full_serving_viewer_result_import",
-        ],
-    }
 
 
 def run_workload(
@@ -154,6 +145,7 @@ def run_workload(
     activation_workspace: dict[str, Any],
     repeat_runs: int,
     decode_step_limit: int | None,
+    logits_check_policy: str,
 ) -> dict[str, Any]:
     workspace = workspace_for_workload(
         activation_workspace=activation_workspace,
@@ -197,7 +189,18 @@ def run_workload(
             ctypes.byref(timing),
         )
         counters = graph.read_counters()
-        logits_summary = graph.read_logits_summary(workspace)
+        if should_check_logits(
+            policy=logits_check_policy,
+            repeat_index=repeat_index,
+            execution_count=execution_count,
+        ):
+            logits_summary = graph.read_logits_summary(workspace)
+        else:
+            logits_summary = unchecked_logits_summary(
+                policy=logits_check_policy,
+                repeat_index=repeat_index,
+                execution_count=execution_count,
+            )
         decode_feedback = apply_decode_feedback(
             session=session,
             token_fields=token_fields,
@@ -227,72 +230,10 @@ def run_workload(
                 },
             }
         )
-    last = repeat_results[-1]
-    total_host_wall = sum(
-        item["timing_ns"]["host_wall"] for item in repeat_results
+    return build_workload_result(
+        plan=plan,
+        packet_len=len(packet),
+        repeat_results=repeat_results,
+        decode_step_limit=decode_step_limit,
+        logits_check_policy=logits_check_policy,
     )
-    total_device_wall = sum(
-        item["timing_ns"]["device_wall"] for item in repeat_results
-    )
-    result = {
-        "workload_id": plan["workload_id"],
-        "status": (
-            "pass"
-            if all(item["status"] == "pass" for item in repeat_results)
-            else "fail"
-        ),
-        "run_prepared_status": int(last["run_prepared_status"]),
-        "repeat_runs": len(repeat_results),
-        "planned_decode_steps": int(plan["decode_steps"]),
-        "executed_decode_steps": (
-            len(repeat_results) if decode_step_limit is not None else 0
-        ),
-        "decode_step_limit": decode_step_limit,
-        "execution_mode": (
-            "bounded_decode_steps"
-            if decode_step_limit is not None
-            else "repeat_submissions"
-        ),
-        "repeat_results": repeat_results,
-        "graph_task_count": len(packet),
-        "scheduler_counters": last["scheduler_counters"],
-        "total_completed_count": sum(
-            item["scheduler_counters"]["completed_count"] for item in repeat_results
-        ),
-        "total_error_count": sum(
-            item["scheduler_counters"]["error_count"] for item in repeat_results
-        ),
-        "output_sample": last["output_sample"],
-        "logits_summary": last["logits_summary"],
-        "logits_summary_stable": logits_summary_stable(repeat_results),
-        "decode_feedback": feedback_summary(repeat_results),
-        "timing_ns": {
-            "host_wall": total_host_wall,
-            "device_wall": total_device_wall,
-        },
-    }
-    return result
-
-
-def artifact_summary(prepared: Any) -> dict[str, Any]:
-    artifact = prepared.artifact
-    return {
-        "cache_key": artifact.cache_key,
-        "cache_hit": artifact.cache_hit,
-        "source_path": repo_relative(Path(artifact.source_path)),
-        "ptx_path": repo_relative(Path(artifact.ptx_path)),
-        "entry_name": artifact.entry_name,
-        "source_kind": artifact.source_kind,
-    }
-
-
-def decode_feedback_contract_status(workload_results: list[dict[str, Any]]) -> str:
-    statuses = {
-        item.get("decode_feedback", {}).get("status", "not_requested")
-        for item in workload_results
-    }
-    if statuses == {"device_token_feedback_observed"}:
-        return "device_token_feedback_observed"
-    if statuses == {"diagnostic_token_feedback_applied"}:
-        return "diagnostic_token_feedback_applied"
-    return "not_requested"

@@ -57,6 +57,8 @@ def build_decode_loop_runner(
     run_resource_backed_smoke: bool = False,
     resource_backed_repeat_runs: int = 1,
     resource_backed_decode_steps: int | None = None,
+    resource_backed_workloads: list[str] | None = None,
+    resource_backed_logits_check_policy: str = "every_step",
     arch: str = "compute_80",
 ) -> dict[str, Any]:
     session_payload: dict[str, Any] | None = None
@@ -150,6 +152,8 @@ def build_decode_loop_runner(
                 cache_root=cache_dir,
                 repeat_runs=resource_backed_repeat_runs,
                 decode_step_limit=resource_backed_decode_steps,
+                workload_ids=resource_backed_workloads,
+                logits_check_policy=resource_backed_logits_check_policy,
             )
             if session is not None
             else {

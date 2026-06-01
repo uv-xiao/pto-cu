@@ -108,3 +108,27 @@ def test_decode_feedback_observes_device_committed_token():
     assert module.feedback_summary([{"decode_feedback": result}])["status"] == (
         "device_token_feedback_observed"
     )
+
+
+def test_decode_feedback_observes_unchecked_device_committed_token():
+    module = load_decode_feedback_module()
+    session = FakeSession()
+    session.runtime.memory[0:4] = (23).to_bytes(4, "little", signed=True)
+    session.runtime.memory[72:76] = (23).to_bytes(4, "little", signed=True)
+
+    result = module.apply_decode_feedback(
+        session=session,
+        token_fields={
+            "a": {"device_ptr_hex": "0x0"},
+            "out": {"device_ptr_hex": "0x40"},
+        },
+        decode_step_index=2,
+        logits_summary={"coverage": "not_checked"},
+        device_committed=True,
+    )
+
+    assert result["status"] == "device_feedback_observed_unchecked"
+    assert result["sampled_token_id"] == 23
+    summary = module.feedback_summary([{"decode_feedback": result}])
+    assert summary["status"] == "device_token_feedback_observed"
+    assert summary["applied_step_count"] == 1

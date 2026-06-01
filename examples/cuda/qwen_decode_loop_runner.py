@@ -63,6 +63,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-resource-backed-smoke", action="store_true")
     parser.add_argument("--resource-backed-repeat-runs", type=int, default=1)
     parser.add_argument("--resource-backed-decode-steps", type=int)
+    parser.add_argument("--resource-backed-workload", action="append")
+    parser.add_argument(
+        "--resource-backed-logits-check-policy",
+        choices=["every_step", "final_step"],
+        default="every_step",
+    )
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--arch", default="compute_80")
     parser.add_argument("--cache-root", type=Path)
@@ -119,6 +125,10 @@ def main() -> None:
         run_resource_backed_smoke=args.run_resource_backed_smoke,
         resource_backed_repeat_runs=args.resource_backed_repeat_runs,
         resource_backed_decode_steps=args.resource_backed_decode_steps,
+        resource_backed_workloads=args.resource_backed_workload,
+        resource_backed_logits_check_policy=(
+            args.resource_backed_logits_check_policy
+        ),
         arch=args.arch,
     )
     if args.output_json:
