@@ -25,6 +25,33 @@ def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def load_manifest_examples(examples_root: Path, root: Path) -> list[dict[str, Any]]:
+    manifest = load_json(examples_root / "manifest.json")
+    inline_examples = manifest.get("examples")
+    if isinstance(inline_examples, list):
+        return inline_examples
+
+    example_files = manifest.get("example_files")
+    if not isinstance(example_files, list) or not example_files:
+        fail("examples/cuda/manifest.json has no examples or example_files")
+
+    examples: list[dict[str, Any]] = []
+    for relpath in example_files:
+        if not isinstance(relpath, str) or not relpath:
+            fail("examples/cuda/manifest.json has an invalid example_files entry")
+        shard_path = (examples_root / relpath).resolve()
+        try:
+            shard_path.relative_to(examples_root.resolve())
+        except ValueError:
+            fail(f"manifest shard escapes examples/cuda: {relpath}")
+        shard = load_json(shard_path)
+        shard_examples = shard.get("examples")
+        if not isinstance(shard_examples, list) or not shard_examples:
+            fail(f"{shard_path.relative_to(root)} has no examples")
+        examples.extend(shard_examples)
+    return examples
+
+
 def require_string(record: dict[str, Any], key: str, owner: str) -> str:
     value = record.get(key)
     if not isinstance(value, str) or not value.strip():
@@ -70,13 +97,12 @@ def validate_examples(root: Path = ROOT) -> None:
     )
     review_text = f"{readme_text}\n{split_doc_text}"
 
-    manifest = load_json(examples_root / "manifest.json")
     benchmarks = load_json(viewer_data / "benchmarks.json")
     methods = load_json(viewer_data / "methods.json")
     benchmark_ids = {item["id"] for item in benchmarks.get("benchmarks", [])}
     method_ids = {item["id"] for item in methods.get("methods", [])}
 
-    examples = manifest.get("examples")
+    examples = load_manifest_examples(examples_root, root)
     if not isinstance(examples, list) or not examples:
         fail("examples/cuda/manifest.json has no examples")
 

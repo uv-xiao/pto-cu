@@ -7,6 +7,7 @@ what evaluation ran, and what evidence proves the claim.
 ## Reports
 
 - [2026-06-02 baseline survey split](2026-06-02-baseline-survey-split.md)
+- [2026-06-02 CUDA example manifest split](2026-06-02-cuda-example-manifest-split.md)
 - [2026-06-02 overall design split](2026-06-02-overall-design-split.md)
 - [2026-06-02 Qwen persistent weight arguments split](2026-06-02-qwen-persistent-weight-args-split.md)
 - [2026-06-02 Qwen persistent weight materialization split](2026-06-02-qwen-persistent-weight-materialization-split.md)

@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "examples": [
+    {
+      "id": "qwen_weight_inventory",
+      "title": "Qwen Weight Inventory",
+      "script": "examples/cuda/qwen_weight_inventory.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_weight_inventory.py --output-json tmp/cuda-backend/pto-serving-weights/qwen-weight-inventory.json",
+      "expected_output": "command exits 0; output JSON records safetensors shard count, tensor count, binding groups, total size, the config-derived expected shape/dtype contract, and the remaining tensor-open and CUDA weight-binding gaps.",
+      "evidence_symbols": [
+        "pto_qwen_weight_inventory",
+        "binding_groups",
+        "expected_shape_dtype_contract",
+        "safetensors_tensor_open",
+        "cuda_device_weight_binding"
+      ]
+    },
+    {
+      "id": "qwen_safetensors_fetch",
+      "title": "Qwen Safetensors Shard Status",
+      "script": "examples/cuda/qwen_safetensors_fetch.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_safetensors_fetch.py --output-json tmp/cuda-backend/pto-serving-shards/qwen-safetensors-shards.json",
+      "expected_output": "command exits 0; output JSON records Qwen safetensors shard URLs, local target paths, present/missing counts, and resumable fetch commands without downloading by default.",
+      "evidence_symbols": [
+        "pto_qwen_safetensors_shard_status",
+        "safetensors_fetch_plan",
+        "local_shard_presence_check",
+        "qwen_safetensors_shard_download",
+        "ready_for_metadata_probe"
+      ]
+    },
+    {
+      "id": "qwen_safetensors_metadata",
+      "title": "Qwen Safetensors Metadata Probe",
+      "script": "examples/cuda/qwen_safetensors_metadata.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_safetensors_metadata.py --weight-inventory-json tmp/cuda-backend/pto-serving-weights/qwen-weight-inventory.json --output-json tmp/cuda-backend/pto-serving-safetensors/qwen-safetensors-metadata.json",
+      "expected_output": "command exits 0; output JSON records whether Qwen safetensors shard headers were opened and whether actual tensor shapes/dtypes match the expected contract.",
+      "evidence_symbols": [
+        "pto_qwen_safetensors_metadata_probe",
+        "safetensors_header_parse",
+        "actual_safetensors_shape_dtype_validation",
+        "safetensors_tensor_open",
+        "cuda_device_weight_binding"
+      ]
+    },
+    {
+      "id": "qwen_cuda_weight_binding",
+      "title": "Qwen CUDA Weight Binding",
+      "script": "examples/cuda/qwen_cuda_weight_binding.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_cuda_weight_binding.py --output-json tmp/cuda-backend/pto-serving-weight-binding/qwen-cuda-weight-binding.json",
+      "expected_output": "command exits 0; output JSON records stable CUDA binding slots, safetensors file byte ranges, persistent-device readonly weight argument roles, and bounded or full CUDA residency probe status.",
+      "evidence_symbols": [
+        "pto_qwen_cuda_weight_binding",
+        "safetensors_tensor_data_offsets",
+        "persistent_task_weight_arg_binding_plan",
+        "cuda_device_weight_copy_probe",
+        "cuda_full_weight_residency_probe"
+      ]
+    },
+    {
+      "id": "qwen_persistent_weight_args",
+      "title": "Qwen Persistent Weight Arguments",
+      "script": "examples/cuda/qwen_persistent_weight_args.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_weight_args.py --output-json tmp/cuda-backend/pto-serving-weight-args/qwen-persistent-weight-args.json",
+      "expected_output": "command exits 0; output JSON records Qwen weight task descriptors whose tensor_args fit the four-pointer persistent DAG ABI and cover every validated weight tensor.",
+      "evidence_symbols": [
+        "pto_qwen_persistent_weight_args",
+        "qwen_weight_task_decomposition",
+        "persistent_dag_tensor_arg_capacity_check",
+        "persistent_task_weight_arg_binding_manifest"
+      ]
+    },
+    {
+      "id": "qwen_persistent_weight_materialization",
+      "title": "Qwen Persistent Weight Materialization",
+      "script": "examples/cuda/qwen_persistent_weight_materialization.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_weight_materialization.py --output-json tmp/cuda-backend/pto-serving-weight-materialization/qwen-persistent-weight-materialization.json",
+      "expected_output": "command exits 0; output JSON records how Qwen persistent weight task descriptors are materialized through the CudaPersistentDagTask ctypes layout, and binds resident device pointers when a live pointer table is supplied.",
+      "evidence_symbols": [
+        "pto_qwen_persistent_weight_materialization",
+        "persistent_task_weight_arg_runtime_materializer",
+        "ctypes_persistent_dag_task_layout",
+        "resident_weight_pointer_table_validation"
+      ]
+    },
+    {
+      "id": "qwen_resident_weight_table",
+      "title": "Qwen Resident Weight Table",
+      "script": "examples/cuda/qwen_resident_weight_table.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_resident_weight_table.py --output-json tmp/cuda-backend/pto-serving-resident-weight-table/qwen-resident-weight-table.json",
+      "expected_output": "command exits 0; output JSON records the process-scoped resident weight pointer owner lifecycle, materialization bridge, pointer count, and teardown count; add --cuda-live to allocate and copy through the CUDA runtime.",
+      "evidence_symbols": [
+        "pto_qwen_resident_weight_table_lifecycle",
+        "live_resident_weight_table_owner",
+        "resident_pointer_table_materialization_bridge",
+        "dry_run_pointer_lifecycle"
+      ]
+    }
+  ]
+}
