@@ -114,6 +114,7 @@ PYTHONPATH=$PWD:$PWD/python \
   --mode mock \
   --run-unit-math-live \
   --run-submission-smoke \
+  --single-context-live-session \
   --token-cuda-live \
   --kv-cuda-live \
   --resident-cuda-live \
@@ -124,11 +125,11 @@ PYTHONPATH=$PWD:$PWD/python \
   --output-json tmp/cuda-backend/pto-serving-decode-loop-submission-descriptors/qwen-decode-loop-runner.json
 ```
 
-Expected output: command exits 0; output JSON records runner-owned cuda_live
-token, KV-cache, resident-weight, and activation-workspace owners,
-resource-backed Qwen submission descriptors, compact graph materialization,
-workspace-bound launch-packet preflight blockers, diagnostic bridge contracts,
-and a diagnostic Qwen descriptor smoke execution.
+Expected output: command exits 0; output JSON records a single CUDA-context
+resource session, runner-owned cuda_live token, KV-cache, resident-weight, and
+activation-workspace owners, resource-backed Qwen submission descriptors,
+compact graph materialization, workspace-bound launch-packet preflight blockers,
+diagnostic bridge contracts, and a diagnostic Qwen descriptor smoke execution.
 
 The artifact composes token pointer, KV-cache, and resident-weight owners into
 a decode-loop submission plan. It records owner open/materialize/submit/close
@@ -142,7 +143,10 @@ in the runner. With `--resident-cuda-live`, it opens the resident weight-table
 owner and materializes 399 weight pointers for the submission plan. With
 `--workspace-cuda-live`, it allocates per-workload float32 activation buffers
 plus a logits/sampling output buffer and closes the owner after launch-packet
-preflight capture.
+preflight capture. With `--single-context-live-session`, token buffers,
+KV-cache, resident weights, and activation workspace are allocated under one
+CUDA context before graph materialization and launch-packet preflight, then
+closed after the preflight evidence is recorded.
 The `cuda_live_submission_descriptor_contract` maps those resource pointers
 to Qwen task function ids 7100 through 7109 and records the `run_prepared`
 repetition count. With `--run-submission-smoke`, it also compiles those same
@@ -157,12 +161,6 @@ array from those pointers. When the activation workspace is live, intermediate
 tasks are chained through activation buffers and the final task writes to a
 float logits/sampling output buffer. It still does not execute full Qwen
 kernels or a full-serving decode loop.
-
-Expected output: command exits 0; output JSON records runner-owned cuda_live
-token, KV-cache, resident-weight, and activation-workspace owners,
-resource-backed Qwen submission descriptors, compact graph materialization,
-workspace-bound launch-packet preflight blockers, diagnostic bridge contracts,
-and a diagnostic Qwen descriptor smoke execution.
 
 ## Qwen Persistent Task Bodies
 

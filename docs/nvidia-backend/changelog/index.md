@@ -115,6 +115,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-02 Qwen resource-backed graph](2026-06-02-qwen-resource-backed-graph.md)
 - [2026-06-02 Qwen launch-packet preflight](2026-06-02-qwen-launch-packet-preflight.md)
 - [2026-06-02 Qwen activation workspace](2026-06-02-qwen-activation-workspace.md)
+- [2026-06-02 Qwen single context session](2026-06-02-qwen-single-context-session.md)
 - [2026-06-01 Qwen KV-cache binding](2026-06-01-qwen-kv-cache-binding.md)
 - [2026-06-01 Qwen token pointer table](2026-06-01-qwen-token-pointer-table.md)
 - [2026-06-01 Qwen persistent decode arguments](2026-06-01-qwen-persistent-decode-args.md)
