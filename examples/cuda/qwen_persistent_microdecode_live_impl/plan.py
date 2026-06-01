@@ -33,12 +33,12 @@ def _inputs() -> dict[str, Any]:
     }
 
 
-def _expected(inputs: dict[str, Any]) -> dict[str, list[float]]:
+def _expected_for_step(inputs: dict[str, Any], c_values: list[float], d_values: list[float]) -> dict[str, list[float]]:
     qkv_out = []
     qkv_c = []
     for index, value in enumerate(inputs["a"]):
         q = inputs["weights"][0][index]
-        out = value + inputs["b"][index] + inputs["c"][index] + inputs["d"][index] + q
+        out = value + inputs["b"][index] + c_values[index] + d_values[index] + q
         qkv_out.append(out)
         qkv_c.append(value + q)
     attention_o = [
@@ -58,14 +58,30 @@ def _expected(inputs: dict[str, Any]) -> dict[str, list[float]]:
     }
 
 
+def _decode_iterations(inputs: dict[str, Any], repeat_runs: int) -> list[dict[str, Any]]:
+    c_values = list(inputs["c"])
+    d_values = list(inputs["d"])
+    iterations = []
+    for index in range(repeat_runs):
+        expected = _expected_for_step(inputs, c_values, d_values)
+        iterations.append({"iteration": index, "expected": expected})
+        c_values = expected["c"]
+        d_values = expected["d"]
+    return iterations
+
+
 def build_live_microdecode_plan(
     *,
     scheduler_blocks: int = 1,
     worker_blocks: int = 1,
     queue_capacity: int = 8,
     block_dim: int = 128,
+    repeat_runs: int = 1,
 ) -> dict[str, Any]:
+    if repeat_runs <= 0:
+        raise ValueError("repeat_runs must be positive")
     inputs = _inputs()
+    decode_iterations = _decode_iterations(inputs, repeat_runs)
     return {
         "kind": "pto_qwen_microdecode_live_execution_plan",
         "status": "ready_to_run",
@@ -82,6 +98,21 @@ def build_live_microdecode_plan(
             "dependency_edges": [
                 ["qwen_attention_qkv", "qwen_attention_o"],
                 ["qwen_attention_o", "qwen_logits"],
+            ],
+        },
+        "decode_loop": {
+            "repeat_runs": repeat_runs,
+            "planned_task_executions": repeat_runs * 3,
+            "prepared_callable_reuse": "single_prepare_multiple_run_prepared",
+            "reset_between_runs": [
+                "fanin",
+                "ready_flags",
+                "completion_flags",
+                "counters",
+            ],
+            "carried_between_runs": [
+                "key_cache_mutable",
+                "value_cache_mutable",
             ],
         },
         "tasks": [
@@ -113,9 +144,11 @@ def build_live_microdecode_plan(
             },
         },
         "inputs": inputs,
-        "expected": _expected(inputs),
+        "decode_iterations": decode_iterations,
+        "expected": decode_iterations[-1]["expected"],
         "implemented_contracts": [
             "controlled_proxy_live_microdecode_plan",
+            "controlled_proxy_live_decode_loop_plan",
             "persistent_device_proxy_decode_chain_plan",
             "qwen_attention_to_logits_dag_contract",
         ],
@@ -133,4 +166,3 @@ __all__ = [
     "repo_relative",
     "write_json",
 ]
-

@@ -4678,3 +4678,35 @@ Follow-up tracked-state closure after user confirmation:
   Qwen-shaped QKV-to-logits proxy chain can run as a dependent persistent DAG.
   Remaining PTO full-serving gaps are numerically correct Qwen kernels, full
   decode-loop execution, and viewer-result import.
+
+### 2026-06-01 - Qwen Proxy Decode Loop Live Reuse
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned live CUDA
+  evidence update for repeated controlled Qwen proxy decode submissions.
+- Exact Codex command or script invocation:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  examples/cuda/qwen_persistent_microdecode_live.py --device 0
+  --arch compute_80 --repeat-runs 3 --output-json
+  tmp/cuda-backend/pto-serving-decode-loop-live-2026-06-01/qwen-microdecode-loop.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, benchmark-viewer data,
+  in-progress evaluation docs, changelog docs, dispatch log, and focused
+  tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the run reuses one prepared callable
+  across three proxy decode submissions and carries mutable KV state, but the
+  bodies remain controlled proxy arithmetic rather than full Qwen kernels.
+- Verification commands and results: focused TDD test first failed because
+  `build_live_microdecode_plan` did not accept `repeat_runs`. After
+  implementation the local A100 artifact reported `status=pass`,
+  `max_abs_error=0.0`, `total_completed_count=9`, and `total_error_count=0`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves repeated live
+  persistent-device submissions through one prepared proxy callable. Remaining
+  PTO full-serving gaps are numerically correct Qwen kernels, full
+  decode-loop execution, and viewer-result import.

@@ -39,12 +39,11 @@ def _alloc(runtime: Any, ctx: Any, allocated: list[int], size: int) -> int:
 
 def _status(
     *,
-    plan: dict[str, Any],
+    expected: dict[str, list[float]],
     observed: dict[str, list[float]],
     counters: Any,
     scheduler_processed: Any,
 ) -> tuple[str, float]:
-    expected = plan["expected"]
     max_abs_error = max(
         abs(observed[name][index] - expected[name][index])
         for name in ("attention_qkv_out", "attention_o_out", "logits_out", "c", "d")
@@ -65,8 +64,9 @@ def run_live_microdecode(
     arch: str = "compute_80",
     cache_root: Path | None = None,
     build_runtime: bool = False,
+    repeat_runs: int = 1,
 ) -> dict[str, Any]:
-    plan = build_live_microdecode_plan()
+    plan = build_live_microdecode_plan(repeat_runs=repeat_runs)
     runtime, binaries = load_runtime(build_runtime=build_runtime)
     artifact = compile_cuda_persistent_device(
         _selected_functions(),
@@ -134,29 +134,82 @@ def run_live_microdecode(
             raise RuntimeError("prepare_callable failed")
         callable_prepared = True
 
-        timing = PtoRunTiming()
         args = CudaPersistentDagArgs(state=ptrs["state"])
-        status = runtime.run_prepared(
-            ctx,
-            None,
-            0,
-            ctypes.byref(args),
-            plan["dag"]["block_dim"],
-            0,
-            0,
-            0,
-            0,
-            0,
-            None,
-            ctypes.byref(timing),
-        )
-        if status != 0:
-            raise RuntimeError(f"run_prepared failed with status {status}")
+        launch_records = []
+        for iteration in range(repeat_runs):
+            launch_state = {
+                "fanin": u32_3(0, 1, 1),
+                "ready_flags": u32_8(*([0] * 8)),
+                "completion_flags": u32_8(*([0] * 8)),
+                "counters": u32_11(*([0] * 11)),
+                "scheduler_processed": (ctypes.c_uint32 * 1)(0),
+                "qkv": array_t(*([0.0] * 4)),
+                "attn_o": array_t(*([0.0] * 4)),
+                "logits": array_t(*([0.0] * 4)),
+            }
+            for name, host in launch_state.items():
+                _copy_to_device(runtime, ctx, ptrs[name], host, name)
 
-        for name in ("qkv", "attn_o", "logits", "c", "d"):
-            _copy_from_device(runtime, ctx, hosts[name], ptrs[name], name)
-        for name in ("counters", "scheduler_processed"):
-            _copy_from_device(runtime, ctx, graph_hosts[name], ptrs[name], name)
+            timing = PtoRunTiming()
+            status = runtime.run_prepared(
+                ctx,
+                None,
+                0,
+                ctypes.byref(args),
+                plan["dag"]["block_dim"],
+                0,
+                0,
+                0,
+                0,
+                0,
+                None,
+                ctypes.byref(timing),
+            )
+            if status != 0:
+                raise RuntimeError(f"run_prepared failed with status {status}")
+
+            for name in ("qkv", "attn_o", "logits", "c", "d"):
+                _copy_from_device(runtime, ctx, hosts[name], ptrs[name], name)
+            for name in ("counters", "scheduler_processed"):
+                _copy_from_device(runtime, ctx, launch_state[name], ptrs[name], name)
+
+            observed = {
+                "attention_qkv_out": [round(float(value), 6) for value in hosts["qkv"]],
+                "attention_o_out": [round(float(value), 6) for value in hosts["attn_o"]],
+                "logits_out": [round(float(value), 6) for value in hosts["logits"]],
+                "c": [round(float(value), 6) for value in hosts["c"]],
+                "d": [round(float(value), 6) for value in hosts["d"]],
+            }
+            iteration_expected = plan["decode_iterations"][iteration]["expected"]
+            iteration_status, iteration_error = _status(
+                expected=iteration_expected,
+                observed=observed,
+                counters=launch_state["counters"],
+                scheduler_processed=launch_state["scheduler_processed"],
+            )
+            launch_records.append(
+                {
+                    "iteration": iteration,
+                    "status": iteration_status,
+                    "observed": observed,
+                    "expected": iteration_expected,
+                    "max_abs_error": iteration_error,
+                    "scheduler_counters": {
+                        "completed_count": int(launch_state["counters"][4]),
+                        "error_count": int(launch_state["counters"][5]),
+                        "error_code": int(launch_state["counters"][6]),
+                        "error_task_id": int(launch_state["counters"][7]),
+                        "scheduler_processed_count": int(launch_state["counters"][10]),
+                        "scheduler_processed_by_block": [
+                            int(launch_state["scheduler_processed"][0])
+                        ],
+                    },
+                    "timing_ns": {
+                        "host_wall": int(timing.host_wall_ns),
+                        "device_wall": int(timing.device_wall_ns),
+                    },
+                }
+            )
     finally:
         if callable_prepared:
             runtime.unregister_callable(ctx, 0)
@@ -165,21 +218,9 @@ def run_live_microdecode(
         runtime.finalize_device(ctx)
         runtime.destroy_device_context(ctx)
 
-    observed = {
-        "attention_qkv_out": [round(float(value), 6) for value in hosts["qkv"]],
-        "attention_o_out": [round(float(value), 6) for value in hosts["attn_o"]],
-        "logits_out": [round(float(value), 6) for value in hosts["logits"]],
-        "c": [round(float(value), 6) for value in hosts["c"]],
-        "d": [round(float(value), 6) for value in hosts["d"]],
-    }
-    counters = graph_hosts["counters"]
-    scheduler_processed = graph_hosts["scheduler_processed"]
-    status, max_abs_error = _status(
-        plan=plan,
-        observed=observed,
-        counters=counters,
-        scheduler_processed=scheduler_processed,
-    )
+    final_record = launch_records[-1]
+    max_abs_error = max(record["max_abs_error"] for record in launch_records)
+    status = "pass" if all(record["status"] == "pass" for record in launch_records) else "fail"
     return {
         **plan,
         "kind": "pto_qwen_microdecode_live_execution",
@@ -194,25 +235,29 @@ def run_live_microdecode(
             "entry_name": artifact.entry_name,
             "source_kind": artifact.source_kind,
         },
-        "observed": observed,
+        "observed": final_record["observed"],
         "max_abs_error": max_abs_error,
-        "scheduler_counters": {
-            "completed_count": int(counters[4]),
-            "error_count": int(counters[5]),
-            "error_code": int(counters[6]),
-            "error_task_id": int(counters[7]),
-            "scheduler_init_count": int(counters[8]),
-            "scheduler_loop_count": int(counters[9]),
-            "scheduler_processed_count": int(counters[10]),
-            "scheduler_processed_by_block": [int(scheduler_processed[0])],
+        "decode_loop_observations": launch_records,
+        "decode_loop_summary": {
+            "repeat_runs": repeat_runs,
+            "total_completed_count": sum(
+                record["scheduler_counters"]["completed_count"]
+                for record in launch_records
+            ),
+            "total_error_count": sum(
+                record["scheduler_counters"]["error_count"]
+                for record in launch_records
+            ),
+            "total_scheduler_processed_count": sum(
+                record["scheduler_counters"]["scheduler_processed_count"]
+                for record in launch_records
+            ),
         },
-        "timing_ns": {
-            "host_wall": int(timing.host_wall_ns),
-            "device_wall": int(timing.device_wall_ns),
-        },
+        "scheduler_counters": final_record["scheduler_counters"],
+        "timing_ns": final_record["timing_ns"],
         "implemented_contracts": [
             *plan["implemented_contracts"],
             "controlled_proxy_live_microdecode_execution",
+            "controlled_proxy_live_decode_loop_execution",
         ],
     }
-

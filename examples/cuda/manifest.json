@@ -137,11 +137,12 @@
       "benchmark_id": "llm_serving_decode",
       "method_id": "pto_persistent_device",
       "runtime": "cuda/persistent_device",
-      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_microdecode_live.py --device 0 --arch compute_80 --output-json tmp/cuda-backend/pto-serving-microdecode-live/qwen-microdecode-live.json",
-      "expected_output": "command exits 0 on a CUDA host; output JSON records status=pass for a controlled Qwen QKV-to-logits proxy DAG launched through cuda/persistent_device.",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_microdecode_live.py --device 0 --arch compute_80 --repeat-runs 3 --output-json tmp/cuda-backend/pto-serving-decode-loop-live/qwen-microdecode-loop.json",
+      "expected_output": "command exits 0 on a CUDA host; output JSON records status=pass for a controlled Qwen QKV-to-logits proxy DAG submitted repeatedly through cuda/persistent_device.",
       "evidence_symbols": [
         "pto_qwen_microdecode_live_execution",
         "controlled_proxy_live_microdecode_execution",
+        "controlled_proxy_live_decode_loop_execution",
         "persistent_device_proxy_decode_chain_plan",
         "qwen_attention_to_logits_dag_contract"
       ]
