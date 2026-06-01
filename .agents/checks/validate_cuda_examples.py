@@ -53,6 +53,11 @@ def validate_examples(root: Path = ROOT) -> None:
     if not readme.is_file():
         fail(f"missing {readme.relative_to(root)}")
     readme_text = readme.read_text(encoding="utf-8")
+    split_doc_text = "\n".join(
+        path.read_text(encoding="utf-8", errors="replace")
+        for path in sorted((examples_root / "docs").glob("*.md"))
+    )
+    review_text = f"{readme_text}\n{split_doc_text}"
 
     manifest = load_json(examples_root / "manifest.json")
     benchmarks = load_json(viewer_data / "benchmarks.json")
@@ -92,7 +97,7 @@ def validate_examples(root: Path = ROOT) -> None:
         command = require_string(example, "command", example_id)
         expected = require_string(example, "expected_output", example_id)
         for text in (title, benchmark_id, method_id, runtime, command, expected):
-            require_in_readme(readme_text, text, example_id)
+            require_in_readme(review_text, text, example_id)
 
         symbols = example.get("evidence_symbols")
         if not isinstance(symbols, list) or not symbols:
