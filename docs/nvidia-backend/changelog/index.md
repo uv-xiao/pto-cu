@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen CUDA weight binding split](2026-06-02-qwen-cuda-weight-binding-split.md)
 - [2026-06-02 benchmark viewer validator split](2026-06-02-benchmark-viewer-validator-split.md)
 - [2026-06-02 CUDA example README split](2026-06-02-cuda-example-readme-split.md)
 - [2026-06-02 flow details split](2026-06-02-flow-details-split.md)

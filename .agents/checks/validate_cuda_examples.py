@@ -46,6 +46,17 @@ def require_in_readme(readme_text: str, value: str, owner: str) -> None:
     fail(f"{owner} README missing: {value}")
 
 
+def example_source_text(script: Path) -> str:
+    parts = [script.read_text(encoding="utf-8")]
+    split_dir = script.with_name(f"{script.stem}_impl")
+    if split_dir.is_dir():
+        parts.extend(
+            path.read_text(encoding="utf-8", errors="replace")
+            for path in sorted(split_dir.rglob("*.py"))
+        )
+    return "\n".join(parts)
+
+
 def validate_examples(root: Path = ROOT) -> None:
     examples_root = root / "examples" / "cuda"
     viewer_data = root / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
@@ -84,7 +95,7 @@ def validate_examples(root: Path = ROOT) -> None:
         script = root / require_string(example, "script", example_id)
         if not script.is_file():
             fail(f"{example_id} script missing: {script.relative_to(root)}")
-        script_text = script.read_text(encoding="utf-8")
+        script_text = example_source_text(script)
 
         benchmark_id = require_string(example, "benchmark_id", example_id)
         method_id = require_string(example, "method_id", example_id)
