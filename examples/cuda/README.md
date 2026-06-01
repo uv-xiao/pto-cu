@@ -147,7 +147,16 @@ but still does not use the full Qwen resource-backed serving buffers.
 The `resource_backed_graph_materialization` section checks that both serving
 policies have all token fields, KV fields, and 255 resident-weight-backed DAG
 task descriptors bound to concrete CUDA-live pointers.
-It still does not execute full Qwen kernels or a full-serving decode loop.
+Its launch-packet preflight also packs the host-side `CudaPersistentDagTask`
+array from those pointers and records the remaining launch blockers:
+intermediate activation buffers, a float logits/sampling output path, and
+numerically correct Qwen kernels. It still does not execute full Qwen kernels
+or a full-serving decode loop.
+
+Expected output: command exits 0; output JSON records runner-owned cuda_live
+token, KV-cache, and resident-weight owners, resource-backed Qwen submission
+descriptors, compact graph materialization, launch-packet preflight blockers,
+diagnostic bridge contracts, and a diagnostic Qwen descriptor smoke execution.
 
 ## Qwen Persistent Task Bodies
 

@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from qwen_decode_loop_runner_impl.launch_preflight import (
+    launch_packet_preflight,
+)
 from qwen_decode_loop_runner_impl.submission import QWEN_TASK_FUNCTIONS
 from qwen_persistent_weight_materialization import build_materialization_manifest
 
@@ -88,6 +91,10 @@ def workload_materialization(
                 "layer_35_mlp_down",
             }
         ],
+        "launch_packet_preflight": launch_packet_preflight(
+            plan=plan,
+            descriptors=descriptors,
+        ),
     }
 
 
