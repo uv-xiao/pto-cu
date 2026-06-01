@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from qwen_decode_loop_runner_impl.resources import build_resources
+from qwen_decode_loop_runner_impl.submission import submission_descriptor_contract
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -253,6 +254,18 @@ def build_decode_loop_runner(
         implemented_contracts.append("cuda_live_kv_cache_owner_in_runner")
     if resident_lifecycle.get("mode") == "cuda_live":
         implemented_contracts.append("cuda_live_resident_weight_table_in_runner")
+    resource_status = {
+        "token_pointer_table": token_lifecycle.get("status"),
+        "kv_cache": kv_lifecycle.get("status"),
+        "resident_weight_table": resident_lifecycle.get("status"),
+    }
+    submission_descriptors = submission_descriptor_contract(
+        plans=plans,
+        resource_modes=resource_modes,
+        resource_status=resource_status,
+    )
+    if submission_descriptors["status"] == "resource_backed_descriptors_ready":
+        implemented_contracts.append("qwen_decode_loop_submission_descriptors")
     return {
         "schema_version": 1,
         "kind": "pto_qwen_decode_loop_runner",
@@ -262,13 +275,10 @@ def build_decode_loop_runner(
             if live_owners
             else "dry_run_submission_plan"
         ),
-        "resource_lifecycle_status": {
-            "token_pointer_table": token_lifecycle.get("status"),
-            "kv_cache": kv_lifecycle.get("status"),
-            "resident_weight_table": resident_lifecycle.get("status"),
-        },
+        "resource_lifecycle_status": resource_status,
         "resource_lifecycle_modes": resource_modes,
         "cuda_live_resource_owners": live_owners,
+        "cuda_live_submission_descriptor_contract": submission_descriptors,
         "cuda_live_bridge_contract": cuda_live_bridge_contract(),
         "unit_math_live_bridge_contract": unit_math_live_bridge_contract(
             unit_math_live_payload,

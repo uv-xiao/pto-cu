@@ -31,4 +31,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-01-part-12.md](entries/2026-06-01-part-12.md) | 6 | Qwen Decode Loop Runner Plan | Qwen Microdecode Live CUDA Execution |
 | [2026-06-01-part-13.md](entries/2026-06-01-part-13.md) | 9 | Qwen Proxy Decode Loop Live Reuse | Qwen Unit Math Prepared Reuse |
 | [2026-06-01-part-14.md](entries/2026-06-01-part-14.md) | 2 | Decode Loop Unit Math Bridge | Decode Loop Token Owner Live |
-| [2026-06-02-part-01.md](entries/2026-06-02-part-01.md) | 2 | Decode Loop KV Owner Live | Decode Loop Resident Owner Live |
+| [2026-06-02-part-01.md](entries/2026-06-02-part-01.md) | 3 | Decode Loop KV Owner Live | Decode Loop Submission Descriptors |

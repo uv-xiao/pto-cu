@@ -167,6 +167,11 @@ It can also open the token pointer table in CUDA-live mode from the runner;
 the current partial resource-owner artifact is
 `tmp/cuda-backend/pto-serving-decode-loop-token-kv-resident-live-2026-06-02/qwen-decode-loop-runner.json`.
 It now opens token, KV-cache, and resident-weight owners in CUDA-live mode.
+The current descriptor artifact is
+`tmp/cuda-backend/pto-serving-decode-loop-submission-descriptors-2026-06-02/qwen-decode-loop-runner.json`;
+it records resource-backed Qwen function ids 7100 through 7109, graph task
+counts, and `run_prepared` repetition counts for the MPK and VDCores serving
+policies, but marks full Qwen execution as `not_executed`.
 The task-body source artifact in
 `examples/cuda/qwen_persistent_task_bodies.py` now renders Qwen persistent
 task bodies through the existing persistent DAG source generator. It records

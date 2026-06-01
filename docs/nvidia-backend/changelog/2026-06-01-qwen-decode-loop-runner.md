@@ -18,6 +18,10 @@
   planned KV-cache owner in CUDA-live mode.
 - Added `--resident-cuda-live` so the decode-loop runner can invoke the
   resident weight-table owner in CUDA-live mode.
+- Added `cuda_live_submission_descriptor_contract`, which maps the live
+  token, KV-cache, and resident-weight resources to Qwen persistent task
+  function ids 7100 through 7109 and records the planned `run_prepared`
+  repetitions.
 - Captured current evidence at
   `tmp/cuda-backend/pto-serving-decode-loop-2026-06-01/`
   `qwen-decode-loop-runner.json`.
@@ -105,8 +109,24 @@ Result: `mode=partial_cuda_live_submission_plan`,
 `"resident_weight_table"]`, and
 `resource_lifecycle_modes.resident_weight_table=cuda_live`.
 
+Additional resource-backed descriptor command:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_decode_loop_runner.py \
+  --mode mock --token-cuda-live --kv-cuda-live --resident-cuda-live \
+  --device 0 --output-json \
+  tmp/cuda-backend/pto-serving-decode-loop-submission-descriptors-2026-06-02/\
+qwen-decode-loop-runner.json
+```
+
+Result: `cuda_live_submission_descriptor_contract.status=`
+`resource_backed_descriptors_ready`, `execution_status=not_executed`,
+and descriptor rows for `mpk_offline_decode` and `vdcores_offline_decode`
+with Qwen function ids 7100 through 7109.
+
 ## Remaining Gaps
 
 - Generate Qwen kernel bodies that consume token, KV-cache, and weight fields.
-- Execute the full `cuda_live` decode loop and import full-serving viewer
-  rows.
+- Run the resource-backed descriptors through `run_prepared`, validate Qwen
+  numerical correctness, and import full-serving viewer rows.

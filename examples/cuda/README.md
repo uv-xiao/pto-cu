@@ -119,13 +119,12 @@ PYTHONPATH=$PWD:$PWD/python \
   --device 0 \
   --arch compute_80 \
   --repeat-runs 3 \
-  --output-json tmp/cuda-backend/pto-serving-decode-loop-token-kv-resident-live/qwen-decode-loop-runner.json
+  --output-json tmp/cuda-backend/pto-serving-decode-loop-submission-descriptors/qwen-decode-loop-runner.json
 ```
 
-Expected output: command exits 0; output JSON records decode-loop resource
-owner ordering, persistent DAG submission plans, runner-owned `cuda_live`
-token, KV-cache, and resident-weight owners, and diagnostic `cuda_live`
-bridge contracts.
+Expected output: command exits 0; output JSON records runner-owned cuda_live
+token, KV-cache, and resident-weight owners, plus resource-backed Qwen
+submission descriptors and diagnostic cuda_live bridge contracts.
 
 The artifact composes token pointer, KV-cache, and resident-weight owners into
 a decode-loop submission plan. It records owner open/materialize/submit/close
@@ -137,6 +136,9 @@ diagnostic from the runner entry point and records the bridge summary. With
 the runner. With `--kv-cuda-live`, it opens the full planned KV-cache owner
 in the runner. With `--resident-cuda-live`, it opens the resident weight-table
 owner and materializes 399 weight pointers for the submission plan.
+The `cuda_live_submission_descriptor_contract` maps those resource pointers
+to Qwen task function ids 7100 through 7109 and records the `run_prepared`
+repetition count, but marks the full Qwen execution as not yet run.
 It still does not execute full Qwen kernels or a full-serving decode loop.
 
 ## Qwen Persistent Task Bodies

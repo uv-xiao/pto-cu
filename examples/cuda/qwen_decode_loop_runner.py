@@ -30,6 +30,7 @@ EVIDENCE_SYMBOLS = [
     "cuda_live_token_pointer_table_in_runner",
     "cuda_live_kv_cache_owner_in_runner",
     "cuda_live_resident_weight_table_in_runner",
+    "qwen_decode_loop_submission_descriptors",
 ]
 
 
