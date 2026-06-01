@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "generated_at_utc": "2026-06-01T06:45:37.135958+00:00",
+    "pto_commit": "b6df049f",
+    "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs",
+    "model_tier": "primary",
+    "source_files": [
+      "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json",
+      "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json"
+    ]
+  },
+  "collection": "serving_command_plans",
+  "record_files": [
+    "records/mpk-qwen3-native-vs-persistent-mpk-offline-decode-batch1.json",
+    "records/mpk-qwen3-native-vs-persistent-mpk-offline-decode-batch2.json",
+    "records/mpk-qwen3-native-vs-persistent-mpk-offline-decode-batch4.json",
+    "records/mpk-qwen3-native-vs-persistent-mpk-offline-decode-batch8.json",
+    "records/mpk-qwen3-native-vs-persistent-mpk-offline-decode-batch16.json",
+    "records/mpk-qwen3-native-token-bringup-mpk-native-qwen3-0p6b-token2-bringup-batc.json",
+    "records/vdcores-qwen3-8b-decode-preflight-vdcores-offline-decode-batch1.json",
+    "records/vdcores-qwen3-8b-decode-preflight-vdcores-offline-decode-batch2.json",
+    "records/vdcores-qwen3-8b-decode-preflight-vdcores-offline-decode-batch4.json",
+    "records/vdcores-qwen3-8b-decode-preflight-vdcores-offline-decode-batch8.json",
+    "records/vdcores-qwen3-8b-decode-preflight-vdcores-offline-decode-batch16.json",
+    "records/vllm-serving-and-throughput-mpk-offline-decode-batch1.json",
+    "records/vllm-serving-and-throughput-mpk-offline-decode-batch2.json",
+    "records/vllm-serving-and-throughput-mpk-offline-decode-batch4.json",
+    "records/vllm-serving-and-throughput-mpk-offline-decode-batch8.json",
+    "records/vllm-serving-and-throughput-mpk-offline-decode-batch16.json",
+    "records/vllm-serving-and-throughput-vdcores-offline-decode-batch1.json",
+    "records/vllm-serving-and-throughput-vdcores-offline-decode-batch2.json",
+    "records/vllm-serving-and-throughput-vdcores-offline-decode-batch4.json",
+    "records/vllm-serving-and-throughput-vdcores-offline-decode-batch8.json",
+    "records/vllm-serving-and-throughput-vdcores-offline-decode-batch16.json",
+    "records/sglang-serving-and-offline-mpk-offline-decode-batch1.json",
+    "records/sglang-serving-and-offline-mpk-offline-decode-batch2.json",
+    "records/sglang-serving-and-offline-mpk-offline-decode-batch4.json",
+    "records/sglang-serving-and-offline-mpk-offline-decode-batch8.json",
+    "records/sglang-serving-and-offline-mpk-offline-decode-batch16.json",
+    "records/sglang-serving-and-offline-vdcores-offline-decode-batch1.json",
+    "records/sglang-serving-and-offline-vdcores-offline-decode-batch2.json",
+    "records/sglang-serving-and-offline-vdcores-offline-decode-batch4.json",
+    "records/sglang-serving-and-offline-vdcores-offline-decode-batch8.json",
+    "records/sglang-serving-and-offline-vdcores-offline-decode-batch16.json",
+    "records/thunderkittens-decode-attention-tile-vdcores-offline-decode-batch1.json",
+    "records/thunderkittens-decode-attention-tile-vdcores-offline-decode-batch2.json",
+    "records/thunderkittens-decode-attention-tile-vdcores-offline-decode-batch4.json",
+    "records/thunderkittens-decode-attention-tile-vdcores-offline-decode-batch8.json",
+    "records/thunderkittens-decode-attention-tile-vdcores-offline-decode-batch16.json"
+  ]
+}

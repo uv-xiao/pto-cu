@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from viewer_data_io import write_json as write_viewer_json
+
 
 ROOT = Path(__file__).resolve().parents[4]
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
@@ -29,6 +31,13 @@ def load_json(path: Path) -> dict[str, Any]:
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n")
+
+
+def write_output(path: Path, payload: Any) -> None:
+    if path.resolve().parent == VIEWER_DATA.resolve() or path.with_suffix("").is_dir():
+        write_viewer_json(path, payload)
+    else:
+        write_json(path, payload)
 
 
 def git_commit() -> str:
@@ -577,7 +586,7 @@ def main() -> None:
         artifact_root=args.artifact_root,
         model_tier=args.model_tier,
     )
-    write_json(args.output, plan)
+    write_output(args.output, plan)
     print(f"wrote {args.output}")
 
 

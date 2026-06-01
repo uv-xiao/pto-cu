@@ -12,7 +12,9 @@ const DATA_FILES = {
   paperBaselineExecutionAttempts: {
     manifest: "data/paper_baseline_execution_attempts/index.json",
   },
-  servingCommandPlan: "data/serving_command_plan.json",
+  servingCommandPlan: {
+    manifest: "data/serving_command_plan/index.json",
+  },
   servingWorkloads: "data/serving_workloads.json",
   paperEvaluation: {
     manifest: "data/paper_evaluation_matrix/index.json",
@@ -876,7 +878,7 @@ async function main() {
       loadJson(DATA_FILES.paperBaselineProbes),
       loadDataFile(DATA_FILES.paperBaselineRunReadiness),
       loadDataFile(DATA_FILES.paperBaselineExecutionAttempts),
-      loadJson(DATA_FILES.servingCommandPlan),
+      loadDataFile(DATA_FILES.servingCommandPlan),
       loadJson(DATA_FILES.servingWorkloads),
       loadDataFile(DATA_FILES.paperEvaluation),
       loadJson(DATA_FILES.paperReadinessAudit),

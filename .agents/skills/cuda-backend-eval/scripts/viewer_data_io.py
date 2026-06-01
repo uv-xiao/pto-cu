@@ -16,6 +16,7 @@ COLLECTION_KEYS = (
     "paper_baseline_execution_attempts",
     "paper_baseline_run_readiness",
     "paper_evaluation_matrix",
+    "serving_command_plans",
 )
 SIDECAR_LIST_FIELDS = {
     "paper_evaluation_matrix": (
@@ -253,6 +254,8 @@ def manifest_record_files(base: Path, manifest: dict[str, Any]) -> list[Any]:
 
 
 def record_filename(collection: str, index: int, record: dict[str, Any]) -> str:
+    if collection == "serving_command_plans" and "id" in record:
+        return f"{slug(str(record['id']))}.json"
     if "id" in record:
         return f"{record['id']}.json"
     prefix = slug(record_prefix(record))

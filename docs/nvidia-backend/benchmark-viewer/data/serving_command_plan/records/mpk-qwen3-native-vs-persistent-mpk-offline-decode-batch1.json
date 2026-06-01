@@ -1,0 +1,24 @@
+{
+  "id": "mpk_qwen3_native_vs_persistent:mpk_offline_decode:batch1",
+  "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
+  "paper_baseline_id": "mpk",
+  "serving_workload_id": "mpk_offline_decode",
+  "model_tier": "primary",
+  "model": "Qwen/Qwen3-8B",
+  "batch_size": 1,
+  "prompt_tokens": 64,
+  "decode_tokens": 1024,
+  "traffic_mode": "offline batched inference without request-arrival variability",
+  "commands": [
+    {
+      "kind": "native_demo",
+      "command": "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --model Qwen/Qwen3-8B --prompt 'Give me a short introduction to large language model.' --max-new-tokens 1024 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --temperature 0 --save-tokens ../../cuda-backend/paper-baselines/serving-runs/mpk/mpk_offline_decode/mpk-native-batch1.json",
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/mpk/mpk_offline_decode/mpk-native-batch1.json"
+    },
+    {
+      "kind": "persistent_demo",
+      "command": "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --model Qwen/Qwen3-8B --prompt 'Give me a short introduction to large language model.' --max-new-tokens 1024 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --temperature 0 --use-mirage --save-tokens ../../cuda-backend/paper-baselines/serving-runs/mpk/mpk_offline_decode/mpk-persistent-batch1.json",
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/mpk/mpk_offline_decode/mpk-persistent-batch1.json"
+    }
+  ]
+}

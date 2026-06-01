@@ -5164,7 +5164,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (run_readiness_dir / "index.json").is_file()
     execution_attempts_dir = VIEWER_ROOT / "data" / "paper_baseline_execution_attempts"
     assert (execution_attempts_dir / "index.json").is_file()
-    assert (VIEWER_ROOT / "data" / "serving_command_plan.json").is_file()
+    serving_command_plan_dir = VIEWER_ROOT / "data" / "serving_command_plan"
+    assert (serving_command_plan_dir / "index.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_workloads.json").is_file()
     paper_evaluation_dir = VIEWER_ROOT / "data" / "paper_evaluation_matrix"
     assert (paper_evaluation_dir / "index.json").is_file()
@@ -5200,7 +5201,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "next_actions",
         "Next Actions",
         "servingCommandPlan",
-        "serving_command_plan.json",
+        "data/serving_command_plan/index.json",
         "Serving Command Plan",
         "servingWorkloads",
         "serving_workloads",
@@ -5262,10 +5263,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     paper_baseline_execution_attempts = load_viewer_collection(
         execution_attempts_dir
     )
-    serving_command_plan = json.loads(
-        (VIEWER_ROOT / "data" / "serving_command_plan.json").read_text(
-            encoding="utf-8"
-        )
+    serving_command_plan = load_viewer_collection(
+        VIEWER_ROOT / "data" / "serving_command_plan.json"
     )
     serving_workloads = json.loads(
         (VIEWER_ROOT / "data" / "serving_workloads.json").read_text(

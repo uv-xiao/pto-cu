@@ -1,0 +1,28 @@
+{
+  "id": "vllm_serving_and_throughput:vdcores_offline_decode:batch2",
+  "paper_baseline_run_id": "vllm_serving_and_throughput",
+  "paper_baseline_id": "vllm",
+  "serving_workload_id": "vdcores_offline_decode",
+  "model_tier": "primary",
+  "model": "Qwen/Qwen3-8B",
+  "batch_size": 2,
+  "prompt_tokens": 128,
+  "decode_tokens": 64,
+  "traffic_mode": "offline fixed batch",
+  "commands": [
+    {
+      "kind": "server",
+      "command": "vllm serve Qwen/Qwen3-8B --port 8000 --served-model-name Qwen/Qwen3-8B --max-model-len 192"
+    },
+    {
+      "kind": "online_serving",
+      "command": "vllm bench serve --backend vllm --model Qwen/Qwen3-8B --host 127.0.0.1 --port 8000 --dataset-name random --input-len 128 --output-len 64 --num-prompts 2 --max-concurrency 2 --request-rate inf --ignore-eos --temperature 0 --save-result --result-dir tmp/cuda-backend/paper-baselines/serving-runs/vllm/vdcores_offline_decode --result-filename vllm-serve-batch2.json",
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/vdcores_offline_decode/vllm-serve-batch2.json"
+    },
+    {
+      "kind": "offline_throughput",
+      "command": "vllm bench throughput --model Qwen/Qwen3-8B --dataset-name random --input-len 128 --output-len 64 --num-prompts 2 --num-warmups 1 --output-json tmp/cuda-backend/paper-baselines/serving-runs/vllm/vdcores_offline_decode/vllm-throughput-batch2.json",
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/vdcores_offline_decode/vllm-throughput-batch2.json"
+    }
+  ]
+}
