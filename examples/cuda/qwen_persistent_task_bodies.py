@@ -24,6 +24,7 @@ EVIDENCE_SYMBOLS = [
     "pto_qwen_persistent_task_bodies",
     "generated_qwen_kernel_bodies",
     "controlled_proxy_numeric_oracle",
+    "qwen_unit_math_oracle",
     "qwen_kernel_token_field_consumption",
     "qwen_kernel_kv_field_consumption",
     "qwen_kernel_weight_tensor_arg_consumption",

@@ -963,6 +963,7 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     assert "task->tensor_args[0]" in source
     assert "generated_qwen_kernel_bodies" in manifest["implemented_contracts"]
     assert "controlled_proxy_numeric_oracle" in manifest["implemented_contracts"]
+    assert "qwen_unit_math_oracle" in manifest["implemented_contracts"]
     assert (
         "qwen_kernel_kv_cache_writeback_field_contract"
         in manifest["implemented_contracts"]
@@ -980,8 +981,17 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     assert qkv_oracle["expected_out"] == [13.0, 15.0, 17.0, 19.0]
     assert qkv_oracle["expected_c"] == [11.0, 13.0, 15.0, 17.0]
     assert qkv_oracle["expected_d"] == qkv_oracle["expected_out"]
+    unit_oracle = manifest["qwen_unit_math_oracle"]
+    assert unit_oracle["status"] == "qwen_unit_math_oracle_ready"
+    assert unit_oracle["steps"]["mlp_swiglu"] == [
+        0.054983,
+        -0.05402,
+        0.060482,
+        -0.063023,
+    ]
     assert manifest["remaining_runtime_gaps"] == [
         "numerically_correct_qwen_kernel_bodies",
+        "cuda_task_bodies_match_qwen_unit_math_oracle",
         "cuda_live_decode_loop_execution",
         "viewer_result_import",
     ]

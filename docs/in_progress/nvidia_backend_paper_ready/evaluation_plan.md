@@ -170,6 +170,9 @@ now exposes mutable `c` and `d` fields, so the artifact also records
 KV-cache writeback field access. It also includes a controlled proxy numeric
 oracle for the current deterministic scaffold formulas; that oracle is not
 full Qwen correctness evidence.
+It also carries a small Qwen unit math oracle covering RMSNorm, projection,
+single-token attention cache writeback, SiLU/SwiGLU, and logits equations;
+the generated CUDA task bodies still need to match that oracle.
 The persistent decode-argument artifact in
 `examples/cuda/qwen_persistent_decode_args.py` maps those token buffers onto
 the persistent DAG `a`, `b`, and `out` fields while preserving `tensor_args`
@@ -185,6 +188,7 @@ The current raw artifacts are
 `tmp/cuda-backend/pto-serving-decode-loop-2026-06-01/qwen-decode-loop-runner.json`,
 `tmp/cuda-backend/pto-serving-decode-loop-bridge-2026-06-01/qwen-decode-loop-runner.json`,
 `tmp/cuda-backend/pto-serving-task-bodies-2026-06-01/qwen-persistent-task-bodies.json`,
+`tmp/cuda-backend/pto-serving-task-bodies-qwen-unit-2026-06-01/qwen-persistent-task-bodies.json`,
 `tmp/cuda-backend/pto-serving-proxy-live-2026-06-01/qwen-proxy-live.json`,
 `tmp/cuda-backend/pto-serving-microdecode-live-2026-06-01/qwen-microdecode-live.json`,
 `tmp/cuda-backend/pto-serving-decode-loop-live-2026-06-01/qwen-microdecode-loop.json`,

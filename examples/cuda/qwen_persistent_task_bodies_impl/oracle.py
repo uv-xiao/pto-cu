@@ -1,7 +1,8 @@
-"""Deterministic numeric oracle for the current Qwen proxy task bodies."""
+"""Deterministic numeric oracles for Qwen task-body evidence."""
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 
@@ -175,4 +176,98 @@ def build_numeric_oracle(callables: list[str]) -> dict[str, Any]:
         "checked_callables": len(sample_outputs),
         "max_abs_error": 0.0,
         "sample_outputs": sample_outputs,
+    }
+
+
+def _diagonal_matrix(scales: list[float]) -> list[list[float]]:
+    return [
+        [scale if row == col else 0.0 for col in range(len(scales))]
+        for row, scale in enumerate(scales)
+    ]
+
+
+def _linear(vector: list[float], matrix: list[list[float]]) -> list[float]:
+    return [
+        sum(value * weight for value, weight in zip(vector, row, strict=True))
+        for row in matrix
+    ]
+
+
+def _rmsnorm(
+    vector: list[float],
+    weight: list[float],
+    *,
+    eps: float,
+) -> list[float]:
+    mean_square = sum(value * value for value in vector) / len(vector)
+    scale = 1.0 / math.sqrt(mean_square + eps)
+    return [
+        value * scale * norm_weight
+        for value, norm_weight in zip(vector, weight, strict=True)
+    ]
+
+
+def _silu(values: list[float]) -> list[float]:
+    return [value / (1.0 + math.exp(-value)) for value in values]
+
+
+def _mul(left: list[float], right: list[float]) -> list[float]:
+    return [lhs * rhs for lhs, rhs in zip(left, right, strict=True)]
+
+
+def build_qwen_unit_math_oracle() -> dict[str, Any]:
+    hidden = [1.0, -2.0, 3.0, -4.0]
+    norm_weight = [1.0, 1.1, 1.05, 1.5]
+    eps = 1e-6
+    rmsnorm_input = _rmsnorm(hidden, norm_weight, eps=eps)
+    value_projection = _linear(
+        rmsnorm_input,
+        _diagonal_matrix([0.4, 0.3, 0.3, 0.2]),
+    )
+    gate_projection = [0.2, -0.2, 0.2, -0.2]
+    up_projection = [0.5, 0.6, 0.55, 0.7]
+    mlp_swiglu = _mul(_silu(gate_projection), up_projection)
+    logits = _linear(
+        mlp_swiglu,
+        _diagonal_matrix([3.4, 4.4, 5.0, 6.0]),
+    )
+    query_projection = _linear(rmsnorm_input, _diagonal_matrix([0.5] * 4))
+    key_projection = _linear(rmsnorm_input, _diagonal_matrix([0.25] * 4))
+    attention_score = sum(
+        query * key
+        for query, key in zip(query_projection, key_projection, strict=True)
+    ) / math.sqrt(4.0)
+    return {
+        "status": "qwen_unit_math_oracle_ready",
+        "scope": "single_token_hidden4_reference",
+        "hidden_size": 4,
+        "eps": eps,
+        "checked_equations": [
+            "rmsnorm",
+            "linear_projection",
+            "single_token_attention_cache_writeback",
+            "silu",
+            "swiglu",
+            "logits_linear",
+        ],
+        "inputs": {
+            "hidden": hidden,
+            "norm_weight": norm_weight,
+        },
+        "steps": {
+            "rmsnorm_input": _round(rmsnorm_input),
+            "q_projection": _round(query_projection),
+            "k_projection": _round(key_projection),
+            "v_projection": _round(value_projection),
+            "attention_score": round(attention_score, 6),
+            "attention_probability": 1.0,
+            "key_cache_after": _round(key_projection),
+            "value_cache_after": _round(value_projection),
+            "attention_context": _round(value_projection),
+            "gate_projection": _round(gate_projection),
+            "up_projection": _round(up_projection),
+            "silu_gate": _round(_silu(gate_projection)),
+            "mlp_swiglu": _round(mlp_swiglu),
+            "logits": _round(logits),
+        },
     }

@@ -12,7 +12,7 @@ from simpler_setup.cuda_callable_compiler import (
     render_persistent_dag_source,
 )
 
-from .oracle import build_numeric_oracle
+from .oracle import build_numeric_oracle, build_qwen_unit_math_oracle
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -240,9 +240,11 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             ),
         },
         "numeric_oracle": build_numeric_oracle(callables),
+        "qwen_unit_math_oracle": build_qwen_unit_math_oracle(),
         "implemented_contracts": [
             "generated_qwen_kernel_bodies",
             "controlled_proxy_numeric_oracle",
+            "qwen_unit_math_oracle",
             "qwen_kernel_token_field_consumption",
             "qwen_kernel_kv_field_consumption",
             "qwen_kernel_kv_cache_writeback_field_contract",
@@ -250,6 +252,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
         ],
         "remaining_runtime_gaps": [
             "numerically_correct_qwen_kernel_bodies",
+            "cuda_task_bodies_match_qwen_unit_math_oracle",
             "cuda_live_decode_loop_execution",
             "viewer_result_import",
         ],
