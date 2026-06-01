@@ -4778,7 +4778,7 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_qwen3_8b_decode_preflight"
         and item["execution_attempt_id"]
-        == "vdcores_qwen3_8b_global_instruction_capacity_h200"
+        == "vdcores_qwen3_8b_shared_instruction_window_plan_h200"
         for item in work_items
     )
 
@@ -5714,6 +5714,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_8b_missing_ops_preflight_h200",
         "vdcores_qwen3_8b_rebuild_correctness_token1_h200",
         "vdcores_qwen3_8b_global_instruction_capacity_h200",
+        "vdcores_qwen3_8b_shared_instruction_window_plan_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
         "thunderkittens_mha_h100_fa3_comparator_h200",
         "thunderkittens_mha_h100_pt_reference_isolated_h200",
@@ -6330,6 +6331,23 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "docs/nvidia-backend/baseline-patches/"
         "vdcores-qwen3-8b-global-insts-16384.patch"
         in vdcores_qwen3_8b_global_insts["reproducibility_patches"]
+    )
+    vdcores_qwen3_8b_window_plan = attempts_by_id[
+        "vdcores_qwen3_8b_shared_instruction_window_plan_h200"
+    ]
+    assert vdcores_qwen3_8b_window_plan["status"] == "partial"
+    assert vdcores_qwen3_8b_window_plan["paper_baseline_run_id"] == (
+        "vdcores_qwen3_8b_decode_preflight"
+    )
+    assert (
+        vdcores_qwen3_8b_window_plan["summary"][
+            "minimum_memory_instruction_windows"
+        ]
+        == 30
+    )
+    assert (
+        vdcores_qwen3_8b_window_plan["summary"]["failure_kind"]
+        == "shared_instruction_windowing_not_implemented"
     )
     vdcores_rebuild_attempt = attempts_by_id[
         "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200"

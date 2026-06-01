@@ -392,6 +392,12 @@
           "why": "Expected artifacts must remain under tmp/."
         },
         {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-shared-window-plan-0a0392d2/shared-window-plan.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
           "kind": "required_metric",
           "metric": "correctness",
           "status": "pass",

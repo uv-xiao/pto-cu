@@ -495,6 +495,7 @@ def check_examples_and_rules() -> None:
         ".agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py",
         ".agents/skills/cuda-backend-eval/scripts/paper_readiness_work_queue.py",
+        ".agents/skills/cuda-backend-eval/scripts/vdcores_instruction_window_plan.py",
         ".agents/skills/cuda-backend-eval/scripts/nvidia_goal_progress.py",
         ".agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py",
         ".agents/checks/validate_nvidia_changelog.py",

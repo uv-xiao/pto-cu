@@ -92,6 +92,10 @@ capacity problem: a temporary global-instruction runtime can run `-N 64 -b 5`,
 but it fails Qwen3-8B correctness thresholds, so the row remains blocked until
 the global-instruction path is corrected or the schedule is segmented without
 leaving the shared-instruction runtime.
+The current shared-window analysis makes the segmented path concrete: under
+the 512-instruction shared table, Qwen3-8B decode64 needs a lower bound of 5
+compute-instruction windows and 30 memory-instruction windows per SM before it
+can become a correctness-backed paper row.
 The PTO full-serving gap is tracked by
 `.agents/skills/cuda-backend-eval/scripts/pto_serving_preflight.py` and the
 repo-owned lifecycle scaffold in

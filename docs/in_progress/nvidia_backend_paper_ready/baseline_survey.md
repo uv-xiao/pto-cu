@@ -140,6 +140,10 @@ runtime with `numInsts=16384` allowed `-N 64 -b 5` to run, but that runtime
 failed Qwen3-8B correctness thresholds. The remaining VDCores paper-serving
 blocker is therefore correctness for the global-instruction path, or an
 equivalent segmented schedule that preserves the shared-instruction runtime.
+The shared-window analysis script derives the minimum segmented runtime
+requirement from the same H200 artifact: keeping the default 512-instruction
+shared table needs at least 5 compute-instruction windows and 30
+memory-instruction windows per SM for the Qwen3-8B decode64 path.
 
 ## vLLM Notes
 

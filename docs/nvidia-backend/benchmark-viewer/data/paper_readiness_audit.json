@@ -380,7 +380,8 @@
             "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-global-insts-summary.json",
             "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-bench-n64-b5-global-insts.log",
             "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-correctness-global-insts.log",
-            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/rebuild-restored-shared-insts.log"
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/rebuild-restored-shared-insts.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-shared-window-plan-0a0392d2/shared-window-plan.json"
           ]
         },
         {
@@ -460,30 +461,24 @@
         {
           "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
           "paper_baseline_id": "vdcores",
-          "execution_attempt_id": "vdcores_qwen3_8b_global_instruction_capacity_h200",
-          "title": "VDCores Qwen3-8B Global Instruction Capacity Diagnostic",
+          "execution_attempt_id": "vdcores_qwen3_8b_shared_instruction_window_plan_h200",
+          "title": "VDCores Qwen3-8B Shared-Instruction Window Plan",
           "status": "partial",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/",
-          "blocker": "The global-memory instruction variant fixes the 64-token instruction-capacity overflow and produces timing, but it fails correctness thresholds; the VDCores paper row still needs either a correct global-instruction runtime path or a segmented/token-windowed schedule that preserves the shared-instruction runtime.",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-shared-window-plan-0a0392d2/",
+          "blocker": "This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing.",
           "summary": {
             "model": "Qwen/Qwen3-8B",
-            "capacity_measurement_status": "pass",
-            "max_insts_compiled_shared": 512,
+            "analysis_status": "pass",
+            "shared_instruction_limit": 512,
+            "num_sms": 132,
             "max_cinsts_per_sm_required": 2177,
             "max_minsts_per_sm_required": 15042,
-            "global_instruction_rebuild_status": "pass",
-            "decode64_benchmark_status": "pass",
-            "decode64_median_execution_time_ns": 303995744,
-            "correctness_status": "fail",
-            "failed_correctness_checks": [
-              "gate_proj_low",
-              "up_proj_low",
-              "silu",
-              "final_rms"
-            ],
-            "final_token_match": true,
-            "remote_source_restored": true,
-            "failure_kind": "global_instruction_path_correctness_regression"
+            "minimum_compute_instruction_windows": 5,
+            "minimum_memory_instruction_windows": 30,
+            "minimum_worst_case_windows_per_sm": 30,
+            "preferred_path": "segmented_token_windowed_shared_instruction_schedule",
+            "paper_row_importable": false,
+            "failure_kind": "shared_instruction_windowing_not_implemented"
           }
         }
       ],
@@ -577,7 +572,7 @@
       "blockers": [
         "PTO persistent-device full-serving, VDCores Qwen3-8B full serving after the current global-instruction correctness blocker, and ThunderKittens-family full serving rows are not yet imported for the shared Qwen3-8B serving policies.",
         "Paper baseline run vdcores_qwen3_8b_decode_preflight is planned_not_run, not imported_to_viewer.",
-        "Latest execution attempt vdcores_qwen3_8b_global_instruction_capacity_h200 for vdcores_qwen3_8b_decode_preflight is partial: The global-memory instruction variant fixes the 64-token instruction-capacity overflow and produces timing, but it fails correctness thresholds; the VDCores paper row still needs either a correct global-instruction runtime path or a segmented/token-windowed schedule that preserves the shared-instruction runtime."
+        "Latest execution attempt vdcores_qwen3_8b_shared_instruction_window_plan_h200 for vdcores_qwen3_8b_decode_preflight is partial: This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing."
       ],
       "next_actions": [
         {
@@ -625,9 +620,9 @@
           "source": "execution_attempt",
           "paper_baseline_id": "vdcores",
           "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
-          "execution_attempt_id": "vdcores_qwen3_8b_global_instruction_capacity_h200",
+          "execution_attempt_id": "vdcores_qwen3_8b_shared_instruction_window_plan_h200",
           "status": "partial",
-          "action": "Resolve latest execution attempt vdcores_qwen3_8b_global_instruction_capacity_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: The global-memory instruction variant fixes the 64-token instruction-capacity overflow and produces timing, but it fails correctness thresholds; the VDCores paper row still needs either a correct global-instruction runtime path or a segmented/token-windowed schedule that preserves the shared-instruction runtime."
+          "action": "Resolve latest execution attempt vdcores_qwen3_8b_shared_instruction_window_plan_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing."
         }
       ],
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
