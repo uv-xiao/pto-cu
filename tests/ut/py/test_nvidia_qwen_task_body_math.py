@@ -74,6 +74,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     source = manifest["rendered_source"]["preview"]
 
     assert "rsqrtf(mean_square + 0.000001f)" in source
+    assert "task->scalar_args[1] * norm_weight" in source
     assert "task->c[kv_index] = k;" in source
     assert "task->d[kv_index] = v;" in source
     assert "task->out[i] = v;" in source

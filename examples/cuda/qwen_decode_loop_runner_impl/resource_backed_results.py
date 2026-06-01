@@ -182,4 +182,5 @@ def execution_contracts(
     )
     if numeric_task_mode == "unit_math":
         contracts.append("qwen_resource_backed_unit_numeric_task_mode")
+        contracts.append("qwen_resource_backed_external_rmsnorm_scale")
     return contracts

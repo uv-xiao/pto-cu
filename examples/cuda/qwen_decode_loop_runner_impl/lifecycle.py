@@ -225,6 +225,13 @@ def build_decode_loop_runner(
                 implemented_contracts.append(
                     "qwen_resource_backed_unit_numeric_task_mode",
                 )
+            if (
+                "qwen_resource_backed_external_rmsnorm_scale"
+                in resource_backed_execution.get("implemented_contracts", [])
+            ):
+                implemented_contracts.append(
+                    "qwen_resource_backed_external_rmsnorm_scale",
+                )
     submission_descriptors = submission_descriptor_contract(
         plans=plans,
         resource_modes=resource_modes,

@@ -162,7 +162,8 @@ policy, and `--resource-backed-logits-check-policy final_step` to defer the
 full logits-buffer readback until the last bounded decode step.
 Use `--resource-backed-numeric-task-mode unit_math` to run the resource-backed
 descriptors with the safe O(n) task bodies that already have unit-math numeric
-branches; this still remains below full Qwen numerical serving correctness.
+branches. RMSNorm uses an explicit external scale in this mode, so this still
+remains below full Qwen numerical serving correctness.
 The `cuda_live_submission_descriptor_contract` maps those resource pointers
 to Qwen task function ids 7100 through 7109 and records the `run_prepared`
 repetition count. With `--run-submission-smoke`, it also compiles those same

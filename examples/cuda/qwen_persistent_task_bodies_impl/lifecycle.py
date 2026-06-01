@@ -58,6 +58,9 @@ const float *weight = task->tensor_args[0];
 if (task->scalar_arg_count == 0) {
     const float scale = weight ? weight[i & 3U] : 1.0f;
     task->out[i] = task->a[i] * scale;
+} else if (task->scalar_arg_count > 1) {
+    const float norm_weight = weight ? weight[i & 3U] : 1.0f;
+    task->out[i] = task->a[i] * task->scalar_args[1] * norm_weight;
 } else {
     float mean_square = 0.0f;
     for (unsigned long long j = 0; j < task->n; ++j) {

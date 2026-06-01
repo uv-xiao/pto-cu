@@ -91,9 +91,16 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
         for row in rows
         if row["statistic"].get("numeric_task_mode") == "unit_math"
     ]
-    assert len(unit_numeric_rows) == 1
-    assert unit_numeric_rows[0]["workload_id"] == "vdcores_offline_decode"
-    assert unit_numeric_rows[0]["numeric_ready_callable_count"] == 2
+    rmsnorm_scale_rows = [
+        row
+        for row in unit_numeric_rows
+        if row.get("numeric_task_scope")
+        == "resource_backed_unit_math_external_scale_branches"
+    ]
+    assert len(rmsnorm_scale_rows) == 1
+    assert rmsnorm_scale_rows[0]["workload_id"] == "vdcores_offline_decode"
+    assert rmsnorm_scale_rows[0]["numeric_ready_callable_count"] == 3
+    assert rmsnorm_scale_rows[0]["external_scale_contract_count"] == 1
     assert all(row["statistic"]["error_count"] == 0 for row in rows)
     assert any(row["correctness"] == "pass" for row in rows)
     assert any(

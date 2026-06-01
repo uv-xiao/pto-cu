@@ -42,6 +42,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_diagnostic_decode_token_feedback",
     "qwen_device_decode_token_feedback",
     "qwen_resource_backed_unit_numeric_task_mode",
+    "qwen_resource_backed_external_rmsnorm_scale",
 ]
 
 

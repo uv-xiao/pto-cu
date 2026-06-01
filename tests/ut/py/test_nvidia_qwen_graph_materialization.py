@@ -206,7 +206,8 @@ def test_launch_packet_marks_unit_math_numeric_ready_tasks():
     )
 
     assert packet is not None
-    assert packet[0].scalar_arg_count == 0
+    assert packet[0].scalar_arg_count == 2
+    assert list(packet[0].scalar_args)[:2] == [1.0, 1.0]
     assert packet[1].scalar_arg_count == 1
     assert packet[1].scalar_args[0] == 1.0
     assert packet[2].scalar_arg_count == 3

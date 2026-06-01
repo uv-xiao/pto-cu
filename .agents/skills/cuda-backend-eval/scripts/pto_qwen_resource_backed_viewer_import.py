@@ -142,6 +142,9 @@ def build_result_records(
                     "numeric_ready_callable_count": len(
                         numeric_mode.get("numeric_ready_callables", []),
                     ),
+                    "external_scale_contract_count": len(
+                        numeric_mode.get("external_scale_contracts", []),
+                    ),
                     "decode_feedback_status": decode_feedback.get(
                         "status",
                         "not_recorded",

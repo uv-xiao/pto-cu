@@ -7,9 +7,11 @@ from typing import Any
 
 NUMERIC_TASK_MODES = ("diagnostic", "unit_math")
 UNIT_NUMERIC_CALLABLES = {
+    "qwen_rmsnorm_input",
     "qwen_attention_qkv",
     "qwen_mlp_gate_up",
 }
+UNIT_NUMERIC_RMSNORM_SCALE = 1.0
 
 
 def normalize_numeric_task_mode(mode: str) -> str:
@@ -108,6 +110,8 @@ def task_scalar_args(
             numeric_task_mode == "unit_math"
             and descriptor.get("callable") in UNIT_NUMERIC_CALLABLES
         ):
+            if descriptor.get("callable") == "qwen_rmsnorm_input":
+                return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, 0.0]
             return [1.0, 0.0, 0.0, 0.0]
         return [0.0, 0.0, 0.0, 0.0]
     return [
@@ -132,8 +136,18 @@ def numeric_task_mode_summary(mode: str) -> dict[str, Any]:
         "numeric_ready_callables": sorted(UNIT_NUMERIC_CALLABLES)
         if mode == "unit_math"
         else [],
+        "external_scale_contracts": [
+            {
+                "callable": "qwen_rmsnorm_input",
+                "scale_arg": "scalar_args[1]",
+                "scale": UNIT_NUMERIC_RMSNORM_SCALE,
+                "scope": "resource_backed_external_rmsnorm_scale",
+            },
+        ]
+        if mode == "unit_math"
+        else [],
         "scope": (
-            "resource_backed_unit_math_linear_branches"
+            "resource_backed_unit_math_external_scale_branches"
             if mode == "unit_math"
             else "diagnostic_resource_backed_formulas"
         ),
