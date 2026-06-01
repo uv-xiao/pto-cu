@@ -284,9 +284,35 @@ def test_resource_backed_logits_summary_marks_full_buffer_written_prefix_sampled
         [0.0, 3.5, -1.0, 2.0],
         logits_buffer_elements=4,
         written_element_count=4,
+        diagnostic_reference={
+            "status": "pass",
+            "scope": "diagnostic_qwen_logits_formula",
+            "checked_element_count": 4,
+            "max_abs_error": 0.0,
+        },
         top_k=1,
     )
 
     assert summary["coverage"] == "full_logits_buffer_prefix_sampled"
     assert summary["full_buffer_sampled"] is True
     assert summary["topk"] == [{"token_id": 1, "logit": 3.5}]
+    assert summary["diagnostic_reference"]["status"] == "pass"
+
+
+def test_diagnostic_logits_reference_compares_sampled_formula():
+    module = load_resource_graph_module()
+
+    reference = module.diagnostic_logits_reference_values(
+        hidden=[2.0, -3.0],
+        lm_head=[0.5, 2.0, 4.0, 8.0],
+        count=4,
+    )
+    comparison = module.compare_logits_reference(
+        [1.0, -6.0, 8.0, -24.0],
+        reference,
+    )
+
+    assert reference == [1.0, -6.0, 8.0, -24.0]
+    assert comparison["status"] == "pass"
+    assert comparison["scope"] == "diagnostic_qwen_logits_formula"
+    assert comparison["max_abs_error"] == 0.0

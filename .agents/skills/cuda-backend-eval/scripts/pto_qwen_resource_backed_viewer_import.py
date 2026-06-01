@@ -56,6 +56,7 @@ def build_result_records(
     for workload in execution["workloads"]:
         counters = workload["scheduler_counters"]
         logits_summary = workload.get("logits_summary", {})
+        diagnostic_reference = logits_summary.get("diagnostic_reference", {})
         topk = logits_summary.get("topk", [])
         repeat_runs = int(workload.get("repeat_runs", 1))
         completed_count = int(
@@ -126,12 +127,33 @@ def build_result_records(
                     "logits_summary_stable": bool(
                         workload.get("logits_summary_stable", False),
                     ),
+                    "diagnostic_logits_reference_status": (
+                        diagnostic_reference.get("status", "not_recorded")
+                    ),
+                    "diagnostic_logits_reference_checked_count": int(
+                        diagnostic_reference.get("checked_element_count", 0),
+                    ),
+                    "diagnostic_logits_reference_max_abs_error": float(
+                        diagnostic_reference.get("max_abs_error", 0.0),
+                    ),
                 },
                 "raw_artifact": raw_artifact,
-                "correctness": "pass" if workload["status"] == "pass" else "fail",
+                "correctness": correctness_status(workload, diagnostic_reference),
             }
         )
     return records
+
+
+def correctness_status(
+    workload: dict[str, Any],
+    diagnostic_reference: dict[str, Any],
+) -> str:
+    if workload["status"] != "pass":
+        return "fail"
+    reference_status = diagnostic_reference.get("status")
+    if reference_status in {None, "not_recorded", "not_checked"}:
+        return "pass"
+    return "pass" if reference_status == "pass" else "fail"
 
 
 def result_key(record: dict[str, Any]) -> tuple[str, str, str, str, str]:
@@ -180,6 +202,7 @@ def ensure_matrix_ref(
                 "repeat_runs",
                 "partial_logits_not_full_vocab",
                 "full_logits_buffer_prefix_sampled",
+                "diagnostic_qwen_logits_formula",
                 "logits_summary_stable",
             ],
         }
@@ -212,7 +235,8 @@ def ensure_matrix_ref(
                         "resource-backed execution, and repeated "
                         "resource-backed execution viewer_result_imports "
                         "with full-logits-buffer diagnostic writes and "
-                        "bounded-prefix sampling are present."
+                        "bounded-prefix diagnostic reference checks are "
+                        "present."
                     )
                     for phrase in (
                         "diagnostic proxy, unit-math, and descriptor-smoke "
@@ -228,6 +252,11 @@ def ensure_matrix_ref(
                         "resource-backed execution, and repeated "
                         "resource-backed execution viewer_result_imports "
                         "with partial-logits sampling are present.",
+                        "diagnostic proxy, unit-math, descriptor-smoke, "
+                        "resource-backed execution, and repeated "
+                        "resource-backed execution viewer_result_imports "
+                        "with full-logits-buffer diagnostic writes and "
+                        "bounded-prefix sampling are present.",
                     ):
                         action = action.replace(phrase, updated_phrase)
                     detail["action"] = action

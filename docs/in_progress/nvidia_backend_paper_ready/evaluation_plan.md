@@ -182,15 +182,17 @@ still remains unexecuted. The current live-owner smoke artifact is
 `tmp/cuda-backend/pto-serving-decode-loop-submission-smoke-live-2026-06-02/`
 `qwen-decode-loop-runner.json`, and the benchmark viewer imports it as
 `serving_coverage=diagnostic_qwen_descriptor_smoke`.
-The current resource-backed full-logits-write artifact is
-`tmp/cuda-backend/pto-serving-resource-backed-full-logits-write-2026-06-02/qwen-decode-loop-runner.json`.
+The current resource-backed logits-reference artifact is
+`tmp/cuda-backend/pto-serving-resource-backed-logits-reference-2026-06-02/qwen-decode-loop-runner.json`.
 It reuses one prepared callable inside the single CUDA context for three
 resource-backed submissions per serving policy, completing `765` diagnostic
 tasks per policy with zero scheduler errors. The final diagnostic logits task
 now writes all `2,430,976` logits-buffer elements per serving policy and
-records `full_logits_buffer_prefix_sampled` coverage with a bounded
-65,536-element prefix readback. This is still diagnostic execution, not full
-Qwen numerical correctness or a full-serving row.
+records `full_logits_buffer_prefix_sampled` coverage. It also checks 65,536
+sampled logits elements against the diagnostic formula
+`out[i]=hidden[i%hidden_elements]*lm_head[i&3]`, currently failing with max
+absolute error `0.00148231`. This is still diagnostic execution, not full Qwen
+numerical correctness or a full-serving row.
 The task-body source artifact in
 `examples/cuda/qwen_persistent_task_bodies.py` now renders Qwen persistent
 task bodies through the existing persistent DAG source generator. It records

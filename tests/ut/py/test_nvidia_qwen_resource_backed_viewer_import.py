@@ -56,6 +56,11 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                         "logits_buffer_elements": 2430976,
                         "sampled_element_count": 65536,
                         "topk": [{"token_id": 17, "logit": 2.5}],
+                        "diagnostic_reference": {
+                            "status": "pass",
+                            "checked_element_count": 65536,
+                            "max_abs_error": 0.0,
+                        },
                     },
                     "logits_summary_stable": True,
                 },
@@ -76,6 +81,11 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                         "logits_buffer_elements": 759680,
                         "sampled_element_count": 20480,
                         "topk": [{"token_id": 9, "logit": 1.25}],
+                        "diagnostic_reference": {
+                            "status": "pass",
+                            "checked_element_count": 20480,
+                            "max_abs_error": 0.0,
+                        },
                     },
                     "logits_summary_stable": True,
                 },
@@ -117,6 +127,61 @@ def test_resource_backed_importer_emits_diagnostic_rows():
         )
         assert isinstance(record["statistic"]["sampled_token_id"], int)
         assert record["statistic"]["logits_summary_stable"] is True
+        assert record["statistic"]["diagnostic_logits_reference_status"] == "pass"
+        assert (
+            record["statistic"]["diagnostic_logits_reference_checked_count"] > 0
+        )
+        assert (
+            record["statistic"]["diagnostic_logits_reference_max_abs_error"] == 0.0
+        )
+
+
+def test_resource_backed_importer_fails_failed_diagnostic_reference():
+    module = load_importer_module()
+    raw_payload = {
+        "resource_backed_execution": {
+            "status": "pass",
+            "device": {"arch": "compute_80"},
+            "context_policy": "one_cuda_context_for_all_resource_owners",
+            "workloads": [
+                {
+                    "workload_id": "mpk_offline_decode",
+                    "status": "pass",
+                    "run_prepared_status": 0,
+                    "graph_task_count": 255,
+                    "timing_ns": {"host_wall": 11, "device_wall": 7},
+                    "scheduler_counters": {
+                        "completed_count": 255,
+                        "error_count": 0,
+                        "scheduler_processed_count": 255,
+                    },
+                    "logits_summary": {
+                        "coverage": "full_logits_buffer_prefix_sampled",
+                        "written_element_count": 2430976,
+                        "logits_buffer_elements": 2430976,
+                        "sampled_element_count": 65536,
+                        "topk": [{"token_id": 17, "logit": 2.5}],
+                        "diagnostic_reference": {
+                            "status": "fail",
+                            "checked_element_count": 65536,
+                            "max_abs_error": 0.001,
+                        },
+                    },
+                },
+            ],
+        },
+    }
+
+    records = module.build_result_records(
+        raw_payload,
+        raw_artifact="tmp/cuda-backend/resource-backed-ref.json",
+        commit="abc1234",
+    )
+
+    assert records[0]["correctness"] == "fail"
+    assert (
+        records[0]["statistic"]["diagnostic_logits_reference_status"] == "fail"
+    )
 
 
 def test_resource_backed_importer_adds_matrix_ref():
@@ -168,6 +233,9 @@ def test_resource_backed_importer_adds_matrix_ref():
     assert "partial_logits_not_full_vocab" in claim[
         "current_evidence_refs"
     ][1]["symbols"]
+    assert "diagnostic_qwen_logits_formula" in claim[
+        "current_evidence_refs"
+    ][1]["symbols"]
     assert (
         len(
             [
@@ -217,7 +285,12 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
     )
     assert all(row["statistic"]["completed_count"] in {255, 765} for row in rows)
     assert all(row["statistic"]["error_count"] == 0 for row in rows)
-    assert all(row["correctness"] == "pass" for row in rows)
+    assert any(row["correctness"] == "pass" for row in rows)
+    assert any(
+        row["correctness"] == "fail"
+        and row["statistic"].get("diagnostic_logits_reference_status") == "fail"
+        for row in rows
+    )
     assert all(
         row["statistic"].get("logits_coverage")
         in {

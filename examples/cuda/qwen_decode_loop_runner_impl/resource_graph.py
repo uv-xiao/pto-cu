@@ -141,11 +141,45 @@ class MaterializedGraph:
         host = (ctypes.c_float * sampled_elements)(*([0.0] * sampled_elements))
         ptr = int(workspace["logits_buffer"]["device_ptr_hex"], 0)
         self.copy_from_device(host, ptr, "logits_prefix")
+        values = [float(value) for value in host]
+        final_task = self.packet[self.task_count - 1]
         return summarize_logits_values(
-            [float(value) for value in host],
+            values,
             logits_buffer_elements=int(workspace["logits_buffer"]["element_count"]),
             written_element_count=written_elements,
+            diagnostic_reference=self.diagnostic_logits_reference(
+                final_task=final_task,
+                values=values,
+            ),
         )
+
+    def diagnostic_logits_reference(
+        self,
+        *,
+        final_task: Any,
+        values: list[float],
+    ) -> dict[str, Any]:
+        hidden_elements = int(final_task.scalar_args[1])
+        if hidden_elements <= 0 or not final_task.a or not final_task.tensor_args[0]:
+            return {
+                "status": "not_checked",
+                "reason": "missing_hidden_or_weight_pointer",
+            }
+        checked = min(len(values), hidden_elements)
+        hidden = (ctypes.c_float * checked)(*([0.0] * checked))
+        lm_head = (ctypes.c_float * 4)(0.0, 0.0, 0.0, 0.0)
+        self.copy_from_device(hidden, int(final_task.a), "diagnostic_logits_hidden")
+        self.copy_from_device(
+            lm_head,
+            int(final_task.tensor_args[0]),
+            "diagnostic_logits_lm_head",
+        )
+        reference = diagnostic_logits_reference_values(
+            hidden=[float(value) for value in hidden],
+            lm_head=[float(value) for value in lm_head],
+            count=checked,
+        )
+        return compare_logits_reference(values[:checked], reference)
 
 
 def logits_written_elements(workspace: dict[str, Any]) -> int:
@@ -157,6 +191,7 @@ def summarize_logits_values(
     *,
     logits_buffer_elements: int,
     written_element_count: int,
+    diagnostic_reference: dict[str, Any] | None = None,
     top_k: int = 5,
 ) -> dict[str, Any]:
     finite_values = [
@@ -188,4 +223,42 @@ def summarize_logits_values(
             for index, value in ranked
         ],
         "sample_checksum": round(float(checksum), 6),
+        "diagnostic_reference": diagnostic_reference
+        or {"status": "not_checked", "reason": "not_requested"},
+    }
+
+
+def diagnostic_logits_reference_values(
+    *,
+    hidden: list[float],
+    lm_head: list[float],
+    count: int,
+) -> list[float]:
+    hidden_count = max(1, len(hidden))
+    return [
+        hidden[index % hidden_count] * lm_head[index & 3]
+        for index in range(count)
+    ]
+
+
+def compare_logits_reference(
+    values: list[float],
+    reference: list[float],
+    *,
+    tolerance: float = 1e-5,
+) -> dict[str, Any]:
+    errors = [
+        abs(value - expected)
+        for value, expected in zip(values, reference, strict=True)
+    ]
+    max_abs_error = max(errors, default=0.0)
+    mismatch_count = sum(1 for error in errors if error > tolerance)
+    return {
+        "status": "pass" if mismatch_count == 0 else "fail",
+        "scope": "diagnostic_qwen_logits_formula",
+        "formula": "out[i]=hidden[i%hidden_elements]*lm_head[i&3]",
+        "checked_element_count": len(values),
+        "tolerance": tolerance,
+        "max_abs_error": round(float(max_abs_error), 8),
+        "mismatch_count": mismatch_count,
     }
