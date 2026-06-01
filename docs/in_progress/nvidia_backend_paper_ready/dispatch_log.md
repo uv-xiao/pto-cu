@@ -3065,3 +3065,38 @@ Each entry must include:
   setup evidence in the same viewer path as vLLM. Continue from step `3` to
   install `tmp/baselines/sglang/python[all]`, then validate imports and run the
   serving/offline/one-batch benchmarks.
+
+### 2026-06-01 - SGLang H200 Environment Validation
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned continuation
+  of the SGLang H200 isolated environment setup and validation slice.
+- Exact Codex command or script invocation: ran
+  `PYTHONPATH=$PWD:$PWD/python python3 .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py --baseline sglang --start-step 3 --max-steps 1 --attempt-id-suffix h200_step03 --output-root tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step03 --timeout-seconds 1800 --commit df219d33`,
+  then ran
+  `PYTHONPATH=$PWD:$PWD/python python3 .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py --baseline sglang --start-step 4 --max-steps 6 --attempt-id-suffix h200_step04_09 --output-root tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09 --timeout-seconds 300 --commit df219d33`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready SGLang
+  serving-baseline environment setup.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer environment-attempt data,
+  changelog docs, dispatch log, tests, and local `tmp/` SGLang attempt
+  artifacts. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  This validates the SGLang environment only; server launch and benchmark raw
+  JSON are still separate work.
+- Verification commands and results:
+  H200 environment artifact
+  `tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step03/`
+  -> step `3` editable install passed in `147.943 s`;
+  `tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/`
+  -> steps `4` through `9` all passed, validating imports for `sglang`,
+  `orjson`, `torchvision`, `sglang.bench_serving`,
+  `sglang.bench_offline_throughput`, and `sglang.bench_one_batch`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: SGLang now has a passing isolated H200
+  environment and benchmark-module import evidence. The next slice should run
+  SGLang server launch, serving benchmark, offline throughput, and one-batch
+  captures under the shared Qwen3-8B workload policy.

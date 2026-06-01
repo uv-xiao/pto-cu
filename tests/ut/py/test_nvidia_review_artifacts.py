@@ -3455,6 +3455,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vllm_environment_attempt_840a847f_h200_full",
         "vllm_environment_attempt_840a847f_h200_validation",
         "sglang_environment_attempt_1cbb7b83_h200_step01_02",
+        "sglang_environment_attempt_df219d33_h200_step03",
+        "sglang_environment_attempt_df219d33_h200_step04_09",
     } <= set(environment_attempts_by_id)
     assert (
         environment_attempts_by_id[
@@ -3490,6 +3492,50 @@ def test_benchmark_viewer_has_json_backed_review_data():
         step["command"].startswith(("python3 -m venv", "env PYTHONNOUSERSITE=1"))
         for step in sglang_h200_attempt["steps"]
     )
+    sglang_h200_install = environment_attempts_by_id[
+        "sglang_environment_attempt_df219d33_h200_step03"
+    ]
+    assert sglang_h200_install["status"] == "partial"
+    assert sglang_h200_install["paper_baseline_id"] == "sglang"
+    assert sglang_h200_install["start_step"] == 3
+    assert sglang_h200_install["end_step"] == 3
+    assert sglang_h200_install["steps_completed"] == 1
+    assert sglang_h200_install["steps_total"] == 9
+    assert sglang_h200_install["steps"][0]["status"] == "pass"
+    assert "python[all]" in sglang_h200_install["steps"][0]["command"]
+    sglang_h200_validation = environment_attempts_by_id[
+        "sglang_environment_attempt_df219d33_h200_step04_09"
+    ]
+    assert sglang_h200_validation["status"] == "pass"
+    assert sglang_h200_validation["paper_baseline_id"] == "sglang"
+    assert sglang_h200_validation["start_step"] == 4
+    assert sglang_h200_validation["end_step"] == 9
+    assert sglang_h200_validation["steps_completed"] == 6
+    assert sglang_h200_validation["steps_total"] == 9
+    assert not sglang_h200_validation["blocker"]
+    assert [step["status"] for step in sglang_h200_validation["steps"]] == [
+        "pass",
+        "pass",
+        "pass",
+        "pass",
+        "pass",
+        "pass",
+    ]
+    validation_commands = [
+        step["command"] for step in sglang_h200_validation["steps"]
+    ]
+    for module_name in (
+        "sglang",
+        "orjson",
+        "torchvision",
+        "sglang.bench_serving",
+        "sglang.bench_offline_throughput",
+        "sglang.bench_one_batch",
+    ):
+        assert any(
+            f"importlib.import_module('{module_name}')" in command
+            for command in validation_commands
+        )
     vllm_h200_attempt = attempts_by_id["vllm_qwen3_8b_vdcores_batch1_h200"]
     assert vllm_h200_attempt["status"] == "partial"
     assert vllm_h200_attempt["hardware"]["gpu"] == "H200"
