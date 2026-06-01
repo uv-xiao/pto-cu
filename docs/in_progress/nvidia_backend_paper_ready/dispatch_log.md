@@ -3251,3 +3251,53 @@ Each entry must include:
   the one-batch synthetic-input path and then add repeated samples for
   variance before upgrading SGLang from partial evidence to a paper-ready
   baseline.
+
+### 2026-06-01 - SGLang Fixed-Range H200 Repeats
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned SGLang
+  repeated sample capture and import.
+- Exact Codex command or script invocation: used the documented tree-sync
+  fallback to refresh the remote standalone checkout on `bizhaoh200`, started
+  one SGLang `Qwen/Qwen3-8B` server on `CUDA_VISIBLE_DEVICES=0` with
+  `bfloat16`, `--context-length 256`, and
+  `--disable-piecewise-cuda-graph`, then ran three
+  `sglang.bench_serving` repeats for batches `1`, `2`, `4`, `8`, and `16`
+  with `--dataset-name random-ids`, `--tokenize-prompt`,
+  `--random-range-ratio 1.0`, prompt length `128`, output length `64`,
+  `max_concurrency=batch`, and `request_rate=inf`. After stopping the server,
+  ran three `sglang.bench_offline_throughput` repeats for the same batch
+  ladder with `--context-length 384`, `--skip-warmup`, and a local
+  ShareGPT-shaped seed file. Imported the aggregate raw JSON with
+  `paper_baseline_results_update.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready SGLang
+  serving-baseline execution.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: paper-baseline importer metric preservation,
+  benchmark-viewer result data, benchmark-viewer execution-attempt data,
+  generated paper-readiness data, changelog docs, dispatch log, tests, and
+  local `tmp/` SGLang serving repeat artifacts. No upstream repositories were
+  edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The SGLang online/offline batch ladder now has three samples for each batch,
+  but `bench_one_batch` remains unresolved and final paper claims still need
+  matching PTO persistent-device, MPK, VDCores, and vLLM serving-policy
+  evidence.
+- Verification commands and results: artifact
+  `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/`
+  -> `server_ready_status=0`, all 15 online statuses `0`, and all 15 offline
+  statuses `0`. Online output throughput means were `161.02159972046658`,
+  `308.03817224015523`, `597.9727093342293`, `1194.254514947911`, and
+  `2171.7566025420783` tok/s for batches `1`, `2`, `4`, `8`, and `16`.
+  Offline output throughput means were `156.19079316906286`,
+  `288.1244764888034`, `554.4822850296894`, `1136.0633983460384`, and
+  `1784.4900809591322` tok/s; the batch-16 offline row preserves raw samples
+  `2167.286434107662`, `2237.551058756805`, and `948.6327500129296` tok/s.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: next SGLang work should fix or bypass
+  the one-batch synthetic-input path, then align SGLang repeated rows with
+  matching PTO persistent-device, MPK, VDCores, and vLLM serving-policy
+  evidence before treating the serving baseline as paper-ready.

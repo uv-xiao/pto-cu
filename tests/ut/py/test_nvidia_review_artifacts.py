@@ -1154,6 +1154,11 @@ def test_paper_baseline_results_update_marks_imported_run(tmp_path):
                     "host_wall_ns": 900000,
                     "device_wall_ns": 700000,
                     "scheduler_overhead_ns": 42000,
+                    "throughput_tokens_per_s": 12.5,
+                    "throughput_tokens_per_s_stdev": 1.25,
+                    "throughput_tokens_per_s_samples": [11.0, 12.5, 14.0],
+                    "completed_requests": 3,
+                    "failed_requests": 0,
                     "dispatch_trace": {"task_count": 9},
                     "resource_policy": {
                         "scheduler_blocks": 3,
@@ -1210,6 +1215,14 @@ def test_paper_baseline_results_update_marks_imported_run(tmp_path):
     assert len(viewer_records) == 1
     assert viewer_records[0]["method_id"] == "mpk"
     assert viewer_records[0]["statistic"]["scheduler_overhead_ns"] == 42000
+    assert viewer_records[0]["statistic"]["throughput_tokens_per_s_stdev"] == 1.25
+    assert viewer_records[0]["statistic"]["throughput_tokens_per_s_samples"] == [
+        11.0,
+        12.5,
+        14.0,
+    ]
+    assert viewer_records[0]["statistic"]["completed_requests"] == 3
+    assert viewer_records[0]["statistic"]["failed_requests"] == 0
 
     updated_results = json.loads(results_path.read_text(encoding="utf-8"))
     assert any(
@@ -2510,7 +2523,6 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "mpk_qwen3_native_vs_persistent",
         "vdcores_llama_decode_correctness",
         "vllm_serving_and_throughput",
-        "sglang_serving_and_offline",
     } <= llm_readiness_ids
     assert "thunderkittens_decode_attention_tile" not in llm_readiness_ids
     assert not any(
@@ -2638,12 +2650,12 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 10
+    assert committed["summary"]["total_work_items"] == 8
     assert committed["summary"]["work_items_by_source"] == {
-        "execution_attempt": 2,
+        "execution_attempt": 1,
         "matrix_missing_evidence": 3,
         "probe": 2,
-        "run_readiness": 3,
+        "run_readiness": 2,
     }
     work_items = committed["work_items"]
     assert all(not item["ready_for_paper_claim"] for item in work_items)
@@ -2688,14 +2700,11 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and "repeated samples for variance" in item["action"]
         for item in work_items
     )
-    assert any(
+    assert not any(
         item["claim_id"] == "llm_serving_paper_baselines"
         and item["source"] == "execution_attempt"
         and item["paper_baseline_id"] == "sglang"
         and item["paper_baseline_run_id"] == "sglang_serving_and_offline"
-        and item["execution_attempt_id"]
-        == "sglang_qwen3_8b_vdcores_fixedrange_sweep_h200"
-        and "repeated samples are not captured" in item["action"]
         for item in work_items
     )
 
@@ -2731,7 +2740,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 10
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 8
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -3475,6 +3484,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "sglang_qwen3_8b_vdcores_batch1_randomids_h200",
         "sglang_qwen3_8b_vdcores_batch1_fixedrange_h200",
         "sglang_qwen3_8b_vdcores_fixedrange_sweep_h200",
+        "sglang_qwen3_8b_vdcores_fixedrange_repeats_h200",
     } <= set(attempts_by_id)
     environment_attempts = paper_baseline_environment_attempts[
         "paper_baseline_environment_attempts"
@@ -3627,6 +3637,33 @@ def test_benchmark_viewer_has_json_backed_review_data():
     ) == {2, 4, 8, 16}
     assert "batch 2/4/8/16" in sglang_sweep_attempt["blocker"]
     assert "repeated samples are not captured" in sglang_sweep_attempt["blocker"]
+    sglang_repeats_attempt = attempts_by_id[
+        "sglang_qwen3_8b_vdcores_fixedrange_repeats_h200"
+    ]
+    assert sglang_repeats_attempt["status"] == "partial"
+    assert sglang_repeats_attempt["summary"]["batches"] == [1, 2, 4, 8, 16]
+    assert sglang_repeats_attempt["summary"]["sample_count_per_batch"] == 3
+    assert sglang_repeats_attempt["summary"]["prompt_tokens_per_request"] == 128
+    assert sglang_repeats_attempt["summary"]["decode_tokens_per_request"] == 64
+    assert sglang_repeats_attempt["summary"]["batch_ladder_measured"]
+    assert sglang_repeats_attempt["summary"]["repeated_samples_measured"]
+    assert sglang_repeats_attempt["summary"]["serving_latency_measured"]
+    assert sglang_repeats_attempt["summary"]["offline_throughput_measured"]
+    assert not sglang_repeats_attempt["summary"]["one_batch_measured"]
+    assert sglang_repeats_attempt["summary"]["viewer_result_imported"]
+    assert (
+        sglang_repeats_attempt["summary"][
+            "online_output_tokens_per_second_mean_by_batch"
+        ]["16"]
+        == 2171.7566025420783
+    )
+    assert (
+        sglang_repeats_attempt["summary"][
+            "offline_output_tokens_per_second_stdev_by_batch"
+        ]["16"]
+        == 724.7257327028299
+    )
+    assert "bench_one_batch still fails" in sglang_repeats_attempt["blocker"]
     vllm_h200_attempt = attempts_by_id["vllm_qwen3_8b_vdcores_batch1_h200"]
     assert vllm_h200_attempt["status"] == "partial"
     assert vllm_h200_attempt["hardware"]["gpu"] == "H200"
@@ -5015,6 +5052,62 @@ def test_benchmark_viewer_has_json_backed_review_data():
         ]["statistic"]["throughput_tokens_per_s"]
         == 2170.7243728274034
     )
+    sglang_repeat_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "sglang"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/paper-baselines/serving-runs/sglang/"
+        "h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/"
+    ]
+    assert len(sglang_repeat_records) == 10
+    assert {
+        record["statistic"]["batch_size"] for record in sglang_repeat_records
+    } == {1, 2, 4, 8, 16}
+    assert {
+        record["statistic"]["sample_count"] for record in sglang_repeat_records
+    } == {3}
+    assert {
+        record["statistic"]["prompt_tokens"] for record in sglang_repeat_records
+    } == {128}
+    assert {
+        record["statistic"]["decode_tokens"] for record in sglang_repeat_records
+    } == {64}
+    assert all(
+        record["statistic"]["completed_requests"]
+        == record["statistic"]["batch_size"]
+        and record["statistic"]["failed_requests"] == 0
+        and record["statistic"]["throughput_tokens_per_s"] > 0
+        and record["statistic"]["throughput_tokens_per_s_stdev"] >= 0
+        and len(record["statistic"]["throughput_tokens_per_s_samples"]) == 3
+        and record["correctness"] == "pass"
+        for record in sglang_repeat_records
+    )
+    sglang_repeat_by_mode_batch = {
+        (record["statistic"]["kind"], record["statistic"]["batch_size"]): record
+        for record in sglang_repeat_records
+    }
+    assert (
+        sglang_repeat_by_mode_batch[
+            ("paper_baseline_serving_repeat_capture", 16)
+        ]["statistic"]["throughput_tokens_per_s"]
+        == 2171.7566025420783
+    )
+    assert (
+        sglang_repeat_by_mode_batch[
+            ("paper_baseline_offline_repeat_capture", 16)
+        ]["statistic"]["throughput_tokens_per_s_stdev"]
+        == 724.7257327028299
+    )
+    assert sglang_repeat_by_mode_batch[
+        ("paper_baseline_offline_repeat_capture", 16)
+    ]["statistic"]["throughput_tokens_per_s_samples"] == [
+        2167.286434107662,
+        2237.551058756805,
+        948.6327500129296,
+    ]
     vllm_h200_sweep_records = [
         record
         for record in results["result_records"]

@@ -280,7 +280,7 @@
       "paper_baseline_id": "sglang",
       "paper_evaluation_id": "llm_serving_paper_baselines",
       "title": "SGLang Serving And Offline Throughput",
-      "status": "planned_not_run",
+      "status": "imported_to_viewer",
       "hardware_targets": [
         "H200"
       ],
@@ -304,10 +304,14 @@
         "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path <model>"
       ],
       "expected_artifacts": [
-        "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
-        "tmp/cuda-backend/paper-baselines/sglang/bench-serving.json",
-        "tmp/cuda-backend/paper-baselines/sglang/offline-throughput.json",
-        "tmp/cuda-backend/paper-baselines/sglang/one-batch.json"
+        "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/paper-baseline-results.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/viewer-result-records.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/attempt-summary.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/status-summary.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/bench-serving-r1-batch1.jsonl",
+        "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/bench-serving-r3-batch16.jsonl",
+        "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/offline-throughput-r1-batch1.jsonl",
+        "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/offline-throughput-r3-batch16.jsonl"
       ],
       "required_metrics": [
         "correctness",
@@ -322,7 +326,7 @@
       "import_target": {
         "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
         "result_kind": "paper_baseline_result_record",
-        "notes": "Importer must preserve the SGLang server command, model, prompt shape, output length, and concurrency policy."
+        "notes": "Importer preserves the SGLang server command, model, prompt shape, output length, concurrency policy, repeat sample count, throughput variance, and raw throughput samples."
       }
     },
     {

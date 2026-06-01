@@ -255,16 +255,20 @@
         {
           "id": "sglang_serving_and_offline",
           "paper_baseline_id": "sglang",
-          "status": "planned_not_run",
+          "status": "imported_to_viewer",
           "serving_workload_ids": [
             "mpk_offline_decode",
             "vdcores_offline_decode"
           ],
           "expected_artifacts": [
-            "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
-            "tmp/cuda-backend/paper-baselines/sglang/bench-serving.json",
-            "tmp/cuda-backend/paper-baselines/sglang/offline-throughput.json",
-            "tmp/cuda-backend/paper-baselines/sglang/one-batch.json"
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/paper-baseline-results.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/viewer-result-records.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/attempt-summary.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/status-summary.txt",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/bench-serving-r1-batch1.jsonl",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/bench-serving-r3-batch16.jsonl",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/offline-throughput-r1-batch1.jsonl",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/offline-throughput-r3-batch16.jsonl"
           ]
         },
         {
@@ -289,7 +293,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cfbdcf0c/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-eb75a235/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -297,7 +301,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cfbdcf0c/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-eb75a235/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -307,19 +311,9 @@
           "paper_baseline_run_id": "vllm_serving_and_throughput",
           "paper_baseline_id": "vllm",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cfbdcf0c/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-eb75a235/",
           "blocking_gaps": [
             "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; A100: python_import failed: vllm.entrypoints.openai.api_server; A100: python_import failed: vllm.engine.arg_utils; H200: python_module failed: vllm; H200: python_import failed: vllm.entrypoints.openai.api_server; H200: python_import failed: vllm.engine.arg_utils."
-          ],
-          "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
-        },
-        {
-          "paper_baseline_run_id": "sglang_serving_and_offline",
-          "paper_baseline_id": "sglang",
-          "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-cfbdcf0c/",
-          "blocking_gaps": [
-            "Readiness probe sglang_source_entrypoints is partial: A100: python_module failed: orjson; A100: python_module failed: torchvision; A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_module failed: orjson; H200: python_module failed: torchvision; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }
@@ -433,77 +427,6 @@
               "repeat samples for variance and confidence intervals",
               "capture MPK serving policy under the same workload",
               "compare against PTO persistent-device once the matching runner exists"
-            ]
-          }
-        },
-        {
-          "paper_baseline_run_id": "sglang_serving_and_offline",
-          "paper_baseline_id": "sglang",
-          "execution_attempt_id": "sglang_qwen3_8b_vdcores_fixedrange_sweep_h200",
-          "title": "SGLang Qwen3 8B VDCores Fixed-Range Batch Sweep",
-          "status": "partial",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/",
-          "blocker": "Online serving and offline engine throughput for batch 2/4/8/16 are imported as partial SGLang viewer results, but the run remains partial because bench_one_batch still fails before emitting a latency row and repeated samples are not captured.",
-          "summary": {
-            "mode": "sglang_bench_serving_and_offline_vdcores_fixedrange_sweep",
-            "model": "Qwen/Qwen3-8B",
-            "offline_cache_used": true,
-            "remote_refresh_path": "tree sync fallback",
-            "pto_commit": "cfbdcf0c",
-            "prompt_tokens_per_request": 128,
-            "decode_tokens_per_request": 64,
-            "batches": [
-              2,
-              4,
-              8,
-              16
-            ],
-            "status_codes": {
-              "server_ready_status": "0",
-              "bench_serving_batch2_status": "0",
-              "offline_batch2_status": "0",
-              "bench_serving_batch4_status": "0",
-              "offline_batch4_status": "0",
-              "bench_serving_batch8_status": "0",
-              "offline_batch8_status": "0",
-              "bench_serving_batch16_status": "0",
-              "offline_batch16_status": "0"
-            },
-            "online_output_tokens_per_second_by_batch": {
-              "2": 173.9169706505443,
-              "4": 484.47103616685513,
-              "8": 1177.5193163104066,
-              "16": 1793.5576766141346
-            },
-            "offline_output_tokens_per_second_by_batch": {
-              "2": 288.98312805396284,
-              "4": 562.3668373531619,
-              "8": 1141.1108121634202,
-              "16": 2170.7243728274034
-            },
-            "online_completed_requests_by_batch": {
-              "2": 2,
-              "4": 4,
-              "8": 8,
-              "16": 16
-            },
-            "offline_successful_requests_by_batch": {
-              "2": 2,
-              "4": 4,
-              "8": 8,
-              "16": 16
-            },
-            "serving_latency_measured": true,
-            "offline_throughput_measured": true,
-            "one_batch_measured": false,
-            "batch_ladder_measured": true,
-            "repeated_samples_measured": false,
-            "paper_target_model_measured": true,
-            "h200_measured": true,
-            "viewer_result_imported": true,
-            "remaining_paper_gaps": [
-              "resolve bench_one_batch input_ids None failure",
-              "add repeated samples for variance and confidence intervals"
             ]
           }
         }
@@ -621,14 +544,11 @@
         "Paper baseline run mpk_qwen3_native_vs_persistent is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vdcores_llama_decode_correctness is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vllm_serving_and_throughput is planned_not_run, not imported_to_viewer.",
-        "Paper baseline run sglang_serving_and_offline is planned_not_run, not imported_to_viewer.",
         "Readiness probe for vllm is partial.",
         "Readiness probe for sglang is partial.",
         "Run readiness vdcores_llama_decode_correctness is partial: HF_TOKEN is not available for this run.",
         "Run readiness vllm_serving_and_throughput is partial: Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; A100: python_import failed: vllm.entrypoints.openai.api_server; A100: python_import failed: vllm.engine.arg_utils; H200: python_module failed: vllm; H200: python_import failed: vllm.entrypoints.openai.api_server; H200: python_import failed: vllm.engine.arg_utils.",
-        "Run readiness sglang_serving_and_offline is partial: Readiness probe sglang_source_entrypoints is partial: A100: python_module failed: orjson; A100: python_module failed: torchvision; A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_module failed: orjson; H200: python_module failed: torchvision; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch.",
-        "Latest execution attempt vllm_qwen3_8b_mpk_sweep_h200 for vllm_serving_and_throughput is partial: The MPK-comparable vLLM batch sweep is captured, but the full paper baseline still needs repeated samples for variance, a matching MPK serving-policy comparison, and PTO persistent-device comparison under the same Qwen3-8B workload.",
-        "Latest execution attempt sglang_qwen3_8b_vdcores_fixedrange_sweep_h200 for sglang_serving_and_offline is partial: Online serving and offline engine throughput for batch 2/4/8/16 are imported as partial SGLang viewer results, but the run remains partial because bench_one_batch still fails before emitting a latency row and repeated samples are not captured."
+        "Latest execution attempt vllm_qwen3_8b_mpk_sweep_h200 for vllm_serving_and_throughput is partial: The MPK-comparable vLLM batch sweep is captured, but the full paper baseline still needs repeated samples for variance, a matching MPK serving-policy comparison, and PTO persistent-device comparison under the same Qwen3-8B workload."
       ],
       "next_actions": [
         {
@@ -651,27 +571,12 @@
           "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
         {
-          "source": "run_readiness",
-          "paper_baseline_id": "sglang",
-          "paper_baseline_run_id": "sglang_serving_and_offline",
-          "status": "partial",
-          "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
-        },
-        {
           "source": "execution_attempt",
           "paper_baseline_id": "vllm",
           "paper_baseline_run_id": "vllm_serving_and_throughput",
           "execution_attempt_id": "vllm_qwen3_8b_mpk_sweep_h200",
           "status": "partial",
           "action": "Resolve latest execution attempt vllm_qwen3_8b_mpk_sweep_h200 before importing vllm_serving_and_throughput. Diagnostic blocker: The MPK-comparable vLLM batch sweep is captured, but the full paper baseline still needs repeated samples for variance, a matching MPK serving-policy comparison, and PTO persistent-device comparison under the same Qwen3-8B workload."
-        },
-        {
-          "source": "execution_attempt",
-          "paper_baseline_id": "sglang",
-          "paper_baseline_run_id": "sglang_serving_and_offline",
-          "execution_attempt_id": "sglang_qwen3_8b_vdcores_fixedrange_sweep_h200",
-          "status": "partial",
-          "action": "Resolve latest execution attempt sglang_qwen3_8b_vdcores_fixedrange_sweep_h200 before importing sglang_serving_and_offline. Diagnostic blocker: Online serving and offline engine throughput for batch 2/4/8/16 are imported as partial SGLang viewer results, but the run remains partial because bench_one_batch still fails before emitting a latency row and repeated samples are not captured."
         },
         {
           "source": "probe",

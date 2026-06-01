@@ -17,9 +17,17 @@ DEFAULT_METHODS = VIEWER_DATA / "methods.json"
 OPTIONAL_NUMERIC_METRICS = (
     "end_to_end_latency_ns",
     "time_to_first_token_ns",
+    "time_to_first_token_stdev_ns",
     "inter_token_latency_ns",
+    "inter_token_latency_stdev_ns",
+    "time_per_output_token_ns",
     "throughput_tokens_per_s",
+    "throughput_tokens_per_s_stdev",
+    "throughput_tokens_per_s_min",
+    "throughput_tokens_per_s_max",
     "throughput",
+    "total_token_throughput_tokens_per_s",
+    "last_gen_throughput_tokens_per_s",
     "attention_flops",
     "scheduler_overhead_ns",
     "queue_wait_ns",
@@ -31,6 +39,17 @@ OPTIONAL_NUMERIC_METRICS = (
     "batch_size",
     "prompt_tokens",
     "decode_tokens",
+    "completed_requests",
+    "failed_requests",
+    "max_concurrent_requests",
+    "total_input_tokens",
+    "total_output_tokens",
+    "end_to_end_latency_stdev_ns",
+    "p50_output_throughput_tokens_per_s",
+    "p90_output_throughput_tokens_per_s",
+    "p99_output_throughput_tokens_per_s",
+    "p99_ttft_ns",
+    "p99_itl_ns",
 )
 OPTIONAL_STRUCTURED_METRICS = (
     "dispatch_trace",
@@ -38,6 +57,8 @@ OPTIONAL_STRUCTURED_METRICS = (
     "queue_pressure",
     "task_registry",
     "generated_kernel_metadata",
+    "throughput_tokens_per_s_samples",
+    "last_gen_throughput_tokens_per_s_samples",
 )
 
 
