@@ -6,12 +6,20 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[4]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from viewer_data_io import load_json as load_viewer_json
+from viewer_data_io import write_json as write_viewer_json
+
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 DEFAULT_PLANS = VIEWER_DATA / "paper_baseline_environment_plans.json"
 DEFAULT_OUTPUT_ROOT = (
@@ -39,6 +47,26 @@ def load_json(path: Path) -> dict[str, Any]:
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n")
+
+
+def is_viewer_output(path: Path) -> bool:
+    return (
+        path.resolve().parent == VIEWER_DATA.resolve()
+        or path.with_suffix("").is_dir()
+    )
+
+
+def load_viewer_output(path: Path) -> dict[str, Any]:
+    if is_viewer_output(path):
+        return load_viewer_json(path)
+    return load_json(path)
+
+
+def write_viewer_output(path: Path, payload: dict[str, Any]) -> None:
+    if is_viewer_output(path):
+        write_viewer_json(path, payload)
+        return
+    write_json(path, payload)
 
 
 def repo_relative(path: Path) -> str:
@@ -265,9 +293,9 @@ def build_attempt(
 
 
 def append_viewer_attempts(viewer_output: Path, payload: dict[str, Any]) -> dict[str, Any]:
-    if not viewer_output.is_file():
+    if not viewer_output.is_file() and not viewer_output.with_suffix("").is_dir():
         return payload
-    existing = load_json(viewer_output)
+    existing = load_viewer_output(viewer_output)
     existing_records = existing.get("paper_baseline_environment_attempts")
     new_records = payload.get("paper_baseline_environment_attempts")
     if not isinstance(existing_records, list) or not isinstance(new_records, list):
@@ -321,7 +349,7 @@ def main() -> None:
     )
     if args.append_viewer:
         payload = append_viewer_attempts(args.viewer_output, payload)
-    write_json(args.viewer_output, payload)
+    write_viewer_output(args.viewer_output, payload)
     print(f"wrote {repo_relative(output_root / 'environment-attempt.json')}")
 
 

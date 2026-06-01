@@ -1,0 +1,51 @@
+{
+  "id": "vllm_environment_attempt_94ba2e06",
+  "paper_baseline_id": "vllm",
+  "environment_plan_id": "vllm_runtime_environment",
+  "title": "vLLM Isolated Runtime Environment setup attempt",
+  "status": "partial",
+  "environment_path": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-94ba2e06/",
+  "start_step": 1,
+  "end_step": 3,
+  "steps_completed": 3,
+  "steps_total": 11,
+  "steps": [
+    {
+      "index": 1,
+      "kind": "install",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 2.617,
+      "command": "python3 -m venv --system-site-packages tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-94ba2e06/step-01.log"
+    },
+    {
+      "index": 2,
+      "kind": "install",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 2.844,
+      "command": "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --upgrade pip setuptools wheel",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-94ba2e06/step-02.log"
+    },
+    {
+      "index": 3,
+      "kind": "install",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 1.105,
+      "command": "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install uvloop",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-94ba2e06/step-03.log"
+    }
+  ],
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-94ba2e06/step-01.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-94ba2e06/step-02.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-94ba2e06/step-03.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-94ba2e06/environment-attempt.json"
+  ],
+  "blocker": "bounded attempt stopped at step 3 of 11 environment steps",
+  "observation": "Bounded environment setup attempt captured command logs and JSON evidence under tmp/.",
+  "next_action": "Continue the remaining install and validation steps before serving benchmark execution."
+}

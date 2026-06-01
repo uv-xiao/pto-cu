@@ -1,0 +1,41 @@
+{
+  "id": "vllm_environment_attempt_460a34ba_step06_overlay_preflight",
+  "paper_baseline_id": "vllm",
+  "environment_plan_id": "vllm_runtime_environment",
+  "title": "vLLM Isolated Runtime Environment setup attempt",
+  "status": "partial",
+  "environment_path": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-460a34ba-step06-overlay-preflight/",
+  "start_step": 6,
+  "end_step": 7,
+  "steps_completed": 2,
+  "steps_total": 12,
+  "steps": [
+    {
+      "index": 6,
+      "kind": "install",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 4.489,
+      "command": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_source_overlay.py --source tmp/baselines/vllm --overlay tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-460a34ba-step06-overlay-preflight/step-06.log"
+    },
+    {
+      "index": 7,
+      "kind": "preflight",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 0.091,
+      "command": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_preflight.py --source tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython --env-python tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-460a34ba-step06-overlay-preflight/step-07.log"
+    }
+  ],
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-460a34ba-step06-overlay-preflight/step-06.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-460a34ba-step06-overlay-preflight/step-07.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-460a34ba-step06-overlay-preflight/environment-attempt.json"
+  ],
+  "blocker": "bounded attempt stopped at step 7 of 12 environment steps",
+  "observation": "Bounded environment setup attempt captured command logs and JSON evidence under tmp/.",
+  "next_action": "Continue the remaining install and validation steps before serving benchmark execution."
+}

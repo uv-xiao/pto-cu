@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "pto_commit": "df219d33",
+    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/",
+    "source_files": [
+      "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_environment_plans.json"
+    ]
+  },
+  "collection": "paper_baseline_environment_attempts",
+  "record_files": [
+    "records/vllm_environment_attempt_94ba2e06.json",
+    "records/vllm_environment_attempt_94ba2e06_step04.json",
+    "records/vllm_environment_attempt_94ba2e06_step05.json",
+    "records/vllm_environment_attempt_94ba2e06_step06.json",
+    "records/vllm_environment_attempt_460a34ba_step06_overlay_preflight.json",
+    "records/vllm_environment_attempt_e1c48975_step08_editable_install.json",
+    "records/vllm_environment_attempt_e1c48975_step08_editable_install_versioned.json",
+    "records/vllm_environment_attempt_e1c48975_step06_overlay_preflight_install_clean.json",
+    "records/vllm_environment_attempt_e1c48975_step09_validation_imports.json",
+    "records/vllm_environment_attempt_e1c48975_step09_scipy_validation.json",
+    "records/vllm_environment_attempt_840a847f_h200_full.json",
+    "records/vllm_environment_attempt_840a847f_h200_validation.json",
+    "records/sglang_environment_attempt_1cbb7b83_h200_step01_02.json",
+    "records/sglang_environment_attempt_df219d33_h200_step03.json",
+    "records/sglang_environment_attempt_df219d33_h200_step04_09.json"
+  ]
+}

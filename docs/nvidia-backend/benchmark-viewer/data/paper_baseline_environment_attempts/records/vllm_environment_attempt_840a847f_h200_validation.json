@@ -1,0 +1,71 @@
+{
+  "id": "vllm_environment_attempt_840a847f_h200_validation",
+  "paper_baseline_id": "vllm",
+  "environment_plan_id": "vllm_runtime_environment",
+  "title": "vLLM Isolated Runtime Environment setup attempt",
+  "status": "pass",
+  "environment_path": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/",
+  "start_step": 9,
+  "end_step": 13,
+  "steps_completed": 5,
+  "steps_total": 13,
+  "steps": [
+    {
+      "index": 9,
+      "kind": "install",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 6.574,
+      "command": "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install 'scipy>=1.15.0'",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/step-09.log"
+    },
+    {
+      "index": 10,
+      "kind": "validation",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 1.869,
+      "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm')\"",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/step-10.log"
+    },
+    {
+      "index": 11,
+      "kind": "validation",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 2.172,
+      "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.cli.main')\"",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/step-11.log"
+    },
+    {
+      "index": 12,
+      "kind": "validation",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 11.654,
+      "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.openai.api_server')\"",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/step-12.log"
+    },
+    {
+      "index": 13,
+      "kind": "validation",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 9.95,
+      "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.engine.arg_utils')\"",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/step-13.log"
+    }
+  ],
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/step-09.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/step-10.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/step-11.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/step-12.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/step-13.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/environment-attempt.json"
+  ],
+  "blocker": "",
+  "observation": "Bounded environment setup attempt captured command logs and JSON evidence under tmp/.",
+  "next_action": "Environment setup and validation passed; run the serving benchmark commands and import their raw JSON results."
+}

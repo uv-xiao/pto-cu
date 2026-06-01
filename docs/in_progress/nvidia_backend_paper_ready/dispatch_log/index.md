@@ -40,3 +40,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-07.md](entries/2026-06-02-part-07.md) | 1 | Run Readiness Shard Split | Run Readiness Shard Split |
 | [2026-06-02-part-08.md](entries/2026-06-02-part-08.md) | 1 | Paper Matrix Shard Split | Paper Matrix Shard Split |
 | [2026-06-02-part-09.md](entries/2026-06-02-part-09.md) | 1 | Serving Command Plan Shard Split | Serving Command Plan Shard Split |
+| [2026-06-02-part-10.md](entries/2026-06-02-part-10.md) | 1 | Environment Attempt Shard Split | Environment Attempt Shard Split |

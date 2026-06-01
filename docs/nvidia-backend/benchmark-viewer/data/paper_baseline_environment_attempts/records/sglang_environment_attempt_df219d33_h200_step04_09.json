@@ -1,0 +1,81 @@
+{
+  "id": "sglang_environment_attempt_df219d33_h200_step04_09",
+  "paper_baseline_id": "sglang",
+  "environment_plan_id": "sglang_runtime_environment",
+  "title": "SGLang Isolated Runtime Environment setup attempt",
+  "status": "pass",
+  "environment_path": "tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15",
+  "artifact_root": "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/",
+  "start_step": 4,
+  "end_step": 9,
+  "steps_completed": 6,
+  "steps_total": 9,
+  "steps": [
+    {
+      "index": 4,
+      "kind": "validation",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 9.34,
+      "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang')\"",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/step-04.log"
+    },
+    {
+      "index": 5,
+      "kind": "validation",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 0.047,
+      "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('orjson')\"",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/step-05.log"
+    },
+    {
+      "index": 6,
+      "kind": "validation",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 1.832,
+      "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('torchvision')\"",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/step-06.log"
+    },
+    {
+      "index": 7,
+      "kind": "validation",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 9.809,
+      "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang.bench_serving')\"",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/step-07.log"
+    },
+    {
+      "index": 8,
+      "kind": "validation",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 12.511,
+      "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang.bench_offline_throughput')\"",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/step-08.log"
+    },
+    {
+      "index": 9,
+      "kind": "validation",
+      "status": "pass",
+      "returncode": 0,
+      "duration_seconds": 12.859,
+      "command": "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang.bench_one_batch')\"",
+      "log": "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/step-09.log"
+    }
+  ],
+  "artifacts": [
+    "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/step-04.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/step-05.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/step-06.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/step-07.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/step-08.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/step-09.log",
+    "tmp/cuda-backend/paper-baselines/environment-attempts/sglang-df219d33-h200-step04-09/environment-attempt.json"
+  ],
+  "blocker": "",
+  "observation": "Bounded environment setup attempt captured command logs and JSON evidence under tmp/.",
+  "next_action": "Environment setup and validation passed; run the serving benchmark commands and import their raw JSON results."
+}
