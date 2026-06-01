@@ -5342,6 +5342,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "full_serving_latency_caveat",
         "controlled_attention_tile_proxy",
         "diagnostic_microdecode",
+        "diagnostic_qwen_descriptor_smoke",
+        "diagnostic_resource_backed_qwen_dag",
+        "diagnostic_unit_math",
         "native_bringup",
     }
     llm_result_records = [

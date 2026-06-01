@@ -1129,6 +1129,7 @@ def validate_results(
         "controlled_attention_tile_proxy",
         "diagnostic_microdecode",
         "diagnostic_qwen_descriptor_smoke",
+        "diagnostic_resource_backed_qwen_dag",
         "diagnostic_unit_math",
         "native_bringup",
     }
