@@ -3892,6 +3892,65 @@
         "decode64_status": "blocked_before_launch",
         "failure_kind": "instruction_buffer_capacity_assertion"
       }
+    },
+    {
+      "id": "vdcores_qwen3_8b_global_instruction_capacity_h200",
+      "paper_baseline_id": "vdcores",
+      "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
+      "title": "VDCores Qwen3-8B Global Instruction Capacity Diagnostic",
+      "status": "partial",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "Apply local patch docs/nvidia-backend/baseline-patches/vdcores-qwen3-8b-global-insts-16384.patch to switch VDCores instruction fetch to global memory with numInsts=16384, rebuild dae.runtime with the Qwen3-8B compute-op set, run -N 64 -b 1, run -N 64 -b 5, run --correctness, then restore and rebuild the shared-instruction runtime.",
+      "observation": "The capacity measurement showed the 64-token schedule needs up to 2177 compute instructions and 15042 memory instructions per SM. The global-instruction local patch rebuilt successfully, reduced static shared memory to 2336 bytes, and allowed the -N 64 -b 5 benchmark to run with median 303995744 ns. The same patched runtime failed several correctness thresholds, so this is diagnostic timing evidence only.",
+      "blocker": "The global-memory instruction variant fixes the 64-token instruction-capacity overflow and produces timing, but it fails correctness thresholds; the VDCores paper row still needs either a correct global-instruction runtime path or a segmented/token-windowed schedule that preserves the shared-instruction runtime.",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-instruction-capacity-0a0392d2/instruction-capacity-n64.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-instruction-capacity-0a0392d2/instruction-capacity-n64.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-instruction-capacity-0a0392d2/instruction-capacity-n64-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/vdcores-global-insts-16384.patch",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/applied-source-diff.patch",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/patch-apply-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/rebuild-global-insts.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/rebuild-global-insts-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-bench-n64-b1-global-insts.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-bench-n64-b1-global-insts-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-bench-n64-b5-global-insts.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-bench-n64-b5-global-insts-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-correctness-global-insts.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-correctness-global-insts-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/patch-restore-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/rebuild-restored-shared-insts.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/rebuild-restored-shared-insts-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-global-insts-summary.json"
+      ],
+      "reproducibility_patches": [
+        "docs/nvidia-backend/baseline-patches/vdcores-qwen3-8b-global-insts-16384.patch"
+      ],
+      "summary": {
+        "model": "Qwen/Qwen3-8B",
+        "capacity_measurement_status": "pass",
+        "max_insts_compiled_shared": 512,
+        "max_cinsts_per_sm_required": 2177,
+        "max_minsts_per_sm_required": 15042,
+        "global_instruction_rebuild_status": "pass",
+        "decode64_benchmark_status": "pass",
+        "decode64_median_execution_time_ns": 303995744,
+        "correctness_status": "fail",
+        "failed_correctness_checks": [
+          "gate_proj_low",
+          "up_proj_low",
+          "silu",
+          "final_rms"
+        ],
+        "final_token_match": true,
+        "remote_source_restored": true,
+        "failure_kind": "global_instruction_path_correctness_regression"
+      }
     }
   ]
 }

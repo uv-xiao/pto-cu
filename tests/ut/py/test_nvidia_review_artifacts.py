@@ -2925,7 +2925,7 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_qwen3_8b_decode_preflight"
         and item["execution_attempt_id"]
-        == "vdcores_qwen3_8b_rebuild_correctness_token1_h200"
+        == "vdcores_qwen3_8b_global_instruction_capacity_h200"
         for item in work_items
     )
 
@@ -3815,6 +3815,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_repeat_guard_correctness_h200",
         "vdcores_qwen3_8b_missing_ops_preflight_h200",
         "vdcores_qwen3_8b_rebuild_correctness_token1_h200",
+        "vdcores_qwen3_8b_global_instruction_capacity_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
         "vllm_qwen3_8b_vdcores_batch1_h200",
         "vllm_qwen3_8b_vdcores_sweep_h200",
@@ -4401,6 +4402,34 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (
         vdcores_qwen3_8b_rebuilt["summary"]["failure_kind"]
         == "instruction_buffer_capacity_assertion"
+    )
+    vdcores_qwen3_8b_global_insts = attempts_by_id[
+        "vdcores_qwen3_8b_global_instruction_capacity_h200"
+    ]
+    assert vdcores_qwen3_8b_global_insts["status"] == "partial"
+    assert vdcores_qwen3_8b_global_insts["paper_baseline_run_id"] == (
+        "vdcores_qwen3_8b_decode_preflight"
+    )
+    assert (
+        vdcores_qwen3_8b_global_insts["summary"]["max_minsts_per_sm_required"]
+        == 15042
+    )
+    assert (
+        vdcores_qwen3_8b_global_insts["summary"][
+            "decode64_median_execution_time_ns"
+        ]
+        == 303995744
+    )
+    assert vdcores_qwen3_8b_global_insts["summary"]["correctness_status"] == "fail"
+    assert vdcores_qwen3_8b_global_insts["summary"]["final_token_match"]
+    assert (
+        vdcores_qwen3_8b_global_insts["summary"]["failure_kind"]
+        == "global_instruction_path_correctness_regression"
+    )
+    assert (
+        "docs/nvidia-backend/baseline-patches/"
+        "vdcores-qwen3-8b-global-insts-16384.patch"
+        in vdcores_qwen3_8b_global_insts["reproducibility_patches"]
     )
     vdcores_rebuild_attempt = attempts_by_id[
         "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200"

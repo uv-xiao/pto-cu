@@ -126,9 +126,13 @@ The first Qwen3-8B preflight loaded the offline H200 checkpoint and reached
 `dae.launch()`, then stopped because the compiled `dae.runtime` did not include
 the Qwen3-8B compute-operator set reported by the launcher. After rebuilding
 with that operator set, the bounded correctness path passed and a token-1
-benchmark emitted timing. The remaining VDCores paper-serving blocker is the
-`-N 64 -b 5` instruction-capacity assertion in
-`dae.launcher.Builder.build`.
+benchmark emitted timing. A later capacity diagnostic measured the full
+`-N 64` schedule at up to `2177` compute instructions and `15042` memory
+instructions per SM. Switching VDCores to a temporary global-instruction
+runtime with `numInsts=16384` allowed `-N 64 -b 5` to run, but that runtime
+failed Qwen3-8B correctness thresholds. The remaining VDCores paper-serving
+blocker is therefore correctness for the global-instruction path, or an
+equivalent segmented schedule that preserves the shared-instruction runtime.
 
 ## vLLM Notes
 

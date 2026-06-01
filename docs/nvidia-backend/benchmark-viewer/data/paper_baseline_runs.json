@@ -177,7 +177,12 @@
         "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-token1-after-rebuild.log",
         "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-token1-after-rebuild-status.txt",
         "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-after-rebuild.log",
-        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-after-rebuild-status.txt"
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-after-rebuild-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-instruction-capacity-0a0392d2/instruction-capacity-n64.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-global-insts-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-bench-n64-b5-global-insts.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-correctness-global-insts.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/rebuild-restored-shared-insts.log"
       ],
       "required_metrics": [
         "correctness",
@@ -192,7 +197,7 @@
       "import_target": {
         "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
         "result_kind": "paper_baseline_result_record",
-        "notes": "Importer must preserve VDCores queue/resource metadata. Current Qwen3-8B evidence proves rebuild plus correctness and bounded token-1 timing, but full 64-token serving remains blocked by the instruction-buffer capacity assertion before launch."
+        "notes": "Do not import as a result until correctness passes. Current evidence shows Qwen3-8B model load, operator rebuild, token-1 correctness, 64-token capacity measurement, and a global-instruction timing variant that fails correctness."
       }
     },
     {

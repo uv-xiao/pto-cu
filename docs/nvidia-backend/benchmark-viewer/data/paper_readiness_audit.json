@@ -238,7 +238,7 @@
           ],
           "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
           "status": "missing",
-          "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after increasing the qwen3 schedule instruction capacity enough for the 64-token policy."
+          "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after fixing correctness for the global-instruction capacity path or implementing an equivalent segmented schedule under the shared-instruction runtime."
         },
         {
           "id": "thunderkittens_full_serving_qwen3_8b",
@@ -317,7 +317,12 @@
             "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-token1-after-rebuild.log",
             "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-token1-after-rebuild-status.txt",
             "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-after-rebuild.log",
-            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-after-rebuild-status.txt"
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-after-rebuild-status.txt",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-instruction-capacity-0a0392d2/instruction-capacity-n64.json",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-global-insts-summary.json",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-bench-n64-b5-global-insts.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-correctness-global-insts.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/rebuild-restored-shared-insts.log"
           ]
         },
         {
@@ -388,7 +393,7 @@
           "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
           "paper_baseline_id": "vdcores",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-4778a9a1/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-0a0392d2/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }
@@ -397,20 +402,30 @@
         {
           "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
           "paper_baseline_id": "vdcores",
-          "execution_attempt_id": "vdcores_qwen3_8b_rebuild_correctness_token1_h200",
-          "title": "VDCores Qwen3-8B Rebuild, Correctness, And Token-1 Timing",
+          "execution_attempt_id": "vdcores_qwen3_8b_global_instruction_capacity_h200",
+          "title": "VDCores Qwen3-8B Global Instruction Capacity Diagnostic",
           "status": "partial",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/",
-          "blocker": "The full VDCores paper decode policy is still not importable: app/python/qwen3/sched.py -N 64 -b 5 fails before launch in dae.launcher.Builder.build with assert len(self.cinsts) <= ctensor.shape[0].",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/",
+          "blocker": "The global-memory instruction variant fixes the 64-token instruction-capacity overflow and produces timing, but it fails correctness thresholds; the VDCores paper row still needs either a correct global-instruction runtime path or a segmented/token-windowed schedule that preserves the shared-instruction runtime.",
           "summary": {
             "model": "Qwen/Qwen3-8B",
-            "runtime_rebuild_status": "pass",
-            "correctness_status": "pass",
+            "capacity_measurement_status": "pass",
+            "max_insts_compiled_shared": 512,
+            "max_cinsts_per_sm_required": 2177,
+            "max_minsts_per_sm_required": 15042,
+            "global_instruction_rebuild_status": "pass",
+            "decode64_benchmark_status": "pass",
+            "decode64_median_execution_time_ns": 303995744,
+            "correctness_status": "fail",
+            "failed_correctness_checks": [
+              "gate_proj_low",
+              "up_proj_low",
+              "silu",
+              "final_rms"
+            ],
             "final_token_match": true,
-            "token1_benchmark_status": "pass",
-            "token1_median_execution_time_ns": 4536640,
-            "decode64_status": "blocked_before_launch",
-            "failure_kind": "instruction_buffer_capacity_assertion"
+            "remote_source_restored": true,
+            "failure_kind": "global_instruction_path_correctness_regression"
           }
         }
       ],
@@ -502,9 +517,9 @@
         }
       ],
       "blockers": [
-        "PTO persistent-device full-serving, VDCores Qwen3-8B full serving after the current 64-token instruction-capacity blocker, and ThunderKittens-family full serving rows are not yet imported for the shared Qwen3-8B serving policies.",
+        "PTO persistent-device full-serving, VDCores Qwen3-8B full serving after the current global-instruction correctness blocker, and ThunderKittens-family full serving rows are not yet imported for the shared Qwen3-8B serving policies.",
         "Paper baseline run vdcores_qwen3_8b_decode_preflight is planned_not_run, not imported_to_viewer.",
-        "Latest execution attempt vdcores_qwen3_8b_rebuild_correctness_token1_h200 for vdcores_qwen3_8b_decode_preflight is partial: The full VDCores paper decode policy is still not importable: app/python/qwen3/sched.py -N 64 -b 5 fails before launch in dae.launcher.Builder.build with assert len(self.cinsts) <= ctensor.shape[0]."
+        "Latest execution attempt vdcores_qwen3_8b_global_instruction_capacity_h200 for vdcores_qwen3_8b_decode_preflight is partial: The global-memory instruction variant fixes the 64-token instruction-capacity overflow and produces timing, but it fails correctness thresholds; the VDCores paper row still needs either a correct global-instruction runtime path or a segmented/token-windowed schedule that preserves the shared-instruction runtime."
       ],
       "next_actions": [
         {
@@ -532,7 +547,7 @@
           ],
           "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
           "status": "missing",
-          "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after increasing the qwen3 schedule instruction capacity enough for the 64-token policy."
+          "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after fixing correctness for the global-instruction capacity path or implementing an equivalent segmented schedule under the shared-instruction runtime."
         },
         {
           "source": "matrix_missing_evidence",
@@ -552,9 +567,9 @@
           "source": "execution_attempt",
           "paper_baseline_id": "vdcores",
           "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
-          "execution_attempt_id": "vdcores_qwen3_8b_rebuild_correctness_token1_h200",
+          "execution_attempt_id": "vdcores_qwen3_8b_global_instruction_capacity_h200",
           "status": "partial",
-          "action": "Resolve latest execution attempt vdcores_qwen3_8b_rebuild_correctness_token1_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: The full VDCores paper decode policy is still not importable: app/python/qwen3/sched.py -N 64 -b 5 fails before launch in dae.launcher.Builder.build with assert len(self.cinsts) <= ctensor.shape[0]."
+          "action": "Resolve latest execution attempt vdcores_qwen3_8b_global_instruction_capacity_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: The global-memory instruction variant fixes the 64-token instruction-capacity overflow and produces timing, but it fails correctness thresholds; the VDCores paper row still needs either a correct global-instruction runtime path or a segmented/token-windowed schedule that preserves the shared-instruction runtime."
         }
       ],
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."

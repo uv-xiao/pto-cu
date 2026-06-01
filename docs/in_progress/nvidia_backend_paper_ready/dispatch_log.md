@@ -3546,3 +3546,44 @@ Follow-up tracked-state closure after user confirmation:
   missing-operator blocker. It now needs instruction-capacity work before the
   full `vdcores_offline_decode` 64-token row can be imported with final
   latency/throughput metrics.
+
+### 2026-06-01 - VDCores Qwen3 8B Global Instruction Diagnostic
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  Qwen3-8B instruction-capacity and correctness diagnostic.
+- Exact Codex command or script invocation: measured the `-N 64` Qwen3-8B
+  schedule on `bizhaoh200` by monkeypatching `Launcher.build_instructions` to
+  emit per-SM instruction counts before allocation. Then applied
+  `docs/nvidia-backend/baseline-patches/vdcores-qwen3-8b-global-insts-16384.patch`
+  to the remote VDCores checkout, rebuilt `dae.runtime` with the Qwen3-8B
+  compute-op file, ran `-N 64 -b 1`, ran `-N 64 -b 5`, ran `--correctness`,
+  restored the source patch, and rebuilt the shared-instruction runtime.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, VDCores full-serving
+  evidence for the paper-readiness matrix.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, baseline reproducibility
+  patch, in-progress evaluation docs, changelog docs, dispatch log, and tests.
+  No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The 64-token schedule requires up to `2177` compute instructions and
+  `15042` memory instructions per SM, beyond the default shared-load
+  `512`-instruction limit. The global-instruction runtime with
+  `numInsts=16384` runs timing but fails correctness thresholds, so it cannot
+  be imported as a paper result.
+- Verification commands and results: `validate_benchmark_viewer_data.py` ->
+  passed; `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed; `jq empty
+  docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `git diff --check` -> passed;
+  `pytest tests/ut/py/test_nvidia_review_artifacts.py -q` -> `41 passed`.
+  Raw H200 logs show `-N 64 -b 5` exit status `0`, median execution time
+  `303995744 ns`, and `--correctness` exit status `1`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the VDCores Qwen3-8B full-serving
+  blocker is now sharper: fix correctness for the global-instruction path or
+  implement a segmented/token-windowed schedule under the shared-instruction
+  runtime before importing the VDCores paper-serving row.

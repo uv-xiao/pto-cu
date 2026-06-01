@@ -213,7 +213,8 @@
         "VDCores Qwen3-8B now rebuilds with the required compute-operator set and passes the bounded correctness preflight.",
         "A token-1 benchmark emits timing, but the 64-token VDCores paper policy fails before launch in dae.launcher.Builder.build with assert len(self.cinsts) <= ctensor.shape[0].",
         "ThunderKittens has imported padded H100 MHA decode-attention tile rows for the policy batch ladder, but not the full Qwen serving-family sweep.",
-        "PTO persistent_device has an imported controlled attention-tile proxy; a full Qwen serving-family PTO sweep remains absent."
+        "PTO persistent_device has an imported controlled attention-tile proxy; a full Qwen serving-family PTO sweep remains absent.",
+        "VDCores Qwen3-8B 64-token schedule capacity is measured at up to 2177 compute and 15042 memory instructions per SM. A temporary global-instruction runtime with numInsts=16384 runs -N 64 -b 5, but fails correctness thresholds, so the serving row remains blocked."
       ],
       "evidence_refs": [
         {

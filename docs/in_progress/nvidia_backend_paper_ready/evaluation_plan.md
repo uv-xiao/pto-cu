@@ -87,8 +87,11 @@ bring-up, target prompt length 64, decode length 1024, and offline batch sizes
 cross-paper target through the VDCores `qwen3` schedule path, uses target
 context length 128, decode length 64, and the same batch-size ladder.
 Current VDCores Qwen3-8B evidence proves runtime rebuild and bounded
-correctness, but the full 64-token serving row remains blocked by instruction
-capacity before launch.
+correctness. The full 64-token serving row is no longer only a pre-launch
+capacity problem: a temporary global-instruction runtime can run `-N 64 -b 5`,
+but it fails Qwen3-8B correctness thresholds, so the row remains blocked until
+the global-instruction path is corrected or the schedule is segmented without
+leaving the shared-instruction runtime.
 Every serving baseline run record must reference one of these policy IDs and
 require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before
 it can be imported. Imported rows must record actual tokenizer counts, model

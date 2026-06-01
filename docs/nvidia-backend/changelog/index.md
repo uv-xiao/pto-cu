@@ -93,6 +93,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-05-31 probe status updater](2026-05-31-probe-status-updater.md)
 - [2026-05-31 paper readiness audit](2026-05-31-paper-readiness-audit.md)
 - [2026-05-31 readiness audit execution attempts](2026-05-31-readiness-audit-execution-attempts.md)
+- [2026-06-01 VDCores Qwen3 8B global instructions](2026-06-01-vdcores-qwen3-8b-global-insts.md)
 - [2026-05-31 persistent baseline run contracts](2026-05-31-persistent-baseline-run-contracts.md)
 - [2026-05-31 persistent scheduler breakdown](2026-05-31-persistent-scheduler-breakdown.md)
 - [2026-05-31 paper baseline scheduler metadata](2026-05-31-paper-baseline-scheduler-metadata.md)

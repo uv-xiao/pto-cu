@@ -1,0 +1,17 @@
+diff --git a/include/dae/context.cuh b/include/dae/context.cuh
+--- a/include/dae/context.cuh
++++ b/include/dae/context.cuh
+@@ -9,11 +9,11 @@
+ constexpr bool dae2EnableLooping = true;
+ constexpr bool dae2EnableGroup = true;
+ constexpr bool dae2BlockingStore = false;
+-constexpr bool dae2LoadInstructions = true;
++constexpr bool dae2LoadInstructions = false;
+ 
+ static constexpr int slotSizeKb = 8;
+ static constexpr int numSlots = 24;
+-static constexpr int numInsts = dae2LoadInstructions ? 512 : 4096;
++static constexpr int numInsts = dae2LoadInstructions ? 512 : 16384;
+ static constexpr int numTmas = 1024;
+ static constexpr int numBars = 1024;
+ 
