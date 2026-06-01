@@ -33,4 +33,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-01-part-14.md](entries/2026-06-01-part-14.md) | 2 | Decode Loop Unit Math Bridge | Decode Loop Token Owner Live |
 | [2026-06-02-part-01.md](entries/2026-06-02-part-01.md) | 3 | Decode Loop KV Owner Live | Decode Loop Submission Descriptors |
 | [2026-06-02-part-02.md](entries/2026-06-02-part-02.md) | 6 | VDCores Shared-Instruction Window Plan | Qwen Resource-Backed Logits Reference Fix |
-| [2026-06-02-part-03.md](entries/2026-06-02-part-03.md) | 7 | Paper Work Queue Evidence Summary | Qwen MPK Full Diagnostic Decode |
+| [2026-06-02-part-03.md](entries/2026-06-02-part-03.md) | 8 | Paper Work Queue Evidence Summary | Qwen MPK 1024 Diagnostic Decode |

@@ -41,7 +41,7 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
         for row in rows
     )
     assert all(
-        row["statistic"]["completed_count"] in {255, 510, 765, 16320}
+        row["statistic"]["completed_count"] in {255, 510, 765, 16320, 261120}
         for row in rows
     )
     assert any(
@@ -77,6 +77,15 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
         and row.get("logits_deferred_step_count") == 63
         for row in long_decode_rows
     )
+    full_mpk_rows = [
+        row["statistic"]
+        for row in rows
+        if row["statistic"].get("workload_id") == "mpk_offline_decode"
+        and row["statistic"].get("executed_decode_steps") == 1024
+    ]
+    assert len(full_mpk_rows) == 1
+    assert full_mpk_rows[0]["completed_count"] == 261120
+    assert full_mpk_rows[0]["logits_deferred_step_count"] == 1023
     assert all(row["statistic"]["error_count"] == 0 for row in rows)
     assert any(row["correctness"] == "pass" for row in rows)
     assert any(
