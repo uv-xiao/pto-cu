@@ -46,13 +46,18 @@ def decode_step_execution_summary(
 def implemented_contracts(
     decode_step_limit: int | None,
     *,
-    token_feedback: bool = False,
+    token_feedback_status: str = "not_requested",
 ) -> list[str]:
     contracts = ["qwen_resource_backed_diagnostic_execution"]
     if decode_step_limit is not None:
         contracts.append("qwen_resource_backed_decode_step_execution")
-    if token_feedback:
+    if token_feedback_status in {
+        "diagnostic_token_feedback_applied",
+        "device_token_feedback_observed",
+    }:
         contracts.append("qwen_diagnostic_decode_token_feedback")
+    if token_feedback_status == "device_token_feedback_observed":
+        contracts.append("qwen_device_decode_token_feedback")
     return contracts
 
 

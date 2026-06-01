@@ -80,7 +80,12 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "1.0f + expf(-gate_value)" in source
     assert "task->out[i] = silu_gate * up_value;" in source
     assert "lm_head" in source
+    assert "output_ids[decode_step] = best_token;" in source
+    assert "input_ids[0] = best_token;" in source
     assert "qwen_unit_math_source_coverage" in manifest["implemented_contracts"]
+    assert "qwen_logits_device_sampled_token_feedback_source" in manifest[
+        "implemented_contracts"
+    ]
 
 
 def test_qwen_task_bodies_do_not_exit_grid_stride_wrapper_early():

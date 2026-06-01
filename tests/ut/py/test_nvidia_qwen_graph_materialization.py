@@ -12,6 +12,7 @@ from qwen_decode_loop_runner_impl.launch_preflight import (  # noqa: E402
     build_host_task_packet,
     keyed_fields,
     launch_packet_preflight,
+    set_decode_step_index,
 )
 
 
@@ -170,3 +171,11 @@ def test_launch_packet_uses_full_logits_extent_for_final_logits_task():
     assert packet[1].n == 151936
     assert packet[1].scalar_arg_count == 3
     assert list(packet[1].scalar_args)[:3] == [0.0, 4096.0, 151936.0]
+    assert packet[1].tensor_args[2] == 0x3000
+    assert packet[1].tensor_args[3] == 0x5000
+    assert packet[1].tensor_arg_count == 4
+
+    set_decode_step_index(packet, 7)
+
+    assert packet[1].scalar_arg_count == 4
+    assert packet[1].scalar_args[3] == 7.0

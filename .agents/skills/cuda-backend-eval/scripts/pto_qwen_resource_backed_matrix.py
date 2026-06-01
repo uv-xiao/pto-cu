@@ -58,6 +58,7 @@ def raw_artifact_ref(raw_artifact: str) -> dict[str, Any]:
             "qwen_resource_backed_diagnostic_execution",
             "qwen_resource_backed_decode_step_execution",
             "qwen_diagnostic_decode_token_feedback",
+            "qwen_device_decode_token_feedback",
             "diagnostic_resource_backed_qwen_dag",
             "repeat_runs",
             "partial_logits_not_full_vocab",
@@ -84,8 +85,8 @@ def current_action_phrase() -> str:
         "diagnostic proxy, unit-math, descriptor-smoke, "
         "resource-backed execution, and repeated resource-backed execution "
         "viewer_result_imports with full-logits-buffer diagnostic writes and "
-        "bounded-prefix diagnostic reference checks plus diagnostic "
-        "sampled-token feedback are present."
+        "bounded-prefix diagnostic reference checks plus device-side "
+        "diagnostic sampled-token feedback are present."
     )
 
 

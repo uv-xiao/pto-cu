@@ -12,6 +12,7 @@ from simpler_setup.cuda_callable_compiler import (
     render_persistent_dag_source,
 )
 
+from .logits_feedback import qwen_logits_spec
 from .oracle import build_numeric_oracle, build_qwen_unit_math_oracle
 
 
@@ -182,24 +183,7 @@ const float *weight = task->tensor_args[0];
 task->out[i] = task->a[i] * (weight ? weight[i & 3U] : 1.0f);
 """,
         },
-        {
-            "callable": "qwen_logits",
-            "phase": "per_token_decode",
-            "consumes_fields": ["a", "out", "tensor_args"],
-            "consumes_roles": ["hidden_state", "lm_head_weight", "output_ids"],
-            "body": """
-const float *lm_head = task->tensor_args[0];
-if (task->scalar_arg_count > 1 && lm_head) {
-    const unsigned long long hidden_elements =
-        static_cast<unsigned long long>(task->scalar_args[1]);
-    const unsigned long long hidden_index = i % max(1ULL, hidden_elements);
-    task->out[i] = task->a[hidden_index] * lm_head[i & 3U];
-} else {
-    const float logit = task->a[i] + (lm_head ? lm_head[i & 3U] : 0.0f);
-    task->out[i] = logit;
-}
-""",
-        },
+        qwen_logits_spec(),
     ]
 
 
@@ -214,7 +198,7 @@ def task_functions() -> list[CudaPersistentTaskFunction]:
     ]
 
 
-def source_preview(source: str, callables: list[str]) -> str:
+def source_preview(source: str, callables: list[str], *, window_lines: int = 44) -> str:
     lines = source.splitlines()
     selected: list[str] = []
     for callable_name in callables:
@@ -222,7 +206,7 @@ def source_preview(source: str, callables: list[str]) -> str:
         for line_index, line in enumerate(lines):
             if marker not in line:
                 continue
-            selected.extend(lines[line_index : line_index + 28])
+            selected.extend(lines[line_index : line_index + window_lines])
             selected.append("")
             break
     return "\n".join(selected).strip()
@@ -258,6 +242,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "kv_fields": ["c", "d"],
             "kv_write_policy": "mutable_kv_fields_ready",
             "weight_fields": ["tensor_args"],
+            "decode_feedback_fields": ["tensor_args[2]", "tensor_args[3]"],
             "descriptor_source": "examples/cuda/qwen_persistent_weight_args.py",
             "decode_argument_source": "examples/cuda/qwen_persistent_decode_args.py",
         },
@@ -286,6 +271,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_kernel_kv_field_consumption",
             "qwen_kernel_kv_cache_writeback_field_contract",
             "qwen_kernel_weight_tensor_arg_consumption",
+            "qwen_logits_device_sampled_token_feedback_source",
         ],
         "remaining_runtime_gaps": [
             "numerically_correct_qwen_kernel_bodies",

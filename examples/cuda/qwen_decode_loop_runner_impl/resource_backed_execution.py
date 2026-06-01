@@ -19,6 +19,7 @@ from qwen_decode_loop_runner_impl.decode_feedback import (
 from qwen_decode_loop_runner_impl.launch_preflight import (
     build_host_task_packet,
     keyed_fields,
+    set_decode_step_index,
     workspace_for_workload,
 )
 from qwen_decode_loop_runner_impl.resource_execution_policy import (
@@ -136,11 +137,7 @@ def run_resource_backed_execution(
         "workloads": workload_results,
         "implemented_contracts": implemented_contracts(
             decode_step_limit,
-            token_feedback=all(
-                item.get("decode_feedback", {}).get("status")
-                == "diagnostic_token_feedback_applied"
-                for item in workload_results
-            ),
+            token_feedback_status=decode_feedback_contract_status(workload_results),
         ),
         "remaining_runtime_gaps": [
             "full_qwen_numerical_correctness",
@@ -180,6 +177,8 @@ def run_workload(
     )
     repeat_results = []
     for repeat_index in range(execution_count):
+        step_index = repeat_index if decode_step_limit is not None else None
+        set_decode_step_index(packet, step_index)
         graph = MaterializedGraph(session, packet)
         timing = PtoRunTiming()
         args = CudaPersistentDagArgs(state=graph.ptrs["state"])
@@ -199,12 +198,12 @@ def run_workload(
         )
         counters = graph.read_counters()
         logits_summary = graph.read_logits_summary(workspace)
-        step_index = repeat_index if decode_step_limit is not None else None
         decode_feedback = apply_decode_feedback(
             session=session,
             token_fields=token_fields,
             decode_step_index=step_index,
             logits_summary=logits_summary,
+            device_committed=True,
         )
         repeat_results.append(
             {
@@ -285,3 +284,15 @@ def artifact_summary(prepared: Any) -> dict[str, Any]:
         "entry_name": artifact.entry_name,
         "source_kind": artifact.source_kind,
     }
+
+
+def decode_feedback_contract_status(workload_results: list[dict[str, Any]]) -> str:
+    statuses = {
+        item.get("decode_feedback", {}).get("status", "not_requested")
+        for item in workload_results
+    }
+    if statuses == {"device_token_feedback_observed"}:
+        return "device_token_feedback_observed"
+    if statuses == {"diagnostic_token_feedback_applied"}:
+        return "diagnostic_token_feedback_applied"
+    return "not_requested"

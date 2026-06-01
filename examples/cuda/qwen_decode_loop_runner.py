@@ -40,6 +40,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_resource_backed_diagnostic_execution",
     "qwen_resource_backed_decode_step_execution",
     "qwen_diagnostic_decode_token_feedback",
+    "qwen_device_decode_token_feedback",
 ]
 
 

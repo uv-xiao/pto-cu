@@ -29,6 +29,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_kernel_token_field_consumption",
     "qwen_kernel_kv_field_consumption",
     "qwen_kernel_weight_tensor_arg_consumption",
+    "qwen_logits_device_sampled_token_feedback_source",
 ]
 
 

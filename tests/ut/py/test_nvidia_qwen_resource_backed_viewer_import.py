@@ -129,6 +129,7 @@ def test_resource_backed_importer_emits_diagnostic_rows():
         }
         assert record["statistic"]["decode_feedback_status"] in {
             "diagnostic_token_feedback_applied",
+            "device_token_feedback_observed",
             "not_recorded",
         }
         assert record["correctness"] == "pass"
@@ -312,6 +313,12 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
     assert any(
         row["statistic"].get("decode_feedback_status")
         == "diagnostic_token_feedback_applied"
+        and row["statistic"].get("decode_feedback_applied_step_count") == 2
+        for row in rows
+    )
+    assert any(
+        row["statistic"].get("decode_feedback_status")
+        == "device_token_feedback_observed"
         and row["statistic"].get("decode_feedback_applied_step_count") == 2
         for row in rows
     )

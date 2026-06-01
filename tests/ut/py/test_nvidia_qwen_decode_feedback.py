@@ -85,3 +85,26 @@ def test_decode_feedback_commits_sampled_token_to_output_and_next_input():
         "sampled_token_ids": [17],
         "policy": "host_commits_diagnostic_sampled_token_for_next_step",
     }
+
+
+def test_decode_feedback_observes_device_committed_token():
+    module = load_decode_feedback_module()
+    session = FakeSession()
+    session.runtime.memory[0:4] = (17).to_bytes(4, "little", signed=True)
+    session.runtime.memory[64:68] = (17).to_bytes(4, "little", signed=True)
+
+    result = module.apply_decode_feedback(
+        session=session,
+        token_fields={
+            "a": {"device_ptr_hex": "0x0"},
+            "out": {"device_ptr_hex": "0x40"},
+        },
+        decode_step_index=0,
+        logits_summary={"topk": [{"token_id": 17, "logit": 2.5}]},
+        device_committed=True,
+    )
+
+    assert result["status"] == "device_feedback_observed"
+    assert module.feedback_summary([{"decode_feedback": result}])["status"] == (
+        "device_token_feedback_observed"
+    )

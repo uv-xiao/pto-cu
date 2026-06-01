@@ -11,6 +11,21 @@ from simpler_setup.cuda_callable_compiler import (
     CudaPersistentDagTask,
 )
 
+from qwen_decode_loop_runner_impl.launch_helpers import (
+    attach_decode_feedback_tensors,
+    input_ptr_for_task,
+    launch_blockers,
+    missing_launch_buffers,
+    next_power_of_two,
+    output_ptr_for_task,
+    parse_ptr,
+    set_decode_step_index,
+    task_n_for_record,
+    task_scalar_arg_count,
+    task_scalar_args,
+    tensor_arg_count,
+    tensor_arg_index,
+)
 from qwen_decode_loop_runner_impl.submission import QWEN_TASK_FUNCTIONS
 
 
@@ -136,6 +151,14 @@ def host_task_record(
         tensor_args[tensor_arg_index(arg["arg"])] = parse_ptr(
             arg.get("device_ptr_hex"),
         )
+    attach_decode_feedback_tensors(
+        index=index,
+        task_count=task_count,
+        descriptor=descriptor,
+        tensor_args=tensor_args,
+        token_fields=token_fields,
+        workspace=workspace,
+    )
     return CudaPersistentDagTask(
         func_id=CALLABLE_FUNC_IDS[descriptor["callable"]],
         a=input_ptr_for_task(
@@ -163,7 +186,7 @@ def host_task_record(
         d=parse_ptr(kv_fields["d"].get("device_ptr_hex")),
         tensor_args=tensor_args_t(*tensor_args),
         scalar_args=scalar_args_t(*scalar_args),
-        tensor_arg_count=min(len(descriptor.get("tensor_args", [])), 4),
+        tensor_arg_count=tensor_arg_count(tensor_args),
         scalar_arg_count=task_scalar_arg_count(scalar_args),
     )
 
@@ -192,95 +215,6 @@ def workspace_for_workload(
     return None
 
 
-def input_ptr_for_task(
-    *,
-    index: int,
-    token_fields: dict[str, dict[str, Any]],
-    workspace: dict[str, Any] | None,
-) -> int:
-    if workspace is not None and index > 0:
-        return parse_ptr(workspace["activation_buffers"][index - 1]["device_ptr_hex"])
-    return parse_ptr(token_fields["a"].get("device_ptr_hex"))
-
-
-def output_ptr_for_task(
-    *,
-    index: int,
-    task_count: int,
-    token_fields: dict[str, dict[str, Any]],
-    workspace: dict[str, Any] | None,
-) -> int:
-    if workspace is None:
-        return parse_ptr(token_fields["out"].get("device_ptr_hex"))
-    if index + 1 == task_count:
-        return parse_ptr(workspace["logits_buffer"]["device_ptr_hex"])
-    return parse_ptr(workspace["activation_buffers"][index]["device_ptr_hex"])
-
-
-def task_n_for_record(
-    *,
-    index: int,
-    task_count: int,
-    descriptor: dict[str, Any],
-    workspace: dict[str, Any] | None,
-) -> int:
-    if is_logits_output_task(index=index, task_count=task_count, descriptor=descriptor):
-        return logits_element_count(workspace)
-    return hidden_element_count(workspace)
-
-
-def task_scalar_args(
-    *,
-    index: int,
-    task_count: int,
-    descriptor: dict[str, Any],
-    workspace: dict[str, Any] | None,
-) -> list[float]:
-    if not is_logits_output_task(
-        index=index,
-        task_count=task_count,
-        descriptor=descriptor,
-    ):
-        return [0.0, 0.0, 0.0, 0.0]
-    return [
-        0.0,
-        float(hidden_element_count(workspace)),
-        float(logits_element_count(workspace)),
-        0.0,
-    ]
-
-
-def task_scalar_arg_count(scalar_args: list[float]) -> int:
-    for index in range(len(scalar_args) - 1, -1, -1):
-        if scalar_args[index] != 0.0:
-            return index + 1
-    return 0
-
-
-def is_logits_output_task(
-    *,
-    index: int,
-    task_count: int,
-    descriptor: dict[str, Any],
-) -> bool:
-    return index + 1 == task_count and descriptor.get("callable") == "qwen_logits"
-
-
-def hidden_element_count(workspace: dict[str, Any] | None) -> int:
-    if workspace is None:
-        return 1
-    buffers = workspace.get("activation_buffers", [])
-    if buffers:
-        return int(buffers[0].get("element_count", 1))
-    return int(workspace["logits_buffer"].get("element_count", 1))
-
-
-def logits_element_count(workspace: dict[str, Any] | None) -> int:
-    if workspace is None:
-        return 1
-    return int(workspace["logits_buffer"].get("element_count", 1))
-
-
 def workspace_pointer_policy(
     *,
     workspace: dict[str, Any] | None,
@@ -301,60 +235,3 @@ def workspace_pointer_policy(
         "logits_buffer": workspace["logits_buffer"]["device_ptr_hex"],
         "total_byte_count": workspace["total_byte_count"],
     }
-
-
-def tensor_arg_index(value: str) -> int:
-    prefix = "tensor_args["
-    if not value.startswith(prefix) or not value.endswith("]"):
-        return 0
-    parsed = int(value[len(prefix) : -1])
-    return parsed if 0 <= parsed < 4 else 0
-
-
-def parse_ptr(value: Any) -> int:
-    if isinstance(value, int):
-        return value
-    if isinstance(value, str) and value:
-        return int(value, 0)
-    return 0
-
-
-def missing_launch_buffers(
-    *,
-    descriptors: list[dict[str, Any]],
-    workspace_ready: bool,
-) -> list[dict[str, Any]]:
-    if workspace_ready:
-        return []
-    return [
-        {
-            "buffer": "intermediate_activation_buffers",
-            "required_count": max(len(descriptors) - 1, 0),
-            "status": "not_allocated",
-        },
-        {
-            "buffer": "float_logits_or_sampling_output",
-            "required_count": 1,
-            "status": "not_allocated",
-        },
-    ]
-
-
-def launch_blockers(*, workspace_ready: bool) -> list[str]:
-    if workspace_ready:
-        return [
-            "diagnostic_kernel_bodies_not_full_qwen_numeric",
-            "run_prepared_execution_not_attempted",
-        ]
-    return [
-        "intermediate_activation_buffers_not_allocated",
-        "logits_output_dtype_mismatch_with_output_ids",
-        "diagnostic_kernel_bodies_not_full_qwen_numeric",
-    ]
-
-
-def next_power_of_two(value: int) -> int:
-    power = 1
-    while power < value:
-        power *= 2
-    return power

@@ -15,6 +15,7 @@ def apply_decode_feedback(
     token_fields: dict[str, dict[str, Any]],
     decode_step_index: int | None,
     logits_summary: dict[str, Any],
+    device_committed: bool = False,
 ) -> dict[str, Any]:
     token_id = sampled_token_id(logits_summary)
     if decode_step_index is None:
@@ -27,6 +28,14 @@ def apply_decode_feedback(
     output_ptr = parse_ptr(token_fields["out"].get("device_ptr_hex"))
     input_ptr = parse_ptr(token_fields["a"].get("device_ptr_hex"))
     output_index = int(decode_step_index)
+    if device_committed:
+        return observed_device_feedback(
+            session=session,
+            input_ptr=input_ptr,
+            output_ptr=output_ptr,
+            output_index=output_index,
+            token_id=token_id,
+        )
     write_i32(session, output_ptr, output_index, token_id, "output_ids")
     write_i32(session, input_ptr, 0, token_id, "next_input_id")
     return {
@@ -37,6 +46,32 @@ def apply_decode_feedback(
         "next_input_index": 0,
         "next_input_value": read_i32(session, input_ptr, 0, "next_input_id"),
         "policy": "host_commits_diagnostic_sampled_token_for_next_step",
+    }
+
+
+def observed_device_feedback(
+    *,
+    session: Any,
+    input_ptr: int,
+    output_ptr: int,
+    output_index: int,
+    token_id: int,
+) -> dict[str, Any]:
+    output_value = read_i32(session, output_ptr, output_index, "output_ids")
+    input_value = read_i32(session, input_ptr, 0, "next_input_id")
+    status = (
+        "device_feedback_observed"
+        if output_value == int(token_id) and input_value == int(token_id)
+        else "device_feedback_mismatch"
+    )
+    return {
+        "status": status,
+        "sampled_token_id": int(token_id),
+        "output_ids_index": output_index,
+        "output_ids_value": output_value,
+        "next_input_index": 0,
+        "next_input_value": input_value,
+        "policy": "device_commits_diagnostic_sampled_token_for_next_step",
     }
 
 
@@ -83,15 +118,28 @@ def parse_ptr(value: Any) -> int:
 
 def feedback_summary(repeat_results: list[dict[str, Any]]) -> dict[str, Any]:
     feedback = [item.get("decode_feedback", {}) for item in repeat_results]
-    applied = [item for item in feedback if item.get("status") == "feedback_applied"]
+    applied = [
+        item
+        for item in feedback
+        if item.get("status") in {"feedback_applied", "device_feedback_observed"}
+    ]
     if not feedback or all(item.get("status") == "not_requested" for item in feedback):
         return {"status": "not_requested"}
     return {
-        "status": "diagnostic_token_feedback_applied"
+        "status": "device_token_feedback_observed"
+        if all(item.get("status") == "device_feedback_observed" for item in feedback)
+        else "diagnostic_token_feedback_applied"
         if len(applied) == len(feedback)
         else "partial_or_failed",
         "applied_step_count": len(applied),
         "step_count": len(feedback),
         "sampled_token_ids": [int(item["sampled_token_id"]) for item in applied],
-        "policy": "host_commits_diagnostic_sampled_token_for_next_step",
+        "policy": feedback_policy(applied),
     }
+
+
+def feedback_policy(applied: list[dict[str, Any]]) -> str:
+    policies = {item.get("policy") for item in applied}
+    if policies == {"device_commits_diagnostic_sampled_token_for_next_step"}:
+        return "device_commits_diagnostic_sampled_token_for_next_step"
+    return "host_commits_diagnostic_sampled_token_for_next_step"
