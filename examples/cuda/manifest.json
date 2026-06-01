@@ -115,6 +115,22 @@
       ]
     },
     {
+      "id": "qwen_persistent_proxy_live",
+      "title": "Qwen Persistent Proxy Live",
+      "script": "examples/cuda/qwen_persistent_proxy_live.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_proxy_live.py --device 0 --arch compute_80 --output-json tmp/cuda-backend/pto-serving-proxy-live/qwen-proxy-live.json",
+      "expected_output": "command exits 0 on a CUDA host; output JSON records status=pass for a controlled single-task Qwen QKV proxy launched through cuda/persistent_device.",
+      "evidence_symbols": [
+        "pto_qwen_proxy_live_execution",
+        "controlled_proxy_live_cuda_execution",
+        "persistent_device_single_task_dag_launch_plan",
+        "qwen_attention_qkv_mutable_kv_live_contract"
+      ]
+    },
+    {
       "id": "qwen_prompt_accounting",
       "title": "Qwen Prompt Accounting",
       "script": "examples/cuda/qwen_prompt_accounting.py",

@@ -99,6 +99,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 mutable KV-cache ABI](2026-06-01-mutable-kv-cache-abi.md)
 - [2026-06-01 CUDA codegen test guard](2026-06-01-cuda-codegen-test-guard.md)
 - [2026-06-01 Qwen proxy numeric oracle](2026-06-01-qwen-proxy-numeric-oracle.md)
+- [2026-06-01 Qwen proxy live execution](2026-06-01-qwen-proxy-live-execution.md)
 - [2026-06-01 Qwen persistent task bodies](2026-06-01-qwen-persistent-task-bodies.md)
 - [2026-06-01 Qwen decode loop runner plan](2026-06-01-qwen-decode-loop-runner.md)
 - [2026-06-01 Qwen KV-cache binding](2026-06-01-qwen-kv-cache-binding.md)

@@ -987,6 +987,50 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     ]
 
 
+def test_qwen_persistent_proxy_live_plan_maps_qkv_to_single_task_dag():
+    script_path = ROOT / "examples" / "cuda" / "qwen_persistent_proxy_live.py"
+    spec = importlib.util.spec_from_file_location(
+        "qwen_persistent_proxy_live",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    plan = module.build_live_proxy_plan()
+
+    assert plan["kind"] == "pto_qwen_proxy_live_execution_plan"
+    assert plan["status"] == "ready_to_run"
+    assert plan["scope"] == "controlled_proxy_not_full_qwen"
+    assert plan["runtime"] == "cuda/persistent_device"
+    assert plan["callable"] == "qwen_attention_qkv"
+    assert plan["func_id"] == 7102
+    assert plan["dag"]["task_count"] == 1
+    assert plan["dag"]["scheduler_blocks"] == 1
+    assert plan["dag"]["worker_blocks"] == 1
+    assert plan["dag"]["queue_capacity"] == 4
+    assert plan["task_argument_fields"] == {
+        "a": "hidden_state",
+        "b": "attention_mask",
+        "out": "attention_output",
+        "c": "key_cache_mutable",
+        "d": "value_cache_mutable",
+        "tensor_args[0]": "q_proj_weight",
+    }
+    assert plan["inputs"]["a"] == [10.0, 11.0, 12.0, 13.0]
+    assert plan["inputs"]["weights"][0] == [1.0, 2.0, 3.0, 4.0]
+    assert plan["expected"]["out"] == [13.0, 15.0, 17.0, 19.0]
+    assert plan["expected"]["c"] == [11.0, 13.0, 15.0, 17.0]
+    assert plan["expected"]["d"] == plan["expected"]["out"]
+    assert plan["remaining_runtime_gaps"] == [
+        "numerically_correct_qwen_kernel_bodies",
+        "full_qwen_decode_loop_execution",
+        "viewer_result_import",
+    ]
+
+
 def test_persistent_qwen_prompt_accounting_is_reviewable(tmp_path):
     output = tmp_path / "qwen-prompt-accounting.json"
     result = subprocess.run(
@@ -2103,6 +2147,12 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
+        == "tmp/cuda-backend/pto-serving-proxy-live-2026-06-01/qwen-proxy-live.json"
+        for ref in claim["current_evidence_refs"]
+    )
+    assert any(
+        ref.get("kind") == "raw_artifact"
+        and ref.get("path")
         == "tmp/cuda-backend/pto-serving-scaffold-2026-06-01/qwen-serving-scaffold.json"
         for ref in claim["current_evidence_refs"]
     )
@@ -2125,10 +2175,10 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "qwen_serving_lifecycle_plan",
         "qwen_prompt_accounting",
         "qwen_runtime_input_binding",
-            "qwen_cuda_token_buffer_binding",
-            "qwen_persistent_decode_args",
-            "qwen_kv_cache_binding",
-            "qwen_weight_inventory",
+        "qwen_cuda_token_buffer_binding",
+        "qwen_persistent_decode_args",
+        "qwen_kv_cache_binding",
+        "qwen_weight_inventory",
         "qwen_safetensors_fetch",
         "qwen_safetensors_metadata",
         "qwen_cuda_weight_binding",
@@ -2147,14 +2197,15 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "padded target-length input_ids",
         "attention_mask",
         "CUDA token-buffer allocation/copy-back verification",
-            "persistent decode token argument binding",
-            "preserving tensor_args for weights",
-            "dry-run KV-cache key/value pointer binding",
-            "persistent DAG c/d",
+        "persistent decode token argument binding",
+        "preserving tensor_args for weights",
+        "dry-run KV-cache key/value pointer binding",
+        "persistent DAG c/d",
         "generated persistent-device Qwen task-body source",
         "mutable KV fields c/d",
         "controlled proxy numeric oracle",
-            "decode-loop execution",
+        "controlled proxy live CUDA execution",
+        "decode-loop execution",
     ]:
         assert phrase in action
     assert "mutable KV-cache writeback ABI" not in action

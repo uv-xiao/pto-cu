@@ -4614,3 +4614,36 @@ Follow-up tracked-state closure after user confirmation:
   field access in the persistent DAG ABI and generated Qwen task-body source.
   Remaining PTO full-serving gaps are numerically correct Qwen kernels,
   `cuda_live` decode-loop execution, and viewer-result import.
+
+### 2026-06-01 - Qwen Proxy Live CUDA Execution
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned live CUDA
+  evidence update for the Qwen persistent-device proxy.
+- Exact Codex command or script invocation:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  examples/cuda/qwen_persistent_proxy_live.py --device 0 --arch compute_80
+  --output-json
+  tmp/cuda-backend/pto-serving-proxy-live-2026-06-01/qwen-proxy-live.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, benchmark-viewer data,
+  in-progress evaluation docs, changelog docs, dispatch log, and focused
+  tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the run compiles and launches only the
+  controlled `qwen_attention_qkv` proxy task. It is not full Qwen attention or
+  a full decode loop.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_persistent_proxy_live.py` did not exist. After
+  implementation the local A100 live artifact reported `status=pass`,
+  `max_abs_error=0.0`, `completed_count=1`, and `error_count=0`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves one generated
+  Qwen proxy task can be compiled, prepared, launched through the
+  persistent-device scheduler, and copied back. Remaining PTO full-serving
+  gaps are numerically correct Qwen kernels, full decode-loop execution, and
+  viewer-result import.
