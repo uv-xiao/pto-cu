@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "072cc513",
+    "pto_commit": "b6df049f",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
       "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
@@ -16,7 +16,7 @@
       "paper_baseline_id": "mpk",
       "title": "MPK Qwen3 Native Versus Persistent Kernel Readiness",
       "latest_status": "fail",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-072cc513/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b6df049f/",
       "checks": [
         {
           "kind": "source_path",
@@ -174,7 +174,7 @@
       "paper_baseline_id": "mpk",
       "title": "MPK Native Qwen3 Token Bring-Up Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-072cc513/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b6df049f/",
       "checks": [
         {
           "kind": "source_path",
@@ -253,12 +253,12 @@
       "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
     },
     {
-      "id": "vdcores_llama_decode_correctness_readiness",
-      "paper_baseline_run_id": "vdcores_llama_decode_correctness",
+      "id": "vdcores_qwen3_8b_decode_preflight_readiness",
+      "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
       "paper_baseline_id": "vdcores",
-      "title": "VDCores Llama Decode Correctness And Benchmark Readiness",
-      "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-072cc513/",
+      "title": "VDCores Qwen3-8B Decode Preflight Readiness",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b6df049f/",
       "checks": [
         {
           "kind": "source_path",
@@ -273,7 +273,7 @@
         },
         {
           "kind": "path_exists",
-          "path": "app/python/llama3/sched.py",
+          "path": "app/python/qwen3/sched.py",
           "status": "pass",
           "why": "Python entrypoint referenced by run_commands."
         },
@@ -285,19 +285,25 @@
         },
         {
           "kind": "expected_artifact_path",
-          "path": "tmp/baselines/vdcores command log",
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-preflight-summary.json",
           "status": "pass",
           "why": "Expected artifacts must remain under tmp/."
         },
         {
           "kind": "expected_artifact_path",
-          "path": "tmp/cuda-backend/paper-baselines/vdcores/llama-decode.json",
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight-hub-cache.log",
           "status": "pass",
           "why": "Expected artifacts must remain under tmp/."
         },
         {
           "kind": "expected_artifact_path",
-          "path": "tmp/cuda-backend/paper-baselines/vdcores/correctness.json",
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight-hub-cache-status.txt",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight.log",
           "status": "pass",
           "why": "Expected artifacts must remain under tmp/."
         },
@@ -322,9 +328,9 @@
         },
         {
           "kind": "environment",
-          "name": "HF_TOKEN",
-          "status": "partial",
-          "why": "The currently selected VDCores llama3 demo reads HF_TOKEN directly when loading the Llama model and tokenizer."
+          "name": "public_model_access",
+          "status": "pass",
+          "why": "Qwen/Qwen3-8B is public and the H200 preflight loaded it from the offline cache. The VDCores runtime_context.py still indexes os.environ[\"HF_TOKEN\"], so run_commands set HF_TOKEN= as an environment key, not as gated authentication."
         },
         {
           "kind": "compiled_extension",
@@ -333,9 +339,7 @@
           "why": "VDCores run commands import dae.runtime from the built CUDA extension."
         }
       ],
-      "blocking_gaps": [
-        "HF_TOKEN is not available for this run."
-      ],
+      "blocking_gaps": [],
       "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
     },
     {
@@ -344,7 +348,7 @@
       "paper_baseline_id": "mpk",
       "title": "MPK Persistent Scheduler Trace Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-072cc513/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b6df049f/",
       "checks": [
         {
           "kind": "source_path",
@@ -410,7 +414,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Resource Policy Trace Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-072cc513/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b6df049f/",
       "checks": [
         {
           "kind": "source_path",
@@ -530,7 +534,7 @@
       "paper_baseline_id": "vllm",
       "title": "vLLM Serving And Offline Throughput Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-072cc513/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b6df049f/",
       "checks": [
         {
           "kind": "source_path",
@@ -613,7 +617,7 @@
         {
           "kind": "environment_plan",
           "name": "vllm_runtime_environment",
-          "path": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-072cc513/environment-plans.json",
+          "path": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-b6df049f/environment-plans.json",
           "status": "pass",
           "why": "Serving framework dependencies must be installed in an isolated tmp/ environment before benchmark execution."
         }
@@ -627,7 +631,7 @@
       "paper_baseline_id": "sglang",
       "title": "SGLang Serving And Offline Throughput Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-072cc513/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b6df049f/",
       "checks": [
         {
           "kind": "source_path",
@@ -758,7 +762,7 @@
         {
           "kind": "environment_plan",
           "name": "sglang_runtime_environment",
-          "path": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-072cc513/environment-plans.json",
+          "path": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-b6df049f/environment-plans.json",
           "status": "pass",
           "why": "Serving framework dependencies must be installed in an isolated tmp/ environment before benchmark execution."
         }
@@ -772,7 +776,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Tile Kernel Readiness",
       "latest_status": "fail",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-072cc513/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b6df049f/",
       "checks": [
         {
           "kind": "source_path",
@@ -859,7 +863,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Selected Correctness And Benchmark Sweep Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-072cc513/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b6df049f/",
       "checks": [
         {
           "kind": "source_path",
@@ -937,7 +941,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Non-MHA Rotary Kernel Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-072cc513/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b6df049f/",
       "checks": [
         {
           "kind": "source_path",
@@ -1015,7 +1019,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Decode-Attention Tile Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-072cc513/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-b6df049f/",
       "checks": [
         {
           "kind": "source_path",

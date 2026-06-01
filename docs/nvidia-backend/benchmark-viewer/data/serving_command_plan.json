@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at_utc": "2026-06-01T04:48:40.267639+00:00",
-    "pto_commit": "6fa7978e",
+    "generated_at_utc": "2026-06-01T06:45:37.135958+00:00",
+    "pto_commit": "b6df049f",
     "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs",
     "model_tier": "primary",
     "source_files": [
@@ -150,8 +150,8 @@
       ]
     },
     {
-      "id": "vdcores_llama_decode_correctness:vdcores_offline_decode:batch1",
-      "paper_baseline_run_id": "vdcores_llama_decode_correctness",
+      "id": "vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode:batch1",
+      "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
       "paper_baseline_id": "vdcores",
       "serving_workload_id": "vdcores_offline_decode",
       "model_tier": "primary",
@@ -163,15 +163,15 @@
       "commands": [
         {
           "kind": "decode_benchmark",
-          "command": "cd tmp/baselines/vdcores && python app/python/llama3/sched.py --prompt 'Give me a short introduction to large language model.' --max-decode-steps 64 -N 64 --bench 1",
+          "command": "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir '<shared-hf-cache>/hub' -N 64 --bench 1",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vdcores/vdcores_offline_decode/vdcores-decode-batch1.json",
-          "note": "Current VDCores demo path is Llama-only and has no batch-size CLI; batch_size is retained for policy tracking."
+          "note": "Current VDCores Qwen3-8B path fixes part of the internal batch policy; batch_size remains the paper policy target until a full serving harness records actual scheduled request count."
         }
       ]
     },
     {
-      "id": "vdcores_llama_decode_correctness:vdcores_offline_decode:batch2",
-      "paper_baseline_run_id": "vdcores_llama_decode_correctness",
+      "id": "vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode:batch2",
+      "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
       "paper_baseline_id": "vdcores",
       "serving_workload_id": "vdcores_offline_decode",
       "model_tier": "primary",
@@ -183,15 +183,15 @@
       "commands": [
         {
           "kind": "decode_benchmark",
-          "command": "cd tmp/baselines/vdcores && python app/python/llama3/sched.py --prompt 'Give me a short introduction to large language model.' --max-decode-steps 64 -N 64 --bench 1",
+          "command": "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir '<shared-hf-cache>/hub' -N 64 --bench 2",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vdcores/vdcores_offline_decode/vdcores-decode-batch2.json",
-          "note": "Current VDCores demo path is Llama-only and has no batch-size CLI; batch_size is retained for policy tracking."
+          "note": "Current VDCores Qwen3-8B path fixes part of the internal batch policy; batch_size remains the paper policy target until a full serving harness records actual scheduled request count."
         }
       ]
     },
     {
-      "id": "vdcores_llama_decode_correctness:vdcores_offline_decode:batch4",
-      "paper_baseline_run_id": "vdcores_llama_decode_correctness",
+      "id": "vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode:batch4",
+      "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
       "paper_baseline_id": "vdcores",
       "serving_workload_id": "vdcores_offline_decode",
       "model_tier": "primary",
@@ -203,15 +203,15 @@
       "commands": [
         {
           "kind": "decode_benchmark",
-          "command": "cd tmp/baselines/vdcores && python app/python/llama3/sched.py --prompt 'Give me a short introduction to large language model.' --max-decode-steps 64 -N 64 --bench 1",
+          "command": "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir '<shared-hf-cache>/hub' -N 64 --bench 4",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vdcores/vdcores_offline_decode/vdcores-decode-batch4.json",
-          "note": "Current VDCores demo path is Llama-only and has no batch-size CLI; batch_size is retained for policy tracking."
+          "note": "Current VDCores Qwen3-8B path fixes part of the internal batch policy; batch_size remains the paper policy target until a full serving harness records actual scheduled request count."
         }
       ]
     },
     {
-      "id": "vdcores_llama_decode_correctness:vdcores_offline_decode:batch8",
-      "paper_baseline_run_id": "vdcores_llama_decode_correctness",
+      "id": "vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode:batch8",
+      "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
       "paper_baseline_id": "vdcores",
       "serving_workload_id": "vdcores_offline_decode",
       "model_tier": "primary",
@@ -223,15 +223,15 @@
       "commands": [
         {
           "kind": "decode_benchmark",
-          "command": "cd tmp/baselines/vdcores && python app/python/llama3/sched.py --prompt 'Give me a short introduction to large language model.' --max-decode-steps 64 -N 64 --bench 1",
+          "command": "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir '<shared-hf-cache>/hub' -N 64 --bench 8",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vdcores/vdcores_offline_decode/vdcores-decode-batch8.json",
-          "note": "Current VDCores demo path is Llama-only and has no batch-size CLI; batch_size is retained for policy tracking."
+          "note": "Current VDCores Qwen3-8B path fixes part of the internal batch policy; batch_size remains the paper policy target until a full serving harness records actual scheduled request count."
         }
       ]
     },
     {
-      "id": "vdcores_llama_decode_correctness:vdcores_offline_decode:batch16",
-      "paper_baseline_run_id": "vdcores_llama_decode_correctness",
+      "id": "vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode:batch16",
+      "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
       "paper_baseline_id": "vdcores",
       "serving_workload_id": "vdcores_offline_decode",
       "model_tier": "primary",
@@ -243,9 +243,9 @@
       "commands": [
         {
           "kind": "decode_benchmark",
-          "command": "cd tmp/baselines/vdcores && python app/python/llama3/sched.py --prompt 'Give me a short introduction to large language model.' --max-decode-steps 64 -N 64 --bench 1",
+          "command": "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir '<shared-hf-cache>/hub' -N 64 --bench 16",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vdcores/vdcores_offline_decode/vdcores-decode-batch16.json",
-          "note": "Current VDCores demo path is Llama-only and has no batch-size CLI; batch_size is retained for policy tracking."
+          "note": "Current VDCores Qwen3-8B path fixes part of the internal batch policy; batch_size remains the paper policy target until a full serving harness records actual scheduled request count."
         }
       ]
     },

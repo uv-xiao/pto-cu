@@ -168,8 +168,8 @@
       "model_policy": {
         "primary_model": "Qwen/Qwen3-8B",
         "bringup_model": "Qwen/Qwen3-1.7B",
-        "fallback_model": "meta-llama/Llama-3.1-8B-Instruct",
-        "selection_reason": "Qwen3-8B appears in the VDCores and MPK paper model sets. Llama-3.1-8B remains the current VDCores demo path and requires HF_TOKEN."
+        "fallback_model": "Qwen/Qwen3-1.7B",
+        "selection_reason": "Qwen3-8B appears in the VDCores and MPK paper model sets. The VDCores tree now has an explicit Qwen3-8B schedule path; Qwen3-1.7B remains the bring-up path for runtime diagnostics."
       },
       "prompt_policy": {
         "prompt_text": "Give me a short introduction to large language model.",
@@ -192,7 +192,7 @@
         "H200"
       ],
       "baseline_run_ids": [
-        "vdcores_llama_decode_correctness",
+        "vdcores_qwen3_8b_decode_preflight",
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
         "thunderkittens_tile_kernel",
@@ -210,10 +210,9 @@
         "raw_artifacts"
       ],
       "current_blockers": [
-        "VDCores extension and model path still need captured H200 run artifacts.",
-        "vLLM and SGLang packages are not yet installed for H200 serving capture.",
-        "ThunderKittens has imported padded H100 MHA decode-attention tile rows for the policy batch ladder, but not the full Llama/Qwen serving-family sweep.",
-        "PTO persistent_device has an imported controlled attention-tile proxy; a full Llama/Qwen serving-family PTO sweep remains absent."
+        "VDCores Qwen3-8B loads from the H200 offline cache, but dae.runtime must be rebuilt with the Qwen3-8B compute-operator set before correctness or serving timing can run.",
+        "ThunderKittens has imported padded H100 MHA decode-attention tile rows for the policy batch ladder, but not the full Qwen serving-family sweep.",
+        "PTO persistent_device has an imported controlled attention-tile proxy; a full Qwen serving-family PTO sweep remains absent."
       ],
       "evidence_refs": [
         {
@@ -225,11 +224,11 @@
           ]
         },
         {
-          "path": "tmp/baselines/vdcores/app/python/llama3/sched.py",
+          "path": "tmp/baselines/vdcores/app/python/qwen3/cli.py",
           "symbols": [
-            "meta-llama/Llama-3.1-8B-Instruct",
-            "--max-decode-steps",
-            "--num-generates"
+            "Qwen/Qwen3-8B",
+            "--num-generates",
+            "--correctness"
           ]
         },
         {
@@ -245,6 +244,14 @@
             "pto_controlled_serving_equivalent",
             "paper_baseline_serving_tile_capture",
             "vdcores_offline_decode attention tile proxy"
+          ]
+        },
+        {
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-preflight-summary.json",
+          "symbols": [
+            "\"model_load\": \"pass\"",
+            "missing_compiled_compute_operators",
+            "DAE_COMPUTE_OPS"
           ]
         }
       ]

@@ -130,10 +130,10 @@
       }
     },
     {
-      "id": "vdcores_llama_decode_correctness",
+      "id": "vdcores_qwen3_8b_decode_preflight",
       "paper_baseline_id": "vdcores",
       "paper_evaluation_id": "llm_serving_paper_baselines",
-      "title": "VDCores Llama Decode Correctness And Benchmark",
+      "title": "VDCores Qwen3-8B Decode Preflight",
       "status": "planned_not_run",
       "hardware_targets": [
         "H200"
@@ -142,31 +142,32 @@
         "vdcores_offline_decode"
       ],
       "workload": {
-        "model": "Qwen/Qwen3-8B policy target; current VDCores demo uses meta-llama/Llama-3.1-8B-Instruct",
-        "input_policy": "vdcores_offline_decode prompt policy: target 128 prompt tokens with actual tokenizer count recorded",
-        "output_policy": "vdcores_offline_decode output policy: 64 decode tokens, adjusted only when VDCores KV-block scheduling requires rounding",
-        "batch_or_concurrency": "offline fixed batch; batch sizes 1,2,4,8,16"
+        "model": "Qwen/Qwen3-8B through tmp/baselines/vdcores/app/python/qwen3/sched.py",
+        "input_policy": "vdcores_offline_decode prompt policy: target 128 prompt tokens; the current source preflight uses the hard-coded Qwen token IDs from cli.py until the batch-ladder harness is added.",
+        "output_policy": "vdcores_offline_decode output policy: 64 decode tokens for final paper rows; the current preflight uses --correctness to validate model load and launcher operator coverage first.",
+        "batch_or_concurrency": "offline fixed batch target sizes 1,2,4,8,16; current Qwen3-8B source path fixes REQ=N=8 internally and needs a paper harness before importing batch-ladder rows."
       },
       "model_access": {
-        "requires_hf_token": true,
-        "gated_models": [
-          "meta-llama/Llama-3.1-8B-Instruct"
+        "requires_hf_token": false,
+        "public_models": [
+          "Qwen/Qwen3-8B"
         ],
-        "why": "The currently selected VDCores llama3 demo reads HF_TOKEN directly when loading the Llama model and tokenizer."
+        "why": "Qwen/Qwen3-8B is public and the H200 preflight loaded it from the offline cache. The VDCores runtime_context.py still indexes os.environ[\"HF_TOKEN\"], so run_commands set HF_TOKEN= as an environment key, not as gated authentication."
       },
       "setup_commands": [
-        "cd tmp/baselines/vdcores && make pyext"
+        "cd tmp/baselines/vdcores && make pyext",
+        "For the Qwen3-8B path, rebuild dae.runtime with the DAE_COMPUTE_OPS set reported by app/python/qwen3/sched.py before importing serving rows."
       ],
       "run_commands": [
-        "cd tmp/baselines/vdcores && python app/python/llama3/sched.py -w",
-        "cd tmp/baselines/vdcores && python app/python/llama3/sched.py -N 256 \"Write a hello world in Python.\"",
-        "cd tmp/baselines/vdcores && python app/python/llama3/sched.py --correctness"
+        "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir <shared-hf-cache>/hub --correctness",
+        "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir <shared-hf-cache>/hub -N 64 -b 1"
       ],
       "expected_artifacts": [
         "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
-        "tmp/baselines/vdcores command log",
-        "tmp/cuda-backend/paper-baselines/vdcores/llama-decode.json",
-        "tmp/cuda-backend/paper-baselines/vdcores/correctness.json"
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-preflight-summary.json",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight-hub-cache.log",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight-hub-cache-status.txt",
+        "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight.log"
       ],
       "required_metrics": [
         "correctness",

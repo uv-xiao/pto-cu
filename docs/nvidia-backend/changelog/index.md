@@ -43,6 +43,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 VDCores RepeatM guard correctness](2026-06-01-vdcores-repeat-guard-correctness.md)
 - [2026-06-01 VDCores queue/scheduler trace](2026-06-01-vdcores-queue-scheduler-trace.md)
 - [2026-06-01 VDCores diagnostic scope contract](2026-06-01-vdcores-diagnostic-scope-contract.md)
+- [2026-06-01 VDCores Qwen3 8B preflight](2026-06-01-vdcores-qwen3-8b-preflight.md)
 - [2026-06-01 Persistent scheduler claim promotion](2026-06-01-persistent-scheduler-claim-promotion.md)
 - [2026-06-01 SGLang MPK-policy H200 repeats](2026-06-01-sglang-mpk-policy-repeats.md)
 - [2026-06-01 SGLang fixed-range H200 repeats](2026-06-01-sglang-fixedrange-repeats.md)

@@ -236,7 +236,7 @@ def test_imported_paper_baseline_run_rejects_missing_expected_artifact(tmp_path)
         "paper_baseline_runs": [
             imported,
             run_record(
-                "vdcores_llama_decode_correctness",
+                "vdcores_qwen3_8b_decode_preflight",
                 "vdcores",
                 "llm_serving_paper_baselines",
                 ["vdcores_offline_decode"],
@@ -363,7 +363,7 @@ def test_llm_serving_paper_baseline_run_requires_shape_and_concurrency(tmp_path)
                 ["correctness", "raw_artifacts", "model_and_prompt_shape"],
             ),
             run_record(
-                "vdcores_llama_decode_correctness",
+                "vdcores_qwen3_8b_decode_preflight",
                 "vdcores",
                 "llm_serving_paper_baselines",
                 ["vdcores_offline_decode"],
@@ -2723,7 +2723,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         item["paper_baseline_run_id"]
         for item in llm_claim["paper_baseline_run_readiness_statuses"]
     }
-    assert "vdcores_llama_decode_correctness" in llm_readiness_ids
+    assert "vdcores_qwen3_8b_decode_preflight" in llm_readiness_ids
     assert "mpk_qwen3_native_vs_persistent" not in llm_readiness_ids
     assert "vllm_serving_and_throughput" not in llm_readiness_ids
     assert "thunderkittens_decode_attention_tile" not in llm_readiness_ids
@@ -2855,8 +2855,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     assert committed["overall_status"] == "not_paper_ready"
     assert committed["summary"]["total_work_items"] == 5
     assert committed["summary"]["work_items_by_source"] == {
+        "execution_attempt": 1,
         "matrix_missing_evidence": 4,
-        "run_readiness": 1,
     }
     work_items = committed["work_items"]
     assert all(not item["ready_for_paper_claim"] for item in work_items)
@@ -2918,6 +2918,14 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["source"] == "execution_attempt"
         and item["paper_baseline_id"] == "sglang"
         and item["paper_baseline_run_id"] == "sglang_serving_and_offline"
+        for item in work_items
+    )
+    assert any(
+        item["claim_id"] == "llm_serving_paper_baselines"
+        and item["source"] == "execution_attempt"
+        and item["paper_baseline_run_id"] == "vdcores_qwen3_8b_decode_preflight"
+        and item["execution_attempt_id"]
+        == "vdcores_qwen3_8b_missing_ops_preflight_h200"
         for item in work_items
     )
 
@@ -3480,7 +3488,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert {
         "mpk_qwen3_native_vs_persistent",
         "mpk_qwen3_native_token_bringup",
-        "vdcores_llama_decode_correctness",
+        "vdcores_qwen3_8b_decode_preflight",
         "mpk_persistent_scheduler_trace",
         "vdcores_resource_policy_trace",
         "vllm_serving_and_throughput",
@@ -3805,6 +3813,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_1p7b_repeat_state_lite_h200",
         "vdcores_qwen3_1p7b_repeat_guard_bench_h200",
         "vdcores_qwen3_1p7b_repeat_guard_correctness_h200",
+        "vdcores_qwen3_8b_missing_ops_preflight_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
         "vllm_qwen3_8b_vdcores_batch1_h200",
         "vllm_qwen3_8b_vdcores_sweep_h200",
@@ -4363,6 +4372,20 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert not vdcores_correctness_attempt["summary"]["launched"]
     assert not vdcores_correctness_attempt["summary"]["resource_policy_measured"]
     assert "config.json timed out" in vdcores_correctness_attempt["blocker"]
+    vdcores_qwen3_8b = attempts_by_id[
+        "vdcores_qwen3_8b_missing_ops_preflight_h200"
+    ]
+    assert vdcores_qwen3_8b["status"] == "blocked"
+    assert vdcores_qwen3_8b["paper_baseline_run_id"] == (
+        "vdcores_qwen3_8b_decode_preflight"
+    )
+    assert vdcores_qwen3_8b["summary"]["model_load"] == "pass"
+    assert vdcores_qwen3_8b["summary"]["stage_reached"] == "dae.launch"
+    assert (
+        vdcores_qwen3_8b["summary"]["failure_kind"]
+        == "missing_compiled_compute_operators"
+    )
+    assert "OP_RMS_NORM_F16_K_4096_SMEM" in vdcores_qwen3_8b["blocker"]
     vdcores_rebuild_attempt = attempts_by_id[
         "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200"
     ]
@@ -4911,7 +4934,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert {
         "mpk_qwen3_native_vs_persistent",
         "mpk_qwen3_native_token_bringup",
-        "vdcores_llama_decode_correctness",
+        "vdcores_qwen3_8b_decode_preflight",
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
         "thunderkittens_decode_attention_tile",

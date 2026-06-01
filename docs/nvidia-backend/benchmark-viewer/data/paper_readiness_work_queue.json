@@ -7,8 +7,8 @@
   "summary": {
     "total_work_items": 5,
     "work_items_by_source": {
-      "matrix_missing_evidence": 4,
-      "run_readiness": 1
+      "execution_attempt": 1,
+      "matrix_missing_evidence": 4
     },
     "work_items_by_claim": {
       "llm_serving_paper_baselines": 4,
@@ -76,9 +76,9 @@
       "missing_evidence_count": 1,
       "action_index": 2,
       "source": "matrix_missing_evidence",
-      "owner": "vdcores_llama_decode_correctness",
+      "owner": "vdcores_qwen3_8b_decode_preflight",
       "paper_baseline_id": "vdcores",
-      "paper_baseline_run_id": "vdcores_llama_decode_correctness",
+      "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
       "execution_attempt_id": "",
       "missing_evidence_id": "vdcores_full_serving_qwen3_8b",
       "method_id": "vdcores",
@@ -87,7 +87,7 @@
       ],
       "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
       "status": "missing",
-      "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row for the VDCores-comparable serving policy.",
+      "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row for the VDCores-comparable serving policy after rebuilding dae.runtime with the Qwen3-8B compute-operator set.",
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
@@ -126,17 +126,17 @@
       "blocker_count": 3,
       "missing_evidence_count": 1,
       "action_index": 4,
-      "source": "run_readiness",
-      "owner": "vdcores_llama_decode_correctness",
+      "source": "execution_attempt",
+      "owner": "vdcores_qwen3_8b_decode_preflight",
       "paper_baseline_id": "vdcores",
-      "paper_baseline_run_id": "vdcores_llama_decode_correctness",
-      "execution_attempt_id": "",
+      "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
+      "execution_attempt_id": "vdcores_qwen3_8b_missing_ops_preflight_h200",
       "missing_evidence_id": "",
       "method_id": "",
       "serving_workload_ids": [],
       "shape_contains": "",
-      "status": "partial",
-      "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py.",
+      "status": "blocked",
+      "action": "Resolve latest execution attempt vdcores_qwen3_8b_missing_ops_preflight_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: dae.runtime lacks the Qwen3-8B compute operators reported by the launcher, including OP_RMS_NORM_F16_K_4096_SMEM and OP_SILU_MUL_SHARED_BF16_K_64_SW128; rebuild with the full DAE_COMPUTE_OPS set before running correctness or serving timing.",
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     }
   ]

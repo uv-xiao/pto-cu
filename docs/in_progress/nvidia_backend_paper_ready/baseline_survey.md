@@ -31,9 +31,9 @@ universal serving row:
 
 - `mpk_offline_decode`: Qwen3-8B primary, prompt target 64, decode 1024,
   offline batch sizes 1, 2, 4, 8, and 16.
-- `vdcores_offline_decode`: Qwen3-8B cross-paper target, Llama-3.1-8B current
-  VDCores demo path, context target 128, decode 64, offline batch sizes 1, 2,
-  4, 8, and 16.
+- `vdcores_offline_decode`: Qwen3-8B cross-paper target through the VDCores
+  `qwen3` schedule path, context target 128, decode 64, offline batch sizes
+  1, 2, 4, 8, and 16.
 
 The current primary-model launch plan for those policies is materialized at
 `tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json` by
@@ -95,7 +95,12 @@ Observed entry points:
 - `src/runtime.cu` and `src/torch_runtime.cu`: runtime and PyTorch binding.
 - `include/dae/`: virtual core runtime, queues, allocator, and launcher.
 - `include/task/`: attention, GEMV, RMSNorm, RoPE, SiLU, WGMMA, and argmax.
-- `app/python/llama3/sched.py`: Llama decode schedule.
+- `app/python/qwen3/sched.py`: Qwen/Qwen3-8B decode schedule used for
+  the current paper-target preflight.
+- `app/python/qwen3_1p7b/sched.py`: Qwen/Qwen3-1.7B bring-up and
+  runtime-diagnostic schedule.
+- `app/python/llama3/sched.py`: Llama decode schedule retained as an
+  upstream demo path, but no longer the paper-target VDCores row.
 - `agents/workflows/development-and-test.md`: correctness and benchmark
   commands used by the VDCores repo.
 
@@ -111,11 +116,17 @@ First reproduction command candidates:
 
 ```bash
 make pyext
-python app/python/llama3/sched.py -w
-make pyext
-python app/python/llama3/sched.py -N 256 "Write a hello world in Python."
-python app/python/llama3/sched.py --correctness
+HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+  python app/python/qwen3/sched.py \
+  --hf-cache-dir <shared-hf-cache>/hub \
+  --correctness
 ```
+
+The latest Qwen3-8B preflight loaded the offline H200 checkpoint and reached
+`dae.launch()`, then stopped because the compiled `dae.runtime` did not include
+the Qwen3-8B compute-operator set reported by the launcher. Rebuild with the
+reported `DAE_COMPUTE_OPS` superset before collecting correctness or timing
+rows.
 
 ## vLLM Notes
 

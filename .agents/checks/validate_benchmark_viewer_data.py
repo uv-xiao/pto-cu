@@ -242,7 +242,7 @@ def validate_paper_baseline_runs(
     run_ids = check_unique_ids(records, "paper baseline run")
     required_runs = {
         "mpk_qwen3_native_vs_persistent",
-        "vdcores_llama_decode_correctness",
+        "vdcores_qwen3_8b_decode_preflight",
         "mpk_persistent_scheduler_trace",
         "vdcores_resource_policy_trace",
         "vllm_serving_and_throughput",

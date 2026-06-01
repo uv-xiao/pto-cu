@@ -3472,3 +3472,42 @@ Follow-up tracked-state closure after user confirmation:
   full serving, VDCores full serving plus its `HF_TOKEN` readiness blocker,
   ThunderKittens-family full serving, and the official ThunderKittens upstream
   tensor-core sweep gaps.
+
+### 2026-06-01 - VDCores Qwen3 8B Preflight
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned VDCores
+  serving-readiness correction for the paper-target Qwen3-8B path.
+- Exact Codex command or script invocation: ran a bounded H200 preflight with
+  `HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0
+  python app/python/qwen3/sched.py --hf-cache-dir <shared-hf-cache>/hub
+  --correctness`, copied artifacts back under
+  `tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/`,
+  added the execution-attempt record, updated the serving command generator,
+  regenerated `serving_command_plan.json`, and refreshed review artifacts with
+  `refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, VDCores full-serving
+  evidence for the paper-readiness matrix.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, CUDA evaluation helper
+  script, in-progress evaluation docs, changelog docs, dispatch log, and
+  tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  Qwen3-8B model load passed from the offline H200 cache, but the run stopped
+  before correctness because the compiled VDCores `dae.runtime` lacks the
+  Qwen3-8B compute-operator set reported by the launcher.
+- Verification commands and results: `validate_benchmark_viewer_data.py` ->
+  passed; `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed;
+  `pytest tests/ut/py/test_nvidia_review_artifacts.py -q` -> `41 passed`;
+  `jq empty docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `git diff --check` -> passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the VDCores serving work item now points
+  at `app/python/qwen3/sched.py` and carries a specific missing-operators
+  execution blocker. Remaining work is to rebuild `dae.runtime` with that
+  `DAE_COMPUTE_OPS` superset, rerun correctness, then build a paper-serving
+  harness that imports Qwen3-8B latency/throughput rows.

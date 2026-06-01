@@ -299,7 +299,7 @@ def check_viewer_data() -> None:
     }
     required_run_ids = {
         "mpk_qwen3_native_vs_persistent",
-        "vdcores_llama_decode_correctness",
+        "vdcores_qwen3_8b_decode_preflight",
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
         "thunderkittens_tile_kernel",

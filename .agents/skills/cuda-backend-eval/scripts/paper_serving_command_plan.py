@@ -385,30 +385,33 @@ def vdcores_commands(
 ) -> list[dict[str, str]]:
     del model
     decode_tokens = policy["decode_policy"]["decode_tokens"]
-    prompt = policy["prompt_policy"]["prompt_text"]
     raw_json = f"{out_dir}/vdcores-decode-batch{batch_size}.json"
     command = shell_join(
         [
             "python",
-            "app/python/llama3/sched.py",
-            "--prompt",
-            prompt,
-            "--max-decode-steps",
-            str(decode_tokens),
+            "app/python/qwen3/sched.py",
+            "--hf-cache-dir",
+            "<shared-hf-cache>/hub",
             "-N",
             str(decode_tokens),
             "--bench",
-            "1",
+            str(batch_size),
         ]
     )
     return [
         {
             "kind": "decode_benchmark",
-            "command": "cd tmp/baselines/vdcores && " + command,
+            "command": (
+                "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 "
+                "TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 "
+            )
+            + command,
             "raw_artifact": raw_json,
             "note": (
-                "Current VDCores demo path is Llama-only and has no batch-size "
-                "CLI; batch_size is retained for policy tracking."
+                "Current VDCores Qwen3-8B path fixes part of the internal "
+                "batch policy; batch_size remains the paper policy target "
+                "until a full serving harness records actual scheduled "
+                "request count."
             ),
         }
     ]
