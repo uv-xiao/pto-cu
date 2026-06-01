@@ -50,3 +50,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-17.md](entries/2026-06-02-part-17.md) | 1 | Persistent Device Design Split | Persistent Device Design Split |
 | [2026-06-02-part-18.md](entries/2026-06-02-part-18.md) | 1 | NVIDIA Flow Details Split | NVIDIA Flow Details Split |
 | [2026-06-02-part-19.md](entries/2026-06-02-part-19.md) | 1 | CUDA Example README Split | CUDA Example README Split |
+| [2026-06-02-part-20.md](entries/2026-06-02-part-20.md) | 1 | Benchmark Viewer Validator Split | Benchmark Viewer Validator Split |
