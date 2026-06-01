@@ -111,6 +111,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 Dispatch log archive split](2026-06-01-dispatch-log-archive-split.md)
 - [2026-06-01 Qwen persistent task bodies](2026-06-01-qwen-persistent-task-bodies.md)
 - [2026-06-01 Qwen decode loop runner plan](2026-06-01-qwen-decode-loop-runner.md)
+- [2026-06-02 Qwen descriptor smoke audit](2026-06-02-qwen-descriptor-smoke-audit.md)
 - [2026-06-01 Qwen KV-cache binding](2026-06-01-qwen-kv-cache-binding.md)
 - [2026-06-01 Qwen token pointer table](2026-06-01-qwen-token-pointer-table.md)
 - [2026-06-01 Qwen persistent decode arguments](2026-06-01-qwen-persistent-decode-args.md)
