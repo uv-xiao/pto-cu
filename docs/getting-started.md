@@ -95,7 +95,7 @@ Editing Python is instant (editable install). Editing C++ requires re-running `p
 **Verifying an install:** the single source of truth is
 `tools/verify_packaging.sh`, which exercises all 5 install paths × 4 entry
 points from a fully clean state. During the NVIDIA backend ultimate goal,
-repository CI is manual-only, so run this script locally for packaging changes.
+repository CI is closed, so run this script locally for packaging changes.
 
 ## Build Process
 

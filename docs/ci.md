@@ -4,9 +4,10 @@
 
 This standalone pto-cu repository keeps GitHub Actions disabled at the
 repository settings level while the NVIDIA backend ultimate goal is active.
-Workflow files under `.github/workflows/` must also stay manual-only. They
-must not register automatic `push`, `pull_request`, `pull_request_target`,
-`merge_group`, or `schedule` triggers.
+No runnable workflow YAML should be committed under `.github/workflows/` during
+the goal. If a workflow file is reintroduced there later, it must stay
+manual-only and must not register automatic `push`, `pull_request`,
+`pull_request_target`, `merge_group`, or `schedule` triggers.
 
 The purpose is to keep exploratory NVIDIA backend slices moving without being
 blocked by inherited Ascend a2a3/a5 CI or repository-level check status.
@@ -15,12 +16,13 @@ required gates before a slice is pushed for human review.
 
 ## Workflow
 
-The only workflow currently kept in the repository is
-`.github/workflows/ci.yml`, named `NVIDIA Manual Review`. The file is kept as
-the future manual review recipe, but it cannot run while repository GitHub
-Actions are disabled. After Actions are explicitly reopened, the workflow is
-available through `workflow_dispatch` for explicit reviewer use and runs the
-lightweight NVIDIA review checks:
+No active workflow is currently kept under `.github/workflows/`. The archived
+recipe at `docs/ci/nvidia-manual-review.workflow.yml`, named
+`NVIDIA Manual Review`, records the future manual review job but is intentionally
+outside GitHub's workflow directory. After Actions are explicitly reopened, a
+reviewer may copy or move that recipe under `.github/workflows/` to make it
+available through `workflow_dispatch` for explicit reviewer use. The recipe runs
+the lightweight NVIDIA review checks:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
@@ -57,10 +59,10 @@ hardware or toolchain skips explicitly.
 
 ## Guardrail
 
-The NVIDIA review guard scans every file in `.github/workflows/` and fails if a
-workflow reintroduces automatic triggers or Ascend-specific runner usage. This
-makes the manual-only CI policy part of the branch contract instead of a
-temporary convention.
+The NVIDIA review guard fails if runnable workflow YAML exists under
+`.github/workflows/` while this closed-CI policy is active. It also checks that
+the archived review recipe stays available under `docs/ci/`. This makes closed
+CI part of the branch contract instead of a temporary convention.
 
 ## Reopening CI
 
@@ -75,6 +77,8 @@ this standalone repository. That change must include:
   a2a3/a5 infrastructure unless the branch deliberately opts into it.
 
 If a reviewer needs to run the manual workflow before automatic CI is reopened,
-temporarily enable repository GitHub Actions, dispatch `NVIDIA Manual Review`,
-then disable Actions again and record the run in
+temporarily copy `docs/ci/nvidia-manual-review.workflow.yml` into
+`.github/workflows/`, enable repository GitHub Actions, dispatch
+`NVIDIA Manual Review`, then disable Actions again, remove the runnable
+workflow file, and record the run in
 `docs/in_progress/nvidia_backend_paper_ready/dispatch_log.md`.

@@ -2130,6 +2130,15 @@ Each entry must include:
   ultimate goal. Local review guards, benchmark artifacts, changelog reports,
   and dispatch-log evidence remain the required progress gates.
 
+Follow-up tracked-state closure after user confirmation:
+
+- Removed the runnable `.github/workflows/ci.yml` file from the branch.
+- Archived the future manual review recipe at
+  `docs/ci/nvidia-manual-review.workflow.yml`.
+- Updated `docs/ci.md`, the review guard, and focused tests so closed repo CI
+  means no workflow YAML exists under `.github/workflows/` during the ultimate
+  goal.
+
 ### 2026-06-01 - VDCores Logits Schedule Introspection
 
 - Dispatcher session or PR: local Codex session on

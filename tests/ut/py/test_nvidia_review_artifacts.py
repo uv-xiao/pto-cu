@@ -6172,27 +6172,14 @@ def test_review_policy_changelog_and_examples_exist():
     assert (example_root / "persistent_layered_cross.py").is_file()
 
 
-def test_ultimate_goal_ci_is_manual_only_and_avoids_ascend_jobs():
+def test_ultimate_goal_ci_is_closed_and_avoids_ascend_jobs():
     workflow_paths = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
     workflow_paths += sorted((ROOT / ".github" / "workflows").glob("*.yaml"))
-    assert workflow_paths
+    assert workflow_paths == []
 
-    for workflow_path in workflow_paths:
-        workflow = workflow_path.read_text(encoding="utf-8")
-        assert "workflow_dispatch:" in workflow
-        assert "pull_request:" not in workflow
-        assert "pull_request_target:" not in workflow
-        assert "merge_group:" not in workflow
-        assert "schedule:" not in workflow
-        assert "push:" not in workflow
-        assert "runs-on: [self-hosted, a2a3]" not in workflow
-        assert "runs-on: [self-hosted, a5]" not in workflow
-        assert "--platform a2a3" not in workflow
-        assert "--platform a5" not in workflow
-
-    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
-        encoding="utf-8"
-    )
+    workflow = (
+        ROOT / "docs" / "ci" / "nvidia-manual-review.workflow.yml"
+    ).read_text(encoding="utf-8")
     assert "NVIDIA Manual Review" in workflow
     assert "workflow_dispatch:" in workflow
     assert "pull_request:" not in workflow
@@ -6202,8 +6189,8 @@ def test_ultimate_goal_ci_is_manual_only_and_avoids_ascend_jobs():
     assert "nvidia-manual-review:" in workflow
 
     ci_doc = (ROOT / "docs" / "ci.md").read_text(encoding="utf-8")
-    assert "manual-only" in ci_doc
-    assert "must not register automatic" in ci_doc
+    assert "No runnable workflow YAML" in ci_doc
+    assert "closed-CI policy" in ci_doc
     assert "a2a3/a5 CI" in ci_doc
 
 

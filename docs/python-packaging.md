@@ -97,9 +97,9 @@ Plus one build-time entry point invoked by CMake during `pip install`:
 ## Install modes
 
 Five install paths × two entry points = the verification matrix. During the
-NVIDIA backend ultimate goal, repository CI is manual-only, so package-structure
-changes must run the local verification command below instead of relying on an
-automatic packaging matrix.
+NVIDIA backend ultimate goal, repository CI is closed, so package-structure
+changes must run the local verification command below instead of relying on a
+GitHub packaging matrix.
 
 ### Mode-by-mode
 

@@ -30,6 +30,9 @@ settings for this work.
   disabled at the repository settings level so repository CI cannot block
   exploratory child slices. Local verification and dispatch-log evidence are
   the required gates before pushing a slice.
+- During this ultimate goal, no runnable workflow YAML should be committed
+  under `.github/workflows/`; the archived future manual workflow recipe lives
+  at `docs/ci/nvidia-manual-review.workflow.yml`.
 - If repository Actions are deliberately reopened later, every workflow under
   `.github/workflows/` must avoid automatic triggers until a reviewer updates
   this policy, `docs/ci.md`, and the matching changelog report.
