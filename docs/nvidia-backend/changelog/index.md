@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 paper baseline run shards](2026-06-02-paper-baseline-run-shards.md)
 - [2026-06-02 environment attempt shards](2026-06-02-environment-attempt-shards.md)
 - [2026-06-02 serving command plan shards](2026-06-02-serving-command-plan-shards.md)
 - [2026-06-02 paper matrix shards](2026-06-02-paper-matrix-shards.md)

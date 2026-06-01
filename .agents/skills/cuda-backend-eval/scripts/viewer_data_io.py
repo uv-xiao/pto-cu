@@ -15,6 +15,7 @@ COLLECTION_KEYS = (
     "result_records",
     "paper_baseline_execution_attempts",
     "paper_baseline_environment_attempts",
+    "paper_baseline_runs",
     "paper_baseline_run_readiness",
     "paper_evaluation_matrix",
     "serving_command_plans",

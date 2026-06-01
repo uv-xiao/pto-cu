@@ -1,0 +1,72 @@
+{
+  "id": "vdcores_qwen3_8b_decode_preflight",
+  "paper_baseline_id": "vdcores",
+  "paper_evaluation_id": "llm_serving_paper_baselines",
+  "title": "VDCores Qwen3-8B Decode Preflight",
+  "status": "planned_not_run",
+  "hardware_targets": [
+    "H200"
+  ],
+  "serving_workload_ids": [
+    "vdcores_offline_decode"
+  ],
+  "workload": {
+    "model": "Qwen/Qwen3-8B through tmp/baselines/vdcores/app/python/qwen3/sched.py",
+    "input_policy": "vdcores_offline_decode prompt policy: target 128 prompt tokens; the current source preflight uses the hard-coded Qwen token IDs from cli.py until the batch-ladder harness is added.",
+    "output_policy": "vdcores_offline_decode output policy: 64 decode tokens for final paper rows; the current preflight uses --correctness to validate model load and launcher operator coverage first.",
+    "batch_or_concurrency": "offline fixed batch target sizes 1,2,4,8,16; current Qwen3-8B source path fixes REQ=N=8 internally and needs a paper harness before importing batch-ladder rows."
+  },
+  "model_access": {
+    "requires_hf_token": false,
+    "public_models": [
+      "Qwen/Qwen3-8B"
+    ],
+    "why": "Qwen/Qwen3-8B is public and the H200 preflight loaded it from the offline cache. The VDCores runtime_context.py still indexes os.environ[\"HF_TOKEN\"], so run_commands set HF_TOKEN= as an environment key, not as gated authentication."
+  },
+  "setup_commands": [
+    "cd tmp/baselines/vdcores && make pyext",
+    "cd tmp/baselines/vdcores && CPATH=<cutlass>/include DAE_COMPUTE_OPS_FILE=<artifact>/qwen3-8b-compute-ops.vdcore.build make clean pyext NVCC_FLAGS=\"-O3 -Iinclude/dae -Iinclude -Ibuild/generated -I<cutlass>/include -std=c++20 -Xptxas=-v -use_fast_math -lineinfo -DNDEBUG -include cfloat\""
+  ],
+  "run_commands": [
+    "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir <shared-hf-cache>/hub --correctness",
+    "cd tmp/baselines/vdcores && DAE_BENCH_WARMUP=1 HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir <shared-hf-cache>/hub -N 1 -b 5",
+    "cd tmp/baselines/vdcores && DAE_BENCH_WARMUP=1 HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir <shared-hf-cache>/hub -N 64 -b 5"
+  ],
+  "expected_artifacts": [
+    "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-preflight-summary.json",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight-hub-cache.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight-hub-cache-status.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-rebuild-correctness-bench-summary.json",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-compute-ops.vdcore.build",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/rebuild-qwen3-8b-runtime-cfloat.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/rebuild-qwen3-8b-runtime-cfloat-status.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-correctness-after-rebuild.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-correctness-after-rebuild-status.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-token1-after-rebuild.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-token1-after-rebuild-status.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-after-rebuild.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-after-rebuild-status.txt",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-instruction-capacity-0a0392d2/instruction-capacity-n64.json",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-global-insts-summary.json",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-bench-n64-b5-global-insts.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-correctness-global-insts.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/rebuild-restored-shared-insts.log",
+    "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-shared-window-plan-0a0392d2/shared-window-plan.json"
+  ],
+  "required_metrics": [
+    "correctness",
+    "end_to_end_latency",
+    "inter_token_latency",
+    "throughput",
+    "model_and_prompt_shape",
+    "batch_or_concurrency_policy",
+    "resource_policy",
+    "raw_artifacts"
+  ],
+  "import_target": {
+    "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+    "result_kind": "paper_baseline_result_record",
+    "notes": "Do not import as a result until correctness passes. Current evidence shows Qwen3-8B model load, operator rebuild, token-1 correctness, 64-token capacity measurement, and a global-instruction timing variant that fails correctness."
+  }
+}

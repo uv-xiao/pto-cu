@@ -2,7 +2,9 @@ const DATA_FILES = {
   benchmarks: "data/benchmarks.json",
   methods: "data/methods.json",
   paperBaselines: "data/paper_baselines.json",
-  paperBaselineRuns: "data/paper_baseline_runs.json",
+  paperBaselineRuns: {
+    manifest: "data/paper_baseline_runs/index.json",
+  },
   paperBaselineProbes: "data/paper_baseline_probes.json",
   paperBaselineEnvironmentPlans: "data/paper_baseline_environment_plans.json",
   paperBaselineEnvironmentAttempts: {
@@ -877,7 +879,7 @@ async function main() {
       loadJson(DATA_FILES.benchmarks),
       loadJson(DATA_FILES.methods),
       loadJson(DATA_FILES.paperBaselines),
-      loadJson(DATA_FILES.paperBaselineRuns),
+      loadDataFile(DATA_FILES.paperBaselineRuns),
       loadJson(DATA_FILES.paperBaselineProbes),
       loadDataFile(DATA_FILES.paperBaselineEnvironmentAttempts),
       loadDataFile(DATA_FILES.paperBaselineRunReadiness),

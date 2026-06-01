@@ -238,7 +238,7 @@ def main() -> None:
     )
     updated_runs = mark_runs_imported(runs, imported_run_ids(raw_payload))
     write_viewer_json(args.results, updated_results)
-    write_json(args.runs, updated_runs)
+    write_viewer_json(args.runs, updated_runs)
 
     audit = build_readiness_audit(
         matrix=load_viewer_json(args.matrix),

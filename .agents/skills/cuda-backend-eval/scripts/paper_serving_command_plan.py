@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from viewer_data_io import load_json as load_viewer_json
 from viewer_data_io import write_json as write_viewer_json
 
 
@@ -25,7 +26,7 @@ def fail(message: str) -> None:
 
 
 def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return load_viewer_json(path)
 
 
 def write_json(path: Path, payload: Any) -> None:

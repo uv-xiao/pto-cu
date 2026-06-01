@@ -1,0 +1,53 @@
+{
+  "id": "vllm_serving_and_throughput",
+  "paper_baseline_id": "vllm",
+  "paper_evaluation_id": "llm_serving_paper_baselines",
+  "title": "vLLM Serving And Offline Throughput",
+  "status": "imported_to_viewer",
+  "hardware_targets": [
+    "H200"
+  ],
+  "serving_workload_ids": [
+    "mpk_offline_decode",
+    "vdcores_offline_decode"
+  ],
+  "workload": {
+    "model": "Qwen/Qwen3-8B primary, Qwen/Qwen3-1.7B bring-up",
+    "input_policy": "mpk_offline_decode and vdcores_offline_decode prompt policies",
+    "output_policy": "1024-token MPK-comparable decode and 64-token VDCores-comparable decode",
+    "batch_or_concurrency": "offline batch sizes 1,2,4,8,16"
+  },
+  "setup_commands": [
+    "cd tmp/baselines/vllm && python -m pip install -e ."
+  ],
+  "run_commands": [
+    "vllm serve <model> --port 8000",
+    "vllm bench serve --backend vllm --model <model> --host 127.0.0.1 --port 8000",
+    "vllm bench throughput --model <model>"
+  ],
+  "expected_artifacts": [
+    "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/paper-baseline-results.json",
+    "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/viewer-result-records.json",
+    "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/attempt-summary.json",
+    "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/status-summary.txt",
+    "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/vdcores/r1-batch1/bench-serve.json",
+    "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/vdcores/r3-batch16/bench-serve.json",
+    "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/mpk/r1-batch1/bench-serve.json",
+    "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/mpk/r3-batch16/bench-serve.json"
+  ],
+  "required_metrics": [
+    "correctness",
+    "end_to_end_latency",
+    "time_to_first_token",
+    "inter_token_latency",
+    "throughput",
+    "model_and_prompt_shape",
+    "batch_or_concurrency_policy",
+    "raw_artifacts"
+  ],
+  "import_target": {
+    "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+    "result_kind": "paper_baseline_result_record",
+    "notes": "Importer preserves the vLLM server command, model, prompt shape, output length, concurrency policy, repeat sample count, throughput variance, and raw throughput samples for both VDCores-shaped and MPK-shaped serving policies."
+  }
+}

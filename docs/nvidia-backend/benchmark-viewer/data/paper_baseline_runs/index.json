@@ -1,0 +1,16 @@
+{
+  "collection": "paper_baseline_runs",
+  "record_files": [
+    "records/mpk_qwen3_native_vs_persistent.json",
+    "records/mpk_qwen3_native_token_bringup.json",
+    "records/vdcores_qwen3_8b_decode_preflight.json",
+    "records/mpk_persistent_scheduler_trace.json",
+    "records/vdcores_resource_policy_trace.json",
+    "records/vllm_serving_and_throughput.json",
+    "records/sglang_serving_and_offline.json",
+    "records/thunderkittens_tile_kernel.json",
+    "records/thunderkittens_full_sweep.json",
+    "records/thunderkittens_non_mha_rotary.json",
+    "records/thunderkittens_decode_attention_tile.json"
+  ]
+}

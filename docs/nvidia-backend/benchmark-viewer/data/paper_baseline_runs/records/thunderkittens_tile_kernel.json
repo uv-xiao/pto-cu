@@ -1,0 +1,45 @@
+{
+  "id": "thunderkittens_tile_kernel",
+  "paper_baseline_id": "thunderkittens",
+  "paper_evaluation_id": "tensor_core_tile_baselines",
+  "title": "ThunderKittens Tile Kernel",
+  "status": "imported_to_viewer",
+  "hardware_targets": [
+    "H200"
+  ],
+  "serving_workload_ids": [
+    "vdcores_offline_decode"
+  ],
+  "workload": {
+    "model": "not applicable",
+    "input_policy": "selected attention or GEMM tile matching VDCores/PTO tensor shape",
+    "output_policy": "kernel correctness output",
+    "batch_or_concurrency": "single-kernel benchmark sweep"
+  },
+  "setup_commands": [
+    "cd tmp/baselines/thunderkittens/kernels/<selected-kernel> && make"
+  ],
+  "run_commands": [
+    "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/capture.json --machine <h200-host> --pto-commit 5915346e --cuda-toolkit 12.8 --shape 1,1,768,64 --shape 1,4,1536,64 --warmup 5 --repeats 20 --causal",
+    "cd tmp/baselines/thunderkittens/kernels/<selected-kernel> && python test_correctness.py",
+    "cd tmp/baselines/thunderkittens/kernels/<selected-kernel> && python benchmark.py"
+  ],
+  "expected_artifacts": [
+    "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/build.log",
+    "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/quick-smoke.json",
+    "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/capture.json",
+    "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/viewer-result-records.json"
+  ],
+  "required_metrics": [
+    "correctness",
+    "device_elapsed_time",
+    "throughput",
+    "tensor_shape",
+    "raw_artifacts"
+  ],
+  "import_target": {
+    "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+    "result_kind": "paper_baseline_result_record",
+    "notes": "Importer must map ThunderKittens output onto the tensor-core tile baseline claim with the selected tensor shape."
+  }
+}

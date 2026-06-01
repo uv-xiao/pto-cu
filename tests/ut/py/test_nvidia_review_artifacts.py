@@ -2351,10 +2351,8 @@ def test_vdcores_scheduler_trace_keeps_diagnostic_scope_separate():
     )
     assert "measurement scope" in claim["promotion_gate"]
 
-    runs = json.loads(
-        (VIEWER_ROOT / "data" / "paper_baseline_runs.json").read_text(
-            encoding="utf-8"
-        )
+    runs = load_viewer_collection(
+        VIEWER_ROOT / "data" / "paper_baseline_runs.json"
     )
     vdcores_run = next(
         item
@@ -3277,8 +3275,11 @@ def test_paper_baseline_results_update_marks_imported_run(tmp_path):
         encoding="utf-8",
     )
     runs_path.write_text(
-        (VIEWER_ROOT / "data" / "paper_baseline_runs.json").read_text(
-            encoding="utf-8"
+        json.dumps(
+            load_viewer_collection(
+                VIEWER_ROOT / "data" / "paper_baseline_runs.json"
+            ),
+            indent=2,
         ),
         encoding="utf-8",
     )
@@ -3320,7 +3321,7 @@ def test_paper_baseline_results_update_marks_imported_run(tmp_path):
     assert viewer_records[0]["statistic"]["completed_requests"] == 3
     assert viewer_records[0]["statistic"]["failed_requests"] == 0
 
-    updated_results = json.loads(results_path.read_text(encoding="utf-8"))
+    updated_results = load_viewer_collection(results_path)
     assert any(
         record["method_id"] == "mpk"
         and record["raw_artifact"] == "tmp/cuda-backend/paper-baselines/mpk/fixture/"
@@ -3397,8 +3398,11 @@ def test_paper_baseline_results_update_rejects_missing_required_metric(tmp_path)
         encoding="utf-8",
     )
     runs_path.write_text(
-        (VIEWER_ROOT / "data" / "paper_baseline_runs.json").read_text(
-            encoding="utf-8"
+        json.dumps(
+            load_viewer_collection(
+                VIEWER_ROOT / "data" / "paper_baseline_runs.json"
+            ),
+            indent=2,
         ),
         encoding="utf-8",
     )
@@ -5152,7 +5156,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "styles.css").is_file()
     assert (VIEWER_ROOT / "viewer.js").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baselines.json").is_file()
-    assert (VIEWER_ROOT / "data" / "paper_baseline_runs.json").is_file()
+    paper_baseline_runs_dir = VIEWER_ROOT / "data" / "paper_baseline_runs"
+    assert (paper_baseline_runs_dir / "index.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_baseline_probes.json").is_file()
     assert (
         VIEWER_ROOT / "data" / "paper_baseline_environment_plans.json"
@@ -5181,6 +5186,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "method.launch_model",
         "paperBaselineRuns",
         "paper_baseline_runs",
+        "data/paper_baseline_runs/index.json",
         "paperBaselineProbes",
         "paper_baseline_probes",
         "paperBaselineEnvironmentPlans",
@@ -5239,10 +5245,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
             encoding="utf-8"
         )
     )
-    paper_baseline_runs = json.loads(
-        (VIEWER_ROOT / "data" / "paper_baseline_runs.json").read_text(
-            encoding="utf-8"
-        )
+    paper_baseline_runs = load_viewer_collection(
+        VIEWER_ROOT / "data" / "paper_baseline_runs.json"
     )
     paper_baseline_probes = json.loads(
         (VIEWER_ROOT / "data" / "paper_baseline_probes.json").read_text(
