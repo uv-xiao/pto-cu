@@ -13,6 +13,10 @@ ROOT = Path(__file__).resolve().parents[3]
 TOKEN_POINTER = ROOT / "examples" / "cuda" / "qwen_token_pointer_table.py"
 KV_CACHE = ROOT / "examples" / "cuda" / "qwen_kv_cache_binding.py"
 RESIDENT_WEIGHTS = ROOT / "examples" / "cuda" / "qwen_resident_weight_table.py"
+LIVE_MICRODECODE_ARTIFACT = (
+    "tmp/cuda-backend/pto-serving-decode-loop-live-2026-06-01/"
+    "qwen-microdecode-loop.json"
+)
 
 OWNER_LIFETIME_ORDER = [
     "open_token_pointer_table",
@@ -32,6 +36,24 @@ TASK_ARGUMENT_FIELDS = {
     "c": "key_cache",
     "d": "value_cache",
     "tensor_args": "resident_weight_tensors",
+}
+LIVE_MICRODECODE_FIELDS = {
+    "a": "hidden_state",
+    "b": "attention_mask",
+    "out": "logits_out",
+    "c": "key_cache_mutable",
+    "d": "value_cache_mutable",
+    "tensor_args": "resident_weight_tensors",
+}
+LIVE_DECODE_LOOP_REUSE = {
+    "prepared_callable_reuse": "single_prepare_multiple_run_prepared",
+    "reset_between_runs": [
+        "fanin",
+        "ready_flags",
+        "completion_flags",
+        "counters",
+    ],
+    "carried_between_runs": ["key_cache_mutable", "value_cache_mutable"],
 }
 
 
@@ -152,6 +174,18 @@ def build_submission_plans(
     return plans
 
 
+def cuda_live_bridge_contract() -> dict[str, Any]:
+    return {
+        "status": "diagnostic_bridge_ready",
+        "runtime": "cuda/persistent_device",
+        "source_live_artifact": LIVE_MICRODECODE_ARTIFACT,
+        "submission_to_live_fields": LIVE_MICRODECODE_FIELDS,
+        "decode_loop_reuse": LIVE_DECODE_LOOP_REUSE,
+        "serving_coverage": "diagnostic_microdecode",
+        "remaining_gap": "full_qwen_decode_loop_execution",
+    }
+
+
 def build_decode_loop_runner(
     *,
     mode: str = "offline",
@@ -176,12 +210,14 @@ def build_decode_loop_runner(
             "kv_cache": kv_lifecycle.get("status"),
             "resident_weight_table": resident_lifecycle.get("status"),
         },
+        "cuda_live_bridge_contract": cuda_live_bridge_contract(),
         "dag_submission_plans": plans,
         "total_decode_iterations": sum(item["decode_steps"] for item in plans),
         "implemented_contracts": [
             "decode_loop_owner_lifetime_order",
             "persistent_dag_submission_plan",
             "output_token_accounting_plan",
+            "cuda_live_resource_bridge_contract",
         ],
         "remaining_runtime_gaps": [
             "numerically_correct_qwen_kernel_bodies",

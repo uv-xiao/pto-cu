@@ -22,6 +22,20 @@ def load_microdecode_module():
     return module
 
 
+def load_decode_loop_runner_module():
+    script_path = ROOT / "examples" / "cuda" / "qwen_decode_loop_runner.py"
+    spec = importlib.util.spec_from_file_location(
+        "qwen_decode_loop_runner",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def test_plan_tracks_repeated_decode_loop():
     module = load_microdecode_module()
 
@@ -55,6 +69,41 @@ def test_plan_tracks_repeated_decode_loop():
     ]
     assert plan["expected"] == plan["decode_iterations"][-1]["expected"]
     assert "controlled_proxy_live_decode_loop_plan" in plan["implemented_contracts"]
+
+
+def test_decode_loop_runner_tracks_cuda_live_bridge_contract():
+    module = load_decode_loop_runner_module()
+
+    runner = module.build_decode_loop_runner(mode="offline")
+
+    bridge = runner["cuda_live_bridge_contract"]
+    assert bridge["status"] == "diagnostic_bridge_ready"
+    assert bridge["runtime"] == "cuda/persistent_device"
+    assert bridge["source_live_artifact"] == (
+        "tmp/cuda-backend/pto-serving-decode-loop-live-2026-06-01/"
+        "qwen-microdecode-loop.json"
+    )
+    assert bridge["submission_to_live_fields"] == {
+        "a": "hidden_state",
+        "b": "attention_mask",
+        "out": "logits_out",
+        "c": "key_cache_mutable",
+        "d": "value_cache_mutable",
+        "tensor_args": "resident_weight_tensors",
+    }
+    assert bridge["decode_loop_reuse"] == {
+        "prepared_callable_reuse": "single_prepare_multiple_run_prepared",
+        "reset_between_runs": [
+            "fanin",
+            "ready_flags",
+            "completion_flags",
+            "counters",
+        ],
+        "carried_between_runs": ["key_cache_mutable", "value_cache_mutable"],
+    }
+    assert bridge["serving_coverage"] == "diagnostic_microdecode"
+    assert bridge["remaining_gap"] == "full_qwen_decode_loop_execution"
+    assert "cuda_live_resource_bridge_contract" in runner["implemented_contracts"]
 
 
 def test_viewer_matrix_tracks_decode_loop_evidence():

@@ -408,12 +408,18 @@ def build_preflight() -> dict[str, Any]:
             "status": "pass"
             if serving_scaffold.get("decode_loop_runner", {}).get("status")
             == "decode_loop_runner_plan_ready"
+            and "cuda_live_resource_bridge_contract"
+            in serving_scaffold.get("decode_loop_runner", {}).get(
+                "implemented_contracts",
+                [],
+            )
             else "fail",
             "evidence": "examples/cuda/qwen_decode_loop_runner.py",
             "why": (
                 "Repo-owned decode-loop runner integration orders token, "
                 "KV-cache, and resident-weight owner lifetimes around "
-                "persistent DAG submission."
+                "persistent DAG submission and records the diagnostic "
+                "cuda_live bridge into the repeated microdecode runner."
             ),
         },
         {

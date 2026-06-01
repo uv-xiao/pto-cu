@@ -115,12 +115,14 @@ PYTHONPATH=$PWD:$PWD/python \
 ```
 
 Expected output: command exits 0; output JSON records dry-run decode-loop
-resource owner ordering and persistent DAG submission plans.
+resource owner ordering, persistent DAG submission plans, and the diagnostic
+`cuda_live` bridge contract.
 
 The artifact composes token pointer, KV-cache, and resident-weight owners into
 a decode-loop submission plan. It records owner open/materialize/submit/close
-ordering plus output-token accounting. It still does not execute generated
-Qwen kernels or launch a `cuda_live` decode loop.
+ordering plus output-token accounting, and maps the owner-owned `a`, `b`,
+`out`, `c`, `d`, and `tensor_args` fields into the repeated proxy live runner.
+It still does not execute full Qwen kernels or a full-serving decode loop.
 
 ## Qwen Persistent Task Bodies
 

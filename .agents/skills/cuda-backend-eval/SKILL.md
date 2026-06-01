@@ -420,8 +420,9 @@ PYTHONPATH=$PWD:$PWD/python \
 ```
 
 Use `examples/cuda/qwen_decode_loop_runner.py` when reviewers need the
-decode-loop owner lifetime and persistent DAG submission order. The current
-artifact is a dry-run plan, not a full-serving execution result:
+decode-loop owner lifetime, persistent DAG submission order, and diagnostic
+`cuda_live` bridge contract. The current artifact is a dry-run plan plus a
+bridge to the repeated proxy microdecode runner, not a full-serving result:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

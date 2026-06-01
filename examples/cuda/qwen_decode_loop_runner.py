@@ -25,6 +25,7 @@ EVIDENCE_SYMBOLS = [
     "decode_loop_owner_lifetime_order",
     "persistent_dag_submission_plan",
     "output_token_accounting_plan",
+    "cuda_live_resource_bridge_contract",
 ]
 
 

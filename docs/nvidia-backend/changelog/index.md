@@ -103,6 +103,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 Qwen microdecode live execution](2026-06-01-qwen-microdecode-live-execution.md)
 - [2026-06-01 Qwen proxy decode loop live](2026-06-01-qwen-proxy-decode-loop-live.md)
 - [2026-06-01 Qwen proxy decode loop viewer import](2026-06-01-qwen-proxy-decode-loop-viewer-import.md)
+- [2026-06-01 Qwen decode loop live bridge](2026-06-01-qwen-decode-loop-live-bridge.md)
 - [2026-06-01 Dispatch log archive split](2026-06-01-dispatch-log-archive-split.md)
 - [2026-06-01 Qwen persistent task bodies](2026-06-01-qwen-persistent-task-bodies.md)
 - [2026-06-01 Qwen decode loop runner plan](2026-06-01-qwen-decode-loop-runner.md)
