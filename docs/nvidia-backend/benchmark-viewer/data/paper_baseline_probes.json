@@ -108,8 +108,8 @@
       "id": "vllm_source_entrypoints",
       "paper_baseline_id": "vllm",
       "title": "vLLM Source Entrypoints",
-      "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/vllm-h200-env-d727befb/",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/vllm-a100-h200-env-27fa5aa3/",
       "checks": [
         {
           "kind": "path_exists",
@@ -165,20 +165,18 @@
           "why": "The benchmark CLI imports engine argument parsing before launching throughput runs."
         }
       ],
-      "next_action": "A100 vLLM runtime validation remains uncaptured; H200 entrypoints and serving benchmark execution are validated under the isolated vLLM env.",
+      "next_action": "vLLM A100 and H200 entrypoint imports pass under isolated runtime environments; keep serving-result rows tied to raw benchmark artifacts before promotion.",
       "latest_machine_status": [
         {
           "gpu": "A100",
-          "status": "partial",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/vllm-h200-env-d727befb/a100-probe.json",
-          "blocking_gaps": [
-            "A100 vLLM runtime validation was not rerun for this H200 paper-baseline capture."
-          ]
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/vllm-a100-h200-env-27fa5aa3/a100-probe.json",
+          "blocking_gaps": []
         },
         {
           "gpu": "H200",
           "status": "pass",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/vllm-h200-env-d727befb/h200-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/vllm-a100-h200-env-27fa5aa3/h200-probe.json",
           "blocking_gaps": []
         }
       ]

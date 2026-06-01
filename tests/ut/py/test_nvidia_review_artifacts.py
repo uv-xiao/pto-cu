@@ -2499,7 +2499,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "Readiness probe for sglang is partial" in blocker
         for blocker in llm_claim["blockers"]
     )
-    assert any(
+    assert not any(
         "Readiness probe for vllm is partial" in blocker
         for blocker in llm_claim["blockers"]
     )
@@ -2507,10 +2507,9 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "Run readiness vllm_serving_and_throughput is partial" in blocker
         for blocker in llm_claim["blockers"]
     )
-    assert any(
+    assert not any(
         action["source"] == "probe"
         and action["paper_baseline_id"] == "vllm"
-        and "A100 vLLM runtime validation remains uncaptured" in action["action"]
         for action in llm_claim["next_actions"]
     )
     assert any(
@@ -2654,10 +2653,10 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 6
+    assert committed["summary"]["total_work_items"] == 5
     assert committed["summary"]["work_items_by_source"] == {
         "matrix_missing_evidence": 3,
-        "probe": 2,
+        "probe": 1,
         "run_readiness": 1,
     }
     work_items = committed["work_items"]
@@ -2700,11 +2699,10 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["paper_baseline_run_id"] == "vllm_serving_and_throughput"
         for item in work_items
     )
-    assert any(
+    assert not any(
         item["claim_id"] == "llm_serving_paper_baselines"
         and item["source"] == "probe"
         and item["paper_baseline_id"] == "vllm"
-        and "A100 vLLM runtime validation remains uncaptured" in item["action"]
         for item in work_items
     )
     assert not any(
@@ -2747,7 +2745,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 6
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 5
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -3357,7 +3355,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         expected_probe_roots = {
             "vllm": (
                 "tmp/cuda-backend/paper-baselines/probes/"
-                "vllm-h200-env-d727befb/"
+                "vllm-a100-h200-env-27fa5aa3/"
             ),
             "sglang": (
                 "tmp/cuda-backend/paper-baselines/probes/"
@@ -3436,10 +3434,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if check["kind"] == "python_import"
             )
         if item["paper_baseline_id"] == "vllm":
-            assert item["latest_status"] == "partial"
+            assert item["latest_status"] == "pass"
             assert machine_status["H200"]["status"] == "pass"
-            assert machine_status["A100"]["status"] == "partial"
-            assert "not rerun" in machine_status["A100"]["blocking_gaps"][0]
+            assert machine_status["A100"]["status"] == "pass"
+            assert machine_status["A100"]["blocking_gaps"] == []
             imported_modules = {
                 check["module"]
                 for check in item["checks"]
@@ -4656,12 +4654,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert readiness_by_run["vdcores_resource_policy_trace"][
         "latest_status"
     ] == "pass"
-    assert any(
-        "A100 vLLM runtime validation was not rerun" in gap
-        for gap in readiness_by_run[
-            "vllm_serving_and_throughput"
-        ]["blocking_gaps"]
-    )
+    assert readiness_by_run["vllm_serving_and_throughput"][
+        "latest_status"
+    ] == "pass"
+    assert readiness_by_run["vllm_serving_and_throughput"]["blocking_gaps"] == []
     assert any(
         "sglang.bench_serving" in gap
         for gap in readiness_by_run[

@@ -51,6 +51,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 vLLM H200 repeats](2026-06-01-vllm-h200-repeats.md)
 - [2026-06-01 vLLM H200 serving sweep](2026-06-01-vllm-h200-serving-sweep.md)
 - [2026-06-01 vLLM H200 serving capture](2026-06-01-vllm-h200-serving-capture.md)
+- [2026-06-01 vLLM A100 probe validation](2026-06-01-vllm-a100-probe-validation.md)
 - [2026-06-01 repository CI closed for ultimate goal](2026-06-01-repo-ci-closed.md)
 - [2026-05-31 MPK model-access readiness](2026-05-31-mpk-model-access-readiness.md)
 - [2026-05-31 VDCores extension readiness](2026-05-31-vdcores-extension-readiness.md)

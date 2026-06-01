@@ -298,7 +298,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-156b7fa0/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-5bfc8129/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -306,7 +306,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-156b7fa0/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-5bfc8129/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -367,15 +367,13 @@
         },
         {
           "paper_baseline_id": "vllm",
-          "latest_status": "partial",
-          "next_action": "A100 vLLM runtime validation remains uncaptured; H200 entrypoints and serving benchmark execution are validated under the isolated vLLM env.",
+          "latest_status": "pass",
+          "next_action": "vLLM A100 and H200 entrypoint imports pass under isolated runtime environments; keep serving-result rows tied to raw benchmark artifacts before promotion.",
           "machines": [
             {
               "gpu": "A100",
-              "status": "partial",
-              "blocking_gaps": [
-                "A100 vLLM runtime validation was not rerun for this H200 paper-baseline capture."
-              ]
+              "status": "pass",
+              "blocking_gaps": []
             },
             {
               "gpu": "H200",
@@ -429,7 +427,6 @@
         "MPK, VDCores, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records.",
         "Paper baseline run mpk_qwen3_native_vs_persistent is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vdcores_llama_decode_correctness is planned_not_run, not imported_to_viewer.",
-        "Readiness probe for vllm is partial.",
         "Readiness probe for sglang is partial.",
         "Run readiness vdcores_llama_decode_correctness is partial: HF_TOKEN is not available for this run."
       ],
@@ -445,12 +442,6 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "status": "partial",
           "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
-        },
-        {
-          "source": "probe",
-          "paper_baseline_id": "vllm",
-          "status": "partial",
-          "action": "A100 vLLM runtime validation remains uncaptured; H200 entrypoints and serving benchmark execution are validated under the isolated vLLM env."
         },
         {
           "source": "probe",
