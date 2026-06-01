@@ -2620,7 +2620,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     )
     assert any(
         "MPK persistent-kernel" in blocker
-        and "same paper workload" in blocker
+        and "SGLang MPK-policy" in blocker
         for blocker in llm_claim["blockers"]
     )
     assert not any(
@@ -2880,6 +2880,10 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     )
     assert any(
         "remaining queued MPK persistent" in gap
+        for gap in by_id["paper_grade_results"]["gaps"]
+    )
+    assert any(
+        "SGLang MPK-policy" in gap
         for gap in by_id["paper_grade_results"]["gaps"]
     )
     assert not any(
@@ -4999,6 +5003,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 and ref.get("benchmark_id") == "llm_serving_decode"
                 and ref.get("method_id") == "pto_persistent_device"
                 and ref.get("gpu") == "H200"
+                and ref.get("shape_contains")
+                == "vdcores_offline_decode attention tile proxy"
                 for ref in item["current_evidence_refs"]
             )
             assert any(
@@ -5006,6 +5012,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 and ref.get("benchmark_id") == "llm_serving_decode"
                 and ref.get("method_id") == "mpk"
                 and ref.get("gpu") == "H200"
+                and ref.get("shape_contains") == "Qwen/Qwen3-0.6B"
                 for ref in item["current_evidence_refs"]
             )
             assert any(
@@ -5013,6 +5020,17 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 and ref.get("benchmark_id") == "llm_serving_decode"
                 and ref.get("method_id") == "vllm"
                 and ref.get("gpu") == "H200"
+                and ref.get("shape_contains")
+                == "vdcores_offline_decode,Qwen/Qwen3-8B"
+                for ref in item["current_evidence_refs"]
+            )
+            assert any(
+                ref.get("kind") == "viewer_result"
+                and ref.get("benchmark_id") == "llm_serving_decode"
+                and ref.get("method_id") == "vllm"
+                and ref.get("gpu") == "H200"
+                and ref.get("shape_contains")
+                == "mpk_offline_decode,Qwen/Qwen3-8B"
                 for ref in item["current_evidence_refs"]
             )
             assert any(
@@ -5020,6 +5038,15 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 and ref.get("benchmark_id") == "llm_serving_decode"
                 and ref.get("method_id") == "sglang"
                 and ref.get("gpu") == "H200"
+                and ref.get("shape_contains")
+                == "vdcores_offline_decode,Qwen/Qwen3-8B"
+                for ref in item["current_evidence_refs"]
+            )
+            assert not any(
+                ref.get("kind") == "viewer_result"
+                and ref.get("method_id") == "sglang"
+                and ref.get("shape_contains")
+                == "mpk_offline_decode,Qwen/Qwen3-8B"
                 for ref in item["current_evidence_refs"]
             )
             assert any(
@@ -5039,6 +5066,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
             )
             assert not any(
                 "vLLM, SGLang" in gap for gap in item["missing_evidence"]
+            )
+            assert any(
+                "SGLang MPK-policy" in gap for gap in item["missing_evidence"]
             )
 
     assert paper_readiness_audit["overall_status"] == "not_paper_ready"

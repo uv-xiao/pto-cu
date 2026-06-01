@@ -246,7 +246,7 @@ def build_goal_progress(
                 "validate_benchmark_viewer_data.py",
             ],
             gaps=[] if paper_ready else [
-                "Import the remaining queued MPK persistent, VDCores full-serving, ThunderKittens-family, and PTO full-serving artifacts.",
+                "Import the remaining queued MPK persistent, VDCores full-serving, SGLang MPK-policy, ThunderKittens-family, and PTO full-serving artifacts.",
                 "Promote paper readiness only after the audit has zero blockers.",
             ],
             extra={

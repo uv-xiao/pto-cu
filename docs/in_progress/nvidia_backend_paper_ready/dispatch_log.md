@@ -3395,6 +3395,7 @@ Each entry must include:
   imported.
 - Exact Codex command or script invocation: added vLLM and SGLang
   `llm_serving_decode` H200 evidence refs to `paper_evaluation_matrix.json`,
+  added shape-aware `viewer_result` matching in the audit and validator,
   narrowed the LLM-serving missing-evidence text, updated
   `nvidia_goal_progress.py`, then regenerated review artifacts with
   `refresh_nvidia_review_artifacts.py`.
@@ -3418,7 +3419,8 @@ Each entry must include:
   passed.
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: the LLM-serving work queue no longer
-  asks reviewers to import vLLM or SGLang rows that already exist. Remaining
-  full-serving gaps are MPK persistent-kernel, VDCores full serving,
-  ThunderKittens-family full serving, and PTO full serving under the shared
-  Qwen3-8B policies.
+  asks reviewers to import vLLM rows that already exist, and SGLang is now
+  scoped to the VDCores-shaped `128/64` policy it actually covers. Remaining
+  full-serving gaps are MPK persistent-kernel, VDCores full serving, SGLang
+  MPK-policy, ThunderKittens-family full serving, and PTO full serving under
+  the shared Qwen3-8B policies.

@@ -1172,6 +1172,7 @@ def validate_paper_evaluation_matrix(
             result["benchmark_id"],
             result["method_id"],
             result["hardware"]["gpu"],
+            result.get("inputs", {}).get("shape", ""),
         )
         for result in results["result_records"]
     }
@@ -1242,8 +1243,21 @@ def validate_paper_evaluation_matrix(
                     require_string(ref, "method_id", owner),
                     require_string(ref, "gpu", owner),
                 )
-                if key not in result_index:
-                    fail(f"{owner} viewer_result evidence is missing: {key}")
+                shape_contains = ref.get("shape_contains")
+                if shape_contains is not None and (
+                    not isinstance(shape_contains, str) or not shape_contains
+                ):
+                    fail(f"{owner} viewer_result shape_contains is invalid")
+                if not any(
+                    result_key[:3] == key
+                    and (
+                        shape_contains is None
+                        or shape_contains in str(result_key[3])
+                    )
+                    for result_key in result_index
+                ):
+                    detail = key if shape_contains is None else (*key, shape_contains)
+                    fail(f"{owner} viewer_result evidence is missing: {detail}")
             elif kind in {
                 "viewer_data",
                 "stable_doc",

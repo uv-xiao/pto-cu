@@ -411,25 +411,36 @@
           "kind": "viewer_result",
           "benchmark_id": "llm_serving_decode",
           "method_id": "pto_persistent_device",
-          "gpu": "H200"
+          "gpu": "H200",
+          "shape_contains": "vdcores_offline_decode attention tile proxy"
         },
         {
           "kind": "viewer_result",
           "benchmark_id": "llm_serving_decode",
           "method_id": "mpk",
-          "gpu": "H200"
+          "gpu": "H200",
+          "shape_contains": "Qwen/Qwen3-0.6B"
         },
         {
           "kind": "viewer_result",
           "benchmark_id": "llm_serving_decode",
           "method_id": "vllm",
-          "gpu": "H200"
+          "gpu": "H200",
+          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "vllm",
+          "gpu": "H200",
+          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B"
         },
         {
           "kind": "viewer_result",
           "benchmark_id": "llm_serving_decode",
           "method_id": "sglang",
-          "gpu": "H200"
+          "gpu": "H200",
+          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B"
         },
         {
           "kind": "raw_artifact",
@@ -449,7 +460,7 @@
         }
       ],
       "missing_evidence": [
-        "MPK persistent-kernel and VDCores full serving raw outputs are not yet imported for the same paper workload; ThunderKittens-family and PTO rows remain proxy or partial serving-equivalent evidence rather than full Qwen3-8B serving rows."
+        "MPK persistent-kernel, VDCores full serving, SGLang MPK-policy, ThunderKittens-family full serving, and PTO full-serving rows are not yet imported for the shared Qwen3-8B serving policies."
       ],
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     }

@@ -128,7 +128,7 @@
         "validate_benchmark_viewer_data.py"
       ],
       "gaps": [
-        "Import the remaining queued MPK persistent, VDCores full-serving, ThunderKittens-family, and PTO full-serving artifacts.",
+        "Import the remaining queued MPK persistent, VDCores full-serving, SGLang MPK-policy, ThunderKittens-family, and PTO full-serving artifacts.",
         "Promote paper readiness only after the audit has zero blockers."
       ],
       "paper_readiness_status": "not_paper_ready",

@@ -57,24 +57,50 @@ def require_records(data: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return records
 
 
-def result_index(results: dict[str, Any]) -> set[tuple[str, str, str]]:
+def result_index(results: dict[str, Any]) -> set[tuple[str, str, str, str]]:
     records = require_records(results, "result_records")
-    index: set[tuple[str, str, str]] = set()
+    index: set[tuple[str, str, str, str]] = set()
     for record in records:
         hardware = record.get("hardware")
+        inputs = record.get("inputs")
         if not isinstance(hardware, dict):
             continue
+        if not isinstance(inputs, dict):
+            inputs = {}
         benchmark_id = record.get("benchmark_id")
         method_id = record.get("method_id")
         gpu = hardware.get("gpu")
+        shape = inputs.get("shape", "")
         if all(isinstance(value, str) for value in (benchmark_id, method_id, gpu)):
-            index.add((benchmark_id, method_id, gpu))
+            index.add((benchmark_id, method_id, gpu, str(shape)))
     return index
+
+
+def has_viewer_result(
+    current_results: set[tuple[str, str, str, str]],
+    ref: dict[str, Any],
+) -> bool:
+    benchmark_id = str(ref.get("benchmark_id", ""))
+    method_id = str(ref.get("method_id", ""))
+    gpu = str(ref.get("gpu", ""))
+    shape_contains = ref.get("shape_contains")
+    for current_benchmark, current_method, current_gpu, current_shape in current_results:
+        if (
+            current_benchmark,
+            current_method,
+            current_gpu,
+        ) != (benchmark_id, method_id, gpu):
+            continue
+        if shape_contains is None:
+            return True
+        if isinstance(shape_contains, str) and shape_contains in current_shape:
+            return True
+    return False
 
 
 def count_evidence_refs(
     evidence_refs: list[dict[str, Any]],
-    current_results: set[tuple[str, str, str]],
+    current_results: set[tuple[str, str, str, str]],
 ) -> tuple[dict[str, int], list[str]]:
     counts = Counter()
     missing_viewer_results: list[str] = []
@@ -84,12 +110,15 @@ def count_evidence_refs(
             kind = "unknown"
         counts[kind] += 1
         if kind == "viewer_result":
-            key = (
+            key = [
                 str(ref.get("benchmark_id", "")),
                 str(ref.get("method_id", "")),
                 str(ref.get("gpu", "")),
-            )
-            if key not in current_results:
+            ]
+            shape_contains = ref.get("shape_contains")
+            if isinstance(shape_contains, str) and shape_contains:
+                key.append(f"shape contains {shape_contains}")
+            if not has_viewer_result(current_results, ref):
                 missing_viewer_results.append(" / ".join(key))
     return dict(sorted(counts.items())), missing_viewer_results
 
