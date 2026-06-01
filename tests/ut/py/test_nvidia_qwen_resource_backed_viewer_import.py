@@ -40,6 +40,7 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                     "workload_id": "mpk_offline_decode",
                     "status": "pass",
                     "run_prepared_status": 0,
+                    "repeat_runs": 3,
                     "graph_task_count": 255,
                     "timing_ns": {"host_wall": 11, "device_wall": 7},
                     "scheduler_counters": {
@@ -47,6 +48,8 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                         "error_count": 0,
                         "scheduler_processed_count": 255,
                     },
+                    "total_completed_count": 765,
+                    "total_error_count": 0,
                 },
                 {
                     "workload_id": "vdcores_offline_decode",
@@ -81,10 +84,14 @@ def test_resource_backed_importer_emits_diagnostic_rows():
         assert record["statistic"]["serving_coverage"] == (
             "diagnostic_resource_backed_qwen_dag"
         )
-        assert record["statistic"]["completed_count"] == 255
+        assert record["statistic"]["last_completed_count"] == 255
+        assert record["statistic"]["completed_count"] in {255, 765}
         assert record["statistic"]["error_count"] == 0
+        assert record["statistic"]["repeat_runs"] in {1, 3}
+        assert record["statistic"]["sample_count"] in {1, 3}
         assert record["correctness"] == "pass"
         assert "resource-backed diagnostic" in record["inputs"]["shape"]
+        assert "prepared callable reused" in record["inputs"]["repeat_policy"]
 
 
 def test_resource_backed_importer_adds_matrix_ref():
@@ -107,10 +114,13 @@ def test_resource_backed_importer_adds_matrix_ref():
         ]
     }
 
-    updated = module.ensure_matrix_ref(matrix)
+    updated = module.ensure_matrix_ref(
+        matrix,
+        raw_artifact="tmp/cuda-backend/resource-backed-repeat.json",
+    )
     claim = updated["paper_evaluation_matrix"][0]
 
-    assert claim["current_evidence_refs"] == [
+    assert claim["current_evidence_refs"][0] == (
         {
             "kind": "viewer_result",
             "benchmark_id": "llm_serving_decode",
@@ -119,8 +129,12 @@ def test_resource_backed_importer_adds_matrix_ref():
             "shape_contains": "Qwen/Qwen3-8B resource-backed diagnostic",
             "serving_coverage": "diagnostic_resource_backed_qwen_dag",
         }
-    ]
-    assert "resource-backed execution viewer_result_imports" in claim[
+    )
+    assert claim["current_evidence_refs"][1]["path"] == (
+        "tmp/cuda-backend/resource-backed-repeat.json"
+    )
+    assert "repeat_runs" in claim["current_evidence_refs"][1]["symbols"]
+    assert "repeated resource-backed execution viewer_result_imports" in claim[
         "missing_evidence_details"
     ][0]["action"]
 
@@ -148,6 +162,15 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
         "mpk_offline_decode",
         "vdcores_offline_decode",
     }
-    assert all(row["statistic"]["completed_count"] == 255 for row in rows)
+    assert any(row["statistic"].get("repeat_runs") == 3 for row in rows)
+    assert all(
+        row["statistic"].get(
+            "last_completed_count",
+            row["statistic"]["completed_count"],
+        )
+        == 255
+        for row in rows
+    )
+    assert all(row["statistic"]["completed_count"] in {255, 765} for row in rows)
     assert all(row["statistic"]["error_count"] == 0 for row in rows)
     assert all(row["correctness"] == "pass" for row in rows)

@@ -58,6 +58,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--single-context-live-session", action="store_true")
     parser.add_argument("--run-submission-smoke", action="store_true")
     parser.add_argument("--run-resource-backed-smoke", action="store_true")
+    parser.add_argument("--resource-backed-repeat-runs", type=int, default=1)
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--arch", default="compute_80")
     parser.add_argument("--cache-root", type=Path)
@@ -112,6 +113,7 @@ def main() -> None:
         workspace_cuda_live=args.workspace_cuda_live,
         single_context_live_session=args.single_context_live_session,
         run_resource_backed_smoke=args.run_resource_backed_smoke,
+        resource_backed_repeat_runs=args.resource_backed_repeat_runs,
         arch=args.arch,
     )
     if args.output_json:

@@ -55,6 +55,7 @@ def build_decode_loop_runner(
     workspace_cuda_live: bool = False,
     single_context_live_session: bool = False,
     run_resource_backed_smoke: bool = False,
+    resource_backed_repeat_runs: int = 1,
     arch: str = "compute_80",
 ) -> dict[str, Any]:
     session_payload: dict[str, Any] | None = None
@@ -146,6 +147,7 @@ def build_decode_loop_runner(
                 activation_workspace=activation_workspace,
                 arch=arch,
                 cache_root=cache_dir,
+                repeat_runs=resource_backed_repeat_runs,
             )
             if session is not None
             else {

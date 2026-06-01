@@ -55,6 +55,11 @@ def build_result_records(
     records = []
     for workload in execution["workloads"]:
         counters = workload["scheduler_counters"]
+        repeat_runs = int(workload.get("repeat_runs", 1))
+        completed_count = int(
+            workload.get("total_completed_count", counters["completed_count"]),
+        )
+        error_count = int(workload.get("total_error_count", counters["error_count"]))
         records.append(
             {
                 "benchmark_id": "llm_serving_decode",
@@ -72,25 +77,30 @@ def build_result_records(
                     "shape": (
                         "Qwen/Qwen3-8B resource-backed diagnostic "
                         f"{workload['workload_id']}, graph_tasks="
-                        f"{workload['graph_task_count']}"
+                        f"{workload['graph_task_count']}, repeat_runs="
+                        f"{repeat_runs}"
                     ),
                     "dtype": "float32 diagnostic task bodies with real buffers",
                     "repeat_policy": (
-                        "single resource-backed run_prepared submission "
-                        "inside one CUDA context"
+                        "single prepared callable reused across "
+                        f"{repeat_runs} resource-backed run_prepared "
+                        "submission(s) inside one CUDA context"
                     ),
                 },
                 "statistic": {
                     "kind": "pto_qwen_resource_backed_execution",
-                    "sample_count": 1,
+                    "sample_count": repeat_runs,
                     "host_wall_ns": int(workload["timing_ns"]["host_wall"]),
                     "device_wall_ns": int(workload["timing_ns"]["device_wall"]),
                     "run_prepared_status": int(workload["run_prepared_status"]),
-                    "completed_count": int(counters["completed_count"]),
-                    "error_count": int(counters["error_count"]),
+                    "completed_count": completed_count,
+                    "error_count": error_count,
+                    "last_completed_count": int(counters["completed_count"]),
+                    "last_error_count": int(counters["error_count"]),
                     "scheduler_processed_count": int(
                         counters["scheduler_processed_count"],
                     ),
+                    "repeat_runs": repeat_runs,
                     "task_count": int(workload["graph_task_count"]),
                     "serving_coverage": COVERAGE,
                     "workload_id": workload["workload_id"],
@@ -125,7 +135,11 @@ def merge_results(
     return updated
 
 
-def ensure_matrix_ref(matrix: dict[str, Any]) -> dict[str, Any]:
+def ensure_matrix_ref(
+    matrix: dict[str, Any],
+    *,
+    raw_artifact: str | None = None,
+) -> dict[str, Any]:
     ref = {
         "kind": "viewer_result",
         "benchmark_id": "llm_serving_decode",
@@ -134,6 +148,20 @@ def ensure_matrix_ref(matrix: dict[str, Any]) -> dict[str, Any]:
         "shape_contains": "Qwen/Qwen3-8B resource-backed diagnostic",
         "serving_coverage": COVERAGE,
     }
+    raw_ref = (
+        {
+            "kind": "raw_artifact",
+            "path": raw_artifact,
+            "symbols": [
+                "pto_qwen_resource_backed_execution",
+                "qwen_resource_backed_diagnostic_execution",
+                "diagnostic_resource_backed_qwen_dag",
+                "repeat_runs",
+            ],
+        }
+        if raw_artifact
+        else None
+    )
     updated = dict(matrix)
     records = []
     for record in matrix["paper_evaluation_matrix"]:
@@ -142,17 +170,26 @@ def ensure_matrix_ref(matrix: dict[str, Any]) -> dict[str, Any]:
             refs = current["current_evidence_refs"]
             if ref not in refs:
                 refs.append(ref)
+            if raw_ref is not None and raw_ref not in refs:
+                refs.append(raw_ref)
             for detail in current.get("missing_evidence_details", []):
                 if detail.get("id") == "pto_full_serving_qwen3_8b":
-                    detail["action"] = detail["action"].replace(
+                    action = detail["action"]
+                    updated_phrase = (
+                        "diagnostic proxy, unit-math, descriptor-smoke, "
+                        "resource-backed execution, and repeated "
+                        "resource-backed execution viewer_result_imports "
+                        "are present."
+                    )
+                    for phrase in (
                         "diagnostic proxy, unit-math, and descriptor-smoke "
                         "viewer_result_imports are present.",
-                        (
-                            "diagnostic proxy, unit-math, descriptor-smoke, "
-                            "and resource-backed execution viewer_result_imports "
-                            "are present."
-                        ),
-                    )
+                        "diagnostic proxy, unit-math, descriptor-smoke, "
+                        "and resource-backed execution viewer_result_imports "
+                        "are present.",
+                    ):
+                        action = action.replace(phrase, updated_phrase)
+                    detail["action"] = action
         records.append(current)
     updated["paper_evaluation_matrix"] = records
     return updated
@@ -178,7 +215,10 @@ def main() -> None:
         commit=args.commit,
     )
     write_json(args.results, merge_results(load_json(args.results), records))
-    write_json(args.matrix, ensure_matrix_ref(load_json(args.matrix)))
+    write_json(
+        args.matrix,
+        ensure_matrix_ref(load_json(args.matrix), raw_artifact=raw_artifact),
+    )
     print(f"imported {raw_artifact}")
 
 

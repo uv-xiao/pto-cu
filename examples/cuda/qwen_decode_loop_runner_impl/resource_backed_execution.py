@@ -45,6 +45,7 @@ def run_resource_backed_execution(
     activation_workspace: dict[str, Any],
     arch: str,
     cache_root: Path | None,
+    repeat_runs: int = 1,
 ) -> dict[str, Any]:
     runtime = session.runtime
     ctx = session.ctx
@@ -84,6 +85,7 @@ def run_resource_backed_execution(
                 plan=plan,
                 descriptors=descriptors,
                 activation_workspace=activation_workspace,
+                repeat_runs=repeat_runs,
             )
             for plan in plans
         ]
@@ -93,7 +95,9 @@ def run_resource_backed_execution(
         if callable_prepared:
             runtime.unregister_callable(ctx, 0)
 
-    passed = workload_results and all(item["status"] == "pass" for item in workload_results)
+    passed = workload_results and all(
+        item["status"] == "pass" for item in workload_results
+    )
     return {
         "schema_version": 1,
         "kind": "pto_qwen_resource_backed_execution",
@@ -107,6 +111,11 @@ def run_resource_backed_execution(
         },
         "artifact": artifact_summary(prepared),
         "context_policy": "one_cuda_context_for_all_resource_owners",
+        "repeat_policy": {
+            "prepared_callable_reuse": "single_prepare_multiple_run_prepared",
+            "repeat_runs_per_workload": max(1, int(repeat_runs)),
+            "graph_state_policy": "fresh_graph_state_per_repeat",
+        },
         "workloads": workload_results,
         "implemented_contracts": ["qwen_resource_backed_diagnostic_execution"],
         "remaining_runtime_gaps": [
@@ -122,6 +131,7 @@ def run_workload(
     plan: dict[str, Any],
     descriptors: list[dict[str, Any]],
     activation_workspace: dict[str, Any],
+    repeat_runs: int,
 ) -> dict[str, Any]:
     workspace = workspace_for_workload(
         activation_workspace=activation_workspace,
@@ -137,40 +147,74 @@ def run_workload(
     if packet is None or workspace is None:
         return {"workload_id": plan["workload_id"], "status": "not_run"}
 
-    graph = MaterializedGraph(session, packet)
-    timing = PtoRunTiming()
-    args = CudaPersistentDagArgs(state=graph.ptrs["state"])
-    status = session.runtime.run_prepared(
-        session.ctx,
-        None,
-        0,
-        ctypes.byref(args),
-        graph.block_dim,
-        0,
-        0,
-        0,
-        0,
-        0,
-        None,
-        ctypes.byref(timing),
+    repeat_results = []
+    for repeat_index in range(max(1, int(repeat_runs))):
+        graph = MaterializedGraph(session, packet)
+        timing = PtoRunTiming()
+        args = CudaPersistentDagArgs(state=graph.ptrs["state"])
+        status = session.runtime.run_prepared(
+            session.ctx,
+            None,
+            0,
+            ctypes.byref(args),
+            graph.block_dim,
+            0,
+            0,
+            0,
+            0,
+            0,
+            None,
+            ctypes.byref(timing),
+        )
+        counters = graph.read_counters()
+        repeat_results.append(
+            {
+                "repeat_index": repeat_index,
+                "status": (
+                    "pass"
+                    if status == 0
+                    and counters["completed_count"] == len(packet)
+                    and counters["error_count"] == 0
+                    else "fail"
+                ),
+                "run_prepared_status": int(status),
+                "scheduler_counters": counters,
+                "output_sample": graph.read_output_sample(workspace),
+                "timing_ns": {
+                    "host_wall": int(timing.host_wall_ns),
+                    "device_wall": int(timing.device_wall_ns),
+                },
+            }
+        )
+    last = repeat_results[-1]
+    total_host_wall = sum(
+        item["timing_ns"]["host_wall"] for item in repeat_results
     )
-    counters = graph.read_counters()
+    total_device_wall = sum(
+        item["timing_ns"]["device_wall"] for item in repeat_results
+    )
     result = {
         "workload_id": plan["workload_id"],
         "status": (
             "pass"
-            if status == 0
-            and counters["completed_count"] == len(packet)
-            and counters["error_count"] == 0
+            if all(item["status"] == "pass" for item in repeat_results)
             else "fail"
         ),
-        "run_prepared_status": int(status),
+        "run_prepared_status": int(last["run_prepared_status"]),
+        "repeat_runs": len(repeat_results),
+        "repeat_results": repeat_results,
         "graph_task_count": len(packet),
-        "scheduler_counters": counters,
-        "output_sample": graph.read_output_sample(workspace),
+        "scheduler_counters": last["scheduler_counters"],
+        "total_completed_count": sum(
+            item["scheduler_counters"]["completed_count"] for item in repeat_results
+        ),
+        "total_error_count": sum(
+            item["scheduler_counters"]["error_count"] for item in repeat_results
+        ),
+        "output_sample": last["output_sample"],
         "timing_ns": {
-            "host_wall": int(timing.host_wall_ns),
-            "device_wall": int(timing.device_wall_ns),
+            "host_wall": total_host_wall,
+            "device_wall": total_device_wall,
         },
     }
     return result

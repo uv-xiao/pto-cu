@@ -182,6 +182,12 @@ still remains unexecuted. The current live-owner smoke artifact is
 `tmp/cuda-backend/pto-serving-decode-loop-submission-smoke-live-2026-06-02/`
 `qwen-decode-loop-runner.json`, and the benchmark viewer imports it as
 `serving_coverage=diagnostic_qwen_descriptor_smoke`.
+The current resource-backed repeat artifact is
+`tmp/cuda-backend/pto-serving-resource-backed-repeat-2026-06-02/qwen-decode-loop-runner.json`.
+It reuses one prepared callable inside the single CUDA context for three
+resource-backed submissions per serving policy, completing `765` diagnostic
+tasks per policy with zero scheduler errors. This is still diagnostic
+execution, not full Qwen numerical correctness or a full-serving row.
 The task-body source artifact in
 `examples/cuda/qwen_persistent_task_bodies.py` now renders Qwen persistent
 task bodies through the existing persistent DAG source generator. It records

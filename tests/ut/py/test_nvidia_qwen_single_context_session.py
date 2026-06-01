@@ -198,6 +198,7 @@ def test_resource_backed_smoke_runs_before_single_context_close(monkeypatch):
         assert kwargs["session"] is session
         assert kwargs["plans"][0]["workload_id"] == "mpk_offline_decode"
         assert kwargs["activation_workspace"] is session.workspace
+        assert kwargs["repeat_runs"] == 4
         return {
             "status": "pass",
             "serving_coverage": "diagnostic_resource_backed_qwen_dag",
@@ -220,6 +221,7 @@ def test_resource_backed_smoke_runs_before_single_context_close(monkeypatch):
         mode="mock",
         single_context_live_session=True,
         run_resource_backed_smoke=True,
+        resource_backed_repeat_runs=4,
     )
 
     assert session.closed
