@@ -75,8 +75,10 @@ that target `uv-xiao/pto-cu:main`.
 - Dependency PRs are required before shared schemas, tooling, or runtime
   abstractions are reused by multiple workers.
 - Every dispatch, branch, PR, merge decision, scope change, and handoff is
-  recorded in
-  `docs/in_progress/nvidia_backend_paper_ready/dispatch_log.md`.
+  recorded through
+  `docs/in_progress/nvidia_backend_paper_ready/dispatch_log.md`, with
+  dated archive chunks linked from
+  `docs/in_progress/nvidia_backend_paper_ready/dispatch_log/index.md`.
 
 ## Required Child Slices
 

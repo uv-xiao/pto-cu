@@ -261,13 +261,15 @@ def build_goal_progress(
             status=criterion_status(
                 [
                     "docs/in_progress/nvidia_backend_paper_ready/dispatch_log.md",
+                    "docs/in_progress/nvidia_backend_paper_ready/dispatch_log/index.md",
                     "docs/in_progress/nvidia_backend_paper_ready.md",
                 ]
             ),
-            summary="Goal state, branches, PR target, verification, and handoffs are recorded for later sessions.",
+            summary="Goal state, branches, PR target, verification, and handoffs are recorded for later sessions in a split dispatch archive.",
             evidence_refs=[
                 "docs/in_progress/nvidia_backend_paper_ready.md",
                 "docs/in_progress/nvidia_backend_paper_ready/dispatch_log.md",
+                "docs/in_progress/nvidia_backend_paper_ready/dispatch_log/index.md",
             ],
             verification=["check_nvidia_review_ready.py"],
             gaps=[],

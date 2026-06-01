@@ -26,6 +26,31 @@ def require_file(path: Path) -> None:
         fail(f"missing file: {path.relative_to(ROOT)}")
 
 
+def check_dispatch_log_structure() -> None:
+    landing = GOAL_ROOT / "dispatch_log.md"
+    archive_index = GOAL_ROOT / "dispatch_log" / "index.md"
+    entries_root = GOAL_ROOT / "dispatch_log" / "entries"
+
+    require_file(landing)
+    require_file(archive_index)
+    if not entries_root.is_dir():
+        fail(f"missing directory: {entries_root.relative_to(ROOT)}")
+    landing_lines = landing.read_text(encoding="utf-8").splitlines()
+    if len(landing_lines) > 120:
+        fail(f"{landing.relative_to(ROOT)} has {len(landing_lines)} lines")
+    index_text = archive_index.read_text(encoding="utf-8")
+    entry_files = sorted(entries_root.glob("*.md"))
+    if not entry_files:
+        fail(f"{entries_root.relative_to(ROOT)} has no entry files")
+    for path in entry_files:
+        rel = f"entries/{path.name}"
+        if rel not in index_text:
+            fail(f"{archive_index.relative_to(ROOT)} missing {rel}")
+        line_count = len(path.read_text(encoding="utf-8").splitlines())
+        if line_count > 300:
+            fail(f"{path.relative_to(ROOT)} has {line_count} lines")
+
+
 def load_json(path: Path) -> dict:
     require_file(path)
     try:
@@ -93,7 +118,7 @@ def check_ultimate_goal_contract() -> None:
             "code evidence",
         ],
     )
-    require_file(GOAL_ROOT / "dispatch_log.md")
+    check_dispatch_log_structure()
     require_file(GOAL_ROOT / "work_preparation.md")
     require_text(
         GOAL_ROOT / "baseline_survey.md",

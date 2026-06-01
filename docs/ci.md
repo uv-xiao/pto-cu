@@ -81,4 +81,5 @@ temporarily copy `docs/ci/nvidia-manual-review.workflow.yml` into
 `.github/workflows/`, enable repository GitHub Actions, dispatch
 `NVIDIA Manual Review`, then disable Actions again, remove the runnable
 workflow file, and record the run in
-`docs/in_progress/nvidia_backend_paper_ready/dispatch_log.md`.
+`docs/in_progress/nvidia_backend_paper_ready/dispatch_log.md` or its linked
+dispatch archive.
