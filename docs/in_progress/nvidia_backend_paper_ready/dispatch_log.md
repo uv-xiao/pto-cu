@@ -3153,3 +3153,55 @@ Each entry must include:
   token-shape contract before importing viewer result rows, then resolve
   offline throughput and one-batch command failures before running the full
   batch ladder.
+
+### 2026-06-01 - SGLang Fixed-Range H200 Capture
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned SGLang
+  fixed-range serving and offline evidence import.
+- Exact Codex command or script invocation: used the documented tree-sync
+  fallback to refresh the remote standalone checkout on `bizhaoh200`. The H200 run
+  used `CUDA_VISIBLE_DEVICES=0`, the isolated
+  `tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15` environment,
+  `Qwen/Qwen3-8B`, `bfloat16`, `--disable-piecewise-cuda-graph`, and
+  `--random-range-ratio 1.0` after source inspection showed
+  `range_ratio=0` samples variable lengths. The online command used
+  `sglang.bench_serving --dataset-name random-ids --tokenize-prompt` with
+  `128` input tokens, `64` output tokens, `num_prompts=1`,
+  `max_concurrency=1`, and `request_rate=inf`. The offline command used
+  `sglang.bench_offline_throughput --context-length 384 --skip-warmup` with a
+  local ShareGPT-shaped seed file.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready SGLang
+  serving-baseline execution.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: SGLang command-plan generation, benchmark-viewer
+  results, benchmark-viewer execution-attempt data, generated paper-readiness
+  data, changelog docs, dispatch log, tests, and local `tmp/` SGLang serving
+  artifacts. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  SGLang online serving and offline engine throughput now have exact `128/64`
+  H200 result rows, but `bench_one_batch` still fails before producing a row,
+  so the SGLang run remains partial.
+- Verification commands and results:
+  source diagnosis reproduced `range_ratio=0.0 -> [38]/[44]` and
+  `range_ratio=1.0 -> [128]/[64]`; artifact
+  `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-fixedrange-bfc1c581/`
+  -> `server_ready_status=0`, `bench_serving_status=0`,
+  `offline_status=0`, `one_batch_status=1`. Online serving captured one
+  completed request, zero failed requests, `128` input tokens, `64` output
+  tokens, request throughput `2.48693394676766 req/s`, output throughput
+  `159.16377259313023 tok/s`, mean TTFT `36.877373699098825 ms`, and mean ITL
+  `5.6076819948371375 ms`. Offline engine throughput captured one successful
+  request, `128` input tokens, `64` output tokens, latency
+  `0.4909931207075715 s`, and output throughput
+  `130.34805845705012 tok/s`. One-batch still fails with
+  `AttributeError: 'NoneType' object has no attribute 'long'` in
+  `vocab_parallel_embedding.py`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: next SGLang work should fix or bypass
+  the one-batch synthetic-input path, then run batch `2`, `4`, `8`, and `16`
+  with repeated samples before upgrading SGLang from partial evidence to a
+  paper-ready baseline.

@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at_utc": "2026-05-31T07:13:59.825975+00:00",
-    "pto_commit": "f7662782",
+    "generated_at_utc": "2026-06-01T01:43:42.830522+00:00",
+    "pto_commit": "bfc1c581",
     "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs",
     "model_tier": "primary",
     "source_files": [
@@ -524,21 +524,21 @@
       "commands": [
         {
           "kind": "server",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 1088"
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 1088 --disable-piecewise-cuda-graph"
         },
         {
           "kind": "online_serving",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 0 --num-prompts 1 --max-concurrency 1 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch1.jsonl",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random-ids --tokenize-prompt --random-input-len 64 --random-output-len 1024 --random-range-ratio 1.0 --num-prompts 1 --max-concurrency 1 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch1.jsonl",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch1.jsonl"
         },
         {
           "kind": "offline_throughput",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 0 --num-prompts 1 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch1.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --context-length 1088 --disable-piecewise-cuda-graph --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 1.0 --num-prompts 1 --skip-warmup --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch1.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch1.json"
         },
         {
           "kind": "one_batch",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --batch-size 1 --input-len 64 --output-len 1024 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch1.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --context-length 1088 --disable-piecewise-cuda-graph --disable-cuda-graph --batch-size 1 --input-len 64 --output-len 1024 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch1.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch1.json"
         }
       ]
@@ -557,21 +557,21 @@
       "commands": [
         {
           "kind": "server",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 1088"
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 1088 --disable-piecewise-cuda-graph"
         },
         {
           "kind": "online_serving",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 0 --num-prompts 2 --max-concurrency 2 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch2.jsonl",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random-ids --tokenize-prompt --random-input-len 64 --random-output-len 1024 --random-range-ratio 1.0 --num-prompts 2 --max-concurrency 2 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch2.jsonl",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch2.jsonl"
         },
         {
           "kind": "offline_throughput",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 0 --num-prompts 2 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch2.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --context-length 1088 --disable-piecewise-cuda-graph --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 1.0 --num-prompts 2 --skip-warmup --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch2.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch2.json"
         },
         {
           "kind": "one_batch",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --batch-size 2 --input-len 64 --output-len 1024 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch2.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --context-length 1088 --disable-piecewise-cuda-graph --disable-cuda-graph --batch-size 2 --input-len 64 --output-len 1024 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch2.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch2.json"
         }
       ]
@@ -590,21 +590,21 @@
       "commands": [
         {
           "kind": "server",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 1088"
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 1088 --disable-piecewise-cuda-graph"
         },
         {
           "kind": "online_serving",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 0 --num-prompts 4 --max-concurrency 4 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch4.jsonl",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random-ids --tokenize-prompt --random-input-len 64 --random-output-len 1024 --random-range-ratio 1.0 --num-prompts 4 --max-concurrency 4 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch4.jsonl",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch4.jsonl"
         },
         {
           "kind": "offline_throughput",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 0 --num-prompts 4 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch4.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --context-length 1088 --disable-piecewise-cuda-graph --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 1.0 --num-prompts 4 --skip-warmup --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch4.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch4.json"
         },
         {
           "kind": "one_batch",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --batch-size 4 --input-len 64 --output-len 1024 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch4.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --context-length 1088 --disable-piecewise-cuda-graph --disable-cuda-graph --batch-size 4 --input-len 64 --output-len 1024 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch4.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch4.json"
         }
       ]
@@ -623,21 +623,21 @@
       "commands": [
         {
           "kind": "server",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 1088"
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 1088 --disable-piecewise-cuda-graph"
         },
         {
           "kind": "online_serving",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 0 --num-prompts 8 --max-concurrency 8 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch8.jsonl",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random-ids --tokenize-prompt --random-input-len 64 --random-output-len 1024 --random-range-ratio 1.0 --num-prompts 8 --max-concurrency 8 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch8.jsonl",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch8.jsonl"
         },
         {
           "kind": "offline_throughput",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 0 --num-prompts 8 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch8.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --context-length 1088 --disable-piecewise-cuda-graph --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 1.0 --num-prompts 8 --skip-warmup --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch8.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch8.json"
         },
         {
           "kind": "one_batch",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --batch-size 8 --input-len 64 --output-len 1024 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch8.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --context-length 1088 --disable-piecewise-cuda-graph --disable-cuda-graph --batch-size 8 --input-len 64 --output-len 1024 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch8.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch8.json"
         }
       ]
@@ -656,21 +656,21 @@
       "commands": [
         {
           "kind": "server",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 1088"
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 1088 --disable-piecewise-cuda-graph"
         },
         {
           "kind": "online_serving",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 0 --num-prompts 16 --max-concurrency 16 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch16.jsonl",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random-ids --tokenize-prompt --random-input-len 64 --random-output-len 1024 --random-range-ratio 1.0 --num-prompts 16 --max-concurrency 16 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch16.jsonl",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-serving-batch16.jsonl"
         },
         {
           "kind": "offline_throughput",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 0 --num-prompts 16 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch16.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --context-length 1088 --disable-piecewise-cuda-graph --dataset-name random --random-input-len 64 --random-output-len 1024 --random-range-ratio 1.0 --num-prompts 16 --skip-warmup --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch16.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-offline-batch16.json"
         },
         {
           "kind": "one_batch",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --batch-size 16 --input-len 64 --output-len 1024 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch16.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --context-length 1088 --disable-piecewise-cuda-graph --disable-cuda-graph --batch-size 16 --input-len 64 --output-len 1024 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch16.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/mpk_offline_decode/sglang-one-batch16.json"
         }
       ]
@@ -689,21 +689,21 @@
       "commands": [
         {
           "kind": "server",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 192"
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 256 --disable-piecewise-cuda-graph"
         },
         {
           "kind": "online_serving",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 0 --num-prompts 1 --max-concurrency 1 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch1.jsonl",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random-ids --tokenize-prompt --random-input-len 128 --random-output-len 64 --random-range-ratio 1.0 --num-prompts 1 --max-concurrency 1 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch1.jsonl",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch1.jsonl"
         },
         {
           "kind": "offline_throughput",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 0 --num-prompts 1 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch1.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --context-length 384 --disable-piecewise-cuda-graph --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 1.0 --num-prompts 1 --skip-warmup --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch1.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch1.json"
         },
         {
           "kind": "one_batch",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --batch-size 1 --input-len 128 --output-len 64 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch1.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --context-length 256 --disable-piecewise-cuda-graph --disable-cuda-graph --batch-size 1 --input-len 128 --output-len 64 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch1.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch1.json"
         }
       ]
@@ -722,21 +722,21 @@
       "commands": [
         {
           "kind": "server",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 192"
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 256 --disable-piecewise-cuda-graph"
         },
         {
           "kind": "online_serving",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 0 --num-prompts 2 --max-concurrency 2 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch2.jsonl",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random-ids --tokenize-prompt --random-input-len 128 --random-output-len 64 --random-range-ratio 1.0 --num-prompts 2 --max-concurrency 2 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch2.jsonl",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch2.jsonl"
         },
         {
           "kind": "offline_throughput",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 0 --num-prompts 2 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch2.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --context-length 384 --disable-piecewise-cuda-graph --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 1.0 --num-prompts 2 --skip-warmup --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch2.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch2.json"
         },
         {
           "kind": "one_batch",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --batch-size 2 --input-len 128 --output-len 64 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch2.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --context-length 256 --disable-piecewise-cuda-graph --disable-cuda-graph --batch-size 2 --input-len 128 --output-len 64 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch2.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch2.json"
         }
       ]
@@ -755,21 +755,21 @@
       "commands": [
         {
           "kind": "server",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 192"
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 256 --disable-piecewise-cuda-graph"
         },
         {
           "kind": "online_serving",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 0 --num-prompts 4 --max-concurrency 4 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch4.jsonl",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random-ids --tokenize-prompt --random-input-len 128 --random-output-len 64 --random-range-ratio 1.0 --num-prompts 4 --max-concurrency 4 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch4.jsonl",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch4.jsonl"
         },
         {
           "kind": "offline_throughput",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 0 --num-prompts 4 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch4.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --context-length 384 --disable-piecewise-cuda-graph --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 1.0 --num-prompts 4 --skip-warmup --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch4.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch4.json"
         },
         {
           "kind": "one_batch",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --batch-size 4 --input-len 128 --output-len 64 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch4.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --context-length 256 --disable-piecewise-cuda-graph --disable-cuda-graph --batch-size 4 --input-len 128 --output-len 64 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch4.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch4.json"
         }
       ]
@@ -788,21 +788,21 @@
       "commands": [
         {
           "kind": "server",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 192"
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 256 --disable-piecewise-cuda-graph"
         },
         {
           "kind": "online_serving",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 0 --num-prompts 8 --max-concurrency 8 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch8.jsonl",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random-ids --tokenize-prompt --random-input-len 128 --random-output-len 64 --random-range-ratio 1.0 --num-prompts 8 --max-concurrency 8 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch8.jsonl",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch8.jsonl"
         },
         {
           "kind": "offline_throughput",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 0 --num-prompts 8 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch8.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --context-length 384 --disable-piecewise-cuda-graph --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 1.0 --num-prompts 8 --skip-warmup --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch8.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch8.json"
         },
         {
           "kind": "one_batch",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --batch-size 8 --input-len 128 --output-len 64 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch8.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --context-length 256 --disable-piecewise-cuda-graph --disable-cuda-graph --batch-size 8 --input-len 128 --output-len 64 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch8.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch8.json"
         }
       ]
@@ -821,21 +821,21 @@
       "commands": [
         {
           "kind": "server",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 192"
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.launch_server --model-path Qwen/Qwen3-8B --port 30000 --context-length 256 --disable-piecewise-cuda-graph"
         },
         {
           "kind": "online_serving",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 0 --num-prompts 16 --max-concurrency 16 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch16.jsonl",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_serving --backend sglang --model Qwen/Qwen3-8B --host 127.0.0.1 --port 30000 --dataset-name random-ids --tokenize-prompt --random-input-len 128 --random-output-len 64 --random-range-ratio 1.0 --num-prompts 16 --max-concurrency 16 --request-rate inf --output-file tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch16.jsonl",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-serving-batch16.jsonl"
         },
         {
           "kind": "offline_throughput",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 0 --num-prompts 16 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch16.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_offline_throughput --model-path Qwen/Qwen3-8B --context-length 384 --disable-piecewise-cuda-graph --dataset-name random --random-input-len 128 --random-output-len 64 --random-range-ratio 1.0 --num-prompts 16 --skip-warmup --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch16.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-offline-batch16.json"
         },
         {
           "kind": "one_batch",
-          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --batch-size 16 --input-len 128 --output-len 64 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch16.json",
+          "command": "env PYTHONPATH=$PWD/tmp/baselines/sglang/python:$PYTHONPATH python -m sglang.bench_one_batch --model-path Qwen/Qwen3-8B --context-length 256 --disable-piecewise-cuda-graph --disable-cuda-graph --batch-size 16 --input-len 128 --output-len 64 --result-filename tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch16.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/vdcores_offline_decode/sglang-one-batch16.json"
         }
       ]

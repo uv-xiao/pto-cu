@@ -186,7 +186,7 @@ def sglang_commands(
 ) -> list[dict[str, str]]:
     prompt_tokens = policy["prompt_policy"]["target_prompt_tokens"]
     decode_tokens = policy["decode_policy"]["decode_tokens"]
-    max_context = prompt_tokens + decode_tokens
+    max_context = max(prompt_tokens + decode_tokens, 256)
     serving_json = f"{out_dir}/sglang-serving-batch{batch_size}.jsonl"
     offline_json = f"{out_dir}/sglang-offline-batch{batch_size}.json"
     one_batch_json = f"{out_dir}/sglang-one-batch{batch_size}.json"
@@ -207,6 +207,7 @@ def sglang_commands(
                     "30000",
                     "--context-length",
                     str(max_context),
+                    "--disable-piecewise-cuda-graph",
                 ]
             ),
         },
@@ -228,13 +229,14 @@ def sglang_commands(
                     "--port",
                     "30000",
                     "--dataset-name",
-                    "random",
+                    "random-ids",
+                    "--tokenize-prompt",
                     "--random-input-len",
                     str(prompt_tokens),
                     "--random-output-len",
                     str(decode_tokens),
                     "--random-range-ratio",
-                    "0",
+                    "1.0",
                     "--num-prompts",
                     str(batch_size),
                     "--max-concurrency",
@@ -258,6 +260,9 @@ def sglang_commands(
                     "sglang.bench_offline_throughput",
                     "--model-path",
                     model,
+                    "--context-length",
+                    str(max(max_context, 384)),
+                    "--disable-piecewise-cuda-graph",
                     "--dataset-name",
                     "random",
                     "--random-input-len",
@@ -265,9 +270,10 @@ def sglang_commands(
                     "--random-output-len",
                     str(decode_tokens),
                     "--random-range-ratio",
-                    "0",
+                    "1.0",
                     "--num-prompts",
                     str(batch_size),
+                    "--skip-warmup",
                     "--result-filename",
                     offline_json,
                 ]
@@ -285,6 +291,10 @@ def sglang_commands(
                     "sglang.bench_one_batch",
                     "--model-path",
                     model,
+                    "--context-length",
+                    str(max_context),
+                    "--disable-piecewise-cuda-graph",
+                    "--disable-cuda-graph",
                     "--batch-size",
                     str(batch_size),
                     "--input-len",

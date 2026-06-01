@@ -289,7 +289,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-8a61669c/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-bfc1c581/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -297,7 +297,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-8a61669c/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-bfc1c581/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -307,7 +307,7 @@
           "paper_baseline_run_id": "vllm_serving_and_throughput",
           "paper_baseline_id": "vllm",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-8a61669c/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-bfc1c581/",
           "blocking_gaps": [
             "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; A100: python_import failed: vllm.entrypoints.openai.api_server; A100: python_import failed: vllm.engine.arg_utils; H200: python_module failed: vllm; H200: python_import failed: vllm.entrypoints.openai.api_server; H200: python_import failed: vllm.engine.arg_utils."
           ],
@@ -317,7 +317,7 @@
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "paper_baseline_id": "sglang",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-8a61669c/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-bfc1c581/",
           "blocking_gaps": [
             "Readiness probe sglang_source_entrypoints is partial: A100: python_module failed: orjson; A100: python_module failed: torchvision; A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_module failed: orjson; H200: python_module failed: torchvision; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch."
           ],
@@ -439,47 +439,51 @@
         {
           "paper_baseline_run_id": "sglang_serving_and_offline",
           "paper_baseline_id": "sglang",
-          "execution_attempt_id": "sglang_qwen3_8b_vdcores_batch1_randomids_h200",
-          "title": "SGLang Qwen3 8B VDCores Batch-1 Online Serving Capture",
+          "execution_attempt_id": "sglang_qwen3_8b_vdcores_batch1_fixedrange_h200",
+          "title": "SGLang Qwen3 8B VDCores Batch-1 Fixed-Range Serving And Offline Capture",
           "status": "partial",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-randomids-8a61669c/",
-          "blocker": "This is a successful SGLang online-serving bring-up, but it is not imported as a paper result because measured token counts do not match the VDCores 128/64 policy and offline_throughput plus one_batch remain unresolved.",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-fixedrange-bfc1c581/",
+          "blocker": "Online serving and offline engine throughput are imported as partial SGLang viewer results, but the run remains partial because bench_one_batch still fails before emitting a latency row and batch 2/4/8/16 sweeps plus repeats are not captured.",
           "summary": {
-            "mode": "sglang_bench_serving_vdcores_batch1_randomids",
+            "mode": "sglang_bench_serving_and_offline_vdcores_batch1_fixedrange",
             "model": "Qwen/Qwen3-8B",
             "offline_cache_used": true,
             "remote_refresh_path": "tree sync fallback",
-            "pto_commit": "8a61669c",
+            "pto_commit": "bfc1c581",
+            "source_diagnosis": "compute_random_lens with range_ratio=0 samples [1, full_len], while range_ratio=1.0 fixes the requested length",
             "requested_input_tokens": 128,
             "requested_output_tokens": 64,
-            "measured_input_tokens": 38,
-            "measured_output_tokens": 44,
+            "measured_input_tokens": 128,
+            "measured_output_tokens": 64,
+            "offline_input_tokens": 128,
+            "offline_output_tokens": 64,
             "completed_requests": 1,
             "failed_requests": 0,
-            "duration_s": 1.0312071559019387,
-            "request_throughput": 0.9697372581994511,
-            "output_tokens_per_second": 42.66843936077585,
-            "total_tokens_per_second": 79.51845517235499,
-            "mean_e2e_latency_ms": 1011.1441072076559,
-            "mean_ttft_ms": 771.7542587779462,
-            "mean_tpot_ms": 5.567205777435109,
-            "mean_itl_ms": 5.566300629356572,
-            "p99_ttft_ms": 771.7542587779462,
-            "p99_itl_ms": 6.367784282192587,
+            "online_duration_s": 0.40210155211389065,
+            "online_request_throughput": 2.48693394676766,
+            "online_output_tokens_per_second": 159.16377259313023,
+            "online_total_tokens_per_second": 477.4913177793907,
+            "online_mean_e2e_latency_ms": 384.5958118326962,
+            "online_mean_ttft_ms": 36.877373699098825,
+            "online_mean_tpot_ms": 5.519340287834879,
+            "online_mean_itl_ms": 5.6076819948371375,
+            "offline_latency_s": 0.4909931207075715,
+            "offline_output_tokens_per_second": 130.34805845705012,
             "dtype": "bfloat16",
-            "context_length": 192,
+            "online_context_length": 256,
+            "offline_context_length": 384,
             "mem_fraction_static": 0.8,
-            "cuda_visible_devices": "7",
+            "cuda_visible_devices": "0",
             "server_ready": true,
             "serving_latency_measured": true,
+            "offline_throughput_measured": true,
+            "one_batch_measured": false,
             "paper_target_model_measured": true,
             "h200_measured": true,
-            "viewer_result_imported": false,
+            "viewer_result_imported": true,
             "remaining_paper_gaps": [
-              "make SGLang bench_serving preserve the 128/64 VDCores policy token shape",
-              "resolve offline_throughput context-length/tokenization failure",
               "resolve bench_one_batch input_ids None failure",
-              "capture batch 2, 4, 8, and 16 after batch 1 is policy-shaped",
+              "capture SGLang batch 2, 4, 8, and 16 for online and offline modes",
               "repeat samples for variance and confidence intervals"
             ]
           }
@@ -605,7 +609,7 @@
         "Run readiness vllm_serving_and_throughput is partial: Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; A100: python_import failed: vllm.entrypoints.openai.api_server; A100: python_import failed: vllm.engine.arg_utils; H200: python_module failed: vllm; H200: python_import failed: vllm.entrypoints.openai.api_server; H200: python_import failed: vllm.engine.arg_utils.",
         "Run readiness sglang_serving_and_offline is partial: Readiness probe sglang_source_entrypoints is partial: A100: python_module failed: orjson; A100: python_module failed: torchvision; A100: python_import failed: sglang.bench_serving; A100: python_import failed: sglang.bench_offline_throughput; A100: python_import failed: sglang.bench_one_batch; H200: python_module failed: sglang; H200: python_module failed: orjson; H200: python_module failed: torchvision; H200: python_import failed: sglang.bench_serving; H200: python_import failed: sglang.bench_offline_throughput; H200: python_import failed: sglang.bench_one_batch.",
         "Latest execution attempt vllm_qwen3_8b_mpk_sweep_h200 for vllm_serving_and_throughput is partial: The MPK-comparable vLLM batch sweep is captured, but the full paper baseline still needs repeated samples for variance, a matching MPK serving-policy comparison, and PTO persistent-device comparison under the same Qwen3-8B workload.",
-        "Latest execution attempt sglang_qwen3_8b_vdcores_batch1_randomids_h200 for sglang_serving_and_offline is partial: This is a successful SGLang online-serving bring-up, but it is not imported as a paper result because measured token counts do not match the VDCores 128/64 policy and offline_throughput plus one_batch remain unresolved."
+        "Latest execution attempt sglang_qwen3_8b_vdcores_batch1_fixedrange_h200 for sglang_serving_and_offline is partial: Online serving and offline engine throughput are imported as partial SGLang viewer results, but the run remains partial because bench_one_batch still fails before emitting a latency row and batch 2/4/8/16 sweeps plus repeats are not captured."
       ],
       "next_actions": [
         {
@@ -646,9 +650,9 @@
           "source": "execution_attempt",
           "paper_baseline_id": "sglang",
           "paper_baseline_run_id": "sglang_serving_and_offline",
-          "execution_attempt_id": "sglang_qwen3_8b_vdcores_batch1_randomids_h200",
+          "execution_attempt_id": "sglang_qwen3_8b_vdcores_batch1_fixedrange_h200",
           "status": "partial",
-          "action": "Resolve latest execution attempt sglang_qwen3_8b_vdcores_batch1_randomids_h200 before importing sglang_serving_and_offline. Diagnostic blocker: This is a successful SGLang online-serving bring-up, but it is not imported as a paper result because measured token counts do not match the VDCores 128/64 policy and offline_throughput plus one_batch remain unresolved."
+          "action": "Resolve latest execution attempt sglang_qwen3_8b_vdcores_batch1_fixedrange_h200 before importing sglang_serving_and_offline. Diagnostic blocker: Online serving and offline engine throughput are imported as partial SGLang viewer results, but the run remains partial because bench_one_batch still fails before emitting a latency row and batch 2/4/8/16 sweeps plus repeats are not captured."
         },
         {
           "source": "probe",

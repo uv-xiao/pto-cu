@@ -2694,8 +2694,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["paper_baseline_id"] == "sglang"
         and item["paper_baseline_run_id"] == "sglang_serving_and_offline"
         and item["execution_attempt_id"]
-        == "sglang_qwen3_8b_vdcores_batch1_randomids_h200"
-        and "measured token counts do not match" in item["action"]
+        == "sglang_qwen3_8b_vdcores_batch1_fixedrange_h200"
+        and "bench_one_batch still fails" in item["action"]
         for item in work_items
     )
 
@@ -2818,6 +2818,24 @@ def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
     assert any(
         "--random-input-len 128" in command["command"]
         and "--random-output-len 64" in command["command"]
+        and "--random-range-ratio 1.0" in command["command"]
+        for command in sglang_vdcores["commands"]
+    )
+    assert any(
+        command["kind"] == "online_serving"
+        and "--dataset-name random-ids" in command["command"]
+        and "--tokenize-prompt" in command["command"]
+        for command in sglang_vdcores["commands"]
+    )
+    assert any(
+        command["kind"] == "offline_throughput"
+        and "--context-length 384" in command["command"]
+        and "--skip-warmup" in command["command"]
+        for command in sglang_vdcores["commands"]
+    )
+    assert any(
+        command["kind"] == "one_batch"
+        and "--disable-cuda-graph" in command["command"]
         for command in sglang_vdcores["commands"]
     )
     assert all(
@@ -3455,6 +3473,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vllm_qwen3_8b_mpk_batch1_h200",
         "vllm_qwen3_8b_mpk_sweep_h200",
         "sglang_qwen3_8b_vdcores_batch1_randomids_h200",
+        "sglang_qwen3_8b_vdcores_batch1_fixedrange_h200",
     } <= set(attempts_by_id)
     environment_attempts = paper_baseline_environment_attempts[
         "paper_baseline_environment_attempts"
@@ -3566,6 +3585,22 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert sglang_serving_attempt["summary"]["measured_output_tokens"] == 44
     assert "--disable-piecewise-cuda-graph" in sglang_serving_attempt["command"]
     assert "not imported as a paper result" in sglang_serving_attempt["blocker"]
+    sglang_fixedrange_attempt = attempts_by_id[
+        "sglang_qwen3_8b_vdcores_batch1_fixedrange_h200"
+    ]
+    assert sglang_fixedrange_attempt["status"] == "partial"
+    assert sglang_fixedrange_attempt["summary"]["requested_input_tokens"] == 128
+    assert sglang_fixedrange_attempt["summary"]["requested_output_tokens"] == 64
+    assert sglang_fixedrange_attempt["summary"]["measured_input_tokens"] == 128
+    assert sglang_fixedrange_attempt["summary"]["measured_output_tokens"] == 64
+    assert sglang_fixedrange_attempt["summary"]["offline_input_tokens"] == 128
+    assert sglang_fixedrange_attempt["summary"]["offline_output_tokens"] == 64
+    assert sglang_fixedrange_attempt["summary"]["serving_latency_measured"]
+    assert sglang_fixedrange_attempt["summary"]["offline_throughput_measured"]
+    assert not sglang_fixedrange_attempt["summary"]["one_batch_measured"]
+    assert sglang_fixedrange_attempt["summary"]["viewer_result_imported"]
+    assert "random_range_ratio=1.0" in sglang_fixedrange_attempt["command"]
+    assert "bench_one_batch still fails" in sglang_fixedrange_attempt["blocker"]
     vllm_h200_attempt = attempts_by_id["vllm_qwen3_8b_vdcores_batch1_h200"]
     assert vllm_h200_attempt["status"] == "partial"
     assert vllm_h200_attempt["hardware"]["gpu"] == "H200"
@@ -4864,6 +4899,52 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert vllm_h200_serving["statistic"]["prompt_tokens"] == 128
     assert vllm_h200_serving["statistic"]["decode_tokens"] == 64
     assert vllm_h200_serving["correctness"] == "pass"
+    sglang_h200_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "sglang"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/paper-baselines/serving-runs/sglang/"
+        "h200-vdcores-qwen3-8b-batch1-fixedrange-bfc1c581/"
+    ]
+    assert len(sglang_h200_records) == 2
+    sglang_by_mode = {
+        record["statistic"]["kind"]: record for record in sglang_h200_records
+    }
+    assert set(sglang_by_mode) == {
+        "paper_baseline_serving_capture",
+        "paper_baseline_offline_throughput_capture",
+    }
+    sglang_online = sglang_by_mode["paper_baseline_serving_capture"]
+    assert sglang_online["inputs"]["shape"] == (
+        "vdcores_offline_decode,Qwen/Qwen3-8B,batch=1,"
+        "prompt_tokens=128,decode_tokens=64,mode=online_serving"
+    )
+    assert sglang_online["statistic"]["host_wall_ns"] == 384595812
+    assert sglang_online["statistic"]["time_to_first_token_ns"] == 36877374
+    assert sglang_online["statistic"]["inter_token_latency_ns"] == 5607682
+    assert sglang_online["statistic"]["prompt_tokens"] == 128
+    assert sglang_online["statistic"]["decode_tokens"] == 64
+    assert sglang_online["statistic"]["completed_requests"] == 1
+    assert sglang_online["statistic"]["failed_requests"] == 0
+    sglang_offline = sglang_by_mode["paper_baseline_offline_throughput_capture"]
+    assert sglang_offline["inputs"]["shape"] == (
+        "vdcores_offline_decode,Qwen/Qwen3-8B,batch=1,"
+        "prompt_tokens=128,decode_tokens=64,mode=offline_engine"
+    )
+    assert sglang_offline["statistic"]["host_wall_ns"] == 490993121
+    assert sglang_offline["statistic"]["prompt_tokens"] == 128
+    assert sglang_offline["statistic"]["decode_tokens"] == 64
+    assert sglang_offline["statistic"]["completed_requests"] == 1
+    assert sglang_offline["statistic"]["failed_requests"] == 0
+    assert all(
+        record["inputs"]["dtype"] == "bfloat16"
+        and record["statistic"]["throughput_tokens_per_s"] > 0
+        and record["correctness"] == "pass"
+        for record in sglang_h200_records
+    )
     vllm_h200_sweep_records = [
         record
         for record in results["result_records"]

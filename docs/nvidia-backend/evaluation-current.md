@@ -13,6 +13,7 @@ full benchmark matrix and the compact selected gate.
 | Stream concurrency | `tmp/cuda-backend/combined-stream-pool6-02bca4df/` | 40 | Ten-repeat A100/H200 comparison between serial host-schedule launches and parallel launches on separate CUDA streams. |
 | Graph replay sweep | `tmp/cuda-backend/graph-replay-sweep-01e30e99/` | 120 | Ten-repeat A100/H200 CUDA Driver graph replay sweep for vector sizes 1024, 4096, 65536 and matching naive SGEMM graph replay. |
 | Direct launch sweep | `tmp/cuda-backend/direct-launch-sweep-626b8c75/` | 240 | Ten-repeat A100/H200 CUDA Runtime and CUDA Driver direct-launch sweep for the same vector sizes and naive SGEMM tile shape. |
+| SGLang fixed-range serving | `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-fixedrange-bfc1c581/` | 2 result rows | H200 Qwen3-8B batch-1 online serving and offline engine throughput for the VDCores `128/64` policy. |
 
 These captures passed `cuda_validate_capture.py` with the matching current
 presets during the latest verification run.
@@ -43,7 +44,7 @@ that descriptor metadata is still visible in generated reports and validators.
 
 Open [benchmark-viewer/index.html](benchmark-viewer/index.html) through a
 local static file server to inspect the benchmark setups, method definitions,
-result snapshot, and commands:
+result snapshot, paper-baseline execution attempts, and commands:
 
 ```bash
 python3 -m http.server 8000
