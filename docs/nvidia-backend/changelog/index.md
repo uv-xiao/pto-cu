@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 NVIDIA review guard split](2026-06-02-nvidia-review-guard-split.md)
 - [2026-06-02 Qwen serving scaffold split](2026-06-02-qwen-serving-scaffold-split.md)
 - [2026-06-02 Qwen CUDA weight binding split](2026-06-02-qwen-cuda-weight-binding-split.md)
 - [2026-06-02 benchmark viewer validator split](2026-06-02-benchmark-viewer-validator-split.md)
