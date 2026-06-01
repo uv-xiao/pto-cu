@@ -265,6 +265,20 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_cuda_weight_binding_plan",
+            "status": "pass"
+            if serving_scaffold.get("cuda_weight_binding", {}).get("status")
+            == "binding_plan_ready"
+            else "fail",
+            "evidence": "examples/cuda/qwen_cuda_weight_binding.py",
+            "why": (
+                "Validated safetensors tensors must be mapped to stable "
+                "CUDA binding slots, file byte ranges, binding groups, and "
+                "persistent-device readonly weight argument roles before "
+                "runtime device residency can be completed."
+            ),
+        },
+        {
             "id": "qwen_model_loader_or_token_loop",
             "status": "fail",
             "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",

@@ -455,6 +455,19 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-safetensors-$(git rev-parse --short HEAD)/qwen-safetensors-metadata.json
 ```
 
+Use `examples/cuda/qwen_cuda_weight_binding.py` after metadata validation to
+turn the safetensors headers into stable CUDA binding slots, file byte ranges,
+binding groups, and persistent-device readonly weight argument roles. By
+default it also performs a bounded CUDA allocation/copy probe for small tensors
+when the host runtime library is available; add `--no-cuda-probe` for
+dependency-free contract checks:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_cuda_weight_binding.py \
+    --output-json tmp/cuda-backend/pto-serving-weight-binding-$(git rev-parse --short HEAD)/qwen-cuda-weight-binding.json
+```
+
 Use `paper_baseline_run_readiness.py` before spending H200 time on planned
 paper-baseline runs. It does not execute long baselines; it records source
 path, reproduction-command presence, Python entrypoints, expected artifact,

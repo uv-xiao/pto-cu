@@ -21,6 +21,7 @@ SAFETENSORS_FETCH = ROOT / "examples" / "cuda" / "qwen_safetensors_fetch.py"
 SAFETENSORS_METADATA = (
     ROOT / "examples" / "cuda" / "qwen_safetensors_metadata.py"
 )
+CUDA_WEIGHT_BINDING = ROOT / "examples" / "cuda" / "qwen_cuda_weight_binding.py"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -101,6 +102,19 @@ def load_safetensors_metadata() -> dict[str, Any]:
     )
 
 
+def load_cuda_weight_binding() -> dict[str, Any]:
+    spec = importlib.util.spec_from_file_location(
+        "qwen_cuda_weight_binding",
+        CUDA_WEIGHT_BINDING,
+    )
+    if spec is None or spec.loader is None:
+        return {}
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.build_weight_binding(no_cuda_probe=True)
+
+
 def serving_workload_contracts() -> list[dict[str, Any]]:
     payload = load_json(VIEWER_DATA / "serving_workloads.json")
     workloads = []
@@ -149,15 +163,24 @@ def build_scaffold() -> dict[str, Any]:
     weight_inventory = load_weight_inventory()
     safetensors_shards = load_safetensors_shards()
     safetensors_metadata = load_safetensors_metadata()
+    cuda_weight_binding = load_cuda_weight_binding()
     shards_ready = (
         safetensors_shards.get("status") == "ready_for_metadata_probe"
     )
     metadata_validated = (
         safetensors_metadata.get("status") == "metadata_validated"
     )
+    weight_binding_ready = (
+        cuda_weight_binding.get("status") == "binding_plan_ready"
+    )
     weight_next_action = (
-        "Bind validated Qwen safetensors tensors to CUDA buffers and "
-        "persistent-device task args."
+        "Move the planned CUDA weight bindings into real persistent task "
+        "arguments and full device residency."
+        if weight_binding_ready
+        else (
+            "Bind validated Qwen safetensors tensors to CUDA buffers and "
+            "persistent-device task args."
+        )
         if metadata_validated
         else (
             "Run the safetensors metadata probe against the placed Qwen "
@@ -258,6 +281,25 @@ def build_scaffold() -> dict[str, Any]:
             next_action=weight_next_action,
         ),
         stage(
+            stage_id="qwen_cuda_weight_binding",
+            title="Qwen CUDA weight binding plan",
+            owner="pto_serving_host",
+            required_for_full_serving=True,
+            status=(
+                "pass"
+                if weight_binding_ready
+                else "partial"
+                if cuda_weight_binding.get("kind")
+                == "pto_qwen_cuda_weight_binding"
+                else "missing"
+            ),
+            evidence="examples/cuda/qwen_cuda_weight_binding.py",
+            next_action=(
+                "Run the CUDA copy probe and connect resident device "
+                "pointers to persistent-device task args."
+            ),
+        ),
+        stage(
             stage_id="qwen_safetensors_shards",
             title="Qwen safetensors shard placement",
             owner="pto_serving_host",
@@ -325,6 +367,7 @@ def build_scaffold() -> dict[str, Any]:
         "weight_inventory": weight_inventory,
         "safetensors_shards": safetensors_shards,
         "safetensors_metadata": safetensors_metadata,
+        "cuda_weight_binding": cuda_weight_binding,
         "stages": stages,
         "missing_stage_ids": [item["id"] for item in missing],
         "next_action": (

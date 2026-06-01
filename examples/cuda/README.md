@@ -168,3 +168,25 @@ This is a metadata probe, not a CUDA loader. When the Qwen shards are absent it
 reports `shards_missing`; when shards are present it parses standard
 safetensors headers and validates tensor shape/dtype metadata before any data
 copy or CUDA binding step.
+
+## Qwen CUDA Weight Binding
+
+- Benchmark id: `llm_serving_decode`
+- Runtime: `cuda/persistent_device`
+- Method id: `pto_persistent_device`
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_cuda_weight_binding.py \
+  --output-json tmp/cuda-backend/pto-serving-weight-binding/qwen-cuda-weight-binding.json
+```
+
+Expected output: command exits 0; output JSON records stable CUDA binding
+slots, safetensors file byte ranges, persistent-device readonly weight
+argument roles, and optional small-tensor CUDA copy-probe status.
+
+This is a binding artifact, not a full model loader. With local CUDA runtime
+libraries available it copies a bounded subset of small tensors to device
+memory through the existing runtime C API, then frees them. Full weight
+residency and persistent task-argument pointer binding remain explicit runtime
+gaps.

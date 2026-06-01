@@ -250,9 +250,10 @@ The current PTO serving comparison has explicit lifecycle artifacts at
 `tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json`,
 `tmp/cuda-backend/pto-serving-shards-a16851f6/qwen-safetensors-shards.json`,
 `tmp/cuda-backend/pto-serving-safetensors-a16851f6/qwen-safetensors-metadata.json`,
-`tmp/cuda-backend/pto-serving-scaffold-a16851f6/qwen-serving-scaffold.json`,
+`tmp/cuda-backend/pto-serving-weight-binding-35f713e9/qwen-cuda-weight-binding.json`,
+`tmp/cuda-backend/pto-serving-scaffold-35f713e9/qwen-serving-scaffold.json`,
 and
-`tmp/cuda-backend/pto-serving-preflight-a16851f6/pto-serving-preflight.json`.
+`tmp/cuda-backend/pto-serving-preflight-35f713e9/pto-serving-preflight.json`.
 They record the proxy-only execution state plus the new partial runtime plan:
 the benchmark viewer has a controlled attention-tile PTO serving-equivalent
 row, and the repo-owned PTO CUDA path now has a reviewable Qwen3-8B model
@@ -260,9 +261,12 @@ shape, KV-cache capacity ladder, weight-binding plan, and persistent-device
 task mapping, tokenizer-observed prompt counts, safetensors shard/tensor
 inventory, and the config-derived expected weight shape/dtype contract. It
 also has local Qwen shard placement plus actual safetensors shape/dtype
-validation for 399 tensors across five shards. It still does not bind Qwen
-weights to CUDA buffers, bind token IDs to runtime buffers, bind real CUDA
-buffers, run generated Qwen kernel bodies, or execute a decode loop for
+validation for 399 tensors across five shards. The CUDA binding artifact maps
+all 399 tensors to stable binding slots, file byte ranges, and readonly
+persistent-device argument roles, and copied 16 small norm tensors through the
+CUDA runtime allocation/copy API. It still does not provide full CUDA weight
+residency, bind token IDs to runtime buffers, bind real CUDA KV-cache buffers,
+run generated Qwen kernel bodies, or execute a decode loop for
 `Qwen/Qwen3-8B`.
 
 ## Next Dispatcher Actions

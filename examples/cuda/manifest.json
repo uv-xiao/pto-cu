@@ -130,6 +130,23 @@
         "safetensors_tensor_open",
         "cuda_device_weight_binding"
       ]
+    },
+    {
+      "id": "qwen_cuda_weight_binding",
+      "title": "Qwen CUDA Weight Binding",
+      "script": "examples/cuda/qwen_cuda_weight_binding.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_cuda_weight_binding.py --output-json tmp/cuda-backend/pto-serving-weight-binding/qwen-cuda-weight-binding.json",
+      "expected_output": "command exits 0; output JSON records stable CUDA binding slots, safetensors file byte ranges, persistent-device readonly weight argument roles, and optional small-tensor CUDA copy-probe status.",
+      "evidence_symbols": [
+        "pto_qwen_cuda_weight_binding",
+        "safetensors_tensor_data_offsets",
+        "persistent_task_weight_arg_binding_plan",
+        "cuda_device_weight_copy_probe",
+        "full_cuda_weight_residency"
+      ]
     }
   ]
 }

@@ -4124,3 +4124,43 @@ Follow-up tracked-state closure after user confirmation:
   full-serving gaps are CUDA weight binding, runtime token-ID binding,
   KV-cache allocation/binding, Qwen kernel generation, decode-loop execution,
   and viewer-result import.
+
+### 2026-06-01 - Qwen CUDA Weight Binding
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned CUDA weight
+  binding slice for the PTO persistent-device Qwen/Qwen3-8B full-serving
+  blocker.
+- Exact Codex command or script invocation:
+  `qwen_cuda_weight_binding.py --output-json
+  tmp/cuda-backend/pto-serving-weight-binding-35f713e9/qwen-cuda-weight-binding.json`,
+  then `persistent_qwen_serving_scaffold.py --output-json
+  tmp/cuda-backend/pto-serving-scaffold-35f713e9/qwen-serving-scaffold.json`,
+  then `pto_serving_preflight.py --output
+  tmp/cuda-backend/pto-serving-preflight-35f713e9/pto-serving-preflight.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled,
+  `.github/workflows/` stayed empty on this branch, and PR #1 reported no
+  checks. The large safetensors shards are local tmp evidence and are not
+  committed.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_cuda_weight_binding.py` did not exist; after
+  implementation it passed. The real binding artifact reports
+  `status=binding_plan_ready`, `planned_binding_count=399`,
+  `total_weight_bytes=16381470720`, and `cuda_probe.status=pass` with 16
+  copied small tensors.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: Qwen CUDA weight binding now has stable
+  slot/file-offset/argument-role evidence and a bounded CUDA copy probe. The
+  remaining PTO full-serving gaps are full CUDA weight residency,
+  persistent-task pointer binding, runtime token-ID binding,
+  KV-cache allocation/binding, Qwen kernel generation, decode-loop execution,
+  and viewer-result import.
