@@ -32,6 +32,7 @@ EVIDENCE_SYMBOLS = [
     "cuda_live_resident_weight_table_in_runner",
     "qwen_decode_loop_submission_descriptors",
     "qwen_decode_loop_submission_smoke_execution",
+    "qwen_resource_backed_graph_materialization",
 ]
 
 

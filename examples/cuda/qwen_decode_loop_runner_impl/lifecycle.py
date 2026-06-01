@@ -6,6 +6,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+from qwen_decode_loop_runner_impl.graph_materialization import (
+    graph_materialization_contract,
+)
 from qwen_decode_loop_runner_impl.resources import build_resources
 from qwen_decode_loop_runner_impl.submission import submission_descriptor_contract
 
@@ -260,6 +263,10 @@ def build_decode_loop_runner(
         "kv_cache": kv_lifecycle.get("status"),
         "resident_weight_table": resident_lifecycle.get("status"),
     }
+    graph_materialization = graph_materialization_contract(
+        plans=plans,
+        resident_lifecycle=resident_lifecycle,
+    )
     submission_descriptors = submission_descriptor_contract(
         plans=plans,
         resource_modes=resource_modes,
@@ -270,6 +277,8 @@ def build_decode_loop_runner(
         implemented_contracts.append("qwen_decode_loop_submission_descriptors")
     if submission_smoke_payload is not None:
         implemented_contracts.append("qwen_decode_loop_submission_smoke_execution")
+    if graph_materialization["status"] == "resource_backed_graph_materialized":
+        implemented_contracts.append("qwen_resource_backed_graph_materialization")
     return {
         "schema_version": 1,
         "kind": "pto_qwen_decode_loop_runner",
@@ -283,6 +292,7 @@ def build_decode_loop_runner(
         "resource_lifecycle_modes": resource_modes,
         "cuda_live_resource_owners": live_owners,
         "cuda_live_submission_descriptor_contract": submission_descriptors,
+        "resource_backed_graph_materialization": graph_materialization,
         "cuda_live_bridge_contract": cuda_live_bridge_contract(),
         "unit_math_live_bridge_contract": unit_math_live_bridge_contract(
             unit_math_live_payload,

@@ -124,12 +124,54 @@ def test_decode_loop_runner_tracks_cuda_live_resource_owners(monkeypatch):
         "mode": "cuda_live",
         "materialized_task_count": 1,
         "bound_tensor_pointer_count": 4,
+        "pointer_table": {"status": "resident_weight_pointer_table_ready"},
+    }
+    materialized = {
+        "status": "persistent_weight_materialization_ready",
+        "abi": {"task_struct": "CudaPersistentDagTask", "sizeof_bytes": 200},
+        "materialized_task_descriptors": [
+            {
+                "id": "embedding_lookup",
+                "callable": "qwen_embedding_lookup",
+                "status": "ready",
+                "tensor_arg_count": 1,
+                "tensor_args": [
+                    {
+                        "arg": "tensor_args[0]",
+                        "slot_id": 0,
+                        "device_ptr_hex": "0x1000",
+                    }
+                ],
+            }
+        ],
+        "bound_tensor_pointer_count": 4,
+        "missing_pointer_count": 0,
     }
 
     monkeypatch.setitem(
         module.build_decode_loop_runner.__globals__,
         "build_resources",
         lambda **_kwargs: (token_lifecycle, kv_lifecycle, resident_lifecycle),
+    )
+    monkeypatch.setitem(
+        module.build_decode_loop_runner.__globals__,
+        "graph_materialization_contract",
+        lambda **_kwargs: {
+            "status": "resource_backed_graph_materialized",
+            "runtime": "cuda/persistent_device",
+            "materialization_status": materialized["status"],
+            "materialized_task_count": 1,
+            "bound_tensor_pointer_count": 4,
+            "missing_pointer_count": 0,
+            "workloads": [
+                {
+                    "workload_id": "mpk_offline_decode",
+                    "status": "resource_backed_graph_materialized",
+                    "graph_task_count": 1,
+                }
+            ],
+            "remaining_gap": "run_prepared_resource_backed_decode_loop",
+        },
     )
     runner = module.build_decode_loop_runner(
         mode="mock",
@@ -175,6 +217,12 @@ def test_decode_loop_runner_tracks_cuda_live_resource_owners(monkeypatch):
         "implemented_contracts"
     ]
     assert "qwen_decode_loop_submission_smoke_execution" in runner[
+        "implemented_contracts"
+    ]
+    materialization = runner["resource_backed_graph_materialization"]
+    assert materialization["status"] == "resource_backed_graph_materialized"
+    assert materialization["workloads"][0]["graph_task_count"] == 1
+    assert "qwen_resource_backed_graph_materialization" in runner[
         "implemented_contracts"
     ]
 

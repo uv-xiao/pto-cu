@@ -125,8 +125,8 @@ PYTHONPATH=$PWD:$PWD/python \
 
 Expected output: command exits 0; output JSON records runner-owned cuda_live
 token, KV-cache, and resident-weight owners, resource-backed Qwen submission
-descriptors, diagnostic bridge contracts, and a diagnostic Qwen descriptor
-smoke execution.
+descriptors, compact graph materialization, diagnostic bridge contracts, and
+a diagnostic Qwen descriptor smoke execution.
 
 The artifact composes token pointer, KV-cache, and resident-weight owners into
 a decode-loop submission plan. It records owner open/materialize/submit/close
@@ -144,6 +144,9 @@ repetition count. With `--run-submission-smoke`, it also compiles those same
 function ids and launches a small controlled CUDA DAG through
 `run_prepared`; this proves the descriptor task-function set is executable,
 but still does not use the full Qwen resource-backed serving buffers.
+The `resource_backed_graph_materialization` section checks that both serving
+policies have all token fields, KV fields, and 255 resident-weight-backed DAG
+task descriptors bound to concrete CUDA-live pointers.
 It still does not execute full Qwen kernels or a full-serving decode loop.
 
 ## Qwen Persistent Task Bodies
