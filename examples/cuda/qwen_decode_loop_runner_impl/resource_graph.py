@@ -149,9 +149,6 @@ class MaterializedGraph:
 
 
 def logits_written_elements(workspace: dict[str, Any]) -> int:
-    buffers = workspace.get("activation_buffers", [])
-    if buffers:
-        return int(buffers[0].get("element_count", 0))
     return int(workspace["logits_buffer"].get("element_count", 0))
 
 
@@ -169,9 +166,14 @@ def summarize_logits_values(
     ]
     ranked = sorted(finite_values, key=lambda item: item[1], reverse=True)[:top_k]
     checksum = sum((index + 1) * value for index, value in enumerate(values))
+    full_written = int(written_element_count) >= int(logits_buffer_elements)
     return {
         "status": "partial_logits_sampled",
-        "coverage": "partial_logits_not_full_vocab",
+        "coverage": (
+            "full_logits_buffer_prefix_sampled"
+            if full_written
+            else "partial_logits_not_full_vocab"
+        ),
         "logits_buffer_elements": int(logits_buffer_elements),
         "written_element_count": int(written_element_count),
         "sampled_element_count": len(values),

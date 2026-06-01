@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "examples" / "cuda"))
 
 from qwen_decode_loop_runner_impl.launch_preflight import (  # noqa: E402
+    build_host_task_packet,
+    keyed_fields,
     launch_packet_preflight,
 )
 
@@ -124,3 +126,47 @@ def test_launch_packet_preflight_binds_activation_workspace():
     assert preflight["missing_runtime_buffers"] == []
     assert preflight["workspace_pointer_policy"]["status"] == "workspace_bound"
     assert preflight["remaining_gap"] == "run_prepared_resource_backed_decode_loop"
+
+
+def test_launch_packet_uses_full_logits_extent_for_final_logits_task():
+    descriptors = [
+        {"callable": "qwen_embedding_lookup", "tensor_args": []},
+        {"callable": "qwen_logits", "tensor_args": []},
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x3000"},
+            {"field": "b", "device_ptr_hex": "0x4000"},
+            {"field": "out", "device_ptr_hex": "0x5000"},
+        ],
+    )
+    workspace = {
+        "activation_buffers": [
+            {
+                "device_ptr_hex": "0x8000",
+                "element_count": 4096,
+            }
+        ],
+        "logits_buffer": {
+            "device_ptr_hex": "0x9000",
+            "element_count": 151936,
+        },
+        "total_byte_count": 623616,
+    }
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x6000"},
+            "d": {"device_ptr_hex": "0x7000"},
+        },
+        workspace=workspace,
+    )
+
+    assert packet is not None
+    assert packet[0].n == 4096
+    assert packet[0].scalar_arg_count == 0
+    assert packet[1].n == 151936
+    assert packet[1].scalar_arg_count == 3
+    assert list(packet[1].scalar_args)[:3] == [0.0, 4096.0, 151936.0]

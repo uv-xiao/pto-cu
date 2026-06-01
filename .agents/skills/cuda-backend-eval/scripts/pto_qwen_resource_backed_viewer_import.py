@@ -179,6 +179,7 @@ def ensure_matrix_ref(
                 "diagnostic_resource_backed_qwen_dag",
                 "repeat_runs",
                 "partial_logits_not_full_vocab",
+                "full_logits_buffer_prefix_sampled",
                 "logits_summary_stable",
             ],
         }
@@ -210,7 +211,8 @@ def ensure_matrix_ref(
                         "diagnostic proxy, unit-math, descriptor-smoke, "
                         "resource-backed execution, and repeated "
                         "resource-backed execution viewer_result_imports "
-                        "with partial-logits sampling are present."
+                        "with full-logits-buffer diagnostic writes and "
+                        "bounded-prefix sampling are present."
                     )
                     for phrase in (
                         "diagnostic proxy, unit-math, and descriptor-smoke "
@@ -222,6 +224,10 @@ def ensure_matrix_ref(
                         "resource-backed execution, and repeated "
                         "resource-backed execution viewer_result_imports "
                         "are present.",
+                        "diagnostic proxy, unit-math, descriptor-smoke, "
+                        "resource-backed execution, and repeated "
+                        "resource-backed execution viewer_result_imports "
+                        "with partial-logits sampling are present.",
                     ):
                         action = action.replace(phrase, updated_phrase)
                     detail["action"] = action

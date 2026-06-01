@@ -189,8 +189,11 @@ task->out[i] = task->a[i] * (weight ? weight[i & 3U] : 1.0f);
             "consumes_roles": ["hidden_state", "lm_head_weight", "output_ids"],
             "body": """
 const float *lm_head = task->tensor_args[0];
-if (task->scalar_arg_count > 0 && lm_head) {
-    task->out[i] = task->a[i] * lm_head[i & 3U];
+if (task->scalar_arg_count > 1 && lm_head) {
+    const unsigned long long hidden_elements =
+        static_cast<unsigned long long>(task->scalar_args[1]);
+    const unsigned long long hidden_index = i % max(1ULL, hidden_elements);
+    task->out[i] = task->a[hidden_index] * lm_head[i & 3U];
     return;
 }
 const float logit = task->a[i] + (lm_head ? lm_head[i & 3U] : 0.0f);

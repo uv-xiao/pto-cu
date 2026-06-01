@@ -126,6 +126,12 @@ def host_task_record(
     tensor_args_t = ctypes.c_void_p * 4
     scalar_args_t = ctypes.c_float * 4
     tensor_args = [0, 0, 0, 0]
+    scalar_args = task_scalar_args(
+        index=index,
+        task_count=task_count,
+        descriptor=descriptor,
+        workspace=workspace,
+    )
     for arg in descriptor.get("tensor_args", [])[:4]:
         tensor_args[tensor_arg_index(arg["arg"])] = parse_ptr(
             arg.get("device_ptr_hex"),
@@ -144,16 +150,21 @@ def host_task_record(
             token_fields=token_fields,
             workspace=workspace,
         ),
-        n=task_n_for_workspace(workspace),
+        n=task_n_for_record(
+            index=index,
+            task_count=task_count,
+            descriptor=descriptor,
+            workspace=workspace,
+        ),
         dependent_begin=index,
         dependent_count=1 if index + 1 < task_count else 0,
         initial_fanin=0 if index == 0 else 1,
         c=parse_ptr(kv_fields["c"].get("device_ptr_hex")),
         d=parse_ptr(kv_fields["d"].get("device_ptr_hex")),
         tensor_args=tensor_args_t(*tensor_args),
-        scalar_args=scalar_args_t(0.0, 0.0, 0.0, 0.0),
+        scalar_args=scalar_args_t(*scalar_args),
         tensor_arg_count=min(len(descriptor.get("tensor_args", [])), 4),
-        scalar_arg_count=0,
+        scalar_arg_count=task_scalar_arg_count(scalar_args),
     )
 
 
@@ -206,12 +217,67 @@ def output_ptr_for_task(
     return parse_ptr(workspace["activation_buffers"][index]["device_ptr_hex"])
 
 
-def task_n_for_workspace(workspace: dict[str, Any] | None) -> int:
+def task_n_for_record(
+    *,
+    index: int,
+    task_count: int,
+    descriptor: dict[str, Any],
+    workspace: dict[str, Any] | None,
+) -> int:
+    if is_logits_output_task(index=index, task_count=task_count, descriptor=descriptor):
+        return logits_element_count(workspace)
+    return hidden_element_count(workspace)
+
+
+def task_scalar_args(
+    *,
+    index: int,
+    task_count: int,
+    descriptor: dict[str, Any],
+    workspace: dict[str, Any] | None,
+) -> list[float]:
+    if not is_logits_output_task(
+        index=index,
+        task_count=task_count,
+        descriptor=descriptor,
+    ):
+        return [0.0, 0.0, 0.0, 0.0]
+    return [
+        0.0,
+        float(hidden_element_count(workspace)),
+        float(logits_element_count(workspace)),
+        0.0,
+    ]
+
+
+def task_scalar_arg_count(scalar_args: list[float]) -> int:
+    for index in range(len(scalar_args) - 1, -1, -1):
+        if scalar_args[index] != 0.0:
+            return index + 1
+    return 0
+
+
+def is_logits_output_task(
+    *,
+    index: int,
+    task_count: int,
+    descriptor: dict[str, Any],
+) -> bool:
+    return index + 1 == task_count and descriptor.get("callable") == "qwen_logits"
+
+
+def hidden_element_count(workspace: dict[str, Any] | None) -> int:
     if workspace is None:
         return 1
     buffers = workspace.get("activation_buffers", [])
     if buffers:
         return int(buffers[0].get("element_count", 1))
+    return int(workspace["logits_buffer"].get("element_count", 1))
+
+
+def logits_element_count(workspace: dict[str, Any] | None) -> int:
+    if workspace is None:
+        return 1
     return int(workspace["logits_buffer"].get("element_count", 1))
 
 

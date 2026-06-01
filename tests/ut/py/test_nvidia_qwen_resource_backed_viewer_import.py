@@ -51,7 +51,7 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                     "total_completed_count": 765,
                     "total_error_count": 0,
                     "logits_summary": {
-                        "coverage": "partial_logits_not_full_vocab",
+                        "coverage": "full_logits_buffer_prefix_sampled",
                         "written_element_count": 65536,
                         "logits_buffer_elements": 2430976,
                         "sampled_element_count": 65536,
@@ -71,7 +71,7 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                         "scheduler_processed_count": 255,
                     },
                     "logits_summary": {
-                        "coverage": "partial_logits_not_full_vocab",
+                        "coverage": "full_logits_buffer_prefix_sampled",
                         "written_element_count": 20480,
                         "logits_buffer_elements": 759680,
                         "sampled_element_count": 20480,
@@ -109,7 +109,7 @@ def test_resource_backed_importer_emits_diagnostic_rows():
         assert "resource-backed diagnostic" in record["inputs"]["shape"]
         assert "prepared callable reused" in record["inputs"]["repeat_policy"]
         assert record["statistic"]["logits_coverage"] == (
-            "partial_logits_not_full_vocab"
+            "full_logits_buffer_prefix_sampled"
         )
         assert record["statistic"]["logits_written_element_count"] > 0
         assert record["statistic"]["logits_buffer_element_count"] > (
@@ -220,6 +220,10 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
     assert all(row["correctness"] == "pass" for row in rows)
     assert all(
         row["statistic"].get("logits_coverage")
-        in {"partial_logits_not_full_vocab", None}
+        in {
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            None,
+        }
         for row in rows
     )
