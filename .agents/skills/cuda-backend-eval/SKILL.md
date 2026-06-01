@@ -432,6 +432,18 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-weights-$(git rev-parse --short HEAD)/qwen-weight-inventory.json
 ```
 
+Use `examples/cuda/qwen_safetensors_fetch.py` to record the shard-placement
+state before any metadata validation or CUDA weight binding. By default it
+does not download; it emits Hugging Face resolve URLs, target paths, present
+versus missing counts, and resumable `curl -L -C -` commands. Add `--download`
+only when intentionally fetching the Qwen3-8B shards into `tmp/`:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_safetensors_fetch.py \
+    --output-json tmp/cuda-backend/pto-serving-shards-$(git rev-parse --short HEAD)/qwen-safetensors-shards.json
+```
+
 Use `examples/cuda/qwen_safetensors_metadata.py` after the weight inventory
 exists. It reports missing shards honestly, or parses safetensors headers and
 validates actual tensor shape/dtype metadata when the shards are available:

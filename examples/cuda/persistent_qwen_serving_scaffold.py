@@ -17,6 +17,7 @@ TARGET_WORKLOAD_IDS = {"mpk_offline_decode", "vdcores_offline_decode"}
 LIFECYCLE_PLAN = ROOT / "examples" / "cuda" / "qwen_serving_lifecycle_plan.py"
 PROMPT_ACCOUNTING = ROOT / "examples" / "cuda" / "qwen_prompt_accounting.py"
 WEIGHT_INVENTORY = ROOT / "examples" / "cuda" / "qwen_weight_inventory.py"
+SAFETENSORS_FETCH = ROOT / "examples" / "cuda" / "qwen_safetensors_fetch.py"
 SAFETENSORS_METADATA = (
     ROOT / "examples" / "cuda" / "qwen_safetensors_metadata.py"
 )
@@ -84,6 +85,14 @@ def load_weight_inventory() -> dict[str, Any]:
     )
 
 
+def load_safetensors_shards() -> dict[str, Any]:
+    return load_python_payload(
+        SAFETENSORS_FETCH,
+        "qwen_safetensors_fetch",
+        "build_shard_status",
+    )
+
+
 def load_safetensors_metadata() -> dict[str, Any]:
     return load_python_payload(
         SAFETENSORS_METADATA,
@@ -138,6 +147,7 @@ def build_scaffold() -> dict[str, Any]:
     lifecycle_plan = load_lifecycle_plan()
     prompt_accounting = load_prompt_accounting()
     weight_inventory = load_weight_inventory()
+    safetensors_shards = load_safetensors_shards()
     safetensors_metadata = load_safetensors_metadata()
     persistent_abi_ready = text_contains(
         "src/cuda/platform/include/host/pto_cuda_persistent_device_abi.h",
@@ -217,9 +227,27 @@ def build_scaffold() -> dict[str, Any]:
             else "missing",
             evidence="examples/cuda/qwen_weight_inventory.py",
             next_action=(
-                "Open Qwen safetensors shards, validate actual tensor "
-                "metadata against the expected shape/dtype contract, and "
-                "bind device weights to persistent-device task args."
+                "Keep the safetensors index and expected shape/dtype contract "
+                "in sync with the shard placement and metadata probes."
+            ),
+        ),
+        stage(
+            stage_id="qwen_safetensors_shards",
+            title="Qwen safetensors shard placement",
+            owner="pto_serving_host",
+            required_for_full_serving=True,
+            status=(
+                "pass"
+                if safetensors_shards.get("status") == "ready_for_metadata_probe"
+                else "partial"
+                if safetensors_shards.get("kind")
+                == "pto_qwen_safetensors_shard_status"
+                else "missing"
+            ),
+            evidence="examples/cuda/qwen_safetensors_fetch.py",
+            next_action=(
+                "Place or download the real Qwen safetensors shards under "
+                "tmp/sources/qwen3-8b-safetensors, then rerun the metadata probe."
             ),
         ),
         stage(
@@ -272,6 +300,7 @@ def build_scaffold() -> dict[str, Any]:
         "lifecycle_plan": lifecycle_plan,
         "prompt_accounting": prompt_accounting,
         "weight_inventory": weight_inventory,
+        "safetensors_shards": safetensors_shards,
         "safetensors_metadata": safetensors_metadata,
         "stages": stages,
         "missing_stage_ids": [item["id"] for item in missing],

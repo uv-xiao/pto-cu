@@ -98,6 +98,23 @@
       ]
     },
     {
+      "id": "qwen_safetensors_fetch",
+      "title": "Qwen Safetensors Shard Status",
+      "script": "examples/cuda/qwen_safetensors_fetch.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_safetensors_fetch.py --output-json tmp/cuda-backend/pto-serving-shards/qwen-safetensors-shards.json",
+      "expected_output": "command exits 0; output JSON records Qwen safetensors shard URLs, local target paths, present/missing counts, and resumable fetch commands without downloading by default.",
+      "evidence_symbols": [
+        "pto_qwen_safetensors_shard_status",
+        "safetensors_fetch_plan",
+        "local_shard_presence_check",
+        "qwen_safetensors_shard_download",
+        "ready_for_metadata_probe"
+      ]
+    },
+    {
       "id": "qwen_safetensors_metadata",
       "title": "Qwen Safetensors Metadata Probe",
       "script": "examples/cuda/qwen_safetensors_metadata.py",

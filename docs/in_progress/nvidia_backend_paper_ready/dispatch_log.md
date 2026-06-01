@@ -4034,3 +4034,48 @@ Follow-up tracked-state closure after user confirmation:
   bind runtime token IDs, allocate/bind CUDA KV-cache storage, generate Qwen
   kernel bodies, execute the decode loop, and import viewer results before PTO
   Qwen/Qwen3-8B full-serving rows can be added.
+
+### 2026-06-01 - Qwen Safetensors Shard Status
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  shard-placement evidence slice for the PTO persistent-device
+  Qwen/Qwen3-8B full-serving blocker.
+- Exact Codex command or script invocation:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  examples/cuda/qwen_safetensors_fetch.py --output-json
+  tmp/cuda-backend/pto-serving-shards-80373a64/qwen-safetensors-shards.json`,
+  then `persistent_qwen_serving_scaffold.py --output-json
+  tmp/cuda-backend/pto-serving-scaffold-80373a64/qwen-serving-scaffold.json`,
+  then `pto_serving_preflight.py --output
+  tmp/cuda-backend/pto-serving-preflight-80373a64/pto-serving-preflight.json`,
+  then `refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled,
+  `.github/workflows/` stayed empty on this branch, and PR #1 reported no
+  checks. The Qwen safetensors index exists under `tmp/sources/`; the five
+  real safetensors shards are still missing locally.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_safetensors_fetch.py` did not exist; after
+  implementation, the focused fetch/scaffold/preflight/matrix tests passed
+  with `4 passed`, and the full NVIDIA review artifact suite passed with
+  `49 passed`. Also passed `validate_cuda_examples.py`,
+  `validate_benchmark_viewer_data.py`, `validate_nvidia_changelog.py`,
+  `check_nvidia_review_ready.py`, `jq empty examples/cuda/manifest.json
+  docs/nvidia-backend/benchmark-viewer/data/*.json`, `py_compile` for the
+  Qwen serving scripts and PTO serving preflight, and `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the repo now has a no-network
+  shard-status artifact with Qwen/Qwen3-8B URLs, target paths, tensor counts,
+  and resumable fetch commands. The real shards still need download or
+  placement before metadata validation, CUDA weight binding, token-ID binding,
+  KV-cache allocation/binding, Qwen kernel generation, decode-loop execution,
+  and viewer-result import.
