@@ -37,6 +37,7 @@ def test_launch_packet_preflight_packs_resource_backed_task_records():
         },
     ]
     plan = {
+        "workload_id": "mpk_offline_decode",
         "token_pointer_fields": [
             {"field": "a", "device_ptr_hex": "0x3000"},
             {"field": "b", "device_ptr_hex": "0x4000"},
@@ -71,3 +72,55 @@ def test_launch_packet_preflight_packs_resource_backed_task_records():
     assert "intermediate_activation_buffers_not_allocated" in preflight[
         "launch_blockers"
     ]
+
+
+def test_launch_packet_preflight_binds_activation_workspace():
+    descriptors = [
+        {"callable": "qwen_embedding_lookup", "tensor_args": []},
+        {"callable": "qwen_logits", "tensor_args": []},
+    ]
+    plan = {
+        "workload_id": "mpk_offline_decode",
+        "token_pointer_fields": [
+            {"field": "a", "device_ptr_hex": "0x3000"},
+            {"field": "b", "device_ptr_hex": "0x4000"},
+            {"field": "out", "device_ptr_hex": "0x5000"},
+        ],
+        "kv_pointer_fields": {
+            "c": {"device_ptr_hex": "0x6000"},
+            "d": {"device_ptr_hex": "0x7000"},
+        },
+    }
+    workspace = {
+        "status": "activation_workspace_lifecycle_ready",
+        "pointer_table": {
+            "mode": "cuda_live",
+            "pointer_sets": [
+                {
+                    "workload_id": "mpk_offline_decode",
+                    "activation_buffers": [
+                        {
+                            "device_ptr_hex": "0x8000",
+                            "element_count": 4096,
+                        }
+                    ],
+                    "logits_buffer": {
+                        "device_ptr_hex": "0x9000",
+                        "element_count": 151936,
+                    },
+                    "total_byte_count": 623616,
+                }
+            ],
+        },
+    }
+
+    preflight = launch_packet_preflight(
+        plan=plan,
+        descriptors=descriptors,
+        activation_workspace=workspace,
+    )
+
+    assert preflight["status"] == "resource_backed_launch_packet_workspace_bound"
+    assert preflight["missing_runtime_buffers"] == []
+    assert preflight["workspace_pointer_policy"]["status"] == "workspace_bound"
+    assert preflight["remaining_gap"] == "run_prepared_resource_backed_decode_loop"

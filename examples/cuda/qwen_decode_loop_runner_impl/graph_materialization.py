@@ -20,6 +20,7 @@ def graph_materialization_contract(
     *,
     plans: list[dict[str, Any]],
     resident_lifecycle: dict[str, Any],
+    activation_workspace: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     materialization = build_materialization_manifest(
         pointer_table=resident_lifecycle.get("pointer_table"),
@@ -29,7 +30,11 @@ def graph_materialization_contract(
         descriptor for descriptor in descriptors if descriptor.get("status") == "ready"
     ]
     workload_records = [
-        workload_materialization(plan=plan, descriptors=ready_descriptors)
+        workload_materialization(
+            plan=plan,
+            descriptors=ready_descriptors,
+            activation_workspace=activation_workspace,
+        )
         for plan in plans
     ]
     ready = (
@@ -59,6 +64,7 @@ def workload_materialization(
     *,
     plan: dict[str, Any],
     descriptors: list[dict[str, Any]],
+    activation_workspace: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     token_fields = ready_token_fields(plan.get("token_pointer_fields", []))
     kv_fields = ready_kv_fields(plan.get("kv_pointer_fields", {}))
@@ -94,6 +100,7 @@ def workload_materialization(
         "launch_packet_preflight": launch_packet_preflight(
             plan=plan,
             descriptors=descriptors,
+            activation_workspace=activation_workspace,
         ),
     }
 

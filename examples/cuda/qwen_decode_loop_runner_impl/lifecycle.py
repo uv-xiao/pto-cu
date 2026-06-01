@@ -6,6 +6,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+from qwen_decode_loop_runner_impl.activation_workspace import (
+    build_activation_workspace_lifecycle,
+)
 from qwen_decode_loop_runner_impl.bridge_contracts import (
     cuda_live_bridge_contract,
     unit_math_live_bridge_contract,
@@ -23,9 +26,11 @@ OWNER_LIFETIME_ORDER = [
     "open_token_pointer_table",
     "open_kv_cache",
     "open_resident_weight_table",
+    "open_activation_workspace",
     "materialize_decode_args",
     "materialize_weight_args",
     "submit_persistent_dag",
+    "close_activation_workspace",
     "close_resident_weight_table",
     "close_kv_cache",
     "close_token_pointer_table",
@@ -140,6 +145,7 @@ def build_decode_loop_runner(
     device: int = 0,
     host_runtime: Path | None = None,
     submission_smoke_payload: dict[str, Any] | None = None,
+    workspace_cuda_live: bool = False,
 ) -> dict[str, Any]:
     token_lifecycle, kv_lifecycle, resident_lifecycle = build_resources(
         mode=mode,
@@ -155,10 +161,18 @@ def build_decode_loop_runner(
         kv_lifecycle=kv_lifecycle,
         resident_lifecycle=resident_lifecycle,
     )
+    activation_workspace = build_activation_workspace_lifecycle(
+        plans=plans,
+        graph_task_count=int(resident_lifecycle.get("materialized_task_count", 0)),
+        cuda_live=workspace_cuda_live,
+        device=device,
+        host_runtime=host_runtime,
+    )
     resource_modes = {
         "token_pointer_table": token_lifecycle.get("mode", "unknown"),
         "kv_cache": kv_lifecycle.get("mode", "unknown"),
         "resident_weight_table": resident_lifecycle.get("mode", "unknown"),
+        "activation_workspace": activation_workspace.get("mode", "unknown"),
     }
     live_owners = [
         name
@@ -178,19 +192,27 @@ def build_decode_loop_runner(
         implemented_contracts.append("cuda_live_kv_cache_owner_in_runner")
     if resident_lifecycle.get("mode") == "cuda_live":
         implemented_contracts.append("cuda_live_resident_weight_table_in_runner")
+    if activation_workspace.get("mode") == "cuda_live":
+        implemented_contracts.append("cuda_live_activation_workspace_in_runner")
     resource_status = {
         "token_pointer_table": token_lifecycle.get("status"),
         "kv_cache": kv_lifecycle.get("status"),
         "resident_weight_table": resident_lifecycle.get("status"),
+        "activation_workspace": activation_workspace.get("status"),
     }
     graph_materialization = graph_materialization_contract(
         plans=plans,
         resident_lifecycle=resident_lifecycle,
+        activation_workspace=activation_workspace,
     )
     submission_descriptors = submission_descriptor_contract(
         plans=plans,
         resource_modes=resource_modes,
-        resource_status=resource_status,
+        resource_status={
+            "token_pointer_table": resource_status["token_pointer_table"],
+            "kv_cache": resource_status["kv_cache"],
+            "resident_weight_table": resource_status["resident_weight_table"],
+        },
         execution_evidence=submission_smoke_payload,
     )
     if submission_descriptors["status"] == "resource_backed_descriptors_ready":
@@ -201,10 +223,19 @@ def build_decode_loop_runner(
         implemented_contracts.append("qwen_resource_backed_graph_materialization")
     if all(
         item.get("launch_packet_preflight", {}).get("status")
-        == "resource_backed_launch_packet_preflight_ready"
+        in {
+            "resource_backed_launch_packet_preflight_ready",
+            "resource_backed_launch_packet_workspace_bound",
+        }
         for item in graph_materialization.get("workloads", [])
     ):
         implemented_contracts.append("qwen_resource_backed_launch_packet_preflight")
+    if all(
+        item.get("launch_packet_preflight", {}).get("status")
+        == "resource_backed_launch_packet_workspace_bound"
+        for item in graph_materialization.get("workloads", [])
+    ):
+        implemented_contracts.append("qwen_activation_workspace_launch_packet_binding")
     return {
         "schema_version": 1,
         "kind": "pto_qwen_decode_loop_runner",
@@ -217,6 +248,7 @@ def build_decode_loop_runner(
         "resource_lifecycle_status": resource_status,
         "resource_lifecycle_modes": resource_modes,
         "cuda_live_resource_owners": live_owners,
+        "activation_workspace_lifecycle": activation_workspace,
         "cuda_live_submission_descriptor_contract": submission_descriptors,
         "resource_backed_graph_materialization": graph_materialization,
         "cuda_live_bridge_contract": cuda_live_bridge_contract(),

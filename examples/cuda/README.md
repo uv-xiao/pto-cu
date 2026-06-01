@@ -117,6 +117,7 @@ PYTHONPATH=$PWD:$PWD/python \
   --token-cuda-live \
   --kv-cuda-live \
   --resident-cuda-live \
+  --workspace-cuda-live \
   --device 0 \
   --arch compute_80 \
   --repeat-runs 3 \
@@ -124,9 +125,10 @@ PYTHONPATH=$PWD:$PWD/python \
 ```
 
 Expected output: command exits 0; output JSON records runner-owned cuda_live
-token, KV-cache, and resident-weight owners, resource-backed Qwen submission
-descriptors, compact graph materialization, diagnostic bridge contracts, and
-a diagnostic Qwen descriptor smoke execution.
+token, KV-cache, resident-weight, and activation-workspace owners,
+resource-backed Qwen submission descriptors, compact graph materialization,
+workspace-bound launch-packet preflight blockers, diagnostic bridge contracts,
+and a diagnostic Qwen descriptor smoke execution.
 
 The artifact composes token pointer, KV-cache, and resident-weight owners into
 a decode-loop submission plan. It records owner open/materialize/submit/close
@@ -137,7 +139,10 @@ diagnostic from the runner entry point and records the bridge summary. With
 `--token-cuda-live`, it opens the process-scoped token pointer-table owner in
 the runner. With `--kv-cuda-live`, it opens the full planned KV-cache owner
 in the runner. With `--resident-cuda-live`, it opens the resident weight-table
-owner and materializes 399 weight pointers for the submission plan.
+owner and materializes 399 weight pointers for the submission plan. With
+`--workspace-cuda-live`, it allocates per-workload float32 activation buffers
+plus a logits/sampling output buffer and closes the owner after launch-packet
+preflight capture.
 The `cuda_live_submission_descriptor_contract` maps those resource pointers
 to Qwen task function ids 7100 through 7109 and records the `run_prepared`
 repetition count. With `--run-submission-smoke`, it also compiles those same
@@ -148,15 +153,16 @@ The `resource_backed_graph_materialization` section checks that both serving
 policies have all token fields, KV fields, and 255 resident-weight-backed DAG
 task descriptors bound to concrete CUDA-live pointers.
 Its launch-packet preflight also packs the host-side `CudaPersistentDagTask`
-array from those pointers and records the remaining launch blockers:
-intermediate activation buffers, a float logits/sampling output path, and
-numerically correct Qwen kernels. It still does not execute full Qwen kernels
-or a full-serving decode loop.
+array from those pointers. When the activation workspace is live, intermediate
+tasks are chained through activation buffers and the final task writes to a
+float logits/sampling output buffer. It still does not execute full Qwen
+kernels or a full-serving decode loop.
 
 Expected output: command exits 0; output JSON records runner-owned cuda_live
-token, KV-cache, and resident-weight owners, resource-backed Qwen submission
-descriptors, compact graph materialization, launch-packet preflight blockers,
-diagnostic bridge contracts, and a diagnostic Qwen descriptor smoke execution.
+token, KV-cache, resident-weight, and activation-workspace owners,
+resource-backed Qwen submission descriptors, compact graph materialization,
+workspace-bound launch-packet preflight blockers, diagnostic bridge contracts,
+and a diagnostic Qwen descriptor smoke execution.
 
 ## Qwen Persistent Task Bodies
 

@@ -30,10 +30,12 @@ EVIDENCE_SYMBOLS = [
     "cuda_live_token_pointer_table_in_runner",
     "cuda_live_kv_cache_owner_in_runner",
     "cuda_live_resident_weight_table_in_runner",
+    "cuda_live_activation_workspace_in_runner",
     "qwen_decode_loop_submission_descriptors",
     "qwen_decode_loop_submission_smoke_execution",
     "qwen_resource_backed_graph_materialization",
     "qwen_resource_backed_launch_packet_preflight",
+    "qwen_activation_workspace_launch_packet_binding",
 ]
 
 
@@ -50,6 +52,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--token-cuda-live", action="store_true")
     parser.add_argument("--kv-cuda-live", action="store_true")
     parser.add_argument("--resident-cuda-live", action="store_true")
+    parser.add_argument("--workspace-cuda-live", action="store_true")
     parser.add_argument("--run-submission-smoke", action="store_true")
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--arch", default="compute_80")
@@ -102,6 +105,7 @@ def main() -> None:
         device=args.device,
         host_runtime=args.host_runtime,
         submission_smoke_payload=load_submission_smoke_payload(args),
+        workspace_cuda_live=args.workspace_cuda_live,
     )
     if args.output_json:
         write_json(args.output_json, payload)

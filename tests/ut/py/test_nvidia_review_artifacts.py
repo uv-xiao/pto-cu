@@ -879,6 +879,7 @@ def test_qwen_decode_loop_runner_orders_resource_lifetimes():
         "token_pointer_table": "token_pointer_table_lifecycle_ready",
         "kv_cache": "kv_cache_lifecycle_ready",
         "resident_weight_table": "resident_weight_table_lifecycle_ready",
+        "activation_workspace": "activation_workspace_lifecycle_planned",
     }
     assert runner["total_decode_iterations"] == 1088
     plans = {item["workload_id"]: item for item in runner["dag_submission_plans"]}
@@ -890,9 +891,11 @@ def test_qwen_decode_loop_runner_orders_resource_lifetimes():
         "open_token_pointer_table",
         "open_kv_cache",
         "open_resident_weight_table",
+        "open_activation_workspace",
         "materialize_decode_args",
         "materialize_weight_args",
         "submit_persistent_dag",
+        "close_activation_workspace",
         "close_resident_weight_table",
         "close_kv_cache",
         "close_token_pointer_table",

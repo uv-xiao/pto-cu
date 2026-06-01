@@ -88,8 +88,8 @@
       "benchmark_id": "llm_serving_decode",
       "method_id": "pto_persistent_device",
       "runtime": "cuda/persistent_device",
-      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode mock --run-unit-math-live --run-submission-smoke --token-cuda-live --kv-cuda-live --resident-cuda-live --device 0 --arch compute_80 --repeat-runs 3 --output-json tmp/cuda-backend/pto-serving-decode-loop-submission-descriptors/qwen-decode-loop-runner.json",
-      "expected_output": "command exits 0; output JSON records runner-owned cuda_live token, KV-cache, and resident-weight owners, resource-backed Qwen submission descriptors, compact graph materialization, launch-packet preflight blockers, diagnostic bridge contracts, and a diagnostic Qwen descriptor smoke execution.",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode mock --run-unit-math-live --run-submission-smoke --token-cuda-live --kv-cuda-live --resident-cuda-live --workspace-cuda-live --device 0 --arch compute_80 --repeat-runs 3 --output-json tmp/cuda-backend/pto-serving-decode-loop-submission-descriptors/qwen-decode-loop-runner.json",
+      "expected_output": "command exits 0; output JSON records runner-owned cuda_live token, KV-cache, resident-weight, and activation-workspace owners, resource-backed Qwen submission descriptors, compact graph materialization, workspace-bound launch-packet preflight blockers, diagnostic bridge contracts, and a diagnostic Qwen descriptor smoke execution.",
       "evidence_symbols": [
         "pto_qwen_decode_loop_runner",
         "decode_loop_owner_lifetime_order",
@@ -103,7 +103,9 @@
         "qwen_decode_loop_submission_descriptors",
         "qwen_decode_loop_submission_smoke_execution",
         "qwen_resource_backed_graph_materialization",
-        "qwen_resource_backed_launch_packet_preflight"
+        "qwen_resource_backed_launch_packet_preflight",
+        "cuda_live_activation_workspace_in_runner",
+        "qwen_activation_workspace_launch_packet_binding"
       ]
     },
     {
