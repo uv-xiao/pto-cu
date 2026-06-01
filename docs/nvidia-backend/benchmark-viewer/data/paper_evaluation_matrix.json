@@ -502,6 +502,10 @@
         {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-preflight-26c38df3/pto-serving-preflight.json"
         }
       ],
       "missing_evidence": [
@@ -517,7 +521,7 @@
           ],
           "shape_contains": "Qwen/Qwen3-8B",
           "status": "missing",
-          "action": "Import PTO persistent-device full-serving rows for Qwen/Qwen3-8B under both MPK-comparable and VDCores-comparable serving policies."
+          "action": "Implement and import PTO persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current PTO serving preflight proves only the controlled attention-tile proxy is imported; Qwen model loading, tokenization, KV-cache management, and decode-loop execution are still absent from the repo-owned PTO CUDA path."
         },
         {
           "id": "vdcores_full_serving_qwen3_8b",

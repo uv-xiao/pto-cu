@@ -3702,3 +3702,39 @@ Follow-up tracked-state closure after user confirmation:
   paper-ready with an explicit OOM/not-applicable footnote policy for
   infeasible 12288-token dense PyTorch reference cells. The active work queue
   now contains only LLM-serving paper-baseline gaps.
+
+### 2026-06-01 - PTO Full-Serving Preflight
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned PTO
+  full-serving gap preflight for the LLM-serving paper claim.
+- Exact Codex command or script invocation:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  .agents/skills/cuda-backend-eval/scripts/pto_serving_preflight.py --output
+  tmp/cuda-backend/pto-serving-preflight-26c38df3/pto-serving-preflight.json`,
+  then `refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, LLM-serving PTO
+  full-serving evidence.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, benchmark-viewer data,
+  in-progress evaluation docs, changelog docs, dispatch log, and tests. No
+  upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled,
+  `.github/workflows/` stayed empty, and PR #1 had no status-check rollup. The
+  preflight is not performance evidence; it records the missing PTO Qwen
+  full-serving path.
+- Verification commands and results: `validate_benchmark_viewer_data.py` ->
+  passed; `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed; `jq empty
+  docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `git diff --check` -> passed; `py_compile pto_serving_preflight.py` ->
+  passed; `pytest tests/ut/py/test_nvidia_review_artifacts.py -q` ->
+  `43 passed`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: implement or import PTO
+  persistent-device Qwen/Qwen3-8B model loading, tokenization, KV-cache, and
+  decode-loop execution before importing `mpk_offline_decode` or
+  `vdcores_offline_decode` PTO full-serving rows.

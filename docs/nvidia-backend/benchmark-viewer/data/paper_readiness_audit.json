@@ -268,7 +268,7 @@
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
         "baseline_survey": 1,
-        "raw_artifact": 6,
+        "raw_artifact": 7,
         "viewer_data": 3,
         "viewer_result": 7
       },
@@ -283,7 +283,7 @@
           ],
           "shape_contains": "Qwen/Qwen3-8B",
           "status": "missing",
-          "action": "Import PTO persistent-device full-serving rows for Qwen/Qwen3-8B under both MPK-comparable and VDCores-comparable serving policies."
+          "action": "Implement and import PTO persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current PTO serving preflight proves only the controlled attention-tile proxy is imported; Qwen model loading, tokenization, KV-cache management, and decode-loop execution are still absent from the repo-owned PTO CUDA path."
         },
         {
           "id": "vdcores_full_serving_qwen3_8b",
@@ -451,7 +451,7 @@
           "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
           "paper_baseline_id": "vdcores",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-0342252b/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-26c38df3/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }
@@ -592,7 +592,7 @@
           ],
           "shape_contains": "Qwen/Qwen3-8B",
           "status": "missing",
-          "action": "Import PTO persistent-device full-serving rows for Qwen/Qwen3-8B under both MPK-comparable and VDCores-comparable serving policies."
+          "action": "Implement and import PTO persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current PTO serving preflight proves only the controlled attention-tile proxy is imported; Qwen model loading, tokenization, KV-cache management, and decode-loop execution are still absent from the repo-owned PTO CUDA path."
         },
         {
           "source": "matrix_missing_evidence",

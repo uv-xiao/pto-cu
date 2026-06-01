@@ -370,6 +370,18 @@ PYTHONPATH=$PWD:$PWD/python \
     --viewer-output tmp/cuda-backend/paper-baselines/mpk/viewer-result-records.json
 ```
 
+Use `pto_serving_preflight.py` when the PTO full-serving gap must be recorded
+without claiming performance. It checks the committed viewer rows and repo code
+for persistent-device ABI/codegen support, the current PTO
+serving-equivalent proxy row, and the missing Qwen/Qwen3-8B model-loading,
+tokenization, KV-cache, and decode-loop path:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_serving_preflight.py \
+    --output tmp/cuda-backend/pto-serving-preflight-$(git rev-parse --short HEAD)/pto-serving-preflight.json
+```
+
 Use `paper_baseline_run_readiness.py` before spending H200 time on planned
 paper-baseline runs. It does not execute long baselines; it records source
 path, reproduction-command presence, Python entrypoints, expected artifact,

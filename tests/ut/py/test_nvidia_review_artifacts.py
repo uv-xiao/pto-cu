@@ -432,6 +432,78 @@ def test_llm_serving_paper_baseline_run_requires_shape_and_concurrency(tmp_path)
         raise AssertionError("LLM serving run without concurrency policy was accepted")
 
 
+def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
+    output = tmp_path / "pto-serving-preflight.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/pto_serving_preflight.py",
+            "--output",
+            str(output),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    preflight = json.loads(output.read_text(encoding="utf-8"))
+    assert preflight["kind"] == "pto_persistent_device_full_serving_preflight"
+    assert preflight["status"] == "partial"
+
+    checks = {check["id"]: check for check in preflight["checks"]}
+    assert checks["persistent_device_task_descriptor_abi"]["status"] == "pass"
+    assert checks["persistent_dag_source_codegen"]["status"] == "pass"
+    assert checks["pto_controlled_serving_proxy_imported"]["status"] == "pass"
+    assert checks["qwen3_8b_full_serving_rows_imported"]["status"] == "fail"
+    assert checks["qwen_model_loader_or_token_loop"]["status"] == "fail"
+    assert any(
+        row["shape"].startswith("controlled serving-equivalent")
+        for row in preflight["pto_serving_rows"]
+    )
+    assert {workload["id"] for workload in preflight["serving_workloads"]} == {
+        "mpk_offline_decode",
+        "vdcores_offline_decode",
+    }
+    assert "Qwen/Qwen3-8B" in preflight["next_action"]
+
+
+def test_llm_serving_matrix_tracks_pto_preflight_blocker():
+    matrix = json.loads(
+        (
+            VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
+        ).read_text(encoding="utf-8")
+    )
+    claim = next(
+        item
+        for item in matrix["paper_evaluation_matrix"]
+        if item["id"] == "llm_serving_paper_baselines"
+    )
+    assert any(
+        ref.get("kind") == "raw_artifact"
+        and ref.get("path")
+        == "tmp/cuda-backend/pto-serving-preflight-26c38df3/pto-serving-preflight.json"
+        for ref in claim["current_evidence_refs"]
+    )
+    pto_gap = next(
+        item
+        for item in claim["missing_evidence_details"]
+        if item["id"] == "pto_full_serving_qwen3_8b"
+    )
+    assert pto_gap["status"] == "missing"
+    action = pto_gap["action"]
+    for phrase in [
+        "controlled attention-tile proxy",
+        "Qwen model loading",
+        "tokenization",
+        "KV-cache",
+        "decode-loop",
+    ]:
+        assert phrase in action
+
+
 def test_vdcores_scheduler_trace_keeps_diagnostic_scope_separate():
     matrix = json.loads(
         (

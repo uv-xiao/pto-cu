@@ -92,6 +92,15 @@ capacity problem: a temporary global-instruction runtime can run `-N 64 -b 5`,
 but it fails Qwen3-8B correctness thresholds, so the row remains blocked until
 the global-instruction path is corrected or the schedule is segmented without
 leaving the shared-instruction runtime.
+The PTO full-serving gap is tracked by
+`.agents/skills/cuda-backend-eval/scripts/pto_serving_preflight.py` and the
+raw artifact at
+`tmp/cuda-backend/pto-serving-preflight-26c38df3/pto-serving-preflight.json`.
+That preflight proves the current viewer has only the controlled
+attention-tile proxy row for PTO serving-equivalent evidence. The repo-owned
+PTO CUDA path still lacks Qwen model loading, tokenization, KV-cache
+management, and decode-loop execution, so no PTO `Qwen/Qwen3-8B` full-serving
+row can be imported yet.
 Every serving baseline run record must reference one of these policy IDs and
 require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before
 it can be imported. Imported rows must record actual tokenizer counts, model
