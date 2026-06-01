@@ -62,6 +62,22 @@ def test_task_body_manifest_tracks_qwen_unit_math_oracle():
         -0.378139,
     ]
     assert "qwen_unit_math_oracle" in manifest["implemented_contracts"]
-    assert "cuda_task_bodies_match_qwen_unit_math_oracle" in manifest[
+    assert "cuda_live_qwen_unit_math_execution" in manifest[
         "remaining_runtime_gaps"
     ]
+
+
+def test_generated_source_contains_qwen_unit_math_kernels():
+    module = load_task_bodies_module()
+
+    manifest = module.build_task_body_manifest(num_hidden_layers=1)
+    source = manifest["rendered_source"]["preview"]
+
+    assert "rsqrtf(mean_square + 0.000001f)" in source
+    assert "task->c[kv_index] = k;" in source
+    assert "task->d[kv_index] = v;" in source
+    assert "task->out[i] = v;" in source
+    assert "1.0f + expf(-gate_value)" in source
+    assert "task->out[i] = silu_gate * up_value;" in source
+    assert "lm_head" in source
+    assert "qwen_unit_math_source_coverage" in manifest["implemented_contracts"]

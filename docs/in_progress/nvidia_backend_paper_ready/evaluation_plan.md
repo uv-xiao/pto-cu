@@ -172,7 +172,8 @@ oracle for the current deterministic scaffold formulas; that oracle is not
 full Qwen correctness evidence.
 It also carries a small Qwen unit math oracle covering RMSNorm, projection,
 single-token attention cache writeback, SiLU/SwiGLU, and logits equations;
-the generated CUDA task bodies still need to match that oracle.
+the generated CUDA source now contains a matching opt-in unit-math path, and
+`cuda_live` execution of that path is still pending.
 The persistent decode-argument artifact in
 `examples/cuda/qwen_persistent_decode_args.py` maps those token buffers onto
 the persistent DAG `a`, `b`, and `out` fields while preserving `tensor_args`

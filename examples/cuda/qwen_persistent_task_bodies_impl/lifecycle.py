@@ -54,8 +54,14 @@ task->out[i] = embedding ? embedding[token_id & 3U] : 0.0f;
             "consumes_roles": ["hidden_state", "input_layernorm_weight"],
             "body": """
 const float *weight = task->tensor_args[0];
-const float scale = weight ? weight[i & 3U] : 1.0f;
-task->out[i] = task->a[i] * scale;
+float mean_square = 0.0f;
+for (unsigned long long j = 0; j < task->n; ++j) {
+    mean_square += task->a[j] * task->a[j];
+}
+mean_square /= static_cast<float>(task->n);
+const float scale = rsqrtf(mean_square + 0.000001f);
+const float norm_weight = weight ? weight[i & 3U] : 1.0f;
+task->out[i] = task->a[i] * scale * norm_weight;
 """,
         },
         {
@@ -79,6 +85,21 @@ const unsigned long long kv_index = i % task->n;
 const float key = task->c ? task->c[kv_index] : 0.0f;
 const float value = task->d ? task->d[kv_index] : 0.0f;
 const float *q_proj = task->tensor_args[0];
+const float *k_proj = task->tensor_args[1];
+const float *v_proj = task->tensor_args[2];
+if (task->scalar_arg_count > 0 && q_proj && k_proj && v_proj) {
+    const float q = task->a[i] * q_proj[i & 3U];
+    const float k = task->a[i] * k_proj[i & 3U];
+    const float v = task->a[i] * v_proj[i & 3U];
+    if (task->c) {
+        task->c[kv_index] = k;
+    }
+    if (task->d) {
+        task->d[kv_index] = v;
+    }
+    task->out[i] = v;
+    return;
+}
 const float q = q_proj ? q_proj[i & 3U] : 0.0f;
 task->out[i] = task->a[i] + mask + key + value + q;
 if (task->c) {
@@ -130,8 +151,10 @@ task->out[i] = task->a[i] * (weight ? weight[i & 3U] : 1.0f);
             "body": """
 const float *gate = task->tensor_args[0];
 const float *up = task->tensor_args[1];
-const float gated = task->a[i] * (gate ? gate[i & 3U] : 1.0f);
-task->out[i] = gated + (up ? up[i & 3U] : 0.0f);
+const float gate_value = gate ? gate[i & 3U] : task->a[i];
+const float up_value = up ? up[i & 3U] : task->a[i];
+const float silu_gate = gate_value / (1.0f + expf(-gate_value));
+task->out[i] = silu_gate * up_value;
 """,
         },
         {
@@ -161,6 +184,10 @@ task->out[i] = task->a[i] * (weight ? weight[i & 3U] : 1.0f);
             "consumes_roles": ["hidden_state", "lm_head_weight", "output_ids"],
             "body": """
 const float *lm_head = task->tensor_args[0];
+if (task->scalar_arg_count > 0 && lm_head) {
+    task->out[i] = task->a[i] * lm_head[i & 3U];
+    return;
+}
 const float logit = task->a[i] + (lm_head ? lm_head[i & 3U] : 0.0f);
 task->out[i] = logit;
 """,
@@ -187,7 +214,7 @@ def source_preview(source: str, callables: list[str]) -> str:
         for line_index, line in enumerate(lines):
             if marker not in line:
                 continue
-            selected.extend(lines[line_index : line_index + 14])
+            selected.extend(lines[line_index : line_index + 28])
             selected.append("")
             break
     return "\n".join(selected).strip()
@@ -233,6 +260,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "preview": source_preview(
                 source,
                 [
+                    "qwen_rmsnorm_input",
                     "qwen_attention_qkv",
                     "qwen_mlp_gate_up",
                     "qwen_logits",
@@ -245,6 +273,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "generated_qwen_kernel_bodies",
             "controlled_proxy_numeric_oracle",
             "qwen_unit_math_oracle",
+            "qwen_unit_math_source_coverage",
             "qwen_kernel_token_field_consumption",
             "qwen_kernel_kv_field_consumption",
             "qwen_kernel_kv_cache_writeback_field_contract",
@@ -252,7 +281,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
         ],
         "remaining_runtime_gaps": [
             "numerically_correct_qwen_kernel_bodies",
-            "cuda_task_bodies_match_qwen_unit_math_oracle",
+            "cuda_live_qwen_unit_math_execution",
             "cuda_live_decode_loop_execution",
             "viewer_result_import",
         ],

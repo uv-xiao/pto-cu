@@ -13,8 +13,8 @@
 
 The task-body evidence now separates three claims: source generation through
 the persistent DAG generator, deterministic proxy arithmetic, and real Qwen
-unit equations. The manifest still marks CUDA task-body equivalence to this
-oracle as a remaining implementation gap.
+unit equations. A later source-coverage change adds generated CUDA source for
+the same unit equations; this report records the oracle-introduction step.
 
 ## Evaluation Run
 
@@ -28,5 +28,5 @@ Result: `1 passed`.
 
 ## Remaining Gaps
 
-- Update CUDA task bodies to match the Qwen unit math oracle.
+- Execute the Qwen unit-math source path through `cuda_live`.
 - Execute the full Qwen decode loop and import full-serving viewer rows.

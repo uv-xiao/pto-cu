@@ -964,6 +964,7 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     assert "generated_qwen_kernel_bodies" in manifest["implemented_contracts"]
     assert "controlled_proxy_numeric_oracle" in manifest["implemented_contracts"]
     assert "qwen_unit_math_oracle" in manifest["implemented_contracts"]
+    assert "qwen_unit_math_source_coverage" in manifest["implemented_contracts"]
     assert (
         "qwen_kernel_kv_cache_writeback_field_contract"
         in manifest["implemented_contracts"]
@@ -991,7 +992,7 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     ]
     assert manifest["remaining_runtime_gaps"] == [
         "numerically_correct_qwen_kernel_bodies",
-        "cuda_task_bodies_match_qwen_unit_math_oracle",
+        "cuda_live_qwen_unit_math_execution",
         "cuda_live_decode_loop_execution",
         "viewer_result_import",
     ]

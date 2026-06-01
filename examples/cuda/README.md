@@ -150,7 +150,8 @@ fields, so the artifact records KV-cache writeback field access before
 controlled proxy formulas only; it must not be promoted as full Qwen
 correctness. The Qwen unit math oracle records RMSNorm, projection,
 single-token attention cache writeback, SiLU/SwiGLU, and logits equations
-for a hidden-size-4 reference; CUDA task bodies still need to match it.
+for a hidden-size-4 reference. The generated CUDA source now contains that
+unit-math path; `cuda_live` execution of the path is still pending.
 
 ## Qwen Persistent Proxy Live
 

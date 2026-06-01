@@ -435,7 +435,8 @@ Use `examples/cuda/qwen_persistent_task_bodies.py` when reviewers need the
 repo-owned Qwen persistent task-body source manifest. The current artifact
 renders through the existing persistent DAG source generator and records token,
 mutable KV-cache, weight field consumption, and a small Qwen unit math oracle;
-it is not yet a numerically correct Qwen kernel implementation:
+the generated source contains that unit-math path, but the path is not yet
+validated in a `cuda_live` decode execution:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
