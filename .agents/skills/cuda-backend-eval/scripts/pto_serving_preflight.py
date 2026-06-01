@@ -279,6 +279,20 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_persistent_weight_arg_manifest",
+            "status": "pass"
+            if serving_scaffold.get("persistent_weight_args", {}).get("status")
+            == "persistent_weight_args_ready"
+            else "fail",
+            "evidence": "examples/cuda/qwen_persistent_weight_args.py",
+            "why": (
+                "Qwen weights must be decomposed into persistent DAG task "
+                "tensor_args descriptors that fit the current four-pointer "
+                "PtoCudaPersistentDagTask ABI before runtime pointer "
+                "materialization can be implemented."
+            ),
+        },
+        {
             "id": "qwen_model_loader_or_token_loop",
             "status": "fail",
             "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",

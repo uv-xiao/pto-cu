@@ -480,6 +480,18 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-weight-residency-$(git rev-parse --short HEAD)/qwen-cuda-weight-residency.json
 ```
 
+Use `examples/cuda/qwen_persistent_weight_args.py` after CUDA weight binding to
+make the persistent DAG task argument contract reviewable. It decomposes Qwen
+weight use into task descriptors whose `tensor_args` fit the current
+four-pointer `PtoCudaPersistentDagTask` ABI and cover every validated tensor:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_persistent_weight_args.py \
+    --weight-binding-json tmp/cuda-backend/pto-serving-weight-residency-$(git rev-parse --short HEAD)/qwen-cuda-weight-residency.json \
+    --output-json tmp/cuda-backend/pto-serving-weight-args-$(git rev-parse --short HEAD)/qwen-persistent-weight-args.json
+```
+
 Use `paper_baseline_run_readiness.py` before spending H200 time on planned
 paper-baseline runs. It does not execute long baselines; it records source
 path, reproduction-command presence, Python entrypoints, expected artifact,

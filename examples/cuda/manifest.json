@@ -147,6 +147,22 @@
         "cuda_device_weight_copy_probe",
         "cuda_full_weight_residency_probe"
       ]
+    },
+    {
+      "id": "qwen_persistent_weight_args",
+      "title": "Qwen Persistent Weight Arguments",
+      "script": "examples/cuda/qwen_persistent_weight_args.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_weight_args.py --output-json tmp/cuda-backend/pto-serving-weight-args/qwen-persistent-weight-args.json",
+      "expected_output": "command exits 0; output JSON records Qwen weight task descriptors whose tensor_args fit the four-pointer persistent DAG ABI and cover every validated weight tensor.",
+      "evidence_symbols": [
+        "pto_qwen_persistent_weight_args",
+        "qwen_weight_task_decomposition",
+        "persistent_dag_tensor_arg_capacity_check",
+        "persistent_task_weight_arg_binding_manifest"
+      ]
     }
   ]
 }

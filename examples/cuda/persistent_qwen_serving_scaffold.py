@@ -22,6 +22,9 @@ SAFETENSORS_METADATA = (
     ROOT / "examples" / "cuda" / "qwen_safetensors_metadata.py"
 )
 CUDA_WEIGHT_BINDING = ROOT / "examples" / "cuda" / "qwen_cuda_weight_binding.py"
+PERSISTENT_WEIGHT_ARGS = (
+    ROOT / "examples" / "cuda" / "qwen_persistent_weight_args.py"
+)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -115,6 +118,19 @@ def load_cuda_weight_binding() -> dict[str, Any]:
     return module.build_weight_binding(no_cuda_probe=True)
 
 
+def load_persistent_weight_args() -> dict[str, Any]:
+    spec = importlib.util.spec_from_file_location(
+        "qwen_persistent_weight_args",
+        PERSISTENT_WEIGHT_ARGS,
+    )
+    if spec is None or spec.loader is None:
+        return {}
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.build_weight_arg_manifest()
+
+
 def serving_workload_contracts() -> list[dict[str, Any]]:
     payload = load_json(VIEWER_DATA / "serving_workloads.json")
     workloads = []
@@ -164,6 +180,7 @@ def build_scaffold() -> dict[str, Any]:
     safetensors_shards = load_safetensors_shards()
     safetensors_metadata = load_safetensors_metadata()
     cuda_weight_binding = load_cuda_weight_binding()
+    persistent_weight_args = load_persistent_weight_args()
     shards_ready = (
         safetensors_shards.get("status") == "ready_for_metadata_probe"
     )
@@ -173,9 +190,17 @@ def build_scaffold() -> dict[str, Any]:
     weight_binding_ready = (
         cuda_weight_binding.get("status") == "binding_plan_ready"
     )
+    persistent_weight_args_ready = (
+        persistent_weight_args.get("status") == "persistent_weight_args_ready"
+    )
     weight_next_action = (
-        "Move the planned CUDA weight bindings into real persistent task "
-        "arguments and full device residency."
+        "Materialize persistent task descriptors with resident weight "
+        "pointers during the decode-loop runner."
+        if persistent_weight_args_ready
+        else (
+            "Move the planned CUDA weight bindings into real persistent task "
+            "arguments and full device residency."
+        )
         if weight_binding_ready
         else (
             "Bind validated Qwen safetensors tensors to CUDA buffers and "
@@ -300,6 +325,25 @@ def build_scaffold() -> dict[str, Any]:
             ),
         ),
         stage(
+            stage_id="qwen_persistent_weight_args",
+            title="Qwen persistent weight argument manifest",
+            owner="pto_serving_host",
+            required_for_full_serving=True,
+            status=(
+                "pass"
+                if persistent_weight_args_ready
+                else "partial"
+                if persistent_weight_args.get("kind")
+                == "pto_qwen_persistent_weight_args"
+                else "missing"
+            ),
+            evidence="examples/cuda/qwen_persistent_weight_args.py",
+            next_action=(
+                "Materialize these tensor_arg descriptors with resident "
+                "device pointers in the decode-loop runner."
+            ),
+        ),
+        stage(
             stage_id="qwen_safetensors_shards",
             title="Qwen safetensors shard placement",
             owner="pto_serving_host",
@@ -368,6 +412,7 @@ def build_scaffold() -> dict[str, Any]:
         "safetensors_shards": safetensors_shards,
         "safetensors_metadata": safetensors_metadata,
         "cuda_weight_binding": cuda_weight_binding,
+        "persistent_weight_args": persistent_weight_args,
         "stages": stages,
         "missing_stage_ids": [item["id"] for item in missing],
         "next_action": (

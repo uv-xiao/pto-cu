@@ -33,6 +33,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 Qwen safetensors real metadata](2026-06-01-qwen-safetensors-real-metadata.md)
 - [2026-06-01 Qwen CUDA weight binding](2026-06-01-qwen-cuda-weight-binding.md)
 - [2026-06-01 Qwen CUDA weight residency](2026-06-01-qwen-cuda-weight-residency.md)
+- [2026-06-01 Qwen persistent weight arguments](2026-06-01-qwen-persistent-weight-args.md)
 - [2026-06-01 serving coverage guard](2026-06-01-serving-coverage-guard.md)
 - [2026-06-01 serving gap audit narrowing](2026-06-01-serving-gap-audit-narrowing.md)
 - [2026-06-01 serving work queue targets](2026-06-01-serving-work-queue-targets.md)

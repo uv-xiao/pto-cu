@@ -4200,3 +4200,44 @@ Follow-up tracked-state closure after user confirmation:
   weight-pointer binding, runtime token-ID binding, KV-cache allocation and
   binding, Qwen kernel generation, decode-loop execution, and viewer-result
   import.
+
+### 2026-06-01 - Qwen Persistent Weight Arguments
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned persistent
+  DAG weight-argument manifest for Qwen/Qwen3-8B after CUDA residency.
+- Exact Codex command or script invocation:
+  `qwen_persistent_weight_args.py --weight-binding-json
+  tmp/cuda-backend/pto-serving-weight-residency-1ae913c9/qwen-cuda-weight-residency.json
+  --output-json
+  tmp/cuda-backend/pto-serving-weight-args-21589e81/qwen-persistent-weight-args.json`,
+  then `persistent_qwen_serving_scaffold.py --output-json
+  tmp/cuda-backend/pto-serving-scaffold-21589e81/qwen-serving-scaffold.json`,
+  then `pto_serving_preflight.py --output
+  tmp/cuda-backend/pto-serving-preflight-21589e81/pto-serving-preflight.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled,
+  `.github/workflows/` stayed empty on this branch, and PR #1 reported no
+  checks. The large safetensors shards and weight-argument artifact are local
+  tmp evidence and are not committed.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_persistent_weight_args.py` did not exist; after
+  implementation it passed. The real manifest reports
+  `status=persistent_weight_args_ready`, `task_arg_descriptor_count=255`,
+  `covered_tensor_count=399`, `missing_tensor_count=0`, and
+  `max_tensor_args_per_task=3`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves every validated
+  Qwen3-8B weight has a persistent DAG tensor-argument descriptor within the
+  current four-pointer ABI. The remaining PTO full-serving gaps are runtime
+  materialization of resident pointers into task descriptors, runtime token-ID
+  binding, KV-cache allocation and binding, Qwen kernel generation,
+  decode-loop execution, and viewer-result import.
