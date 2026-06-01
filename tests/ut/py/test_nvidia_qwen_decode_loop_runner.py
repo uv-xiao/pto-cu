@@ -136,6 +136,14 @@ def test_decode_loop_runner_tracks_cuda_live_resource_owners(monkeypatch):
         token_cuda_live=True,
         kv_cuda_live=True,
         resident_cuda_live=True,
+        submission_smoke_payload={
+            "kind": "pto_qwen_submission_smoke_execution",
+            "status": "pass",
+            "serving_coverage": "diagnostic_qwen_descriptor_smoke",
+            "func_id_sequence": list(range(7100, 7110)),
+            "max_abs_error": 0.0,
+            "scheduler_counters": {"completed_count": 10, "error_count": 0},
+        },
     )
 
     assert runner["mode"] == "partial_cuda_live_submission_plan"
@@ -156,13 +164,17 @@ def test_decode_loop_runner_tracks_cuda_live_resource_owners(monkeypatch):
     ]
     contract = runner["cuda_live_submission_descriptor_contract"]
     assert contract["status"] == "resource_backed_descriptors_ready"
-    assert contract["execution_status"] == "not_executed"
-    assert contract["remaining_gap"] == "run_prepared_full_qwen_decode_loop"
+    assert contract["execution_status"] == "diagnostic_descriptor_smoke_passed"
+    assert contract["execution_evidence"]["completed_count"] == 10
+    assert contract["remaining_gap"] == "resource_backed_full_qwen_decode_loop_execution"
     assert contract["descriptors"][0]["func_id_sequence"] == list(
         range(7100, 7110)
     )
     assert contract["descriptors"][0]["run_prepared_repetitions"] == 1024
     assert "qwen_decode_loop_submission_descriptors" in runner[
+        "implemented_contracts"
+    ]
+    assert "qwen_decode_loop_submission_smoke_execution" in runner[
         "implemented_contracts"
     ]
 

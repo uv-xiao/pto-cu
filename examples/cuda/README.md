@@ -113,6 +113,7 @@ PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/qwen_decode_loop_runner.py \
   --mode mock \
   --run-unit-math-live \
+  --run-submission-smoke \
   --token-cuda-live \
   --kv-cuda-live \
   --resident-cuda-live \
@@ -123,8 +124,9 @@ PYTHONPATH=$PWD:$PWD/python \
 ```
 
 Expected output: command exits 0; output JSON records runner-owned cuda_live
-token, KV-cache, and resident-weight owners, plus resource-backed Qwen
-submission descriptors and diagnostic cuda_live bridge contracts.
+token, KV-cache, and resident-weight owners, resource-backed Qwen submission
+descriptors, diagnostic bridge contracts, and a diagnostic Qwen descriptor
+smoke execution.
 
 The artifact composes token pointer, KV-cache, and resident-weight owners into
 a decode-loop submission plan. It records owner open/materialize/submit/close
@@ -138,7 +140,10 @@ in the runner. With `--resident-cuda-live`, it opens the resident weight-table
 owner and materializes 399 weight pointers for the submission plan.
 The `cuda_live_submission_descriptor_contract` maps those resource pointers
 to Qwen task function ids 7100 through 7109 and records the `run_prepared`
-repetition count, but marks the full Qwen execution as not yet run.
+repetition count. With `--run-submission-smoke`, it also compiles those same
+function ids and launches a small controlled CUDA DAG through
+`run_prepared`; this proves the descriptor task-function set is executable,
+but still does not use the full Qwen resource-backed serving buffers.
 It still does not execute full Qwen kernels or a full-serving decode loop.
 
 ## Qwen Persistent Task Bodies

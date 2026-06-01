@@ -22,6 +22,11 @@
   token, KV-cache, and resident-weight resources to Qwen persistent task
   function ids 7100 through 7109 and records the planned `run_prepared`
   repetitions.
+- Added `--run-submission-smoke`, which compiles those same Qwen task
+  function ids and runs a small controlled persistent DAG through
+  `cuda/persistent_device`.
+- Imported the diagnostic descriptor smoke into the benchmark viewer as a
+  non-full-serving `diagnostic_qwen_descriptor_smoke` row.
 - Captured current evidence at
   `tmp/cuda-backend/pto-serving-decode-loop-2026-06-01/`
   `qwen-decode-loop-runner.json`.
@@ -125,8 +130,25 @@ Result: `cuda_live_submission_descriptor_contract.status=`
 and descriptor rows for `mpk_offline_decode` and `vdcores_offline_decode`
 with Qwen function ids 7100 through 7109.
 
+Additional diagnostic descriptor smoke command:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_decode_loop_runner.py \
+  --mode mock --run-submission-smoke --token-cuda-live --kv-cuda-live \
+  --resident-cuda-live --device 0 --arch compute_80 \
+  --output-json \
+  tmp/cuda-backend/pto-serving-decode-loop-submission-smoke-live-2026-06-02/\
+qwen-decode-loop-runner.json
+```
+
+Result: `cuda_live_submission_descriptor_contract.execution_status=`
+`diagnostic_descriptor_smoke_passed` when the smoke payload is attached,
+with `status=resource_backed_descriptors_ready`, `completed_count=10`,
+`error_count=0`, `device_wall_ns=84992`, and `max_abs_error<=1e-5`.
+
 ## Remaining Gaps
 
-- Generate Qwen kernel bodies that consume token, KV-cache, and weight fields.
-- Run the resource-backed descriptors through `run_prepared`, validate Qwen
-  numerical correctness, and import full-serving viewer rows.
+- Run the resource-backed full Qwen decode-loop descriptors through
+  `run_prepared`, validate Qwen numerical correctness, and import
+  full-serving viewer rows.

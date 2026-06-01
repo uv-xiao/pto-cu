@@ -216,6 +216,7 @@ def build_decode_loop_runner(
     resident_cuda_live: bool = False,
     device: int = 0,
     host_runtime: Path | None = None,
+    submission_smoke_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     token_lifecycle, kv_lifecycle, resident_lifecycle = build_resources(
         mode=mode,
@@ -263,9 +264,12 @@ def build_decode_loop_runner(
         plans=plans,
         resource_modes=resource_modes,
         resource_status=resource_status,
+        execution_evidence=submission_smoke_payload,
     )
     if submission_descriptors["status"] == "resource_backed_descriptors_ready":
         implemented_contracts.append("qwen_decode_loop_submission_descriptors")
+    if submission_smoke_payload is not None:
+        implemented_contracts.append("qwen_decode_loop_submission_smoke_execution")
     return {
         "schema_version": 1,
         "kind": "pto_qwen_decode_loop_runner",

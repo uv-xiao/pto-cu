@@ -423,14 +423,14 @@ Use `examples/cuda/qwen_decode_loop_runner.py` when reviewers need the
 decode-loop owner lifetime, persistent DAG submission order, and diagnostic
 `cuda_live` bridge contracts. The current artifact is a partial CUDA-live
 submission plan with runner-owned token, KV-cache, and resident-weight tables,
-resource-backed Qwen submission descriptors, plus bridges to the repeated
-proxy microdecode runner and repeated unit-math live runner, not a
-full-serving result:
+resource-backed Qwen submission descriptors, a diagnostic descriptor smoke,
+and bridges to the repeated proxy microdecode runner and repeated unit-math
+live runner, not a full-serving result:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/qwen_decode_loop_runner.py \
-    --mode mock --run-unit-math-live --token-cuda-live \
+    --mode mock --run-unit-math-live --run-submission-smoke --token-cuda-live \
     --kv-cuda-live --resident-cuda-live \
     --device 0 --arch compute_80 \
     --repeat-runs 3 \

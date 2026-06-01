@@ -31,6 +31,7 @@ EVIDENCE_SYMBOLS = [
     "cuda_live_kv_cache_owner_in_runner",
     "cuda_live_resident_weight_table_in_runner",
     "qwen_decode_loop_submission_descriptors",
+    "qwen_decode_loop_submission_smoke_execution",
 ]
 
 
@@ -47,6 +48,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--token-cuda-live", action="store_true")
     parser.add_argument("--kv-cuda-live", action="store_true")
     parser.add_argument("--resident-cuda-live", action="store_true")
+    parser.add_argument("--run-submission-smoke", action="store_true")
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--arch", default="compute_80")
     parser.add_argument("--cache-root", type=Path)
@@ -73,6 +75,19 @@ def load_unit_math_payload(args: argparse.Namespace) -> dict | None:
     )
 
 
+def load_submission_smoke_payload(args: argparse.Namespace) -> dict | None:
+    if not args.run_submission_smoke:
+        return None
+    from qwen_decode_loop_runner_impl.submission_smoke import run_submission_smoke
+
+    return run_submission_smoke(
+        device=args.device,
+        arch=args.arch,
+        cache_root=args.cache_root,
+        build_runtime=args.build_runtime,
+    )
+
+
 def main() -> None:
     args = parse_args()
     payload = build_decode_loop_runner(
@@ -84,6 +99,7 @@ def main() -> None:
         resident_cuda_live=args.resident_cuda_live,
         device=args.device,
         host_runtime=args.host_runtime,
+        submission_smoke_payload=load_submission_smoke_payload(args),
     )
     if args.output_json:
         write_json(args.output_json, payload)

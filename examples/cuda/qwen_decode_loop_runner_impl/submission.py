@@ -29,6 +29,7 @@ def submission_descriptor_contract(
     plans: list[dict[str, Any]],
     resource_modes: dict[str, str],
     resource_status: dict[str, Any],
+    execution_evidence: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     live_ready = all(
         resource_modes.get(owner) == "cuda_live" for owner in EXPECTED_LIVE_OWNERS
@@ -38,6 +39,7 @@ def submission_descriptor_contract(
         for status in resource_status.values()
     )
     descriptors = [descriptor_for_plan(plan) for plan in plans]
+    executed = execution_evidence is not None and execution_evidence.get("status") == "pass"
     return {
         "status": (
             "resource_backed_descriptors_ready"
@@ -48,11 +50,36 @@ def submission_descriptor_contract(
         "entry_name": "pto_persistent_dag_f32_executor",
         "task_body_source": "examples/cuda/qwen_persistent_task_bodies.py",
         "prepared_callable_reuse": "single_prepare_multiple_run_prepared",
-        "execution_status": "not_executed",
+        "execution_status": (
+            "diagnostic_descriptor_smoke_passed" if executed else "not_executed"
+        ),
+        "execution_evidence": execution_summary(execution_evidence),
         "resource_preconditions": resource_status,
         "required_cuda_live_owners": EXPECTED_LIVE_OWNERS,
         "descriptors": descriptors,
-        "remaining_gap": "run_prepared_full_qwen_decode_loop",
+        "remaining_gap": (
+            "resource_backed_full_qwen_decode_loop_execution"
+            if executed
+            else "run_prepared_full_qwen_decode_loop"
+        ),
+    }
+
+
+def execution_summary(evidence: dict[str, Any] | None) -> dict[str, Any] | None:
+    if evidence is None:
+        return None
+    counters = evidence.get("scheduler_counters", {})
+    timing = evidence.get("timing_ns", {})
+    return {
+        "kind": evidence.get("kind"),
+        "status": evidence.get("status"),
+        "serving_coverage": evidence.get("serving_coverage"),
+        "func_id_sequence": evidence.get("func_id_sequence", []),
+        "completed_count": int(counters.get("completed_count", 0)),
+        "error_count": int(counters.get("error_count", 0)),
+        "max_abs_error": float(evidence.get("max_abs_error", 0.0)),
+        "host_wall_ns": int(timing.get("host_wall", 0)),
+        "device_wall_ns": int(timing.get("device_wall", 0)),
     }
 
 

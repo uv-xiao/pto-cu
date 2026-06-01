@@ -171,7 +171,13 @@ The current descriptor artifact is
 `tmp/cuda-backend/pto-serving-decode-loop-submission-descriptors-2026-06-02/qwen-decode-loop-runner.json`;
 it records resource-backed Qwen function ids 7100 through 7109, graph task
 counts, and `run_prepared` repetition counts for the MPK and VDCores serving
-policies, but marks full Qwen execution as `not_executed`.
+policies. The runner can now attach a diagnostic descriptor smoke that
+compiles those same function ids and executes a small controlled
+`cuda/persistent_device` DAG, but the full resource-backed Qwen decode loop
+still remains unexecuted. The current live-owner smoke artifact is
+`tmp/cuda-backend/pto-serving-decode-loop-submission-smoke-live-2026-06-02/`
+`qwen-decode-loop-runner.json`, and the benchmark viewer imports it as
+`serving_coverage=diagnostic_qwen_descriptor_smoke`.
 The task-body source artifact in
 `examples/cuda/qwen_persistent_task_bodies.py` now renders Qwen persistent
 task bodies through the existing persistent DAG source generator. It records
