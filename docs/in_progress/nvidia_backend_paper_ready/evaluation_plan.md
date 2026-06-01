@@ -151,9 +151,9 @@ needed for actual Qwen kernel submission.
 The KV-cache binding artifact in
 `examples/cuda/qwen_kv_cache_binding.py` now splits the planned cache into key
 and value buffers and maps them to persistent DAG `c` and `d` fields. Its
-checked artifact covers 20 dry-run pointers totaling 5.45 GiB across the MPK
-and VDCores batch ladders; full-serving `cuda_live` ownership still depends
-on full Qwen decode-loop execution.
+checked artifact covers 20 CUDA-live pointers totaling 5.45 GiB across the
+MPK and VDCores batch ladders. It allocates the planned KV-cache memory but
+does not prefill Qwen attention KV values.
 The decode-loop runner artifact in
 `examples/cuda/qwen_decode_loop_runner.py` now composes the token pointer,
 KV-cache, and resident weight lifecycles into a persistent DAG submission
@@ -165,8 +165,9 @@ point; the current bridge artifact is
 `tmp/cuda-backend/pto-serving-decode-loop-unit-math-bridge-2026-06-01/qwen-decode-loop-runner.json`.
 It can also open the token pointer table in CUDA-live mode from the runner;
 the current partial resource-owner artifact is
-`tmp/cuda-backend/pto-serving-decode-loop-token-live-2026-06-01/qwen-decode-loop-runner.json`.
-KV-cache and resident weight owners remain dry-run in that artifact.
+`tmp/cuda-backend/pto-serving-decode-loop-token-kv-live-2026-06-02/qwen-decode-loop-runner.json`.
+It now opens both token and KV-cache owners in CUDA-live mode. Resident
+weights remain dry-run in that artifact.
 The task-body source artifact in
 `examples/cuda/qwen_persistent_task_bodies.py` now renders Qwen persistent
 task bodies through the existing persistent DAG source generator. It records

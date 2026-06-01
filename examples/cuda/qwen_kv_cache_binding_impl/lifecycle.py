@@ -127,6 +127,9 @@ def build_kv_cache_lifecycle(
     *,
     pointer_base: int = 0x70000000,
     pointer_stride: int = 0x10000000,
+    cuda_live: bool = False,
+    device: int = 0,
+    host_runtime: Path | None = None,
 ) -> dict[str, Any]:
     lifecycle_plan = load_lifecycle_plan()
     bindings, pointers = kv_binding_records(
@@ -134,24 +137,52 @@ def build_kv_cache_lifecycle(
         pointer_base=pointer_base,
         pointer_stride=pointer_stride,
     )
-    pointer_table = {
-        "schema_version": 1,
-        "kind": "pto_qwen_cuda_kv_cache_pointer_table",
-        "status": "kv_cache_pointer_table_ready",
-        "mode": "dry_run_pointer_lifecycle",
-        "pointers": pointers,
-        "pointer_count": len(pointers),
-    }
+    if cuda_live:
+        if host_runtime is None:
+            host_runtime = (
+                ROOT
+                / "build"
+                / "lib"
+                / "cuda"
+                / "onboard"
+                / "persistent_device"
+                / "libhost_runtime.so"
+            )
+        from qwen_kv_cache_binding_impl.cuda_live import live_pointer_table
+
+        pointer_table, close = live_pointer_table(
+            pointers=pointers,
+            host_runtime=host_runtime,
+            device=device,
+        )
+    else:
+        pointer_table = {
+            "schema_version": 1,
+            "kind": "pto_qwen_cuda_kv_cache_pointer_table",
+            "status": "kv_cache_pointer_table_ready",
+            "mode": "dry_run_pointer_lifecycle",
+            "pointers": pointers,
+            "pointer_count": len(pointers),
+        }
+        close = lambda: len(pointers)
+    freed = close()
     closed = {
         **pointer_table,
         "status": "kv_cache_pointer_table_closed",
-        "freed_pointer_count": len(pointers),
+        "freed_pointer_count": freed,
     }
+    ready = (
+        pointer_table.get("status") == "kv_cache_pointer_table_ready"
+        and freed == len(pointers)
+    )
+    mode = "cuda_live" if cuda_live else "dry_run_pointer_lifecycle"
     return {
         "schema_version": 1,
         "kind": "pto_qwen_cuda_kv_cache_lifecycle",
-        "status": "kv_cache_lifecycle_ready",
-        "mode": "dry_run_pointer_lifecycle",
+        "status": (
+            "kv_cache_lifecycle_ready" if ready else "kv_cache_lifecycle_incomplete"
+        ),
+        "mode": mode,
         "lifecycle_plan_status": lifecycle_plan.get("status"),
         "abi": dag_task_abi(),
         "pointer_table": pointer_table,
@@ -162,9 +193,14 @@ def build_kv_cache_lifecycle(
         "implemented_contracts": [
             "kv_cache_key_value_field_binding",
             "kv_cache_token_position_lifecycle",
-            "dry_run_pointer_lifecycle",
+            "cuda_live_kv_cache_owner" if cuda_live else "dry_run_pointer_lifecycle",
         ],
         "remaining_runtime_gaps": [
+            "numerically_correct_qwen_attention_kv_cache_use",
+            "decode_loop_execution",
+        ]
+        if cuda_live
+        else [
             "cuda_live_kv_cache_owner_in_decode_loop",
             "numerically_correct_qwen_attention_kv_cache_use",
             "decode_loop_execution",

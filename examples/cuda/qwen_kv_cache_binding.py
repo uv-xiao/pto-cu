@@ -25,6 +25,7 @@ EVIDENCE_SYMBOLS = [
     "kv_cache_key_value_field_binding",
     "PtoCudaPersistentDagTask::c",
     "PtoCudaPersistentDagTask::d",
+    "cuda_live_kv_cache_owner",
 ]
 
 
@@ -40,6 +41,9 @@ def parse_args() -> argparse.Namespace:
         type=lambda text: int(text, 0),
         default=0x10000000,
     )
+    parser.add_argument("--cuda-live", action="store_true")
+    parser.add_argument("--device", type=int, default=0)
+    parser.add_argument("--host-runtime", type=Path)
     parser.add_argument("--output-json", type=Path)
     return parser.parse_args()
 
@@ -49,6 +53,9 @@ def main() -> None:
     payload = build_kv_cache_lifecycle(
         pointer_base=args.pointer_base,
         pointer_stride=args.pointer_stride,
+        cuda_live=args.cuda_live,
+        device=args.device,
+        host_runtime=args.host_runtime,
     )
     if args.output_json:
         write_json(args.output_json, payload)

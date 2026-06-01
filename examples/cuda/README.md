@@ -89,17 +89,18 @@ kernel bodies, decode-loop execution, and viewer-result import are complete.
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/qwen_kv_cache_binding.py \
-  --output-json tmp/cuda-backend/pto-serving-kv-cache/qwen-kv-cache-binding.json
+  --cuda-live \
+  --device 0 \
+  --output-json tmp/cuda-backend/pto-serving-kv-cache-live/qwen-kv-cache-binding.json
 ```
 
-Expected output: command exits 0; output JSON records dry-run key/value
-KV-cache pointer binding evidence.
+Expected output: command exits 0; output JSON records CUDA-live key/value
+KV-cache allocation and pointer binding evidence.
 
 The artifact derives KV-cache sizes from the Qwen serving lifecycle plan,
-splits each planned cache into key and value buffers, and maps them to the
-persistent DAG `c` and `d` fields. The current evidence is a deterministic
-dry-run pointer lifecycle; the decode-loop runner still needs a `cuda_live`
-owner before Qwen attention kernels can consume those fields.
+splits each planned cache into key and value buffers, allocates the planned
+cache on CUDA, and maps them to the persistent DAG `c` and `d` fields. This
+does not prefill KV values or prove Qwen attention correctness.
 
 ## Qwen Decode Loop Runner
 
@@ -113,15 +114,16 @@ PYTHONPATH=$PWD:$PWD/python \
   --mode mock \
   --run-unit-math-live \
   --token-cuda-live \
+  --kv-cuda-live \
   --device 0 \
   --arch compute_80 \
   --repeat-runs 3 \
-  --output-json tmp/cuda-backend/pto-serving-decode-loop-token-live/qwen-decode-loop-runner.json
+  --output-json tmp/cuda-backend/pto-serving-decode-loop-token-kv-live/qwen-decode-loop-runner.json
 ```
 
 Expected output: command exits 0; output JSON records decode-loop resource
-owner ordering, persistent DAG submission plans, a runner-owned `cuda_live`
-token pointer table, and diagnostic `cuda_live` bridge contracts.
+owner ordering, persistent DAG submission plans, runner-owned `cuda_live`
+token and KV-cache owners, and diagnostic `cuda_live` bridge contracts.
 
 The artifact composes token pointer, KV-cache, and resident-weight owners into
 a decode-loop submission plan. It records owner open/materialize/submit/close
@@ -130,7 +132,8 @@ ordering plus output-token accounting, and maps the owner-owned `a`, `b`,
 With `--run-unit-math-live`, it also executes the repeated unit-math
 diagnostic from the runner entry point and records the bridge summary. With
 `--token-cuda-live`, it opens the process-scoped token pointer-table owner in
-the runner and records that KV-cache and resident weights remain dry-run.
+the runner. With `--kv-cuda-live`, it opens the full planned KV-cache owner
+in the runner. Resident weights remain dry-run.
 It still does not execute full Qwen kernels or a full-serving decode loop.
 
 ## Qwen Persistent Task Bodies

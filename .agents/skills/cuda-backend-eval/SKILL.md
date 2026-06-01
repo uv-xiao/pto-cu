@@ -422,17 +422,18 @@ PYTHONPATH=$PWD:$PWD/python \
 Use `examples/cuda/qwen_decode_loop_runner.py` when reviewers need the
 decode-loop owner lifetime, persistent DAG submission order, and diagnostic
 `cuda_live` bridge contracts. The current artifact is a partial CUDA-live
-submission plan with a runner-owned token pointer table plus bridges to the
-repeated proxy microdecode runner and repeated unit-math live runner, not a
-full-serving result:
+submission plan with runner-owned token and KV-cache tables plus bridges to
+the repeated proxy microdecode runner and repeated unit-math live runner, not
+a full-serving result:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/qwen_decode_loop_runner.py \
     --mode mock --run-unit-math-live --token-cuda-live \
+    --kv-cuda-live \
     --device 0 --arch compute_80 \
     --repeat-runs 3 \
-    --output-json tmp/cuda-backend/pto-serving-decode-loop-token-live-$(git rev-parse --short HEAD)/qwen-decode-loop-runner.json
+    --output-json tmp/cuda-backend/pto-serving-decode-loop-token-kv-live-$(git rev-parse --short HEAD)/qwen-decode-loop-runner.json
 ```
 
 Use `examples/cuda/qwen_persistent_task_bodies.py` when reviewers need the

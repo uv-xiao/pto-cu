@@ -140,7 +140,7 @@ def test_decode_loop_runner_attaches_unit_math_live_bridge():
     assert "qwen_unit_math_live_bridge_contract" in runner["implemented_contracts"]
 
 
-def test_decode_loop_runner_tracks_cuda_live_token_owner(monkeypatch):
+def test_decode_loop_runner_tracks_cuda_live_resource_owners(monkeypatch):
     module = load_decode_loop_runner_module()
 
     token_lifecycle = {
@@ -158,7 +158,7 @@ def test_decode_loop_runner_tracks_cuda_live_token_owner(monkeypatch):
     }
     kv_lifecycle = {
         "status": "kv_cache_lifecycle_ready",
-        "mode": "dry_run_pointer_lifecycle",
+        "mode": "cuda_live",
         "kv_cache_bindings": [
             {
                 "workload_id": "mpk_offline_decode",
@@ -180,14 +180,20 @@ def test_decode_loop_runner_tracks_cuda_live_token_owner(monkeypatch):
         "build_resources",
         lambda **_kwargs: (token_lifecycle, kv_lifecycle, resident_lifecycle),
     )
-    runner = module.build_decode_loop_runner(mode="mock", token_cuda_live=True)
+    runner = module.build_decode_loop_runner(
+        mode="mock",
+        token_cuda_live=True,
+        kv_cuda_live=True,
+    )
 
     assert runner["mode"] == "partial_cuda_live_submission_plan"
     assert runner["resource_lifecycle_modes"]["token_pointer_table"] == "cuda_live"
-    assert runner["cuda_live_resource_owners"] == ["token_pointer_table"]
+    assert runner["resource_lifecycle_modes"]["kv_cache"] == "cuda_live"
+    assert runner["cuda_live_resource_owners"] == ["token_pointer_table", "kv_cache"]
     assert "cuda_live_token_pointer_table_in_runner" in runner[
         "implemented_contracts"
     ]
+    assert "cuda_live_kv_cache_owner_in_runner" in runner["implemented_contracts"]
 
 
 def test_viewer_matrix_tracks_decode_loop_evidence():

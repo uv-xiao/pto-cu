@@ -88,6 +88,7 @@ def build_resources(
     mode: str,
     cache_dir: Path | None,
     token_cuda_live: bool = False,
+    kv_cuda_live: bool = False,
     device: int = 0,
     host_runtime: Path | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
@@ -102,9 +103,12 @@ def build_resources(
     }
     if host_runtime is not None:
         token_kwargs["host_runtime"] = host_runtime
+    kv_kwargs: dict[str, Any] = {"cuda_live": kv_cuda_live, "device": device}
+    if host_runtime is not None:
+        kv_kwargs["host_runtime"] = host_runtime
     return (
         token_module.build_token_pointer_table_lifecycle(**token_kwargs),
-        kv_module.build_kv_cache_lifecycle(),
+        kv_module.build_kv_cache_lifecycle(**kv_kwargs),
         resident_module.build_resident_table_lifecycle(),
     )
 
@@ -250,6 +254,7 @@ def build_decode_loop_runner(
     cache_dir: Path | None = None,
     unit_math_live_payload: dict[str, Any] | None = None,
     token_cuda_live: bool = False,
+    kv_cuda_live: bool = False,
     device: int = 0,
     host_runtime: Path | None = None,
 ) -> dict[str, Any]:
@@ -257,6 +262,7 @@ def build_decode_loop_runner(
         mode=mode,
         cache_dir=cache_dir,
         token_cuda_live=token_cuda_live,
+        kv_cuda_live=kv_cuda_live,
         device=device,
         host_runtime=host_runtime,
     )
@@ -284,6 +290,8 @@ def build_decode_loop_runner(
     ]
     if token_lifecycle.get("mode") == "cuda_live":
         implemented_contracts.append("cuda_live_token_pointer_table_in_runner")
+    if kv_lifecycle.get("mode") == "cuda_live":
+        implemented_contracts.append("cuda_live_kv_cache_owner_in_runner")
     return {
         "schema_version": 1,
         "kind": "pto_qwen_decode_loop_runner",

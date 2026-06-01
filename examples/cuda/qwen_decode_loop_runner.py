@@ -28,6 +28,7 @@ EVIDENCE_SYMBOLS = [
     "cuda_live_resource_bridge_contract",
     "qwen_unit_math_live_bridge_contract",
     "cuda_live_token_pointer_table_in_runner",
+    "cuda_live_kv_cache_owner_in_runner",
 ]
 
 
@@ -42,6 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--unit-math-live-json", type=Path)
     parser.add_argument("--run-unit-math-live", action="store_true")
     parser.add_argument("--token-cuda-live", action="store_true")
+    parser.add_argument("--kv-cuda-live", action="store_true")
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--arch", default="compute_80")
     parser.add_argument("--cache-root", type=Path)
@@ -75,6 +77,7 @@ def main() -> None:
         cache_dir=args.cache_dir,
         unit_math_live_payload=load_unit_math_payload(args),
         token_cuda_live=args.token_cuda_live,
+        kv_cuda_live=args.kv_cuda_live,
         device=args.device,
         host_runtime=args.host_runtime,
     )
