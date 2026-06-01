@@ -4279,3 +4279,43 @@ Follow-up tracked-state closure after user confirmation:
   gaps are live decode-loop pointer-table ownership, runtime token-ID binding,
   KV-cache allocation and binding, Qwen kernel generation, decode-loop
   execution, and viewer-result import.
+
+### 2026-06-01 - Qwen Resident Weight Table Owner
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned resident
+  weight pointer table owner for Qwen/Qwen3-8B persistent DAG submission.
+- Exact Codex command or script invocation:
+  `qwen_resident_weight_table.py --output-json
+  tmp/cuda-backend/pto-serving-resident-weight-table-2026-06-01/qwen-resident-weight-table.json`,
+  plus refreshed scaffold/preflight artifacts under
+  `tmp/cuda-backend/pto-serving-scaffold-2026-06-01/` and
+  `tmp/cuda-backend/pto-serving-preflight-2026-06-01/`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the default artifact uses
+  `dry_run_pointer_lifecycle` so it can validate lifetime and materialization
+  behavior without allocating 16.38 GB again. The decode-loop runner must still
+  use the same owner in `cuda_live` mode and keep it open through DAG
+  submission.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_resident_weight_table.py` did not exist; after
+  implementation the selected resident-table, preflight, and scaffold tests
+  passed. The real lifecycle artifact reports
+  `status=resident_weight_table_lifecycle_ready`,
+  `mode=dry_run_pointer_lifecycle`, `pointer_count=399`,
+  `bound_tensor_pointer_count=399`, and `freed_pointer_count=399`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves a process-scoped
+  host owner can produce a pointer table, feed it into persistent weight
+  materialization while open, and free the table after materialization. The
+  remaining PTO full-serving gaps are `cuda_live` decode-loop integration,
+  runtime token-ID binding, KV-cache allocation and binding, Qwen kernel
+  generation, decode-loop execution, and viewer-result import.

@@ -311,6 +311,19 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_resident_weight_table_owner",
+            "status": "pass"
+            if serving_scaffold.get("resident_weight_table", {}).get("status")
+            == "resident_weight_table_lifecycle_ready"
+            else "fail",
+            "evidence": "examples/cuda/qwen_resident_weight_table.py",
+            "why": (
+                "The host side must own resident weight pointers for the "
+                "whole decode-loop DAG submission lifetime, then free them "
+                "after submission completes."
+            ),
+        },
+        {
             "id": "qwen_model_loader_or_token_loop",
             "status": "fail",
             "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",

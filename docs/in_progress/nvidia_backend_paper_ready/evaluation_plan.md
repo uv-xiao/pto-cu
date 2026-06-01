@@ -129,6 +129,12 @@ descriptors through the `CudaPersistentDagTask` ctypes layout. Its current
 artifact is symbolic because the decode-loop runner does not yet own a live
 resident pointer table, but it records the exact
 `resident_weight_ptrs[slot_id]` source needed for all 399 weight arguments.
+The resident weight-table artifact in
+`examples/cuda/qwen_resident_weight_table.py` adds the process-scoped owner
+that keeps a pointer table valid until close, feeds it to materialization, and
+then frees pointers in reverse order. Its current checked artifact uses
+`dry_run_pointer_lifecycle`; `--cuda-live` remains the runner mode needed for
+actual decode submission.
 The current raw artifacts are
 `tmp/cuda-backend/pto-serving-lifecycle-b95ff321/qwen-serving-lifecycle-plan.json`,
 `tmp/cuda-backend/pto-serving-tokenizer-b95ff321/qwen-prompt-accounting.json`,
@@ -137,10 +143,11 @@ The current raw artifacts are
 `tmp/cuda-backend/pto-serving-safetensors-a16851f6/qwen-safetensors-metadata.json`,
 `tmp/cuda-backend/pto-serving-weight-residency-1ae913c9/qwen-cuda-weight-residency.json`,
 `tmp/cuda-backend/pto-serving-weight-args-21589e81/qwen-persistent-weight-args.json`,
-`tmp/cuda-backend/pto-serving-weight-materialization-b46497b3/qwen-persistent-weight-materialization.json`,
-`tmp/cuda-backend/pto-serving-scaffold-b46497b3/qwen-serving-scaffold.json`,
+`tmp/cuda-backend/pto-serving-weight-materialization-2026-06-01/qwen-persistent-weight-materialization.json`,
+`tmp/cuda-backend/pto-serving-resident-weight-table-2026-06-01/qwen-resident-weight-table.json`,
+`tmp/cuda-backend/pto-serving-scaffold-2026-06-01/qwen-serving-scaffold.json`,
 and
-`tmp/cuda-backend/pto-serving-preflight-b46497b3/pto-serving-preflight.json`.
+`tmp/cuda-backend/pto-serving-preflight-2026-06-01/pto-serving-preflight.json`.
 They prove the current viewer has only the controlled attention-tile proxy row
 for PTO serving-equivalent evidence, plus a partial runtime plan for the
 Qwen3-8B KV-cache and task mapping, tokenizer-observed prompt counts, a
@@ -149,11 +156,12 @@ contract. It also proves local Qwen shard placement and actual safetensors
 shape/dtype validation for 399 tensors across five shards, plus full CUDA
 weight residency for all 399 tensors in a probe process and a persistent DAG
 weight-argument manifest that fits the current ABI. It also proves a
-ctypes-backed materialization plan for the resident weight pointer table. The
-repo-owned PTO CUDA path still lacks runtime token-ID binding, live decode-loop
-ownership of the resident pointer table, real CUDA allocation and binding for
-the planned KV-cache layout, generated Qwen kernel bodies, decode-loop
-execution, and
+ctypes-backed materialization plan for the resident weight pointer table and a
+dry-run owner lifecycle that binds 399 pointers and frees them after
+materialization. The repo-owned PTO CUDA path still lacks runtime token-ID
+binding, `cuda_live` decode-loop integration for that owner, real CUDA
+allocation and binding for the planned KV-cache layout, generated Qwen kernel
+bodies, decode-loop execution, and
 `viewer_result_import`, so no PTO
 `Qwen/Qwen3-8B` full-serving row can be imported yet.
 Every serving baseline run record must reference one of these policy IDs and

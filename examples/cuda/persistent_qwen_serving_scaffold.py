@@ -28,6 +28,7 @@ PERSISTENT_WEIGHT_ARGS = (
 PERSISTENT_WEIGHT_MATERIALIZATION = (
     ROOT / "examples" / "cuda" / "qwen_persistent_weight_materialization.py"
 )
+RESIDENT_WEIGHT_TABLE = ROOT / "examples" / "cuda" / "qwen_resident_weight_table.py"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -147,6 +148,19 @@ def load_persistent_weight_materialization() -> dict[str, Any]:
     return module.build_materialization_manifest()
 
 
+def load_resident_weight_table() -> dict[str, Any]:
+    spec = importlib.util.spec_from_file_location(
+        "qwen_resident_weight_table",
+        RESIDENT_WEIGHT_TABLE,
+    )
+    if spec is None or spec.loader is None:
+        return {}
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.build_resident_table_lifecycle()
+
+
 def serving_workload_contracts() -> list[dict[str, Any]]:
     payload = load_json(VIEWER_DATA / "serving_workloads.json")
     workloads = []
@@ -198,6 +212,7 @@ def build_scaffold() -> dict[str, Any]:
     cuda_weight_binding = load_cuda_weight_binding()
     persistent_weight_args = load_persistent_weight_args()
     persistent_weight_materialization = load_persistent_weight_materialization()
+    resident_weight_table = load_resident_weight_table()
     shards_ready = (
         safetensors_shards.get("status") == "ready_for_metadata_probe"
     )
@@ -219,9 +234,18 @@ def build_scaffold() -> dict[str, Any]:
             "persistent_weight_materialization_ready",
         }
     )
+    resident_weight_table_ready = (
+        resident_weight_table.get("status")
+        == "resident_weight_table_lifecycle_ready"
+    )
     weight_next_action = (
-        "Create the live decode-loop resident pointer table, then pass it to "
-        "the persistent weight materializer before launching Qwen tasks."
+        "Connect the resident weight table owner to the decode-loop runner and "
+        "replace dry-run pointers with cuda_live table ownership."
+        if resident_weight_table_ready
+        else (
+            "Create the live decode-loop resident pointer table, then pass it to "
+            "the persistent weight materializer before launching Qwen tasks."
+        )
         if persistent_weight_materialization_planned
         else (
             "Materialize persistent task descriptors with resident weight "
@@ -394,6 +418,25 @@ def build_scaffold() -> dict[str, Any]:
             ),
         ),
         stage(
+            stage_id="qwen_resident_weight_table_owner",
+            title="Qwen resident weight pointer table owner",
+            owner="pto_serving_host",
+            required_for_full_serving=True,
+            status=(
+                "partial"
+                if resident_weight_table_ready
+                and resident_weight_table.get("mode") == "dry_run_pointer_lifecycle"
+                else "pass"
+                if resident_weight_table_ready
+                else "missing"
+            ),
+            evidence="examples/cuda/qwen_resident_weight_table.py",
+            next_action=(
+                "Run the resident table owner in cuda_live mode from the "
+                "decode-loop runner and keep it open through DAG submission."
+            ),
+        ),
+        stage(
             stage_id="qwen_safetensors_shards",
             title="Qwen safetensors shard placement",
             owner="pto_serving_host",
@@ -464,6 +507,7 @@ def build_scaffold() -> dict[str, Any]:
         "cuda_weight_binding": cuda_weight_binding,
         "persistent_weight_args": persistent_weight_args,
         "persistent_weight_materialization": persistent_weight_materialization,
+        "resident_weight_table": resident_weight_table,
         "stages": stages,
         "missing_stage_ids": [item["id"] for item in missing],
         "next_action": (

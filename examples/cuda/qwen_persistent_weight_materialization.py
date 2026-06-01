@@ -234,18 +234,30 @@ def build_materialization_manifest(
     weight_args_json: Path | None = None,
     weight_binding_json: Path | None = None,
     pointer_table_json: Path | None = None,
+    pointer_table: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     weight_args, weight_args_source = load_or_build_weight_args(weight_args_json)
     weight_binding, weight_binding_source = load_or_build_weight_binding(
         weight_binding_json
     )
-    pointer_table = load_json(pointer_table_json) if pointer_table_json else None
-    pointer_source = repo_relative(pointer_table_json) if pointer_table_json else None
-    pointers = pointer_map(pointer_table)
+    if pointer_table_json is not None and pointer_table is not None:
+        raise ValueError("pass pointer_table_json or pointer_table, not both")
+    loaded_pointer_table = (
+        load_json(pointer_table_json) if pointer_table_json else pointer_table
+    )
+    pointer_source = (
+        repo_relative(pointer_table_json)
+        if pointer_table_json
+        else "in_memory_pointer_table"
+        if pointer_table is not None
+        else None
+    )
+    pointers = pointer_map(loaded_pointer_table)
     bindings = binding_map(weight_binding)
     pointer_table_ready = (
-        pointer_table is not None
-        and pointer_table.get("status") == "resident_weight_pointer_table_ready"
+        loaded_pointer_table is not None
+        and loaded_pointer_table.get("status")
+        == "resident_weight_pointer_table_ready"
     )
     descriptors = [
         materialized_descriptor(
@@ -302,7 +314,9 @@ def build_materialization_manifest(
         "weight_args_status": weight_args.get("status"),
         "weight_binding_status": weight_binding.get("status"),
         "pointer_table_status": (
-            pointer_table.get("status") if pointer_table is not None else "not_supplied"
+            loaded_pointer_table.get("status")
+            if loaded_pointer_table is not None
+            else "not_supplied"
         ),
         "abi": dag_task_abi(),
         "materialized_task_count": len(descriptors),

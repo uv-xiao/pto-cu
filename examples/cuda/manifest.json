@@ -179,6 +179,22 @@
         "ctypes_persistent_dag_task_layout",
         "resident_weight_pointer_table_validation"
       ]
+    },
+    {
+      "id": "qwen_resident_weight_table",
+      "title": "Qwen Resident Weight Table",
+      "script": "examples/cuda/qwen_resident_weight_table.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_resident_weight_table.py --output-json tmp/cuda-backend/pto-serving-resident-weight-table/qwen-resident-weight-table.json",
+      "expected_output": "command exits 0; output JSON records the process-scoped resident weight pointer owner lifecycle, materialization bridge, pointer count, and teardown count; add --cuda-live to allocate and copy through the CUDA runtime.",
+      "evidence_symbols": [
+        "pto_qwen_resident_weight_table_lifecycle",
+        "live_resident_weight_table_owner",
+        "resident_pointer_table_materialization_bridge",
+        "dry_run_pointer_lifecycle"
+      ]
     }
   ]
 }

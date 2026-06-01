@@ -11,6 +11,77 @@ DOC_ROOT = ROOT / "docs" / "nvidia-backend"
 VIEWER_ROOT = DOC_ROOT / "benchmark-viewer"
 
 
+def qwen_one_layer_bindings():
+    tensors = [
+        ("model.embed_tokens.weight", "embedding"),
+        ("model.layers.0.input_layernorm.weight", "attention_norms"),
+        ("model.layers.0.self_attn.q_proj.weight", "attention_qkv_o"),
+        ("model.layers.0.self_attn.k_proj.weight", "attention_qkv_o"),
+        ("model.layers.0.self_attn.v_proj.weight", "attention_qkv_o"),
+        ("model.layers.0.self_attn.q_norm.weight", "attention_norms"),
+        ("model.layers.0.self_attn.k_norm.weight", "attention_norms"),
+        ("model.layers.0.self_attn.o_proj.weight", "attention_qkv_o"),
+        ("model.layers.0.post_attention_layernorm.weight", "attention_norms"),
+        ("model.layers.0.mlp.gate_proj.weight", "mlp_gate_up_down"),
+        ("model.layers.0.mlp.up_proj.weight", "mlp_gate_up_down"),
+        ("model.layers.0.mlp.down_proj.weight", "mlp_gate_up_down"),
+        ("model.norm.weight", "norm_and_logits"),
+        ("lm_head.weight", "norm_and_logits"),
+    ]
+    return [
+        {
+            "slot_id": slot_id,
+            "tensor": tensor,
+            "binding_group": binding_group,
+            "persistent_arg_role": "readonly_weight_tensor",
+            "shape": [4],
+            "dtype": "bfloat16",
+            "size_bytes": 8,
+        }
+        for slot_id, (tensor, binding_group) in enumerate(tensors)
+    ]
+
+
+def write_qwen_binding_fixture(path, bindings):
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "kind": "pto_qwen_cuda_weight_binding",
+                "status": "binding_plan_ready",
+                "tensor_count": len(bindings),
+                "planned_binding_count": len(bindings),
+                "cuda_probe": {"mode": "full_residency", "status": "pass"},
+                "bindings": bindings,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def write_qwen_weight_args_fixture(tmp_path, binding):
+    weight_args = tmp_path / "qwen-persistent-weight-args.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/cuda/qwen_persistent_weight_args.py",
+            "--weight-binding-json",
+            str(binding),
+            "--num-hidden-layers",
+            "1",
+            "--output-json",
+            str(weight_args),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    return weight_args
+
+
 def test_nvidia_review_guard_passes():
     result = subprocess.run(
         [sys.executable, ".agents/checks/check_nvidia_review_ready.py"],
@@ -468,6 +539,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["qwen_actual_safetensors_metadata"]["status"] == "pass"
     assert checks["qwen_cuda_weight_binding_plan"]["status"] == "pass"
     assert checks["qwen_persistent_weight_materialization_plan"]["status"] == "pass"
+    assert checks["qwen_resident_weight_table_owner"]["status"] == "pass"
     assert checks["qwen3_8b_full_serving_rows_imported"]["status"] == "fail"
     assert checks["qwen_model_loader_or_token_loop"]["status"] == "fail"
     lifecycle = preflight["serving_lifecycle"]
@@ -505,11 +577,18 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert lifecycle["persistent_weight_materialization"]["status"] == (
         "persistent_weight_materialization_plan_ready"
     )
+    assert lifecycle["resident_weight_table"]["kind"] == (
+        "pto_qwen_resident_weight_table_lifecycle"
+    )
+    assert lifecycle["resident_weight_table"]["status"] == (
+        "resident_weight_table_lifecycle_ready"
+    )
     assert checks["qwen_persistent_weight_arg_manifest"]["status"] == "pass"
     assert {
         "qwen_tokenizer",
         "qwen_weight_loader",
         "qwen_persistent_weight_materialization",
+        "qwen_resident_weight_table_owner",
         "kv_cache_lifecycle",
         "decode_loop_runner",
         "viewer_result_import",
@@ -557,12 +636,13 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     assert stages["qwen_serving_lifecycle_plan"]["status"] == "pass"
     assert stages["qwen_tokenizer"]["status"] == "partial"
     assert stages["qwen_weight_loader"]["status"] == "partial"
-    assert "live decode-loop resident pointer table" in stages[
+    assert "cuda_live table ownership" in stages[
         "qwen_weight_loader"
     ]["next_action"]
     assert stages["qwen_cuda_weight_binding"]["status"] == "pass"
     assert stages["qwen_persistent_weight_args"]["status"] == "pass"
     assert stages["qwen_persistent_weight_materialization"]["status"] == "partial"
+    assert stages["qwen_resident_weight_table_owner"]["status"] == "partial"
     assert stages["qwen_safetensors_shards"]["status"] == "pass"
     assert "rerun the metadata probe" in stages["qwen_safetensors_shards"][
         "next_action"
@@ -589,6 +669,13 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     assert scaffold["persistent_weight_materialization"]["status"] == (
         "persistent_weight_materialization_plan_ready"
     )
+    assert scaffold["resident_weight_table"]["kind"] == (
+        "pto_qwen_resident_weight_table_lifecycle"
+    )
+    assert scaffold["resident_weight_table"]["status"] == (
+        "resident_weight_table_lifecycle_ready"
+    )
+    assert scaffold["resident_weight_table"]["mode"] == "dry_run_pointer_lifecycle"
     assert stages["kv_cache_lifecycle"]["status"] == "partial"
     assert stages["decode_loop_runner"]["status"] == "missing"
 
@@ -1165,75 +1252,10 @@ def test_persistent_qwen_weight_arg_manifest_is_reviewable(tmp_path):
 
 
 def test_persistent_qwen_weight_materialization_binds_resident_pointers(tmp_path):
-    bindings = []
-
-    def add(slot_id, tensor, binding_group):
-        bindings.append(
-            {
-                "slot_id": slot_id,
-                "tensor": tensor,
-                "binding_group": binding_group,
-                "persistent_arg_role": "readonly_weight_tensor",
-                "shape": [4],
-                "dtype": "bfloat16",
-                "size_bytes": 8,
-            }
-        )
-
-    for slot, (name, group) in enumerate(
-        [
-            ("model.embed_tokens.weight", "embedding"),
-            ("model.layers.0.input_layernorm.weight", "attention_norms"),
-            ("model.layers.0.self_attn.q_proj.weight", "attention_qkv_o"),
-            ("model.layers.0.self_attn.k_proj.weight", "attention_qkv_o"),
-            ("model.layers.0.self_attn.v_proj.weight", "attention_qkv_o"),
-            ("model.layers.0.self_attn.q_norm.weight", "attention_norms"),
-            ("model.layers.0.self_attn.k_norm.weight", "attention_norms"),
-            ("model.layers.0.self_attn.o_proj.weight", "attention_qkv_o"),
-            ("model.layers.0.post_attention_layernorm.weight", "attention_norms"),
-            ("model.layers.0.mlp.gate_proj.weight", "mlp_gate_up_down"),
-            ("model.layers.0.mlp.up_proj.weight", "mlp_gate_up_down"),
-            ("model.layers.0.mlp.down_proj.weight", "mlp_gate_up_down"),
-            ("model.norm.weight", "norm_and_logits"),
-            ("lm_head.weight", "norm_and_logits"),
-        ]
-    ):
-        add(slot, name, group)
-
+    bindings = qwen_one_layer_bindings()
     binding = tmp_path / "qwen-cuda-weight-binding.json"
-    binding.write_text(
-        json.dumps(
-            {
-                "schema_version": 1,
-                "kind": "pto_qwen_cuda_weight_binding",
-                "status": "binding_plan_ready",
-                "tensor_count": len(bindings),
-                "planned_binding_count": len(bindings),
-                "cuda_probe": {"mode": "full_residency", "status": "pass"},
-                "bindings": bindings,
-            }
-        ),
-        encoding="utf-8",
-    )
-    weight_args = tmp_path / "qwen-persistent-weight-args.json"
-    result = subprocess.run(
-        [
-            sys.executable,
-            "examples/cuda/qwen_persistent_weight_args.py",
-            "--weight-binding-json",
-            str(binding),
-            "--num-hidden-layers",
-            "1",
-            "--output-json",
-            str(weight_args),
-        ],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
-    assert result.returncode == 0, result.stdout
+    write_qwen_binding_fixture(binding, bindings)
+    weight_args = write_qwen_weight_args_fixture(tmp_path, binding)
 
     pointer_table = tmp_path / "qwen-resident-weight-pointers.json"
     pointer_table.write_text(
@@ -1315,6 +1337,72 @@ def test_persistent_qwen_weight_materialization_binds_resident_pointers(tmp_path
     assert materialized_descriptors["logits"]["tensor_args"][0]["tensor"] == (
         "lm_head.weight"
     )
+
+
+def test_qwen_resident_weight_table_owner_materializes_during_lifetime(tmp_path):
+    bindings = qwen_one_layer_bindings()
+    binding = tmp_path / "qwen-cuda-weight-binding.json"
+    write_qwen_binding_fixture(binding, bindings)
+    weight_args = write_qwen_weight_args_fixture(tmp_path, binding)
+
+    resident_spec = importlib.util.spec_from_file_location(
+        "qwen_resident_weight_table",
+        ROOT / "examples" / "cuda" / "qwen_resident_weight_table.py",
+    )
+    assert resident_spec is not None
+    assert resident_spec.loader is not None
+    resident_module = importlib.util.module_from_spec(resident_spec)
+    sys.modules[resident_spec.name] = resident_module
+    resident_spec.loader.exec_module(resident_module)
+
+    materialization_spec = importlib.util.spec_from_file_location(
+        "qwen_persistent_weight_materialization",
+        ROOT / "examples" / "cuda" / "qwen_persistent_weight_materialization.py",
+    )
+    assert materialization_spec is not None
+    assert materialization_spec.loader is not None
+    materialization_module = importlib.util.module_from_spec(materialization_spec)
+    sys.modules[materialization_spec.name] = materialization_module
+    materialization_spec.loader.exec_module(materialization_module)
+
+    events = []
+
+    def allocate_and_copy(item):
+        events.append(("allocate_and_copy", item["slot_id"]))
+        return 0x20000000 + item["slot_id"] * 0x1000
+
+    def free_pointer(ptr, item):
+        events.append(("free", item["slot_id"], ptr))
+
+    owner = resident_module.ResidentWeightTableOwner(
+        bindings=bindings,
+        allocate_and_copy=allocate_and_copy,
+        free_pointer=free_pointer,
+        device=7,
+        source="unit-test",
+    )
+    with owner:
+        pointer_table = owner.pointer_table()
+        assert pointer_table["kind"] == "pto_qwen_resident_weight_pointer_table"
+        assert pointer_table["status"] == "resident_weight_pointer_table_ready"
+        assert pointer_table["lifetime"] == "valid_until_owner_close"
+        assert pointer_table["pointer_count"] == len(bindings)
+        assert pointer_table["pointers"][2]["device_ptr_hex"] == "0x20002000"
+        materialization = materialization_module.build_materialization_manifest(
+            weight_args_json=weight_args,
+            weight_binding_json=binding,
+            pointer_table=pointer_table,
+        )
+        assert materialization["status"] == "persistent_weight_materialization_ready"
+        assert materialization["bound_tensor_pointer_count"] == len(bindings)
+        assert materialization["missing_pointer_count"] == 0
+
+    closed = owner.pointer_table()
+    assert closed["status"] == "resident_weight_pointer_table_closed"
+    assert closed["pointer_count"] == 0
+    assert closed["freed_pointer_count"] == len(bindings)
+    assert events[:2] == [("allocate_and_copy", 0), ("allocate_and_copy", 1)]
+    assert events[-1] == ("free", 0, 0x20000000)
 
 
 def test_persistent_qwen_safetensors_fetch_status_is_reviewable(tmp_path):
@@ -1448,19 +1536,25 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-weight-materialization-b46497b3/qwen-persistent-weight-materialization.json"
+        == "tmp/cuda-backend/pto-serving-weight-materialization-2026-06-01/qwen-persistent-weight-materialization.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-scaffold-b46497b3/qwen-serving-scaffold.json"
+        == "tmp/cuda-backend/pto-serving-resident-weight-table-2026-06-01/qwen-resident-weight-table.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-preflight-b46497b3/pto-serving-preflight.json"
+        == "tmp/cuda-backend/pto-serving-scaffold-2026-06-01/qwen-serving-scaffold.json"
+        for ref in claim["current_evidence_refs"]
+    )
+    assert any(
+        ref.get("kind") == "raw_artifact"
+        and ref.get("path")
+        == "tmp/cuda-backend/pto-serving-preflight-2026-06-01/pto-serving-preflight.json"
         for ref in claim["current_evidence_refs"]
     )
     pto_gap = next(
@@ -1481,6 +1575,7 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "qwen_cuda_weight_binding",
         "qwen_persistent_weight_args",
         "qwen_persistent_weight_materialization",
+        "qwen_resident_weight_table",
         "local Qwen shard placement",
         "actual safetensors shape/dtype validation for 399 tensors",
         "stable CUDA weight binding slots and file offsets",
@@ -1488,6 +1583,7 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "copy-back verification for 16 small tensors",
         "persistent DAG tensor_args manifest",
         "resident_weight_ptrs[slot_id]",
+        "process-scoped resident weight table owner",
         "partial KV-cache lifecycle plan",
         "decode-loop execution",
     ]:

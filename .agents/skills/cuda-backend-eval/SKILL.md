@@ -507,6 +507,19 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-weight-materialization-$(git rev-parse --short HEAD)/qwen-persistent-weight-materialization.json
 ```
 
+Use `examples/cuda/qwen_resident_weight_table.py` to exercise the process
+lifetime that owns resident weight pointers before persistent DAG submission.
+The default dry-run mode binds all weight slots through the materialization
+bridge and verifies close/free ordering without allocating 16.38 GB again.
+Add `--cuda-live` only inside a runner process that will submit the DAG while
+the owner is still open:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_resident_weight_table.py \
+    --output-json tmp/cuda-backend/pto-serving-resident-weight-table-$(git rev-parse --short HEAD)/qwen-resident-weight-table.json
+```
+
 Use `paper_baseline_run_readiness.py` before spending H200 time on planned
 paper-baseline runs. It does not execute long baselines; it records source
 path, reproduction-command presence, Python entrypoints, expected artifact,
