@@ -45,3 +45,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-12.md](entries/2026-06-02-part-12.md) | 1 | Paper Readiness Audit Shard Split | Paper Readiness Audit Shard Split |
 | [2026-06-02-part-13.md](entries/2026-06-02-part-13.md) | 1 | Paper Baseline Probe Shard Split | Paper Baseline Probe Shard Split |
 | [2026-06-02-part-14.md](entries/2026-06-02-part-14.md) | 1 | Capture Import Shard Split | Capture Import Shard Split |
+| [2026-06-02-part-15.md](entries/2026-06-02-part-15.md) | 1 | Evaluation Plan Split | Evaluation Plan Split |

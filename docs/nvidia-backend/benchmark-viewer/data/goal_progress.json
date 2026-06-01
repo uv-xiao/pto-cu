@@ -7,7 +7,14 @@
     "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
     "docs/in_progress/nvidia_backend_paper_ready.md",
     "docs/in_progress/nvidia_backend_paper_ready/shared_contracts.md",
-    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan.md"
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/baseline_families.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/workloads.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/hardware_matrix.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/metrics.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/reproducibility.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/paper_outputs.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/dispatcher_backlog.md"
   ],
   "overall_status": "in_progress",
   "summary": {
