@@ -40,3 +40,10 @@ selected large official H100 MHA benchmark cells, so the next step is either a
 fresh-process PyTorch reference capture for those cells or an explicit paper
 policy that excludes infeasible dense PyTorch reference cells while preserving
 FA2, FA3, TK, PTO, cuBLAS, CUTLASS, and Triton comparisons.
+
+This remaining-gap statement is partially superseded by
+[2026-06-01 ThunderKittens isolated PyTorch reference cells][isolated]:
+fresh-process H200 runs recovered every selected 6144-token PyTorch
+reference cell and left only selected 12288-token dense references OOM.
+
+[isolated]: 2026-06-01-thunderkittens-isolated-pytorch-reference.md

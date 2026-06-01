@@ -36,7 +36,7 @@
       "serving_workload_ids": [],
       "shape_contains": "",
       "status": "missing",
-      "action": "Resolve remaining official ThunderKittens upstream sweep PyTorch reference OOM cells after FA3 comparator capture: PyTorch reference rows OOM at selected 6144- and 12288-token shapes in the FA3-enabled H200 run.",
+      "action": "Resolve remaining official ThunderKittens upstream sweep PyTorch reference OOM cells after isolated-reference capture: PyTorch reference rows still OOM at selected 12288-token shapes even when each cell runs in a fresh H200 process.",
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
     },
     {

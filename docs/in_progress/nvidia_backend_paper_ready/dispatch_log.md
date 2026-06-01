@@ -3625,4 +3625,41 @@ Follow-up tracked-state closure after user confirmation:
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: the tensor-core work queue no longer
   treats FA3 bindings as missing. The remaining official ThunderKittens sweep
-  blocker is PyTorch reference OOM in selected 6144- and 12288-token cells.
+  blocker was PyTorch reference OOM in selected 6144- and 12288-token cells
+  before the isolated-reference capture below.
+
+### 2026-06-01 - ThunderKittens Isolated PyTorch Reference Cells
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  ThunderKittens official-reference OOM isolation.
+- Exact Codex command or script invocation: copied
+  `tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/run_pt_reference_cell.py`
+  to `bizhaoh200`, then launched each selected PyTorch reference cell as a
+  fresh process with `CUDA_VISIBLE_DEVICES=0` and
+  `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`. The matrix covered
+  forward/backward, causal/non-causal, and sequence lengths 6144 and 12288.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, tensor-core baseline
+  evidence for the paper-readiness matrix.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, in-progress evaluation docs,
+  changelog docs, dispatch log, tests, and raw `tmp/` artifacts. No upstream
+  repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  Isolating the PyTorch references separates allocator fragmentation or
+  monolithic benchmark sequencing from true dense-reference memory capacity.
+- Verification commands and results: isolated 6144-token cells passed for
+  forward/backward and causal/non-causal modes. Isolated 12288-token cells
+  still OOM for all four selected modes. `validate_benchmark_viewer_data.py`
+  -> passed; `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed; `jq empty
+  docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `git diff --check` -> passed;
+  `pytest tests/ut/py/test_nvidia_review_artifacts.py -q` -> `41 passed`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the tensor-core work queue now excludes
+  6144-token PyTorch references from the blocker. The remaining official
+  ThunderKittens sweep gap is 12288-token dense PyTorch reference capacity.

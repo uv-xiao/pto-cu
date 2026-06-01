@@ -166,7 +166,34 @@
             "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/correctness-fa3.log",
             "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/correctness-fa3-status.txt",
             "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/metadata.txt",
-            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/shim/flash_attn_interface.py"
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/shim/flash_attn_interface.py",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/run_pt_reference_cell.py",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/run-manifest.tsv",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/isolated-pt-reference-summary.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n12288.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n6144.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n12288.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n6144.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n12288.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n6144.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n12288.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n6144.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n12288.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n6144.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n12288.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n6144.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n12288.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n6144.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n12288.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n6144.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n12288.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n6144.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n12288.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n6144.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n12288.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n6144.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n12288.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n6144.log"
           ]
         },
         {
@@ -204,13 +231,13 @@
         }
       ],
       "blockers": [
-        "Resolve remaining official ThunderKittens upstream sweep PyTorch reference OOM cells after FA3 comparator capture: PyTorch reference rows OOM at selected 6144- and 12288-token shapes in the FA3-enabled H200 run."
+        "Resolve remaining official ThunderKittens upstream sweep PyTorch reference OOM cells after isolated-reference capture: PyTorch reference rows still OOM at selected 12288-token shapes even when each cell runs in a fresh H200 process."
       ],
       "next_actions": [
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
-          "action": "Resolve remaining official ThunderKittens upstream sweep PyTorch reference OOM cells after FA3 comparator capture: PyTorch reference rows OOM at selected 6144- and 12288-token shapes in the FA3-enabled H200 run."
+          "action": "Resolve remaining official ThunderKittens upstream sweep PyTorch reference OOM cells after isolated-reference capture: PyTorch reference rows still OOM at selected 12288-token shapes even when each cell runs in a fresh H200 process."
         }
       ],
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
@@ -404,7 +431,7 @@
           "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
           "paper_baseline_id": "vdcores",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-7371626c/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-60d797cd/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }

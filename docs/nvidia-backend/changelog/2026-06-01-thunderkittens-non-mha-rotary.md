@@ -27,8 +27,9 @@ one undifferentiated baseline.
 The remaining tensor-core blocker is now specific to the official upstream MHA
 sweep environment. This report originally inherited the first-probe FA3
 absence, which is now superseded by the FA3 comparator capture. The current
-remaining blocker is PyTorch reference OOM at selected 6144- and 12288-token
-shapes.
+remaining blocker is further narrowed by the isolated PyTorch reference
+capture: all selected 6144-token cells now pass, while 12288-token dense
+reference cells still OOM.
 
 ## Evaluation Run
 
@@ -60,5 +61,6 @@ error, throughput, and `rotary_flops`.
 
 - FA3 bindings are now covered by
   [2026-06-01 ThunderKittens FA3 comparator capture](2026-06-01-thunderkittens-fa3-comparator.md).
-- PyTorch reference rows still OOM at selected 6144- and 12288-token shapes in
-  the official ThunderKittens MHA benchmark.
+- PyTorch reference rows still OOM at selected 12288-token shapes in the
+  official ThunderKittens MHA benchmark after isolated 6144-token reference
+  cells passed.

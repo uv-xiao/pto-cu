@@ -495,7 +495,8 @@
       ],
       "run_commands": [
         "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_full_sweep_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output-dir tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73 --machine <h200-host> --pto-commit 4277aa73 --cuda-toolkit 12.8 --shape 1,1,768,64 --shape 1,4,1536,64 --warmup 5 --repeats 20 --causal",
-        "Build FlashAttention-3 from tmp/baselines/flash-attention/hopper with SM90 bf16 head-dim-128 scoped build flags, then run the official ThunderKittens benchmark.py and test_correctness.py with a PYTHONPATH shim that requests return_attn_probs=True from flash_attn_interface.flash_attn_func."
+        "Build FlashAttention-3 from tmp/baselines/flash-attention/hopper with SM90 bf16 head-dim-128 scoped build flags, then run the official ThunderKittens benchmark.py and test_correctness.py with a PYTHONPATH shim that requests return_attn_probs=True from flash_attn_interface.flash_attn_func.",
+        "Run the official PyTorch reference cells that OOMed in the monolithic ThunderKittens benchmark as one fresh H200 process per cell with PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True."
       ],
       "expected_artifacts": [
         "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/correctness.json",
@@ -513,7 +514,34 @@
         "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/correctness-fa3.log",
         "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/correctness-fa3-status.txt",
         "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/metadata.txt",
-        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/shim/flash_attn_interface.py"
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/shim/flash_attn_interface.py",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/run_pt_reference_cell.py",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/run-manifest.tsv",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/isolated-pt-reference-summary.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n12288.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n6144.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n12288.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n6144.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n12288.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n6144.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n12288.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n6144.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n12288.status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n6144.status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n12288.status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n6144.status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n12288.status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n6144.status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n12288.status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n6144.status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n12288.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n6144.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n12288.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n6144.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n12288.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n6144.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n12288.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n6144.log"
       ],
       "required_metrics": [
         "correctness",

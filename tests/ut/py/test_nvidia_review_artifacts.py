@@ -2811,8 +2811,9 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     } <= tensor_run_ids
     assert any(
         "ThunderKittens upstream sweep PyTorch reference OOM cells" in blocker
-        and "FA3 comparator capture" in blocker
-        and "6144- and 12288-token shapes" in blocker
+        and "isolated-reference capture" in blocker
+        and "12288-token shapes" in blocker
+        and "fresh H200 process" in blocker
         for blocker in tensor_claim["blockers"]
     )
     assert not any(
@@ -2821,8 +2822,9 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     )
     assert any(
         action["source"] == "matrix_missing_evidence"
-        and "FA3 comparator capture" in action["action"]
-        and "PyTorch reference rows OOM" in action["action"]
+        and "isolated-reference capture" in action["action"]
+        and "12288-token shapes" in action["action"]
+        and "fresh H200 process" in action["action"]
         for action in tensor_claim["next_actions"]
     )
 
@@ -3818,6 +3820,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_8b_global_instruction_capacity_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
         "thunderkittens_mha_h100_fa3_comparator_h200",
+        "thunderkittens_mha_h100_pt_reference_isolated_h200",
         "vllm_qwen3_8b_vdcores_batch1_h200",
         "vllm_qwen3_8b_vdcores_sweep_h200",
         "vllm_qwen3_8b_mpk_batch1_h200",
@@ -4979,6 +4982,28 @@ def test_benchmark_viewer_has_json_backed_review_data():
         12288,
     ]
     assert tk_fa3_attempt["summary"]["compatibility_shim_used"]
+    tk_pt_isolated_attempt = attempts_by_id[
+        "thunderkittens_mha_h100_pt_reference_isolated_h200"
+    ]
+    assert tk_pt_isolated_attempt["status"] == "partial"
+    assert tk_pt_isolated_attempt["summary"]["fresh_process_per_cell"]
+    assert tk_pt_isolated_attempt["summary"]["pytorch_reference_6144_recovered"]
+    assert tk_pt_isolated_attempt["summary"]["pytorch_reference_12288_oom"]
+    assert tk_pt_isolated_attempt["summary"]["remaining_oom_sequence_lengths"] == [
+        12288
+    ]
+    assert set(tk_pt_isolated_attempt["summary"]["pass_cells"]) == {
+        "bwd_cfalse_n6144",
+        "bwd_ctrue_n6144",
+        "fwd_cfalse_n6144",
+        "fwd_ctrue_n6144",
+    }
+    assert set(tk_pt_isolated_attempt["summary"]["fail_cells"]) == {
+        "bwd_cfalse_n12288",
+        "bwd_ctrue_n12288",
+        "fwd_cfalse_n12288",
+        "fwd_ctrue_n12288",
+    }
     tk_rotary_attempt = attempts_by_id["thunderkittens_rotary_non_mha_h200"]
     assert tk_rotary_attempt["status"] == "pass"
     assert tk_rotary_attempt["summary"]["mode"] == "thunderkittens_non_mha_rotary"

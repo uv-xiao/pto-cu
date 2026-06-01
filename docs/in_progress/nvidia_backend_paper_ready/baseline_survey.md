@@ -203,8 +203,11 @@ build, then the unmodified ThunderKittens `benchmark.py` and
 `test_correctness.py` were run through a local `PYTHONPATH` compatibility shim
 that requests `return_attn_probs=True` from `flash_attn_interface`. This
 produced all FA3 forward and backward rows across sequence lengths 768, 1536,
-3072, 6144, and 12288. The remaining official-sweep gap is PyTorch reference
-OOM for selected 6144- and 12288-token cells, not missing FA3 bindings.
+3072, 6144, and 12288. A follow-up isolated PyTorch reference capture ran each
+large reference cell in a fresh H200 process with expandable allocator
+segments. That recovered every selected 6144-token cell. The remaining
+official-sweep gap is true 12288-token dense PyTorch reference capacity, not
+missing FA3 bindings or monolithic benchmark fragmentation.
 
 Observed entry points:
 

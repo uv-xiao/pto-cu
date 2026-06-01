@@ -279,8 +279,12 @@ head-dim-128 build, and the unmodified ThunderKittens benchmark was run with a
 local compatibility shim that requests `return_attn_probs=True` so the current
 FA3 API returns the `(out, lse)` tuple expected by ThunderKittens. The FA3
 rows completed for forward/backward, causal/non-causal, and sequence lengths
-768, 1536, 3072, 6144, and 12288. The remaining official-sweep blocker is
-PyTorch reference OOM in selected large cells, not unavailable FA3 bindings.
+768, 1536, 3072, 6144, and 12288. A follow-up isolated PyTorch reference
+capture ran each selected large reference cell in a fresh H200 process with
+expandable allocator segments. It recovered every 6144-token cell and left only
+12288-token dense PyTorch reference cells OOM, so the remaining official-sweep
+blocker is true 12288-token dense-reference capacity, not unavailable FA3
+bindings or monolithic benchmark fragmentation.
 The LLM-serving claim also has a planned ThunderKittens
 `thunderkittens_decode_attention_tile` run record. Its readiness is generated
 from the selected source tree, repo-local capture wrapper, expected tmp
