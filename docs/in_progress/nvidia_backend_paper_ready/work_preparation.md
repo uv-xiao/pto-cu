@@ -9,7 +9,8 @@
 5. `docs/in_progress/nvidia_backend_paper_ready/shared_contracts.md`
 6. `docs/in_progress/nvidia_backend_paper_ready/evaluation_plan.md` and the
    focused files under `docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/`
-7. `docs/nvidia-backend/overall.md`
+7. `docs/nvidia-backend/overall.md` and the focused files under
+   `docs/nvidia-backend/overall/`
 8. `docs/nvidia-backend/flows.md` and the focused files under
    `docs/nvidia-backend/flows/`
 9. `docs/nvidia-backend/persistent-device.md` and the focused files under
