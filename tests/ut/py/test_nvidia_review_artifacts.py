@@ -3454,6 +3454,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert {
         "vllm_environment_attempt_840a847f_h200_full",
         "vllm_environment_attempt_840a847f_h200_validation",
+        "sglang_environment_attempt_1cbb7b83_h200_step01_02",
     } <= set(environment_attempts_by_id)
     assert (
         environment_attempts_by_id[
@@ -3466,6 +3467,28 @@ def test_benchmark_viewer_has_json_backed_review_data():
             "vllm_environment_attempt_840a847f_h200_validation"
         ]["status"]
         == "pass"
+    )
+    sglang_h200_attempt = environment_attempts_by_id[
+        "sglang_environment_attempt_1cbb7b83_h200_step01_02"
+    ]
+    assert sglang_h200_attempt["status"] == "partial"
+    assert sglang_h200_attempt["paper_baseline_id"] == "sglang"
+    assert (
+        sglang_h200_attempt["environment_plan_id"]
+        == "sglang_runtime_environment"
+    )
+    assert sglang_h200_attempt["start_step"] == 1
+    assert sglang_h200_attempt["end_step"] == 2
+    assert sglang_h200_attempt["steps_completed"] == 2
+    assert sglang_h200_attempt["steps_total"] == 9
+    assert "step 2 of 9" in sglang_h200_attempt["blocker"]
+    assert [step["status"] for step in sglang_h200_attempt["steps"]] == [
+        "pass",
+        "pass",
+    ]
+    assert all(
+        step["command"].startswith(("python3 -m venv", "env PYTHONNOUSERSITE=1"))
+        for step in sglang_h200_attempt["steps"]
     )
     vllm_h200_attempt = attempts_by_id["vllm_qwen3_8b_vdcores_batch1_h200"]
     assert vllm_h200_attempt["status"] == "partial"

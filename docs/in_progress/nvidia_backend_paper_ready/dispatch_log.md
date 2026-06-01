@@ -3033,3 +3033,35 @@ Each entry must include:
   batch matrix. The vLLM paper-baseline run is still partial until repeated
   samples, MPK serving comparison, and PTO persistent-device comparison are
   captured under the same workload policy.
+
+### 2026-06-01 - SGLang H200 Environment Attempt
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned SGLang H200
+  isolated environment setup evidence for the paper baseline evaluation track.
+- Exact Codex command or script invocation: used the documented tree-sync
+  fallback to refresh the standalone pto-cu checkout on `bizhaoh200`, then ran
+  `PYTHONPATH=$PWD:$PWD/python python3 .agents/skills/cuda-backend-eval/scripts/paper_baseline_environment_attempt.py --baseline sglang --start-step 1 --max-steps 2 --attempt-id-suffix h200_step01_02 --output-root tmp/cuda-backend/paper-baselines/environment-attempts/sglang-1cbb7b83-h200-step01-02 --timeout-seconds 300 --commit 1cbb7b83`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready SGLang
+  serving-baseline environment setup.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer environment-attempt data,
+  changelog docs, dispatch log, tests, and local `tmp/` SGLang attempt
+  artifacts. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The attempt is intentionally bounded to steps `1` and `2`; the editable
+  SGLang install and validation imports remain unrun.
+- Verification commands and results:
+  H200 environment artifact
+  `tmp/cuda-backend/paper-baselines/environment-attempts/sglang-1cbb7b83-h200-step01-02/`
+  -> step `1` venv creation passed in `2.681 s`; step `2` pip/setuptools/wheel
+  upgrade passed in `2.923 s`; attempt status is `partial` with blocker
+  `bounded attempt stopped at step 2 of 9 environment steps`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: SGLang now has first H200 environment
+  setup evidence in the same viewer path as vLLM. Continue from step `3` to
+  install `tmp/baselines/sglang/python[all]`, then validate imports and run the
+  serving/offline/one-batch benchmarks.
