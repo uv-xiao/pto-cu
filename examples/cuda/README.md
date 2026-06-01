@@ -151,7 +151,28 @@ controlled proxy formulas only; it must not be promoted as full Qwen
 correctness. The Qwen unit math oracle records RMSNorm, projection,
 single-token attention cache writeback, SiLU/SwiGLU, and logits equations
 for a hidden-size-4 reference. The generated CUDA source now contains that
-unit-math path; `cuda_live` execution of the path is still pending.
+unit-math path, and the live example below executes it.
+
+## Qwen Unit Math Live
+
+- Benchmark id: `llm_serving_decode`
+- Runtime: `cuda/persistent_device`
+- Method id: `pto_persistent_device`
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_unit_math_live.py \
+  --device 0 \
+  --arch compute_80 \
+  --output-json tmp/cuda-backend/pto-serving-unit-math-live/qwen-unit-math-live.json
+```
+
+Expected output: command exits 0 on a CUDA host; output JSON records
+status=pass for a Qwen unit-math DAG launched through cuda/persistent_device.
+
+This is live runtime evidence for the unit math path only. It proves the
+RMSNorm, QKV cache writeback, SiLU/SwiGLU, and logits task-body path can be
+compiled, scheduled, and copied back. It is not a full Qwen decode loop.
 
 ## Qwen Persistent Proxy Live
 

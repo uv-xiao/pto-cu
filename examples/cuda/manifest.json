@@ -134,6 +134,22 @@
       ]
     },
     {
+      "id": "qwen_unit_math_live",
+      "title": "Qwen Unit Math Live",
+      "script": "examples/cuda/qwen_unit_math_live.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_unit_math_live.py --device 0 --arch compute_80 --output-json tmp/cuda-backend/pto-serving-unit-math-live/qwen-unit-math-live.json",
+      "expected_output": "command exits 0 on a CUDA host; output JSON records status=pass for a Qwen unit-math DAG launched through cuda/persistent_device.",
+      "evidence_symbols": [
+        "pto_qwen_unit_math_live_execution",
+        "qwen_unit_math_cuda_live_execution_plan",
+        "qwen_unit_math_cuda_live_execution",
+        "persistent_device_unit_math_dag_launch_plan"
+      ]
+    },
+    {
       "id": "qwen_persistent_microdecode_live",
       "title": "Qwen Persistent Microdecode Live",
       "script": "examples/cuda/qwen_persistent_microdecode_live.py",

@@ -54,6 +54,11 @@ task->out[i] = embedding ? embedding[token_id & 3U] : 0.0f;
             "consumes_roles": ["hidden_state", "input_layernorm_weight"],
             "body": """
 const float *weight = task->tensor_args[0];
+if (task->scalar_arg_count == 0) {
+    const float scale = weight ? weight[i & 3U] : 1.0f;
+    task->out[i] = task->a[i] * scale;
+    return;
+}
 float mean_square = 0.0f;
 for (unsigned long long j = 0; j < task->n; ++j) {
     mean_square += task->a[j] * task->a[j];

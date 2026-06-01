@@ -36,7 +36,7 @@ Each entry must include:
 
 - [2026-06-01-part-11.md](dispatch_log/entries/2026-06-01-part-11.md) (6 entries): Qwen Resident Weight Table Owner through Qwen KV-Cache Binding.
 - [2026-06-01-part-12.md](dispatch_log/entries/2026-06-01-part-12.md) (6 entries): Qwen Decode Loop Runner Plan through Qwen Microdecode Live CUDA Execution.
-- [2026-06-01-part-13.md](dispatch_log/entries/2026-06-01-part-13.md) (6 entries): Qwen Proxy Decode Loop Live Reuse through Qwen Unit Math Source Coverage.
+- [2026-06-01-part-13.md](dispatch_log/entries/2026-06-01-part-13.md) (7 entries): Qwen Proxy Decode Loop Live Reuse through Qwen Unit Math Live Execution.
 
 ## Full Archive
 

@@ -172,8 +172,9 @@ oracle for the current deterministic scaffold formulas; that oracle is not
 full Qwen correctness evidence.
 It also carries a small Qwen unit math oracle covering RMSNorm, projection,
 single-token attention cache writeback, SiLU/SwiGLU, and logits equations;
-the generated CUDA source now contains a matching opt-in unit-math path, and
-`cuda_live` execution of that path is still pending.
+the generated CUDA source contains a matching opt-in unit-math path, and the
+current A100 artifact executes that path through `cuda_live` with zero
+observed error.
 The persistent decode-argument artifact in
 `examples/cuda/qwen_persistent_decode_args.py` maps those token buffers onto
 the persistent DAG `a`, `b`, and `out` fields while preserving `tensor_args`
@@ -190,6 +191,7 @@ The current raw artifacts are
 `tmp/cuda-backend/pto-serving-decode-loop-bridge-2026-06-01/qwen-decode-loop-runner.json`,
 `tmp/cuda-backend/pto-serving-task-bodies-2026-06-01/qwen-persistent-task-bodies.json`,
 `tmp/cuda-backend/pto-serving-task-bodies-qwen-unit-2026-06-01/qwen-persistent-task-bodies.json`,
+`tmp/cuda-backend/pto-serving-unit-math-live-2026-06-01/qwen-unit-math-live.json`,
 `tmp/cuda-backend/pto-serving-proxy-live-2026-06-01/qwen-proxy-live.json`,
 `tmp/cuda-backend/pto-serving-microdecode-live-2026-06-01/qwen-microdecode-live.json`,
 `tmp/cuda-backend/pto-serving-decode-loop-live-2026-06-01/qwen-microdecode-loop.json`,

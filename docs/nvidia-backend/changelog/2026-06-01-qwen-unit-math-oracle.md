@@ -28,5 +28,5 @@ Result: `1 passed`.
 
 ## Remaining Gaps
 
-- Execute the Qwen unit-math source path through `cuda_live`.
-- Execute the full Qwen decode loop and import full-serving viewer rows.
+- Execute the full Qwen decode loop.
+- Import full-serving viewer rows.

@@ -435,14 +435,23 @@ Use `examples/cuda/qwen_persistent_task_bodies.py` when reviewers need the
 repo-owned Qwen persistent task-body source manifest. The current artifact
 renders through the existing persistent DAG source generator and records token,
 mutable KV-cache, weight field consumption, and a small Qwen unit math oracle;
-the generated source contains that unit-math path, but the path is not yet
-validated in a `cuda_live` decode execution:
+the generated source contains that unit-math path:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/qwen_persistent_task_bodies.py \
     --output-json tmp/cuda-backend/pto-serving-task-bodies-$(git rev-parse --short HEAD)/qwen-persistent-task-bodies.json \
     --output-source tmp/cuda-backend/pto-serving-task-bodies-$(git rev-parse --short HEAD)/qwen-persistent-task-bodies.cu
+```
+
+Use `examples/cuda/qwen_unit_math_live.py` when reviewers need live CUDA
+evidence for the Qwen unit math source path:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_unit_math_live.py \
+    --device 0 --arch compute_80 \
+    --output-json tmp/cuda-backend/pto-serving-unit-math-live-$(git rev-parse --short HEAD)/qwen-unit-math-live.json
 ```
 
 Use `examples/cuda/qwen_prompt_accounting.py` to capture tokenizer-observed

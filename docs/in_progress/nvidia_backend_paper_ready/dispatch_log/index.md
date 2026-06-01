@@ -29,4 +29,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-01-part-10.md](entries/2026-06-01-part-10.md) | 6 | Qwen Safetensors Shard Status | Qwen Persistent Weight Materialization |
 | [2026-06-01-part-11.md](entries/2026-06-01-part-11.md) | 6 | Qwen Resident Weight Table Owner | Qwen KV-Cache Binding |
 | [2026-06-01-part-12.md](entries/2026-06-01-part-12.md) | 6 | Qwen Decode Loop Runner Plan | Qwen Microdecode Live CUDA Execution |
-| [2026-06-01-part-13.md](entries/2026-06-01-part-13.md) | 6 | Qwen Proxy Decode Loop Live Reuse | Qwen Unit Math Source Coverage |
+| [2026-06-01-part-13.md](entries/2026-06-01-part-13.md) | 7 | Qwen Proxy Decode Loop Live Reuse | Qwen Unit Math Live Execution |
