@@ -185,6 +185,11 @@ def test_launch_packet_marks_unit_math_numeric_ready_tasks():
     descriptors = [
         {"callable": "qwen_rmsnorm_input", "tensor_args": []},
         {"callable": "qwen_attention_qkv", "tensor_args": []},
+        {"callable": "qwen_attention_qk_norm", "tensor_args": []},
+        {"callable": "qwen_attention_o", "tensor_args": []},
+        {"callable": "qwen_rmsnorm_post_attention", "tensor_args": []},
+        {"callable": "qwen_mlp_down", "tensor_args": []},
+        {"callable": "qwen_final_norm", "tensor_args": []},
         {"callable": "qwen_logits", "tensor_args": []},
     ]
     token_fields = keyed_fields(
@@ -210,5 +215,8 @@ def test_launch_packet_marks_unit_math_numeric_ready_tasks():
     assert list(packet[0].scalar_args)[:2] == [1.0, 1.0]
     assert packet[1].scalar_arg_count == 1
     assert packet[1].scalar_args[0] == 1.0
-    assert packet[2].scalar_arg_count == 3
-    assert list(packet[2].scalar_args)[:3] == [0.0, 1.0, 1.0]
+    for index in range(2, 7):
+        assert packet[index].scalar_arg_count == 1
+        assert packet[index].scalar_args[0] == 1.0
+    assert packet[7].scalar_arg_count == 3
+    assert list(packet[7].scalar_args)[:3] == [0.0, 1.0, 1.0]

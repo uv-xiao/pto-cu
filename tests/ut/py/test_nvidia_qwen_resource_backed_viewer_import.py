@@ -61,12 +61,17 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                     "numeric_task_mode": {
                         "mode": "unit_math",
                         "scope": (
-                            "resource_backed_unit_math_external_scale_branches"
+                            "resource_backed_unit_math_weighted_elementwise_branches"
                         ),
                         "numeric_ready_callables": [
                             "qwen_rmsnorm_input",
                             "qwen_attention_qkv",
+                            "qwen_attention_qk_norm",
+                            "qwen_attention_o",
+                            "qwen_rmsnorm_post_attention",
                             "qwen_mlp_gate_up",
+                            "qwen_mlp_down",
+                            "qwen_final_norm",
                         ],
                         "external_scale_contracts": [
                             {
@@ -74,6 +79,13 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                                 "scale_arg": "scalar_args[1]",
                                 "scale": 1.0,
                             },
+                        ],
+                        "weighted_elementwise_callables": [
+                            "qwen_attention_qk_norm",
+                            "qwen_attention_o",
+                            "qwen_rmsnorm_post_attention",
+                            "qwen_mlp_down",
+                            "qwen_final_norm",
                         ],
                     },
                     "decode_feedback": {
@@ -163,8 +175,9 @@ def test_resource_backed_importer_emits_diagnostic_rows():
             assert record["statistic"]["logits_checked_step_count"] == 1
             assert record["statistic"]["logits_deferred_step_count"] == 2
             assert record["statistic"]["numeric_task_mode"] == "unit_math"
-            assert record["statistic"]["numeric_ready_callable_count"] == 3
+            assert record["statistic"]["numeric_ready_callable_count"] == 8
             assert record["statistic"]["external_scale_contract_count"] == 1
+            assert record["statistic"]["weighted_elementwise_callable_count"] == 5
         assert record["correctness"] == "pass"
         assert "resource-backed diagnostic" in record["inputs"]["shape"]
         assert "prepared callable reused" in record["inputs"]["repeat_policy"]

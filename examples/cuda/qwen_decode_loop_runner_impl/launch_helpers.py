@@ -9,9 +9,21 @@ NUMERIC_TASK_MODES = ("diagnostic", "unit_math")
 UNIT_NUMERIC_CALLABLES = {
     "qwen_rmsnorm_input",
     "qwen_attention_qkv",
+    "qwen_attention_qk_norm",
+    "qwen_attention_o",
+    "qwen_rmsnorm_post_attention",
     "qwen_mlp_gate_up",
+    "qwen_mlp_down",
+    "qwen_final_norm",
 }
 UNIT_NUMERIC_RMSNORM_SCALE = 1.0
+UNIT_NUMERIC_WEIGHTED_ELEMENTWISE_CALLABLES = {
+    "qwen_attention_qk_norm",
+    "qwen_attention_o",
+    "qwen_rmsnorm_post_attention",
+    "qwen_mlp_down",
+    "qwen_final_norm",
+}
 
 
 def normalize_numeric_task_mode(mode: str) -> str:
@@ -146,8 +158,13 @@ def numeric_task_mode_summary(mode: str) -> dict[str, Any]:
         ]
         if mode == "unit_math"
         else [],
+        "weighted_elementwise_callables": sorted(
+            UNIT_NUMERIC_WEIGHTED_ELEMENTWISE_CALLABLES,
+        )
+        if mode == "unit_math"
+        else [],
         "scope": (
-            "resource_backed_unit_math_external_scale_branches"
+            "resource_backed_unit_math_weighted_elementwise_branches"
             if mode == "unit_math"
             else "diagnostic_resource_backed_formulas"
         ),

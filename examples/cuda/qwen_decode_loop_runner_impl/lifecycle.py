@@ -208,30 +208,19 @@ def build_decode_loop_runner(
                 implemented_contracts.append(
                     "qwen_resource_backed_decode_step_execution",
                 )
-            if (
-                "qwen_diagnostic_decode_token_feedback"
-                in resource_backed_execution.get("implemented_contracts", [])
-            ):
-                implemented_contracts.append("qwen_diagnostic_decode_token_feedback")
-            if (
-                "qwen_device_decode_token_feedback"
-                in resource_backed_execution.get("implemented_contracts", [])
-            ):
-                implemented_contracts.append("qwen_device_decode_token_feedback")
-            if (
-                "qwen_resource_backed_unit_numeric_task_mode"
-                in resource_backed_execution.get("implemented_contracts", [])
-            ):
-                implemented_contracts.append(
-                    "qwen_resource_backed_unit_numeric_task_mode",
-                )
-            if (
-                "qwen_resource_backed_external_rmsnorm_scale"
-                in resource_backed_execution.get("implemented_contracts", [])
-            ):
-                implemented_contracts.append(
-                    "qwen_resource_backed_external_rmsnorm_scale",
-                )
+            resource_contracts = resource_backed_execution.get(
+                "implemented_contracts",
+                [],
+            )
+            for contract in [
+                "qwen_diagnostic_decode_token_feedback",
+                "qwen_device_decode_token_feedback",
+                "qwen_resource_backed_unit_numeric_task_mode",
+                "qwen_resource_backed_external_rmsnorm_scale",
+                "qwen_resource_backed_weighted_elementwise_branches",
+            ]:
+                if contract in resource_contracts:
+                    implemented_contracts.append(contract)
     submission_descriptors = submission_descriptor_contract(
         plans=plans,
         resource_modes=resource_modes,
