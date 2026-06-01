@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 CUDA status split](2026-06-02-cuda-status-split.md)
 - [2026-06-02 evaluation plan split](2026-06-02-evaluation-plan-split.md)
 - [2026-06-02 capture import shards](2026-06-02-capture-import-shards.md)
 - [2026-06-02 paper baseline probe shards](2026-06-02-paper-baseline-probe-shards.md)

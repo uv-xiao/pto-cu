@@ -13,7 +13,8 @@
 8. `docs/nvidia-backend/flows.md`
 9. `docs/nvidia-backend/persistent-device.md`
 10. `docs/nvidia-backend/evaluation.md`
-11. `docs/nvidia-backend/status.md`
+11. `docs/nvidia-backend/status.md` and the focused files under
+    `docs/nvidia-backend/status/`
 
 ## Repository Policy
 

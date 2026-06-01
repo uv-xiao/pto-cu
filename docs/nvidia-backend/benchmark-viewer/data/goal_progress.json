@@ -65,6 +65,7 @@
       "summary": "Status docs, shared contracts, and review guards tie claims to explicit code or data evidence.",
       "evidence_refs": [
         "docs/nvidia-backend/status.md",
+        "docs/nvidia-backend/status/",
         "docs/in_progress/nvidia_backend_paper_ready/shared_contracts.md",
         ".agents/checks/check_nvidia_review_ready.py"
       ],
