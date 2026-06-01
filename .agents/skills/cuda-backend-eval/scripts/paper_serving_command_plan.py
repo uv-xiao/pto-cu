@@ -81,6 +81,21 @@ def plan_id(run_id: str, policy_id: str, batch_size: int) -> str:
     return f"{run_id}:{policy_id}:batch{batch_size}"
 
 
+def filter_commands_for_run(
+    commands: list[dict[str, str]],
+    run: dict[str, Any],
+) -> list[dict[str, str]]:
+    selected = run.get("serving_command_kinds")
+    if selected is None:
+        return commands
+    if not isinstance(selected, list) or not all(
+        isinstance(item, str) and item for item in selected
+    ):
+        fail(f"{run['id']} has invalid serving_command_kinds")
+    allowed = set(selected)
+    return [command for command in commands if command.get("kind") in allowed]
+
+
 def vllm_commands(
     *,
     model: str,
@@ -499,6 +514,9 @@ def build_plan(
                     batch_size=int(batch_size),
                     out_dir=out_dir,
                 )
+                commands = filter_commands_for_run(commands, run)
+                if not commands:
+                    fail(f"{run['id']} selected no serving commands")
                 records.append(
                     {
                         "id": plan_id(run["id"], policy_id, int(batch_size)),

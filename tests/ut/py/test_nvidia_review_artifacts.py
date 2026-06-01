@@ -1196,6 +1196,61 @@ def test_thunderkittens_rotary_capture_builds_importable_record():
     assert result["correctness"] == "pass"
 
 
+def test_mpk_native_token_capture_builds_importable_record():
+    import importlib.util
+
+    script = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "mpk_native_token_capture.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "mpk_native_token_capture",
+        script,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    result = module.build_result_record(
+        token_payload={
+            "prompt_length": 39,
+            "generate_length": 2,
+            "latency_ms_per_token": 238.19888305664062,
+            "mode": "torch",
+        },
+        machine="bizhaoh200",
+        pto_commit="61af3f01",
+        gpu="H200",
+        raw_gpu_name="NVIDIA H200",
+        driver="see raw artifact",
+        compute_target="compute_90",
+        cuda_toolkit="see raw artifact",
+        dtype="bfloat16",
+        clock_policy="not recorded",
+    )
+
+    assert result["paper_baseline_run_id"] == "mpk_qwen3_native_token_bringup"
+    assert result["benchmark_id"] == "llm_serving_decode"
+    assert result["hardware"]["gpu"] == "H200"
+    assert result["inputs"]["shape"] == (
+        "model=Qwen/Qwen3-0.6B,prompt_tokens=39,"
+        "decode_tokens=2,batch=1,mode=torch"
+    )
+    assert result["metrics"]["kind"] == "mpk_native_token_bringup"
+    assert result["metrics"]["sample_count"] == 1
+    assert result["metrics"]["end_to_end_latency_ns"] == 476397766
+    assert result["metrics"]["inter_token_latency_ns"] == 238198883
+    assert result["metrics"]["time_per_output_token_ns"] == 238198883
+    assert result["metrics"]["throughput_tokens_per_s"] > 4.0
+    assert result["metrics"]["completed_requests"] == 1
+    assert result["metrics"]["failed_requests"] == 0
+    assert result["correctness"] == "pass"
+
+
 def test_paper_baseline_results_update_marks_imported_run(tmp_path):
     raw = {
         "metadata": {
@@ -2558,8 +2613,14 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert host_claim["next_actions"] == []
     llm_claim = by_id["llm_serving_paper_baselines"]
     assert not llm_claim["ready_for_paper_claim"]
+    assert llm_claim["matrix_status"] == "partial_current_capture"
     assert any(
         "mpk_qwen3_native_vs_persistent is planned_not_run" in blocker
+        for blocker in llm_claim["blockers"]
+    )
+    assert any(
+        "MPK persistent-kernel" in blocker
+        and "same paper workload" in blocker
         for blocker in llm_claim["blockers"]
     )
     assert not any(
@@ -2872,7 +2933,7 @@ def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
     records = payload["serving_command_plans"]
 
     assert payload["metadata"]["model_tier"] == "primary"
-    assert len(records) == 35
+    assert len(records) == 36
     by_id = {record["id"]: record for record in records}
     vllm_mpk = by_id[
         "vllm_serving_and_throughput:mpk_offline_decode:batch16"
@@ -2939,6 +3000,21 @@ def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
         and "--shape 4,1,256,64" in command["command"]
         for command in thunderkittens_decode["commands"]
     )
+    mpk_native_bringup = by_id[
+        "mpk_qwen3_native_token_bringup:"
+        "mpk_native_qwen3_0p6b_token2_bringup:batch1"
+    ]
+    assert mpk_native_bringup["model"] == "Qwen/Qwen3-0.6B"
+    assert mpk_native_bringup["prompt_tokens"] == 39
+    assert mpk_native_bringup["decode_tokens"] == 2
+    assert mpk_native_bringup["batch_size"] == 1
+    assert [command["kind"] for command in mpk_native_bringup["commands"]] == [
+        "native_demo"
+    ]
+    assert "--model Qwen/Qwen3-0.6B" in mpk_native_bringup["commands"][0][
+        "command"
+    ]
+    assert "--max-new-tokens 2" in mpk_native_bringup["commands"][0]["command"]
     assert all(
         command.get("raw_artifact", "").startswith(
             "tmp/cuda-backend/paper-baselines/serving-runs"
@@ -3265,7 +3341,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     serving_by_id = {
         item["id"]: item for item in serving_workloads["serving_workloads"]
     }
-    assert {"mpk_offline_decode", "vdcores_offline_decode"} <= set(serving_by_id)
+    assert {
+        "mpk_offline_decode",
+        "mpk_native_qwen3_0p6b_token2_bringup",
+        "vdcores_offline_decode",
+    } <= set(serving_by_id)
     assert serving_by_id["mpk_offline_decode"]["model_policy"]["primary_model"] == (
         "Qwen/Qwen3-8B"
     )
@@ -3276,6 +3356,14 @@ def test_benchmark_viewer_has_json_backed_review_data():
         == 64
     )
     assert serving_by_id["mpk_offline_decode"]["decode_policy"]["decode_tokens"] == 1024
+    mpk_native_workload = serving_by_id["mpk_native_qwen3_0p6b_token2_bringup"]
+    assert mpk_native_workload["model_policy"]["primary_model"] == "Qwen/Qwen3-0.6B"
+    assert mpk_native_workload["prompt_policy"]["target_prompt_tokens"] == 39
+    assert mpk_native_workload["decode_policy"]["decode_tokens"] == 2
+    assert mpk_native_workload["decode_policy"]["batch_sizes"] == [1]
+    assert mpk_native_workload["baseline_run_ids"] == [
+        "mpk_qwen3_native_token_bringup"
+    ]
     assert serving_by_id["vdcores_offline_decode"]["decode_policy"]["decode_tokens"] == 64
     assert serving_by_id["vdcores_offline_decode"]["status"] == (
         "partial_controlled_results"
@@ -3296,6 +3384,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     run_ids = {item["id"] for item in paper_baseline_runs["paper_baseline_runs"]}
     assert {
         "mpk_qwen3_native_vs_persistent",
+        "mpk_qwen3_native_token_bringup",
         "vdcores_llama_decode_correctness",
         "mpk_persistent_scheduler_trace",
         "vdcores_resource_policy_trace",
@@ -3334,6 +3423,28 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 "model_and_prompt_shape",
                 "batch_or_concurrency_policy",
             } <= set(item["required_metrics"])
+        if item["id"] == "mpk_qwen3_native_token_bringup":
+            assert item["paper_evaluation_id"] == "llm_serving_paper_baselines"
+            assert item["status"] == "imported_to_viewer"
+            assert item["serving_workload_ids"] == [
+                "mpk_native_qwen3_0p6b_token2_bringup"
+            ]
+            assert item["serving_command_kinds"] == ["native_demo"]
+            assert "native torch bring-up" in item["workload"][
+                "batch_or_concurrency"
+            ]
+            assert any(
+                "mpk_native_token_capture.py" in command
+                for command in item["run_commands"]
+            )
+            assert any(
+                path.endswith("native-token2-paper-results.json")
+                for path in item["expected_artifacts"]
+            )
+            assert any(
+                path.endswith("native-token2-viewer-result-records.json")
+                for path in item["expected_artifacts"]
+            )
         if item["id"] == "thunderkittens_tile_kernel":
             assert item["status"] == "imported_to_viewer"
             assert any(
@@ -3545,6 +3656,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
     attempts_by_id = {item["id"]: item for item in execution_attempts}
     assert {
         "mpk_qwen3_0p6b_native_token2_h200",
+        "mpk_qwen3_0p6b_native_token_viewer_import",
         "mpk_qwen3_0p6b_persistent_profile_token2_h200",
         "mpk_qwen3_0p6b_persistent_noprofile_token2_h200",
         "mpk_qwen3_0p6b_persistent_token8_h200",
@@ -3591,6 +3703,13 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "sglang_qwen3_8b_vdcores_fixedrange_sweep_h200",
         "sglang_qwen3_8b_vdcores_fixedrange_repeats_h200",
     } <= set(attempts_by_id)
+    mpk_native_import = attempts_by_id["mpk_qwen3_0p6b_native_token_viewer_import"]
+    assert mpk_native_import["status"] == "pass"
+    assert mpk_native_import["paper_baseline_run_id"] == (
+        "mpk_qwen3_native_token_bringup"
+    )
+    assert mpk_native_import["summary"]["viewer_rows_imported"] == 1
+    assert not mpk_native_import["summary"]["persistent_kernel_evidence"]
     environment_attempts = paper_baseline_environment_attempts[
         "paper_baseline_environment_attempts"
     ]
@@ -4658,12 +4777,13 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert (ROOT / path).is_file()
     command_plan_records = serving_command_plan["serving_command_plans"]
     assert serving_command_plan["metadata"]["model_tier"] == "primary"
-    assert len(command_plan_records) == 35
+    assert len(command_plan_records) == 36
     command_plan_run_ids = {
         item["paper_baseline_run_id"] for item in command_plan_records
     }
     assert {
         "mpk_qwen3_native_vs_persistent",
+        "mpk_qwen3_native_token_bringup",
         "vdcores_llama_decode_correctness",
         "vllm_serving_and_throughput",
         "sglang_serving_and_offline",
@@ -4869,6 +4989,18 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 and ref.get("gpu") == "H200"
                 for ref in item["current_evidence_refs"]
             )
+            assert any(
+                ref.get("kind") == "viewer_result"
+                and ref.get("benchmark_id") == "llm_serving_decode"
+                and ref.get("method_id") == "mpk"
+                and ref.get("gpu") == "H200"
+                for ref in item["current_evidence_refs"]
+            )
+            assert any(
+                ref.get("path")
+                == "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/"
+                for ref in item["current_evidence_refs"]
+            )
 
     assert paper_readiness_audit["overall_status"] == "not_paper_ready"
     assert paper_readiness_audit["ready_claims"] == 2
@@ -4940,6 +5072,30 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "under MAX_WORKER_PER_SCHEDULER=9"
     )
     assert mpk_statistic["generated_kernel_metadata"]["tensor_count"] == 371
+    mpk_native_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "mpk"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/"
+    ]
+    assert len(mpk_native_records) == 1
+    mpk_native = mpk_native_records[0]
+    assert mpk_native["correctness"] == "pass"
+    assert mpk_native["inputs"]["shape"] == (
+        "model=Qwen/Qwen3-0.6B,prompt_tokens=39,"
+        "decode_tokens=2,batch=1,mode=torch"
+    )
+    assert mpk_native["statistic"]["kind"] == "mpk_native_token_bringup"
+    assert mpk_native["statistic"]["sample_count"] == 1
+    assert mpk_native["statistic"]["prompt_tokens"] == 39
+    assert mpk_native["statistic"]["decode_tokens"] == 2
+    assert mpk_native["statistic"]["end_to_end_latency_ns"] == 476397766
+    assert mpk_native["statistic"]["throughput_tokens_per_s"] > 4.0
+    assert mpk_native["statistic"]["completed_requests"] == 1
+    assert mpk_native["statistic"]["failed_requests"] == 0
     vdcores_scheduler_records = [
         record
         for record in results["result_records"]

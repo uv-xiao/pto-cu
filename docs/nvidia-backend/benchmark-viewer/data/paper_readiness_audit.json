@@ -204,13 +204,13 @@
     {
       "id": "llm_serving_paper_baselines",
       "title": "LLM Serving Paper Baselines",
-      "matrix_status": "planned_no_results",
+      "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
         "baseline_survey": 1,
-        "raw_artifact": 1,
+        "raw_artifact": 2,
         "viewer_data": 3,
-        "viewer_result": 1
+        "viewer_result": 2
       },
       "missing_evidence_count": 1,
       "missing_viewer_results": [],
@@ -227,6 +227,20 @@
             "tmp/baselines/mirage-mpk command log",
             "tmp/cuda-backend/paper-baselines/mpk/qwen3-native.json",
             "tmp/cuda-backend/paper-baselines/mpk/qwen3-mpk.json"
+          ]
+        },
+        {
+          "id": "mpk_qwen3_native_token_bringup",
+          "paper_baseline_id": "mpk",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [
+            "mpk_native_qwen3_0p6b_token2_bringup"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json",
+            "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.log",
+            "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2-paper-results.json",
+            "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2-viewer-result-records.json"
           ]
         },
         {
@@ -303,7 +317,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-ae922a2a/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-6fa7978e/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -311,7 +325,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-ae922a2a/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-6fa7978e/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -423,7 +437,7 @@
         }
       ],
       "blockers": [
-        "MPK, VDCores, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records.",
+        "MPK persistent-kernel, VDCores gated Llama, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records for the same paper workload.",
         "Paper baseline run mpk_qwen3_native_vs_persistent is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vdcores_llama_decode_correctness is planned_not_run, not imported_to_viewer.",
         "Run readiness vdcores_llama_decode_correctness is partial: HF_TOKEN is not available for this run."
@@ -432,7 +446,7 @@
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
-          "action": "MPK, VDCores, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records."
+          "action": "MPK persistent-kernel, VDCores gated Llama, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records for the same paper workload."
         },
         {
           "source": "run_readiness",

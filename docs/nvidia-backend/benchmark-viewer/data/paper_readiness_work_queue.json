@@ -40,7 +40,7 @@
       "priority": 2,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
-      "matrix_status": "planned_no_results",
+      "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
       "blocker_count": 4,
       "missing_evidence_count": 1,
@@ -51,7 +51,7 @@
       "paper_baseline_run_id": "",
       "execution_attempt_id": "",
       "status": "missing",
-      "action": "MPK, VDCores, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records.",
+      "action": "MPK persistent-kernel, VDCores gated Llama, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records for the same paper workload.",
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
@@ -59,7 +59,7 @@
       "priority": 3,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
-      "matrix_status": "planned_no_results",
+      "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
       "blocker_count": 4,
       "missing_evidence_count": 1,

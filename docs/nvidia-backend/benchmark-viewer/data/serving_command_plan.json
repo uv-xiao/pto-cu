@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at_utc": "2026-06-01T01:43:42.830522+00:00",
-    "pto_commit": "bfc1c581",
+    "generated_at_utc": "2026-06-01T04:48:40.267639+00:00",
+    "pto_commit": "6fa7978e",
     "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs",
     "model_tier": "primary",
     "source_files": [
@@ -127,6 +127,25 @@
           "kind": "persistent_demo",
           "command": "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --model Qwen/Qwen3-8B --prompt 'Give me a short introduction to large language model.' --max-new-tokens 1024 --max-num-batched-requests 16 --max-num-batched-tokens 16 --ignore-eos --temperature 0 --use-mirage --save-tokens ../../cuda-backend/paper-baselines/serving-runs/mpk/mpk_offline_decode/mpk-persistent-batch16.json",
           "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/mpk/mpk_offline_decode/mpk-persistent-batch16.json"
+        }
+      ]
+    },
+    {
+      "id": "mpk_qwen3_native_token_bringup:mpk_native_qwen3_0p6b_token2_bringup:batch1",
+      "paper_baseline_run_id": "mpk_qwen3_native_token_bringup",
+      "paper_baseline_id": "mpk",
+      "serving_workload_id": "mpk_native_qwen3_0p6b_token2_bringup",
+      "model_tier": "primary",
+      "model": "Qwen/Qwen3-0.6B",
+      "batch_size": 1,
+      "prompt_tokens": 39,
+      "decode_tokens": 2,
+      "traffic_mode": "single native torch offline request",
+      "commands": [
+        {
+          "kind": "native_demo",
+          "command": "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --prompt 'Give me a short introduction to large language model.' --max-new-tokens 2 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --temperature 0 --save-tokens ../../cuda-backend/paper-baselines/serving-runs/mpk/mpk_native_qwen3_0p6b_token2_bringup/mpk-native-batch1.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/mpk/mpk_native_qwen3_0p6b_token2_bringup/mpk-native-batch1.json"
         }
       ]
     },

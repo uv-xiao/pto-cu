@@ -448,6 +448,20 @@ On H200, prefer a local model cache for MPK execution attempts when
 `HF_HOME=<shared-hf-cache> HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1`
 with a shared Qwen3 cache rather than relying on live model downloads.
 
+Use `mpk_native_token_capture.py` only for the MPK native torch bring-up row.
+It normalizes an existing `demo/qwen3/demo.py --save-tokens` JSON into the
+paper-baseline raw-result schema. This is not persistent-kernel evidence; keep
+the separate MPK persistent run blocked until it has correctness and scheduler
+or latency artifacts for the same paper workload:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/mpk_native_token_capture.py \
+    --input tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json \
+    --output tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2-paper-results.json \
+    --machine <h200-host> --pto-commit <pto-commit>
+```
+
 Use `paper_serving_command_plan.py` before long MPK, VDCores, vLLM, SGLang,
 or ThunderKittens serving-family runs. It reads the committed
 `serving_workloads.json` and

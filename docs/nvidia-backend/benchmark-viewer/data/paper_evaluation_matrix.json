@@ -360,7 +360,7 @@
       "id": "llm_serving_paper_baselines",
       "title": "LLM Serving Paper Baselines",
       "claim": "Paper-level PTO CUDA claims require a shared serving workload against MPK, VDCores, vLLM, SGLang, and ThunderKittens-family baselines.",
-      "status": "planned_no_results",
+      "status": "partial_current_capture",
       "workload_ids": [
         "llm_serving_decode",
         "graph_layered_cross",
@@ -414,12 +414,22 @@
           "gpu": "H200"
         },
         {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "mpk",
+          "gpu": "H200"
+        },
+        {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/graph-tensor-core-compact-current-working/combined-current-493ce832/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/"
         }
       ],
       "missing_evidence": [
-        "MPK, VDCores, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records."
+        "MPK persistent-kernel, VDCores gated Llama, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records for the same paper workload."
       ],
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     }

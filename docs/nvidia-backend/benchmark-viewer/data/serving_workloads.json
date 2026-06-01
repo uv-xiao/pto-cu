@@ -76,6 +76,71 @@
       ]
     },
     {
+      "id": "mpk_native_qwen3_0p6b_token2_bringup",
+      "title": "MPK Native Qwen3 0.6B Token Bring-Up",
+      "status": "imported_to_viewer",
+      "paper_source": {
+        "paper": "Mirage Persistent Kernel",
+        "evidence": "tmp/sources/arxiv-2512.22219v1-mirage-persistent-kernel.txt",
+        "notes": "This is an MPK native torch environment bring-up workload, not the MPK persistent-kernel paper-serving workload."
+      },
+      "model_policy": {
+        "primary_model": "Qwen/Qwen3-0.6B",
+        "bringup_model": "Qwen/Qwen3-0.6B",
+        "fallback_model": "Qwen/Qwen3-0.6B",
+        "selection_reason": "The imported H200 artifact uses Qwen3-0.6B for bounded MPK native setup validation. Full paper comparison remains on Qwen3-8B."
+      },
+      "prompt_policy": {
+        "prompt_text": "Give me a short introduction to large language model.",
+        "target_prompt_tokens": 39,
+        "tokenization_rule": "The MPK native demo records the tokenizer-observed prompt length in native-token2.json."
+      },
+      "decode_policy": {
+        "decode_tokens": 2,
+        "batch_sizes": [
+          1
+        ],
+        "traffic_mode": "single native torch offline request",
+        "generation_mode": "deterministic greedy decode with ignore_eos for bounded bring-up"
+      },
+      "hardware_targets": [
+        "H200"
+      ],
+      "baseline_run_ids": [
+        "mpk_qwen3_native_token_bringup"
+      ],
+      "required_metrics": [
+        "correctness",
+        "end_to_end_latency",
+        "inter_token_latency",
+        "throughput_tokens_per_s",
+        "batch_size",
+        "prompt_tokens",
+        "decode_tokens",
+        "raw_artifacts"
+      ],
+      "current_blockers": [
+        "This workload is MPK native bring-up evidence only; MPK persistent-kernel paper evidence remains blocked."
+      ],
+      "evidence_refs": [
+        {
+          "path": "tmp/sources/arxiv-2512.22219v1-mirage-persistent-kernel.txt",
+          "symbols": [
+            "fixed prompt length of 64",
+            "decode 1024 tokens"
+          ]
+        },
+        {
+          "path": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json",
+          "symbols": [
+            "latency_ms_per_token",
+            "prompt_length",
+            "generate_length"
+          ]
+        }
+      ]
+    },
+    {
       "id": "vdcores_offline_decode",
       "title": "VDCores-Comparable Offline Decode",
       "status": "partial_controlled_results",

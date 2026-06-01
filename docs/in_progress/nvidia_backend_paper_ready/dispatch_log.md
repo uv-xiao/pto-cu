@@ -3343,3 +3343,45 @@ Each entry must include:
   matching MPK and VDCores baseline rows under the same Qwen3-8B policies, and
   either rerun or explicitly waive A100 vLLM runtime validation for this
   H200-only baseline path.
+
+### 2026-06-01 - MPK Native Token Viewer Import
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned MPK native
+  H200 bring-up normalization, viewer import, and command-plan contract fix.
+- Exact Codex command or script invocation: normalized
+  `tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json`
+  with `mpk_native_token_capture.py`, imported the generated raw result through
+  `paper_baseline_results_update.py`, regenerated `serving_command_plan.json`
+  with `paper_serving_command_plan.py`, and refreshed derived review artifacts
+  with `refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, MPK paper-baseline
+  bring-up evidence.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation skill script/docs,
+  benchmark-viewer result data, serving workload/run contracts, generated
+  review data, changelog docs, dispatch log, tests, and local `tmp/` MPK native
+  artifacts. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The imported row is native torch bring-up evidence only. It is not MPK
+  persistent-kernel evidence and does not satisfy the full Qwen3-8B MPK paper
+  serving workload.
+- Verification commands and results: `validate_benchmark_viewer_data.py` ->
+  passed; `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed;
+  `pytest tests/ut/py/test_nvidia_review_artifacts.py -q` -> `40 passed`;
+  `jq empty` over viewer data and MPK generated artifacts -> passed;
+  `py_compile` for `mpk_native_token_capture.py` and
+  `paper_serving_command_plan.py` -> passed; `git diff --check` -> passed.
+  The imported viewer row records `prompt_tokens=39`, `decode_tokens=2`,
+  `end_to_end_latency_ns=476397766`, `time_per_output_token_ns=238198883`,
+  and `throughput_tokens_per_s=4.198172499406724`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the viewer now exposes the MPK native
+  Qwen3-0.6B H200 bring-up artifact without attaching it to the full MPK paper
+  ladder. The MPK persistent-kernel path remains the paper-critical blocker,
+  and LLM-serving paper readiness still needs same-workload MPK persistent,
+  VDCores, vLLM, SGLang, ThunderKittens-family, and PTO rows.

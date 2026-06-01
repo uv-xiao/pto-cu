@@ -59,6 +59,64 @@
       }
     },
     {
+      "id": "mpk_qwen3_native_token_bringup",
+      "paper_baseline_id": "mpk",
+      "paper_evaluation_id": "llm_serving_paper_baselines",
+      "title": "MPK Native Qwen3 Token Bring-Up",
+      "status": "imported_to_viewer",
+      "hardware_targets": [
+        "H200"
+      ],
+      "serving_workload_ids": [
+        "mpk_native_qwen3_0p6b_token2_bringup"
+      ],
+      "serving_command_kinds": [
+        "native_demo"
+      ],
+      "workload": {
+        "model": "Qwen/Qwen3-0.6B bring-up",
+        "input_policy": "MPK native demo prompt with tokenizer-observed prompt length recorded in the raw artifact",
+        "output_policy": "bounded deterministic native torch decode with generated token count recorded",
+        "batch_or_concurrency": "single-request native torch bring-up; not a persistent-kernel paper result"
+      },
+      "model_access": {
+        "requires_hf_token": false,
+        "public_models": [
+          "Qwen/Qwen3-0.6B"
+        ],
+        "why": "The MPK native bring-up uses public Qwen model artifacts from the H200 cache."
+      },
+      "setup_commands": [
+        "cd tmp/baselines/mirage-mpk",
+        "python -m pip install -r requirements.txt",
+        "python setup.py develop"
+      ],
+      "run_commands": [
+        "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --model Qwen/Qwen3-0.6B --max-new-tokens 2 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --save-tokens ../../cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json",
+        "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/mpk_native_token_capture.py --input tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json --output tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2-paper-results.json --machine <h200-host> --pto-commit <pto-commit>"
+      ],
+      "expected_artifacts": [
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.log",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2-paper-results.json",
+        "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2-viewer-result-records.json"
+      ],
+      "required_metrics": [
+        "correctness",
+        "end_to_end_latency",
+        "inter_token_latency",
+        "throughput",
+        "model_and_prompt_shape",
+        "batch_or_concurrency_policy",
+        "raw_artifacts"
+      ],
+      "import_target": {
+        "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+        "result_kind": "paper_baseline_result_record",
+        "notes": "Importer must preserve this as a native torch bring-up row and not treat it as MPK persistent-kernel paper evidence."
+      }
+    },
+    {
       "id": "vdcores_llama_decode_correctness",
       "paper_baseline_id": "vdcores",
       "paper_evaluation_id": "llm_serving_paper_baselines",
