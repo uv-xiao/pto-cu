@@ -63,3 +63,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-30.md](entries/2026-06-02-part-30.md) | 1 | CUDA Example Manifest Split | CUDA Example Manifest Split |
 | [2026-06-02-part-31.md](entries/2026-06-02-part-31.md) | 1 | Paper Readiness Audit Script Split | Paper Readiness Audit Script Split |
 | [2026-06-02-part-32.md](entries/2026-06-02-part-32.md) | 1 | Paper Baseline Run Readiness Script Split | Paper Baseline Run Readiness Script Split |
+| [2026-06-02-part-33.md](entries/2026-06-02-part-33.md) | 1 | Paper Baseline Probe Script Split | Paper Baseline Probe Script Split |
