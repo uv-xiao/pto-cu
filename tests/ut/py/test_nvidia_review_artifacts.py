@@ -460,6 +460,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["qwen_serving_lifecycle_scaffold"]["status"] == "pass"
     assert checks["qwen_serving_lifecycle_plan"]["status"] == "pass"
     assert checks["qwen_prompt_accounting"]["status"] == "pass"
+    assert checks["qwen_weight_inventory"]["status"] == "pass"
     assert checks["qwen3_8b_full_serving_rows_imported"]["status"] == "fail"
     assert checks["qwen_model_loader_or_token_loop"]["status"] == "fail"
     lifecycle = preflight["serving_lifecycle"]
@@ -470,6 +471,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
         == "pto_qwen_persistent_serving_lifecycle_plan"
     )
     assert lifecycle["prompt_accounting"]["kind"] == "pto_qwen_prompt_accounting"
+    assert lifecycle["weight_inventory"]["kind"] == "pto_qwen_weight_inventory"
     assert {
         "qwen_tokenizer",
         "qwen_weight_loader",
@@ -519,7 +521,7 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     assert stages["persistent_dag_codegen"]["status"] == "pass"
     assert stages["qwen_serving_lifecycle_plan"]["status"] == "pass"
     assert stages["qwen_tokenizer"]["status"] == "partial"
-    assert stages["qwen_weight_loader"]["status"] == "missing"
+    assert stages["qwen_weight_loader"]["status"] == "partial"
     assert stages["kv_cache_lifecycle"]["status"] == "partial"
     assert stages["decode_loop_runner"]["status"] == "missing"
 
@@ -604,6 +606,75 @@ def test_persistent_qwen_prompt_accounting_is_reviewable(tmp_path):
     assert "decode_loop_consumes_token_ids" in accounting["remaining_runtime_gaps"]
 
 
+def test_persistent_qwen_weight_inventory_is_reviewable(tmp_path):
+    index = tmp_path / "model.safetensors.index.json"
+    index.write_text(
+        json.dumps(
+            {
+                "metadata": {"total_size": 123456},
+                "weight_map": {
+                    "model.embed_tokens.weight": "model-00001-of-00002.safetensors",
+                    "model.layers.0.self_attn.q_proj.weight": (
+                        "model-00001-of-00002.safetensors"
+                    ),
+                    "model.layers.0.self_attn.k_proj.weight": (
+                        "model-00001-of-00002.safetensors"
+                    ),
+                    "model.layers.0.self_attn.v_proj.weight": (
+                        "model-00001-of-00002.safetensors"
+                    ),
+                    "model.layers.0.self_attn.o_proj.weight": (
+                        "model-00001-of-00002.safetensors"
+                    ),
+                    "model.layers.0.mlp.gate_proj.weight": (
+                        "model-00002-of-00002.safetensors"
+                    ),
+                    "model.layers.0.mlp.up_proj.weight": (
+                        "model-00002-of-00002.safetensors"
+                    ),
+                    "model.layers.0.mlp.down_proj.weight": (
+                        "model-00002-of-00002.safetensors"
+                    ),
+                    "model.norm.weight": "model-00002-of-00002.safetensors",
+                    "lm_head.weight": "model-00002-of-00002.safetensors",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "qwen-weight-inventory.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/cuda/qwen_weight_inventory.py",
+            "--index-json",
+            str(index),
+            "--output-json",
+            str(output),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    inventory = json.loads(output.read_text(encoding="utf-8"))
+    assert inventory["kind"] == "pto_qwen_weight_inventory"
+    assert inventory["status"] == "partial_inventory"
+    assert inventory["model_id"] == "Qwen/Qwen3-8B"
+    assert inventory["tensor_count"] == 10
+    assert inventory["shard_count"] == 2
+    groups = {item["id"]: item for item in inventory["binding_groups"]}
+    assert groups["embedding"]["tensor_count"] == 1
+    assert groups["attention_qkv_o"]["tensor_count"] == 4
+    assert groups["mlp_gate_up_down"]["tensor_count"] == 3
+    assert groups["norm_and_logits"]["tensor_count"] == 2
+    assert "safetensors_tensor_open" in inventory["remaining_runtime_gaps"]
+    assert "cuda_device_weight_binding" in inventory["remaining_runtime_gaps"]
+
+
 def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     matrix = json.loads(
         (
@@ -630,13 +701,19 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-scaffold-b95ff321/qwen-serving-scaffold.json"
+        == "tmp/cuda-backend/pto-serving-weights-edbd4390/qwen-weight-inventory.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-preflight-b95ff321/pto-serving-preflight.json"
+        == "tmp/cuda-backend/pto-serving-scaffold-edbd4390/qwen-serving-scaffold.json"
+        for ref in claim["current_evidence_refs"]
+    )
+    assert any(
+        ref.get("kind") == "raw_artifact"
+        and ref.get("path")
+        == "tmp/cuda-backend/pto-serving-preflight-edbd4390/pto-serving-preflight.json"
         for ref in claim["current_evidence_refs"]
     )
     pto_gap = next(
@@ -651,7 +728,9 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "persistent_qwen_serving_scaffold",
         "qwen_serving_lifecycle_plan",
         "qwen_prompt_accounting",
-        "safetensors weight loading",
+        "qwen_weight_inventory",
+        "safetensors tensor open",
+        "CUDA weight binding",
         "partial KV-cache lifecycle plan",
         "decode-loop execution",
     ]:

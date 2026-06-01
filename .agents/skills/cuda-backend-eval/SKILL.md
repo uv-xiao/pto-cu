@@ -421,6 +421,16 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-tokenizer-$(git rev-parse --short HEAD)/qwen-prompt-accounting.json
 ```
 
+Use `examples/cuda/qwen_weight_inventory.py` to capture Qwen/Qwen3-8B
+safetensors shard and tensor binding groups before implementing real tensor
+open and CUDA device binding:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_weight_inventory.py \
+    --output-json tmp/cuda-backend/pto-serving-weights-$(git rev-parse --short HEAD)/qwen-weight-inventory.json
+```
+
 Use `paper_baseline_run_readiness.py` before spending H200 time on planned
 paper-baseline runs. It does not execute long baselines; it records source
 path, reproduction-command presence, Python entrypoints, expected artifact,

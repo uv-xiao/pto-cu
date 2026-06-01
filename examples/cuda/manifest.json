@@ -79,6 +79,22 @@
         "chat_prompt_tokens",
         "padding_or_regeneration_required"
       ]
+    },
+    {
+      "id": "qwen_weight_inventory",
+      "title": "Qwen Weight Inventory",
+      "script": "examples/cuda/qwen_weight_inventory.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_weight_inventory.py --output-json tmp/cuda-backend/pto-serving-weights/qwen-weight-inventory.json",
+      "expected_output": "command exits 0; output JSON records safetensors shard count, tensor count, binding groups, total size, and the remaining tensor-open and CUDA weight-binding gaps.",
+      "evidence_symbols": [
+        "pto_qwen_weight_inventory",
+        "binding_groups",
+        "safetensors_tensor_open",
+        "cuda_device_weight_binding"
+      ]
     }
   ]
 }

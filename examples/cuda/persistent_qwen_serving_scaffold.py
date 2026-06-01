@@ -16,6 +16,7 @@ VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 TARGET_WORKLOAD_IDS = {"mpk_offline_decode", "vdcores_offline_decode"}
 LIFECYCLE_PLAN = ROOT / "examples" / "cuda" / "qwen_serving_lifecycle_plan.py"
 PROMPT_ACCOUNTING = ROOT / "examples" / "cuda" / "qwen_prompt_accounting.py"
+WEIGHT_INVENTORY = ROOT / "examples" / "cuda" / "qwen_weight_inventory.py"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -72,6 +73,14 @@ def load_prompt_accounting() -> dict[str, Any]:
     )
 
 
+def load_weight_inventory() -> dict[str, Any]:
+    return load_python_payload(
+        WEIGHT_INVENTORY,
+        "qwen_weight_inventory",
+        "build_weight_inventory",
+    )
+
+
 def serving_workload_contracts() -> list[dict[str, Any]]:
     payload = load_json(VIEWER_DATA / "serving_workloads.json")
     workloads = []
@@ -117,6 +126,7 @@ def stage(
 def build_scaffold() -> dict[str, Any]:
     lifecycle_plan = load_lifecycle_plan()
     prompt_accounting = load_prompt_accounting()
+    weight_inventory = load_weight_inventory()
     persistent_abi_ready = text_contains(
         "src/cuda/platform/include/host/pto_cuda_persistent_device_abi.h",
         ["PtoCudaPersistentDagTask", "tensor_args", "scalar_args"],
@@ -190,9 +200,14 @@ def build_scaffold() -> dict[str, Any]:
             title="Qwen weight loader",
             owner="pto_serving_host",
             required_for_full_serving=True,
-            status="missing",
-            evidence="none",
-            next_action="Load Qwen/Qwen3-8B tensors and bind them to persistent-device task args.",
+            status="partial"
+            if weight_inventory.get("kind") == "pto_qwen_weight_inventory"
+            else "missing",
+            evidence="examples/cuda/qwen_weight_inventory.py",
+            next_action=(
+                "Open safetensors shards, validate tensor shapes/dtypes, "
+                "and bind device weights to persistent-device task args."
+            ),
         ),
         stage(
             stage_id="kv_cache_lifecycle",
@@ -243,6 +258,7 @@ def build_scaffold() -> dict[str, Any]:
         "serving_workloads": serving_workload_contracts(),
         "lifecycle_plan": lifecycle_plan,
         "prompt_accounting": prompt_accounting,
+        "weight_inventory": weight_inventory,
         "stages": stages,
         "missing_stage_ids": [item["id"] for item in missing],
         "next_action": (

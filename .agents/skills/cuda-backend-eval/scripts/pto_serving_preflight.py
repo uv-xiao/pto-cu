@@ -202,6 +202,18 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_weight_inventory",
+            "status": "pass"
+            if serving_scaffold.get("weight_inventory", {}).get("kind")
+            == "pto_qwen_weight_inventory"
+            else "fail",
+            "evidence": "examples/cuda/qwen_weight_inventory.py",
+            "why": (
+                "Repo-owned safetensors inventory maps Qwen3-8B shards and "
+                "weight groups before runtime tensor binding."
+            ),
+        },
+        {
             "id": "qwen_model_loader_or_token_loop",
             "status": "fail",
             "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",
