@@ -421,8 +421,8 @@ def build_preflight() -> dict[str, Any]:
             "why": (
                 "Repo-owned task-body source generation renders Qwen "
                 "persistent-device callables through the existing persistent "
-                "DAG source generator and records token, KV-cache, and "
-                "weight tensor-arg field consumption."
+                "DAG source generator and records token, mutable KV-cache, "
+                "and weight tensor-arg field consumption."
             ),
         },
         {

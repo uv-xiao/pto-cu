@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import ctypes
 import json
+from pathlib import Path
 
 import pytest
 
@@ -27,6 +28,9 @@ from simpler_setup.cuda_callable_compiler import (
     default_cuda_persistent_cache_root,
     render_persistent_dag_source,
 )
+
+
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_render_cuda_task_wrappers_share_one_task_body_between_runtimes():
@@ -268,7 +272,7 @@ def test_render_persistent_dag_source_includes_third_tensor_descriptor():
         ]
     )
 
-    assert "const float *c;" in source
+    assert "float *c;" in source
     assert "task->c[i]" in source
 
 
@@ -283,9 +287,49 @@ def test_render_persistent_dag_source_includes_fourth_tensor_descriptor():
         ]
     )
 
-    assert "const float *c;" in source
-    assert "const float *d;" in source
+    assert "float *c;" in source
+    assert "float *d;" in source
     assert "task->d[i]" in source
+
+
+def test_render_persistent_dag_source_allows_mutable_kv_cache_fields():
+    source = render_persistent_dag_source(
+        [
+            CudaPersistentTaskFunction(
+                func_id=11,
+                name="kv_writeback_f32",
+                body=(
+                    "task->c[i] = task->a[i]; "
+                    "task->d[i] = task->b[i]; "
+                    "task->out[i] = task->c[i] + task->d[i];"
+                ),
+            )
+        ]
+    )
+
+    assert "float *c;" in source
+    assert "float *d;" in source
+    assert "const float *c;" not in source
+    assert "const float *d;" not in source
+    assert "task->c[i] = task->a[i]" in source
+    assert "task->d[i] = task->b[i]" in source
+
+
+def test_persistent_dag_c_header_allows_mutable_kv_cache_fields():
+    header = (
+        ROOT
+        / "src"
+        / "cuda"
+        / "platform"
+        / "include"
+        / "host"
+        / "pto_cuda_persistent_device_abi.h"
+    ).read_text(encoding="utf-8")
+
+    assert "float *c;" in header
+    assert "float *d;" in header
+    assert "const float *c;" not in header
+    assert "const float *d;" not in header
 
 
 def test_render_persistent_dag_source_includes_generic_argument_slots():

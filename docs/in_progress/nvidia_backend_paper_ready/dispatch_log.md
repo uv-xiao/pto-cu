@@ -4534,8 +4534,9 @@ Follow-up tracked-state closure after user confirmation:
   benchmark-viewer data, in-progress evaluation docs, changelog docs,
   dispatch log, and tests. No upstream repositories were edited or pushed.
 - Dependencies and blocked assumptions: source-level task bodies prove field
-  consumption only. The current persistent DAG ABI exposes `c` and `d` as
-  `const float *`, so mutable KV-cache writeback remains unresolved.
+  consumption only. The persistent DAG ABI now exposes mutable `c` and `d`
+  fields, but numerical Qwen correctness and live decode execution remain
+  unresolved.
 - Verification commands and results: focused TDD test first failed because
   `examples/cuda/qwen_persistent_task_bodies.py` did not exist; after
   implementation the artifact reported `status=generated_task_bodies_ready`,
@@ -4545,6 +4546,38 @@ Follow-up tracked-state closure after user confirmation:
 - Handoff summary and remaining gaps: the branch now proves generated Qwen
   task-body source through the existing persistent DAG source generator and
   records token, KV-cache, and weight argument field consumption. Remaining
-  PTO full-serving gaps are numerically correct Qwen kernels, mutable KV-cache
-  writeback ABI support, `cuda_live` decode-loop execution, and
-  viewer-result import.
+  PTO full-serving gaps are numerically correct Qwen kernels, `cuda_live`
+  decode-loop execution, and viewer-result import.
+
+### 2026-06-01 - Mutable KV-Cache Persistent DAG ABI
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned ABI update
+  for mutable Qwen KV-cache fields in persistent DAG tasks.
+- Exact Codex command or script invocation:
+  `qwen_persistent_task_bodies.py --output-json
+  tmp/cuda-backend/pto-serving-task-bodies-2026-06-01/qwen-persistent-task-bodies.json
+  --output-source
+  tmp/cuda-backend/pto-serving-task-bodies-2026-06-01/qwen-persistent-task-bodies.cu`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA persistent-device ABI/codegen, CUDA examples,
+  CUDA evaluation scripts, benchmark-viewer data, in-progress evaluation docs,
+  changelog docs, dispatch log, and focused tests. No upstream repositories
+  were edited or pushed.
+- Dependencies and blocked assumptions: mutable `c` and `d` fields are now an
+  ABI/source-generation contract. This does not prove numerically correct Qwen
+  attention, nor does it execute a live decode loop.
+- Verification commands and results: focused TDD tests first failed while
+  generated source and the exported C header still declared `const float *c`
+  and `const float *d`; after implementation the focused codegen and Qwen
+  artifact tests passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves mutable KV-cache
+  field access in the persistent DAG ABI and generated Qwen task-body source.
+  Remaining PTO full-serving gaps are numerically correct Qwen kernels,
+  `cuda_live` decode-loop execution, and viewer-result import.

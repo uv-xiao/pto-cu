@@ -131,7 +131,7 @@ def lifecycle_payload(
             "cuda_live_token_pointer_table" if cuda_live else "dry_run_pointer_lifecycle",
         ],
         "remaining_runtime_gaps": [
-            "qwen_kernel_token_consumption",
+            "numerically_correct_qwen_token_consumption",
             "decode_loop_execution",
         ],
     }

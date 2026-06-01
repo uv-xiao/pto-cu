@@ -136,14 +136,14 @@ PYTHONPATH=$PWD:$PWD/python \
 ```
 
 Expected output: command exits 0; output JSON records generated
-persistent-device Qwen task bodies and token, KV-cache, and weight field
-consumption evidence.
+persistent-device Qwen task bodies and token, mutable KV-cache, and weight
+field consumption evidence.
 
 The artifact renders through the existing persistent DAG source generator.
 It is source-level integration evidence, not a numerically correct Qwen kernel
-implementation. The current ABI exposes `c` and `d` as `const float *`, so
-mutable KV-cache writeback remains a runtime ABI gap before `cuda_live`
-decode-loop execution.
+implementation. The persistent DAG ABI now exposes mutable `c` and `d`
+fields, so the artifact records KV-cache writeback field access before
+`cuda_live` decode-loop execution.
 
 ## Qwen Prompt Accounting
 

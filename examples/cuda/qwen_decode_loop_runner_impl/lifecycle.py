@@ -184,9 +184,7 @@ def build_decode_loop_runner(
             "output_token_accounting_plan",
         ],
         "remaining_runtime_gaps": [
-            "generated_qwen_kernel_bodies",
-            "qwen_kernel_token_consumption",
-            "qwen_kernel_kv_cache_consumption",
+            "numerically_correct_qwen_kernel_bodies",
             "cuda_live_decode_loop_execution",
             "viewer_result_import",
         ],

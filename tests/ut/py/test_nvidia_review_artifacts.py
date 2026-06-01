@@ -853,7 +853,7 @@ def test_qwen_kv_cache_binding_maps_key_value_fields():
     ]
     assert lifecycle["remaining_runtime_gaps"] == [
         "cuda_live_kv_cache_owner_in_decode_loop",
-        "qwen_kernel_kv_cache_consumption",
+        "numerically_correct_qwen_attention_kv_cache_use",
         "decode_loop_execution",
     ]
 
@@ -908,9 +908,7 @@ def test_qwen_decode_loop_runner_orders_resource_lifetimes():
     assert mpk["output_token_accounting"]["output_buffer"] == "output_ids"
     assert "decode_loop_owner_lifetime_order" in runner["implemented_contracts"]
     assert runner["remaining_runtime_gaps"] == [
-        "generated_qwen_kernel_bodies",
-        "qwen_kernel_token_consumption",
-        "qwen_kernel_kv_cache_consumption",
+        "numerically_correct_qwen_kernel_bodies",
         "cuda_live_decode_loop_execution",
         "viewer_result_import",
     ]
@@ -954,19 +952,22 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     assert {"key_cache", "value_cache"} <= set(qkv["consumes_roles"])
     assert manifest["coverage"]["token_fields"] == ["a", "b", "out"]
     assert manifest["coverage"]["kv_fields"] == ["c", "d"]
-    assert manifest["coverage"]["kv_write_policy"] == (
-        "current_abi_exposes_c_d_as_const_float_pointers"
-    )
+    assert manifest["coverage"]["kv_write_policy"] == "mutable_kv_fields_ready"
     assert manifest["coverage"]["weight_fields"] == ["tensor_args"]
     source = manifest["rendered_source"]["preview"]
     assert "__device__ void pto_task_qwen_attention_qkv" in source
     assert "task->c" in source
     assert "task->d" in source
+    assert "task->c[kv_index] =" in source
+    assert "task->d[kv_index] =" in source
     assert "task->tensor_args[0]" in source
     assert "generated_qwen_kernel_bodies" in manifest["implemented_contracts"]
+    assert (
+        "qwen_kernel_kv_cache_writeback_field_contract"
+        in manifest["implemented_contracts"]
+    )
     assert manifest["remaining_runtime_gaps"] == [
         "numerically_correct_qwen_kernel_bodies",
-        "mutable_kv_cache_writeback_abi",
         "cuda_live_decode_loop_execution",
         "viewer_result_import",
     ]
@@ -1219,7 +1220,10 @@ def test_qwen_persistent_decode_args_bind_token_pointer_roles(tmp_path):
     assert "decode_loop_consumes_token_ids" not in manifest[
         "remaining_runtime_gaps"
     ]
-    assert "qwen_kernel_token_consumption" in manifest["remaining_runtime_gaps"]
+    assert (
+        "numerically_correct_qwen_token_consumption"
+        in manifest["remaining_runtime_gaps"]
+    )
 
 
 def test_qwen_token_pointer_table_materializes_decode_args_during_lifetime():
@@ -1262,7 +1266,7 @@ def test_qwen_token_pointer_table_materializes_decode_args_during_lifetime():
     }
     assert "live_token_pointer_table_owner" in lifecycle["implemented_contracts"]
     assert lifecycle["remaining_runtime_gaps"] == [
-        "qwen_kernel_token_consumption",
+        "numerically_correct_qwen_token_consumption",
         "decode_loop_execution",
     ]
 
@@ -2134,10 +2138,11 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
             "dry-run KV-cache key/value pointer binding",
             "persistent DAG c/d",
             "generated persistent-device Qwen task-body source",
-            "mutable KV-cache writeback ABI",
+            "mutable KV fields c/d",
             "decode-loop execution",
     ]:
         assert phrase in action
+    assert "mutable KV-cache writeback ABI" not in action
 
 
 def test_vdcores_scheduler_trace_keeps_diagnostic_scope_separate():

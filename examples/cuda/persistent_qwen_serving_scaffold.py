@@ -672,8 +672,8 @@ def build_scaffold() -> dict[str, Any]:
             evidence="examples/cuda/qwen_persistent_task_bodies.py",
             next_action=(
                 "Replace review-oriented task bodies with numerically correct "
-                "Qwen kernels and resolve mutable KV-cache writeback before "
-                "cuda_live decode-loop execution."
+                "Qwen kernels, then validate them in cuda_live decode-loop "
+                "execution."
             ),
         ),
         stage(

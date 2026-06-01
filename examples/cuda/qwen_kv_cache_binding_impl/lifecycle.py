@@ -166,7 +166,7 @@ def build_kv_cache_lifecycle(
         ],
         "remaining_runtime_gaps": [
             "cuda_live_kv_cache_owner_in_decode_loop",
-            "qwen_kernel_kv_cache_consumption",
+            "numerically_correct_qwen_attention_kv_cache_use",
             "decode_loop_execution",
         ],
     }

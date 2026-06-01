@@ -269,7 +269,7 @@ def build_decode_arg_manifest(
         "workload_decode_args": records,
         "implemented_contracts": implemented,
         "remaining_runtime_gaps": [
-            "qwen_kernel_token_consumption",
+            "numerically_correct_qwen_token_consumption",
             "decode_loop_execution",
         ],
     }

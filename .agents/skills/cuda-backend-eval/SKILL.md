@@ -433,8 +433,8 @@ PYTHONPATH=$PWD:$PWD/python \
 Use `examples/cuda/qwen_persistent_task_bodies.py` when reviewers need the
 repo-owned Qwen persistent task-body source manifest. The current artifact
 renders through the existing persistent DAG source generator and records token,
-KV-cache, and weight field consumption; it is not yet a numerically correct
-Qwen kernel implementation:
+mutable KV-cache, and weight field consumption; it is not yet a numerically
+correct Qwen kernel implementation:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

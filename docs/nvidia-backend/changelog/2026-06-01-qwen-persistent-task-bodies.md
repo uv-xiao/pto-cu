@@ -15,9 +15,8 @@
 
 The artifact uses the existing persistent DAG source generator instead of a
 separate source shape. It reports token field consumption through `a`, `b`,
-and `out`, KV-cache field consumption through `c` and `d`, and weight
-consumption through `tensor_args`. It also records that the current `c`/`d`
-ABI is `const float *`, so mutable KV-cache writeback remains unresolved.
+and `out`, KV-cache field consumption through mutable `c` and `d`, and weight
+consumption through `tensor_args`.
 
 ## Evaluation Run
 
@@ -34,10 +33,9 @@ qwen-persistent-task-bodies.cu
 
 Result: `status=generated_task_bodies_ready`, 10 rendered task bodies, and
 source sha256
-`89a292d05f63fa5a70442428f8329da114050e5bad8f3ee420bae6757c8f8875`.
+`92344f30355981ac7777320e8670377df614cff46b62917b70395f7171c90b4f`.
 
 ## Remaining Gaps
 
 - Replace source-level task bodies with numerically correct Qwen kernels.
-- Add mutable KV-cache writeback support for the persistent DAG `c`/`d` ABI.
 - Execute the `cuda_live` decode loop and import full-serving viewer rows.

@@ -636,8 +636,8 @@ struct PtoCudaPersistentDagTask {{
     unsigned long long a_batch_stride;
     unsigned long long b_batch_stride;
     unsigned long long out_batch_stride;
-    const float *c;
-    const float *d;
+    float *c;
+    float *d;
     const float *tensor_args[4];
     float scalar_args[4];
     unsigned int tensor_arg_count;

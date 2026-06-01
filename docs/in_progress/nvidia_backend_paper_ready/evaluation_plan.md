@@ -164,8 +164,9 @@ The task-body source artifact in
 task bodies through the existing persistent DAG source generator. It records
 source-level consumption of token fields `a`, `b`, and `out`, KV-cache fields
 `c` and `d`, and weight `tensor_args`. This is source-generation evidence,
-not a numerically correct Qwen kernel implementation; mutable KV-cache
-writeback is still blocked by the current `const float *` `c`/`d` ABI.
+not a numerically correct Qwen kernel implementation. The persistent DAG ABI
+now exposes mutable `c` and `d` fields, so the artifact also records
+KV-cache writeback field access.
 The persistent decode-argument artifact in
 `examples/cuda/qwen_persistent_decode_args.py` maps those token buffers onto
 the persistent DAG `a`, `b`, and `out` fields while preserving `tensor_args`
@@ -208,8 +209,8 @@ weight-argument manifest that fits the current ABI. It also proves a
 ctypes-backed materialization plan for the resident weight pointer table and a
 dry-run owner lifecycle that binds 399 pointers and frees them after
 materialization. The repo-owned PTO CUDA path still lacks numerically correct
-Qwen kernel bodies, mutable KV-cache writeback ABI support, `cuda_live`
-decode-loop execution, and `viewer_result_import`, so no PTO
+Qwen kernel bodies, `cuda_live` decode-loop execution, and
+`viewer_result_import`, so no PTO
 `Qwen/Qwen3-8B` full-serving row can be imported yet.
 Every serving baseline run record must reference one of these policy IDs and
 require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before

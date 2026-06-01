@@ -104,7 +104,7 @@
       "method_id": "pto_persistent_device",
       "runtime": "cuda/persistent_device",
       "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_task_bodies.py --output-json tmp/cuda-backend/pto-serving-task-bodies/qwen-persistent-task-bodies.json --output-source tmp/cuda-backend/pto-serving-task-bodies/qwen-persistent-task-bodies.cu",
-      "expected_output": "command exits 0; output JSON records generated persistent-device Qwen task bodies and token, KV-cache, and weight field consumption evidence.",
+      "expected_output": "command exits 0; output JSON records generated persistent-device Qwen task bodies and token, mutable KV-cache, and weight field consumption evidence.",
       "evidence_symbols": [
         "pto_qwen_persistent_task_bodies",
         "generated_qwen_kernel_bodies",

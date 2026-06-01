@@ -65,17 +65,26 @@ task->out[i] = task->a[i] * scale;
                 "attention_mask",
                 "key_cache",
                 "value_cache",
+                "key_cache_writeback",
+                "value_cache_writeback",
                 "q_proj_weight",
                 "k_proj_weight",
                 "v_proj_weight",
             ],
             "body": """
 const float mask = task->b ? task->b[i % task->n] : 1.0f;
-const float key = task->c ? task->c[i % task->n] : 0.0f;
-const float value = task->d ? task->d[i % task->n] : 0.0f;
+const unsigned long long kv_index = i % task->n;
+const float key = task->c ? task->c[kv_index] : 0.0f;
+const float value = task->d ? task->d[kv_index] : 0.0f;
 const float *q_proj = task->tensor_args[0];
 const float q = q_proj ? q_proj[i & 3U] : 0.0f;
 task->out[i] = task->a[i] + mask + key + value + q;
+if (task->c) {
+    task->c[kv_index] = task->a[i] + q;
+}
+if (task->d) {
+    task->d[kv_index] = task->out[i];
+}
 """,
         },
         {
@@ -210,7 +219,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
         "coverage": {
             "token_fields": ["a", "b", "out"],
             "kv_fields": ["c", "d"],
-            "kv_write_policy": "current_abi_exposes_c_d_as_const_float_pointers",
+            "kv_write_policy": "mutable_kv_fields_ready",
             "weight_fields": ["tensor_args"],
             "descriptor_source": "examples/cuda/qwen_persistent_weight_args.py",
             "decode_argument_source": "examples/cuda/qwen_persistent_decode_args.py",
@@ -232,11 +241,11 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "generated_qwen_kernel_bodies",
             "qwen_kernel_token_field_consumption",
             "qwen_kernel_kv_field_consumption",
+            "qwen_kernel_kv_cache_writeback_field_contract",
             "qwen_kernel_weight_tensor_arg_consumption",
         ],
         "remaining_runtime_gaps": [
             "numerically_correct_qwen_kernel_bodies",
-            "mutable_kv_cache_writeback_abi",
             "cuda_live_decode_loop_execution",
             "viewer_result_import",
         ],
