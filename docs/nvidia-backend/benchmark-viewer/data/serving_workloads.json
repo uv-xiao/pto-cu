@@ -3,7 +3,7 @@
     {
       "id": "mpk_offline_decode",
       "title": "MPK-Comparable Offline Decode",
-      "status": "policy_selected_no_results",
+      "status": "partial_controlled_results",
       "paper_source": {
         "paper": "Mirage Persistent Kernel",
         "evidence": "tmp/sources/arxiv-2512.22219v1-mirage-persistent-kernel.txt",
@@ -53,8 +53,8 @@
         "raw_artifacts"
       ],
       "current_blockers": [
-        "MPK, vLLM, and SGLang runtime packages still need full H200 setup and captured runs.",
-        "PTO CUDA does not yet have a serving-equivalent workload for this policy."
+        "PTO CUDA does not yet have a serving-equivalent workload for this policy.",
+        "MPK Qwen3-8B persistent evidence is imported only as a single batch=1 execution row with an asynchronous timing caveat; repeat the full batch ladder before using it for final latency-distribution claims."
       ],
       "evidence_refs": [
         {
@@ -71,6 +71,22 @@
             "--model",
             "Qwen/Qwen3-8B",
             "--max-new-tokens"
+          ]
+        },
+        {
+          "path": "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/paper-baseline-results.json",
+          "symbols": [
+            "mpk_qwen3_native_vs_persistent",
+            "decode_tokens=1024",
+            "mode=mpk_persistent"
+          ]
+        },
+        {
+          "path": "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.json",
+          "symbols": [
+            "latency_ms_per_token",
+            "prompt_length",
+            "generate_length"
           ]
         }
       ]
@@ -120,7 +136,7 @@
         "raw_artifacts"
       ],
       "current_blockers": [
-        "This workload is MPK native bring-up evidence only; MPK persistent-kernel paper evidence remains blocked."
+        "This workload is native torch bring-up evidence only; persistent-kernel paper evidence is tracked by mpk_offline_decode and mpk_qwen3_native_vs_persistent."
       ],
       "evidence_refs": [
         {

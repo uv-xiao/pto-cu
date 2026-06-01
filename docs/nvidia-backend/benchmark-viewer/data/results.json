@@ -6351,6 +6351,44 @@
       },
       "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/",
       "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "mpk",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90a",
+        "driver": "580.126.20",
+        "cuda_toolkit": "12.8 (compiler build 35404655_0)",
+        "clock_policy": "not pinned"
+      },
+      "commit": "072cc513",
+      "inputs": {
+        "shape": "mpk_offline_decode,Qwen/Qwen3-8B,batch=1,target_prompt_tokens=64,actual_prompt_tokens=39,decode_tokens=1024,mode=mpk_persistent",
+        "dtype": "bfloat16",
+        "repeat_policy": "single H200 MPK persistent-kernel sample; native torch control decoded 2 tokens; MPK demo reports one combined prefill+decode per-token timing and launches the persistent kernel asynchronously"
+      },
+      "statistic": {
+        "kind": "mpk_qwen3_persistent_decode_async_timing_caveat",
+        "sample_count": 1,
+        "host_wall_ns": 113216,
+        "device_wall_ns": 0,
+        "end_to_end_latency_ns": 113216,
+        "time_to_first_token_ns": 111,
+        "inter_token_latency_ns": 111,
+        "time_per_output_token_ns": 111,
+        "throughput_tokens_per_s": 9044657.998869417,
+        "last_gen_throughput_tokens_per_s": 9044657.998869417,
+        "prompt_tokens": 39,
+        "decode_tokens": 1024,
+        "completed_requests": 1,
+        "failed_requests": 0,
+        "max_concurrent_requests": 1,
+        "total_output_tokens": 1024
+      },
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/",
+      "correctness": "pass"
     }
   ]
 }

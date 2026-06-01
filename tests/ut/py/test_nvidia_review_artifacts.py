@@ -1251,6 +1251,75 @@ def test_mpk_native_token_capture_builds_importable_record():
     assert result["correctness"] == "pass"
 
 
+def test_mpk_qwen3_persistent_capture_builds_caveated_viewer_result(tmp_path):
+    import importlib.util
+
+    script = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "mpk_qwen3_persistent_capture.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "mpk_qwen3_persistent_capture",
+        script,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    result = module.build_result_record(
+        persistent_payload={
+            "token_ids": [151667, 198, 32313],
+            "text": "decoded",
+            "prompt_length": 39,
+            "generate_length": 1024,
+            "latency_ms_per_token": 0.00011056249786633998,
+            "mode": "mpk",
+        },
+        persistent_path=tmp_path / "persistent.json",
+        native_payload={
+            "token_ids": [151667, 198],
+            "text": "decoded",
+            "prompt_length": 39,
+            "generate_length": 2,
+            "latency_ms_per_token": 52.96201705932617,
+            "mode": "torch",
+        },
+        native_path=tmp_path / "native.json",
+        model="Qwen/Qwen3-8B",
+        machine="bizhaoh200",
+        gpu="H200",
+        raw_gpu_name="NVIDIA H200 NVL",
+        driver="580.126.20",
+        compute_target="compute_90a",
+        cuda_toolkit="12.8",
+        dtype="bfloat16",
+        clock_policy="not pinned",
+    )
+
+    assert result["paper_baseline_run_id"] == "mpk_qwen3_native_vs_persistent"
+    assert result["benchmark_id"] == "llm_serving_decode"
+    assert result["inputs"]["shape"] == (
+        "mpk_offline_decode,Qwen/Qwen3-8B,batch=1,"
+        "target_prompt_tokens=64,actual_prompt_tokens=39,"
+        "decode_tokens=1024,mode=mpk_persistent"
+    )
+    assert "asynchronously" in result["inputs"]["repeat_policy"]
+    assert result["metrics"]["kind"] == (
+        "mpk_qwen3_persistent_decode_async_timing_caveat"
+    )
+    assert result["metrics"]["sample_count"] == 1
+    assert result["metrics"]["decode_tokens"] == 1024
+    assert result["metrics"]["time_to_first_token_ns"] > 0
+    assert result["metrics"]["inter_token_latency_ns"] > 0
+    assert result["metrics"]["throughput_tokens_per_s"] > 0
+    assert result["metrics"]["saved_debug_token_count"] == 3
+    assert result["correctness"] == "pass"
+
+
 def test_paper_baseline_results_update_marks_imported_run(tmp_path):
     raw = {
         "metadata": {
@@ -2614,11 +2683,11 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     llm_claim = by_id["llm_serving_paper_baselines"]
     assert not llm_claim["ready_for_paper_claim"]
     assert llm_claim["matrix_status"] == "partial_current_capture"
-    assert any(
+    assert not any(
         "mpk_qwen3_native_vs_persistent is planned_not_run" in blocker
         for blocker in llm_claim["blockers"]
     )
-    assert any(
+    assert not any(
         "MPK persistent-kernel" in blocker for blocker in llm_claim["blockers"]
     )
     assert not any(
@@ -2654,10 +2723,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         item["paper_baseline_run_id"]
         for item in llm_claim["paper_baseline_run_readiness_statuses"]
     }
-    assert {
-        "mpk_qwen3_native_vs_persistent",
-        "vdcores_llama_decode_correctness",
-    } <= llm_readiness_ids
+    assert "vdcores_llama_decode_correctness" in llm_readiness_ids
+    assert "mpk_qwen3_native_vs_persistent" not in llm_readiness_ids
     assert "vllm_serving_and_throughput" not in llm_readiness_ids
     assert "thunderkittens_decode_attention_tile" not in llm_readiness_ids
     assert not any(
@@ -2786,9 +2853,9 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 6
+    assert committed["summary"]["total_work_items"] == 5
     assert committed["summary"]["work_items_by_source"] == {
-        "matrix_missing_evidence": 5,
+        "matrix_missing_evidence": 4,
         "run_readiness": 1,
     }
     work_items = committed["work_items"]
@@ -2801,7 +2868,6 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     ]
     assert {item["missing_evidence_id"] for item in llm_items} == {
         "pto_full_serving_qwen3_8b",
-        "mpk_persistent_qwen3_8b",
         "vdcores_full_serving_qwen3_8b",
         "thunderkittens_full_serving_qwen3_8b",
     }
@@ -2887,7 +2953,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 6
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 5
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -3452,6 +3518,23 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 "model_and_prompt_shape",
                 "batch_or_concurrency_policy",
             } <= set(item["required_metrics"])
+        if item["id"] == "mpk_qwen3_native_vs_persistent":
+            assert item["status"] == "imported_to_viewer"
+            assert item["serving_workload_ids"] == ["mpk_offline_decode"]
+            assert "Qwen/Qwen3-8B" in item["workload"]["model"]
+            assert "batch=1 imported" in item["workload"]["batch_or_concurrency"]
+            assert any(
+                "mpk_qwen3_persistent_capture.py" in command
+                for command in item["run_commands"]
+            )
+            assert any(
+                path.endswith("persistent-batch1-decode1024.json")
+                for path in item["expected_artifacts"]
+            )
+            assert any(
+                path.endswith("paper-baseline-results.json")
+                for path in item["expected_artifacts"]
+            )
         if item["id"] == "mpk_qwen3_native_token_bringup":
             assert item["paper_evaluation_id"] == "llm_serving_paper_baselines"
             assert item["status"] == "imported_to_viewer"
@@ -3701,6 +3784,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mpk_qwen3_0p6b_bounded_profile_diagnostic_h200",
         "mpk_qwen3_0p6b_profile_noop_diagnostic_h200",
         "mpk_qwen3_0p6b_profile_termination_diagnostic_h200",
+        "mpk_qwen3_8b_persistent_decode1024_h200",
         "vdcores_qwen3_1p7b_dry_build_h200",
         "vdcores_qwen3_1p7b_correctness_hf_timeout_h200",
         "vdcores_qwen3_1p7b_selected_runtime_rebuild_h200",
@@ -3739,6 +3823,20 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     assert mpk_native_import["summary"]["viewer_rows_imported"] == 1
     assert not mpk_native_import["summary"]["persistent_kernel_evidence"]
+    mpk_qwen3_8b = attempts_by_id["mpk_qwen3_8b_persistent_decode1024_h200"]
+    assert mpk_qwen3_8b["status"] == "pass"
+    assert mpk_qwen3_8b["paper_baseline_run_id"] == (
+        "mpk_qwen3_native_vs_persistent"
+    )
+    assert mpk_qwen3_8b["summary"]["model"] == "Qwen/Qwen3-8B"
+    assert mpk_qwen3_8b["summary"]["decode_tokens"] == 1024
+    assert mpk_qwen3_8b["summary"]["persistent_kernel_evidence"]
+    assert mpk_qwen3_8b["summary"]["viewer_result_imported"]
+    assert "asynchronous" in mpk_qwen3_8b["summary"]["latency_scope"]
+    assert any(
+        artifact.endswith("persistent-batch1-decode1024.json")
+        for artifact in mpk_qwen3_8b["artifacts"]
+    )
     environment_attempts = paper_baseline_environment_attempts[
         "paper_baseline_environment_attempts"
     ]
@@ -4860,9 +4958,6 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert isinstance(item["blocking_gaps"], list)
         if item["latest_status"] != "pass":
             assert item["blocking_gaps"]
-    assert readiness_by_run["mpk_qwen3_native_vs_persistent"][
-        "latest_status"
-    ] == "pass"
     assert not any(
         "HF_TOKEN" in gap
         for gap in readiness_by_run[
@@ -5031,6 +5126,15 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert any(
                 ref.get("kind") == "viewer_result"
                 and ref.get("benchmark_id") == "llm_serving_decode"
+                and ref.get("method_id") == "mpk"
+                and ref.get("gpu") == "H200"
+                and ref.get("shape_contains")
+                == "mpk_offline_decode,Qwen/Qwen3-8B"
+                for ref in item["current_evidence_refs"]
+            )
+            assert any(
+                ref.get("kind") == "viewer_result"
+                and ref.get("benchmark_id") == "llm_serving_decode"
                 and ref.get("method_id") == "vllm"
                 and ref.get("gpu") == "H200"
                 and ref.get("shape_contains")
@@ -5069,6 +5173,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
             )
             assert any(
                 ref.get("path")
+                == "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/"
+                for ref in item["current_evidence_refs"]
+            )
+            assert any(
+                ref.get("path")
                 == "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/"
                 for ref in item["current_evidence_refs"]
             )
@@ -5088,6 +5197,14 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert not any(
                 "SGLang MPK-policy" in gap for gap in item["missing_evidence"]
             )
+            assert not any(
+                "MPK persistent-kernel" in gap
+                for gap in item["missing_evidence"]
+            )
+            missing_detail_ids = {
+                detail["id"] for detail in item["missing_evidence_details"]
+            }
+            assert "mpk_persistent_qwen3_8b" not in missing_detail_ids
 
     assert paper_readiness_audit["overall_status"] == "not_paper_ready"
     assert paper_readiness_audit["ready_claims"] == 2

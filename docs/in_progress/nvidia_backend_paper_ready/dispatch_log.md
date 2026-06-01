@@ -3433,3 +3433,42 @@ Follow-up tracked-state closure after user confirmation:
   full-serving gaps are MPK persistent-kernel, VDCores full serving, SGLang
   MPK-policy, ThunderKittens-family full serving, and PTO full serving under
   the shared Qwen3-8B policies.
+
+### 2026-06-01 - MPK Qwen3 8B Persistent Import
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned MPK H200
+  persistent-kernel capture import.
+- Exact Codex command or script invocation: tree-synced the standalone repo to
+  `bizhaoh200`, ran native torch and MPK persistent `Qwen/Qwen3-8B` token
+  captures in offline Hugging Face mode, copied artifacts back under
+  `tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/`, added
+  `mpk_qwen3_persistent_capture.py`, imported the normalized raw JSON through
+  `paper_baseline_results_update.py`, then regenerated review artifacts with
+  `refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, MPK serving evidence for
+  the paper-readiness matrix.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, CUDA evaluation helper
+  script, changelog docs, dispatch log, and tests. No upstream repositories
+  were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The MPK demo reports one combined prefill+decode per-token timing around
+  asynchronous persistent-kernel launch, so the imported row is execution
+  coverage with a latency caveat, not a final latency-distribution claim.
+- Verification commands and results: `validate_benchmark_viewer_data.py` ->
+  passed; `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed;
+  `pytest tests/ut/py/test_nvidia_review_artifacts.py -q` -> `41 passed`;
+  `jq empty docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `py_compile mpk_qwen3_persistent_capture.py` -> passed; `git diff --check`
+  -> passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: MPK persistent Qwen3-8B is no longer a
+  matrix missing-evidence item. Remaining work items are PTO persistent-device
+  full serving, VDCores full serving plus its `HF_TOKEN` readiness blocker,
+  ThunderKittens-family full serving, and the official ThunderKittens upstream
+  tensor-core sweep gaps.

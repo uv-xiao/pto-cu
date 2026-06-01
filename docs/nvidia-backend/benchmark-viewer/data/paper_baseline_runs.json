@@ -5,7 +5,7 @@
       "paper_baseline_id": "mpk",
       "paper_evaluation_id": "llm_serving_paper_baselines",
       "title": "MPK Qwen3 Native Versus Persistent Kernel",
-      "status": "planned_not_run",
+      "status": "imported_to_viewer",
       "hardware_targets": [
         "H200"
       ],
@@ -16,7 +16,7 @@
         "model": "Qwen/Qwen3-8B primary, Qwen/Qwen3-1.7B bring-up",
         "input_policy": "mpk_offline_decode prompt policy: target 64 prompt tokens with actual tokenizer count recorded",
         "output_policy": "mpk_offline_decode output policy: deterministic greedy decode up to 1024 tokens",
-        "batch_or_concurrency": "offline batched inference; maximum batch sizes 1,2,4,8,16"
+        "batch_or_concurrency": "offline single-request MPK persistent-kernel decode; batch=1 imported for Qwen/Qwen3-8B, wider batch ladder remains part of future paper-grade serving sweeps"
       },
       "model_access": {
         "requires_hf_token": false,
@@ -32,15 +32,28 @@
         "python setup.py develop"
       ],
       "run_commands": [
-        "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py",
-        "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --use-mirage",
-        "cd tmp/baselines/mirage-mpk && python demo/qwen3/demo.py --use-mirage --profiling"
+        "tree-sync standalone pto-cu to bizhaoh200:/data/shibizhao/pto-cu without pushing upstream",
+        "CUDA_VISIBLE_DEVICES=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python tmp/baselines/mirage-mpk/demo/qwen3/demo.py --model Qwen/Qwen3-8B --prompt ... --max-new-tokens 2 --max-seq-length 128 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --temperature 0 --save-tokens native-token2.json",
+        "CUDA_VISIBLE_DEVICES=0 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python tmp/baselines/mirage-mpk/demo/qwen3/demo.py --model Qwen/Qwen3-8B --use-mirage --prompt ... --max-new-tokens 1024 --max-seq-length 1063 --max-num-batched-requests 1 --max-num-batched-tokens 1 --ignore-eos --temperature 0 --save-tokens persistent-batch1-decode1024.json",
+        "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/mpk_qwen3_persistent_capture.py --artifact-dir tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513 --pto-commit 072cc513"
       ],
       "expected_artifacts": [
-        "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
-        "tmp/baselines/mirage-mpk command log",
-        "tmp/cuda-backend/paper-baselines/mpk/qwen3-native.json",
-        "tmp/cuda-backend/paper-baselines/mpk/qwen3-mpk.json"
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/attempt-summary.json",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/paper-baseline-results.json",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/viewer-result-records.json",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2-status.txt",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2.json",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2.log",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2-status.txt",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.json",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.json.predecode.json",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.log",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024-status.txt",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.json",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.json.predecode.json",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.log",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/pto-commit.txt",
+        "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/remote-refresh-path.txt"
       ],
       "required_metrics": [
         "correctness",
@@ -55,7 +68,7 @@
       "import_target": {
         "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
         "result_kind": "paper_baseline_result_record",
-        "notes": "Importer must normalize MPK native and persistent-kernel outputs into the shared LLM serving result schema."
+        "notes": "Importer normalizes the MPK Qwen3-8B persistent decode row into the shared LLM serving schema and labels the MPK demo latency as a single-sample asynchronous timing caveat."
       }
     },
     {

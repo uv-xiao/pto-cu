@@ -211,9 +211,9 @@
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
         "baseline_survey": 1,
-        "raw_artifact": 5,
+        "raw_artifact": 6,
         "viewer_data": 3,
-        "viewer_result": 6
+        "viewer_result": 7
       },
       "missing_evidence_count": 1,
       "missing_evidence_details": [
@@ -227,18 +227,6 @@
           "shape_contains": "Qwen/Qwen3-8B",
           "status": "missing",
           "action": "Import PTO persistent-device full-serving rows for Qwen/Qwen3-8B under both MPK-comparable and VDCores-comparable serving policies."
-        },
-        {
-          "id": "mpk_persistent_qwen3_8b",
-          "paper_baseline_id": "mpk",
-          "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
-          "method_id": "mpk",
-          "serving_workload_ids": [
-            "mpk_offline_decode"
-          ],
-          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
-          "status": "missing",
-          "action": "Run and import the MPK persistent-kernel Qwen/Qwen3-8B offline-decode row for the MPK-comparable serving policy."
         },
         {
           "id": "vdcores_full_serving_qwen3_8b",
@@ -271,15 +259,27 @@
         {
           "id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
-          "status": "planned_not_run",
+          "status": "imported_to_viewer",
           "serving_workload_ids": [
             "mpk_offline_decode"
           ],
           "expected_artifacts": [
-            "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
-            "tmp/baselines/mirage-mpk command log",
-            "tmp/cuda-backend/paper-baselines/mpk/qwen3-native.json",
-            "tmp/cuda-backend/paper-baselines/mpk/qwen3-mpk.json"
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/attempt-summary.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/paper-baseline-results.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/viewer-result-records.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2-status.txt",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2.log",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2-status.txt",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.json.predecode.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.log",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024-status.txt",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.json.predecode.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.log",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/pto-commit.txt",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/remote-refresh-path.txt"
           ]
         },
         {
@@ -375,41 +375,17 @@
       ],
       "paper_baseline_run_readiness_statuses": [
         {
-          "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
-          "paper_baseline_id": "mpk",
-          "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-84100fce/",
-          "blocking_gaps": [],
-          "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
-        },
-        {
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-84100fce/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-072cc513/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }
       ],
-      "execution_attempt_statuses": [
-        {
-          "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
-          "paper_baseline_id": "mpk",
-          "execution_attempt_id": "mpk_qwen3_0p6b_native_token2_h200",
-          "title": "MPK Qwen3 0.6B Native Bring-Up",
-          "status": "pass",
-          "artifact_root": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/",
-          "blocker": "",
-          "summary": {
-            "mode": "torch",
-            "prompt_length": 39,
-            "generate_length": 2,
-            "latency_ms_per_token": 238.19888305664062
-          }
-        }
-      ],
+      "execution_attempt_statuses": [],
       "probe_statuses": [
         {
           "paper_baseline_id": "mpk",
@@ -498,8 +474,7 @@
         }
       ],
       "blockers": [
-        "MPK persistent-kernel, VDCores full serving, ThunderKittens-family full serving, and PTO full-serving rows are not yet imported for the shared Qwen3-8B serving policies.",
-        "Paper baseline run mpk_qwen3_native_vs_persistent is planned_not_run, not imported_to_viewer.",
+        "PTO persistent-device full-serving, VDCores full serving, and ThunderKittens-family full serving rows are not yet imported for the shared Qwen3-8B serving policies.",
         "Paper baseline run vdcores_llama_decode_correctness is planned_not_run, not imported_to_viewer.",
         "Run readiness vdcores_llama_decode_correctness is partial: HF_TOKEN is not available for this run."
       ],
@@ -517,19 +492,6 @@
           "shape_contains": "Qwen/Qwen3-8B",
           "status": "missing",
           "action": "Import PTO persistent-device full-serving rows for Qwen/Qwen3-8B under both MPK-comparable and VDCores-comparable serving policies."
-        },
-        {
-          "source": "matrix_missing_evidence",
-          "missing_evidence_id": "mpk_persistent_qwen3_8b",
-          "paper_baseline_id": "mpk",
-          "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
-          "method_id": "mpk",
-          "serving_workload_ids": [
-            "mpk_offline_decode"
-          ],
-          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
-          "status": "missing",
-          "action": "Run and import the MPK persistent-kernel Qwen/Qwen3-8B offline-decode row for the MPK-comparable serving policy."
         },
         {
           "source": "matrix_missing_evidence",

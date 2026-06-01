@@ -20,6 +20,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 MPK profile no-op diagnostic](2026-06-01-mpk-profile-noop-diagnostic.md)
 - [2026-06-01 MPK profile termination diagnostic](2026-06-01-mpk-profile-termination-diagnostic.md)
 - [2026-06-01 MPK scheduler trace import](2026-06-01-mpk-scheduler-trace-import.md)
+- [2026-06-01 MPK Qwen3 8B persistent import](2026-06-01-mpk-qwen3-8b-persistent-import.md)
 - [2026-06-01 MPK native token viewer import](2026-06-01-mpk-native-token-viewer-import.md)
 - [2026-06-01 serving gap audit narrowing](2026-06-01-serving-gap-audit-narrowing.md)
 - [2026-06-01 serving work queue targets](2026-06-01-serving-work-queue-targets.md)
