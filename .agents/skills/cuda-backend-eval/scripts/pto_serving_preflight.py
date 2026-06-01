@@ -233,6 +233,24 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_persistent_decode_args",
+            "status": "pass"
+            if serving_scaffold.get("persistent_decode_args", {}).get(
+                "status"
+            )
+            in {
+                "persistent_decode_args_plan_ready",
+                "persistent_decode_args_ready",
+            }
+            else "fail",
+            "evidence": "examples/cuda/qwen_persistent_decode_args.py",
+            "why": (
+                "Repo-owned persistent decode argument binding maps token "
+                "device pointers onto the PtoCudaPersistentDagTask a/b/out "
+                "fields while preserving tensor_args for Qwen weights."
+            ),
+        },
+        {
             "id": "qwen_weight_inventory",
             "status": "pass"
             if serving_scaffold.get("weight_inventory", {}).get("kind")

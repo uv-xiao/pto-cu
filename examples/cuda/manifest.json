@@ -114,6 +114,22 @@
       ]
     },
     {
+      "id": "qwen_persistent_decode_args",
+      "title": "Qwen Persistent Decode Arguments",
+      "script": "examples/cuda/qwen_persistent_decode_args.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_decode_args.py --output-json tmp/cuda-backend/pto-serving-decode-args/qwen-persistent-decode-args.json",
+      "expected_output": "command exits 0; output JSON records how Qwen token device pointers bind to persistent DAG a/b/out fields while preserving tensor_args for weights.",
+      "evidence_symbols": [
+        "pto_qwen_persistent_decode_args",
+        "persistent_decode_token_arg_binding",
+        "base_pointer_fields_for_tokens",
+        "weight_tensor_args_preserved"
+      ]
+    },
+    {
       "id": "qwen_weight_inventory",
       "title": "Qwen Weight Inventory",
       "script": "examples/cuda/qwen_weight_inventory.py",

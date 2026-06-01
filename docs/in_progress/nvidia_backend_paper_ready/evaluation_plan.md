@@ -143,11 +143,16 @@ The CUDA token-buffer binding artifact in
 `examples/cuda/qwen_cuda_token_buffer_binding.py` now allocates those six
 paper-policy token buffers with the CUDA host runtime, copies host token data
 to device memory, verifies copy-back, and frees the temporary owner scope.
+The persistent decode-argument artifact in
+`examples/cuda/qwen_persistent_decode_args.py` maps those token buffers onto
+the persistent DAG `a`, `b`, and `out` fields while preserving `tensor_args`
+for Qwen weights.
 The current raw artifacts are
 `tmp/cuda-backend/pto-serving-lifecycle-b95ff321/qwen-serving-lifecycle-plan.json`,
 `tmp/cuda-backend/pto-serving-tokenizer-b95ff321/qwen-prompt-accounting.json`,
 `tmp/cuda-backend/pto-serving-input-binding-2026-06-01/qwen-runtime-input-binding.json`,
 `tmp/cuda-backend/pto-serving-token-buffer-2026-06-01/qwen-cuda-token-buffer-binding.json`,
+`tmp/cuda-backend/pto-serving-decode-args-2026-06-01/qwen-persistent-decode-args.json`,
 `tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json`,
 `tmp/cuda-backend/pto-serving-shards-a16851f6/qwen-safetensors-shards.json`,
 `tmp/cuda-backend/pto-serving-safetensors-a16851f6/qwen-safetensors-metadata.json`,
@@ -163,6 +168,7 @@ for PTO serving-equivalent evidence, plus a partial runtime plan for the
 Qwen3-8B KV-cache and task mapping, tokenizer-observed prompt counts, a
 host-side runtime token-buffer plan with padded target-length `input_ids` and
 `attention_mask`, CUDA token-buffer allocation/copy-back verification,
+persistent decode token argument binding through `a`, `b`, and `out`,
 safetensors shard/tensor inventory, and the expected weight shape/dtype
 contract. It also proves local Qwen shard placement and actual safetensors
 shape/dtype validation for 399 tensors across five shards, plus full CUDA
@@ -170,10 +176,10 @@ weight residency for all 399 tensors in a probe process and a persistent DAG
 weight-argument manifest that fits the current ABI. It also proves a
 ctypes-backed materialization plan for the resident weight pointer table and a
 dry-run owner lifecycle that binds 399 pointers and frees them after
-materialization. The repo-owned PTO CUDA path still lacks decode-loop
-consumption of those CUDA token buffers, `cuda_live` decode-loop integration
-for that owner, real CUDA allocation and binding for the planned KV-cache
-layout, generated Qwen kernel bodies, decode-loop execution, and
+materialization. The repo-owned PTO CUDA path still lacks live token pointer
+table ownership, Qwen kernel token consumption, `cuda_live` decode-loop
+integration for that owner, real CUDA allocation and binding for the planned
+KV-cache layout, generated Qwen kernel bodies, decode-loop execution, and
 `viewer_result_import`, so no PTO
 `Qwen/Qwen3-8B` full-serving row can be imported yet.
 Every serving baseline run record must reference one of these policy IDs and

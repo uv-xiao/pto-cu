@@ -4385,7 +4385,36 @@ Follow-up tracked-state closure after user confirmation:
 - Merge decision and merge commit: pending.
 - Handoff summary and remaining gaps: the branch now proves CUDA allocation
   and copy-back verification for paper-policy token buffers. The remaining PTO
-  full-serving gaps are decode-loop consumption of token device pointers,
-  `cuda_live` decode-loop integration for weights, KV-cache allocation and
-  binding, Qwen kernel generation, decode-loop execution, and viewer-result
-  import.
+  full-serving gap for token buffers is persistent decode argument binding,
+  which the following slice records.
+
+### 2026-06-01 - Qwen Persistent Decode Arguments
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned persistent
+  decode task-argument binding for Qwen/Qwen3-8B token buffers.
+- Exact Codex command or script invocation:
+  `qwen_persistent_decode_args.py --output-json
+  tmp/cuda-backend/pto-serving-decode-args-2026-06-01/qwen-persistent-decode-args.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the artifact records symbolic pointer
+  sources unless the decode-loop runner supplies a live token pointer table.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_persistent_decode_args.py` did not exist; after
+  implementation a fixture token pointer table produced
+  `status=persistent_decode_args_ready`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves token buffers map
+  to persistent DAG `a`, `b`, and `out` while Qwen weights keep `tensor_args`.
+  The remaining PTO full-serving gaps are live token pointer table ownership,
+  Qwen kernel token consumption, `cuda_live` decode-loop integration for
+  weights, KV-cache allocation and binding, Qwen kernel generation,
+  decode-loop execution, and viewer-result import.

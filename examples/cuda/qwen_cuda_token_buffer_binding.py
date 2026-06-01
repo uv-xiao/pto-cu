@@ -18,6 +18,7 @@ DEFAULT_HOST_RUNTIME = (
     ROOT / "build" / "lib" / "cuda" / "onboard" / "host_schedule" / "libhost_runtime.so"
 )
 
+
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n")
@@ -45,6 +46,7 @@ def load_runtime_input_binding(*, mode: str, cache_dir: Path | None) -> dict[str
     if cache_dir is not None:
         kwargs["cache_dir"] = cache_dir
     return module.build_runtime_input_binding(**kwargs)
+
 
 def device_buffer(record: dict[str, Any], name: str) -> dict[str, Any]:
     source = record[f"{name}_buffer"]
@@ -101,6 +103,7 @@ def workload_records(runtime_binding: dict[str, Any]) -> list[dict[str, Any]]:
             }
         )
     return records
+
 
 def copy_and_verify_buffer(
     *,
@@ -215,6 +218,7 @@ def run_cuda_probe(
         "verified_buffers": copied,
     }
 
+
 def build_cuda_token_buffer_binding(
     *,
     mode: str = "offline",
@@ -260,6 +264,7 @@ def build_cuda_token_buffer_binding(
         ),
     }
 
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -289,6 +294,7 @@ def main() -> None:
         print(repo_relative(args.output_json))
     else:
         print(json.dumps(payload, indent=2, sort_keys=False))
+
 
 if __name__ == "__main__":
     main()

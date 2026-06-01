@@ -36,7 +36,9 @@ verified six buffers, 94,208 bytes total, covering MPK `[16,64]`
 
 ## Remaining Gaps
 
-- Pass the CUDA token-buffer device pointers into the persistent decode loop.
+- Persistent decode argument binding is now tracked by
+  [2026-06-01 Qwen persistent decode arguments](2026-06-01-qwen-persistent-decode-args.md);
+  the decode-loop runner still needs to keep a live token pointer table open.
 - Bind real CUDA KV-cache buffers, run the resident weight table in
   `cuda_live` mode through DAG submission, generate Qwen kernels, execute the
   decode loop, and import full-serving viewer rows for `Qwen/Qwen3-8B`.

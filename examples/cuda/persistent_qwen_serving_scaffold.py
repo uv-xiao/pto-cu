@@ -22,6 +22,9 @@ RUNTIME_INPUT_BINDING = (
 CUDA_TOKEN_BUFFER_BINDING = (
     ROOT / "examples" / "cuda" / "qwen_cuda_token_buffer_binding.py"
 )
+PERSISTENT_DECODE_ARGS = (
+    ROOT / "examples" / "cuda" / "qwen_persistent_decode_args.py"
+)
 WEIGHT_INVENTORY = ROOT / "examples" / "cuda" / "qwen_weight_inventory.py"
 SAFETENSORS_FETCH = ROOT / "examples" / "cuda" / "qwen_safetensors_fetch.py"
 SAFETENSORS_METADATA = (
@@ -110,6 +113,14 @@ def load_cuda_token_buffer_binding() -> dict[str, Any]:
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module.build_cuda_token_buffer_binding(no_cuda_probe=True)
+
+
+def load_persistent_decode_args() -> dict[str, Any]:
+    return load_python_payload(
+        PERSISTENT_DECODE_ARGS,
+        "qwen_persistent_decode_args",
+        "build_decode_arg_manifest",
+    )
 
 
 def load_weight_inventory() -> dict[str, Any]:
@@ -235,6 +246,7 @@ def build_scaffold() -> dict[str, Any]:
     prompt_accounting = load_prompt_accounting()
     runtime_input_binding = load_runtime_input_binding()
     cuda_token_buffer_binding = load_cuda_token_buffer_binding()
+    persistent_decode_args = load_persistent_decode_args()
     weight_inventory = load_weight_inventory()
     safetensors_shards = load_safetensors_shards()
     safetensors_metadata = load_safetensors_metadata()
@@ -271,6 +283,7 @@ def build_scaffold() -> dict[str, Any]:
         runtime_input_binding.get("status") == "runtime_input_binding_plan_ready"
     )
     cuda_token_buffer_status = cuda_token_buffer_binding.get("status")
+    persistent_decode_args_status = persistent_decode_args.get("status")
     weight_next_action = (
         "Connect the resident weight table owner to the decode-loop runner and "
         "replace dry-run pointers with cuda_live table ownership."
@@ -417,8 +430,30 @@ def build_scaffold() -> dict[str, Any]:
             ),
             evidence="examples/cuda/qwen_cuda_token_buffer_binding.py",
             next_action=(
-                "Run the live CUDA token-buffer copy probe, then pass those "
-                "device buffers to the persistent decode loop."
+                "Keep CUDA token-buffer ownership open through persistent "
+                "decode argument binding."
+            ),
+        ),
+        stage(
+            stage_id="qwen_persistent_decode_args",
+            title="Qwen persistent decode argument binding",
+            owner="pto_serving_runtime",
+            required_for_full_serving=True,
+            status=(
+                "pass"
+                if persistent_decode_args_status == "persistent_decode_args_ready"
+                else "partial"
+                if persistent_decode_args_status
+                == "persistent_decode_args_plan_ready"
+                else "missing"
+                if persistent_decode_args.get("kind")
+                != "pto_qwen_persistent_decode_args"
+                else "fail"
+            ),
+            evidence="examples/cuda/qwen_persistent_decode_args.py",
+            next_action=(
+                "Provide live token pointer tables from the decode-loop "
+                "runner, then run kernels that consume those fields."
             ),
         ),
         stage(
@@ -575,6 +610,7 @@ def build_scaffold() -> dict[str, Any]:
         "prompt_accounting": prompt_accounting,
         "runtime_input_binding": runtime_input_binding,
         "cuda_token_buffer_binding": cuda_token_buffer_binding,
+        "persistent_decode_args": persistent_decode_args,
         "weight_inventory": weight_inventory,
         "safetensors_shards": safetensors_shards,
         "safetensors_metadata": safetensors_metadata,

@@ -446,6 +446,17 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-token-buffer-$(git rev-parse --short HEAD)/qwen-cuda-token-buffer-binding.json
 ```
 
+Use `examples/cuda/qwen_persistent_decode_args.py` after token-buffer binding
+to map token device pointers onto persistent DAG task fields. The artifact
+uses `a`, `b`, and `out` for `input_ids`, `attention_mask`, and `output_ids`,
+leaving `tensor_args` available for Qwen weight pointers:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_persistent_decode_args.py \
+    --output-json tmp/cuda-backend/pto-serving-decode-args-$(git rev-parse --short HEAD)/qwen-persistent-decode-args.json
+```
+
 Use `examples/cuda/qwen_weight_inventory.py` to capture Qwen/Qwen3-8B
 safetensors shard and tensor binding groups plus the config-derived expected
 shape/dtype contract before implementing real tensor open and CUDA device
