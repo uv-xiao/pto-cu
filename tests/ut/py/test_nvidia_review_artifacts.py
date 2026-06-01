@@ -443,9 +443,14 @@ def test_vdcores_scheduler_trace_keeps_diagnostic_scope_separate():
         for item in matrix["paper_evaluation_matrix"]
         if item["id"] == "persistent_device_scheduler_overhead"
     )
-    missing_text = " ".join(claim["missing_evidence"])
-    assert "stable baseline instrumentation mode" in missing_text
-    assert "non-diagnostic baseline policy" not in missing_text
+    assert claim["status"] == "ready_for_paper_claim"
+    assert claim["missing_evidence"] == []
+    assert any(
+        ref.get("kind") == "raw_artifact"
+        and ref.get("path")
+        == "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-trace.json"
+        for ref in claim["current_evidence_refs"]
+    )
     assert "measurement scope" in claim["promotion_gate"]
 
     runs = json.loads(
@@ -2481,8 +2486,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["ready_claims"] == 1
-    assert committed["blocked_claims"] == 3
+    assert committed["ready_claims"] == 2
+    assert committed["blocked_claims"] == 2
 
     by_id = {claim["id"]: claim for claim in committed["claim_audits"]}
     host_claim = by_id["host_schedule_launch_overhead"]
@@ -2567,10 +2572,9 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         in blocker
         for blocker in persistent_claim["blockers"]
     )
-    assert any(
-        "stable baseline instrumentation mode" in blocker
-        for blocker in persistent_claim["blockers"]
-    )
+    assert persistent_claim["ready_for_paper_claim"]
+    assert persistent_claim["blockers"] == []
+    assert persistent_claim["next_actions"] == []
     assert not any(
         "Latest execution attempt "
         "mpk_qwen3_0p6b_profile_termination_diagnostic_h200"
@@ -2652,9 +2656,9 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 4
+    assert committed["summary"]["total_work_items"] == 3
     assert committed["summary"]["work_items_by_source"] == {
-        "matrix_missing_evidence": 3,
+        "matrix_missing_evidence": 2,
         "run_readiness": 1,
     }
     work_items = committed["work_items"]
@@ -2683,10 +2687,9 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["paper_baseline_run_id"] == "vdcores_resource_policy_trace"
         for item in work_items
     )
-    assert any(
+    assert not any(
         item["claim_id"] == "persistent_device_scheduler_overhead"
         and item["source"] == "matrix_missing_evidence"
-        and "stable baseline instrumentation mode" in item["action"]
         for item in work_items
     )
     assert not any(
@@ -2742,7 +2745,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 4
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 3
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -4779,8 +4782,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
             )
 
     assert paper_readiness_audit["overall_status"] == "not_paper_ready"
-    assert paper_readiness_audit["ready_claims"] == 1
-    assert paper_readiness_audit["blocked_claims"] == 3
+    assert paper_readiness_audit["ready_claims"] == 2
+    assert paper_readiness_audit["blocked_claims"] == 2
     assert paper_readiness_audit["claim_audits"]
     for item in paper_readiness_audit["claim_audits"]:
         assert item["matrix_status"]
@@ -4803,11 +4806,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert item["ready_for_paper_claim"] is True
             assert item["blockers"] == []
         elif item["id"] == "persistent_device_scheduler_overhead":
-            assert item["ready_for_paper_claim"] is False
-            assert any(
-                "stable baseline instrumentation mode" in blocker
-                for blocker in item["blockers"]
-            )
+            assert item["matrix_status"] == "ready_for_paper_claim"
+            assert item["ready_for_paper_claim"] is True
+            assert item["blockers"] == []
+            assert item["next_actions"] == []
         else:
             assert item["ready_for_paper_claim"] is False
             assert item["blockers"]

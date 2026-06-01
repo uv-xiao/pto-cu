@@ -189,7 +189,7 @@
       "id": "persistent_device_scheduler_overhead",
       "title": "Persistent-Device Scheduler Overhead",
       "claim": "PTO CUDA persistent-device should expose device-side scheduler overhead and task-dispatch behavior because CUDA has no Ascend-style AICPU scheduler.",
-      "status": "partial_current_capture",
+      "status": "ready_for_paper_claim",
       "workload_ids": [
         "graph_layered_cross"
       ],
@@ -233,6 +233,10 @@
           "gpu": "H200"
         },
         {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-trace.json"
+        },
+        {
           "kind": "stable_doc",
           "path": "docs/nvidia-backend/persistent-device.md"
         },
@@ -255,9 +259,7 @@
           "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/"
         }
       ],
-      "missing_evidence": [
-        "Promote the VDCores queue/scheduler diagnostic into a stable baseline instrumentation mode, or keep the diagnostic scheduler trace separate from final non-diagnostic latency/correctness rows in any paper claim."
-      ],
+      "missing_evidence": [],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, latency distributions, and an explicit measurement scope separating diagnostic instrumentation from final baseline timing rows."
     },
     {

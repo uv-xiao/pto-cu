@@ -9,8 +9,8 @@
     "docs/nvidia-backend/benchmark-viewer/data/results.json"
   ],
   "overall_status": "not_paper_ready",
-  "ready_claims": 1,
-  "blocked_claims": 3,
+  "ready_claims": 2,
+  "blocked_claims": 2,
   "claim_audits": [
     {
       "id": "host_schedule_launch_overhead",
@@ -35,14 +35,14 @@
     {
       "id": "persistent_device_scheduler_overhead",
       "title": "Persistent-Device Scheduler Overhead",
-      "matrix_status": "partial_current_capture",
-      "ready_for_paper_claim": false,
+      "matrix_status": "ready_for_paper_claim",
+      "ready_for_paper_claim": true,
       "evidence_ref_counts": {
-        "raw_artifact": 3,
+        "raw_artifact": 4,
         "stable_doc": 1,
         "viewer_result": 4
       },
-      "missing_evidence_count": 1,
+      "missing_evidence_count": 0,
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {
@@ -112,16 +112,8 @@
           ]
         }
       ],
-      "blockers": [
-        "Promote the VDCores queue/scheduler diagnostic into a stable baseline instrumentation mode, or keep the diagnostic scheduler trace separate from final non-diagnostic latency/correctness rows in any paper claim."
-      ],
-      "next_actions": [
-        {
-          "source": "matrix_missing_evidence",
-          "status": "missing",
-          "action": "Promote the VDCores queue/scheduler diagnostic into a stable baseline instrumentation mode, or keep the diagnostic scheduler trace separate from final non-diagnostic latency/correctness rows in any paper claim."
-        }
-      ],
+      "blockers": [],
+      "next_actions": [],
       "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, latency distributions, and an explicit measurement scope separating diagnostic instrumentation from final baseline timing rows."
     },
     {
@@ -298,7 +290,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e4a12d0b/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-88e5c8a7/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -306,7 +298,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-e4a12d0b/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-88e5c8a7/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],

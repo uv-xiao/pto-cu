@@ -2,17 +2,16 @@
   "schema_version": 1,
   "source_file": "docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json",
   "overall_status": "not_paper_ready",
-  "ready_claims": 1,
-  "blocked_claims": 3,
+  "ready_claims": 2,
+  "blocked_claims": 2,
   "summary": {
-    "total_work_items": 4,
+    "total_work_items": 3,
     "work_items_by_source": {
-      "matrix_missing_evidence": 3,
+      "matrix_missing_evidence": 2,
       "run_readiness": 1
     },
     "work_items_by_claim": {
       "llm_serving_paper_baselines": 2,
-      "persistent_device_scheduler_overhead": 1,
       "tensor_core_tile_baselines": 1
     }
   },
@@ -20,25 +19,6 @@
     {
       "id": "paper_readiness_work_item_001",
       "priority": 1,
-      "claim_id": "persistent_device_scheduler_overhead",
-      "claim_title": "Persistent-Device Scheduler Overhead",
-      "matrix_status": "partial_current_capture",
-      "ready_for_paper_claim": false,
-      "blocker_count": 1,
-      "missing_evidence_count": 1,
-      "action_index": 1,
-      "source": "matrix_missing_evidence",
-      "owner": "matrix_missing_evidence",
-      "paper_baseline_id": "",
-      "paper_baseline_run_id": "",
-      "execution_attempt_id": "",
-      "status": "missing",
-      "action": "Promote the VDCores queue/scheduler diagnostic into a stable baseline instrumentation mode, or keep the diagnostic scheduler trace separate from final non-diagnostic latency/correctness rows in any paper claim.",
-      "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, latency distributions, and an explicit measurement scope separating diagnostic instrumentation from final baseline timing rows."
-    },
-    {
-      "id": "paper_readiness_work_item_002",
-      "priority": 2,
       "claim_id": "tensor_core_tile_baselines",
       "claim_title": "Tensor-Core Tile Baselines",
       "matrix_status": "partial_current_capture",
@@ -56,8 +36,8 @@
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
     },
     {
-      "id": "paper_readiness_work_item_003",
-      "priority": 3,
+      "id": "paper_readiness_work_item_002",
+      "priority": 2,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
@@ -75,8 +55,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_004",
-      "priority": 4,
+      "id": "paper_readiness_work_item_003",
+      "priority": 3,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
