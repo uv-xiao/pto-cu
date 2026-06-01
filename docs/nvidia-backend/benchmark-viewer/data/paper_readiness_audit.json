@@ -155,7 +155,18 @@
             "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/benchmark.json",
             "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/upstream-summary.json",
             "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/run-after-build.log",
-            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/correctness.log"
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/correctness.log",
+            "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/environment.txt",
+            "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/fa3-build.log",
+            "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/fa3-build-status.txt",
+            "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/fa3-api-probe.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/upstream-fa3-summary.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/benchmark-fa3.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/benchmark-fa3-status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/correctness-fa3.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/correctness-fa3-status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/metadata.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/shim/flash_attn_interface.py"
           ]
         },
         {
@@ -193,13 +204,13 @@
         }
       ],
       "blockers": [
-        "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable and PyTorch reference rows OOM at selected 12288-token shapes."
+        "Resolve remaining official ThunderKittens upstream sweep PyTorch reference OOM cells after FA3 comparator capture: PyTorch reference rows OOM at selected 6144- and 12288-token shapes in the FA3-enabled H200 run."
       ],
       "next_actions": [
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
-          "action": "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable and PyTorch reference rows OOM at selected 12288-token shapes."
+          "action": "Resolve remaining official ThunderKittens upstream sweep PyTorch reference OOM cells after FA3 comparator capture: PyTorch reference rows OOM at selected 6144- and 12288-token shapes in the FA3-enabled H200 run."
         }
       ],
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
@@ -393,7 +404,7 @@
           "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
           "paper_baseline_id": "vdcores",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-0a0392d2/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-7371626c/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }

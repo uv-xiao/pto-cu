@@ -25,8 +25,10 @@ non-attention operator evidence instead of treating all ThunderKittens rows as
 one undifferentiated baseline.
 
 The remaining tensor-core blocker is now specific to the official upstream MHA
-sweep environment: FlashAttention 3 bindings are absent, and PyTorch reference
-rows still OOM at selected 12288-token shapes.
+sweep environment. This report originally inherited the first-probe FA3
+absence, which is now superseded by the FA3 comparator capture. The current
+remaining blocker is PyTorch reference OOM at selected 6144- and 12288-token
+shapes.
 
 ## Evaluation Run
 
@@ -56,7 +58,7 @@ error, throughput, and `rotary_flops`.
 
 ## Remaining Gaps
 
-- FlashAttention 3 bindings are still absent in the official ThunderKittens
-  MHA benchmark environment.
-- PyTorch reference rows still OOM at selected 12288-token shapes in the
-  official ThunderKittens MHA benchmark.
+- FA3 bindings are now covered by
+  [2026-06-01 ThunderKittens FA3 comparator capture](2026-06-01-thunderkittens-fa3-comparator.md).
+- PyTorch reference rows still OOM at selected 6144- and 12288-token shapes in
+  the official ThunderKittens MHA benchmark.

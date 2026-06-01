@@ -2810,10 +2810,9 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "thunderkittens_non_mha_rotary",
     } <= tensor_run_ids
     assert any(
-        "Resolve remaining official ThunderKittens upstream sweep gaps"
-        in blocker
-        and "FlashAttention 3 bindings are unavailable" in blocker
-        and "PyTorch reference rows OOM" in blocker
+        "ThunderKittens upstream sweep PyTorch reference OOM cells" in blocker
+        and "FA3 comparator capture" in blocker
+        and "6144- and 12288-token shapes" in blocker
         for blocker in tensor_claim["blockers"]
     )
     assert not any(
@@ -2822,7 +2821,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     )
     assert any(
         action["source"] == "matrix_missing_evidence"
-        and "FlashAttention 3 bindings are unavailable" in action["action"]
+        and "FA3 comparator capture" in action["action"]
+        and "PyTorch reference rows OOM" in action["action"]
         for action in tensor_claim["next_actions"]
     )
 
@@ -3817,6 +3817,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vdcores_qwen3_8b_rebuild_correctness_token1_h200",
         "vdcores_qwen3_8b_global_instruction_capacity_h200",
         "thunderkittens_mha_h100_official_benchmark_h200",
+        "thunderkittens_mha_h100_fa3_comparator_h200",
         "vllm_qwen3_8b_vdcores_batch1_h200",
         "vllm_qwen3_8b_vdcores_sweep_h200",
         "vllm_qwen3_8b_mpk_batch1_h200",
@@ -4953,6 +4954,31 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert not tk_official_attempt["summary"]["fa3_available"]
     assert tk_official_attempt["summary"]["pytorch_reference_oom"]
     assert "non-MHA ThunderKittens kernels" not in tk_official_attempt["blocker"]
+    tk_fa3_attempt = attempts_by_id[
+        "thunderkittens_mha_h100_fa3_comparator_h200"
+    ]
+    assert tk_fa3_attempt["status"] == "partial"
+    assert tk_fa3_attempt["summary"]["fa3_available"]
+    assert tk_fa3_attempt["summary"]["fa3_rows_completed"] == 20
+    assert set(tk_fa3_attempt["summary"]["fa3_methods_completed"]) == {
+        "attn_fwd_FA3_c=t",
+        "attn_fwd_FA3_c=f",
+        "attn_bwd_FA3_c=t",
+        "attn_bwd_FA3_c=f",
+    }
+    assert tk_fa3_attempt["summary"]["sequence_lengths"] == [
+        768,
+        1536,
+        3072,
+        6144,
+        12288,
+    ]
+    assert tk_fa3_attempt["summary"]["pytorch_reference_oom"]
+    assert tk_fa3_attempt["summary"]["pytorch_reference_oom_sequence_lengths"] == [
+        6144,
+        12288,
+    ]
+    assert tk_fa3_attempt["summary"]["compatibility_shim_used"]
     tk_rotary_attempt = attempts_by_id["thunderkittens_rotary_non_mha_h200"]
     assert tk_rotary_attempt["status"] == "pass"
     assert tk_rotary_attempt["summary"]["mode"] == "thunderkittens_non_mha_rotary"

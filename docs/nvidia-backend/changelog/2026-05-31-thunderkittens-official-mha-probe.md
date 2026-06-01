@@ -48,15 +48,17 @@ python tmp/baselines/thunderkittens/kernels/attention/mha_h100/test_correctness.
 
 The benchmark completed forward/backward causal and non-causal tables. The
 ThunderKittens rows completed for sequence lengths 768, 1536, 3072, 6144, and
-12288. FlashAttention 3 rows failed because `flash_attn_interface` was not
-available. PyTorch reference rows OOMed at selected largest shapes. The
+12288. FlashAttention 3 rows failed in this first probe because
+`flash_attn_interface` was not available. PyTorch reference rows OOMed at
+selected largest shapes. The
 correctness script completed output, backward, and all-mode error graph
 generation.
 
 ## Remaining Gaps
 
-- FlashAttention 3 bindings are still absent on the H200 evaluation
-  environment.
+- Superseded by
+  [2026-06-01 ThunderKittens FA3 comparator capture](2026-06-01-thunderkittens-fa3-comparator.md):
+  FA3 bindings were built and the FA3 comparator rows now run on H200.
 - PyTorch reference rows still OOM at selected 12288-token shapes in the
   official benchmark script.
 - ThunderKittens kernels outside `attention/mha_h100` are not yet captured for

@@ -494,14 +494,26 @@
         "cd tmp/baselines/thunderkittens && make -C kernels/attention/mha_h100"
       ],
       "run_commands": [
-        "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_full_sweep_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output-dir tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73 --machine <h200-host> --pto-commit 4277aa73 --cuda-toolkit 12.8 --shape 1,1,768,64 --shape 1,4,1536,64 --warmup 5 --repeats 20 --causal"
+        "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_full_sweep_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output-dir tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73 --machine <h200-host> --pto-commit 4277aa73 --cuda-toolkit 12.8 --shape 1,1,768,64 --shape 1,4,1536,64 --warmup 5 --repeats 20 --causal",
+        "Build FlashAttention-3 from tmp/baselines/flash-attention/hopper with SM90 bf16 head-dim-128 scoped build flags, then run the official ThunderKittens benchmark.py and test_correctness.py with a PYTHONPATH shim that requests return_attn_probs=True from flash_attn_interface.flash_attn_func."
       ],
       "expected_artifacts": [
         "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/correctness.json",
         "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/benchmark.json",
         "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/upstream-summary.json",
         "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/run-after-build.log",
-        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/correctness.log"
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/correctness.log",
+        "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/environment.txt",
+        "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/fa3-build.log",
+        "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/fa3-build-status.txt",
+        "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/fa3-api-probe.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/upstream-fa3-summary.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/benchmark-fa3.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/benchmark-fa3-status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/correctness-fa3.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/correctness-fa3-status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/metadata.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/shim/flash_attn_interface.py"
       ],
       "required_metrics": [
         "correctness",

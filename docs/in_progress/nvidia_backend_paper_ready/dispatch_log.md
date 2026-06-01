@@ -3587,3 +3587,42 @@ Follow-up tracked-state closure after user confirmation:
   blocker is now sharper: fix correctness for the global-instruction path or
   implement a segmented/token-windowed schedule under the shared-instruction
   runtime before importing the VDCores paper-serving row.
+
+### 2026-06-01 - ThunderKittens FA3 Comparator Capture
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  ThunderKittens official-comparator gap narrowing.
+- Exact Codex command or script invocation: cloned FlashAttention under
+  `tmp/baselines/flash-attention`, built FlashAttention-3 from
+  `tmp/baselines/flash-attention/hopper` on `bizhaoh200` with
+  `MAX_JOBS=4`, `FLASH_ATTENTION_FORCE_BUILD=TRUE`, SM80 disabled, FP16/FP8
+  disabled, non-128 head dimensions disabled, and optional split/paged/local
+  variants disabled. Then ran the unmodified ThunderKittens
+  `kernels/attention/mha_h100/benchmark.py` and `test_correctness.py` with a
+  `PYTHONPATH` shim that requests `return_attn_probs=True` from
+  `flash_attn_interface.flash_attn_func`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, tensor-core baseline
+  evidence for the paper-readiness matrix.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, in-progress evaluation docs,
+  changelog docs, dispatch log, tests, and raw `tmp/` artifacts. No upstream
+  repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The broad default FA3 build was stopped because it compiled many unused
+  SM80 and head-dimension variants; the narrowed build completed and installed
+  `flash-attn-3` into the remote project venv. The compatibility shim is
+  required because the current FA3 API returns only `out` by default while the
+  ThunderKittens benchmark expects `(out, lse)`.
+- Verification commands and results: remote FA3 build status `0`; FA3 API
+  probe showed `return_attn_probs=True` returns `(out, lse)`; official
+  ThunderKittens benchmark status `0`; official correctness status `0`. FA3
+  rows completed for forward/backward, causal/non-causal, and sequence
+  lengths 768, 1536, 3072, 6144, and 12288.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the tensor-core work queue no longer
+  treats FA3 bindings as missing. The remaining official ThunderKittens sweep
+  blocker is PyTorch reference OOM in selected 6144- and 12288-token cells.

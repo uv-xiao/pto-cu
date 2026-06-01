@@ -272,8 +272,15 @@ ThunderKittens readiness must include the selected PyTorch-extension
 dependencies (`torch`, `pybind11`, `numpy`, `pandas`, `matplotlib`, and
 `tqdm`), not just source-file existence. After installing those modules in
 the H200 project venv, the current H200 probe is ready for the selected
-ThunderKittens setup path, but full correctness and benchmark sweeps remain
-future paper-evaluation work.
+ThunderKittens setup path. The selected official H100 MHA benchmark now has
+an FA3-enabled H200 run as well: FlashAttention-3 was built from the
+`tmp/baselines/flash-attention/hopper` source clone with a narrowed SM90 BF16
+head-dim-128 build, and the unmodified ThunderKittens benchmark was run with a
+local compatibility shim that requests `return_attn_probs=True` so the current
+FA3 API returns the `(out, lse)` tuple expected by ThunderKittens. The FA3
+rows completed for forward/backward, causal/non-causal, and sequence lengths
+768, 1536, 3072, 6144, and 12288. The remaining official-sweep blocker is
+PyTorch reference OOM in selected large cells, not unavailable FA3 bindings.
 The LLM-serving claim also has a planned ThunderKittens
 `thunderkittens_decode_attention_tile` run record. Its readiness is generated
 from the selected source tree, repo-local capture wrapper, expected tmp
@@ -290,12 +297,13 @@ to run two H200 causal BF16 MHA shapes with five warmups and twenty timed
 CUDA-event repeats, compare against PyTorch scaled-dot-product attention, and
 export viewer-compatible paper-baseline records. This promotes the selected
 ThunderKittens bounded-capture row from setup-ready to imported viewer
-evidence. The full upstream correctness and benchmark sweeps are tracked as
-the separate planned `thunderkittens_full_sweep` run, whose expected artifacts
-are `tmp/cuda-backend/paper-baselines/thunderkittens/correctness.json` and
-`tmp/cuda-backend/paper-baselines/thunderkittens/benchmark.json`. Imported
-paper-baseline run records are not allowed to keep missing future artifacts in
-their `expected_artifacts` lists.
+evidence. The full upstream correctness and benchmark sweeps are tracked by
+the separate `thunderkittens_full_sweep` run. Its expected artifacts now
+include the bounded repo-owned sweep, the original official benchmark probe,
+and the FA3-enabled official rerun under
+`tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/`.
+Imported paper-baseline run records are not allowed to keep missing future
+artifacts in their `expected_artifacts` lists.
 
 Remote H200 runs should prefer Git refresh when available and use SSH
 tree-sync fallback when remote Git fails. The selected path is part of the

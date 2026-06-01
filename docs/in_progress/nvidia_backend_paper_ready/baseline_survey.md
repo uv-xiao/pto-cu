@@ -16,6 +16,13 @@ copies live under `tmp/`, and what each child evaluation slice must reproduce.
 | SGLang | `sgl-project/sglang` branch `main` | `tmp/baselines/sglang` | `7ed53d15f357ea4d722c1980c2cb35e8367d8bb0` | cloned for survey |
 | ThunderKittens | `HazyResearch/ThunderKittens` branch `main` | `tmp/baselines/thunderkittens` | `34b15f7e7012de25ae162c8d9dc85296dd342676` | cloned for survey |
 
+Comparator dependency sources used by those baseline runs are also kept under
+`tmp/` for review. The current FlashAttention source clone is
+`tmp/baselines/flash-attention` at commit
+`6dba0373b775196039aedda01cd14c51662965d8`. It was used to build the
+FlashAttention-3 Hopper module required by the official ThunderKittens H100
+MHA benchmark.
+
 The committed viewer data mirrors this table in
 `docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json` so the
 human-reviewable benchmark viewer can show baseline readiness without relying
@@ -189,6 +196,15 @@ python -m sglang.bench_one_batch --model-path <model>
 ThunderKittens is sourced from `https://github.com/HazyResearch/ThunderKittens`.
 The local clone at `tmp/baselines/thunderkittens` is on commit
 `34b15f7e7012de25ae162c8d9dc85296dd342676`.
+The official H100 MHA benchmark now also has a FlashAttention-3 comparator
+capture. FlashAttention-3 was built from
+`tmp/baselines/flash-attention/hopper` with an SM90 BF16 head-dim-128 scoped
+build, then the unmodified ThunderKittens `benchmark.py` and
+`test_correctness.py` were run through a local `PYTHONPATH` compatibility shim
+that requests `return_attn_probs=True` from `flash_attn_interface`. This
+produced all FA3 forward and backward rows across sequence lengths 768, 1536,
+3072, 6144, and 12288. The remaining official-sweep gap is PyTorch reference
+OOM for selected 6144- and 12288-token cells, not missing FA3 bindings.
 
 Observed entry points:
 
