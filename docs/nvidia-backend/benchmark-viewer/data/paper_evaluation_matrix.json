@@ -513,7 +513,11 @@
         },
         {
           "kind": "raw_artifact",
-          "path": "tmp/cuda-backend/pto-serving-preflight-26c38df3/pto-serving-preflight.json"
+          "path": "tmp/cuda-backend/pto-serving-scaffold-76d4fca4/qwen-serving-scaffold.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-preflight-76d4fca4/pto-serving-preflight.json"
         }
       ],
       "missing_evidence": [
@@ -529,7 +533,7 @@
           ],
           "shape_contains": "Qwen/Qwen3-8B",
           "status": "missing",
-          "action": "Implement and import PTO persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current PTO serving preflight proves only the controlled attention-tile proxy is imported; Qwen model loading, tokenization, KV-cache management, and decode-loop execution are still absent from the repo-owned PTO CUDA path."
+          "action": "Implement the missing PTO Qwen lifecycle stages from the repo-owned persistent_qwen_serving_scaffold: qwen_tokenizer, qwen_weight_loader, kv_cache_lifecycle, decode_loop_runner, and viewer_result_import. Then import persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. The current scaffold and preflight prove only persistent-device ABI/codegen and the controlled attention-tile proxy exist today."
         },
         {
           "id": "vdcores_full_serving_qwen3_8b",

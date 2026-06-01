@@ -3772,3 +3772,40 @@ Follow-up tracked-state closure after user confirmation:
   `full_serving` or `full_serving_latency_caveat`; controlled attention-tile
   proxies, native bring-up rows, and one-token diagnostics remain visible but
   cannot close the PTO, VDCores, or ThunderKittens full-serving gaps.
+
+### 2026-06-01 - PTO Qwen Serving Scaffold
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned lifecycle
+  scaffold for the PTO persistent-device Qwen/Qwen3-8B full-serving blocker.
+- Exact Codex command or script invocation:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  examples/cuda/persistent_qwen_serving_scaffold.py --output-json
+  tmp/cuda-backend/pto-serving-scaffold-76d4fca4/qwen-serving-scaffold.json`,
+  then `pto_serving_preflight.py --output
+  tmp/cuda-backend/pto-serving-preflight-76d4fca4/pto-serving-preflight.json`,
+  then `refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The scaffold is not a performance row; it makes missing PTO Qwen lifecycle
+  stages executable and reviewable.
+- Verification commands and results: `validate_cuda_examples.py` -> passed;
+  `validate_benchmark_viewer_data.py` -> passed;
+  `validate_nvidia_changelog.py` -> passed; `check_nvidia_review_ready.py` ->
+  passed; `jq empty examples/cuda/manifest.json
+  docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `git diff --check` -> passed; `py_compile
+  persistent_qwen_serving_scaffold.py pto_serving_preflight.py` -> passed;
+  `pytest tests/ut/py/test_nvidia_review_artifacts.py -q` -> `44 passed`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: implement `qwen_tokenizer`,
+  `qwen_weight_loader`, `kv_cache_lifecycle`, `decode_loop_runner`, and
+  `viewer_result_import` before importing PTO Qwen/Qwen3-8B full-serving rows.

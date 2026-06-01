@@ -31,6 +31,22 @@
         "--scheduler-blocks",
         "--worker-blocks"
       ]
+    },
+    {
+      "id": "persistent_qwen_serving_scaffold",
+      "title": "Persistent Qwen Serving Scaffold",
+      "script": "examples/cuda/persistent_qwen_serving_scaffold.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/persistent_qwen_serving_scaffold.py --output-json tmp/cuda-backend/pto-serving-scaffold/qwen-serving-scaffold.json",
+      "expected_output": "command exits 0; output JSON records status=partial until Qwen tokenizer, weight loader, KV-cache lifecycle, decode-loop runner, and full-serving viewer import stages exist.",
+      "evidence_symbols": [
+        "pto_qwen_persistent_serving_scaffold",
+        "qwen_tokenizer",
+        "kv_cache_lifecycle",
+        "decode_loop_runner"
+      ]
     }
   ]
 }

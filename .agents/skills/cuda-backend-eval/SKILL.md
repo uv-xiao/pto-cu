@@ -388,6 +388,16 @@ PYTHONPATH=$PWD:$PWD/python \
     --output tmp/cuda-backend/pto-serving-preflight-$(git rev-parse --short HEAD)/pto-serving-preflight.json
 ```
 
+Use `examples/cuda/persistent_qwen_serving_scaffold.py` to emit the repo-owned
+PTO Qwen full-serving lifecycle scaffold. It records which stages already have
+code evidence and which full-serving stages still need implementation:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/persistent_qwen_serving_scaffold.py \
+    --output-json tmp/cuda-backend/pto-serving-scaffold-$(git rev-parse --short HEAD)/qwen-serving-scaffold.json
+```
+
 Use `paper_baseline_run_readiness.py` before spending H200 time on planned
 paper-baseline runs. It does not execute long baselines; it records source
 path, reproduction-command presence, Python entrypoints, expected artifact,

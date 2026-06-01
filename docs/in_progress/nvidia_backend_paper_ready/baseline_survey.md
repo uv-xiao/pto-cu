@@ -245,8 +245,10 @@ python test_correctness.py
 | Triton or torch.compile | generated-kernel baseline | compile path, launch path, and correctness |
 
 The current PTO serving comparison has an explicit preflight artifact at
-`tmp/cuda-backend/pto-serving-preflight-26c38df3/pto-serving-preflight.json`.
-It records the proxy-only state: the benchmark viewer has a controlled
+`tmp/cuda-backend/pto-serving-preflight-76d4fca4/pto-serving-preflight.json`
+and a lifecycle scaffold artifact at
+`tmp/cuda-backend/pto-serving-scaffold-76d4fca4/qwen-serving-scaffold.json`.
+They record the proxy-only state: the benchmark viewer has a controlled
 attention-tile PTO serving-equivalent row, but the repo-owned PTO CUDA path
 does not yet load Qwen weights, tokenize prompts, manage KV cache, or run a
 decode loop for `Qwen/Qwen3-8B`.

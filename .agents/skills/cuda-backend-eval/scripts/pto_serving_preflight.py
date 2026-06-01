@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +21,7 @@ DEFAULT_OUTPUT = (
     / "pto-serving-preflight"
     / "pto-serving-preflight.json"
 )
+SERVING_SCAFFOLD = ROOT / "examples" / "cuda" / "persistent_qwen_serving_scaffold.py"
 
 
 def fail(message: str) -> None:
@@ -104,9 +107,23 @@ def serving_policy_summaries(serving_workloads: dict[str, Any]) -> list[dict[str
     return summaries
 
 
+def load_serving_scaffold() -> dict[str, Any]:
+    spec = importlib.util.spec_from_file_location(
+        "persistent_qwen_serving_scaffold",
+        SERVING_SCAFFOLD,
+    )
+    if spec is None or spec.loader is None:
+        fail(f"could not load {SERVING_SCAFFOLD}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.build_scaffold()
+
+
 def build_preflight() -> dict[str, Any]:
     serving_workloads = load_json(VIEWER_DATA / "serving_workloads.json")
     results = load_json(VIEWER_DATA / "results.json")
+    serving_scaffold = load_serving_scaffold()
     pto_rows = pto_serving_rows(results)
     qwen8b_pto_rows = [
         row
@@ -155,10 +172,19 @@ def build_preflight() -> dict[str, Any]:
             "why": "Full-serving readiness requires PTO rows whose shape names Qwen/Qwen3-8B.",
         },
         {
+            "id": "qwen_serving_lifecycle_scaffold",
+            "status": "pass" if serving_scaffold.get("status") else "fail",
+            "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",
+            "why": "Repo-owned scaffold declares the PTO Qwen full-serving lifecycle stages.",
+        },
+        {
             "id": "qwen_model_loader_or_token_loop",
             "status": "fail",
-            "evidence": "src/cuda/ and .agents/skills/cuda-backend-eval/scripts/",
-            "why": "No repo-owned PTO CUDA path currently loads Qwen weights, tokenizes prompts, manages KV cache, or runs a decode loop.",
+            "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",
+            "why": (
+                "PTO Qwen lifecycle stages are still missing: "
+                + ", ".join(serving_scaffold.get("missing_stage_ids", []))
+            ),
         },
     ]
     blocking_gaps = [
@@ -170,6 +196,7 @@ def build_preflight() -> dict[str, Any]:
         "status": "partial" if blocking_gaps else "pass",
         "commit": git_commit(),
         "serving_workloads": serving_policy_summaries(serving_workloads),
+        "serving_lifecycle": serving_scaffold,
         "pto_serving_rows": [
             {
                 "shape": row.get("inputs", {}).get("shape", ""),
