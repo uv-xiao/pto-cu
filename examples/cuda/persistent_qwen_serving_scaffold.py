@@ -25,6 +25,9 @@ CUDA_WEIGHT_BINDING = ROOT / "examples" / "cuda" / "qwen_cuda_weight_binding.py"
 PERSISTENT_WEIGHT_ARGS = (
     ROOT / "examples" / "cuda" / "qwen_persistent_weight_args.py"
 )
+PERSISTENT_WEIGHT_MATERIALIZATION = (
+    ROOT / "examples" / "cuda" / "qwen_persistent_weight_materialization.py"
+)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -131,6 +134,19 @@ def load_persistent_weight_args() -> dict[str, Any]:
     return module.build_weight_arg_manifest()
 
 
+def load_persistent_weight_materialization() -> dict[str, Any]:
+    spec = importlib.util.spec_from_file_location(
+        "qwen_persistent_weight_materialization",
+        PERSISTENT_WEIGHT_MATERIALIZATION,
+    )
+    if spec is None or spec.loader is None:
+        return {}
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.build_materialization_manifest()
+
+
 def serving_workload_contracts() -> list[dict[str, Any]]:
     payload = load_json(VIEWER_DATA / "serving_workloads.json")
     workloads = []
@@ -181,6 +197,7 @@ def build_scaffold() -> dict[str, Any]:
     safetensors_metadata = load_safetensors_metadata()
     cuda_weight_binding = load_cuda_weight_binding()
     persistent_weight_args = load_persistent_weight_args()
+    persistent_weight_materialization = load_persistent_weight_materialization()
     shards_ready = (
         safetensors_shards.get("status") == "ready_for_metadata_probe"
     )
@@ -193,9 +210,23 @@ def build_scaffold() -> dict[str, Any]:
     persistent_weight_args_ready = (
         persistent_weight_args.get("status") == "persistent_weight_args_ready"
     )
+    persistent_weight_materialization_planned = (
+        persistent_weight_materialization.get("kind")
+        == "pto_qwen_persistent_weight_materialization"
+        and persistent_weight_materialization.get("status")
+        in {
+            "persistent_weight_materialization_plan_ready",
+            "persistent_weight_materialization_ready",
+        }
+    )
     weight_next_action = (
-        "Materialize persistent task descriptors with resident weight "
-        "pointers during the decode-loop runner."
+        "Create the live decode-loop resident pointer table, then pass it to "
+        "the persistent weight materializer before launching Qwen tasks."
+        if persistent_weight_materialization_planned
+        else (
+            "Materialize persistent task descriptors with resident weight "
+            "pointers during the decode-loop runner."
+        )
         if persistent_weight_args_ready
         else (
             "Move the planned CUDA weight bindings into real persistent task "
@@ -344,6 +375,25 @@ def build_scaffold() -> dict[str, Any]:
             ),
         ),
         stage(
+            stage_id="qwen_persistent_weight_materialization",
+            title="Qwen persistent weight pointer materialization",
+            owner="pto_serving_host",
+            required_for_full_serving=True,
+            status=(
+                "pass"
+                if persistent_weight_materialization.get("status")
+                == "persistent_weight_materialization_ready"
+                else "partial"
+                if persistent_weight_materialization_planned
+                else "missing"
+            ),
+            evidence="examples/cuda/qwen_persistent_weight_materialization.py",
+            next_action=(
+                "Make the decode-loop runner own a live resident_weight_ptrs "
+                "table and call the materializer before DAG submission."
+            ),
+        ),
+        stage(
             stage_id="qwen_safetensors_shards",
             title="Qwen safetensors shard placement",
             owner="pto_serving_host",
@@ -413,6 +463,7 @@ def build_scaffold() -> dict[str, Any]:
         "safetensors_metadata": safetensors_metadata,
         "cuda_weight_binding": cuda_weight_binding,
         "persistent_weight_args": persistent_weight_args,
+        "persistent_weight_materialization": persistent_weight_materialization,
         "stages": stages,
         "missing_stage_ids": [item["id"] for item in missing],
         "next_action": (

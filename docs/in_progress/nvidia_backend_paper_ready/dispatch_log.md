@@ -4241,3 +4241,41 @@ Follow-up tracked-state closure after user confirmation:
   materialization of resident pointers into task descriptors, runtime token-ID
   binding, KV-cache allocation and binding, Qwen kernel generation,
   decode-loop execution, and viewer-result import.
+
+### 2026-06-01 - Qwen Persistent Weight Materialization
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned host-side
+  materialization plan for Qwen/Qwen3-8B persistent weight task descriptors.
+- Exact Codex command or script invocation:
+  `qwen_persistent_weight_materialization.py --output-json
+  tmp/cuda-backend/pto-serving-weight-materialization-b46497b3/qwen-persistent-weight-materialization.json`,
+  plus the focused pytest selector
+  `-k persistent_qwen_weight_materialization`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the materializer can bind concrete
+  resident pointers when given a live pointer table, but the current scaffold
+  emits a symbolic plan because the decode-loop runner does not yet own that
+  table.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_persistent_weight_materialization.py` did not exist;
+  after implementation the selected materialization and weight-argument tests
+  passed. The real plan artifact reports
+  `status=persistent_weight_materialization_plan_ready`,
+  `materialized_task_count=255`, `symbolic_tensor_pointer_count=399`, and
+  `missing_pointer_count=0`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves the
+  ctypes-backed host materialization shape for
+  `PtoCudaPersistentDagTask::tensor_args[4]`. The remaining PTO full-serving
+  gaps are live decode-loop pointer-table ownership, runtime token-ID binding,
+  KV-cache allocation and binding, Qwen kernel generation, decode-loop
+  execution, and viewer-result import.

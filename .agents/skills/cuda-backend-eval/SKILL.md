@@ -492,6 +492,21 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-weight-args-$(git rev-parse --short HEAD)/qwen-persistent-weight-args.json
 ```
 
+Use `examples/cuda/qwen_persistent_weight_materialization.py` after the weight
+argument manifest to prove the host-side runtime binding shape. Without
+`--pointer-table-json`, it emits the symbolic `resident_weight_ptrs[slot_id]`
+plan that the decode-loop runner must own; with a live pointer table, it emits
+concrete `CudaPersistentDagTask::tensor_args` addresses and validates tensor
+slot matches:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_persistent_weight_materialization.py \
+    --weight-args-json tmp/cuda-backend/pto-serving-weight-args-$(git rev-parse --short HEAD)/qwen-persistent-weight-args.json \
+    --weight-binding-json tmp/cuda-backend/pto-serving-weight-residency-$(git rev-parse --short HEAD)/qwen-cuda-weight-residency.json \
+    --output-json tmp/cuda-backend/pto-serving-weight-materialization-$(git rev-parse --short HEAD)/qwen-persistent-weight-materialization.json
+```
+
 Use `paper_baseline_run_readiness.py` before spending H200 time on planned
 paper-baseline runs. It does not execute long baselines; it records source
 path, reproduction-command presence, Python entrypoints, expected artifact,

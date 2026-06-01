@@ -96,6 +96,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 serving baseline probe scope](2026-06-01-serving-baseline-probe-scope.md)
 - [2026-06-01 serving baseline environment plans](2026-06-01-serving-baseline-environment-plans.md)
 - [2026-06-01 serving baseline environment attempt](2026-06-01-serving-baseline-environment-attempt.md)
+- [2026-06-01 Qwen persistent weight materialization](2026-06-01-qwen-persistent-weight-materialization.md)
 - [2026-06-01 vLLM environment materialization](2026-06-01-vllm-environment-materialization.md)
 - [2026-06-01 vLLM spinloop preflight](2026-06-01-vllm-spinloop-preflight.md)
 - [2026-06-01 vLLM spinloop overlay](2026-06-01-vllm-spinloop-overlay.md)

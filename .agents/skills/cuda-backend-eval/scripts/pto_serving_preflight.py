@@ -293,6 +293,24 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_persistent_weight_materialization_plan",
+            "status": "pass"
+            if serving_scaffold.get("persistent_weight_materialization", {}).get(
+                "status"
+            )
+            in {
+                "persistent_weight_materialization_plan_ready",
+                "persistent_weight_materialization_ready",
+            }
+            else "fail",
+            "evidence": "examples/cuda/qwen_persistent_weight_materialization.py",
+            "why": (
+                "Persistent weight task descriptors must be materialized with "
+                "resident device pointers through the same ctypes layout used "
+                "by persistent DAG submission."
+            ),
+        },
+        {
             "id": "qwen_model_loader_or_token_loop",
             "status": "fail",
             "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",

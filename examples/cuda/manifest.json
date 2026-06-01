@@ -163,6 +163,22 @@
         "persistent_dag_tensor_arg_capacity_check",
         "persistent_task_weight_arg_binding_manifest"
       ]
+    },
+    {
+      "id": "qwen_persistent_weight_materialization",
+      "title": "Qwen Persistent Weight Materialization",
+      "script": "examples/cuda/qwen_persistent_weight_materialization.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_weight_materialization.py --output-json tmp/cuda-backend/pto-serving-weight-materialization/qwen-persistent-weight-materialization.json",
+      "expected_output": "command exits 0; output JSON records how Qwen persistent weight task descriptors are materialized through the CudaPersistentDagTask ctypes layout, and binds resident device pointers when a live pointer table is supplied.",
+      "evidence_symbols": [
+        "pto_qwen_persistent_weight_materialization",
+        "persistent_task_weight_arg_runtime_materializer",
+        "ctypes_persistent_dag_task_layout",
+        "resident_weight_pointer_table_validation"
+      ]
     }
   ]
 }

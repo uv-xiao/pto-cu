@@ -467,6 +467,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["qwen_safetensors_metadata_probe"]["status"] == "pass"
     assert checks["qwen_actual_safetensors_metadata"]["status"] == "pass"
     assert checks["qwen_cuda_weight_binding_plan"]["status"] == "pass"
+    assert checks["qwen_persistent_weight_materialization_plan"]["status"] == "pass"
     assert checks["qwen3_8b_full_serving_rows_imported"]["status"] == "fail"
     assert checks["qwen_model_loader_or_token_loop"]["status"] == "fail"
     lifecycle = preflight["serving_lifecycle"]
@@ -498,10 +499,17 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert lifecycle["persistent_weight_args"]["status"] == (
         "persistent_weight_args_ready"
     )
+    assert lifecycle["persistent_weight_materialization"]["kind"] == (
+        "pto_qwen_persistent_weight_materialization"
+    )
+    assert lifecycle["persistent_weight_materialization"]["status"] == (
+        "persistent_weight_materialization_plan_ready"
+    )
     assert checks["qwen_persistent_weight_arg_manifest"]["status"] == "pass"
     assert {
         "qwen_tokenizer",
         "qwen_weight_loader",
+        "qwen_persistent_weight_materialization",
         "kv_cache_lifecycle",
         "decode_loop_runner",
         "viewer_result_import",
@@ -549,11 +557,12 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     assert stages["qwen_serving_lifecycle_plan"]["status"] == "pass"
     assert stages["qwen_tokenizer"]["status"] == "partial"
     assert stages["qwen_weight_loader"]["status"] == "partial"
-    assert "resident weight pointers" in stages[
+    assert "live decode-loop resident pointer table" in stages[
         "qwen_weight_loader"
     ]["next_action"]
     assert stages["qwen_cuda_weight_binding"]["status"] == "pass"
     assert stages["qwen_persistent_weight_args"]["status"] == "pass"
+    assert stages["qwen_persistent_weight_materialization"]["status"] == "partial"
     assert stages["qwen_safetensors_shards"]["status"] == "pass"
     assert "rerun the metadata probe" in stages["qwen_safetensors_shards"][
         "next_action"
@@ -573,6 +582,12 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     )
     assert scaffold["persistent_weight_args"]["status"] == (
         "persistent_weight_args_ready"
+    )
+    assert scaffold["persistent_weight_materialization"]["kind"] == (
+        "pto_qwen_persistent_weight_materialization"
+    )
+    assert scaffold["persistent_weight_materialization"]["status"] == (
+        "persistent_weight_materialization_plan_ready"
     )
     assert stages["kv_cache_lifecycle"]["status"] == "partial"
     assert stages["decode_loop_runner"]["status"] == "missing"
@@ -1149,6 +1164,159 @@ def test_persistent_qwen_weight_arg_manifest_is_reviewable(tmp_path):
     assert descriptors["logits"]["tensor_args"][0]["tensor"] == "lm_head.weight"
 
 
+def test_persistent_qwen_weight_materialization_binds_resident_pointers(tmp_path):
+    bindings = []
+
+    def add(slot_id, tensor, binding_group):
+        bindings.append(
+            {
+                "slot_id": slot_id,
+                "tensor": tensor,
+                "binding_group": binding_group,
+                "persistent_arg_role": "readonly_weight_tensor",
+                "shape": [4],
+                "dtype": "bfloat16",
+                "size_bytes": 8,
+            }
+        )
+
+    for slot, (name, group) in enumerate(
+        [
+            ("model.embed_tokens.weight", "embedding"),
+            ("model.layers.0.input_layernorm.weight", "attention_norms"),
+            ("model.layers.0.self_attn.q_proj.weight", "attention_qkv_o"),
+            ("model.layers.0.self_attn.k_proj.weight", "attention_qkv_o"),
+            ("model.layers.0.self_attn.v_proj.weight", "attention_qkv_o"),
+            ("model.layers.0.self_attn.q_norm.weight", "attention_norms"),
+            ("model.layers.0.self_attn.k_norm.weight", "attention_norms"),
+            ("model.layers.0.self_attn.o_proj.weight", "attention_qkv_o"),
+            ("model.layers.0.post_attention_layernorm.weight", "attention_norms"),
+            ("model.layers.0.mlp.gate_proj.weight", "mlp_gate_up_down"),
+            ("model.layers.0.mlp.up_proj.weight", "mlp_gate_up_down"),
+            ("model.layers.0.mlp.down_proj.weight", "mlp_gate_up_down"),
+            ("model.norm.weight", "norm_and_logits"),
+            ("lm_head.weight", "norm_and_logits"),
+        ]
+    ):
+        add(slot, name, group)
+
+    binding = tmp_path / "qwen-cuda-weight-binding.json"
+    binding.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "kind": "pto_qwen_cuda_weight_binding",
+                "status": "binding_plan_ready",
+                "tensor_count": len(bindings),
+                "planned_binding_count": len(bindings),
+                "cuda_probe": {"mode": "full_residency", "status": "pass"},
+                "bindings": bindings,
+            }
+        ),
+        encoding="utf-8",
+    )
+    weight_args = tmp_path / "qwen-persistent-weight-args.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/cuda/qwen_persistent_weight_args.py",
+            "--weight-binding-json",
+            str(binding),
+            "--num-hidden-layers",
+            "1",
+            "--output-json",
+            str(weight_args),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+
+    pointer_table = tmp_path / "qwen-resident-weight-pointers.json"
+    pointer_table.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "kind": "pto_qwen_resident_weight_pointer_table",
+                "status": "resident_weight_pointer_table_ready",
+                "pointers": [
+                    {
+                        "slot_id": item["slot_id"],
+                        "tensor": item["tensor"],
+                        "device_ptr": 0x10000000 + item["slot_id"] * 0x1000,
+                        "size_bytes": item["size_bytes"],
+                    }
+                    for item in bindings
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "qwen-persistent-weight-materialization.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/cuda/qwen_persistent_weight_materialization.py",
+            "--weight-args-json",
+            str(weight_args),
+            "--weight-binding-json",
+            str(binding),
+            "--pointer-table-json",
+            str(pointer_table),
+            "--output-json",
+            str(output),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    materialization = json.loads(output.read_text(encoding="utf-8"))
+    assert materialization["kind"] == (
+        "pto_qwen_persistent_weight_materialization"
+    )
+    assert materialization["status"] == "persistent_weight_materialization_ready"
+    assert "persistent_task_weight_arg_runtime_materializer" in materialization[
+        "implemented_contracts"
+    ]
+    assert "live_decode_loop_pointer_table" in materialization[
+        "remaining_runtime_gaps"
+    ]
+    assert materialization["abi"]["task_struct"] == "CudaPersistentDagTask"
+    assert materialization["abi"]["field_offsets"]["tensor_args"] > 0
+    assert materialization["materialized_task_count"] == 10
+    assert materialization["bound_tensor_pointer_count"] == len(bindings)
+    assert materialization["missing_pointer_count"] == 0
+
+    materialized_descriptors = {
+        item["id"]: item
+        for item in materialization["materialized_task_descriptors"]
+    }
+    qkv = materialized_descriptors["layer_0_attention_qkv"]
+    assert qkv["tensor_arg_count"] == 3
+    assert qkv["tensor_args"][0] == {
+        "arg": "tensor_args[0]",
+        "slot_id": 2,
+        "tensor": "model.layers.0.self_attn.q_proj.weight",
+        "device_ptr": 0x10002000,
+        "device_ptr_hex": "0x10002000",
+        "size_bytes": 8,
+    }
+    assert materialized_descriptors["layer_0_attention_qk_norm"][
+        "tensor_arg_count"
+    ] == 2
+    assert materialized_descriptors["layer_0_mlp_gate_up"]["tensor_arg_count"] == 2
+    assert materialized_descriptors["logits"]["tensor_args"][0]["tensor"] == (
+        "lm_head.weight"
+    )
+
+
 def test_persistent_qwen_safetensors_fetch_status_is_reviewable(tmp_path):
     index = tmp_path / "model.safetensors.index.json"
     index.write_text(
@@ -1280,13 +1448,19 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-scaffold-21589e81/qwen-serving-scaffold.json"
+        == "tmp/cuda-backend/pto-serving-weight-materialization-b46497b3/qwen-persistent-weight-materialization.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-preflight-21589e81/pto-serving-preflight.json"
+        == "tmp/cuda-backend/pto-serving-scaffold-b46497b3/qwen-serving-scaffold.json"
+        for ref in claim["current_evidence_refs"]
+    )
+    assert any(
+        ref.get("kind") == "raw_artifact"
+        and ref.get("path")
+        == "tmp/cuda-backend/pto-serving-preflight-b46497b3/pto-serving-preflight.json"
         for ref in claim["current_evidence_refs"]
     )
     pto_gap = next(
@@ -1306,12 +1480,14 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "qwen_safetensors_metadata",
         "qwen_cuda_weight_binding",
         "qwen_persistent_weight_args",
+        "qwen_persistent_weight_materialization",
         "local Qwen shard placement",
         "actual safetensors shape/dtype validation for 399 tensors",
         "stable CUDA weight binding slots and file offsets",
         "full CUDA residency for 16.38 GB of weights",
         "copy-back verification for 16 small tensors",
         "persistent DAG tensor_args manifest",
+        "resident_weight_ptrs[slot_id]",
         "partial KV-cache lifecycle plan",
         "decode-loop execution",
     ]:
