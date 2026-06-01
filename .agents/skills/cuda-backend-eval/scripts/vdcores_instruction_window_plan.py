@@ -47,6 +47,47 @@ def positive_int(payload: dict[str, Any], key: str) -> int:
     return value
 
 
+def instruction_windows(*, required: int, capacity: int) -> list[dict[str, Any]]:
+    windows = []
+    for start in range(0, required, capacity):
+        end = min(start + capacity, required)
+        windows.append(
+            {
+                "index": len(windows),
+                "instruction_start": start,
+                "instruction_end": end,
+                "instruction_count": end - start,
+                "capacity_ok": end - start <= capacity,
+            },
+        )
+    return windows
+
+
+def window_manifest(
+    *,
+    max_insts: int,
+    max_cinsts: int,
+    max_minsts: int,
+) -> dict[str, Any]:
+    compute_windows = instruction_windows(required=max_cinsts, capacity=max_insts)
+    memory_windows = instruction_windows(required=max_minsts, capacity=max_insts)
+    return {
+        "manifest_kind": "per_sm_uniform_lower_bound",
+        "scope": (
+            "Uses observed max per-SM instruction pressure because the "
+            "capacity artifact does not include a full per-SM histogram."
+        ),
+        "compute_instruction_windows": compute_windows,
+        "memory_instruction_windows": memory_windows,
+        "max_compute_window_instruction_count": max(
+            window["instruction_count"] for window in compute_windows
+        ),
+        "max_memory_window_instruction_count": max(
+            window["instruction_count"] for window in memory_windows
+        ),
+    }
+
+
 def make_plan(payload: dict[str, Any], *, source: Path) -> dict[str, Any]:
     max_insts = positive_int(payload, "max_insts")
     max_cinsts = positive_int(payload, "max_cinsts_per_sm")
@@ -88,6 +129,11 @@ def make_plan(payload: dict[str, Any], *, source: Path) -> dict[str, Any]:
             "memory_instruction_windows": minst_windows,
             "worst_case_windows_per_sm": worst_windows,
         },
+        "segmented_window_manifest": window_manifest(
+            max_insts=max_insts,
+            max_cinsts=max_cinsts,
+            max_minsts=max_minsts,
+        ),
         "required_runtime_change": {
             "preferred_path": "segmented_token_windowed_shared_instruction_schedule",
             "why": (
@@ -107,6 +153,12 @@ def make_plan(payload: dict[str, Any], *, source: Path) -> dict[str, Any]:
                 "reload or advance shared instruction windows without a new model load",
                 "keep resident tensors and scheduler state live across windows",
                 "report correctness and per-window timing before viewer import",
+            ],
+            "pre_import_checks": [
+                "every emitted compute and memory window is <= max_insts",
+                "all windows execute under one model residency and KV-cache owner",
+                "window dependency handoff preserves ready queues and token state",
+                "raw artifact records per-window timing and correctness status",
             ],
         },
     }

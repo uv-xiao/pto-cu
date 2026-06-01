@@ -34,4 +34,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-01.md](entries/2026-06-02-part-01.md) | 3 | Decode Loop KV Owner Live | Decode Loop Submission Descriptors |
 | [2026-06-02-part-02.md](entries/2026-06-02-part-02.md) | 6 | VDCores Shared-Instruction Window Plan | Qwen Resource-Backed Logits Reference Fix |
 | [2026-06-02-part-03.md](entries/2026-06-02-part-03.md) | 8 | Paper Work Queue Evidence Summary | Qwen MPK 1024 Diagnostic Decode |
-| [2026-06-02-part-04.md](entries/2026-06-02-part-04.md) | 1 | Qwen VDCores Unit Numeric Branches | Qwen VDCores Unit Numeric Branches |
+| [2026-06-02-part-04.md](entries/2026-06-02-part-04.md) | 2 | Qwen VDCores Unit Numeric Branches | VDCores Segmented Window Manifest |

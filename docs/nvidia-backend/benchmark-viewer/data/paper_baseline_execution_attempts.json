@@ -3965,7 +3965,7 @@
         "compute_target": "compute_90"
       },
       "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/vdcores_instruction_window_plan.py",
-      "observation": "The existing H200 instruction-capacity capture shows the shared runtime compiles 512 instructions per SM, while Qwen3-8B decode64 needs up to 2177 compute instructions and 15042 memory instructions per SM across all 132 SMs. Preserving the shared-instruction runtime therefore requires at least 30 memory-instruction windows per SM.",
+      "observation": "The existing H200 instruction-capacity capture shows the shared runtime compiles 512 instructions per SM, while Qwen3-8B decode64 needs up to 2177 compute instructions and 15042 memory instructions per SM across all 132 SMs. The regenerated artifact now includes a bounded segmented-window manifest: 5 compute windows and 30 memory windows per SM, with every emitted window at or below the 512-instruction shared-table limit.",
       "blocker": "This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing.",
       "artifacts": [
         "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-instruction-capacity-0a0392d2/instruction-capacity-n64.json",
@@ -3984,6 +3984,11 @@
         "minimum_compute_instruction_windows": 5,
         "minimum_memory_instruction_windows": 30,
         "minimum_worst_case_windows_per_sm": 30,
+        "segmented_window_manifest_status": "generated",
+        "segmented_window_manifest_kind": "per_sm_uniform_lower_bound",
+        "max_compute_window_instruction_count": 512,
+        "max_memory_window_instruction_count": 512,
+        "pre_import_check_count": 4,
         "preferred_path": "segmented_token_windowed_shared_instruction_schedule",
         "paper_row_importable": false,
         "failure_kind": "shared_instruction_windowing_not_implemented"

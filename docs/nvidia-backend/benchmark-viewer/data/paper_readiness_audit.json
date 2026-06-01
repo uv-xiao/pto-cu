@@ -482,6 +482,11 @@
             "minimum_compute_instruction_windows": 5,
             "minimum_memory_instruction_windows": 30,
             "minimum_worst_case_windows_per_sm": 30,
+            "segmented_window_manifest_status": "generated",
+            "segmented_window_manifest_kind": "per_sm_uniform_lower_bound",
+            "max_compute_window_instruction_count": 512,
+            "max_memory_window_instruction_count": 512,
+            "pre_import_check_count": 4,
             "preferred_path": "segmented_token_windowed_shared_instruction_schedule",
             "paper_row_importable": false,
             "failure_kind": "shared_instruction_windowing_not_implemented"

@@ -6,6 +6,9 @@
   `.agents/skills/cuda-backend-eval/scripts/vdcores_instruction_window_plan.py`
   to derive a segmented shared-instruction runtime plan from the existing
   VDCores Qwen3-8B H200 capacity artifact.
+- Extended that artifact with a bounded segmented-window manifest that records
+  5 compute windows and 30 memory windows per SM, with every window staying
+  within the 512-instruction shared-table capacity.
 - Generated the raw analysis artifact under:
 
 ```text
@@ -28,7 +31,8 @@ state, KV-cache state, dependencies, correctness checks, and per-window timing.
 The script consumed:
 
 ```text
-tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-instruction-capacity-0a0392d2/instruction-capacity-n64.json
+tmp/cuda-backend/paper-baselines/vdcores/
+  qwen3-8b-instruction-capacity-0a0392d2/instruction-capacity-n64.json
 ```
 
 It derived these lower bounds for the default 512-instruction shared table:
@@ -36,10 +40,14 @@ It derived these lower bounds for the default 512-instruction shared table:
 - 5 compute-instruction windows per SM.
 - 30 memory-instruction windows per SM.
 - 30 worst-case instruction windows per SM for the Qwen3-8B decode64 path.
+- A machine-readable manifest whose largest compute and memory windows are
+  both 512 instructions, and whose final memory window carries the remaining
+  194 instructions.
 
 ## Remaining Gaps
 
-- Implement the segmented shared-instruction builder/runtime path or fix the
-  global-instruction correctness regression.
+- Implement the segmented shared-instruction builder/runtime path using the
+  generated window manifest, or fix the global-instruction correctness
+  regression.
 - Re-run Qwen3-8B `-N 64 -b 5` with correctness passing before importing the
   VDCores paper-serving row.
