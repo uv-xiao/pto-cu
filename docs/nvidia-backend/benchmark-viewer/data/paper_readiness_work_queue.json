@@ -5,14 +5,13 @@
   "ready_claims": 1,
   "blocked_claims": 3,
   "summary": {
-    "total_work_items": 5,
+    "total_work_items": 4,
     "work_items_by_source": {
       "matrix_missing_evidence": 3,
-      "probe": 1,
       "run_readiness": 1
     },
     "work_items_by_claim": {
-      "llm_serving_paper_baselines": 3,
+      "llm_serving_paper_baselines": 2,
       "persistent_device_scheduler_overhead": 1,
       "tensor_core_tile_baselines": 1
     }
@@ -63,7 +62,7 @@
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
       "ready_for_paper_claim": false,
-      "blocker_count": 5,
+      "blocker_count": 4,
       "missing_evidence_count": 1,
       "action_index": 1,
       "source": "matrix_missing_evidence",
@@ -82,7 +81,7 @@
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "planned_no_results",
       "ready_for_paper_claim": false,
-      "blocker_count": 5,
+      "blocker_count": 4,
       "missing_evidence_count": 1,
       "action_index": 2,
       "source": "run_readiness",
@@ -92,25 +91,6 @@
       "execution_attempt_id": "",
       "status": "partial",
       "action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py.",
-      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
-    },
-    {
-      "id": "paper_readiness_work_item_005",
-      "priority": 5,
-      "claim_id": "llm_serving_paper_baselines",
-      "claim_title": "LLM Serving Paper Baselines",
-      "matrix_status": "planned_no_results",
-      "ready_for_paper_claim": false,
-      "blocker_count": 5,
-      "missing_evidence_count": 1,
-      "action_index": 3,
-      "source": "probe",
-      "owner": "sglang",
-      "paper_baseline_id": "sglang",
-      "paper_baseline_run_id": "",
-      "execution_attempt_id": "",
-      "status": "partial",
-      "action": "A100 SGLang runtime validation remains uncaptured; H200 environment imports plus serving and offline benchmark execution are validated under the isolated SGLang env.",
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     }
   ]

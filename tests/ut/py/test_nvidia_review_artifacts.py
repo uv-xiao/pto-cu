@@ -2495,7 +2495,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "mpk_qwen3_native_vs_persistent is planned_not_run" in blocker
         for blocker in llm_claim["blockers"]
     )
-    assert any(
+    assert not any(
         "Readiness probe for sglang is partial" in blocker
         for blocker in llm_claim["blockers"]
     )
@@ -2512,10 +2512,9 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         and action["paper_baseline_id"] == "vllm"
         for action in llm_claim["next_actions"]
     )
-    assert any(
+    assert not any(
         action["source"] == "probe"
         and action["paper_baseline_id"] == "sglang"
-        and "A100 SGLang runtime validation remains uncaptured" in action["action"]
         for action in llm_claim["next_actions"]
     )
     llm_readiness_ids = {
@@ -2653,19 +2652,17 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 5
+    assert committed["summary"]["total_work_items"] == 4
     assert committed["summary"]["work_items_by_source"] == {
         "matrix_missing_evidence": 3,
-        "probe": 1,
         "run_readiness": 1,
     }
     work_items = committed["work_items"]
     assert all(not item["ready_for_paper_claim"] for item in work_items)
-    assert any(
+    assert not any(
         item["claim_id"] == "llm_serving_paper_baselines"
         and item["source"] == "probe"
         and item["paper_baseline_id"] == "sglang"
-        and "A100 SGLang runtime validation remains uncaptured" in item["action"]
         for item in work_items
     )
     assert not any(
@@ -2745,7 +2742,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 5
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 4
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -3359,7 +3356,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
             ),
             "sglang": (
                 "tmp/cuda-backend/paper-baselines/probes/"
-                "sglang-h200-env-df219d33/"
+                "sglang-a100-h200-env-7ed53d15/"
             ),
         }
         expected_probe_root = expected_probe_roots.get(
@@ -3409,9 +3406,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
             }
             assert "mirage.mpk.base_dynamic_shard_loader" in imported_modules
         if item["paper_baseline_id"] == "sglang":
-            assert item["latest_status"] == "partial"
+            assert item["latest_status"] == "pass"
             assert machine_status["H200"]["status"] == "pass"
-            assert machine_status["A100"]["status"] == "partial"
+            assert machine_status["A100"]["status"] == "pass"
+            assert machine_status["A100"]["blocking_gaps"] == []
             probed_modules = {
                 check["module"]
                 for check in item["checks"]
@@ -4658,18 +4656,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "latest_status"
     ] == "pass"
     assert readiness_by_run["vllm_serving_and_throughput"]["blocking_gaps"] == []
-    assert any(
-        "sglang.bench_serving" in gap
-        for gap in readiness_by_run[
-            "sglang_serving_and_offline"
-        ]["blocking_gaps"]
-    )
-    assert not any(
-        "H200:" in gap
-        for gap in readiness_by_run[
-            "sglang_serving_and_offline"
-        ]["blocking_gaps"]
-    )
+    assert readiness_by_run["sglang_serving_and_offline"][
+        "latest_status"
+    ] == "pass"
+    assert readiness_by_run["sglang_serving_and_offline"]["blocking_gaps"] == []
 
     matrix_ids = {
         item["id"] for item in paper_evaluation["paper_evaluation_matrix"]

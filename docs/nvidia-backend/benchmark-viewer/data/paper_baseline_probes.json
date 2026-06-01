@@ -185,8 +185,8 @@
       "id": "sglang_source_entrypoints",
       "paper_baseline_id": "sglang",
       "title": "SGLang Source Entrypoints",
-      "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/sglang-h200-env-df219d33/",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/sglang-a100-h200-env-7ed53d15/",
       "checks": [
         {
           "kind": "path_exists",
@@ -247,24 +247,18 @@
           "why": "The selected one-batch benchmark module must import from the pinned source checkout."
         }
       ],
-      "next_action": "A100 SGLang runtime validation remains uncaptured; H200 environment imports plus serving and offline benchmark execution are validated under the isolated SGLang env.",
+      "next_action": "SGLang A100 and H200 entrypoint imports pass under isolated runtime environments; keep serving-result rows tied to raw benchmark artifacts before promotion.",
       "latest_machine_status": [
         {
           "gpu": "A100",
-          "status": "partial",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/sglang-h200-env-df219d33/a100-probe.json",
-          "blocking_gaps": [
-            "python_module failed: orjson",
-            "python_module failed: torchvision",
-            "python_import failed: sglang.bench_serving",
-            "python_import failed: sglang.bench_offline_throughput",
-            "python_import failed: sglang.bench_one_batch"
-          ]
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/sglang-a100-h200-env-7ed53d15/a100-probe.json",
+          "blocking_gaps": []
         },
         {
           "gpu": "H200",
           "status": "pass",
-          "artifact": "tmp/cuda-backend/paper-baselines/probes/sglang-h200-env-df219d33/h200-probe.json",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/sglang-a100-h200-env-7ed53d15/h200-probe.json",
           "blocking_gaps": []
         }
       ]

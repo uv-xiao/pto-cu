@@ -51,5 +51,5 @@ Result: passed.
 
 - Keep vLLM benchmark-result promotion tied to the imported raw serving
   artifacts and shared workload policy.
-- Materialize the matching A100 SGLang environment before removing the final
-  serving-framework probe blocker.
+- The matching A100 SGLang environment is tracked by
+  `2026-06-01-sglang-a100-probe-validation.md`.
