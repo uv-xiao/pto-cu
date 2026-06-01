@@ -45,6 +45,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 SGLang H200 serving bring-up](2026-06-01-sglang-h200-serving-bringup.md)
 - [2026-06-01 SGLang H200 environment validation](2026-06-01-sglang-h200-environment-validation.md)
 - [2026-06-01 SGLang H200 environment attempt](2026-06-01-sglang-h200-environment-attempt.md)
+- [2026-06-01 SGLang H200 probe narrowing](2026-06-01-sglang-h200-probe-narrowing.md)
 - [2026-06-01 vLLM H200 MPK serving sweep](2026-06-01-vllm-h200-mpk-serving-sweep.md)
 - [2026-06-01 vLLM H200 MPK serving capture](2026-06-01-vllm-h200-mpk-serving-capture.md)
 - [2026-06-01 vLLM H200 repeats](2026-06-01-vllm-h200-repeats.md)

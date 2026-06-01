@@ -129,7 +129,7 @@
       "paper_baseline_run_id": "",
       "execution_attempt_id": "",
       "status": "partial",
-      "action": "Install SGLang runtime dependencies in an isolated evaluation venv, then run launch_server, bench_serving, offline throughput, and one-batch commands under the shared workload policy.",
+      "action": "A100 SGLang runtime validation remains uncaptured; H200 environment imports plus serving and offline benchmark execution are validated under the isolated SGLang env.",
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     }
   ]

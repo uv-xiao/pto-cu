@@ -2516,7 +2516,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert any(
         action["source"] == "probe"
         and action["paper_baseline_id"] == "sglang"
-        and "Install SGLang runtime dependencies" in action["action"]
+        and "A100 SGLang runtime validation remains uncaptured" in action["action"]
         for action in llm_claim["next_actions"]
     )
     llm_readiness_ids = {
@@ -2666,7 +2666,7 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         item["claim_id"] == "llm_serving_paper_baselines"
         and item["source"] == "probe"
         and item["paper_baseline_id"] == "sglang"
-        and "Install SGLang runtime dependencies" in item["action"]
+        and "A100 SGLang runtime validation remains uncaptured" in item["action"]
         for item in work_items
     )
     assert not any(
@@ -3354,12 +3354,20 @@ def test_benchmark_viewer_has_json_backed_review_data():
         probe_root = ROOT / item["latest_artifact_root"]
         assert probe_root.is_dir()
         assert any(path.suffix == ".json" for path in probe_root.iterdir())
-        expected_probe_root = (
+        expected_probe_roots = {
+            "vllm": (
+                "tmp/cuda-backend/paper-baselines/probes/"
+                "vllm-h200-env-d727befb/"
+            ),
+            "sglang": (
+                "tmp/cuda-backend/paper-baselines/probes/"
+                "sglang-h200-env-df219d33/"
+            ),
+        }
+        expected_probe_root = expected_probe_roots.get(
+            item["paper_baseline_id"],
             "tmp/cuda-backend/paper-baselines/probes/"
-            "vllm-h200-env-d727befb/"
-            if item["paper_baseline_id"] == "vllm"
-            else "tmp/cuda-backend/paper-baselines/probes/"
-            "paired-a100-h200-86ea3913/"
+            "paired-a100-h200-86ea3913/",
         )
         assert item["latest_artifact_root"] == expected_probe_root
         assert item["checks"]
@@ -3403,6 +3411,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
             }
             assert "mirage.mpk.base_dynamic_shard_loader" in imported_modules
         if item["paper_baseline_id"] == "sglang":
+            assert item["latest_status"] == "partial"
+            assert machine_status["H200"]["status"] == "pass"
+            assert machine_status["A100"]["status"] == "partial"
             probed_modules = {
                 check["module"]
                 for check in item["checks"]
@@ -4653,6 +4664,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     assert any(
         "sglang.bench_serving" in gap
+        for gap in readiness_by_run[
+            "sglang_serving_and_offline"
+        ]["blocking_gaps"]
+    )
+    assert not any(
+        "H200:" in gap
         for gap in readiness_by_run[
             "sglang_serving_and_offline"
         ]["blocking_gaps"]
