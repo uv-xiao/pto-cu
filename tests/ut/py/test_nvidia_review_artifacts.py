@@ -2684,8 +2684,8 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["paper_baseline_id"] == "vllm"
         and item["paper_baseline_run_id"] == "vllm_serving_and_throughput"
         and item["execution_attempt_id"]
-        == "vllm_qwen3_8b_vdcores_sweep_h200"
-        and "MPK-comparable 1024-token" in item["action"]
+        == "vllm_qwen3_8b_mpk_batch1_h200"
+        and "MPK-comparable batch 2/4/8/16" in item["action"]
         for item in work_items
     )
 
@@ -3442,6 +3442,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "thunderkittens_mha_h100_official_benchmark_h200",
         "vllm_qwen3_8b_vdcores_batch1_h200",
         "vllm_qwen3_8b_vdcores_sweep_h200",
+        "vllm_qwen3_8b_mpk_batch1_h200",
     } <= set(attempts_by_id)
     environment_attempts = paper_baseline_environment_attempts[
         "paper_baseline_environment_attempts"
@@ -3500,6 +3501,18 @@ def test_benchmark_viewer_has_json_backed_review_data():
         and item["output_tokens_per_second"] > 0
         for batch, item in vllm_h200_sweep["summary"]["batch_results"].items()
     )
+    vllm_h200_mpk = attempts_by_id["vllm_qwen3_8b_mpk_batch1_h200"]
+    assert vllm_h200_mpk["status"] == "partial"
+    assert vllm_h200_mpk["hardware"]["gpu"] == "H200"
+    assert vllm_h200_mpk["summary"]["model"] == "Qwen/Qwen3-8B"
+    assert vllm_h200_mpk["summary"]["input_tokens"] == 64
+    assert vllm_h200_mpk["summary"]["output_tokens"] == 1024
+    assert vllm_h200_mpk["summary"]["completed_requests"] == 1
+    assert vllm_h200_mpk["summary"]["failed_requests"] == 0
+    assert vllm_h200_mpk["summary"]["server_ready"]
+    assert vllm_h200_mpk["summary"]["mpk_policy_measured"]
+    assert vllm_h200_mpk["summary"]["viewer_result_imported"]
+    assert vllm_h200_mpk["summary"]["output_tokens_per_second"] > 0
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
     assert (
         attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["summary"][
@@ -4763,6 +4776,37 @@ def test_benchmark_viewer_has_json_backed_review_data():
         and record["correctness"] == "pass"
         for record in vllm_h200_sweep_records
     )
+    vllm_h200_mpk_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "vllm"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"]
+        == "tmp/cuda-backend/paper-baselines/serving-runs/vllm/"
+        "h200-mpk-qwen3-8b-batch1-7e939170/"
+    ]
+    assert len(vllm_h200_mpk_records) == 1
+    vllm_h200_mpk = vllm_h200_mpk_records[0]
+    assert vllm_h200_mpk["inputs"]["shape"] == (
+        "mpk_offline_decode,Qwen/Qwen3-8B,batch=1,"
+        "prompt_tokens=64,decode_tokens=1024"
+    )
+    assert vllm_h200_mpk["inputs"]["dtype"] == "bfloat16"
+    assert vllm_h200_mpk["statistic"]["kind"] == (
+        "paper_baseline_serving_capture"
+    )
+    assert vllm_h200_mpk["statistic"]["sample_count"] == 1
+    assert vllm_h200_mpk["statistic"]["host_wall_ns"] == 6149153061
+    assert vllm_h200_mpk["statistic"]["time_to_first_token_ns"] == 63156633
+    assert vllm_h200_mpk["statistic"]["inter_token_latency_ns"] == 5947964
+    assert vllm_h200_mpk["statistic"]["throughput_tokens_per_s"] > 0
+    assert vllm_h200_mpk["statistic"]["completed_requests"] == 1
+    assert vllm_h200_mpk["statistic"]["failed_requests"] == 0
+    assert vllm_h200_mpk["statistic"]["batch_size"] == 1
+    assert vllm_h200_mpk["statistic"]["prompt_tokens"] == 64
+    assert vllm_h200_mpk["statistic"]["decode_tokens"] == 1024
+    assert vllm_h200_mpk["correctness"] == "pass"
     driver_graph_records = [
         record
         for record in results["result_records"]

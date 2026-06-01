@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "89fe1705",
-    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-89fe1705/",
+    "pto_commit": "7e939170",
+    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-7e939170/",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
     ]
@@ -160,7 +160,7 @@
         "Editable install derives VLLM_VERSION_OVERRIDE from the pinned upstream checkout before changing into the overlay, because the overlay intentionally omits Git metadata."
       ],
       "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-89fe1705/environment-plans.json"
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-7e939170/environment-plans.json"
     },
     {
       "id": "sglang_runtime_environment",
@@ -245,7 +245,7 @@
         "The pinned source declares torch==2.11.0 and CUDA 13 packages; installing it into the project venv would make PTO tests non-reproducible."
       ],
       "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-89fe1705/environment-plans.json"
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-7e939170/environment-plans.json"
     }
   ]
 }

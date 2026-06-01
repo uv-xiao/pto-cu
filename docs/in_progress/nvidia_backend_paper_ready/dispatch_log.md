@@ -2948,3 +2948,43 @@ Each entry must include:
   MPK-comparable 1024-token policy, repeated samples, MPK serving comparison,
   and PTO persistent-device comparison are captured under the same workload
   policy.
+
+### 2026-06-01 - vLLM H200 MPK Serving Capture
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned vLLM H200
+  MPK-comparable serving capture for the paper baseline evaluation track.
+- Exact Codex command or script invocation: used the documented tree-sync
+  fallback to refresh the standalone pto-cu checkout on `bizhaoh200`, started
+  one isolated vLLM server for `Qwen/Qwen3-8B` on `CUDA_VISIBLE_DEVICES=7`
+  with `max_model_len=1088`, `bfloat16`, and `gpu_memory_utilization=0.80`,
+  then ran `vllm bench serve` for input length `64`, output length `1024`,
+  batch/concurrency `1`, `request_rate=inf`, `ignore_eos`, and
+  `temperature=0`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready serving
+  baseline MPK-policy evidence.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, changelog docs, dispatch
+  log, and local `tmp/` vLLM run artifacts. No upstream repositories were
+  edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The capture reuses the previously materialized isolated vLLM environment and
+  source overlay. It covers only MPK-comparable batch `1`, not the full
+  batch/concurrency sweep.
+- Verification commands and results:
+  H200 serving artifact
+  `tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-mpk-qwen3-8b-batch1-7e939170/`
+  -> server readiness passed, status code `0`, `bench-serve-status.txt=0`,
+  completed requests `1`, failed requests `0`, mean TTFT
+  `63.15663317218423 ms`, mean ITL `5.947963752941331 ms`, output throughput
+  `166.5269980770844 tokens/s`, and request throughput
+  `0.16262402155965272 req/s`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: vLLM now has one MPK-comparable H200
+  Qwen3-8B serving point imported into the benchmark viewer. The vLLM
+  paper-baseline run is still partial until MPK-comparable batch `2`, `4`,
+  `8`, and `16`, repeated samples, MPK serving comparison, and PTO
+  persistent-device comparison are captured under the same workload policy.
