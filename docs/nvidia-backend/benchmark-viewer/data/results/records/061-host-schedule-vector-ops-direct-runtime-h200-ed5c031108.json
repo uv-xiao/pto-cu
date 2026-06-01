@@ -1,0 +1,40 @@
+{
+  "benchmark_id": "host_schedule_vector_ops",
+  "method_id": "direct_runtime",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "dasys-h200x8",
+    "compute_target": "compute_90",
+    "driver": "see raw artifact",
+    "cuda_toolkit": "see raw artifact",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "626b8c75",
+  "inputs": {
+    "shape": "n=1024 vector",
+    "dtype": "float32",
+    "repeat_policy": "10-repeat CUDA Runtime API capture"
+  },
+  "statistic": {
+    "kind": "median_capture_group",
+    "sample_count": 10,
+    "host_wall_ns": 198703,
+    "device_wall_ns": 182240,
+    "host_wall_p50_ns": 198703,
+    "host_wall_p90_ns": 206514,
+    "host_wall_p99_ns": 221980,
+    "host_wall_mean_ns": 200061,
+    "host_wall_stdev_ns": 10033,
+    "host_wall_min_ns": 186756,
+    "host_wall_max_ns": 223699,
+    "device_wall_p50_ns": 182240,
+    "device_wall_p90_ns": 189987,
+    "device_wall_p99_ns": 205305,
+    "device_wall_mean_ns": 183603,
+    "device_wall_stdev_ns": 9640,
+    "device_wall_min_ns": 173024,
+    "device_wall_max_ns": 207008
+  },
+  "raw_artifact": "tmp/cuda-backend/direct-launch-sweep-626b8c75/",
+  "correctness": "pass"
+}

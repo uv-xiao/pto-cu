@@ -21,6 +21,8 @@ from paper_baseline_viewer_export import (
 )
 from paper_readiness_audit import build_readiness_audit
 from paper_readiness_audit import load_json as load_audit_json
+from viewer_data_io import load_json as load_viewer_json
+from viewer_data_io import write_json as write_viewer_json
 
 
 DEFAULT_RESULTS = VIEWER_DATA / "results.json"
@@ -231,11 +233,11 @@ def main() -> None:
         write_json(args.viewer_output, imported_records)
 
     updated_results = merge_result_records(
-        load_json(args.results),
+        load_viewer_json(args.results),
         imported_records,
     )
     updated_runs = mark_runs_imported(runs, imported_run_ids(raw_payload))
-    write_json(args.results, updated_results)
+    write_viewer_json(args.results, updated_results)
     write_json(args.runs, updated_runs)
 
     audit = build_readiness_audit(

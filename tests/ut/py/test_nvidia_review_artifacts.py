@@ -14,15 +14,37 @@ VIEWER_ROOT = DOC_ROOT / "benchmark-viewer"
 def load_viewer_collection(path):
     if path.is_dir():
         index = json.loads((path / "index.json").read_text(encoding="utf-8"))
+        base = path
+    elif path.suffix == ".json" and path.with_suffix("").is_dir():
+        index = json.loads(
+            (path.with_suffix("") / "index.json").read_text(encoding="utf-8")
+        )
+        base = path.with_suffix("")
+    else:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if "collection" not in payload:
+            return payload
+        index = payload
+        base = path.parent
+    if "collection" in index:
+        record_files = index.get("record_files")
+        if record_files is None:
+            record_files = json.loads(
+                (base / index["record_files_path"]).read_text(encoding="utf-8")
+            )
         records = [
-            json.loads((path / relpath).read_text(encoding="utf-8"))
-            for relpath in index["record_files"]
+            json.loads((base / relpath).read_text(encoding="utf-8"))
+            for relpath in record_files
         ]
         return {
-            "schema_version": index["schema_version"],
+            **{
+                key: value
+                for key, value in index.items()
+                if key not in {"collection", "record_files", "record_files_path"}
+            },
             index["collection"]: records,
         }
-    return json.loads(path.read_text(encoding="utf-8"))
+    return index
 
 
 def qwen_one_layer_bindings():
@@ -2326,9 +2348,7 @@ def test_vdcores_scheduler_trace_keeps_diagnostic_scope_separate():
     assert "diagnostic-scope" in scope["scheduler_queue_policy"]
     assert "Do not treat diagnostic scheduler fields" in scope["paper_use_rule"]
 
-    results = json.loads(
-        (VIEWER_ROOT / "data" / "results.json").read_text(encoding="utf-8")
-    )
+    results = load_viewer_collection(VIEWER_ROOT / "data" / "results.json")
     vdcores_result = next(
         item
         for item in results["result_records"]
@@ -3232,7 +3252,10 @@ def test_paper_baseline_results_update_marks_imported_run(tmp_path):
     audit_path = tmp_path / "paper_readiness_audit.json"
     viewer_path = tmp_path / "viewer-records.json"
     results_path.write_text(
-        (VIEWER_ROOT / "data" / "results.json").read_text(encoding="utf-8"),
+        json.dumps(
+            load_viewer_collection(VIEWER_ROOT / "data" / "results.json"),
+            indent=2,
+        ),
         encoding="utf-8",
     )
     runs_path.write_text(
@@ -3349,7 +3372,10 @@ def test_paper_baseline_results_update_rejects_missing_required_metric(tmp_path)
     audit_path = tmp_path / "paper_readiness_audit.json"
     viewer_path = tmp_path / "viewer-records.json"
     results_path.write_text(
-        (VIEWER_ROOT / "data" / "results.json").read_text(encoding="utf-8"),
+        json.dumps(
+            load_viewer_collection(VIEWER_ROOT / "data" / "results.json"),
+            indent=2,
+        ),
         encoding="utf-8",
     )
     runs_path.write_text(
@@ -5253,9 +5279,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
             encoding="utf-8"
         )
     )
-    results = json.loads(
-        (VIEWER_ROOT / "data" / "results.json").read_text(encoding="utf-8")
-    )
+    results = load_viewer_collection(VIEWER_ROOT / "data" / "results.json")
 
     benchmark_ids = {item["id"] for item in benchmarks["benchmarks"]}
     assert "llm_serving_decode" in benchmark_ids

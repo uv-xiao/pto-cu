@@ -1,0 +1,44 @@
+{
+  "benchmark_id": "llm_serving_decode",
+  "method_id": "vdcores",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90",
+    "driver": "see raw artifact",
+    "cuda_toolkit": "12.8",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "f6b16bac",
+  "inputs": {
+    "shape": "Qwen/Qwen3-1.7B one-token decode, N=1",
+    "dtype": "model default mixed precision",
+    "repeat_policy": "5 benchmark iterations after 1 warmup, guarded RepeatM tmp patch"
+  },
+  "statistic": {
+    "kind": "median_capture_group",
+    "sample_count": 5,
+    "host_wall_ns": 1778528,
+    "device_wall_ns": 1778528,
+    "host_wall_p50_ns": 1778528,
+    "host_wall_p90_ns": 1785504,
+    "host_wall_p99_ns": 1785504,
+    "host_wall_mean_ns": 1779008,
+    "host_wall_stdev_ns": 0,
+    "host_wall_min_ns": 1774240,
+    "host_wall_max_ns": 1785504,
+    "device_wall_p50_ns": 1778528,
+    "device_wall_p90_ns": 1785504,
+    "device_wall_p99_ns": 1785504,
+    "device_wall_mean_ns": 1779008,
+    "device_wall_stdev_ns": 0,
+    "device_wall_min_ns": 1774240,
+    "device_wall_max_ns": 1785504,
+    "correctness_artifact": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-correctness-712f88e8/",
+    "correctness_check_count": 17,
+    "final_token": "ref=25, dae=25",
+    "serving_coverage": "diagnostic_microdecode"
+  },
+  "raw_artifact": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-bench-f6b16bac/",
+  "correctness": "pass"
+}

@@ -9,7 +9,6 @@ const DATA_FILES = {
   paperBaselineRunReadiness: "data/paper_baseline_run_readiness.json",
   paperBaselineExecutionAttempts: {
     manifest: "data/paper_baseline_execution_attempts/index.json",
-    key: "paper_baseline_execution_attempts",
   },
   servingCommandPlan: "data/serving_command_plan.json",
   servingWorkloads: "data/serving_workloads.json",
@@ -17,7 +16,9 @@ const DATA_FILES = {
   paperReadinessAudit: "data/paper_readiness_audit.json",
   paperReadinessWorkQueue: "data/paper_readiness_work_queue.json",
   goalProgress: "data/goal_progress.json",
-  results: "data/results.json",
+  results: {
+    manifest: "data/results/index.json",
+  },
 };
 
 const state = {};
@@ -36,13 +37,17 @@ async function loadDataFile(spec) {
   }
   const manifest = await loadJson(spec.manifest);
   const base = spec.manifest.replace(/\/[^/]+$/, "");
-  const records = await Promise.all(
-    manifest.record_files.map((path) => loadJson(`${base}/${path}`)),
+  const recordFiles = manifest.record_files || await loadJson(
+    `${base}/${manifest.record_files_path}`,
   );
-  return {
-    schema_version: manifest.schema_version,
-    [spec.key]: records,
-  };
+  const records = await Promise.all(
+    recordFiles.map((path) => loadJson(`${base}/${path}`)),
+  );
+  const payload = Object.assign({}, manifest);
+  delete payload.record_files;
+  delete payload.collection;
+  payload[manifest.collection] = records;
+  return payload;
 }
 
 function text(value) {

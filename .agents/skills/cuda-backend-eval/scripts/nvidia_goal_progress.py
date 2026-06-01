@@ -46,7 +46,14 @@ def repo_relative(path: Path) -> str:
 
 
 def path_exists(path: str) -> bool:
-    return (ROOT / path).exists()
+    target = ROOT / path
+    if target.exists():
+        return True
+    return (
+        target.suffix == ".json"
+        and target.with_suffix("").is_dir()
+        and (target.with_suffix("") / "index.json").is_file()
+    )
 
 
 def make_criterion(

@@ -1,0 +1,59 @@
+{
+  "benchmark_id": "llm_serving_decode",
+  "method_id": "sglang",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90",
+    "driver": "580.126.20",
+    "cuda_toolkit": "12.8",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "eb75a235",
+  "inputs": {
+    "shape": "vdcores_offline_decode,Qwen/Qwen3-8B,batch=1,prompt_tokens=128,decode_tokens=64,mode=offline_engine,repeats=3",
+    "dtype": "bfloat16",
+    "repeat_policy": "three sglang bench_offline_throughput samples, fixed random length, skip warmup, local ShareGPT-shaped seed file"
+  },
+  "statistic": {
+    "kind": "paper_baseline_offline_repeat_capture",
+    "sample_count": 3,
+    "host_wall_ns": 409836575,
+    "device_wall_ns": 0,
+    "end_to_end_latency_ns": 409836575,
+    "time_to_first_token_ns": 0,
+    "inter_token_latency_ns": 6403696,
+    "throughput_tokens_per_s": 156.19079316906286,
+    "throughput_tokens_per_s_stdev": 2.707208317880333,
+    "throughput_tokens_per_s_min": 154.3569607414003,
+    "throughput_tokens_per_s_max": 159.30014429568868,
+    "throughput": 2.440481143266607,
+    "total_token_throughput_tokens_per_s": 468.5723795071886,
+    "last_gen_throughput_tokens_per_s": 42.49957686749451,
+    "batch_size": 1,
+    "prompt_tokens": 128,
+    "decode_tokens": 64,
+    "completed_requests": 1,
+    "failed_requests": 0,
+    "max_concurrent_requests": 1,
+    "total_input_tokens": 128,
+    "total_output_tokens": 64,
+    "end_to_end_latency_stdev_ns": 7036613,
+    "p50_output_throughput_tokens_per_s": 154.91527447009963,
+    "p90_output_throughput_tokens_per_s": 159.30014429568868,
+    "p99_output_throughput_tokens_per_s": 159.30014429568868,
+    "throughput_tokens_per_s_samples": [
+      154.3569607414003,
+      154.91527447009963,
+      159.30014429568868
+    ],
+    "last_gen_throughput_tokens_per_s_samples": [
+      40.59974081863936,
+      40.66600406455308,
+      46.23298571929109
+    ],
+    "serving_coverage": "full_serving"
+  },
+  "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/",
+  "correctness": "pass"
+}

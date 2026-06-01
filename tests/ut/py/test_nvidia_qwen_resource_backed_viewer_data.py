@@ -5,20 +5,31 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def load_viewer_results() -> list[dict]:
+    path = (
+        ROOT
+        / "docs"
+        / "nvidia-backend"
+        / "benchmark-viewer"
+        / "data"
+        / "results"
+    )
+    index = json.loads((path / "index.json").read_text(encoding="utf-8"))
+    record_files = index.get("record_files")
+    if record_files is None:
+        record_files = json.loads(
+            (path / index["record_files_path"]).read_text(encoding="utf-8")
+        )
+    return [
+        json.loads((path / relpath).read_text(encoding="utf-8"))
+        for relpath in record_files
+    ]
+
+
 def resource_backed_rows() -> list[dict]:
-    results = json.loads(
-        (
-            ROOT
-            / "docs"
-            / "nvidia-backend"
-            / "benchmark-viewer"
-            / "data"
-            / "results.json"
-        ).read_text(encoding="utf-8")
-    )["result_records"]
     return [
         record
-        for record in results
+        for record in load_viewer_results()
         if record["statistic"].get("serving_coverage")
         == "diagnostic_resource_backed_qwen_dag"
     ]

@@ -1,0 +1,40 @@
+{
+  "benchmark_id": "tensor_core_tile",
+  "method_id": "direct_runtime",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "dasys-h200x8",
+    "compute_target": "compute_90",
+    "driver": "see raw artifact",
+    "cuda_toolkit": "see raw artifact",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "09462d04",
+  "inputs": {
+    "shape": "n=1024, tensor tile 16x16x16",
+    "dtype": "float32 naive SGEMM",
+    "repeat_policy": "10-repeat selected tensor launch capture"
+  },
+  "statistic": {
+    "kind": "median_capture_group",
+    "sample_count": 10,
+    "host_wall_ns": 209140,
+    "device_wall_ns": 197040,
+    "host_wall_p50_ns": 209140,
+    "host_wall_p90_ns": 248780,
+    "host_wall_p99_ns": 468213,
+    "host_wall_mean_ns": 234497,
+    "host_wall_stdev_ns": 91356,
+    "host_wall_min_ns": 189002,
+    "host_wall_max_ns": 492595,
+    "device_wall_p50_ns": 197040,
+    "device_wall_p90_ns": 234566,
+    "device_wall_p99_ns": 453642,
+    "device_wall_mean_ns": 222742,
+    "device_wall_stdev_ns": 90250,
+    "device_wall_min_ns": 178368,
+    "device_wall_max_ns": 477984
+  },
+  "raw_artifact": "tmp/cuda-backend/tensor-launch-h200-09462d04/",
+  "correctness": "pass"
+}

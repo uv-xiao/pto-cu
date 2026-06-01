@@ -8,6 +8,20 @@ ROOT = Path(__file__).resolve().parents[3]
 VIEWER_ROOT = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer"
 
 
+def load_viewer_results():
+    path = VIEWER_ROOT / "data" / "results"
+    index = json.loads((path / "index.json").read_text(encoding="utf-8"))
+    record_files = index.get("record_files")
+    if record_files is None:
+        record_files = json.loads(
+            (path / index["record_files_path"]).read_text(encoding="utf-8")
+        )
+    return [
+        json.loads((path / relpath).read_text(encoding="utf-8"))
+        for relpath in record_files
+    ]
+
+
 def load_decode_loop_runner_module():
     script_path = ROOT / "examples" / "cuda" / "qwen_decode_loop_runner.py"
     spec = importlib.util.spec_from_file_location(
@@ -259,10 +273,7 @@ def test_viewer_matrix_tracks_decode_loop_evidence():
 
 
 def test_viewer_results_import_decode_loop_as_diagnostic_not_full_serving():
-    results_path = VIEWER_ROOT / "data" / "results.json"
-    results = json.loads(results_path.read_text(encoding="utf-8"))[
-        "result_records"
-    ]
+    results = load_viewer_results()
 
     rows = [
         record

@@ -17,14 +17,12 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from pto_qwen_resource_backed_matrix import COVERAGE, ensure_matrix_ref
+from viewer_data_io import load_json as load_viewer_json
+from viewer_data_io import write_json as write_viewer_json
 
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 DEFAULT_RESULTS = VIEWER_DATA / "results.json"
 DEFAULT_MATRIX = VIEWER_DATA / "paper_evaluation_matrix.json"
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def write_json(path: Path, payload: Any) -> None:
@@ -241,17 +239,23 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    payload = load_json(args.raw_json)
+    payload = json.loads(args.raw_json.read_text(encoding="utf-8"))
     raw_artifact = args.artifact_root or repo_relative(args.raw_json)
     records = build_result_records(
         payload,
         raw_artifact=raw_artifact,
         commit=args.commit,
     )
-    write_json(args.results, merge_results(load_json(args.results), records))
+    write_viewer_json(
+        args.results,
+        merge_results(load_viewer_json(args.results), records),
+    )
     write_json(
         args.matrix,
-        ensure_matrix_ref(load_json(args.matrix), raw_artifact=raw_artifact),
+        ensure_matrix_ref(
+            json.loads(args.matrix.read_text(encoding="utf-8")),
+            raw_artifact=raw_artifact,
+        ),
     )
     print(f"imported {raw_artifact}")
 

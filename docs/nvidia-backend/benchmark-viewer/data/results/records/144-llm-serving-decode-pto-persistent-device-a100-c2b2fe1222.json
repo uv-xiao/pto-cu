@@ -1,0 +1,34 @@
+{
+  "benchmark_id": "llm_serving_decode",
+  "method_id": "pto_persistent_device",
+  "hardware": {
+    "gpu": "A100",
+    "machine": "hina",
+    "compute_target": "compute_80",
+    "driver": "see raw artifact",
+    "cuda_toolkit": "see raw artifact",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "1dd1e4a6",
+  "inputs": {
+    "shape": "Qwen/Qwen3-8B resource-backed diagnostic mpk_offline_decode, graph_tasks=255",
+    "dtype": "float32 diagnostic task bodies with real buffers",
+    "repeat_policy": "single resource-backed run_prepared submission inside one CUDA context"
+  },
+  "statistic": {
+    "kind": "pto_qwen_resource_backed_execution",
+    "sample_count": 1,
+    "host_wall_ns": 58256411,
+    "device_wall_ns": 58233856,
+    "run_prepared_status": 0,
+    "completed_count": 255,
+    "error_count": 0,
+    "scheduler_processed_count": 255,
+    "task_count": 255,
+    "serving_coverage": "diagnostic_resource_backed_qwen_dag",
+    "workload_id": "mpk_offline_decode",
+    "context_policy": "one_cuda_context_for_all_resource_owners"
+  },
+  "raw_artifact": "tmp/cuda-backend/pto-serving-resource-backed-execution-2026-06-02/qwen-decode-loop-runner.json",
+  "correctness": "pass"
+}

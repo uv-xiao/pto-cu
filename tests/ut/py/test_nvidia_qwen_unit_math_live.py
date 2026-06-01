@@ -8,6 +8,20 @@ ROOT = Path(__file__).resolve().parents[3]
 VIEWER_ROOT = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer"
 
 
+def load_viewer_results():
+    path = VIEWER_ROOT / "data" / "results"
+    index = json.loads((path / "index.json").read_text(encoding="utf-8"))
+    record_files = index.get("record_files")
+    if record_files is None:
+        record_files = json.loads(
+            (path / index["record_files_path"]).read_text(encoding="utf-8")
+        )
+    return [
+        json.loads((path / relpath).read_text(encoding="utf-8"))
+        for relpath in record_files
+    ]
+
+
 def load_unit_math_live_module():
     script_path = ROOT / "examples" / "cuda" / "qwen_unit_math_live.py"
     spec = importlib.util.spec_from_file_location(
@@ -173,9 +187,7 @@ def test_unit_math_live_importer_marks_result_as_diagnostic(tmp_path):
 
 
 def test_viewer_results_import_repeated_unit_math_as_diagnostic():
-    results = json.loads(
-        (VIEWER_ROOT / "data" / "results.json").read_text(encoding="utf-8")
-    )["result_records"]
+    results = load_viewer_results()
 
     row = next(
         record

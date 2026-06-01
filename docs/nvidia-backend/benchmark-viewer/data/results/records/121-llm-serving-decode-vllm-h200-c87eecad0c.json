@@ -1,0 +1,58 @@
+{
+  "benchmark_id": "llm_serving_decode",
+  "method_id": "vllm",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90",
+    "driver": "580.126.20",
+    "cuda_toolkit": "12.8",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "d727befb",
+  "inputs": {
+    "shape": "vdcores_offline_decode,Qwen/Qwen3-8B,batch=16,prompt_tokens=128,decode_tokens=64,mode=online_serving,repeats=3",
+    "dtype": "bfloat16",
+    "repeat_policy": "three vLLM bench serve samples, random dataset fixed input/output lengths, max_concurrency=batch, request_rate=inf"
+  },
+  "statistic": {
+    "kind": "paper_baseline_serving_repeat_capture",
+    "sample_count": 3,
+    "host_wall_ns": 480438858,
+    "device_wall_ns": 0,
+    "end_to_end_latency_ns": 480438858,
+    "time_to_first_token_ns": 89170464,
+    "time_to_first_token_stdev_ns": 19294303,
+    "inter_token_latency_ns": 6039125,
+    "inter_token_latency_stdev_ns": 699184,
+    "time_per_output_token_ns": 6039121,
+    "throughput_tokens_per_s": 2159.7779254046995,
+    "throughput_tokens_per_s_stdev": 297.0808627084906,
+    "throughput_tokens_per_s_min": 1839.7487736187843,
+    "throughput_tokens_per_s_max": 2426.7646728798577,
+    "throughput": 33.74653008444843,
+    "total_token_throughput_tokens_per_s": 6479.333776214099,
+    "batch_size": 16,
+    "prompt_tokens": 128,
+    "decode_tokens": 64,
+    "completed_requests": 16,
+    "failed_requests": 0,
+    "max_concurrent_requests": 16,
+    "total_input_tokens": 2048,
+    "total_output_tokens": 1024,
+    "end_to_end_latency_stdev_ns": 69037868,
+    "p50_output_throughput_tokens_per_s": 2212.820329715457,
+    "p90_output_throughput_tokens_per_s": 2426.7646728798577,
+    "p99_output_throughput_tokens_per_s": 2426.7646728798577,
+    "p99_ttft_ns": 103170959,
+    "p99_itl_ns": 11300662,
+    "throughput_tokens_per_s_samples": [
+      1839.7487736187843,
+      2426.7646728798577,
+      2212.820329715457
+    ],
+    "serving_coverage": "full_serving"
+  },
+  "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/",
+  "correctness": "pass"
+}

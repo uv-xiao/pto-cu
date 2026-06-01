@@ -1,0 +1,40 @@
+{
+  "benchmark_id": "tensor_core_tile",
+  "method_id": "direct_runtime",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "dasys-h200x8",
+    "compute_target": "compute_90",
+    "driver": "see raw artifact",
+    "cuda_toolkit": "see raw artifact",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "626b8c75",
+  "inputs": {
+    "shape": "n=1024, tensor tile 16x16x16",
+    "dtype": "float32 naive SGEMM",
+    "repeat_policy": "10-repeat selected tensor launch capture"
+  },
+  "statistic": {
+    "kind": "median_capture_group",
+    "sample_count": 10,
+    "host_wall_ns": 195083,
+    "device_wall_ns": 178192,
+    "host_wall_p50_ns": 195083,
+    "host_wall_p90_ns": 219486,
+    "host_wall_p99_ns": 230202,
+    "host_wall_mean_ns": 190638,
+    "host_wall_stdev_ns": 25531,
+    "host_wall_min_ns": 148985,
+    "host_wall_max_ns": 231393,
+    "device_wall_p50_ns": 178192,
+    "device_wall_p90_ns": 200790,
+    "device_wall_p99_ns": 211858,
+    "device_wall_mean_ns": 173372,
+    "device_wall_stdev_ns": 24384,
+    "device_wall_min_ns": 133440,
+    "device_wall_max_ns": 213088
+  },
+  "raw_artifact": "tmp/cuda-backend/direct-launch-sweep-626b8c75/",
+  "correctness": "pass"
+}

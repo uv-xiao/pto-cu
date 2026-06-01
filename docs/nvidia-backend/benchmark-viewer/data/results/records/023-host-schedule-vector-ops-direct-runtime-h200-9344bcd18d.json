@@ -1,0 +1,40 @@
+{
+  "benchmark_id": "host_schedule_vector_ops",
+  "method_id": "direct_runtime",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "dasys-h200x8",
+    "compute_target": "compute_90",
+    "driver": "see raw artifact",
+    "cuda_toolkit": "see raw artifact",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "ec8f272e",
+  "inputs": {
+    "shape": "n=1024 vector",
+    "dtype": "float32",
+    "repeat_policy": "10-repeat CUDA Runtime API capture"
+  },
+  "statistic": {
+    "kind": "median_capture_group",
+    "sample_count": 10,
+    "host_wall_ns": 157191,
+    "device_wall_ns": 146336,
+    "host_wall_p50_ns": 157191,
+    "host_wall_p90_ns": 1316398,
+    "host_wall_p99_ns": 10602943,
+    "host_wall_mean_ns": 1306447,
+    "host_wall_stdev_ns": 3629012,
+    "host_wall_min_ns": 149906,
+    "host_wall_max_ns": 11634782,
+    "device_wall_p50_ns": 146336,
+    "device_wall_p90_ns": 1305967,
+    "device_wall_p99_ns": 10591419,
+    "device_wall_mean_ns": 1295174,
+    "device_wall_stdev_ns": 3628881,
+    "device_wall_min_ns": 140000,
+    "device_wall_max_ns": 11623136
+  },
+  "raw_artifact": "tmp/cuda-backend/host-launch-h200-ec8f272e/",
+  "correctness": "pass"
+}

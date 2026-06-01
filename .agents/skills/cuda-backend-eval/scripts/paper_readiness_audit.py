@@ -54,6 +54,10 @@ def load_sharded_collection(path: Path) -> dict[str, Any]:
         fail(f"sharded collection index is not an object: {index_path}")
     collection = index.get("collection")
     record_files = index.get("record_files")
+    if record_files is None and isinstance(index.get("record_files_path"), str):
+        record_files = json.loads(
+            (path / index["record_files_path"]).read_text(encoding="utf-8")
+        )
     if not isinstance(collection, str) or not collection:
         fail(f"sharded collection missing collection name: {index_path}")
     if not isinstance(record_files, list):
@@ -72,10 +76,13 @@ def load_sharded_collection(path: Path) -> dict[str, Any]:
         if not isinstance(record, dict):
             fail(f"sharded record is not an object: {record_path}")
         records.append(record)
-    return {
-        "schema_version": index.get("schema_version", 1),
-        collection: records,
+    payload = {
+        key: value
+        for key, value in index.items()
+        if key not in {"collection", "record_files", "record_files_path"}
     }
+    payload[collection] = records
+    return payload
 
 
 def write_json(path: Path, payload: Any) -> None:
@@ -637,7 +644,7 @@ def build_readiness_audit(
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json",
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_execution_attempts/index.json",
-            "docs/nvidia-backend/benchmark-viewer/data/results.json",
+            "docs/nvidia-backend/benchmark-viewer/data/results/index.json",
         ],
         "overall_status": "paper_ready"
         if ready_claims == len(claim_audits)

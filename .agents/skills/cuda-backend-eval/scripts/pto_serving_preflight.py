@@ -13,6 +13,12 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[4]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from viewer_data_io import load_json as load_viewer_json
+
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 DEFAULT_OUTPUT = (
     ROOT
@@ -131,7 +137,7 @@ def load_serving_scaffold() -> dict[str, Any]:
 
 def build_preflight() -> dict[str, Any]:
     serving_workloads = load_json(VIEWER_DATA / "serving_workloads.json")
-    results = load_json(VIEWER_DATA / "results.json")
+    results = load_viewer_json(VIEWER_DATA / "results.json")
     serving_scaffold = load_serving_scaffold()
     pto_rows = pto_serving_rows(results)
     qwen8b_pto_rows = full_serving_qwen_rows(pto_rows)

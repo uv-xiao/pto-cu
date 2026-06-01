@@ -1,0 +1,40 @@
+{
+  "benchmark_id": "llm_serving_decode",
+  "method_id": "sglang",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90",
+    "driver": "580.126.20",
+    "cuda_toolkit": "12.8",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "bfc1c581",
+  "inputs": {
+    "shape": "vdcores_offline_decode,Qwen/Qwen3-8B,batch=1,prompt_tokens=128,decode_tokens=64,mode=offline_engine",
+    "dtype": "bfloat16",
+    "repeat_policy": "single sglang bench_offline_throughput engine request, fixed random length, skip warmup, local ShareGPT-shaped seed file"
+  },
+  "statistic": {
+    "kind": "paper_baseline_offline_throughput_capture",
+    "sample_count": 1,
+    "host_wall_ns": 490993121,
+    "device_wall_ns": 0,
+    "end_to_end_latency_ns": 490993121,
+    "time_to_first_token_ns": 0,
+    "inter_token_latency_ns": 7671768,
+    "throughput": 2.036688413391408,
+    "throughput_tokens_per_s": 130.34805845705012,
+    "total_token_throughput_tokens_per_s": 391.0441753711504,
+    "last_gen_throughput_tokens_per_s": 41.593186990678895,
+    "batch_size": 1,
+    "prompt_tokens": 128,
+    "decode_tokens": 64,
+    "completed_requests": 1,
+    "failed_requests": 0,
+    "max_concurrent_requests": 1,
+    "serving_coverage": "full_serving"
+  },
+  "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-fixedrange-bfc1c581/",
+  "correctness": "pass"
+}

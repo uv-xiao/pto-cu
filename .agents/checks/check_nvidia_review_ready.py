@@ -26,6 +26,25 @@ def require_file(path: Path) -> None:
         fail(f"missing file: {path.relative_to(ROOT)}")
 
 
+def logical_file(path: Path) -> Path:
+    if path.is_file():
+        return path
+    if path.suffix == ".json" and (path.with_suffix("") / "index.json").is_file():
+        return path.with_suffix("") / "index.json"
+    fail(f"missing file: {path.relative_to(ROOT)}")
+
+
+def logical_text(path: Path) -> str:
+    if path.is_file():
+        return path.read_text(encoding="utf-8", errors="replace")
+    if path.suffix == ".json" and path.with_suffix("").is_dir():
+        return "\n".join(
+            child.read_text(encoding="utf-8", errors="replace")
+            for child in sorted(path.with_suffix("").rglob("*.json"))
+        )
+    fail(f"missing file: {path.relative_to(ROOT)}")
+
+
 def check_dispatch_log_structure() -> None:
     landing = GOAL_ROOT / "dispatch_log.md"
     archive_index = GOAL_ROOT / "dispatch_log" / "index.md"
@@ -52,11 +71,44 @@ def check_dispatch_log_structure() -> None:
 
 
 def load_json(path: Path) -> dict:
+    if path.is_dir():
+        return load_sharded_json(path)
+    if not path.is_file() and path.suffix == ".json" and path.with_suffix("").is_dir():
+        return load_sharded_json(path.with_suffix(""))
     require_file(path)
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         fail(f"invalid JSON in {path.relative_to(ROOT)}: {exc}")
+
+
+def load_sharded_json(path: Path) -> dict:
+    index_path = path / "index.json"
+    require_file(index_path)
+    try:
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"invalid JSON in {index_path.relative_to(ROOT)}: {exc}")
+    collection = index.get("collection")
+    record_files = index.get("record_files")
+    if record_files is None and isinstance(index.get("record_files_path"), str):
+        record_files_path = path / index["record_files_path"]
+        require_file(record_files_path)
+        record_files = json.loads(record_files_path.read_text(encoding="utf-8"))
+    if not isinstance(collection, str) or not isinstance(record_files, list):
+        fail(f"invalid sharded index: {index_path.relative_to(ROOT)}")
+    payload = {
+        key: value
+        for key, value in index.items()
+        if key not in {"collection", "record_files", "record_files_path"}
+    }
+    records = []
+    for relpath in record_files:
+        record_path = path / relpath
+        require_file(record_path)
+        records.append(json.loads(record_path.read_text(encoding="utf-8")))
+    payload[collection] = records
+    return payload
 
 
 def check_evaluation_docs() -> None:
@@ -169,8 +221,7 @@ def check_evidence_refs(records: list[dict], owner: str) -> None:
     for record in records:
         for ref in record.get("evidence_refs", []):
             path = ROOT / ref["path"]
-            require_file(path)
-            text = path.read_text(encoding="utf-8", errors="replace")
+            text = logical_text(path)
             for symbol in ref.get("symbols", []):
                 if symbol not in text:
                     fail(f"{owner} {record['id']} missing symbol {symbol} in {ref['path']}")

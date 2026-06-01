@@ -1,0 +1,40 @@
+{
+  "benchmark_id": "tensor_core_tile",
+  "method_id": "direct_driver_graph",
+  "hardware": {
+    "gpu": "A100",
+    "machine": "hina",
+    "compute_target": "compute_80",
+    "driver": "see raw artifact",
+    "cuda_toolkit": "see raw artifact",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "01e30e99",
+  "inputs": {
+    "shape": "n=1024, tensor tile 16x16x16",
+    "dtype": "float32 naive SGEMM",
+    "repeat_policy": "10-repeat selected tensor launch capture"
+  },
+  "statistic": {
+    "kind": "median_capture_group",
+    "sample_count": 10,
+    "host_wall_ns": 31507,
+    "device_wall_ns": 18943,
+    "host_wall_p50_ns": 31507,
+    "host_wall_p90_ns": 40009,
+    "host_wall_p99_ns": 40060,
+    "host_wall_mean_ns": 32889,
+    "host_wall_stdev_ns": 5604,
+    "host_wall_min_ns": 26419,
+    "host_wall_max_ns": 40066,
+    "device_wall_p50_ns": 18943,
+    "device_wall_p90_ns": 22528,
+    "device_wall_p99_ns": 22528,
+    "device_wall_mean_ns": 18328,
+    "device_wall_stdev_ns": 3722,
+    "device_wall_min_ns": 13311,
+    "device_wall_max_ns": 22528
+  },
+  "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+  "correctness": "pass"
+}

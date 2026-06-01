@@ -75,6 +75,14 @@ def load_sharded_collection(path: Path) -> dict[str, Any]:
         )
     collection = index.get("collection")
     record_files = index.get("record_files")
+    if record_files is None and isinstance(index.get("record_files_path"), str):
+        record_files_path = path / index["record_files_path"]
+        if not record_files_path.is_file():
+            fail(f"missing sharded record list: {record_files_path.relative_to(ROOT)}")
+        try:
+            record_files = json.loads(record_files_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            fail(f"invalid JSON in {record_files_path.relative_to(ROOT)}: {exc}")
     if not isinstance(collection, str) or not collection:
         fail(
             "sharded collection has no collection name: "
@@ -103,10 +111,36 @@ def load_sharded_collection(path: Path) -> dict[str, Any]:
         if not isinstance(record, dict):
             fail(f"sharded record is not an object: {record_path.relative_to(ROOT)}")
         records.append(record)
-    return {
-        "schema_version": index.get("schema_version", 1),
-        collection: records,
+    payload = {
+        key: value
+        for key, value in index.items()
+        if key not in {"collection", "record_files", "record_files_path"}
     }
+    payload[collection] = records
+    return payload
+
+
+def logical_data_path_exists(root: Path, relpath: str) -> bool:
+    path = root / relpath
+    if path.is_file():
+        return True
+    return (
+        path.suffix == ".json"
+        and path.with_suffix("").is_dir()
+        and (path.with_suffix("") / "index.json").is_file()
+    )
+
+
+def logical_data_text(root: Path, relpath: str) -> str:
+    path = root / relpath
+    if path.is_file():
+        return path.read_text(encoding="utf-8", errors="replace")
+    if path.suffix == ".json" and path.with_suffix("").is_dir():
+        return "\n".join(
+            child.read_text(encoding="utf-8", errors="replace")
+            for child in sorted(path.with_suffix("").rglob("*.json"))
+        )
+    return ""
 
 
 def require_string(record: dict[str, Any], key: str, owner: str) -> str:
@@ -221,10 +255,9 @@ def check_evidence_refs(record: dict[str, Any], owner: str, root: Path) -> None:
         if not isinstance(ref, dict):
             fail(f"{owner} evidence ref is not an object")
         relpath = require_string(ref, "path", owner)
-        path = root / relpath
-        if not path.is_file():
+        if not logical_data_path_exists(root, relpath):
             fail(f"{owner} evidence path missing: {relpath}")
-        text = path.read_text(encoding="utf-8", errors="replace")
+        text = logical_data_text(root, relpath)
         for symbol in require_list(ref, "symbols", owner):
             if not isinstance(symbol, str) or not symbol:
                 fail(f"{owner} evidence symbol is empty")
@@ -248,7 +281,7 @@ def validate_policy_exception_refs(
             if not (root / path).exists():
                 fail(f"{owner} tmp_artifact path missing: {path}")
         elif kind in {"viewer_data", "stable_doc", "changelog"}:
-            if not (root / path).is_file():
+            if not logical_data_path_exists(root, path):
                 fail(f"{owner} evidence path missing: {path}")
         else:
             fail(f"{owner} has invalid evidence ref kind: {kind}")
@@ -576,7 +609,7 @@ def validate_serving_workloads(data: dict[str, Any], root: Path) -> set[str]:
         source = require_dict(record, "paper_source", owner)
         for key in ("paper", "evidence", "notes"):
             require_string(source, key, owner)
-        if not (root / source["evidence"]).is_file():
+        if not logical_data_path_exists(root, source["evidence"]):
             fail(f"{owner} source evidence missing: {source['evidence']}")
 
         model_policy = require_dict(record, "model_policy", owner)
@@ -1453,7 +1486,7 @@ def validate_paper_evaluation_matrix(
                 "baseline_survey",
             }:
                 path = require_string(ref, "path", owner)
-                if not (root / path).is_file():
+                if not logical_data_path_exists(root, path):
                     fail(f"{owner} evidence path missing: {path}")
             elif kind == "raw_artifact":
                 path = require_string(ref, "path", owner)
@@ -1496,7 +1529,7 @@ def validate_paper_readiness_audit(
             "docs/nvidia-backend/benchmark-viewer/data/"
             "paper_baseline_execution_attempts/index.json"
         ),
-        "docs/nvidia-backend/benchmark-viewer/data/results.json",
+        "docs/nvidia-backend/benchmark-viewer/data/results/index.json",
     }
     sources = audit.get("source_files")
     if not isinstance(sources, list) or set(sources) != required_sources:

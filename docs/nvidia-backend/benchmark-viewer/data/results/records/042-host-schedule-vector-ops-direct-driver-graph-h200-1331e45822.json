@@ -1,0 +1,40 @@
+{
+  "benchmark_id": "host_schedule_vector_ops",
+  "method_id": "direct_driver_graph",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "dasys-h200x8",
+    "compute_target": "compute_90",
+    "driver": "see raw artifact",
+    "cuda_toolkit": "see raw artifact",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "01e30e99",
+  "inputs": {
+    "shape": "n=65536 vector",
+    "dtype": "float32",
+    "repeat_policy": "10-repeat graph-replay sweep capture"
+  },
+  "statistic": {
+    "kind": "median_capture_group",
+    "sample_count": 10,
+    "host_wall_ns": 31847,
+    "device_wall_ns": 19071,
+    "host_wall_p50_ns": 31847,
+    "host_wall_p90_ns": 39591,
+    "host_wall_p99_ns": 42564,
+    "host_wall_mean_ns": 32434,
+    "host_wall_stdev_ns": 5262,
+    "host_wall_min_ns": 26925,
+    "host_wall_max_ns": 42895,
+    "device_wall_p50_ns": 19071,
+    "device_wall_p90_ns": 25647,
+    "device_wall_p99_ns": 28110,
+    "device_wall_mean_ns": 20108,
+    "device_wall_stdev_ns": 4126,
+    "device_wall_min_ns": 15231,
+    "device_wall_max_ns": 28384
+  },
+  "raw_artifact": "tmp/cuda-backend/graph-replay-sweep-01e30e99/",
+  "correctness": "pass"
+}

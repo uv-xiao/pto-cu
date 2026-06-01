@@ -1,0 +1,40 @@
+{
+  "benchmark_id": "host_schedule_vector_ops",
+  "method_id": "pto_host_schedule",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "dasys-h200x8",
+    "compute_target": "compute_90",
+    "driver": "see raw artifact",
+    "cuda_toolkit": "see raw artifact",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "743709f3",
+  "inputs": {
+    "shape": "n=1024 vector",
+    "dtype": "float32",
+    "repeat_policy": "selected row from compact capture"
+  },
+  "statistic": {
+    "kind": "median_capture_group",
+    "sample_count": 1,
+    "host_wall_ns": 23330,
+    "device_wall_ns": 13632,
+    "host_wall_p50_ns": 23330,
+    "host_wall_p90_ns": 23330,
+    "host_wall_p99_ns": 23330,
+    "host_wall_mean_ns": 23330,
+    "host_wall_stdev_ns": 0,
+    "host_wall_min_ns": 23330,
+    "host_wall_max_ns": 23330,
+    "device_wall_p50_ns": 13632,
+    "device_wall_p90_ns": 13632,
+    "device_wall_p99_ns": 13632,
+    "device_wall_mean_ns": 13632,
+    "device_wall_stdev_ns": 0,
+    "device_wall_min_ns": 13632,
+    "device_wall_max_ns": 13632
+  },
+  "raw_artifact": "tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/",
+  "correctness": "pass"
+}
