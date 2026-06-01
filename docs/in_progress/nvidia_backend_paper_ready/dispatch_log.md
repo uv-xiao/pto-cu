@@ -3385,3 +3385,40 @@ Each entry must include:
   ladder. The MPK persistent-kernel path remains the paper-critical blocker,
   and LLM-serving paper readiness still needs same-workload MPK persistent,
   VDCores, vLLM, SGLang, ThunderKittens-family, and PTO rows.
+
+### 2026-06-01 - Serving Gap Audit Narrowing
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  paper-readiness audit cleanup after vLLM and SGLang H200 serving rows were
+  imported.
+- Exact Codex command or script invocation: added vLLM and SGLang
+  `llm_serving_decode` H200 evidence refs to `paper_evaluation_matrix.json`,
+  narrowed the LLM-serving missing-evidence text, updated
+  `nvidia_goal_progress.py`, then regenerated review artifacts with
+  `refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-readiness queue
+  accuracy.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer matrix/audit/work-queue data,
+  generated goal progress and run-readiness data, changelog docs, dispatch
+  log, tests, and CUDA evaluation helper wording. No upstream repositories
+  were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  This slice changed review data only and did not run new GPU benchmarks.
+- Verification commands and results: `validate_benchmark_viewer_data.py` ->
+  passed; `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed;
+  `pytest tests/ut/py/test_nvidia_review_artifacts.py -q` -> `40 passed`;
+  `jq empty docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `py_compile nvidia_goal_progress.py` -> passed; `git diff --check` ->
+  passed.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the LLM-serving work queue no longer
+  asks reviewers to import vLLM or SGLang rows that already exist. Remaining
+  full-serving gaps are MPK persistent-kernel, VDCores full serving,
+  ThunderKittens-family full serving, and PTO full serving under the shared
+  Qwen3-8B policies.

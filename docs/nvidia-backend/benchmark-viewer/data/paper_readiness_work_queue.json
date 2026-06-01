@@ -51,7 +51,7 @@
       "paper_baseline_run_id": "",
       "execution_attempt_id": "",
       "status": "missing",
-      "action": "MPK persistent-kernel, VDCores gated Llama, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records for the same paper workload.",
+      "action": "MPK persistent-kernel and VDCores full serving raw outputs are not yet imported for the same paper workload; ThunderKittens-family and PTO rows remain proxy or partial serving-equivalent evidence rather than full Qwen3-8B serving rows.",
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {

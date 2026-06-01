@@ -420,16 +420,36 @@
           "gpu": "H200"
         },
         {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "vllm",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "sglang",
+          "gpu": "H200"
+        },
+        {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/graph-tensor-core-compact-current-working/combined-current-493ce832/"
         },
         {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/"
         }
       ],
       "missing_evidence": [
-        "MPK persistent-kernel, VDCores gated Llama, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records for the same paper workload."
+        "MPK persistent-kernel and VDCores full serving raw outputs are not yet imported for the same paper workload; ThunderKittens-family and PTO rows remain proxy or partial serving-equivalent evidence rather than full Qwen3-8B serving rows."
       ],
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     }

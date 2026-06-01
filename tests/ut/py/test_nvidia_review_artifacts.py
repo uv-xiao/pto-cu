@@ -2624,6 +2624,10 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         for blocker in llm_claim["blockers"]
     )
     assert not any(
+        "vLLM, SGLang" in blocker
+        for blocker in llm_claim["blockers"]
+    )
+    assert not any(
         "Readiness probe for sglang is partial" in blocker
         for blocker in llm_claim["blockers"]
     )
@@ -2873,6 +2877,14 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert by_id["paper_grade_results"]["blocking_work_items"] == 3
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
+    )
+    assert any(
+        "remaining queued MPK persistent" in gap
+        for gap in by_id["paper_grade_results"]["gaps"]
+    )
+    assert not any(
+        "vLLM, SGLang" in gap
+        for gap in by_id["paper_grade_results"]["gaps"]
     )
     assert by_id["remote_evaluation"]["status"] == "met"
     assert by_id["benchmark_viewer"]["status"] == "met"
@@ -4997,9 +5009,36 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 for ref in item["current_evidence_refs"]
             )
             assert any(
+                ref.get("kind") == "viewer_result"
+                and ref.get("benchmark_id") == "llm_serving_decode"
+                and ref.get("method_id") == "vllm"
+                and ref.get("gpu") == "H200"
+                for ref in item["current_evidence_refs"]
+            )
+            assert any(
+                ref.get("kind") == "viewer_result"
+                and ref.get("benchmark_id") == "llm_serving_decode"
+                and ref.get("method_id") == "sglang"
+                and ref.get("gpu") == "H200"
+                for ref in item["current_evidence_refs"]
+            )
+            assert any(
                 ref.get("path")
                 == "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/"
                 for ref in item["current_evidence_refs"]
+            )
+            assert any(
+                ref.get("path")
+                == "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/"
+                for ref in item["current_evidence_refs"]
+            )
+            assert any(
+                ref.get("path")
+                == "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/"
+                for ref in item["current_evidence_refs"]
+            )
+            assert not any(
+                "vLLM, SGLang" in gap for gap in item["missing_evidence"]
             )
 
     assert paper_readiness_audit["overall_status"] == "not_paper_ready"

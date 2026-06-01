@@ -208,9 +208,9 @@
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
         "baseline_survey": 1,
-        "raw_artifact": 2,
+        "raw_artifact": 4,
         "viewer_data": 3,
-        "viewer_result": 2
+        "viewer_result": 4
       },
       "missing_evidence_count": 1,
       "missing_viewer_results": [],
@@ -317,7 +317,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-6fa7978e/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-3530da72/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -325,7 +325,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-6fa7978e/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-3530da72/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],
@@ -437,7 +437,7 @@
         }
       ],
       "blockers": [
-        "MPK persistent-kernel, VDCores gated Llama, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records for the same paper workload.",
+        "MPK persistent-kernel and VDCores full serving raw outputs are not yet imported for the same paper workload; ThunderKittens-family and PTO rows remain proxy or partial serving-equivalent evidence rather than full Qwen3-8B serving rows.",
         "Paper baseline run mpk_qwen3_native_vs_persistent is planned_not_run, not imported_to_viewer.",
         "Paper baseline run vdcores_llama_decode_correctness is planned_not_run, not imported_to_viewer.",
         "Run readiness vdcores_llama_decode_correctness is partial: HF_TOKEN is not available for this run."
@@ -446,7 +446,7 @@
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
-          "action": "MPK persistent-kernel, VDCores gated Llama, vLLM, SGLang, and ThunderKittens-family raw outputs imported into viewer result records for the same paper workload."
+          "action": "MPK persistent-kernel and VDCores full serving raw outputs are not yet imported for the same paper workload; ThunderKittens-family and PTO rows remain proxy or partial serving-equivalent evidence rather than full Qwen3-8B serving rows."
         },
         {
           "source": "run_readiness",
