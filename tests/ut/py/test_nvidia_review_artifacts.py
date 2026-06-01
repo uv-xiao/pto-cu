@@ -5182,7 +5182,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (paper_readiness_audit_dir / "index.json").is_file()
     assert (VIEWER_ROOT / "data" / "paper_readiness_work_queue.json").is_file()
     assert (VIEWER_ROOT / "data" / "goal_progress.json").is_file()
-    assert (VIEWER_ROOT / "data" / "capture_imports.json").is_file()
+    capture_imports_dir = VIEWER_ROOT / "data" / "capture_imports"
+    assert (capture_imports_dir / "index.json").is_file()
     viewer_js = (VIEWER_ROOT / "viewer.js").read_text(encoding="utf-8")
     for required in [
         "run.inputs.shape",
@@ -5292,10 +5293,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
             encoding="utf-8"
         )
     )
-    capture_imports = json.loads(
-        (VIEWER_ROOT / "data" / "capture_imports.json").read_text(
-            encoding="utf-8"
-        )
+    capture_imports = load_viewer_collection(
+        VIEWER_ROOT / "data" / "capture_imports.json"
     )
     results = load_viewer_collection(VIEWER_ROOT / "data" / "results.json")
 

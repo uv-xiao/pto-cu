@@ -1,0 +1,12 @@
+{
+  "baseline": "direct_driver",
+  "benchmark_id": "host_schedule_vector_ops",
+  "method_id": "direct_driver",
+  "n": 4096,
+  "task_count": 1,
+  "inputs": {
+    "shape": "n=4096 vector",
+    "dtype": "float32",
+    "repeat_policy": "10-repeat direct-launch sweep capture"
+  }
+}

@@ -21,6 +21,8 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+from viewer_data_io import load_json as load_viewer_json
+
 
 ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_MAPPING = (
@@ -34,7 +36,7 @@ DEFAULT_MAPPING = (
 
 
 def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    return load_viewer_json(path)
 
 
 def write_json(path: Path, payload: Any) -> None:

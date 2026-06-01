@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 capture import shards](2026-06-02-capture-import-shards.md)
 - [2026-06-02 paper baseline probe shards](2026-06-02-paper-baseline-probe-shards.md)
 - [2026-06-02 paper readiness audit shards](2026-06-02-paper-readiness-audit-shards.md)
 - [2026-06-02 paper baseline run shards](2026-06-02-paper-baseline-run-shards.md)

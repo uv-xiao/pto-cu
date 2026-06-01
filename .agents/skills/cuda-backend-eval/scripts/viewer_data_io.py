@@ -12,6 +12,7 @@ from typing import Any
 
 
 COLLECTION_KEYS = (
+    "capture_imports",
     "claim_audits",
     "result_records",
     "paper_baseline_execution_attempts",
@@ -116,6 +117,8 @@ def sharded_target(path: Path, payload: dict[str, Any]) -> Path | None:
         path.name == "paper_baseline_probes.json"
         and "paper_baseline_probes" in payload
     ):
+        return path.with_suffix("")
+    if path.name == "capture_imports.json" and "capture_imports" in payload:
         return path.with_suffix("")
     return None
 
@@ -275,6 +278,8 @@ def manifest_record_files(base: Path, manifest: dict[str, Any]) -> list[Any]:
 def record_filename(collection: str, index: int, record: dict[str, Any]) -> str:
     if collection == "serving_command_plans" and "id" in record:
         return f"{slug(str(record['id']))}.json"
+    if collection == "capture_imports":
+        return f"{slug(capture_import_name(index, record))}.json"
     if "id" in record:
         return f"{record['id']}.json"
     prefix = slug(record_prefix(record))
@@ -282,6 +287,20 @@ def record_filename(collection: str, index: int, record: dict[str, Any]) -> str:
         record_identity(record).encode("utf-8"),
     ).hexdigest()[:10]
     return f"{index:03d}-{prefix}-{digest}.json"
+
+
+def capture_import_name(index: int, record: dict[str, Any]) -> str:
+    return "-".join(
+        str(value)
+        for value in (
+            f"{index:03d}",
+            record.get("baseline", "baseline"),
+            record.get("benchmark_id", "benchmark"),
+            record.get("method_id", "method"),
+            record.get("n", "n"),
+            record.get("task_count", "tasks"),
+        )
+    )
 
 
 def record_prefix(record: dict[str, Any]) -> str:

@@ -1,0 +1,12 @@
+{
+  "baseline": "direct_runtime_sgemm",
+  "benchmark_id": "tensor_core_tile",
+  "method_id": "direct_runtime",
+  "n": 4096,
+  "task_count": 1,
+  "inputs": {
+    "shape": "n=4096, tensor tile 16x16x16",
+    "dtype": "float32 naive SGEMM",
+    "repeat_policy": "10-repeat direct-launch sweep capture"
+  }
+}
