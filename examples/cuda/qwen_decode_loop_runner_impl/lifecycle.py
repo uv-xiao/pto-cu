@@ -202,6 +202,11 @@ def build_decode_loop_runner(
                 implemented_contracts.append(
                     "qwen_resource_backed_decode_step_execution",
                 )
+            if (
+                "qwen_diagnostic_decode_token_feedback"
+                in resource_backed_execution.get("implemented_contracts", [])
+            ):
+                implemented_contracts.append("qwen_diagnostic_decode_token_feedback")
     submission_descriptors = submission_descriptor_contract(
         plans=plans,
         resource_modes=resource_modes,

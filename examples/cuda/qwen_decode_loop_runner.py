@@ -39,6 +39,7 @@ EVIDENCE_SYMBOLS = [
     "single_context_live_resource_session",
     "qwen_resource_backed_diagnostic_execution",
     "qwen_resource_backed_decode_step_execution",
+    "qwen_diagnostic_decode_token_feedback",
 ]
 
 

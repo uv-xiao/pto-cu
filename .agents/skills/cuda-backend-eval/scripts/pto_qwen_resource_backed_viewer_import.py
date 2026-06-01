@@ -6,15 +6,21 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[4]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from pto_qwen_resource_backed_matrix import COVERAGE, ensure_matrix_ref
+
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 DEFAULT_RESULTS = VIEWER_DATA / "results.json"
 DEFAULT_MATRIX = VIEWER_DATA / "paper_evaluation_matrix.json"
-COVERAGE = "diagnostic_resource_backed_qwen_dag"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -56,6 +62,7 @@ def build_result_records(
     for workload in execution["workloads"]:
         counters = workload["scheduler_counters"]
         logits_summary = workload.get("logits_summary", {})
+        decode_feedback = workload.get("decode_feedback", {})
         diagnostic_reference = logits_summary.get("diagnostic_reference", {})
         topk = logits_summary.get("topk", [])
         repeat_runs = int(workload.get("repeat_runs", 1))
@@ -115,6 +122,13 @@ def build_result_records(
                         workload.get("executed_decode_steps", 0),
                     ),
                     "decode_step_limit": workload.get("decode_step_limit"),
+                    "decode_feedback_status": decode_feedback.get(
+                        "status",
+                        "not_recorded",
+                    ),
+                    "decode_feedback_applied_step_count": int(
+                        decode_feedback.get("applied_step_count", 0),
+                    ),
                     "task_count": int(workload["graph_task_count"]),
                     "serving_coverage": COVERAGE,
                     "workload_id": workload["workload_id"],
@@ -186,95 +200,6 @@ def merge_results(
     for record in records:
         merged[result_key(record)] = record
     updated["result_records"] = list(merged.values())
-    return updated
-
-
-def ensure_matrix_ref(
-    matrix: dict[str, Any],
-    *,
-    raw_artifact: str | None = None,
-) -> dict[str, Any]:
-    ref = {
-        "kind": "viewer_result",
-        "benchmark_id": "llm_serving_decode",
-        "method_id": "pto_persistent_device",
-        "gpu": "A100",
-        "shape_contains": "Qwen/Qwen3-8B resource-backed diagnostic",
-        "serving_coverage": COVERAGE,
-    }
-    raw_ref = (
-        {
-            "kind": "raw_artifact",
-            "path": raw_artifact,
-            "symbols": [
-                "pto_qwen_resource_backed_execution",
-                "qwen_resource_backed_diagnostic_execution",
-                "qwen_resource_backed_decode_step_execution",
-                "diagnostic_resource_backed_qwen_dag",
-                "repeat_runs",
-                "partial_logits_not_full_vocab",
-                "full_logits_buffer_prefix_sampled",
-                "full_logits_buffer_checked",
-                "diagnostic_qwen_logits_formula",
-                "logits_summary_stable",
-            ],
-        }
-        if raw_artifact
-        else None
-    )
-    updated = dict(matrix)
-    records = []
-    for record in matrix["paper_evaluation_matrix"]:
-        current = dict(record)
-        if current["id"] == "llm_serving_paper_baselines":
-            refs = current["current_evidence_refs"]
-            if ref not in refs:
-                refs.append(ref)
-            if raw_ref is not None:
-                refs[:] = [
-                    item
-                    for item in refs
-                    if not (
-                        item.get("kind") == "raw_artifact"
-                        and item.get("path") == raw_artifact
-                    )
-                ]
-                refs.append(raw_ref)
-            for detail in current.get("missing_evidence_details", []):
-                if detail.get("id") == "pto_full_serving_qwen3_8b":
-                    action = detail["action"]
-                    updated_phrase = (
-                        "diagnostic proxy, unit-math, descriptor-smoke, "
-                        "resource-backed execution, and repeated "
-                        "resource-backed execution viewer_result_imports "
-                        "with full-logits-buffer diagnostic writes and "
-                        "bounded-prefix diagnostic reference checks are "
-                        "present."
-                    )
-                    for phrase in (
-                        "diagnostic proxy, unit-math, and descriptor-smoke "
-                        "viewer_result_imports are present.",
-                        "diagnostic proxy, unit-math, descriptor-smoke, "
-                        "and resource-backed execution viewer_result_imports "
-                        "are present.",
-                        "diagnostic proxy, unit-math, descriptor-smoke, "
-                        "resource-backed execution, and repeated "
-                        "resource-backed execution viewer_result_imports "
-                        "are present.",
-                        "diagnostic proxy, unit-math, descriptor-smoke, "
-                        "resource-backed execution, and repeated "
-                        "resource-backed execution viewer_result_imports "
-                        "with partial-logits sampling are present.",
-                        "diagnostic proxy, unit-math, descriptor-smoke, "
-                        "resource-backed execution, and repeated "
-                        "resource-backed execution viewer_result_imports "
-                        "with full-logits-buffer diagnostic writes and "
-                        "bounded-prefix sampling are present.",
-                    ):
-                        action = action.replace(phrase, updated_phrase)
-                    detail["action"] = action
-        records.append(current)
-    updated["paper_evaluation_matrix"] = records
     return updated
 
 

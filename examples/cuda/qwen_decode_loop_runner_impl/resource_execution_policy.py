@@ -43,8 +43,34 @@ def decode_step_execution_summary(
     }
 
 
-def implemented_contracts(decode_step_limit: int | None) -> list[str]:
+def implemented_contracts(
+    decode_step_limit: int | None,
+    *,
+    token_feedback: bool = False,
+) -> list[str]:
     contracts = ["qwen_resource_backed_diagnostic_execution"]
     if decode_step_limit is not None:
         contracts.append("qwen_resource_backed_decode_step_execution")
+    if token_feedback:
+        contracts.append("qwen_diagnostic_decode_token_feedback")
     return contracts
+
+
+def logits_summary_stable(repeat_results: list[dict[str, Any]]) -> bool:
+    if not repeat_results:
+        return False
+    first_key = logits_stability_key(repeat_results[0].get("logits_summary", {}))
+    return all(
+        logits_stability_key(item.get("logits_summary", {})) == first_key
+        for item in repeat_results[1:]
+    )
+
+
+def logits_stability_key(summary: dict[str, Any]) -> tuple[Any, Any, Any, Any]:
+    topk = summary.get("topk") or []
+    return (
+        summary.get("sample_checksum"),
+        topk[0].get("token_id") if topk else None,
+        summary.get("written_element_count"),
+        summary.get("sampled_element_count"),
+    )

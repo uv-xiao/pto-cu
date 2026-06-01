@@ -12,6 +12,10 @@ from simpler_setup.cuda_callable_compiler import (
     prepare_cuda_persistent_device_callable,
 )
 
+from qwen_decode_loop_runner_impl.decode_feedback import (
+    apply_decode_feedback,
+    feedback_summary,
+)
 from qwen_decode_loop_runner_impl.launch_preflight import (
     build_host_task_packet,
     keyed_fields,
@@ -20,6 +24,7 @@ from qwen_decode_loop_runner_impl.launch_preflight import (
 from qwen_decode_loop_runner_impl.resource_execution_policy import (
     decode_step_execution_summary,
     implemented_contracts,
+    logits_summary_stable,
     resource_backed_execution_count,
 )
 from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph
@@ -129,7 +134,14 @@ def run_resource_backed_execution(
             decode_step_limit=decode_step_limit,
         ),
         "workloads": workload_results,
-        "implemented_contracts": implemented_contracts(decode_step_limit),
+        "implemented_contracts": implemented_contracts(
+            decode_step_limit,
+            token_feedback=all(
+                item.get("decode_feedback", {}).get("status")
+                == "diagnostic_token_feedback_applied"
+                for item in workload_results
+            ),
+        ),
         "remaining_runtime_gaps": [
             "full_qwen_numerical_correctness",
             "full_serving_viewer_result_import",
@@ -151,9 +163,10 @@ def run_workload(
         workload_id=plan["workload_id"],
         task_count=len(descriptors),
     )
+    token_fields = keyed_fields(plan.get("token_pointer_fields", []))
     packet = build_host_task_packet(
         descriptors=descriptors,
-        token_fields=keyed_fields(plan.get("token_pointer_fields", [])),
+        token_fields=token_fields,
         kv_fields=plan.get("kv_pointer_fields", {}),
         workspace=workspace,
     )
@@ -185,12 +198,18 @@ def run_workload(
             ctypes.byref(timing),
         )
         counters = graph.read_counters()
+        logits_summary = graph.read_logits_summary(workspace)
+        step_index = repeat_index if decode_step_limit is not None else None
+        decode_feedback = apply_decode_feedback(
+            session=session,
+            token_fields=token_fields,
+            decode_step_index=step_index,
+            logits_summary=logits_summary,
+        )
         repeat_results.append(
             {
                 "repeat_index": repeat_index,
-                "decode_step_index": (
-                    repeat_index if decode_step_limit is not None else None
-                ),
+                "decode_step_index": step_index,
                 "status": (
                     "pass"
                     if status == 0
@@ -201,7 +220,8 @@ def run_workload(
                 "run_prepared_status": int(status),
                 "scheduler_counters": counters,
                 "output_sample": graph.read_output_sample(workspace),
-                "logits_summary": graph.read_logits_summary(workspace),
+                "logits_summary": logits_summary,
+                "decode_feedback": decode_feedback,
                 "timing_ns": {
                     "host_wall": int(timing.host_wall_ns),
                     "device_wall": int(timing.device_wall_ns),
@@ -246,37 +266,13 @@ def run_workload(
         "output_sample": last["output_sample"],
         "logits_summary": last["logits_summary"],
         "logits_summary_stable": logits_summary_stable(repeat_results),
+        "decode_feedback": feedback_summary(repeat_results),
         "timing_ns": {
             "host_wall": total_host_wall,
             "device_wall": total_device_wall,
         },
     }
     return result
-
-
-def logits_summary_stable(repeat_results: list[dict[str, Any]]) -> bool:
-    if not repeat_results:
-        return False
-    first = repeat_results[0].get("logits_summary", {})
-    first_key = (
-        first.get("sample_checksum"),
-        first.get("topk", [{}])[0].get("token_id") if first.get("topk") else None,
-        first.get("written_element_count"),
-        first.get("sampled_element_count"),
-    )
-    for item in repeat_results[1:]:
-        summary = item.get("logits_summary", {})
-        key = (
-            summary.get("sample_checksum"),
-            summary.get("topk", [{}])[0].get("token_id")
-            if summary.get("topk")
-            else None,
-            summary.get("written_element_count"),
-            summary.get("sampled_element_count"),
-        )
-        if key != first_key:
-            return False
-    return True
 
 
 def artifact_summary(prepared: Any) -> dict[str, Any]:
