@@ -114,6 +114,7 @@ def build_work_queue(
                     "shape_contains": str(action.get("shape_contains", "")),
                     "status": require_string(action, "status", claim_id),
                     "action": require_string(action, "action", claim_id),
+                    "evidence_summary": evidence_summary(action, claim_id),
                     "promotion_gate": require_string(
                         claim, "promotion_gate", claim_id
                     ),
@@ -135,6 +136,17 @@ def build_work_queue(
         },
         "work_items": work_items,
     }
+
+
+def evidence_summary(action: dict[str, Any], owner: str) -> list[str]:
+    summary = action.get("evidence_summary", [])
+    if summary in (None, ""):
+        return []
+    if not isinstance(summary, list) or not all(
+        isinstance(item, str) and item.strip() for item in summary
+    ):
+        fail(f"{owner} action evidence_summary is invalid")
+    return summary
 
 
 def parse_args() -> argparse.Namespace:

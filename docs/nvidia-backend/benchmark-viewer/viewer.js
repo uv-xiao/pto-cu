@@ -575,6 +575,7 @@ function renderPaperWorkQueue() {
     item.shape_contains || "-",
     item.status,
     item.action,
+    (item.evidence_summary || []).join(" | ") || "-",
   ]);
   const heading = document.createElement("h3");
   heading.append(text("Paper Work Queue"));
@@ -591,6 +592,7 @@ function renderPaperWorkQueue() {
         "Shape",
         "Status",
         "Action",
+        "Evidence Summary",
       ],
       rows,
     ),
@@ -680,6 +682,9 @@ function renderPaperReadinessAudit() {
     const nextActions = claim.next_actions.map((action) => (
       `${action.source}: ${formatServingAction(action)}`
     ));
+    const actionEvidence = claim.next_actions.flatMap((action) => (
+      action.evidence_summary || []
+    ));
     const policyExceptions = (claim.evidence_policy_exceptions || []).map((item) => (
       `${item.status}: ${item.title} - ${item.review_rule}`
     ));
@@ -704,6 +709,10 @@ function renderPaperReadinessAudit() {
       ),
       ...namedList("Blockers", claim.blockers),
       ...namedList("Next Actions", nextActions.length ? nextActions : ["none"]),
+      ...namedList(
+        "Next Action Evidence",
+        actionEvidence.length ? actionEvidence : ["none"],
+      ),
       paragraph("Promotion gate", claim.promotion_gate),
     );
     return item;

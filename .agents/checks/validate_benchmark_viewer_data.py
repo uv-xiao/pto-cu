@@ -1319,6 +1319,12 @@ def validate_paper_evaluation_matrix(
                 for serving_id in serving_ids
             ):
                 fail(f"{owner} missing detail serving_workload_ids is invalid")
+            evidence_summary = detail.get("evidence_summary", [])
+            if not isinstance(evidence_summary, list) or not all(
+                isinstance(item, str) and item.strip()
+                for item in evidence_summary
+            ):
+                fail(f"{owner} missing detail evidence_summary is invalid")
             for serving_id in serving_ids:
                 if serving_id not in serving_workload_ids:
                     fail(
@@ -1480,6 +1486,12 @@ def validate_paper_readiness_audit(
                 fail(f"{owner} has invalid next action source: {source}")
             require_string(action, "status", owner)
             require_string(action, "action", owner)
+            evidence_summary = action.get("evidence_summary", [])
+            if not isinstance(evidence_summary, list) or not all(
+                isinstance(item, str) and item.strip()
+                for item in evidence_summary
+            ):
+                fail(f"{owner} next action evidence_summary is invalid")
             serving_ids = action.get("serving_workload_ids", [])
             if not isinstance(serving_ids, list) or not all(
                 isinstance(item, str) and item for item in serving_ids
@@ -1592,6 +1604,12 @@ def validate_paper_readiness_work_queue(
             "promotion_gate",
         ):
             require_string(item, key, owner)
+        evidence_summary = item.get("evidence_summary", [])
+        if not isinstance(evidence_summary, list) or not all(
+            isinstance(entry, str) and entry.strip()
+            for entry in evidence_summary
+        ):
+            fail(f"{owner} evidence_summary is invalid")
         if not isinstance(item.get("ready_for_paper_claim"), bool):
             fail(f"{owner} ready_for_paper_claim is not boolean")
         for key in ("blocker_count", "missing_evidence_count", "action_index"):

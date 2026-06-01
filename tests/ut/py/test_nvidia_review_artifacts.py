@@ -2230,7 +2230,8 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         if item["id"] == "pto_full_serving_qwen3_8b"
     )
     assert pto_gap["status"] == "missing"
-    action = pto_gap["action"]
+    assert len(pto_gap["action"]) < 400
+    action = " ".join([pto_gap["action"], *pto_gap["evidence_summary"]])
     for phrase in [
         "controlled attention-tile proxy",
         "persistent_qwen_serving_scaffold",
@@ -4780,6 +4781,17 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["execution_attempt_id"]
         == "vdcores_qwen3_8b_shared_instruction_window_plan_h200"
         for item in work_items
+    )
+    pto_item = next(
+        item
+        for item in work_items
+        if item["missing_evidence_id"] == "pto_full_serving_qwen3_8b"
+    )
+    assert len(pto_item["action"]) < 400
+    assert pto_item["evidence_summary"]
+    assert any(
+        "resource-backed diagnostic execution" in item
+        for item in pto_item["evidence_summary"]
     )
 
 

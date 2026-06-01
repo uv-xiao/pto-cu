@@ -354,6 +354,7 @@ def claim_next_actions(
                     "shape_contains": str(detail.get("shape_contains", "")),
                     "status": str(detail.get("status", "missing")),
                     "action": str(action),
+                    "evidence_summary": detail.get("evidence_summary", []),
                 }
             )
     for item in [] if missing_evidence_details else missing_evidence:
@@ -518,6 +519,15 @@ def build_readiness_audit(
                         f"{claim.get('id', '<unknown>')} "
                         f"missing_evidence_details has invalid {key}"
                     )
+            evidence_summary = detail.get("evidence_summary", [])
+            if not isinstance(evidence_summary, list) or not all(
+                isinstance(item, str) and item.strip()
+                for item in evidence_summary
+            ):
+                fail(
+                    f"{claim.get('id', '<unknown>')} "
+                    "missing_evidence_details has invalid evidence_summary"
+                )
         paper_baseline_ids = claim.get("paper_baseline_ids", [])
         if not isinstance(paper_baseline_ids, list) or not all(
             isinstance(item, str) for item in paper_baseline_ids
