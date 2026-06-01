@@ -761,6 +761,21 @@
             "diagnostic_qwen_logits_formula",
             "logits_summary_stable"
           ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-full-logits-check-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
         }
       ],
       "missing_evidence": [
@@ -781,7 +796,7 @@
             "Lifecycle and input artifacts: persistent_qwen_serving_scaffold, qwen_serving_lifecycle_plan, qwen_prompt_accounting, qwen_runtime_input_binding, qwen_cuda_token_buffer_binding, qwen_persistent_decode_args, and qwen_kv_cache_binding.",
             "Weight artifacts: qwen_weight_inventory, qwen_safetensors_fetch, qwen_safetensors_metadata, qwen_cuda_weight_binding, qwen_persistent_weight_args, qwen_persistent_weight_materialization, qwen_resident_weight_table, local Qwen shard placement, actual safetensors shape/dtype validation for 399 tensors, stable CUDA weight binding slots and file offsets, full CUDA residency for 16.38 GB of weights, and copy-back verification for 16 small tensors.",
             "Persistent DAG artifacts: qwen_persistent_task_bodies, generated persistent-device Qwen task-body source, persistent DAG tensor_args manifest, resident_weight_ptrs[slot_id], process-scoped resident weight table owner, padded target-length input_ids, attention_mask, persistent decode token argument binding, preserving tensor_args for weights, dry-run KV-cache key/value pointer binding, and persistent DAG c/d mutable KV fields c/d.",
-            "Runtime diagnostics: controlled attention-tile proxy, controlled proxy numeric oracle, controlled proxy live CUDA execution, controlled proxy live microdecode DAG execution, resource-backed diagnostic execution, and decode-loop execution coverage remain diagnostic rather than full serving."
+            "Runtime diagnostics: controlled attention-tile proxy, controlled proxy numeric oracle, controlled proxy live CUDA execution, controlled proxy live microdecode DAG execution, resource-backed diagnostic execution, full logits-buffer diagnostic reference checking for 2,430,976 elements per serving policy, and decode-loop execution coverage remain diagnostic rather than full serving."
           ]
         },
         {

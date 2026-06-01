@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ctypes
+import heapq
 import math
 from typing import Any
 
@@ -127,8 +128,8 @@ class MaterializedGraph:
 
     def read_logits_summary(self, workspace: dict[str, Any]) -> dict[str, Any]:
         written_elements = logits_written_elements(workspace)
-        sampled_elements = min(written_elements, 65536)
-        if sampled_elements <= 0:
+        checked_elements = written_elements
+        if checked_elements <= 0:
             return {
                 "status": "not_sampled",
                 "reason": "no_written_logits",
@@ -138,9 +139,9 @@ class MaterializedGraph:
                 "written_element_count": written_elements,
                 "sampled_element_count": 0,
             }
-        host = (ctypes.c_float * sampled_elements)(*([0.0] * sampled_elements))
+        host = (ctypes.c_float * checked_elements)(*([0.0] * checked_elements))
         ptr = int(workspace["logits_buffer"]["device_ptr_hex"], 0)
-        self.copy_from_device(host, ptr, "logits_prefix")
+        self.copy_from_device(host, ptr, "logits_written_buffer")
         values = [float(value) for value in host]
         final_task = self.packet[self.task_count - 1]
         return summarize_logits_values(
@@ -165,8 +166,7 @@ class MaterializedGraph:
                 "status": "not_checked",
                 "reason": "missing_hidden_or_weight_pointer",
             }
-        checked = min(len(values), hidden_elements)
-        hidden = (ctypes.c_float * checked)(*([0.0] * checked))
+        hidden = (ctypes.c_float * hidden_elements)(*([0.0] * hidden_elements))
         lm_head = (ctypes.c_float * 4)(0.0, 0.0, 0.0, 0.0)
         self.copy_from_device(hidden, int(final_task.a), "diagnostic_logits_hidden")
         self.copy_from_device(
@@ -174,12 +174,11 @@ class MaterializedGraph:
             int(final_task.tensor_args[0]),
             "diagnostic_logits_lm_head",
         )
-        reference = diagnostic_logits_reference_values(
+        return compare_logits_formula(
+            values,
             hidden=[float(value) for value in hidden],
             lm_head=[float(value) for value in lm_head],
-            count=checked,
         )
-        return compare_logits_reference(values[:checked], reference)
 
 
 def logits_written_elements(workspace: dict[str, Any]) -> int:
@@ -199,13 +198,15 @@ def summarize_logits_values(
         for index, value in enumerate(values)
         if math.isfinite(value)
     ]
-    ranked = sorted(finite_values, key=lambda item: item[1], reverse=True)[:top_k]
+    ranked = heapq.nlargest(top_k, finite_values, key=lambda item: item[1])
     checksum = sum((index + 1) * value for index, value in enumerate(values))
     full_written = int(written_element_count) >= int(logits_buffer_elements)
     return {
         "status": "partial_logits_sampled",
         "coverage": (
-            "full_logits_buffer_prefix_sampled"
+            "full_logits_buffer_checked"
+            if full_written and len(values) == int(logits_buffer_elements)
+            else "full_logits_buffer_prefix_sampled"
             if full_written
             else "partial_logits_not_full_vocab"
         ),
@@ -247,12 +248,40 @@ def compare_logits_reference(
     *,
     tolerance: float = 1e-5,
 ) -> dict[str, Any]:
-    errors = [
-        abs(value - expected)
-        for value, expected in zip(values, reference, strict=True)
-    ]
-    max_abs_error = max(errors, default=0.0)
-    mismatch_count = sum(1 for error in errors if error > tolerance)
+    max_abs_error = 0.0
+    mismatch_count = 0
+    for value, expected in zip(values, reference, strict=True):
+        error = abs(value - expected)
+        max_abs_error = max(max_abs_error, error)
+        if error > tolerance:
+            mismatch_count += 1
+    return {
+        "status": "pass" if mismatch_count == 0 else "fail",
+        "scope": "diagnostic_qwen_logits_formula",
+        "formula": "out[i]=hidden[i%hidden_elements]*lm_head[i&3]",
+        "checked_element_count": len(values),
+        "tolerance": tolerance,
+        "max_abs_error": round(float(max_abs_error), 8),
+        "mismatch_count": mismatch_count,
+    }
+
+
+def compare_logits_formula(
+    values: list[float],
+    *,
+    hidden: list[float],
+    lm_head: list[float],
+    tolerance: float = 1e-5,
+) -> dict[str, Any]:
+    hidden_count = max(1, len(hidden))
+    max_abs_error = 0.0
+    mismatch_count = 0
+    for index, value in enumerate(values):
+        expected = hidden[index % hidden_count] * lm_head[index & 3]
+        error = abs(value - expected)
+        max_abs_error = max(max_abs_error, error)
+        if error > tolerance:
+            mismatch_count += 1
     return {
         "status": "pass" if mismatch_count == 0 else "fail",
         "scope": "diagnostic_qwen_logits_formula",

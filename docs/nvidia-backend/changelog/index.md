@@ -122,6 +122,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-02 Qwen resource-backed full logits write](2026-06-02-qwen-resource-backed-full-logits-write.md)
 - [2026-06-02 Qwen resource-backed logits reference](2026-06-02-qwen-resource-backed-logits-reference.md)
 - [2026-06-02 Qwen resource-backed logits reference fix](2026-06-02-qwen-resource-backed-logits-reference-fixed.md)
+- [2026-06-02 Qwen resource-backed full logits check](2026-06-02-qwen-resource-backed-full-logits-check.md)
 - [2026-06-02 Qwen resource-backed viewer import](2026-06-02-qwen-resource-backed-viewer-import.md)
 - [2026-06-02 Paper work queue evidence summary](2026-06-02-paper-work-queue-evidence-summary.md)
 - [2026-06-01 Qwen KV-cache binding](2026-06-01-qwen-kv-cache-binding.md)

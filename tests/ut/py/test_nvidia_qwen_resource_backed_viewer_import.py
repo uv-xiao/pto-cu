@@ -287,6 +287,13 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
     assert all(row["statistic"]["error_count"] == 0 for row in rows)
     assert any(row["correctness"] == "pass" for row in rows)
     assert any(
+        row["correctness"] == "pass"
+        and row["statistic"].get("logits_coverage") == "full_logits_buffer_checked"
+        and row["statistic"].get("diagnostic_logits_reference_checked_count")
+        == row["statistic"].get("logits_buffer_element_count")
+        for row in rows
+    )
+    assert any(
         row["correctness"] == "fail"
         and row["statistic"].get("diagnostic_logits_reference_status") == "fail"
         for row in rows
@@ -296,6 +303,7 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
         in {
             "partial_logits_not_full_vocab",
             "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
             None,
         }
         for row in rows

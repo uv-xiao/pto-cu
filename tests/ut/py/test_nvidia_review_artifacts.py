@@ -2269,6 +2269,7 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "controlled proxy numeric oracle",
         "controlled proxy live CUDA execution",
         "controlled proxy live microdecode DAG execution",
+        "full logits-buffer diagnostic reference checking",
         "decode-loop execution",
     ]:
         assert phrase in action

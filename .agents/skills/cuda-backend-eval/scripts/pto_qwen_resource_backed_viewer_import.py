@@ -202,6 +202,7 @@ def ensure_matrix_ref(
                 "repeat_runs",
                 "partial_logits_not_full_vocab",
                 "full_logits_buffer_prefix_sampled",
+                "full_logits_buffer_checked",
                 "diagnostic_qwen_logits_formula",
                 "logits_summary_stable",
             ],
