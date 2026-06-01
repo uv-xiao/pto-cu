@@ -130,6 +130,22 @@
       ]
     },
     {
+      "id": "qwen_token_pointer_table",
+      "title": "Qwen Token Pointer Table",
+      "script": "examples/cuda/qwen_token_pointer_table.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_token_pointer_table.py --mode offline --output-json tmp/cuda-backend/pto-serving-token-pointers/qwen-token-pointer-table.json",
+      "expected_output": "command exits 0; output JSON records token pointer-table lifecycle evidence.",
+      "evidence_symbols": [
+        "pto_qwen_cuda_token_pointer_table_lifecycle",
+        "live_token_pointer_table_owner",
+        "persistent_decode_arg_materialization_during_lifetime",
+        "dry_run_pointer_lifecycle"
+      ]
+    },
+    {
       "id": "qwen_weight_inventory",
       "title": "Qwen Weight Inventory",
       "script": "examples/cuda/qwen_weight_inventory.py",

@@ -25,6 +25,7 @@ CUDA_TOKEN_BUFFER_BINDING = (
 PERSISTENT_DECODE_ARGS = (
     ROOT / "examples" / "cuda" / "qwen_persistent_decode_args.py"
 )
+TOKEN_POINTER_TABLE = ROOT / "examples" / "cuda" / "qwen_token_pointer_table.py"
 WEIGHT_INVENTORY = ROOT / "examples" / "cuda" / "qwen_weight_inventory.py"
 SAFETENSORS_FETCH = ROOT / "examples" / "cuda" / "qwen_safetensors_fetch.py"
 SAFETENSORS_METADATA = (
@@ -120,6 +121,14 @@ def load_persistent_decode_args() -> dict[str, Any]:
         PERSISTENT_DECODE_ARGS,
         "qwen_persistent_decode_args",
         "build_decode_arg_manifest",
+    )
+
+
+def load_token_pointer_table() -> dict[str, Any]:
+    return load_python_payload(
+        TOKEN_POINTER_TABLE,
+        "qwen_token_pointer_table",
+        "build_token_pointer_table_lifecycle",
     )
 
 
@@ -247,6 +256,7 @@ def build_scaffold() -> dict[str, Any]:
     runtime_input_binding = load_runtime_input_binding()
     cuda_token_buffer_binding = load_cuda_token_buffer_binding()
     persistent_decode_args = load_persistent_decode_args()
+    token_pointer_table = load_token_pointer_table()
     weight_inventory = load_weight_inventory()
     safetensors_shards = load_safetensors_shards()
     safetensors_metadata = load_safetensors_metadata()
@@ -284,6 +294,9 @@ def build_scaffold() -> dict[str, Any]:
     )
     cuda_token_buffer_status = cuda_token_buffer_binding.get("status")
     persistent_decode_args_status = persistent_decode_args.get("status")
+    token_pointer_table_ready = (
+        token_pointer_table.get("status") == "token_pointer_table_lifecycle_ready"
+    )
     weight_next_action = (
         "Connect the resident weight table owner to the decode-loop runner and "
         "replace dry-run pointers with cuda_live table ownership."
@@ -457,6 +470,25 @@ def build_scaffold() -> dict[str, Any]:
             ),
         ),
         stage(
+            stage_id="qwen_token_pointer_table_owner",
+            title="Qwen token pointer table owner",
+            owner="pto_serving_runtime",
+            required_for_full_serving=True,
+            status=(
+                "partial"
+                if token_pointer_table_ready
+                and token_pointer_table.get("mode") == "dry_run_pointer_lifecycle"
+                else "pass"
+                if token_pointer_table_ready
+                else "missing"
+            ),
+            evidence="examples/cuda/qwen_token_pointer_table.py",
+            next_action=(
+                "Run the token pointer table owner in cuda_live mode from "
+                "the decode-loop runner and keep it open through DAG submission."
+            ),
+        ),
+        stage(
             stage_id="qwen_weight_loader",
             title="Qwen weight loader",
             owner="pto_serving_host",
@@ -611,6 +643,7 @@ def build_scaffold() -> dict[str, Any]:
         "runtime_input_binding": runtime_input_binding,
         "cuda_token_buffer_binding": cuda_token_buffer_binding,
         "persistent_decode_args": persistent_decode_args,
+        "token_pointer_table": token_pointer_table,
         "weight_inventory": weight_inventory,
         "safetensors_shards": safetensors_shards,
         "safetensors_metadata": safetensors_metadata,

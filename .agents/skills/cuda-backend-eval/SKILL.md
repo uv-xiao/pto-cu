@@ -457,6 +457,18 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-decode-args-$(git rev-parse --short HEAD)/qwen-persistent-decode-args.json
 ```
 
+Use `examples/cuda/qwen_token_pointer_table.py` when the decode-loop runner
+contract needs explicit token pointer ownership. The default mode records a
+dry-run lifecycle; add `--cuda-live` to allocate real CUDA token buffers and
+free them after decode-arg materialization:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_token_pointer_table.py \
+    --mode offline \
+    --output-json tmp/cuda-backend/pto-serving-token-pointers-$(git rev-parse --short HEAD)/qwen-token-pointer-table.json
+```
+
 Use `examples/cuda/qwen_weight_inventory.py` to capture Qwen/Qwen3-8B
 safetensors shard and tensor binding groups plus the config-derived expected
 shape/dtype contract before implementing real tensor open and CUDA device

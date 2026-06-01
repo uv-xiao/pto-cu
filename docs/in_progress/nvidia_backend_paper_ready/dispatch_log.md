@@ -4418,3 +4418,35 @@ Follow-up tracked-state closure after user confirmation:
   Qwen kernel token consumption, `cuda_live` decode-loop integration for
   weights, KV-cache allocation and binding, Qwen kernel generation,
   decode-loop execution, and viewer-result import.
+
+### 2026-06-01 - Qwen Token Pointer Table
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned token
+  pointer-table lifecycle for Qwen/Qwen3-8B persistent decode submission.
+- Exact Codex command or script invocation:
+  `qwen_token_pointer_table.py --mode offline --output-json
+  tmp/cuda-backend/pto-serving-token-pointers-2026-06-01/qwen-token-pointer-table.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: default evidence is a deterministic
+  dry-run pointer lifecycle. The decode-loop runner must still invoke the
+  owner in `cuda_live` mode before persistent Qwen kernel submission.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_token_pointer_table.py` did not exist; after
+  implementation it produced
+  `status=token_pointer_table_lifecycle_ready` with six pointers freed after
+  decode-arg materialization.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves token pointer
+  ownership through decode-arg materialization. Remaining PTO full-serving
+  gaps are Qwen kernel token consumption, `cuda_live` decode-loop owner
+  integration for token and weight tables, KV-cache allocation and binding,
+  Qwen kernel generation, decode-loop execution, and viewer-result import.

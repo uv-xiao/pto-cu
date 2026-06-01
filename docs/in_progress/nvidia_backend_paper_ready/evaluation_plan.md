@@ -143,6 +143,11 @@ The CUDA token-buffer binding artifact in
 `examples/cuda/qwen_cuda_token_buffer_binding.py` now allocates those six
 paper-policy token buffers with the CUDA host runtime, copies host token data
 to device memory, verifies copy-back, and frees the temporary owner scope.
+The token pointer-table artifact in
+`examples/cuda/qwen_token_pointer_table.py` now keeps six token pointers live
+while persistent decode arguments are materialized. Its checked artifact uses
+`dry_run_pointer_lifecycle`; `--cuda-live` remains the decode-loop runner mode
+needed for actual Qwen kernel submission.
 The persistent decode-argument artifact in
 `examples/cuda/qwen_persistent_decode_args.py` maps those token buffers onto
 the persistent DAG `a`, `b`, and `out` fields while preserving `tensor_args`

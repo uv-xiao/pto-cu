@@ -251,6 +251,19 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_token_pointer_table_owner",
+            "status": "pass"
+            if serving_scaffold.get("token_pointer_table", {}).get("status")
+            == "token_pointer_table_lifecycle_ready"
+            else "fail",
+            "evidence": "examples/cuda/qwen_token_pointer_table.py",
+            "why": (
+                "Repo-owned token pointer-table lifecycle keeps Qwen token "
+                "device pointers live while persistent decode task arguments "
+                "are materialized."
+            ),
+        },
+        {
             "id": "qwen_weight_inventory",
             "status": "pass"
             if serving_scaffold.get("weight_inventory", {}).get("kind")

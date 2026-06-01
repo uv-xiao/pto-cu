@@ -535,6 +535,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["qwen_runtime_input_binding"]["status"] == "pass"
     assert checks["qwen_cuda_token_buffer_binding"]["status"] == "pass"
     assert checks["qwen_persistent_decode_args"]["status"] == "pass"
+    assert checks["qwen_token_pointer_table_owner"]["status"] == "pass"
     assert checks["qwen_weight_inventory"]["status"] == "pass"
     assert checks["qwen_safetensors_shard_plan"]["status"] == "pass"
     assert checks["qwen_safetensors_shards_present"]["status"] == "pass"
@@ -570,6 +571,12 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     )
     assert lifecycle["persistent_decode_args"]["status"] == (
         "persistent_decode_args_plan_ready"
+    )
+    assert lifecycle["token_pointer_table"]["kind"] == (
+        "pto_qwen_cuda_token_pointer_table_lifecycle"
+    )
+    assert lifecycle["token_pointer_table"]["status"] == (
+        "token_pointer_table_lifecycle_ready"
     )
     assert lifecycle["weight_inventory"]["kind"] == "pto_qwen_weight_inventory"
     assert (
@@ -609,6 +616,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
         "qwen_tokenizer",
         "qwen_cuda_token_buffer_binding",
         "qwen_persistent_decode_args",
+        "qwen_token_pointer_table_owner",
         "qwen_weight_loader",
         "qwen_persistent_weight_materialization",
         "qwen_resident_weight_table_owner",
@@ -661,6 +669,7 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     assert stages["qwen_runtime_input_binding"]["status"] == "pass"
     assert stages["qwen_cuda_token_buffer_binding"]["status"] == "partial"
     assert stages["qwen_persistent_decode_args"]["status"] == "partial"
+    assert stages["qwen_token_pointer_table_owner"]["status"] == "partial"
     assert stages["qwen_weight_loader"]["status"] == "partial"
     assert "cuda_live table ownership" in stages[
         "qwen_weight_loader"
@@ -720,6 +729,13 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     assert scaffold["persistent_decode_args"]["status"] == (
         "persistent_decode_args_plan_ready"
     )
+    assert scaffold["token_pointer_table"]["kind"] == (
+        "pto_qwen_cuda_token_pointer_table_lifecycle"
+    )
+    assert scaffold["token_pointer_table"]["status"] == (
+        "token_pointer_table_lifecycle_ready"
+    )
+    assert scaffold["token_pointer_table"]["mode"] == "dry_run_pointer_lifecycle"
     assert stages["kv_cache_lifecycle"]["status"] == "partial"
     assert stages["decode_loop_runner"]["status"] == "missing"
 
@@ -1016,6 +1032,51 @@ def test_qwen_persistent_decode_args_bind_token_pointer_roles(tmp_path):
         "remaining_runtime_gaps"
     ]
     assert "qwen_kernel_token_consumption" in manifest["remaining_runtime_gaps"]
+
+
+def test_qwen_token_pointer_table_materializes_decode_args_during_lifetime():
+    script_path = ROOT / "examples" / "cuda" / "qwen_token_pointer_table.py"
+    spec = importlib.util.spec_from_file_location(
+        "qwen_token_pointer_table",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    lifecycle = module.build_token_pointer_table_lifecycle(mode="mock")
+
+    assert lifecycle["kind"] == "pto_qwen_cuda_token_pointer_table_lifecycle"
+    assert lifecycle["status"] == "token_pointer_table_lifecycle_ready"
+    assert lifecycle["mode"] == "dry_run_pointer_lifecycle"
+    assert lifecycle["pointer_table"]["status"] == "cuda_token_pointer_table_ready"
+    assert lifecycle["pointer_count"] == 6
+    assert lifecycle["closed_pointer_table"]["status"] == (
+        "cuda_token_pointer_table_closed"
+    )
+    assert lifecycle["freed_pointer_count"] == 6
+    assert lifecycle["decode_args"]["kind"] == "pto_qwen_persistent_decode_args"
+    assert lifecycle["decode_args"]["status"] == "persistent_decode_args_ready"
+    records = {
+        item["workload_id"]: item
+        for item in lifecycle["decode_args"]["workload_decode_args"]
+    }
+    assert records["mpk_offline_decode"]["status"] == "ready"
+    assert {
+        item["field"]: item["buffer"]
+        for item in records["mpk_offline_decode"]["pointer_bindings"]
+    } == {
+        "a": "input_ids",
+        "b": "attention_mask",
+        "out": "output_ids",
+    }
+    assert "live_token_pointer_table_owner" in lifecycle["implemented_contracts"]
+    assert lifecycle["remaining_runtime_gaps"] == [
+        "qwen_kernel_token_consumption",
+        "decode_loop_execution",
+    ]
 
 
 def test_persistent_qwen_weight_inventory_is_reviewable(tmp_path):

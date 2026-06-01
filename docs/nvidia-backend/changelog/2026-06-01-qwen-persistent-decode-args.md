@@ -37,6 +37,7 @@ token pointer table is supplied.
 
 ## Remaining Gaps
 
-- Keep a live token pointer table open from the decode-loop runner.
+- Invoke the token pointer-table owner in `cuda_live` mode from the
+  decode-loop runner.
 - Implement Qwen kernels that consume `a`, `b`, `out`, weight `tensor_args`,
   and KV-cache pointers, then execute and import full-serving viewer rows.
