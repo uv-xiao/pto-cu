@@ -196,8 +196,9 @@ The current raw artifacts are
 `tmp/cuda-backend/pto-serving-scaffold-2026-06-01/qwen-serving-scaffold.json`,
 and
 `tmp/cuda-backend/pto-serving-preflight-2026-06-01/pto-serving-preflight.json`.
-They prove the current viewer has only the controlled attention-tile proxy row
-for PTO serving-equivalent evidence, plus a partial runtime plan for the
+They prove the current viewer has a controlled attention-tile proxy row and a
+diagnostic microdecode loop row for PTO serving-equivalent evidence, plus a
+partial runtime plan for the
 Qwen3-8B KV-cache and task mapping, tokenizer-observed prompt counts, a
 host-side runtime token-buffer plan with padded target-length `input_ids` and
 `attention_mask`, CUDA token-buffer allocation/copy-back verification,
@@ -220,9 +221,9 @@ weight-argument manifest that fits the current ABI. It also proves a
 ctypes-backed materialization plan for the resident weight pointer table and a
 dry-run owner lifecycle that binds 399 pointers and frees them after
 materialization. The repo-owned PTO CUDA path still lacks numerically correct
-Qwen kernel bodies, `cuda_live` decode-loop execution, and
-`viewer_result_import`, so no PTO
-`Qwen/Qwen3-8B` full-serving row can be imported yet.
+Qwen kernel bodies, full `cuda_live` decode-loop execution, and full-serving
+`viewer_result_import`, so no PTO `Qwen/Qwen3-8B` full-serving row can be
+imported yet.
 Every serving baseline run record must reference one of these policy IDs and
 require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before
 it can be imported. Imported rows must record actual tokenizer counts, model

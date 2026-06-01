@@ -85,6 +85,15 @@ def pto_serving_rows(results: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+def full_serving_qwen_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        row
+        for row in rows
+        if "Qwen/Qwen3-8B" in str(row.get("inputs", {}).get("shape", ""))
+        and row.get("statistic", {}).get("serving_coverage") == "full_serving"
+    ]
+
+
 def serving_policy_summaries(serving_workloads: dict[str, Any]) -> list[dict[str, Any]]:
     summaries = []
     for workload in serving_workloads.get("serving_workloads", []):
@@ -125,11 +134,7 @@ def build_preflight() -> dict[str, Any]:
     results = load_json(VIEWER_DATA / "results.json")
     serving_scaffold = load_serving_scaffold()
     pto_rows = pto_serving_rows(results)
-    qwen8b_pto_rows = [
-        row
-        for row in pto_rows
-        if "Qwen/Qwen3-8B" in str(row.get("inputs", {}).get("shape", ""))
-    ]
+    qwen8b_pto_rows = full_serving_qwen_rows(pto_rows)
     proxy_rows = [
         row
         for row in pto_rows
