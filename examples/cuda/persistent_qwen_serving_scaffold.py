@@ -40,6 +40,7 @@ PERSISTENT_WEIGHT_MATERIALIZATION = (
 )
 RESIDENT_WEIGHT_TABLE = ROOT / "examples" / "cuda" / "qwen_resident_weight_table.py"
 KV_CACHE_BINDING = ROOT / "examples" / "cuda" / "qwen_kv_cache_binding.py"
+DECODE_LOOP_RUNNER = ROOT / "examples" / "cuda" / "qwen_decode_loop_runner.py"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -217,6 +218,14 @@ def load_kv_cache_binding() -> dict[str, Any]:
     )
 
 
+def load_decode_loop_runner() -> dict[str, Any]:
+    return load_python_payload(
+        DECODE_LOOP_RUNNER,
+        "qwen_decode_loop_runner",
+        "build_decode_loop_runner",
+    )
+
+
 def serving_workload_contracts() -> list[dict[str, Any]]:
     payload = load_json(VIEWER_DATA / "serving_workloads.json")
     workloads = []
@@ -274,6 +283,7 @@ def build_scaffold() -> dict[str, Any]:
     persistent_weight_materialization = load_persistent_weight_materialization()
     resident_weight_table = load_resident_weight_table()
     kv_cache_binding = load_kv_cache_binding()
+    decode_loop_runner = load_decode_loop_runner()
     shards_ready = (
         safetensors_shards.get("status") == "ready_for_metadata_probe"
     )
@@ -301,6 +311,9 @@ def build_scaffold() -> dict[str, Any]:
     )
     kv_cache_binding_ready = (
         kv_cache_binding.get("status") == "kv_cache_lifecycle_ready"
+    )
+    decode_loop_runner_ready = (
+        decode_loop_runner.get("status") == "decode_loop_runner_plan_ready"
     )
     runtime_input_binding_ready = (
         runtime_input_binding.get("status") == "runtime_input_binding_plan_ready"
@@ -630,9 +643,12 @@ def build_scaffold() -> dict[str, Any]:
             title="Decode loop runner",
             owner="pto_serving_runtime",
             required_for_full_serving=True,
-            status="missing",
-            evidence="none",
-            next_action="Run repeated decode steps, sampling, EOS policy, and output-token accounting.",
+            status="partial" if decode_loop_runner_ready else "missing",
+            evidence="examples/cuda/qwen_decode_loop_runner.py",
+            next_action=(
+                "Replace the dry-run submission plan with cuda_live resource "
+                "owners and generated Qwen kernels."
+            ),
         ),
         stage(
             stage_id="viewer_result_import",
@@ -674,6 +690,7 @@ def build_scaffold() -> dict[str, Any]:
         "persistent_weight_materialization": persistent_weight_materialization,
         "resident_weight_table": resident_weight_table,
         "kv_cache_binding": kv_cache_binding,
+        "decode_loop_runner": decode_loop_runner,
         "stages": stages,
         "missing_stage_ids": [item["id"] for item in missing],
         "next_action": (

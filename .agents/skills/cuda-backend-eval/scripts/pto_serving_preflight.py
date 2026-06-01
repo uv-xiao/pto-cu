@@ -399,6 +399,19 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_decode_loop_runner",
+            "status": "pass"
+            if serving_scaffold.get("decode_loop_runner", {}).get("status")
+            == "decode_loop_runner_plan_ready"
+            else "fail",
+            "evidence": "examples/cuda/qwen_decode_loop_runner.py",
+            "why": (
+                "Repo-owned decode-loop runner integration orders token, "
+                "KV-cache, and resident-weight owner lifetimes around "
+                "persistent DAG submission."
+            ),
+        },
+        {
             "id": "qwen_model_loader_or_token_loop",
             "status": "fail",
             "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",

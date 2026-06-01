@@ -4482,3 +4482,34 @@ Follow-up tracked-state closure after user confirmation:
   token/KV consumption, `cuda_live` owner integration from the decode-loop
   runner, Qwen kernel generation, decode-loop execution, and viewer-result
   import.
+
+### 2026-06-01 - Qwen Decode Loop Runner Plan
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned decode-loop
+  resource lifetime and persistent DAG submission plan for Qwen/Qwen3-8B.
+- Exact Codex command or script invocation:
+  `qwen_decode_loop_runner.py --mode offline --output-json
+  tmp/cuda-backend/pto-serving-decode-loop-2026-06-01/qwen-decode-loop-runner.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: the artifact composes dry-run owners
+  and records submission ordering. It still does not launch generated Qwen
+  kernels or execute a `cuda_live` decode loop.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_decode_loop_runner.py` did not exist; after
+  implementation the artifact reported `status=decode_loop_runner_plan_ready`
+  and 1088 total planned decode iterations.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves owner lifetime
+  ordering for token, KV-cache, and resident weight tables around persistent
+  DAG submission. Remaining PTO full-serving gaps are generated Qwen kernel
+  bodies, token/KV consumption inside those kernels, `cuda_live` decode-loop
+  execution, and viewer-result import.

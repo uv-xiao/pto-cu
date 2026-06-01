@@ -419,6 +419,17 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-kv-cache-$(git rev-parse --short HEAD)/qwen-kv-cache-binding.json
 ```
 
+Use `examples/cuda/qwen_decode_loop_runner.py` when reviewers need the
+decode-loop owner lifetime and persistent DAG submission order. The current
+artifact is a dry-run plan, not a full-serving execution result:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_decode_loop_runner.py \
+    --mode offline \
+    --output-json tmp/cuda-backend/pto-serving-decode-loop-$(git rev-parse --short HEAD)/qwen-decode-loop-runner.json
+```
+
 Use `examples/cuda/qwen_prompt_accounting.py` to capture tokenizer-observed
 prompt counts for the shared MPK and VDCores serving policies. Use `--mode
 download` only for an intentional source capture into `tmp/`; use `--mode

@@ -101,6 +101,27 @@ persistent DAG `c` and `d` fields. The current evidence is a deterministic
 dry-run pointer lifecycle; the decode-loop runner still needs a `cuda_live`
 owner before Qwen attention kernels can consume those fields.
 
+## Qwen Decode Loop Runner
+
+- Benchmark id: `llm_serving_decode`
+- Runtime: `cuda/persistent_device`
+- Method id: `pto_persistent_device`
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_decode_loop_runner.py \
+  --mode offline \
+  --output-json tmp/cuda-backend/pto-serving-decode-loop/qwen-decode-loop-runner.json
+```
+
+Expected output: command exits 0; output JSON records dry-run decode-loop
+resource owner ordering and persistent DAG submission plans.
+
+The artifact composes token pointer, KV-cache, and resident-weight owners into
+a decode-loop submission plan. It records owner open/materialize/submit/close
+ordering plus output-token accounting. It still does not execute generated
+Qwen kernels or launch a `cuda_live` decode loop.
+
 ## Qwen Prompt Accounting
 
 - Benchmark id: `llm_serving_decode`

@@ -545,6 +545,7 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["qwen_persistent_weight_materialization_plan"]["status"] == "pass"
     assert checks["qwen_resident_weight_table_owner"]["status"] == "pass"
     assert checks["qwen_kv_cache_binding"]["status"] == "pass"
+    assert checks["qwen_decode_loop_runner"]["status"] == "pass"
     assert checks["qwen3_8b_full_serving_rows_imported"]["status"] == "fail"
     assert checks["qwen_model_loader_or_token_loop"]["status"] == "fail"
     lifecycle = preflight["serving_lifecycle"]
@@ -615,6 +616,8 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["qwen_persistent_weight_arg_manifest"]["status"] == "pass"
     assert lifecycle["kv_cache_binding"]["kind"] == "pto_qwen_cuda_kv_cache_lifecycle"
     assert lifecycle["kv_cache_binding"]["status"] == "kv_cache_lifecycle_ready"
+    assert lifecycle["decode_loop_runner"]["kind"] == "pto_qwen_decode_loop_runner"
+    assert lifecycle["decode_loop_runner"]["status"] == "decode_loop_runner_plan_ready"
     assert {
         "qwen_tokenizer",
         "qwen_cuda_token_buffer_binding",
@@ -742,8 +745,11 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     assert scaffold["kv_cache_binding"]["kind"] == "pto_qwen_cuda_kv_cache_lifecycle"
     assert scaffold["kv_cache_binding"]["status"] == "kv_cache_lifecycle_ready"
     assert scaffold["kv_cache_binding"]["mode"] == "dry_run_pointer_lifecycle"
+    assert scaffold["decode_loop_runner"]["kind"] == "pto_qwen_decode_loop_runner"
+    assert scaffold["decode_loop_runner"]["status"] == "decode_loop_runner_plan_ready"
+    assert scaffold["decode_loop_runner"]["mode"] == "dry_run_submission_plan"
     assert stages["kv_cache_lifecycle"]["status"] == "partial"
-    assert stages["decode_loop_runner"]["status"] == "missing"
+    assert stages["decode_loop_runner"]["status"] == "partial"
 
 
 def test_persistent_qwen_serving_lifecycle_plan_is_reviewable(tmp_path):
@@ -834,6 +840,64 @@ def test_qwen_kv_cache_binding_maps_key_value_fields():
         "cuda_live_kv_cache_owner_in_decode_loop",
         "qwen_kernel_kv_cache_consumption",
         "decode_loop_execution",
+    ]
+
+
+def test_qwen_decode_loop_runner_orders_resource_lifetimes():
+    script_path = ROOT / "examples" / "cuda" / "qwen_decode_loop_runner.py"
+    spec = importlib.util.spec_from_file_location(
+        "qwen_decode_loop_runner",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    runner = module.build_decode_loop_runner(mode="mock")
+
+    assert runner["kind"] == "pto_qwen_decode_loop_runner"
+    assert runner["status"] == "decode_loop_runner_plan_ready"
+    assert runner["mode"] == "dry_run_submission_plan"
+    assert runner["resource_lifecycle_status"] == {
+        "token_pointer_table": "token_pointer_table_lifecycle_ready",
+        "kv_cache": "kv_cache_lifecycle_ready",
+        "resident_weight_table": "resident_weight_table_lifecycle_ready",
+    }
+    assert runner["total_decode_iterations"] == 1088
+    plans = {item["workload_id"]: item for item in runner["dag_submission_plans"]}
+    mpk = plans["mpk_offline_decode"]
+    assert mpk["status"] == "submission_plan_ready"
+    assert mpk["decode_steps"] == 1024
+    assert mpk["max_batch_size"] == 16
+    assert mpk["owner_lifetime_order"] == [
+        "open_token_pointer_table",
+        "open_kv_cache",
+        "open_resident_weight_table",
+        "materialize_decode_args",
+        "materialize_weight_args",
+        "submit_persistent_dag",
+        "close_resident_weight_table",
+        "close_kv_cache",
+        "close_token_pointer_table",
+    ]
+    assert mpk["task_argument_fields"] == {
+        "a": "input_ids",
+        "b": "attention_mask",
+        "out": "output_ids",
+        "c": "key_cache",
+        "d": "value_cache",
+        "tensor_args": "resident_weight_tensors",
+    }
+    assert mpk["output_token_accounting"]["output_buffer"] == "output_ids"
+    assert "decode_loop_owner_lifetime_order" in runner["implemented_contracts"]
+    assert runner["remaining_runtime_gaps"] == [
+        "generated_qwen_kernel_bodies",
+        "qwen_kernel_token_consumption",
+        "qwen_kernel_kv_cache_consumption",
+        "cuda_live_decode_loop_execution",
+        "viewer_result_import",
     ]
 
 
