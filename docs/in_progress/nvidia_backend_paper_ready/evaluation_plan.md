@@ -184,6 +184,7 @@ The current raw artifacts are
 `tmp/cuda-backend/pto-serving-decode-loop-2026-06-01/qwen-decode-loop-runner.json`,
 `tmp/cuda-backend/pto-serving-task-bodies-2026-06-01/qwen-persistent-task-bodies.json`,
 `tmp/cuda-backend/pto-serving-proxy-live-2026-06-01/qwen-proxy-live.json`,
+`tmp/cuda-backend/pto-serving-microdecode-live-2026-06-01/qwen-microdecode-live.json`,
 `tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json`,
 `tmp/cuda-backend/pto-serving-shards-a16851f6/qwen-safetensors-shards.json`,
 `tmp/cuda-backend/pto-serving-safetensors-a16851f6/qwen-safetensors-metadata.json`,
@@ -206,6 +207,8 @@ source-level generated Qwen task bodies that consume token, KV-cache, and
 weight argument fields through the existing persistent DAG source generator,
 one controlled QKV proxy task launched live through `cuda/persistent_device`
 on A100 with zero scheduler errors and exact copied-back `out`/`c`/`d` values,
+one controlled QKV-to-logits proxy DAG launched live through
+`cuda/persistent_device` with dependency release across three tasks,
 safetensors shard/tensor inventory, and the expected weight shape/dtype
 contract. It also proves local Qwen shard placement and actual safetensors
 shape/dtype validation for 399 tensors across five shards, plus full CUDA

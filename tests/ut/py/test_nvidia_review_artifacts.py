@@ -1031,6 +1031,45 @@ def test_qwen_persistent_proxy_live_plan_maps_qkv_to_single_task_dag():
     ]
 
 
+def test_qwen_persistent_microdecode_live_plan_maps_proxy_chain_dag():
+    script_path = ROOT / "examples" / "cuda" / "qwen_persistent_microdecode_live.py"
+    spec = importlib.util.spec_from_file_location(
+        "qwen_persistent_microdecode_live",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    plan = module.build_live_microdecode_plan()
+
+    assert plan["kind"] == "pto_qwen_microdecode_live_execution_plan"
+    assert plan["status"] == "ready_to_run"
+    assert plan["scope"] == "controlled_proxy_not_full_qwen"
+    assert plan["runtime"] == "cuda/persistent_device"
+    assert plan["dag"]["task_count"] == 3
+    assert plan["dag"]["dependent_count"] == 2
+    assert plan["dag"]["dependency_edges"] == [
+        ["qwen_attention_qkv", "qwen_attention_o"],
+        ["qwen_attention_o", "qwen_logits"],
+    ]
+    assert [task["func_id"] for task in plan["tasks"]] == [7102, 7104, 7109]
+    assert [task["initial_fanin"] for task in plan["tasks"]] == [0, 1, 1]
+    assert plan["expected"]["attention_qkv_out"] == [13.0, 15.0, 17.0, 19.0]
+    assert plan["expected"]["attention_o_out"] == [13.5, 16.5, 19.5, 22.5]
+    assert plan["expected"]["logits_out"] == [14.5, 18.5, 22.5, 26.5]
+    assert plan["expected"]["c"] == [11.0, 13.0, 15.0, 17.0]
+    assert plan["expected"]["d"] == plan["expected"]["attention_qkv_out"]
+    assert "controlled_proxy_live_microdecode_plan" in plan["implemented_contracts"]
+    assert plan["remaining_runtime_gaps"] == [
+        "numerically_correct_qwen_kernel_bodies",
+        "full_qwen_decode_loop_execution",
+        "viewer_result_import",
+    ]
+
+
 def test_persistent_qwen_prompt_accounting_is_reviewable(tmp_path):
     output = tmp_path / "qwen-prompt-accounting.json"
     result = subprocess.run(
@@ -2153,6 +2192,15 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
+        == (
+            "tmp/cuda-backend/pto-serving-microdecode-live-2026-06-01/"
+            "qwen-microdecode-live.json"
+        )
+        for ref in claim["current_evidence_refs"]
+    )
+    assert any(
+        ref.get("kind") == "raw_artifact"
+        and ref.get("path")
         == "tmp/cuda-backend/pto-serving-scaffold-2026-06-01/qwen-serving-scaffold.json"
         for ref in claim["current_evidence_refs"]
     )
@@ -2205,6 +2253,7 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "mutable KV fields c/d",
         "controlled proxy numeric oracle",
         "controlled proxy live CUDA execution",
+        "controlled proxy live microdecode DAG execution",
         "decode-loop execution",
     ]:
         assert phrase in action
