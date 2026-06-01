@@ -96,6 +96,23 @@
         "safetensors_tensor_open",
         "cuda_device_weight_binding"
       ]
+    },
+    {
+      "id": "qwen_safetensors_metadata",
+      "title": "Qwen Safetensors Metadata Probe",
+      "script": "examples/cuda/qwen_safetensors_metadata.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_safetensors_metadata.py --weight-inventory-json tmp/cuda-backend/pto-serving-weights/qwen-weight-inventory.json --output-json tmp/cuda-backend/pto-serving-safetensors/qwen-safetensors-metadata.json",
+      "expected_output": "command exits 0; output JSON records whether Qwen safetensors shard headers were opened and whether actual tensor shapes/dtypes match the expected contract.",
+      "evidence_symbols": [
+        "pto_qwen_safetensors_metadata_probe",
+        "safetensors_header_parse",
+        "actual_safetensors_shape_dtype_validation",
+        "safetensors_tensor_open",
+        "cuda_device_weight_binding"
+      ]
     }
   ]
 }

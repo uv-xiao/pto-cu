@@ -3985,3 +3985,52 @@ Follow-up tracked-state closure after user confirmation:
   binding, CUDA KV-cache allocation/binding, generated Qwen kernel bodies,
   decode-loop execution, and viewer-result import remain required before
   importing PTO Qwen/Qwen3-8B full-serving rows.
+
+### 2026-06-01 - Qwen Safetensors Metadata Probe
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned
+  safetensors-header probe slice for the PTO persistent-device Qwen/Qwen3-8B
+  full-serving blocker.
+- Exact Codex command or script invocation:
+  `PYTHONPATH=$PWD:$PWD/python .venv/bin/python
+  examples/cuda/qwen_safetensors_metadata.py --weight-inventory-json
+  tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json
+  --output-json
+  tmp/cuda-backend/pto-serving-safetensors-ff252c1f/qwen-safetensors-metadata.json`,
+  then `persistent_qwen_serving_scaffold.py --output-json
+  tmp/cuda-backend/pto-serving-scaffold-ff252c1f/qwen-serving-scaffold.json`,
+  then `pto_serving_preflight.py --output
+  tmp/cuda-backend/pto-serving-preflight-ff252c1f/pto-serving-preflight.json`,
+  then `refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The Qwen config and safetensors index were saved under `tmp/sources/`; this
+  slice proves the header-parse/metadata-compare path on synthetic
+  safetensors data and reports the five real Qwen shards missing locally.
+- Verification commands and results: focused TDD test first failed because
+  `qwen_safetensors_metadata.py` did not exist; scaffold/preflight tests then
+  failed until the probe was wired into the lifecycle evidence. After
+  implementation, passed `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+  PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest
+  tests/ut/py/test_nvidia_review_artifacts.py -q` with `48 passed`; passed
+  `validate_cuda_examples.py`, `validate_benchmark_viewer_data.py`,
+  `validate_nvidia_changelog.py`, `check_nvidia_review_ready.py`,
+  `jq empty examples/cuda/manifest.json
+  docs/nvidia-backend/benchmark-viewer/data/*.json`, `py_compile` for the
+  Qwen serving/inventory/metadata scripts and PTO serving preflight, and
+  `git diff --check`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: place or download the real Qwen
+  safetensors shards, validate actual safetensors metadata, bind CUDA weights,
+  bind runtime token IDs, allocate/bind CUDA KV-cache storage, generate Qwen
+  kernel bodies, execute the decode loop, and import viewer results before PTO
+  Qwen/Qwen3-8B full-serving rows can be added.

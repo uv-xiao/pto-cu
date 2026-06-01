@@ -215,6 +215,31 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_safetensors_metadata_probe",
+            "status": "pass"
+            if serving_scaffold.get("safetensors_metadata", {}).get("kind")
+            == "pto_qwen_safetensors_metadata_probe"
+            else "fail",
+            "evidence": "examples/cuda/qwen_safetensors_metadata.py",
+            "why": (
+                "Repo-owned safetensors metadata probe can parse shard "
+                "headers and compare them against the expected shape contract."
+            ),
+        },
+        {
+            "id": "qwen_actual_safetensors_metadata",
+            "status": "pass"
+            if serving_scaffold.get("safetensors_metadata", {}).get("status")
+            == "metadata_validated"
+            else "fail",
+            "evidence": "examples/cuda/qwen_safetensors_metadata.py",
+            "why": (
+                "Qwen/Qwen3-8B safetensors shards must be present locally and "
+                "their actual header metadata must match the expected "
+                "shape/dtype contract."
+            ),
+        },
+        {
             "id": "qwen_model_loader_or_token_loop",
             "status": "fail",
             "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",

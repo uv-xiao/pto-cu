@@ -1,5 +1,6 @@
 import json
 import importlib.util
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -461,6 +462,8 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["qwen_serving_lifecycle_plan"]["status"] == "pass"
     assert checks["qwen_prompt_accounting"]["status"] == "pass"
     assert checks["qwen_weight_inventory"]["status"] == "pass"
+    assert checks["qwen_safetensors_metadata_probe"]["status"] == "pass"
+    assert checks["qwen_actual_safetensors_metadata"]["status"] == "fail"
     assert checks["qwen3_8b_full_serving_rows_imported"]["status"] == "fail"
     assert checks["qwen_model_loader_or_token_loop"]["status"] == "fail"
     lifecycle = preflight["serving_lifecycle"]
@@ -472,6 +475,11 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     )
     assert lifecycle["prompt_accounting"]["kind"] == "pto_qwen_prompt_accounting"
     assert lifecycle["weight_inventory"]["kind"] == "pto_qwen_weight_inventory"
+    assert (
+        lifecycle["safetensors_metadata"]["kind"]
+        == "pto_qwen_safetensors_metadata_probe"
+    )
+    assert lifecycle["safetensors_metadata"]["status"] == "shards_missing"
     assert {
         "qwen_tokenizer",
         "qwen_weight_loader",
@@ -522,6 +530,11 @@ def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):
     assert stages["qwen_serving_lifecycle_plan"]["status"] == "pass"
     assert stages["qwen_tokenizer"]["status"] == "partial"
     assert stages["qwen_weight_loader"]["status"] == "partial"
+    assert "actual tensor metadata" in stages["qwen_weight_loader"]["next_action"]
+    assert scaffold["safetensors_metadata"]["kind"] == (
+        "pto_qwen_safetensors_metadata_probe"
+    )
+    assert scaffold["safetensors_metadata"]["status"] == "shards_missing"
     assert stages["kv_cache_lifecycle"]["status"] == "partial"
     assert stages["decode_loop_runner"]["status"] == "missing"
 
@@ -716,6 +729,118 @@ def test_persistent_qwen_weight_inventory_is_reviewable(tmp_path):
     assert "cuda_device_weight_binding" in inventory["remaining_runtime_gaps"]
 
 
+def test_persistent_qwen_safetensors_metadata_probe_validates_headers(tmp_path):
+    config = tmp_path / "config.json"
+    config.write_text(
+        json.dumps(
+            {
+                "hidden_size": 4,
+                "intermediate_size": 8,
+                "vocab_size": 16,
+                "num_hidden_layers": 1,
+                "num_attention_heads": 2,
+                "num_key_value_heads": 1,
+                "head_dim": 2,
+                "torch_dtype": "bfloat16",
+            }
+        ),
+        encoding="utf-8",
+    )
+    index = tmp_path / "model.safetensors.index.json"
+    index.write_text(
+        json.dumps(
+            {
+                "metadata": {"total_size": 264},
+                "weight_map": {
+                    "model.embed_tokens.weight": "model-00001-of-00001.safetensors",
+                    "model.norm.weight": "model-00001-of-00001.safetensors",
+                    "lm_head.weight": "model-00001-of-00001.safetensors",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    inventory = tmp_path / "qwen-weight-inventory.json"
+    inventory_result = subprocess.run(
+        [
+            sys.executable,
+            "examples/cuda/qwen_weight_inventory.py",
+            "--index-json",
+            str(index),
+            "--config-json",
+            str(config),
+            "--output-json",
+            str(inventory),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert inventory_result.returncode == 0, inventory_result.stdout
+
+    shard_dir = tmp_path / "shards"
+    shard_dir.mkdir()
+    header = {
+        "__metadata__": {"format": "pt"},
+        "model.embed_tokens.weight": {
+            "dtype": "BF16",
+            "shape": [16, 4],
+            "data_offsets": [0, 128],
+        },
+        "model.norm.weight": {
+            "dtype": "BF16",
+            "shape": [4],
+            "data_offsets": [128, 136],
+        },
+        "lm_head.weight": {
+            "dtype": "BF16",
+            "shape": [16, 4],
+            "data_offsets": [136, 264],
+        },
+    }
+    header_bytes = json.dumps(header, separators=(",", ":")).encode("utf-8")
+    shard_path = shard_dir / "model-00001-of-00001.safetensors"
+    shard_path.write_bytes(
+        struct.pack("<Q", len(header_bytes)) + header_bytes + (b"\0" * 264)
+    )
+    output = tmp_path / "qwen-safetensors-metadata.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/cuda/qwen_safetensors_metadata.py",
+            "--index-json",
+            str(index),
+            "--weight-inventory-json",
+            str(inventory),
+            "--shard-dir",
+            str(shard_dir),
+            "--output-json",
+            str(output),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    metadata = json.loads(output.read_text(encoding="utf-8"))
+    assert metadata["kind"] == "pto_qwen_safetensors_metadata_probe"
+    assert metadata["status"] == "metadata_validated"
+    assert metadata["opened_shard_count"] == 1
+    assert metadata["validated_tensor_count"] == 3
+    assert metadata["mismatch_count"] == 0
+    assert "safetensors_header_parse" in metadata["implemented_contracts"]
+    assert (
+        "actual_safetensors_shape_dtype_validation"
+        in metadata["implemented_contracts"]
+    )
+    assert "cuda_device_weight_binding" in metadata["remaining_runtime_gaps"]
+
+
 def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     matrix = json.loads(
         (
@@ -748,13 +873,19 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-scaffold-e06636e9/qwen-serving-scaffold.json"
+        == "tmp/cuda-backend/pto-serving-safetensors-ff252c1f/qwen-safetensors-metadata.json"
         for ref in claim["current_evidence_refs"]
     )
     assert any(
         ref.get("kind") == "raw_artifact"
         and ref.get("path")
-        == "tmp/cuda-backend/pto-serving-preflight-e06636e9/pto-serving-preflight.json"
+        == "tmp/cuda-backend/pto-serving-scaffold-ff252c1f/qwen-serving-scaffold.json"
+        for ref in claim["current_evidence_refs"]
+    )
+    assert any(
+        ref.get("kind") == "raw_artifact"
+        and ref.get("path")
+        == "tmp/cuda-backend/pto-serving-preflight-ff252c1f/pto-serving-preflight.json"
         for ref in claim["current_evidence_refs"]
     )
     pto_gap = next(
@@ -770,7 +901,8 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "qwen_serving_lifecycle_plan",
         "qwen_prompt_accounting",
         "qwen_weight_inventory",
-        "safetensors tensor open",
+        "qwen_safetensors_metadata",
+        "Qwen safetensors shard placement/open",
         "actual safetensors shape/dtype validation",
         "CUDA weight binding",
         "partial KV-cache lifecycle plan",

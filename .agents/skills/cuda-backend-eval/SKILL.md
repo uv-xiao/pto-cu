@@ -432,6 +432,17 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-weights-$(git rev-parse --short HEAD)/qwen-weight-inventory.json
 ```
 
+Use `examples/cuda/qwen_safetensors_metadata.py` after the weight inventory
+exists. It reports missing shards honestly, or parses safetensors headers and
+validates actual tensor shape/dtype metadata when the shards are available:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_safetensors_metadata.py \
+    --weight-inventory-json tmp/cuda-backend/pto-serving-weights-$(git rev-parse --short HEAD)/qwen-weight-inventory.json \
+    --output-json tmp/cuda-backend/pto-serving-safetensors-$(git rev-parse --short HEAD)/qwen-safetensors-metadata.json
+```
+
 Use `paper_baseline_run_readiness.py` before spending H200 time on planned
 paper-baseline runs. It does not execute long baselines; it records source
 path, reproduction-command presence, Python entrypoints, expected artifact,

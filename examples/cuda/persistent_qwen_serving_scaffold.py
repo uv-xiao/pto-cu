@@ -17,6 +17,9 @@ TARGET_WORKLOAD_IDS = {"mpk_offline_decode", "vdcores_offline_decode"}
 LIFECYCLE_PLAN = ROOT / "examples" / "cuda" / "qwen_serving_lifecycle_plan.py"
 PROMPT_ACCOUNTING = ROOT / "examples" / "cuda" / "qwen_prompt_accounting.py"
 WEIGHT_INVENTORY = ROOT / "examples" / "cuda" / "qwen_weight_inventory.py"
+SAFETENSORS_METADATA = (
+    ROOT / "examples" / "cuda" / "qwen_safetensors_metadata.py"
+)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -81,6 +84,14 @@ def load_weight_inventory() -> dict[str, Any]:
     )
 
 
+def load_safetensors_metadata() -> dict[str, Any]:
+    return load_python_payload(
+        SAFETENSORS_METADATA,
+        "qwen_safetensors_metadata",
+        "build_metadata_probe",
+    )
+
+
 def serving_workload_contracts() -> list[dict[str, Any]]:
     payload = load_json(VIEWER_DATA / "serving_workloads.json")
     workloads = []
@@ -127,6 +138,7 @@ def build_scaffold() -> dict[str, Any]:
     lifecycle_plan = load_lifecycle_plan()
     prompt_accounting = load_prompt_accounting()
     weight_inventory = load_weight_inventory()
+    safetensors_metadata = load_safetensors_metadata()
     persistent_abi_ready = text_contains(
         "src/cuda/platform/include/host/pto_cuda_persistent_device_abi.h",
         ["PtoCudaPersistentDagTask", "tensor_args", "scalar_args"],
@@ -205,9 +217,9 @@ def build_scaffold() -> dict[str, Any]:
             else "missing",
             evidence="examples/cuda/qwen_weight_inventory.py",
             next_action=(
-                "Open safetensors shards, validate actual tensor metadata "
-                "against the expected shape/dtype contract, and bind device "
-                "weights to persistent-device task args."
+                "Open Qwen safetensors shards, validate actual tensor "
+                "metadata against the expected shape/dtype contract, and "
+                "bind device weights to persistent-device task args."
             ),
         ),
         stage(
@@ -260,6 +272,7 @@ def build_scaffold() -> dict[str, Any]:
         "lifecycle_plan": lifecycle_plan,
         "prompt_accounting": prompt_accounting,
         "weight_inventory": weight_inventory,
+        "safetensors_metadata": safetensors_metadata,
         "stages": stages,
         "missing_stage_ids": [item["id"] for item in missing],
         "next_action": (
