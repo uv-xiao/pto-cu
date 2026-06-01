@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "eb75a235",
+    "pto_commit": "d727befb",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
       "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
@@ -16,7 +16,7 @@
       "paper_baseline_id": "mpk",
       "title": "MPK Qwen3 Native Versus Persistent Kernel Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-eb75a235/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-d727befb/",
       "checks": [
         {
           "kind": "source_path",
@@ -94,7 +94,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Llama Decode Correctness And Benchmark Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-eb75a235/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-d727befb/",
       "checks": [
         {
           "kind": "source_path",
@@ -180,7 +180,7 @@
       "paper_baseline_id": "mpk",
       "title": "MPK Persistent Scheduler Trace Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-eb75a235/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-d727befb/",
       "checks": [
         {
           "kind": "source_path",
@@ -246,7 +246,7 @@
       "paper_baseline_id": "vdcores",
       "title": "VDCores Resource Policy Trace Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-eb75a235/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-d727befb/",
       "checks": [
         {
           "kind": "source_path",
@@ -366,7 +366,7 @@
       "paper_baseline_id": "vllm",
       "title": "vLLM Serving And Offline Throughput Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-eb75a235/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-d727befb/",
       "checks": [
         {
           "kind": "source_path",
@@ -381,19 +381,49 @@
         },
         {
           "kind": "expected_artifact_path",
-          "path": "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/paper-baseline-results.json",
           "status": "pass",
           "why": "Expected artifacts must remain under tmp/."
         },
         {
           "kind": "expected_artifact_path",
-          "path": "tmp/cuda-backend/paper-baselines/vllm/bench-serve.json",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/viewer-result-records.json",
           "status": "pass",
           "why": "Expected artifacts must remain under tmp/."
         },
         {
           "kind": "expected_artifact_path",
-          "path": "tmp/cuda-backend/paper-baselines/vllm/bench-throughput.json",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/attempt-summary.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/status-summary.txt",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/vdcores/r1-batch1/bench-serve.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/vdcores/r3-batch16/bench-serve.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/mpk/r1-batch1/bench-serve.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/mpk/r3-batch16/bench-serve.json",
           "status": "pass",
           "why": "Expected artifacts must remain under tmp/."
         },
@@ -415,24 +445,19 @@
           "status": "partial",
           "why": "Latest committed source/dependency probe status for this baseline.",
           "blocking_gaps": [
-            "A100: python_module failed: vllm",
-            "A100: python_import failed: vllm.entrypoints.openai.api_server",
-            "A100: python_import failed: vllm.engine.arg_utils",
-            "H200: python_module failed: vllm",
-            "H200: python_import failed: vllm.entrypoints.openai.api_server",
-            "H200: python_import failed: vllm.engine.arg_utils"
+            "A100: A100 vLLM runtime validation was not rerun for this H200 paper-baseline capture."
           ]
         },
         {
           "kind": "environment_plan",
           "name": "vllm_runtime_environment",
-          "path": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-eb75a235/environment-plans.json",
+          "path": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-d727befb/environment-plans.json",
           "status": "pass",
           "why": "Serving framework dependencies must be installed in an isolated tmp/ environment before benchmark execution."
         }
       ],
       "blocking_gaps": [
-        "Readiness probe vllm_source_entrypoints is partial: A100: python_module failed: vllm; A100: python_import failed: vllm.entrypoints.openai.api_server; A100: python_import failed: vllm.engine.arg_utils; H200: python_module failed: vllm; H200: python_import failed: vllm.entrypoints.openai.api_server; H200: python_import failed: vllm.engine.arg_utils."
+        "Readiness probe vllm_source_entrypoints is partial: A100: A100 vLLM runtime validation was not rerun for this H200 paper-baseline capture.."
       ],
       "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
     },
@@ -442,7 +467,7 @@
       "paper_baseline_id": "sglang",
       "title": "SGLang Serving And Offline Throughput Readiness",
       "latest_status": "partial",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-eb75a235/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-d727befb/",
       "checks": [
         {
           "kind": "source_path",
@@ -537,7 +562,7 @@
         {
           "kind": "environment_plan",
           "name": "sglang_runtime_environment",
-          "path": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-eb75a235/environment-plans.json",
+          "path": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-d727befb/environment-plans.json",
           "status": "pass",
           "why": "Serving framework dependencies must be installed in an isolated tmp/ environment before benchmark execution."
         }
@@ -553,7 +578,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Tile Kernel Readiness",
       "latest_status": "fail",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-eb75a235/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-d727befb/",
       "checks": [
         {
           "kind": "source_path",
@@ -640,7 +665,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Selected Correctness And Benchmark Sweep Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-eb75a235/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-d727befb/",
       "checks": [
         {
           "kind": "source_path",
@@ -718,7 +743,7 @@
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Decode-Attention Tile Readiness",
       "latest_status": "pass",
-      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-eb75a235/",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-d727befb/",
       "checks": [
         {
           "kind": "source_path",

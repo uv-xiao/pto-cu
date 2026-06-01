@@ -3301,3 +3301,45 @@ Each entry must include:
   the one-batch synthetic-input path, then align SGLang repeated rows with
   matching PTO persistent-device, MPK, VDCores, and vLLM serving-policy
   evidence before treating the serving baseline as paper-ready.
+
+### 2026-06-01 - vLLM H200 Serving Repeats
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned vLLM
+  repeated sample capture and import.
+- Exact Codex command or script invocation: used the documented tree-sync
+  fallback to refresh the remote standalone checkout on `bizhaoh200`, then
+  started one vLLM `Qwen/Qwen3-8B` server on `CUDA_VISIBLE_DEVICES=0` for the
+  VDCores-shaped `128/64` policy and one server for the MPK-shaped `64/1024`
+  policy. For each policy, ran `vllm bench serve` for batches `1`, `2`, `4`,
+  `8`, and `16` with three repeats, `max_concurrency=batch`,
+  `request_rate=inf`, `--ignore-eos`, and `--temperature 0`. Imported the
+  aggregate raw JSON with `paper_baseline_results_update.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready vLLM
+  serving-baseline execution.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer result data,
+  benchmark-viewer execution-attempt data, generated paper-readiness data,
+  changelog docs, dispatch log, tests, and local `tmp/` vLLM serving repeat
+  artifacts. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The H200 vLLM environment entrypoints pass in the isolated evaluation env.
+  The vLLM probe remains partial because A100 runtime validation was not
+  rerun for this H200 paper-baseline capture.
+- Verification commands and results: artifact
+  `tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/`
+  -> all 15 VDCores-shaped serving statuses `0` and all 15 MPK-shaped serving
+  statuses `0`. VDCores-shaped output throughput means were
+  `155.0161459156807`, `312.86978656376226`, `606.447657421981`,
+  `1153.2822637361564`, and `2159.7779254046995` tok/s for batches `1`,
+  `2`, `4`, `8`, and `16`. MPK-shaped output throughput means were
+  `153.16926887618368`, `316.10883967853846`, `629.2727994297298`,
+  `1256.784287803509`, and `2411.4020405041215` tok/s.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: next LLM-serving work should capture
+  matching MPK and VDCores baseline rows under the same Qwen3-8B policies, and
+  either rerun or explicitly waive A100 vLLM runtime validation for this
+  H200-only baseline path.

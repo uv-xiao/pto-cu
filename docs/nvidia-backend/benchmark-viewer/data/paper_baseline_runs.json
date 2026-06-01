@@ -232,7 +232,7 @@
       "paper_baseline_id": "vllm",
       "paper_evaluation_id": "llm_serving_paper_baselines",
       "title": "vLLM Serving And Offline Throughput",
-      "status": "planned_not_run",
+      "status": "imported_to_viewer",
       "hardware_targets": [
         "H200"
       ],
@@ -255,9 +255,14 @@
         "vllm bench throughput --model <model>"
       ],
       "expected_artifacts": [
-        "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
-        "tmp/cuda-backend/paper-baselines/vllm/bench-serve.json",
-        "tmp/cuda-backend/paper-baselines/vllm/bench-throughput.json"
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/paper-baseline-results.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/viewer-result-records.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/attempt-summary.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/status-summary.txt",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/vdcores/r1-batch1/bench-serve.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/vdcores/r3-batch16/bench-serve.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/mpk/r1-batch1/bench-serve.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/mpk/r3-batch16/bench-serve.json"
       ],
       "required_metrics": [
         "correctness",
@@ -272,7 +277,7 @@
       "import_target": {
         "viewer_file": "docs/nvidia-backend/benchmark-viewer/data/results.json",
         "result_kind": "paper_baseline_result_record",
-        "notes": "Importer must preserve the vLLM server command, benchmark command, model, prompt shape, output length, and concurrency policy."
+        "notes": "Importer preserves the vLLM server command, model, prompt shape, output length, concurrency policy, repeat sample count, throughput variance, and raw throughput samples for both VDCores-shaped and MPK-shaped serving policies."
       }
     },
     {

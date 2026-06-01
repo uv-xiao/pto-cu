@@ -47,6 +47,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 SGLang H200 environment attempt](2026-06-01-sglang-h200-environment-attempt.md)
 - [2026-06-01 vLLM H200 MPK serving sweep](2026-06-01-vllm-h200-mpk-serving-sweep.md)
 - [2026-06-01 vLLM H200 MPK serving capture](2026-06-01-vllm-h200-mpk-serving-capture.md)
+- [2026-06-01 vLLM H200 repeats](2026-06-01-vllm-h200-repeats.md)
 - [2026-06-01 vLLM H200 serving sweep](2026-06-01-vllm-h200-serving-sweep.md)
 - [2026-06-01 vLLM H200 serving capture](2026-06-01-vllm-h200-serving-capture.md)
 - [2026-06-01 repository CI closed for ultimate goal](2026-06-01-repo-ci-closed.md)

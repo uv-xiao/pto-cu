@@ -16,6 +16,7 @@ full benchmark matrix and the compact selected gate.
 | SGLang fixed-range serving | `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-batch1-fixedrange-bfc1c581/` | 2 result rows | H200 Qwen3-8B batch-1 online serving and offline engine throughput for the VDCores `128/64` policy. |
 | SGLang fixed-range serving sweep | `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/` | 8 result rows | H200 Qwen3-8B batch `2`, `4`, `8`, and `16` online serving and offline engine throughput for the VDCores `128/64` policy. |
 | SGLang fixed-range serving repeats | `tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/` | 10 result rows | Three-sample H200 Qwen3-8B online serving and offline engine throughput for batches `1`, `2`, `4`, `8`, and `16` under the VDCores `128/64` policy. |
+| vLLM serving repeats | `tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/` | 10 result rows | Three-sample H200 Qwen3-8B online serving throughput for batches `1`, `2`, `4`, `8`, and `16` under both the VDCores `128/64` policy and the MPK `64/1024` policy. |
 
 These captures passed `cuda_validate_capture.py` with the matching current
 presets during the latest verification run.

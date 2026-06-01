@@ -2500,13 +2500,17 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         for blocker in llm_claim["blockers"]
     )
     assert any(
+        "Readiness probe for vllm is partial" in blocker
+        for blocker in llm_claim["blockers"]
+    )
+    assert not any(
         "Run readiness vllm_serving_and_throughput is partial" in blocker
         for blocker in llm_claim["blockers"]
     )
     assert any(
-        action["source"] == "run_readiness"
-        and action["paper_baseline_run_id"] == "vllm_serving_and_throughput"
-        and "Resolve blocking gaps" in action["action"]
+        action["source"] == "probe"
+        and action["paper_baseline_id"] == "vllm"
+        and "A100 vLLM runtime validation remains uncaptured" in action["action"]
         for action in llm_claim["next_actions"]
     )
     assert any(
@@ -2522,8 +2526,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert {
         "mpk_qwen3_native_vs_persistent",
         "vdcores_llama_decode_correctness",
-        "vllm_serving_and_throughput",
     } <= llm_readiness_ids
+    assert "vllm_serving_and_throughput" not in llm_readiness_ids
     assert "thunderkittens_decode_attention_tile" not in llm_readiness_ids
     assert not any(
         "No paper baseline run record is attached to this claim for thunderkittens"
@@ -2650,12 +2654,11 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 8
+    assert committed["summary"]["total_work_items"] == 6
     assert committed["summary"]["work_items_by_source"] == {
-        "execution_attempt": 1,
         "matrix_missing_evidence": 3,
         "probe": 2,
-        "run_readiness": 2,
+        "run_readiness": 1,
     }
     work_items = committed["work_items"]
     assert all(not item["ready_for_paper_claim"] for item in work_items)
@@ -2690,14 +2693,18 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and "stable baseline instrumentation mode" in item["action"]
         for item in work_items
     )
-    assert any(
+    assert not any(
         item["claim_id"] == "llm_serving_paper_baselines"
         and item["source"] == "execution_attempt"
         and item["paper_baseline_id"] == "vllm"
         and item["paper_baseline_run_id"] == "vllm_serving_and_throughput"
-        and item["execution_attempt_id"]
-        == "vllm_qwen3_8b_mpk_sweep_h200"
-        and "repeated samples for variance" in item["action"]
+        for item in work_items
+    )
+    assert any(
+        item["claim_id"] == "llm_serving_paper_baselines"
+        and item["source"] == "probe"
+        and item["paper_baseline_id"] == "vllm"
+        and "A100 vLLM runtime validation remains uncaptured" in item["action"]
         for item in work_items
     )
     assert not any(
@@ -2740,7 +2747,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 8
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 6
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -3347,11 +3354,14 @@ def test_benchmark_viewer_has_json_backed_review_data():
         probe_root = ROOT / item["latest_artifact_root"]
         assert probe_root.is_dir()
         assert any(path.suffix == ".json" for path in probe_root.iterdir())
-        assert (
-            item["latest_artifact_root"]
-            == "tmp/cuda-backend/paper-baselines/probes/"
+        expected_probe_root = (
+            "tmp/cuda-backend/paper-baselines/probes/"
+            "vllm-h200-env-d727befb/"
+            if item["paper_baseline_id"] == "vllm"
+            else "tmp/cuda-backend/paper-baselines/probes/"
             "paired-a100-h200-86ea3913/"
         )
+        assert item["latest_artifact_root"] == expected_probe_root
         assert item["checks"]
         assert item["next_action"]
         machine_status = {
@@ -3415,6 +3425,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 if check["kind"] == "python_import"
             )
         if item["paper_baseline_id"] == "vllm":
+            assert item["latest_status"] == "partial"
+            assert machine_status["H200"]["status"] == "pass"
+            assert machine_status["A100"]["status"] == "partial"
+            assert "not rerun" in machine_status["A100"]["blocking_gaps"][0]
             imported_modules = {
                 check["module"]
                 for check in item["checks"]
@@ -3481,6 +3495,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "vllm_qwen3_8b_vdcores_sweep_h200",
         "vllm_qwen3_8b_mpk_batch1_h200",
         "vllm_qwen3_8b_mpk_sweep_h200",
+        "vllm_qwen3_8b_repeats_h200",
         "sglang_qwen3_8b_vdcores_batch1_randomids_h200",
         "sglang_qwen3_8b_vdcores_batch1_fixedrange_h200",
         "sglang_qwen3_8b_vdcores_fixedrange_sweep_h200",
@@ -3736,6 +3751,36 @@ def test_benchmark_viewer_has_json_backed_review_data():
             "batch_results"
         ].items()
     )
+    vllm_h200_repeats = attempts_by_id["vllm_qwen3_8b_repeats_h200"]
+    assert vllm_h200_repeats["status"] == "pass"
+    assert vllm_h200_repeats["hardware"]["gpu"] == "H200"
+    assert vllm_h200_repeats["summary"]["sample_count_per_batch"] == 3
+    assert vllm_h200_repeats["summary"]["serving_latency_measured"]
+    assert vllm_h200_repeats["summary"]["repeated_samples_measured"]
+    assert vllm_h200_repeats["summary"]["paper_target_model_measured"]
+    assert vllm_h200_repeats["summary"]["h200_measured"]
+    assert vllm_h200_repeats["summary"]["viewer_result_imported"] is False
+    assert set(vllm_h200_repeats["summary"]["policies"]) == {
+        "vdcores",
+        "mpk",
+    }
+    assert (
+        vllm_h200_repeats["summary"]["policies"]["vdcores"][
+            "output_tokens_per_second_mean_by_batch"
+        ]["16"]
+        == 2159.7779254046995
+    )
+    assert (
+        vllm_h200_repeats["summary"]["policies"]["mpk"][
+            "output_tokens_per_second_mean_by_batch"
+        ]["16"]
+        == 2411.4020405041215
+    )
+    assert len(
+        vllm_h200_repeats["summary"]["policies"]["mpk"][
+            "output_tokens_per_second_samples_by_batch"
+        ]["16"]
+    ) == 3
     assert attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["status"] == "pass"
     assert (
         attempts_by_id["mpk_qwen3_0p6b_native_token2_h200"]["summary"][
@@ -4601,7 +4646,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "latest_status"
     ] == "pass"
     assert any(
-        "python_module failed: vllm" in gap
+        "A100 vLLM runtime validation was not rerun" in gap
         for gap in readiness_by_run[
             "vllm_serving_and_throughput"
         ]["blocking_gaps"]
