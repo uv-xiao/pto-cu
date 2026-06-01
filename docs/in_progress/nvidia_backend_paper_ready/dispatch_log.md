@@ -2988,3 +2988,48 @@ Each entry must include:
   paper-baseline run is still partial until MPK-comparable batch `2`, `4`,
   `8`, and `16`, repeated samples, MPK serving comparison, and PTO
   persistent-device comparison are captured under the same workload policy.
+
+### 2026-06-01 - vLLM H200 MPK Serving Sweep
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned vLLM H200
+  MPK-comparable serving sweep for the paper baseline evaluation track.
+- Exact Codex command or script invocation: used the documented tree-sync
+  fallback to refresh the standalone pto-cu checkout on `bizhaoh200`, started
+  one isolated vLLM server for `Qwen/Qwen3-8B` on `CUDA_VISIBLE_DEVICES=7`
+  with `max_model_len=1088`, `bfloat16`, and `gpu_memory_utilization=0.80`,
+  then ran `vllm bench serve` for input length `64`, output length `1024`,
+  batch/concurrency `2`, `4`, `8`, and `16`, `request_rate=inf`,
+  `ignore_eos`, and `temperature=0`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready serving
+  baseline MPK-policy evidence.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data, changelog docs, dispatch
+  log, tests, and local `tmp/` vLLM run artifacts. No upstream repositories
+  were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The capture reuses the isolated vLLM environment and source overlay. It
+  covers only one sample per batch, not paper confidence intervals.
+- Verification commands and results:
+  H200 serving artifact
+  `tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-mpk-qwen3-8b-sweep-908438de/`
+  -> server readiness passed, status code `0`, and all four benchmark
+  commands exited `0`.
+- Captured metrics: batch `2` completed `2`, failed `0`, mean TTFT
+  `72.44588294997811 ms`, mean ITL `5.906464019926849 ms`, output throughput
+  `334.7536743804337 tokens/s`; batch `4` completed `4`, failed `0`, mean
+  TTFT `39.24347530119121 ms`, mean ITL `5.97836579881674 ms`, output
+  throughput `665.049038750595 tokens/s`; batch `8` completed `8`, failed
+  `0`, mean TTFT `57.89269332308322 ms`, mean ITL `6.042956362181649 ms`,
+  output throughput `1311.7874753053661 tokens/s`; batch `16` completed
+  `16`, failed `0`, mean TTFT `98.91026074183173 ms`, mean ITL
+  `5.985480906558565 ms`, output throughput `2629.5086844579146 tokens/s`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: vLLM now has single-sample H200
+  Qwen3-8B serving rows for the full MPK-comparable and VDCores-comparable
+  batch matrix. The vLLM paper-baseline run is still partial until repeated
+  samples, MPK serving comparison, and PTO persistent-device comparison are
+  captured under the same workload policy.
