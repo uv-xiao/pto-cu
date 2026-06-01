@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "metadata": {
-    "pto_commit": "407fd3f7",
-    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-407fd3f7/",
+    "pto_commit": "840a847f",
+    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-840a847f/",
     "source_files": [
       "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
     ]
@@ -114,6 +114,18 @@
         {
           "name": "scipy",
           "why": "The --system-site-packages environment can otherwise import an old system SciPy that is incompatible with the NumPy version installed by the pinned vLLM dependency set during Transformers/OpenAI entrypoint imports."
+        },
+        {
+          "name": "pandas",
+          "why": "H200 serving model inspection imports vllm._aiter_ops, which imports pandas before the server is ready; an old system pandas can be binary-incompatible with the env NumPy under --system-site-packages."
+        },
+        {
+          "name": "numexpr",
+          "why": "Env-local pandas can still import a binary-incompatible system numexpr unless the package is installed inside the isolated vLLM environment."
+        },
+        {
+          "name": "bottleneck",
+          "why": "Env-local pandas can still import a binary-incompatible system bottleneck unless the package is installed inside the isolated vLLM environment."
         }
       ],
       "install_commands": [
@@ -124,7 +136,7 @@
         "REPO_ROOT=$PWD && cd tmp/baselines/vllm && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install -r requirements/build/cuda.txt",
         "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_source_overlay.py --source tmp/baselines/vllm --overlay tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython",
         "REPO_ROOT=$PWD && VLLM_VERSION_OVERRIDE=$($REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import setuptools_scm; print(setuptools_scm.get_version(root='$REPO_ROOT/tmp/baselines/vllm'))\") && cd tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython && env VLLM_VERSION_OVERRIDE=$VLLM_VERSION_OVERRIDE PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e .",
-        "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install 'scipy>=1.15.0'"
+        "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install 'scipy>=1.15.0' 'pandas>=2.2.0' numexpr bottleneck"
       ],
       "preflight_commands": [
         "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_preflight.py --source tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython --env-python tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python"
@@ -134,7 +146,8 @@
         "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm')\"",
         "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.cli.main')\"",
         "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.openai.api_server')\"",
-        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.engine.arg_utils')\""
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.engine.arg_utils')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.model_executor.models.qwen3')\""
       ],
       "execution_gaps": [
         "Environment has not been materialized by this planner artifact.",
@@ -147,7 +160,7 @@
         "Editable install derives VLLM_VERSION_OVERRIDE from the pinned upstream checkout before changing into the overlay, because the overlay intentionally omits Git metadata."
       ],
       "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-407fd3f7/environment-plans.json"
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-840a847f/environment-plans.json"
     },
     {
       "id": "sglang_runtime_environment",
@@ -232,7 +245,7 @@
         "The pinned source declares torch==2.11.0 and CUDA 13 packages; installing it into the project venv would make PTO tests non-reproducible."
       ],
       "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-407fd3f7/environment-plans.json"
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-840a847f/environment-plans.json"
     }
   ]
 }

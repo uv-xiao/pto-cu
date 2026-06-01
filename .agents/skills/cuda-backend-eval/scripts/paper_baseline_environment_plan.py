@@ -65,7 +65,32 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
                     "NumPy version installed by the pinned vLLM dependency "
                     "set during Transformers/OpenAI entrypoint imports."
                 ),
-            }
+            },
+            {
+                "name": "pandas",
+                "why": (
+                    "H200 serving model inspection imports vllm._aiter_ops, "
+                    "which imports pandas before the server is ready; an old "
+                    "system pandas can be binary-incompatible with the env "
+                    "NumPy under --system-site-packages."
+                ),
+            },
+            {
+                "name": "numexpr",
+                "why": (
+                    "Env-local pandas can still import a binary-incompatible "
+                    "system numexpr unless the package is installed inside "
+                    "the isolated vLLM environment."
+                ),
+            },
+            {
+                "name": "bottleneck",
+                "why": (
+                    "Env-local pandas can still import a binary-incompatible "
+                    "system bottleneck unless the package is installed inside "
+                    "the isolated vLLM environment."
+                ),
+            },
         ],
         "install_steps": [
             "env PYTHONNOUSERSITE=1 PATH={env_bin}:$PATH "
@@ -95,7 +120,8 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
             "PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/{env_bin}:$PATH "
             "$REPO_ROOT/{env_python} -m pip install --no-build-isolation -e .",
             "env PYTHONNOUSERSITE=1 PATH={env_bin}:$PATH "
-            "{env_python} -m pip install 'scipy>=1.15.0'",
+            "{env_python} -m pip install 'scipy>=1.15.0' "
+            "'pandas>=2.2.0' numexpr bottleneck",
         ],
         "source_overlay_steps": [
             "{env_python} "
@@ -107,6 +133,7 @@ ENVIRONMENT_SPECS: dict[str, dict[str, Any]] = {
             "vllm.entrypoints.cli.main",
             "vllm.entrypoints.openai.api_server",
             "vllm.engine.arg_utils",
+            "vllm.model_executor.models.qwen3",
         ],
         "notes": [
             "The vLLM source declares torch==2.11.0 while the project venv "

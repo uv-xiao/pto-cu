@@ -2853,3 +2853,52 @@ Each entry must include:
   local A100 evidence, uses the Qwen3-1.7B bring-up model, and lacks serving
   TTFT/ITL metrics. The next serving slice should run `vllm serve` plus
   `vllm bench serve` on H200 for Qwen3-8B or the agreed bring-up model.
+
+### 2026-06-01 - vLLM H200 Serving Capture
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned H200 vLLM
+  serving capture for the paper baseline evaluation track.
+- Exact Codex command or script invocation: used the documented tree-sync
+  fallback to refresh the standalone pto-cu checkout on `bizhaoh200`, ran the
+  vLLM isolated environment setup through bounded H200 attempts, installed
+  env-local `pandas`, `numexpr`, and `bottleneck` after the first server
+  launch exposed system package binary incompatibility, then ran `vllm serve`
+  and `vllm bench serve` for `Qwen/Qwen3-8B` with input length `128`, output
+  length `64`, batch/concurrency `1`, `request_rate=inf`, and
+  `CUDA_VISIBLE_DEVICES=7`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, paper-ready serving
+  baseline capture evidence.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA evaluation scripts, benchmark-viewer data,
+  changelog docs, dispatch log, and local `tmp/` vLLM run artifacts. No
+  upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The first H200 server attempt failed before readiness because
+  `vllm._aiter_ops` imported a system `pandas` package that was incompatible
+  with the environment NumPy. Installing env-local `pandas`, `numexpr`, and
+  `bottleneck` resolved that serving-path blocker.
+- Verification commands and results:
+  H200 environment attempt
+  `tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-full/`
+  -> steps 1 through 8 passed and stopped at the bounded attempt limit;
+  H200 validation attempt
+  `tmp/cuda-backend/paper-baselines/environment-attempts/vllm-840a847f-h200-validation/`
+  -> steps 9 through 13 passed before the additional Qwen3 validation guard was
+  added;
+  H200 serving artifact
+  `tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-vdcores-qwen3-8b-batch1-840a847f-pandas/`
+  -> server readiness passed, `bench-serve-status.txt` is `0`, completed
+  requests `1`, failed requests `0`, mean TTFT `64.89939196035266 ms`, mean
+  ITL `5.8076567134805135 ms`, output throughput
+  `148.25853760123334 tokens/s`, and request throughput
+  `2.316539650019271 req/s`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: vLLM now has one successful H200
+  Qwen3-8B serving point imported into the benchmark viewer. The attempt is
+  still partial for paper use until batch `2`, `4`, `8`, and `16`, repeated
+  samples, MPK serving comparison, and PTO persistent-device comparison are
+  captured under the same workload policy.
