@@ -454,6 +454,15 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-unit-math-live-$(git rev-parse --short HEAD)/qwen-unit-math-live.json
 ```
 
+Import that artifact into the benchmark viewer as diagnostic unit-math
+evidence with:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_unit_math_viewer_import.py \
+    tmp/cuda-backend/pto-serving-unit-math-live-$(git rev-parse --short HEAD)/qwen-unit-math-live.json
+```
+
 Use `examples/cuda/qwen_prompt_accounting.py` to capture tokenizer-observed
 prompt counts for the shared MPK and VDCores serving policies. Use `--mode
 download` only for an intentional source capture into `tmp/`; use `--mode

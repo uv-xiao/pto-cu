@@ -205,9 +205,9 @@ The current raw artifacts are
 `tmp/cuda-backend/pto-serving-scaffold-2026-06-01/qwen-serving-scaffold.json`,
 and
 `tmp/cuda-backend/pto-serving-preflight-2026-06-01/pto-serving-preflight.json`.
-They prove the current viewer has a controlled attention-tile proxy row and a
-diagnostic microdecode loop row for PTO serving-equivalent evidence, plus a
-partial runtime plan for the
+They prove the current viewer has controlled attention-tile proxy, diagnostic
+unit-math, and diagnostic microdecode loop rows for PTO serving-equivalent
+evidence, plus a partial runtime plan for the
 Qwen3-8B KV-cache and task mapping, tokenizer-observed prompt counts, a
 host-side runtime token-buffer plan with padded target-length `input_ids` and
 `attention_mask`, CUDA token-buffer allocation/copy-back verification,
@@ -241,8 +241,9 @@ Every imported `llm_serving_decode` result must also record
 `statistic.serving_coverage`. `full_serving` and
 `full_serving_latency_caveat` are the only coverage classes that can support a
 full-serving paper comparison. `controlled_attention_tile_proxy`,
-`diagnostic_microdecode`, and `native_bringup` rows remain useful evidence,
-but they cannot close the PTO, VDCores, or ThunderKittens full-serving gaps.
+`diagnostic_unit_math`, `diagnostic_microdecode`, and `native_bringup` rows
+remain useful evidence, but they cannot close the PTO, VDCores, or
+ThunderKittens full-serving gaps.
 
 ## Workloads
 

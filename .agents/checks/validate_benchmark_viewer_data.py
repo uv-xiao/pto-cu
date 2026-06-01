@@ -1128,6 +1128,7 @@ def validate_results(
         "full_serving_latency_caveat",
         "controlled_attention_tile_proxy",
         "diagnostic_microdecode",
+        "diagnostic_unit_math",
         "native_bringup",
     }
 

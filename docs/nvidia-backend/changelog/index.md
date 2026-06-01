@@ -102,6 +102,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 Qwen unit math oracle](2026-06-01-qwen-unit-math-oracle.md)
 - [2026-06-01 Qwen unit math source coverage](2026-06-01-qwen-unit-math-source.md)
 - [2026-06-01 Qwen unit math live execution](2026-06-01-qwen-unit-math-live.md)
+- [2026-06-01 Qwen unit math viewer import](2026-06-01-qwen-unit-math-viewer-import.md)
 - [2026-06-01 Qwen proxy live execution](2026-06-01-qwen-proxy-live-execution.md)
 - [2026-06-01 Qwen microdecode live execution](2026-06-01-qwen-microdecode-live-execution.md)
 - [2026-06-01 Qwen proxy decode loop live](2026-06-01-qwen-proxy-decode-loop-live.md)

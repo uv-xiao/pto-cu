@@ -79,3 +79,58 @@ def test_viewer_matrix_tracks_unit_math_live_evidence():
     assert "live CUDA coverage for RMSNorm" in pto_gap["action"]
     assert "full Qwen decode-loop execution" in pto_gap["action"]
     assert "cuda_live execution of the Qwen unit-math" not in pto_gap["action"]
+
+
+def test_unit_math_live_importer_marks_result_as_diagnostic(tmp_path):
+    script_path = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "pto_qwen_unit_math_viewer_import.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "pto_qwen_unit_math_viewer_import",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    raw_payload = {
+        "kind": "pto_qwen_unit_math_live_execution",
+        "status": "pass",
+        "scope": "single_token_hidden4_reference",
+        "model_id": "Qwen/Qwen3-8B",
+        "runtime": "cuda/persistent_device",
+        "dag": {"task_count": 4},
+        "device": {
+            "name": "NVIDIA A100 80GB PCIe",
+            "arch": "compute_80",
+        },
+        "timing_ns": {"host_wall": 7, "device_wall": 3},
+        "scheduler_counters": {
+            "completed_count": 4,
+            "error_count": 0,
+            "scheduler_processed_count": 4,
+        },
+        "max_abs_error": 0.0,
+    }
+    record = module.build_result_record(
+        raw_payload,
+        raw_artifact="tmp/cuda-backend/unit-math.json",
+        commit="abc1234",
+    )
+
+    assert record["benchmark_id"] == "llm_serving_decode"
+    assert record["method_id"] == "pto_persistent_device"
+    assert record["statistic"]["kind"] == "pto_qwen_unit_math_live"
+    assert record["statistic"]["serving_coverage"] == "diagnostic_unit_math"
+    assert "unit math" in record["inputs"]["shape"]
+
+    results = {"result_records": []}
+    merged = module.merge_result(results, record)
+    assert merged["result_records"] == [record]
