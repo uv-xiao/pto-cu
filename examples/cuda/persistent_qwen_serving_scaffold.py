@@ -39,6 +39,7 @@ PERSISTENT_WEIGHT_MATERIALIZATION = (
     ROOT / "examples" / "cuda" / "qwen_persistent_weight_materialization.py"
 )
 RESIDENT_WEIGHT_TABLE = ROOT / "examples" / "cuda" / "qwen_resident_weight_table.py"
+KV_CACHE_BINDING = ROOT / "examples" / "cuda" / "qwen_kv_cache_binding.py"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -208,6 +209,14 @@ def load_resident_weight_table() -> dict[str, Any]:
     return module.build_resident_table_lifecycle()
 
 
+def load_kv_cache_binding() -> dict[str, Any]:
+    return load_python_payload(
+        KV_CACHE_BINDING,
+        "qwen_kv_cache_binding",
+        "build_kv_cache_lifecycle",
+    )
+
+
 def serving_workload_contracts() -> list[dict[str, Any]]:
     payload = load_json(VIEWER_DATA / "serving_workloads.json")
     workloads = []
@@ -264,6 +273,7 @@ def build_scaffold() -> dict[str, Any]:
     persistent_weight_args = load_persistent_weight_args()
     persistent_weight_materialization = load_persistent_weight_materialization()
     resident_weight_table = load_resident_weight_table()
+    kv_cache_binding = load_kv_cache_binding()
     shards_ready = (
         safetensors_shards.get("status") == "ready_for_metadata_probe"
     )
@@ -288,6 +298,9 @@ def build_scaffold() -> dict[str, Any]:
     resident_weight_table_ready = (
         resident_weight_table.get("status")
         == "resident_weight_table_lifecycle_ready"
+    )
+    kv_cache_binding_ready = (
+        kv_cache_binding.get("status") == "kv_cache_lifecycle_ready"
     )
     runtime_input_binding_ready = (
         runtime_input_binding.get("status") == "runtime_input_binding_plan_ready"
@@ -596,11 +609,20 @@ def build_scaffold() -> dict[str, Any]:
             title="KV-cache allocation and token-position lifecycle",
             owner="pto_serving_runtime",
             required_for_full_serving=True,
-            status="partial" if lifecycle_plan.get("workload_plans") else "missing",
-            evidence="examples/cuda/qwen_serving_lifecycle_plan.py",
+            status=(
+                "partial"
+                if kv_cache_binding_ready
+                and kv_cache_binding.get("mode") == "dry_run_pointer_lifecycle"
+                else "pass"
+                if kv_cache_binding_ready
+                else "missing"
+                if not lifecycle_plan.get("workload_plans")
+                else "partial"
+            ),
+            evidence="examples/cuda/qwen_kv_cache_binding.py",
             next_action=(
-                "Bind the planned KV-cache layout to real CUDA allocations "
-                "and persistent-device task args."
+                "Run the KV-cache owner in cuda_live mode from the "
+                "decode-loop runner and consume c/d from Qwen attention kernels."
             ),
         ),
         stage(
@@ -651,6 +673,7 @@ def build_scaffold() -> dict[str, Any]:
         "persistent_weight_args": persistent_weight_args,
         "persistent_weight_materialization": persistent_weight_materialization,
         "resident_weight_table": resident_weight_table,
+        "kv_cache_binding": kv_cache_binding,
         "stages": stages,
         "missing_stage_ids": [item["id"] for item in missing],
         "next_action": (

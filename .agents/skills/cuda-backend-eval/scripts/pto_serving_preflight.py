@@ -386,6 +386,19 @@ def build_preflight() -> dict[str, Any]:
             ),
         },
         {
+            "id": "qwen_kv_cache_binding",
+            "status": "pass"
+            if serving_scaffold.get("kv_cache_binding", {}).get("status")
+            == "kv_cache_lifecycle_ready"
+            else "fail",
+            "evidence": "examples/cuda/qwen_kv_cache_binding.py",
+            "why": (
+                "Repo-owned KV-cache binding splits the planned cache into "
+                "key/value device pointers and maps them to persistent DAG "
+                "c/d fields without consuming token or weight pointer slots."
+            ),
+        },
+        {
             "id": "qwen_model_loader_or_token_loop",
             "status": "fail",
             "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",

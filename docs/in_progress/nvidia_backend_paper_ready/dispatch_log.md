@@ -4450,3 +4450,35 @@ Follow-up tracked-state closure after user confirmation:
   gaps are Qwen kernel token consumption, `cuda_live` decode-loop owner
   integration for token and weight tables, KV-cache allocation and binding,
   Qwen kernel generation, decode-loop execution, and viewer-result import.
+
+### 2026-06-01 - Qwen KV-Cache Binding
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned KV-cache
+  key/value pointer binding for Qwen/Qwen3-8B persistent attention tasks.
+- Exact Codex command or script invocation:
+  `qwen_kv_cache_binding.py --output-json
+  tmp/cuda-backend/pto-serving-kv-cache-2026-06-01/qwen-kv-cache-binding.json`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, PTO full-serving
+  implementation readiness for the LLM-serving paper claim.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: CUDA examples, CUDA evaluation scripts,
+  benchmark-viewer data, in-progress evaluation docs, changelog docs,
+  dispatch log, and tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: default evidence is a deterministic
+  dry-run pointer lifecycle. The decode-loop runner must still own real CUDA
+  KV-cache buffers and Qwen attention kernels must consume `c` and `d`.
+- Verification commands and results: focused TDD test first failed because
+  `examples/cuda/qwen_kv_cache_binding.py` did not exist; after implementation
+  the artifact reported `status=kv_cache_lifecycle_ready`, 20 dry-run
+  pointers, and 5.45 GiB of planned KV-cache storage.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: the branch now proves the planned
+  KV-cache can be mapped to persistent DAG `c`/`d` without consuming token
+  or weight pointer fields. Remaining PTO full-serving gaps are Qwen kernel
+  token/KV consumption, `cuda_live` owner integration from the decode-loop
+  runner, Qwen kernel generation, decode-loop execution, and viewer-result
+  import.

@@ -65,6 +65,22 @@
       ]
     },
     {
+      "id": "qwen_kv_cache_binding",
+      "title": "Qwen KV-Cache Binding",
+      "script": "examples/cuda/qwen_kv_cache_binding.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_kv_cache_binding.py --output-json tmp/cuda-backend/pto-serving-kv-cache/qwen-kv-cache-binding.json",
+      "expected_output": "command exits 0; output JSON records dry-run key/value KV-cache pointer binding evidence.",
+      "evidence_symbols": [
+        "pto_qwen_cuda_kv_cache_lifecycle",
+        "kv_cache_key_value_field_binding",
+        "PtoCudaPersistentDagTask::c",
+        "PtoCudaPersistentDagTask::d"
+      ]
+    },
+    {
       "id": "qwen_prompt_accounting",
       "title": "Qwen Prompt Accounting",
       "script": "examples/cuda/qwen_prompt_accounting.py",

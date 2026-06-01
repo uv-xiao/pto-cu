@@ -96,6 +96,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-01 serving baseline probe scope](2026-06-01-serving-baseline-probe-scope.md)
 - [2026-06-01 serving baseline environment plans](2026-06-01-serving-baseline-environment-plans.md)
 - [2026-06-01 serving baseline environment attempt](2026-06-01-serving-baseline-environment-attempt.md)
+- [2026-06-01 Qwen KV-cache binding](2026-06-01-qwen-kv-cache-binding.md)
 - [2026-06-01 Qwen token pointer table](2026-06-01-qwen-token-pointer-table.md)
 - [2026-06-01 Qwen persistent decode arguments](2026-06-01-qwen-persistent-decode-args.md)
 - [2026-06-01 Qwen CUDA token buffer binding](2026-06-01-qwen-cuda-token-buffer-binding.md)

@@ -409,6 +409,16 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-lifecycle-$(git rev-parse --short HEAD)/qwen-serving-lifecycle-plan.json
 ```
 
+Use `examples/cuda/qwen_kv_cache_binding.py` after the lifecycle plan when the
+Qwen attention memory contract needs reviewable key/value pointer binding.
+The artifact maps key cache to persistent DAG `c` and value cache to `d`:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_kv_cache_binding.py \
+    --output-json tmp/cuda-backend/pto-serving-kv-cache-$(git rev-parse --short HEAD)/qwen-kv-cache-binding.json
+```
+
 Use `examples/cuda/qwen_prompt_accounting.py` to capture tokenizer-observed
 prompt counts for the shared MPK and VDCores serving policies. Use `--mode
 download` only for an intentional source capture into `tmp/`; use `--mode

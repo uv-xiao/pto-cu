@@ -267,6 +267,7 @@ task mapping, tokenizer-observed prompt counts, padded target-length
 CUDA token-buffer allocation/copy-back verification, safetensors shard/tensor
 persistent decode token argument binding through `a`, `b`, and `out`,
 token pointer-table ownership through decode-arg materialization,
+KV-cache key/value binding through persistent DAG `c` and `d`,
 safetensors shard/tensor inventory, and the config-derived expected weight
 shape/dtype contract. It also has local Qwen shard placement plus actual
 safetensors shape/dtype
@@ -282,8 +283,8 @@ records the symbolic `resident_weight_ptrs[slot_id]` source for each weight
 argument. The resident table artifact adds a process-scoped owner that keeps
 399 dry-run pointers live through materialization and frees all of them after
 close. It still does not run the token or weight owners in `cuda_live` mode
-inside the decode-loop runner, bind real CUDA KV-cache buffers, run generated
-Qwen kernel bodies, or execute a decode loop for `Qwen/Qwen3-8B`.
+inside the decode-loop runner, run the KV-cache owner in `cuda_live` mode, run
+generated Qwen kernel bodies, or execute a decode loop for `Qwen/Qwen3-8B`.
 
 ## Next Dispatcher Actions
 

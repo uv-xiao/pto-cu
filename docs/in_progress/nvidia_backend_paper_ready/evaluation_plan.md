@@ -148,6 +148,12 @@ The token pointer-table artifact in
 while persistent decode arguments are materialized. Its checked artifact uses
 `dry_run_pointer_lifecycle`; `--cuda-live` remains the decode-loop runner mode
 needed for actual Qwen kernel submission.
+The KV-cache binding artifact in
+`examples/cuda/qwen_kv_cache_binding.py` now splits the planned cache into key
+and value buffers and maps them to persistent DAG `c` and `d` fields. Its
+checked artifact covers 20 dry-run pointers totaling 5.45 GiB across the MPK
+and VDCores batch ladders; `cuda_live` ownership still belongs in the
+decode-loop runner.
 The persistent decode-argument artifact in
 `examples/cuda/qwen_persistent_decode_args.py` maps those token buffers onto
 the persistent DAG `a`, `b`, and `out` fields while preserving `tensor_args`
@@ -158,6 +164,8 @@ The current raw artifacts are
 `tmp/cuda-backend/pto-serving-input-binding-2026-06-01/qwen-runtime-input-binding.json`,
 `tmp/cuda-backend/pto-serving-token-buffer-2026-06-01/qwen-cuda-token-buffer-binding.json`,
 `tmp/cuda-backend/pto-serving-decode-args-2026-06-01/qwen-persistent-decode-args.json`,
+`tmp/cuda-backend/pto-serving-token-pointers-2026-06-01/qwen-token-pointer-table.json`,
+`tmp/cuda-backend/pto-serving-kv-cache-2026-06-01/qwen-kv-cache-binding.json`,
 `tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json`,
 `tmp/cuda-backend/pto-serving-shards-a16851f6/qwen-safetensors-shards.json`,
 `tmp/cuda-backend/pto-serving-safetensors-a16851f6/qwen-safetensors-metadata.json`,
@@ -174,6 +182,7 @@ Qwen3-8B KV-cache and task mapping, tokenizer-observed prompt counts, a
 host-side runtime token-buffer plan with padded target-length `input_ids` and
 `attention_mask`, CUDA token-buffer allocation/copy-back verification,
 persistent decode token argument binding through `a`, `b`, and `out`,
+dry-run KV-cache key/value binding through `c` and `d`,
 safetensors shard/tensor inventory, and the expected weight shape/dtype
 contract. It also proves local Qwen shard placement and actual safetensors
 shape/dtype validation for 399 tensors across five shards, plus full CUDA
@@ -183,9 +192,8 @@ ctypes-backed materialization plan for the resident weight pointer table and a
 dry-run owner lifecycle that binds 399 pointers and frees them after
 materialization. The repo-owned PTO CUDA path still lacks live token pointer
 table ownership, Qwen kernel token consumption, `cuda_live` decode-loop
-integration for that owner, real CUDA allocation and binding for the planned
-KV-cache layout, generated Qwen kernel bodies, decode-loop execution, and
-`viewer_result_import`, so no PTO
+integration for the token, weight, and KV-cache owners, generated Qwen kernel
+bodies, decode-loop execution, and `viewer_result_import`, so no PTO
 `Qwen/Qwen3-8B` full-serving row can be imported yet.
 Every serving baseline run record must reference one of these policy IDs and
 require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before
