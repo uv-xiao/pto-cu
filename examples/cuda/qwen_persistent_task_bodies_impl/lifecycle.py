@@ -57,16 +57,16 @@ const float *weight = task->tensor_args[0];
 if (task->scalar_arg_count == 0) {
     const float scale = weight ? weight[i & 3U] : 1.0f;
     task->out[i] = task->a[i] * scale;
-    return;
+} else {
+    float mean_square = 0.0f;
+    for (unsigned long long j = 0; j < task->n; ++j) {
+        mean_square += task->a[j] * task->a[j];
+    }
+    mean_square /= static_cast<float>(task->n);
+    const float scale = rsqrtf(mean_square + 0.000001f);
+    const float norm_weight = weight ? weight[i & 3U] : 1.0f;
+    task->out[i] = task->a[i] * scale * norm_weight;
 }
-float mean_square = 0.0f;
-for (unsigned long long j = 0; j < task->n; ++j) {
-    mean_square += task->a[j] * task->a[j];
-}
-mean_square /= static_cast<float>(task->n);
-const float scale = rsqrtf(mean_square + 0.000001f);
-const float norm_weight = weight ? weight[i & 3U] : 1.0f;
-task->out[i] = task->a[i] * scale * norm_weight;
 """,
         },
         {
@@ -103,15 +103,15 @@ if (task->scalar_arg_count > 0 && q_proj && k_proj && v_proj) {
         task->d[kv_index] = v;
     }
     task->out[i] = v;
-    return;
-}
-const float q = q_proj ? q_proj[i & 3U] : 0.0f;
-task->out[i] = task->a[i] + mask + key + value + q;
-if (task->c) {
-    task->c[kv_index] = task->a[i] + q;
-}
-if (task->d) {
-    task->d[kv_index] = task->out[i];
+} else {
+    const float q = q_proj ? q_proj[i & 3U] : 0.0f;
+    task->out[i] = task->a[i] + mask + key + value + q;
+    if (task->c) {
+        task->c[kv_index] = task->a[i] + q;
+    }
+    if (task->d) {
+        task->d[kv_index] = task->out[i];
+    }
 }
 """,
         },
@@ -194,10 +194,10 @@ if (task->scalar_arg_count > 1 && lm_head) {
         static_cast<unsigned long long>(task->scalar_args[1]);
     const unsigned long long hidden_index = i % max(1ULL, hidden_elements);
     task->out[i] = task->a[hidden_index] * lm_head[i & 3U];
-    return;
+} else {
+    const float logit = task->a[i] + (lm_head ? lm_head[i & 3U] : 0.0f);
+    task->out[i] = logit;
 }
-const float logit = task->a[i] + (lm_head ? lm_head[i & 3U] : 0.0f);
-task->out[i] = logit;
 """,
         },
     ]

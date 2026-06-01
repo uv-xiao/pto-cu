@@ -81,3 +81,11 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "task->out[i] = silu_gate * up_value;" in source
     assert "lm_head" in source
     assert "qwen_unit_math_source_coverage" in manifest["implemented_contracts"]
+
+
+def test_qwen_task_bodies_do_not_exit_grid_stride_wrapper_early():
+    sys.path.insert(0, str(ROOT / "examples" / "cuda"))
+    from qwen_persistent_task_bodies_impl.lifecycle import body_specs
+
+    for spec in body_specs():
+        assert "return;" not in spec["body"], spec["callable"]
