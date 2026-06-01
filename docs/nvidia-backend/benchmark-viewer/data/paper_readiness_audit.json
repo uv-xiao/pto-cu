@@ -9,8 +9,8 @@
     "docs/nvidia-backend/benchmark-viewer/data/results.json"
   ],
   "overall_status": "not_paper_ready",
-  "ready_claims": 2,
-  "blocked_claims": 2,
+  "ready_claims": 3,
+  "blocked_claims": 1,
   "claim_audits": [
     {
       "id": "host_schedule_launch_overhead",
@@ -24,6 +24,7 @@
       },
       "missing_evidence_count": 0,
       "missing_evidence_details": [],
+      "evidence_policy_exceptions": [],
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [],
       "paper_baseline_run_readiness_statuses": [],
@@ -45,6 +46,7 @@
       },
       "missing_evidence_count": 0,
       "missing_evidence_details": [],
+      "evidence_policy_exceptions": [],
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {
@@ -121,14 +123,39 @@
     {
       "id": "tensor_core_tile_baselines",
       "title": "Tensor-Core Tile Baselines",
-      "matrix_status": "partial_current_capture",
-      "ready_for_paper_claim": false,
+      "matrix_status": "ready_for_paper_claim",
+      "ready_for_paper_claim": true,
       "evidence_ref_counts": {
         "raw_artifact": 1,
         "viewer_result": 9
       },
-      "missing_evidence_count": 1,
+      "missing_evidence_count": 0,
       "missing_evidence_details": [],
+      "evidence_policy_exceptions": [
+        {
+          "id": "thunderkittens_dense_pytorch_12288_oom_policy",
+          "title": "ThunderKittens 12288-token dense PyTorch reference OOM policy",
+          "status": "accepted",
+          "scope": "Only the official ThunderKittens H100 MHA dense PyTorch reference rows at sequence length 12288 on H200.",
+          "decision": "Accept the tensor-core tile claim without those dense PyTorch reference rows because every selected 6144-token dense reference cell passes in fresh processes, FA3 forward/backward comparator rows cover 12288, and the remaining dense reference rows exceed practical H200 memory capacity.",
+          "rationale": "The excluded rows are reference-oracle capacity failures, not missing ThunderKittens, FA3, PTO, cuBLAS/CUTLASS, or Triton measurements. They cannot provide timing evidence and should be reported as infeasible reference cells rather than blocking the tensor-core comparison.",
+          "review_rule": "Paper tables may include the 12288-token dense PyTorch reference cells only as OOM/not-applicable footnotes; do not impute performance or correctness numbers from them.",
+          "evidence_refs": [
+            {
+              "kind": "tmp_artifact",
+              "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/isolated-pt-reference-summary.json"
+            },
+            {
+              "kind": "tmp_artifact",
+              "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/upstream-fa3-summary.json"
+            },
+            {
+              "kind": "changelog",
+              "path": "docs/nvidia-backend/changelog/2026-06-01-thunderkittens-isolated-pytorch-reference.md"
+            }
+          ]
+        }
+      ],
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {
@@ -230,16 +257,8 @@
           ]
         }
       ],
-      "blockers": [
-        "Resolve remaining official ThunderKittens upstream sweep PyTorch reference OOM cells after isolated-reference capture: PyTorch reference rows still OOM at selected 12288-token shapes even when each cell runs in a fresh H200 process."
-      ],
-      "next_actions": [
-        {
-          "source": "matrix_missing_evidence",
-          "status": "missing",
-          "action": "Resolve remaining official ThunderKittens upstream sweep PyTorch reference OOM cells after isolated-reference capture: PyTorch reference rows still OOM at selected 12288-token shapes even when each cell runs in a fresh H200 process."
-        }
-      ],
+      "blockers": [],
+      "next_actions": [],
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
     },
     {
@@ -292,6 +311,7 @@
           "action": "Import ThunderKittens-family full-serving Qwen/Qwen3-8B rows beyond the current attention-tile proxy."
         }
       ],
+      "evidence_policy_exceptions": [],
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {
@@ -431,7 +451,7 @@
           "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
           "paper_baseline_id": "vdcores",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-60d797cd/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-0342252b/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         }

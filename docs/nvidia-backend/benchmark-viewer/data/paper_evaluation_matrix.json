@@ -266,7 +266,7 @@
       "id": "tensor_core_tile_baselines",
       "title": "Tensor-Core Tile Baselines",
       "claim": "Tensor-core PTO work must be compared against vendor and generated-kernel baselines before making throughput claims.",
-      "status": "partial_current_capture",
+      "status": "ready_for_paper_claim",
       "workload_ids": [
         "tensor_core_tile"
       ],
@@ -351,10 +351,33 @@
           "gpu": "H200"
         }
       ],
-      "missing_evidence": [
-        "Resolve remaining official ThunderKittens upstream sweep PyTorch reference OOM cells after isolated-reference capture: PyTorch reference rows still OOM at selected 12288-token shapes even when each cell runs in a fresh H200 process."
-      ],
-      "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
+      "missing_evidence": [],
+      "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts.",
+      "evidence_policy_exceptions": [
+        {
+          "id": "thunderkittens_dense_pytorch_12288_oom_policy",
+          "title": "ThunderKittens 12288-token dense PyTorch reference OOM policy",
+          "status": "accepted",
+          "scope": "Only the official ThunderKittens H100 MHA dense PyTorch reference rows at sequence length 12288 on H200.",
+          "decision": "Accept the tensor-core tile claim without those dense PyTorch reference rows because every selected 6144-token dense reference cell passes in fresh processes, FA3 forward/backward comparator rows cover 12288, and the remaining dense reference rows exceed practical H200 memory capacity.",
+          "rationale": "The excluded rows are reference-oracle capacity failures, not missing ThunderKittens, FA3, PTO, cuBLAS/CUTLASS, or Triton measurements. They cannot provide timing evidence and should be reported as infeasible reference cells rather than blocking the tensor-core comparison.",
+          "review_rule": "Paper tables may include the 12288-token dense PyTorch reference cells only as OOM/not-applicable footnotes; do not impute performance or correctness numbers from them.",
+          "evidence_refs": [
+            {
+              "kind": "tmp_artifact",
+              "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/isolated-pt-reference-summary.json"
+            },
+            {
+              "kind": "tmp_artifact",
+              "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/upstream-fa3-summary.json"
+            },
+            {
+              "kind": "changelog",
+              "path": "docs/nvidia-backend/changelog/2026-06-01-thunderkittens-isolated-pytorch-reference.md"
+            }
+          ]
+        }
+      ]
     },
     {
       "id": "llm_serving_paper_baselines",

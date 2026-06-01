@@ -65,6 +65,6 @@ Failing cells:
 
 - Selected 12288-token dense PyTorch reference cells still OOM on the H200
   capture host.
-- The tensor-core claim still needs either a paper policy for infeasible dense
-  references at that size or a lower-memory reference capture that remains
-  faithful enough for paper comparison.
+- [2026-06-01 ThunderKittens dense reference policy](2026-06-01-thunderkittens-reference-policy.md)
+  accepts those cells only as OOM/not-applicable footnotes, so they no longer
+  block the tensor-core tile claim.

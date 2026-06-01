@@ -479,6 +479,12 @@ def build_readiness_audit(
                 f"{claim.get('id', '<unknown>')} "
                 "missing_evidence_details is invalid"
             )
+        evidence_policy_exceptions = claim.get("evidence_policy_exceptions", [])
+        if not isinstance(evidence_policy_exceptions, list):
+            fail(
+                f"{claim.get('id', '<unknown>')} "
+                "evidence_policy_exceptions is invalid"
+            )
         for detail in missing_evidence_details:
             if not isinstance(detail, dict):
                 fail(
@@ -558,6 +564,7 @@ def build_readiness_audit(
                 "evidence_ref_counts": evidence_counts,
                 "missing_evidence_count": len(missing_evidence),
                 "missing_evidence_details": missing_evidence_details,
+                "evidence_policy_exceptions": evidence_policy_exceptions,
                 "missing_viewer_results": missing_results,
                 "paper_baseline_run_statuses": run_statuses,
                 "paper_baseline_run_readiness_statuses": run_readiness_items,

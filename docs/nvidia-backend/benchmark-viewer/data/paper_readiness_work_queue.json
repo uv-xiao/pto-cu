@@ -2,46 +2,22 @@
   "schema_version": 1,
   "source_file": "docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json",
   "overall_status": "not_paper_ready",
-  "ready_claims": 2,
-  "blocked_claims": 2,
+  "ready_claims": 3,
+  "blocked_claims": 1,
   "summary": {
-    "total_work_items": 5,
+    "total_work_items": 4,
     "work_items_by_source": {
       "execution_attempt": 1,
-      "matrix_missing_evidence": 4
+      "matrix_missing_evidence": 3
     },
     "work_items_by_claim": {
-      "llm_serving_paper_baselines": 4,
-      "tensor_core_tile_baselines": 1
+      "llm_serving_paper_baselines": 4
     }
   },
   "work_items": [
     {
       "id": "paper_readiness_work_item_001",
       "priority": 1,
-      "claim_id": "tensor_core_tile_baselines",
-      "claim_title": "Tensor-Core Tile Baselines",
-      "matrix_status": "partial_current_capture",
-      "ready_for_paper_claim": false,
-      "blocker_count": 1,
-      "missing_evidence_count": 1,
-      "action_index": 1,
-      "source": "matrix_missing_evidence",
-      "owner": "matrix_missing_evidence",
-      "paper_baseline_id": "",
-      "paper_baseline_run_id": "",
-      "execution_attempt_id": "",
-      "missing_evidence_id": "",
-      "method_id": "",
-      "serving_workload_ids": [],
-      "shape_contains": "",
-      "status": "missing",
-      "action": "Resolve remaining official ThunderKittens upstream sweep PyTorch reference OOM cells after isolated-reference capture: PyTorch reference rows still OOM at selected 12288-token shapes even when each cell runs in a fresh H200 process.",
-      "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
-    },
-    {
-      "id": "paper_readiness_work_item_002",
-      "priority": 2,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "partial_current_capture",
@@ -66,8 +42,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_003",
-      "priority": 3,
+      "id": "paper_readiness_work_item_002",
+      "priority": 2,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "partial_current_capture",
@@ -91,8 +67,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_004",
-      "priority": 4,
+      "id": "paper_readiness_work_item_003",
+      "priority": 3,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "partial_current_capture",
@@ -117,8 +93,8 @@
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
     },
     {
-      "id": "paper_readiness_work_item_005",
-      "priority": 5,
+      "id": "paper_readiness_work_item_004",
+      "priority": 4,
       "claim_id": "llm_serving_paper_baselines",
       "claim_title": "LLM Serving Paper Baselines",
       "matrix_status": "partial_current_capture",

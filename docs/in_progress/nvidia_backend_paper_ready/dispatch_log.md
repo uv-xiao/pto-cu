@@ -3663,3 +3663,42 @@ Follow-up tracked-state closure after user confirmation:
 - Handoff summary and remaining gaps: the tensor-core work queue now excludes
   6144-token PyTorch references from the blocker. The remaining official
   ThunderKittens sweep gap is 12288-token dense PyTorch reference capacity.
+
+### 2026-06-01 - ThunderKittens Dense Reference Policy
+
+- Dispatcher session or PR: local Codex session on
+  `goal/nvidia-paper-ready`; PR targets `uv-xiao/pto-cu:main`.
+- Worker id and objective: no worker dispatched; dispatcher-owned tensor-core
+  paper-readiness policy update.
+- Exact Codex command or script invocation: promoted
+  `tensor_core_tile_baselines` to `ready_for_paper_claim`, added the accepted
+  `thunderkittens_dense_pytorch_12288_oom_policy` exception to
+  `paper_evaluation_matrix.json`, added exception rendering to the HTML
+  viewer, tightened the benchmark-viewer validator, and regenerated
+  `paper_readiness_audit.json`, `paper_readiness_work_queue.json`, run
+  readiness, environment plans, and goal progress with
+  `refresh_nvidia_review_artifacts.py`.
+- Parent goal and child slice:
+  `docs/in_progress/nvidia_backend_paper_ready.md`, tensor-core baseline
+  evidence for the paper-readiness matrix.
+- Branch name and PR URL: `goal/nvidia-paper-ready`,
+  `https://github.com/uv-xiao/pto-cu/pull/1`.
+- Allowed scope and files: benchmark-viewer data and viewer code,
+  in-progress evaluation docs, changelog docs, dispatch log, validators, and
+  tests. No upstream repositories were edited or pushed.
+- Dependencies and blocked assumptions: repository Actions stayed disabled.
+  The policy depends on the isolated-reference capture proving that selected
+  6144-token dense PyTorch reference cells pass while selected 12288-token
+  dense PyTorch reference cells still OOM, and on FA3 comparator artifacts
+  covering sequence length 12288.
+- Verification commands and results: `validate_benchmark_viewer_data.py` ->
+  passed; `validate_nvidia_changelog.py` -> passed;
+  `check_nvidia_review_ready.py` -> passed; `jq empty
+  docs/nvidia-backend/benchmark-viewer/data/*.json` -> passed;
+  `git diff --check` -> passed;
+  `pytest tests/ut/py/test_nvidia_review_artifacts.py -q` -> `41 passed`.
+- Merge decision and merge commit: pending.
+- Handoff summary and remaining gaps: tensor-core tile baselines are now
+  paper-ready with an explicit OOM/not-applicable footnote policy for
+  infeasible 12288-token dense PyTorch reference cells. The active work queue
+  now contains only LLM-serving paper-baseline gaps.

@@ -167,6 +167,9 @@ Each paper-evaluation matrix claim must include:
 - `current_evidence_refs`: viewer rows, stable docs, or tmp artifact roots
   that support the current status;
 - `missing_evidence`: explicit gaps before the claim is paper-ready;
+- `evidence_policy_exceptions`: accepted evidence exceptions, if any, with
+  scope, decision, rationale, review rule, and artifact references proving why
+  the exception does not weaken the claim;
 - `promotion_gate`: condition for moving from planned or partial to
   paper-ready.
 

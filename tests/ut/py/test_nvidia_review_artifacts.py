@@ -2672,8 +2672,8 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["ready_claims"] == 2
-    assert committed["blocked_claims"] == 2
+    assert committed["ready_claims"] == 3
+    assert committed["blocked_claims"] == 1
 
     by_id = {claim["id"]: claim for claim in committed["claim_audits"]}
     host_claim = by_id["host_schedule_launch_overhead"]
@@ -2809,23 +2809,22 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "thunderkittens_full_sweep",
         "thunderkittens_non_mha_rotary",
     } <= tensor_run_ids
+    assert tensor_claim["ready_for_paper_claim"]
+    assert tensor_claim["matrix_status"] == "ready_for_paper_claim"
+    assert tensor_claim["blockers"] == []
+    assert tensor_claim["next_actions"] == []
+    policy = tensor_claim["evidence_policy_exceptions"][0]
+    assert policy["id"] == "thunderkittens_dense_pytorch_12288_oom_policy"
+    assert policy["status"] == "accepted"
+    assert "12288-token dense PyTorch reference" in policy["title"]
+    assert "OOM/not-applicable footnotes" in policy["review_rule"]
     assert any(
-        "ThunderKittens upstream sweep PyTorch reference OOM cells" in blocker
-        and "isolated-reference capture" in blocker
-        and "12288-token shapes" in blocker
-        and "fresh H200 process" in blocker
-        for blocker in tensor_claim["blockers"]
+        ref["path"].endswith("isolated-pt-reference-summary.json")
+        for ref in policy["evidence_refs"]
     )
     assert not any(
         "thunderkittens_full_sweep is planned_not_run" in blocker
         for blocker in tensor_claim["blockers"]
-    )
-    assert any(
-        action["source"] == "matrix_missing_evidence"
-        and "isolated-reference capture" in action["action"]
-        and "12288-token shapes" in action["action"]
-        and "fresh H200 process" in action["action"]
-        for action in tensor_claim["next_actions"]
     )
 
 
@@ -2855,10 +2854,10 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
-    assert committed["summary"]["total_work_items"] == 5
+    assert committed["summary"]["total_work_items"] == 4
     assert committed["summary"]["work_items_by_source"] == {
         "execution_attempt": 1,
-        "matrix_missing_evidence": 4,
+        "matrix_missing_evidence": 3,
     }
     work_items = committed["work_items"]
     assert all(not item["ready_for_paper_claim"] for item in work_items)
@@ -2877,6 +2876,10 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         item["claim_id"] == "llm_serving_paper_baselines"
         and item["source"] == "probe"
         and item["paper_baseline_id"] == "sglang"
+        for item in work_items
+    )
+    assert not any(
+        item["claim_id"] == "tensor_core_tile_baselines"
         for item in work_items
     )
     assert not any(
@@ -2963,7 +2966,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
     assert by_id["paper_grade_results"]["status"] == "in_progress"
-    assert by_id["paper_grade_results"]["blocking_work_items"] == 5
+    assert by_id["paper_grade_results"]["blocking_work_items"] == 4
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (
         "not_paper_ready"
     )
@@ -5206,6 +5209,18 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 "MPK bounded-decode run" in gap
                 for gap in item["missing_evidence"]
             )
+        if item["id"] == "tensor_core_tile_baselines":
+            assert item["status"] == "ready_for_paper_claim"
+            assert item["missing_evidence"] == []
+            policy = item["evidence_policy_exceptions"][0]
+            assert policy["id"] == "thunderkittens_dense_pytorch_12288_oom_policy"
+            assert policy["status"] == "accepted"
+            assert "FA3 forward/backward comparator rows" in policy["decision"]
+            assert any(
+                ref["kind"] == "tmp_artifact"
+                and ref["path"].endswith("isolated-pt-reference-summary.json")
+                for ref in policy["evidence_refs"]
+            )
         if item["id"] == "llm_serving_paper_baselines":
             assert not any(
                 "Selected shared model" in gap
@@ -5326,8 +5341,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert "mpk_persistent_qwen3_8b" not in missing_detail_ids
 
     assert paper_readiness_audit["overall_status"] == "not_paper_ready"
-    assert paper_readiness_audit["ready_claims"] == 2
-    assert paper_readiness_audit["blocked_claims"] == 2
+    assert paper_readiness_audit["ready_claims"] == 3
+    assert paper_readiness_audit["blocked_claims"] == 1
     assert paper_readiness_audit["claim_audits"]
     for item in paper_readiness_audit["claim_audits"]:
         assert item["matrix_status"]
@@ -5354,6 +5369,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert item["ready_for_paper_claim"] is True
             assert item["blockers"] == []
             assert item["next_actions"] == []
+        elif item["id"] == "tensor_core_tile_baselines":
+            assert item["matrix_status"] == "ready_for_paper_claim"
+            assert item["ready_for_paper_claim"] is True
+            assert item["blockers"] == []
+            assert item["next_actions"] == []
+            assert item["evidence_policy_exceptions"]
         else:
             assert item["ready_for_paper_claim"] is False
             assert item["blockers"]

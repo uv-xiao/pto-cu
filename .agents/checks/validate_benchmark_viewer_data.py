@@ -177,6 +177,28 @@ def check_evidence_refs(record: dict[str, Any], owner: str, root: Path) -> None:
                 fail(f"{owner} missing evidence symbol {symbol} in {relpath}")
 
 
+def validate_policy_exception_refs(
+    refs: list[Any],
+    owner: str,
+    root: Path,
+) -> None:
+    for ref in refs:
+        if not isinstance(ref, dict):
+            fail(f"{owner} evidence ref is not an object")
+        kind = require_string(ref, "kind", owner)
+        path = require_string(ref, "path", owner)
+        if kind == "tmp_artifact":
+            if not path.startswith("tmp/"):
+                fail(f"{owner} tmp_artifact must be under tmp/: {path}")
+            if not (root / path).exists():
+                fail(f"{owner} tmp_artifact path missing: {path}")
+        elif kind in {"viewer_data", "stable_doc", "changelog"}:
+            if not (root / path).is_file():
+                fail(f"{owner} evidence path missing: {path}")
+        else:
+            fail(f"{owner} has invalid evidence ref kind: {kind}")
+
+
 def validate_benchmarks(data: dict[str, Any], root: Path) -> set[str]:
     records = require_list(data, "benchmarks", "benchmarks")
     benchmark_ids = check_unique_ids(records, "benchmark")
@@ -1211,6 +1233,36 @@ def validate_paper_evaluation_matrix(
             fail(f"{owner} is ready but still has missing_evidence")
         if record["status"] != "ready_for_paper_claim" and not missing_evidence:
             fail(f"{owner} is not ready but has no missing_evidence")
+        exceptions = record.get("evidence_policy_exceptions", [])
+        if not isinstance(exceptions, list):
+            fail(f"{owner} evidence_policy_exceptions is not a list")
+        if record["status"] == "ready_for_paper_claim":
+            for exception in exceptions:
+                if not isinstance(exception, dict):
+                    fail(
+                        f"{owner} evidence_policy_exceptions item is not an "
+                        "object"
+                    )
+                for key in (
+                    "id",
+                    "title",
+                    "status",
+                    "scope",
+                    "decision",
+                    "rationale",
+                    "review_rule",
+                ):
+                    require_string(exception, key, owner)
+                if exception["status"] != "accepted":
+                    fail(
+                        f"{owner} ready exception must be accepted: "
+                        f"{exception['id']}"
+                    )
+                validate_policy_exception_refs(
+                    require_list(exception, "evidence_refs", owner),
+                    owner,
+                    root,
+                )
         missing_details = record.get("missing_evidence_details", [])
         if not isinstance(missing_details, list):
             fail(f"{owner} missing_evidence_details is not a list")

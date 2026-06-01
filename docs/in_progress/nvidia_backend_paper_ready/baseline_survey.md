@@ -207,7 +207,11 @@ produced all FA3 forward and backward rows across sequence lengths 768, 1536,
 large reference cell in a fresh H200 process with expandable allocator
 segments. That recovered every selected 6144-token cell. The remaining
 official-sweep gap is true 12288-token dense PyTorch reference capacity, not
-missing FA3 bindings or monolithic benchmark fragmentation.
+missing FA3 bindings or monolithic benchmark fragmentation. The tensor-core
+claim records this as an accepted evidence-policy exception: paper tables may
+show those 12288-token dense reference cells only as OOM/not-applicable
+footnotes, while measured FA3, ThunderKittens, PTO, cuBLAS/CUTLASS, and Triton
+rows remain eligible for comparison.
 
 Observed entry points:
 

@@ -524,11 +524,18 @@ function renderPaperEvaluation() {
     const missingDetails = (claim.missing_evidence_details || []).map((item) => (
       formatServingAction(item)
     ));
+    const policyExceptions = (claim.evidence_policy_exceptions || []).map((item) => (
+      `${item.status}: ${item.title} - ${item.decision}`
+    ));
     details.append(
       summary,
       claimText,
       metadata,
       ...namedList("Current Evidence", evidence),
+      ...namedList(
+        "Evidence Policy Exceptions",
+        policyExceptions.length ? policyExceptions : ["none"],
+      ),
       ...namedList("Missing Evidence", claim.missing_evidence),
       ...namedList(
         "Missing Evidence Details",
@@ -672,6 +679,9 @@ function renderPaperReadinessAudit() {
     const nextActions = claim.next_actions.map((action) => (
       `${action.source}: ${formatServingAction(action)}`
     ));
+    const policyExceptions = (claim.evidence_policy_exceptions || []).map((item) => (
+      `${item.status}: ${item.title} - ${item.review_rule}`
+    ));
     item.append(
       summaryLine,
       fieldList([
@@ -687,6 +697,10 @@ function renderPaperReadinessAudit() {
         runReadinessStatuses.length ? runReadinessStatuses : ["none"],
       ),
       ...namedList("Probe Status", probeStatuses.length ? probeStatuses : ["none"]),
+      ...namedList(
+        "Evidence Policy Exceptions",
+        policyExceptions.length ? policyExceptions : ["none"],
+      ),
       ...namedList("Blockers", claim.blockers),
       ...namedList("Next Actions", nextActions.length ? nextActions : ["none"]),
       paragraph("Promotion gate", claim.promotion_gate),

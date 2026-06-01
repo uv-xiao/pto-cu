@@ -283,8 +283,11 @@ rows completed for forward/backward, causal/non-causal, and sequence lengths
 capture ran each selected large reference cell in a fresh H200 process with
 expandable allocator segments. It recovered every 6144-token cell and left only
 12288-token dense PyTorch reference cells OOM, so the remaining official-sweep
-blocker is true 12288-token dense-reference capacity, not unavailable FA3
-bindings or monolithic benchmark fragmentation.
+capacity issue is recorded as an accepted evidence-policy exception instead of
+a tensor-core blocker. The exception is scoped only to the infeasible dense
+PyTorch reference rows; paper tables may footnote those rows as
+OOM/not-applicable and must not impute performance or correctness numbers from
+them.
 The LLM-serving claim also has a planned ThunderKittens
 `thunderkittens_decode_attention_tile` run record. Its readiness is generated
 from the selected source tree, repo-local capture wrapper, expected tmp

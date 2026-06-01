@@ -68,6 +68,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-05-31 ThunderKittens official MHA probe](2026-05-31-thunderkittens-official-mha-probe.md)
 - [2026-06-01 ThunderKittens FA3 comparator capture](2026-06-01-thunderkittens-fa3-comparator.md)
 - [2026-06-01 ThunderKittens isolated PyTorch reference cells](2026-06-01-thunderkittens-isolated-pytorch-reference.md)
+- [2026-06-01 ThunderKittens dense reference policy](2026-06-01-thunderkittens-reference-policy.md)
 - [2026-06-01 ThunderKittens non-MHA rotary capture](2026-06-01-thunderkittens-non-mha-rotary.md)
 - [2026-05-31 ThunderKittens serving capture](2026-05-31-thunderkittens-serving-capture.md)
 - [2026-05-31 PTO serving-equivalent evidence](2026-05-31-pto-serving-equivalent-evidence.md)
