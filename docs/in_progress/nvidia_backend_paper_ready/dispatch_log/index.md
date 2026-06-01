@@ -59,3 +59,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-26.md](entries/2026-06-02-part-26.md) | 1 | Qwen Persistent Weight Materialization Split | Qwen Persistent Weight Materialization Split |
 | [2026-06-02-part-27.md](entries/2026-06-02-part-27.md) | 1 | Qwen Persistent Weight Arguments Split | Qwen Persistent Weight Arguments Split |
 | [2026-06-02-part-28.md](entries/2026-06-02-part-28.md) | 1 | NVIDIA Overall Design Split | NVIDIA Overall Design Split |
+| [2026-06-02-part-29.md](entries/2026-06-02-part-29.md) | 1 | Baseline Survey Split | Baseline Survey Split |
