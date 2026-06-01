@@ -2212,7 +2212,7 @@
       },
       "command": "cd tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076 && PYTHONPATH=$PWD/tmp/baselines/thunderkittens/kernels/attention/mha_h100:$PYTHONPATH python tmp/baselines/thunderkittens/kernels/attention/mha_h100/benchmark.py && PYTHONPATH=$PWD/tmp/baselines/thunderkittens/kernels/attention/mha_h100:$PYTHONPATH python tmp/baselines/thunderkittens/kernels/attention/mha_h100/test_correctness.py",
       "observation": "The official ThunderKittens H100 MHA benchmark completed forward/backward causal and non-causal tables on H200 after rebuilding the extension with the project venv; the official correctness script generated output, backward, and all-mode error graphs.",
-      "blocker": "The probe remains partial because FlashAttention 3 bindings are unavailable, PyTorch reference rows OOM at selected 12288-token shapes, and non-MHA ThunderKittens kernels are not covered.",
+      "blocker": "The probe remains partial because FlashAttention 3 bindings are unavailable and PyTorch reference rows OOM at selected 12288-token shapes.",
       "artifacts": [
         "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/upstream-summary.json",
         "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/build-venv.log",
@@ -2240,6 +2240,47 @@
         "fa3_available": false,
         "pytorch_reference_oom": true,
         "generated_error_graphs": 6
+      }
+    },
+    {
+      "id": "thunderkittens_rotary_non_mha_h200",
+      "paper_baseline_id": "thunderkittens",
+      "paper_baseline_run_id": "thunderkittens_non_mha_rotary",
+      "title": "ThunderKittens Non-MHA Rotary H200 Capture",
+      "status": "pass",
+      "artifact_root": "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/",
+      "hardware": {
+        "gpu": "H200",
+        "machine": "bizhaoh200",
+        "compute_target": "compute_90"
+      },
+      "command": "Build kernels/rotary with ARCH=SM90 and CUDA 12.8 on H200, run the upstream test_correctness.py, then run thunderkittens_rotary_capture.py for two rotary shapes with 5 warmup and 20 timed CUDA-event repeats.",
+      "observation": "The non-MHA rotary extension built successfully on H200, the upstream correctness script exited 0, and the repo-owned capture imported two passing tensor_core_tile rows with rotary_flops, max_abs_error, and p50 device time.",
+      "blocker": "",
+      "artifacts": [
+        "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/capture.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/viewer-result-records.json",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/build.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/build-status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/correctness.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/correctness-status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/capture.log",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/capture-status.txt",
+        "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/nvidia-smi-gpus.txt"
+      ],
+      "summary": {
+        "mode": "thunderkittens_non_mha_rotary",
+        "kernel": "kernels/rotary",
+        "build_status": 0,
+        "correctness_status": 0,
+        "capture_status": 0,
+        "sample_count": 20,
+        "captured_shapes": [
+          "rotary,b=2,h=16,n=1024,d=64",
+          "rotary,b=4,h=16,n=2048,d=64"
+        ],
+        "viewer_rows_imported": 2,
+        "non_mha_kernel_covered": true
       }
     },
     {

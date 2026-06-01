@@ -122,6 +122,7 @@
       "matrix_status": "partial_current_capture",
       "ready_for_paper_claim": false,
       "evidence_ref_counts": {
+        "raw_artifact": 1,
         "viewer_result": 9
       },
       "missing_evidence_count": 1,
@@ -153,6 +154,18 @@
             "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/run-after-build.log",
             "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/correctness.log"
           ]
+        },
+        {
+          "id": "thunderkittens_non_mha_rotary",
+          "paper_baseline_id": "thunderkittens",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/build.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/correctness.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/capture.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/nvidia-smi-gpus.txt"
+          ]
         }
       ],
       "paper_baseline_run_readiness_statuses": [],
@@ -177,13 +190,13 @@
         }
       ],
       "blockers": [
-        "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable, PyTorch reference rows OOM at selected 12288-token shapes, and non-MHA ThunderKittens kernels are not yet captured."
+        "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable and PyTorch reference rows OOM at selected 12288-token shapes."
       ],
       "next_actions": [
         {
           "source": "matrix_missing_evidence",
           "status": "missing",
-          "action": "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable, PyTorch reference rows OOM at selected 12288-token shapes, and non-MHA ThunderKittens kernels are not yet captured."
+          "action": "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable and PyTorch reference rows OOM at selected 12288-token shapes."
         }
       ],
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
@@ -290,7 +303,7 @@
           "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
           "paper_baseline_id": "mpk",
           "latest_status": "pass",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-88e5c8a7/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-ae922a2a/",
           "blocking_gaps": [],
           "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
         },
@@ -298,7 +311,7 @@
           "paper_baseline_run_id": "vdcores_llama_decode_correctness",
           "paper_baseline_id": "vdcores",
           "latest_status": "partial",
-          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-88e5c8a7/",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-ae922a2a/",
           "blocking_gaps": [
             "HF_TOKEN is not available for this run."
           ],

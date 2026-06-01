@@ -26,6 +26,7 @@ OPTIONAL_NUMERIC_METRICS = (
     "throughput_tokens_per_s_min",
     "throughput_tokens_per_s_max",
     "throughput",
+    "rotary_flops",
     "total_token_throughput_tokens_per_s",
     "last_gen_throughput_tokens_per_s",
     "attention_flops",

@@ -1134,6 +1134,68 @@ def test_thunderkittens_full_sweep_capture_builds_importable_record():
     assert result["correctness"] == "pass"
 
 
+def test_thunderkittens_rotary_capture_builds_importable_record():
+    import importlib.util
+
+    script = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "thunderkittens_rotary_capture.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "thunderkittens_rotary_capture",
+        script,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    result = module.build_result_record(
+        metadata={
+            "machine": "bizhaoh200",
+            "cuda_toolkit": "12.8",
+            "clock_policy": "not recorded",
+            "gpu_metadata": {
+                "gpu": "H200",
+                "raw_gpu_name": "NVIDIA H200 NVL",
+                "driver": "580.126.20",
+                "compute_target": "compute_90",
+            },
+        },
+        shape_result={
+            "shape": {
+                "b": 2,
+                "h": 16,
+                "n": 1024,
+                "d": 64,
+                "dtype": "bfloat16",
+            },
+            "latency": {
+                "warmup": 5,
+                "repeats": 20,
+                "sample_count": 20,
+                "p50_ns": 74015,
+            },
+            "correctness": {"status": "pass", "max_abs_diff": 0.150390625},
+            "flops": module.rotary_flops(2, 16, 1024, 64),
+        },
+    )
+
+    assert result["paper_baseline_run_id"] == "thunderkittens_non_mha_rotary"
+    assert result["benchmark_id"] == "tensor_core_tile"
+    assert result["hardware"]["gpu"] == "H200"
+    assert result["inputs"]["shape"] == "rotary,b=2,h=16,n=1024,d=64"
+    assert result["metrics"]["kind"] == "paper_baseline_non_mha_rotary_capture"
+    assert result["metrics"]["device_wall_ns"] == 74015
+    assert result["metrics"]["rotary_flops"] == 6291456
+    assert result["metrics"]["throughput"] > 0
+    assert result["metrics"]["max_abs_error"] == 0.150390625
+    assert result["correctness"] == "pass"
+
+
 def test_paper_baseline_results_update_marks_imported_run(tmp_path):
     raw = {
         "metadata": {
@@ -2612,11 +2674,13 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
     assert {
         "thunderkittens_tile_kernel",
         "thunderkittens_full_sweep",
+        "thunderkittens_non_mha_rotary",
     } <= tensor_run_ids
     assert any(
         "Resolve remaining official ThunderKittens upstream sweep gaps"
         in blocker
-        and "non-MHA ThunderKittens kernels" in blocker
+        and "FlashAttention 3 bindings are unavailable" in blocker
+        and "PyTorch reference rows OOM" in blocker
         for blocker in tensor_claim["blockers"]
     )
     assert not any(
@@ -3239,6 +3303,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "sglang_serving_and_offline",
         "thunderkittens_tile_kernel",
         "thunderkittens_full_sweep",
+        "thunderkittens_non_mha_rotary",
         "thunderkittens_decode_attention_tile",
     } <= run_ids
     run_baselines = {
@@ -3310,6 +3375,21 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert any(
                 "thunderkittens_full_sweep_capture.py" in command
                 for command in item["run_commands"]
+            )
+        if item["id"] == "thunderkittens_non_mha_rotary":
+            assert item["paper_evaluation_id"] == "tensor_core_tile_baselines"
+            assert item["status"] == "imported_to_viewer"
+            assert item["serving_workload_ids"] == []
+            assert any(
+                "thunderkittens_rotary_capture.py" in command
+                for command in item["run_commands"]
+            )
+            assert any(
+                path.endswith("capture.json") for path in item["expected_artifacts"]
+            )
+            assert any(
+                path.endswith("correctness.log")
+                for path in item["expected_artifacts"]
             )
         if item["id"] == "thunderkittens_decode_attention_tile":
             assert item["paper_evaluation_id"] == "llm_serving_paper_baselines"
@@ -4558,7 +4638,16 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert tk_official_attempt["summary"]["tk_rows_completed"]
     assert not tk_official_attempt["summary"]["fa3_available"]
     assert tk_official_attempt["summary"]["pytorch_reference_oom"]
-    assert "non-MHA ThunderKittens kernels" in tk_official_attempt["blocker"]
+    assert "non-MHA ThunderKittens kernels" not in tk_official_attempt["blocker"]
+    tk_rotary_attempt = attempts_by_id["thunderkittens_rotary_non_mha_h200"]
+    assert tk_rotary_attempt["status"] == "pass"
+    assert tk_rotary_attempt["summary"]["mode"] == "thunderkittens_non_mha_rotary"
+    assert tk_rotary_attempt["summary"]["non_mha_kernel_covered"]
+    assert tk_rotary_attempt["summary"]["viewer_rows_imported"] == 2
+    assert tk_rotary_attempt["summary"]["captured_shapes"] == [
+        "rotary,b=2,h=16,n=1024,d=64",
+        "rotary,b=4,h=16,n=2048,d=64",
+    ]
     for attempt in execution_attempts:
         assert attempt["artifact_root"].startswith("tmp/")
         assert (ROOT / attempt["artifact_root"]).is_dir()
@@ -4934,6 +5023,35 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "mha_h100_full_sweep,b=1,h=1,n=768,d=64,causal=True",
         "mha_h100_full_sweep,b=1,h=4,n=1536,d=64,causal=True",
     }
+    thunderkittens_rotary_records = [
+        record
+        for record in results["result_records"]
+        if record["benchmark_id"] == "tensor_core_tile"
+        and record["method_id"] == "thunderkittens"
+        and record["hardware"]["gpu"] == "H200"
+        and record["raw_artifact"]
+        == (
+            "tmp/cuda-backend/paper-baselines/thunderkittens/"
+            "non-mha-h200-rotary-ae922a2a/"
+        )
+    ]
+    assert len(thunderkittens_rotary_records) == 2
+    assert {
+        record["statistic"]["kind"] for record in thunderkittens_rotary_records
+    } == {"paper_baseline_non_mha_rotary_capture"}
+    assert {
+        record["inputs"]["shape"] for record in thunderkittens_rotary_records
+    } == {
+        "rotary,b=2,h=16,n=1024,d=64",
+        "rotary,b=4,h=16,n=2048,d=64",
+    }
+    assert all(
+        record["statistic"]["rotary_flops"] > 0
+        and record["statistic"]["throughput"] > 0
+        and record["statistic"]["max_abs_error"] > 0
+        and record["correctness"] == "pass"
+        for record in thunderkittens_rotary_records
+    )
     thunderkittens_serving_records = [
         record
         for record in results["result_records"]

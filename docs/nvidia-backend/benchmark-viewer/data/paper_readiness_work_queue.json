@@ -32,7 +32,7 @@
       "paper_baseline_run_id": "",
       "execution_attempt_id": "",
       "status": "missing",
-      "action": "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable, PyTorch reference rows OOM at selected 12288-token shapes, and non-MHA ThunderKittens kernels are not yet captured.",
+      "action": "Resolve remaining official ThunderKittens upstream sweep gaps: FlashAttention 3 bindings are unavailable and PyTorch reference rows OOM at selected 12288-token shapes.",
       "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
     },
     {

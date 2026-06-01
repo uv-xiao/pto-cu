@@ -573,6 +573,23 @@ PYTHONPATH=$PWD:$PWD/python \
     --warmup 5 --repeats 20 --causal
 ```
 
+Use `thunderkittens_rotary_capture.py` for non-MHA ThunderKittens coverage
+after `kernels/rotary` builds on an H200-class GPU. The script imports the
+already-built rotary PyTorch extension, compares against the upstream torch
+formula from `test_correctness.py`, records CUDA-event repeat statistics, and
+writes normalized `thunderkittens_non_mha_rotary` rows that can be imported by
+`paper_baseline_results_update.py`:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_rotary_capture.py \
+    --baseline-dir tmp/baselines/thunderkittens/kernels/rotary \
+    --output tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-$(git rev-parse --short HEAD)/capture.json \
+    --machine <h200-host> --pto-commit $(git rev-parse --short HEAD) \
+    --cuda-toolkit 12.8 --shape 2,16,1024,64 --shape 4,16,2048,64 \
+    --warmup 5 --repeats 20
+```
+
 Use `triton_tensor_tile_capture.py` for the generated-kernel tensor-core
 baseline. It measures a Triton `tl.dot` 16x16x16 tile on A100 or H200,
 checks against `torch.matmul`, and writes raw JSON plus viewer rows under
