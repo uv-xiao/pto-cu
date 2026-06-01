@@ -52,3 +52,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-19.md](entries/2026-06-02-part-19.md) | 1 | CUDA Example README Split | CUDA Example README Split |
 | [2026-06-02-part-20.md](entries/2026-06-02-part-20.md) | 1 | Benchmark Viewer Validator Split | Benchmark Viewer Validator Split |
 | [2026-06-02-part-21.md](entries/2026-06-02-part-21.md) | 1 | Qwen CUDA Weight Binding Split | Qwen CUDA Weight Binding Split |
+| [2026-06-02-part-22.md](entries/2026-06-02-part-22.md) | 1 | Qwen Serving Scaffold Split | Qwen Serving Scaffold Split |
