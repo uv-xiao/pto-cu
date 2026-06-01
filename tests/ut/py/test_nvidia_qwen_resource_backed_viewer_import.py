@@ -58,6 +58,16 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                         "checked_step_count": 1,
                         "deferred_step_count": 2,
                     },
+                    "numeric_task_mode": {
+                        "mode": "unit_math",
+                        "scope": (
+                            "resource_backed_unit_math_linear_branches"
+                        ),
+                        "numeric_ready_callables": [
+                            "qwen_attention_qkv",
+                            "qwen_mlp_gate_up",
+                        ],
+                    },
                     "decode_feedback": {
                         "status": "diagnostic_token_feedback_applied",
                         "applied_step_count": 3,
@@ -144,6 +154,8 @@ def test_resource_backed_importer_emits_diagnostic_rows():
             assert record["statistic"]["logits_check_policy"] == "final_step"
             assert record["statistic"]["logits_checked_step_count"] == 1
             assert record["statistic"]["logits_deferred_step_count"] == 2
+            assert record["statistic"]["numeric_task_mode"] == "unit_math"
+            assert record["statistic"]["numeric_ready_callable_count"] == 2
         assert record["correctness"] == "pass"
         assert "resource-backed diagnostic" in record["inputs"]["shape"]
         assert "prepared callable reused" in record["inputs"]["repeat_policy"]

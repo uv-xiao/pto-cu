@@ -65,6 +65,7 @@ def build_result_records(
         decode_feedback = workload.get("decode_feedback", {})
         diagnostic_reference = logits_summary.get("diagnostic_reference", {})
         logits_check = workload.get("logits_check_summary", {})
+        numeric_mode = workload.get("numeric_task_mode", {})
         topk = logits_summary.get("topk", [])
         repeat_runs = int(workload.get("repeat_runs", 1))
         completed_count = int(
@@ -132,6 +133,14 @@ def build_result_records(
                     ),
                     "logits_deferred_step_count": int(
                         logits_check.get("deferred_step_count", 0),
+                    ),
+                    "numeric_task_mode": numeric_mode.get("mode", "diagnostic"),
+                    "numeric_task_scope": numeric_mode.get(
+                        "scope",
+                        "diagnostic_resource_backed_formulas",
+                    ),
+                    "numeric_ready_callable_count": len(
+                        numeric_mode.get("numeric_ready_callables", []),
                     ),
                     "decode_feedback_status": decode_feedback.get(
                         "status",

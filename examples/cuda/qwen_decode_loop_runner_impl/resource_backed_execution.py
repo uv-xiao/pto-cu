@@ -65,6 +65,7 @@ def run_resource_backed_execution(
     decode_step_limit: int | None = None,
     workload_ids: list[str] | None = None,
     logits_check_policy: str = "every_step",
+    numeric_task_mode: str = "diagnostic",
 ) -> dict[str, Any]:
     runtime = session.runtime
     ctx = session.ctx
@@ -115,6 +116,7 @@ def run_resource_backed_execution(
                 repeat_runs=repeat_runs,
                 decode_step_limit=decode_step_limit,
                 logits_check_policy=logits_check_policy,
+                numeric_task_mode=numeric_task_mode,
             )
             for plan in selected_plans
         ]
@@ -133,6 +135,7 @@ def run_resource_backed_execution(
         decode_step_limit=decode_step_limit,
         workload_ids=workload_ids,
         logits_check_policy=logits_check_policy,
+        numeric_task_mode=numeric_task_mode,
         repo_relative=repo_relative,
     )
 
@@ -146,6 +149,7 @@ def run_workload(
     repeat_runs: int,
     decode_step_limit: int | None,
     logits_check_policy: str,
+    numeric_task_mode: str,
 ) -> dict[str, Any]:
     workspace = workspace_for_workload(
         activation_workspace=activation_workspace,
@@ -158,6 +162,7 @@ def run_workload(
         token_fields=token_fields,
         kv_fields=plan.get("kv_pointer_fields", {}),
         workspace=workspace,
+        numeric_task_mode=numeric_task_mode,
     )
     if packet is None or workspace is None:
         return {"workload_id": plan["workload_id"], "status": "not_run"}
@@ -236,4 +241,5 @@ def run_workload(
         repeat_results=repeat_results,
         decode_step_limit=decode_step_limit,
         logits_check_policy=logits_check_policy,
+        numeric_task_mode=numeric_task_mode,
     )

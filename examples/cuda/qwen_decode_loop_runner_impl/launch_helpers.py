@@ -5,6 +5,19 @@ from __future__ import annotations
 from typing import Any
 
 
+NUMERIC_TASK_MODES = ("diagnostic", "unit_math")
+UNIT_NUMERIC_CALLABLES = {
+    "qwen_attention_qkv",
+    "qwen_mlp_gate_up",
+}
+
+
+def normalize_numeric_task_mode(mode: str) -> str:
+    if mode not in NUMERIC_TASK_MODES:
+        raise ValueError(f"unknown numeric task mode: {mode}")
+    return mode
+
+
 def attach_decode_feedback_tensors(
     *,
     index: int,
@@ -84,12 +97,18 @@ def task_scalar_args(
     task_count: int,
     descriptor: dict[str, Any],
     workspace: dict[str, Any] | None,
+    numeric_task_mode: str = "diagnostic",
 ) -> list[float]:
     if not is_logits_output_task(
         index=index,
         task_count=task_count,
         descriptor=descriptor,
     ):
+        if (
+            numeric_task_mode == "unit_math"
+            and descriptor.get("callable") in UNIT_NUMERIC_CALLABLES
+        ):
+            return [1.0, 0.0, 0.0, 0.0]
         return [0.0, 0.0, 0.0, 0.0]
     return [
         0.0,
@@ -104,6 +123,21 @@ def task_scalar_arg_count(scalar_args: list[float]) -> int:
         if scalar_args[index] != 0.0:
             return index + 1
     return 0
+
+
+def numeric_task_mode_summary(mode: str) -> dict[str, Any]:
+    mode = normalize_numeric_task_mode(mode)
+    return {
+        "mode": mode,
+        "numeric_ready_callables": sorted(UNIT_NUMERIC_CALLABLES)
+        if mode == "unit_math"
+        else [],
+        "scope": (
+            "resource_backed_unit_math_linear_branches"
+            if mode == "unit_math"
+            else "diagnostic_resource_backed_formulas"
+        ),
+    }
 
 
 def is_logits_output_task(

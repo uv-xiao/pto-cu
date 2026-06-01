@@ -41,6 +41,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_resource_backed_decode_step_execution",
     "qwen_diagnostic_decode_token_feedback",
     "qwen_device_decode_token_feedback",
+    "qwen_resource_backed_unit_numeric_task_mode",
 ]
 
 
@@ -68,6 +69,11 @@ def parse_args() -> argparse.Namespace:
         "--resource-backed-logits-check-policy",
         choices=["every_step", "final_step"],
         default="every_step",
+    )
+    parser.add_argument(
+        "--resource-backed-numeric-task-mode",
+        choices=["diagnostic", "unit_math"],
+        default="diagnostic",
     )
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--arch", default="compute_80")
@@ -129,6 +135,7 @@ def main() -> None:
         resource_backed_logits_check_policy=(
             args.resource_backed_logits_check_policy
         ),
+        resource_backed_numeric_task_mode=args.resource_backed_numeric_task_mode,
         arch=args.arch,
     )
     if args.output_json:

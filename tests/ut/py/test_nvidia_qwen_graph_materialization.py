@@ -179,3 +179,35 @@ def test_launch_packet_uses_full_logits_extent_for_final_logits_task():
 
     assert packet[1].scalar_arg_count == 4
     assert packet[1].scalar_args[3] == 7.0
+
+
+def test_launch_packet_marks_unit_math_numeric_ready_tasks():
+    descriptors = [
+        {"callable": "qwen_rmsnorm_input", "tensor_args": []},
+        {"callable": "qwen_attention_qkv", "tensor_args": []},
+        {"callable": "qwen_logits", "tensor_args": []},
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x3000"},
+            {"field": "b", "device_ptr_hex": "0x4000"},
+            {"field": "out", "device_ptr_hex": "0x5000"},
+        ],
+    )
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x6000"},
+            "d": {"device_ptr_hex": "0x7000"},
+        },
+        numeric_task_mode="unit_math",
+    )
+
+    assert packet is not None
+    assert packet[0].scalar_arg_count == 0
+    assert packet[1].scalar_arg_count == 1
+    assert packet[1].scalar_args[0] == 1.0
+    assert packet[2].scalar_arg_count == 3
+    assert list(packet[2].scalar_args)[:3] == [0.0, 1.0, 1.0]

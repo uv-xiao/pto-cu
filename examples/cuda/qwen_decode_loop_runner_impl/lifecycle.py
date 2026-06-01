@@ -59,6 +59,7 @@ def build_decode_loop_runner(
     resource_backed_decode_steps: int | None = None,
     resource_backed_workloads: list[str] | None = None,
     resource_backed_logits_check_policy: str = "every_step",
+    resource_backed_numeric_task_mode: str = "diagnostic",
     arch: str = "compute_80",
 ) -> dict[str, Any]:
     session_payload: dict[str, Any] | None = None
@@ -154,6 +155,7 @@ def build_decode_loop_runner(
                 decode_step_limit=resource_backed_decode_steps,
                 workload_ids=resource_backed_workloads,
                 logits_check_policy=resource_backed_logits_check_policy,
+                numeric_task_mode=resource_backed_numeric_task_mode,
             )
             if session is not None
             else {
@@ -216,6 +218,13 @@ def build_decode_loop_runner(
                 in resource_backed_execution.get("implemented_contracts", [])
             ):
                 implemented_contracts.append("qwen_device_decode_token_feedback")
+            if (
+                "qwen_resource_backed_unit_numeric_task_mode"
+                in resource_backed_execution.get("implemented_contracts", [])
+            ):
+                implemented_contracts.append(
+                    "qwen_resource_backed_unit_numeric_task_mode",
+                )
     submission_descriptors = submission_descriptor_contract(
         plans=plans,
         resource_modes=resource_modes,

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from qwen_decode_loop_runner_impl.decode_feedback import feedback_summary
+from qwen_decode_loop_runner_impl.launch_helpers import numeric_task_mode_summary
 from qwen_decode_loop_runner_impl.resource_check_policy import (
     logits_check_summary,
     logits_summary_stable_for_checked_steps,
@@ -29,6 +30,7 @@ def build_execution_result(
     decode_step_limit: int | None,
     workload_ids: list[str] | None,
     logits_check_policy: str,
+    numeric_task_mode: str,
     repo_relative,
 ) -> dict[str, Any]:
     passed = workload_results and all(
@@ -53,6 +55,7 @@ def build_execution_result(
             "decode_step_limit": decode_step_limit,
             "workload_filter": workload_ids or "all",
             "logits_check_policy": logits_check_policy,
+            "numeric_task_mode": numeric_task_mode_summary(numeric_task_mode),
             "graph_state_policy": "fresh_graph_state_per_repeat",
         },
         "decode_step_execution": decode_step_execution_summary(
@@ -60,9 +63,10 @@ def build_execution_result(
             decode_step_limit=decode_step_limit,
         ),
         "workloads": workload_results,
-        "implemented_contracts": implemented_contracts(
-            decode_step_limit,
-            token_feedback_status=decode_feedback_contract_status(workload_results),
+        "implemented_contracts": execution_contracts(
+            decode_step_limit=decode_step_limit,
+            workload_results=workload_results,
+            numeric_task_mode=numeric_task_mode,
         ),
         "remaining_runtime_gaps": [
             "full_qwen_numerical_correctness",
@@ -78,6 +82,7 @@ def build_workload_result(
     repeat_results: list[dict[str, Any]],
     decode_step_limit: int | None,
     logits_check_policy: str,
+    numeric_task_mode: str,
 ) -> dict[str, Any]:
     last = repeat_results[-1]
     return {
@@ -96,6 +101,7 @@ def build_workload_result(
             else "repeat_submissions"
         ),
         "logits_check_policy": logits_check_policy,
+        "numeric_task_mode": numeric_task_mode_summary(numeric_task_mode),
         "logits_check_summary": logits_check_summary(repeat_results),
         "repeat_results": repeat_results,
         "graph_task_count": packet_len,
@@ -162,3 +168,18 @@ def decode_feedback_contract_status(workload_results: list[dict[str, Any]]) -> s
     if statuses == {"diagnostic_token_feedback_applied"}:
         return "diagnostic_token_feedback_applied"
     return "not_requested"
+
+
+def execution_contracts(
+    *,
+    decode_step_limit: int | None,
+    workload_results: list[dict[str, Any]],
+    numeric_task_mode: str,
+) -> list[str]:
+    contracts = implemented_contracts(
+        decode_step_limit,
+        token_feedback_status=decode_feedback_contract_status(workload_results),
+    )
+    if numeric_task_mode == "unit_math":
+        contracts.append("qwen_resource_backed_unit_numeric_task_mode")
+    return contracts

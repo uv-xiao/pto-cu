@@ -17,6 +17,8 @@ from qwen_decode_loop_runner_impl.launch_helpers import (
     launch_blockers,
     missing_launch_buffers,
     next_power_of_two,
+    normalize_numeric_task_mode,
+    numeric_task_mode_summary,
     output_ptr_for_task,
     parse_ptr,
     set_decode_step_index,
@@ -39,7 +41,9 @@ def launch_packet_preflight(
     plan: dict[str, Any],
     descriptors: list[dict[str, Any]],
     activation_workspace: dict[str, Any] | None = None,
+    numeric_task_mode: str = "diagnostic",
 ) -> dict[str, Any]:
+    numeric_task_mode = normalize_numeric_task_mode(numeric_task_mode)
     token_fields = keyed_fields(plan.get("token_pointer_fields", []))
     kv_fields = plan.get("kv_pointer_fields", {})
     workspace = workspace_for_workload(
@@ -52,6 +56,7 @@ def launch_packet_preflight(
         token_fields=token_fields,
         kv_fields=kv_fields,
         workspace=workspace,
+        numeric_task_mode=numeric_task_mode,
     )
     workspace_ready = workspace is not None
     return {
@@ -81,6 +86,7 @@ def launch_packet_preflight(
             workspace=workspace,
             task_count=len(descriptors),
         ),
+        "numeric_task_mode": numeric_task_mode_summary(numeric_task_mode),
         "missing_runtime_buffers": missing_launch_buffers(
             descriptors=descriptors,
             workspace_ready=workspace_ready,
@@ -108,7 +114,9 @@ def build_host_task_packet(
     token_fields: dict[str, dict[str, Any]],
     kv_fields: dict[str, Any],
     workspace: dict[str, Any] | None = None,
+    numeric_task_mode: str = "diagnostic",
 ) -> Any | None:
+    numeric_task_mode = normalize_numeric_task_mode(numeric_task_mode)
     if not descriptors or {"a", "b", "out"} - set(token_fields):
         return None
     if {"c", "d"} - set(kv_fields):
@@ -123,6 +131,7 @@ def build_host_task_packet(
                 token_fields=token_fields,
                 kv_fields=kv_fields,
                 workspace=workspace,
+                numeric_task_mode=numeric_task_mode,
             )
             for index, descriptor in enumerate(descriptors)
         ]
@@ -137,6 +146,7 @@ def host_task_record(
     token_fields: dict[str, dict[str, Any]],
     kv_fields: dict[str, Any],
     workspace: dict[str, Any] | None,
+    numeric_task_mode: str,
 ) -> CudaPersistentDagTask:
     tensor_args_t = ctypes.c_void_p * 4
     scalar_args_t = ctypes.c_float * 4
@@ -146,6 +156,7 @@ def host_task_record(
         task_count=task_count,
         descriptor=descriptor,
         workspace=workspace,
+        numeric_task_mode=numeric_task_mode,
     )
     for arg in descriptor.get("tensor_args", [])[:4]:
         tensor_args[tensor_arg_index(arg["arg"])] = parse_ptr(

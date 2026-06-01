@@ -86,6 +86,14 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
     assert len(full_mpk_rows) == 1
     assert full_mpk_rows[0]["completed_count"] == 261120
     assert full_mpk_rows[0]["logits_deferred_step_count"] == 1023
+    unit_numeric_rows = [
+        row["statistic"]
+        for row in rows
+        if row["statistic"].get("numeric_task_mode") == "unit_math"
+    ]
+    assert len(unit_numeric_rows) == 1
+    assert unit_numeric_rows[0]["workload_id"] == "vdcores_offline_decode"
+    assert unit_numeric_rows[0]["numeric_ready_callable_count"] == 2
     assert all(row["statistic"]["error_count"] == 0 for row in rows)
     assert any(row["correctness"] == "pass" for row in rows)
     assert any(

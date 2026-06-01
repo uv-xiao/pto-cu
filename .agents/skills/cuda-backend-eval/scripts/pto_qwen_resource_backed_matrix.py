@@ -59,6 +59,7 @@ def raw_artifact_ref(raw_artifact: str) -> dict[str, Any]:
             "qwen_resource_backed_decode_step_execution",
             "qwen_diagnostic_decode_token_feedback",
             "qwen_device_decode_token_feedback",
+            "qwen_resource_backed_unit_numeric_task_mode",
             "diagnostic_resource_backed_qwen_dag",
             "repeat_runs",
             "partial_logits_not_full_vocab",
