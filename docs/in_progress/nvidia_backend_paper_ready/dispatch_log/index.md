@@ -37,3 +37,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-04.md](entries/2026-06-02-part-04.md) | 4 | Qwen VDCores Unit Numeric Branches | Qwen VDCores Weighted Elementwise Bridge |
 | [2026-06-02-part-05.md](entries/2026-06-02-part-05.md) | 1 | Execution Attempt Shard Split | Execution Attempt Shard Split |
 | [2026-06-02-part-06.md](entries/2026-06-02-part-06.md) | 1 | Result Record Shard Split | Result Record Shard Split |
+| [2026-06-02-part-07.md](entries/2026-06-02-part-07.md) | 1 | Run Readiness Shard Split | Run Readiness Shard Split |

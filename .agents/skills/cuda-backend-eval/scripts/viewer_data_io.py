@@ -13,6 +13,7 @@ from typing import Any
 COLLECTION_KEYS = (
     "result_records",
     "paper_baseline_execution_attempts",
+    "paper_baseline_run_readiness",
 )
 
 
@@ -83,6 +84,11 @@ def sharded_target(path: Path, payload: dict[str, Any]) -> Path | None:
         return path.with_suffix("")
     if path.name == "results.json" and "result_records" in payload:
         return path.with_suffix("")
+    if (
+        path.name == "paper_baseline_run_readiness.json"
+        and "paper_baseline_run_readiness" in payload
+    ):
+        return path.with_suffix("")
     return None
 
 
@@ -146,7 +152,7 @@ def manifest_record_files(base: Path, manifest: dict[str, Any]) -> list[Any]:
 
 
 def record_filename(collection: str, index: int, record: dict[str, Any]) -> str:
-    if collection == "paper_baseline_execution_attempts" and "id" in record:
+    if "id" in record:
         return f"{record['id']}.json"
     prefix = slug(record_prefix(record))
     digest = hashlib.sha1(

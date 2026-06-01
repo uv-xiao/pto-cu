@@ -5142,7 +5142,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (
         VIEWER_ROOT / "data" / "paper_baseline_environment_attempts.json"
     ).is_file()
-    assert (VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json").is_file()
+    run_readiness_dir = VIEWER_ROOT / "data" / "paper_baseline_run_readiness"
+    assert (run_readiness_dir / "index.json").is_file()
     execution_attempts_dir = VIEWER_ROOT / "data" / "paper_baseline_execution_attempts"
     assert (execution_attempts_dir / "index.json").is_file()
     assert (VIEWER_ROOT / "data" / "serving_command_plan.json").is_file()
@@ -5229,10 +5230,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
             encoding="utf-8"
         )
     )
-    paper_baseline_run_readiness = json.loads(
-        (VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json").read_text(
-            encoding="utf-8"
-        )
+    paper_baseline_run_readiness = load_viewer_collection(
+        VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json"
     )
     paper_baseline_environment_attempts = json.loads(
         (

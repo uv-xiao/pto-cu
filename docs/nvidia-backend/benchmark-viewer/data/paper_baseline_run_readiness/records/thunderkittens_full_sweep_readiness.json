@@ -1,0 +1,306 @@
+{
+  "id": "thunderkittens_full_sweep_readiness",
+  "paper_baseline_run_id": "thunderkittens_full_sweep",
+  "paper_baseline_id": "thunderkittens",
+  "title": "ThunderKittens Selected Correctness And Benchmark Sweep Readiness",
+  "latest_status": "pass",
+  "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-current-working/",
+  "checks": [
+    {
+      "kind": "source_path",
+      "path": "tmp/baselines/thunderkittens",
+      "status": "pass",
+      "why": "Baseline source checkout used by run_commands."
+    },
+    {
+      "kind": "run_command_contract",
+      "status": "pass",
+      "why": "Run readiness must be tied to explicit reproduction commands."
+    },
+    {
+      "kind": "path_exists",
+      "path": ".agents/skills/cuda-backend-eval/scripts/thunderkittens_full_sweep_capture.py",
+      "status": "pass",
+      "why": "Python entrypoint referenced by run_commands."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/correctness.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/benchmark.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/upstream-summary.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/run-after-build.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/correctness.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/environment.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/fa3-build.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/fa3-build-status.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/fa3-api-probe.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/upstream-fa3-summary.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/benchmark-fa3.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/benchmark-fa3-status.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/correctness-fa3.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/correctness-fa3-status.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/metadata.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/shim/flash_attn_interface.py",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/run_pt_reference_cell.py",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/run-manifest.tsv",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/isolated-pt-reference-summary.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n12288.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n6144.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n12288.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n6144.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n12288.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n6144.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n12288.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n6144.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n12288.status.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n6144.status.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n12288.status.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n6144.status.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n12288.status.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n6144.status.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n12288.status.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n6144.status.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n12288.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n6144.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n12288.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n6144.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n12288.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n6144.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n12288.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n6144.log",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "required_metric",
+      "metric": "correctness",
+      "status": "pass",
+      "why": "Paper-baseline imports must include correctness and raw artifact evidence."
+    },
+    {
+      "kind": "required_metric",
+      "metric": "raw_artifacts",
+      "status": "pass",
+      "why": "Paper-baseline imports must include correctness and raw artifact evidence."
+    },
+    {
+      "kind": "baseline_probe",
+      "name": "thunderkittens_source_entrypoints",
+      "status": "pass",
+      "why": "Latest committed source/dependency probe status for this baseline.",
+      "blocking_gaps": []
+    }
+  ],
+  "blocking_gaps": [],
+  "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "pto_commit": "current-working",
+    "source_files": [
+      "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
+      "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
+      "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
+      "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_environment_plans.json"
+    ]
+  },
+  "collection": "paper_baseline_run_readiness",
+  "record_files": [
+    "records/mpk_qwen3_native_vs_persistent_readiness.json",
+    "records/mpk_qwen3_native_token_bringup_readiness.json",
+    "records/vdcores_qwen3_8b_decode_preflight_readiness.json",
+    "records/mpk_persistent_scheduler_trace_readiness.json",
+    "records/vdcores_resource_policy_trace_readiness.json",
+    "records/vllm_serving_and_throughput_readiness.json",
+    "records/sglang_serving_and_offline_readiness.json",
+    "records/thunderkittens_tile_kernel_readiness.json",
+    "records/thunderkittens_full_sweep_readiness.json",
+    "records/thunderkittens_non_mha_rotary_readiness.json",
+    "records/thunderkittens_decode_attention_tile_readiness.json"
+  ]
+}

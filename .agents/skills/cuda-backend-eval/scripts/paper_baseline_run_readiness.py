@@ -446,7 +446,12 @@ def main() -> None:
         commit=commit,
     )
     write_json(args.output_root / "run-readiness.json", payload)
-    write_json(args.viewer_output, payload)
+    if args.viewer_output.resolve().parent == VIEWER_DATA.resolve():
+        from viewer_data_io import write_json as write_viewer_json
+
+        write_viewer_json(args.viewer_output, payload)
+    else:
+        write_json(args.viewer_output, payload)
     print(f"wrote {repo_relative(args.output_root / 'run-readiness.json')}")
 
 

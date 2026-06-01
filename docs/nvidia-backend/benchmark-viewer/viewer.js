@@ -6,7 +6,9 @@ const DATA_FILES = {
   paperBaselineProbes: "data/paper_baseline_probes.json",
   paperBaselineEnvironmentPlans: "data/paper_baseline_environment_plans.json",
   paperBaselineEnvironmentAttempts: "data/paper_baseline_environment_attempts.json",
-  paperBaselineRunReadiness: "data/paper_baseline_run_readiness.json",
+  paperBaselineRunReadiness: {
+    manifest: "data/paper_baseline_run_readiness/index.json",
+  },
   paperBaselineExecutionAttempts: {
     manifest: "data/paper_baseline_execution_attempts/index.json",
   },
@@ -845,7 +847,7 @@ async function main() {
       loadJson(DATA_FILES.paperBaselines),
       loadJson(DATA_FILES.paperBaselineRuns),
       loadJson(DATA_FILES.paperBaselineProbes),
-      loadJson(DATA_FILES.paperBaselineRunReadiness),
+      loadDataFile(DATA_FILES.paperBaselineRunReadiness),
       loadDataFile(DATA_FILES.paperBaselineExecutionAttempts),
       loadJson(DATA_FILES.servingCommandPlan),
       loadJson(DATA_FILES.servingWorkloads),
@@ -853,7 +855,7 @@ async function main() {
       loadJson(DATA_FILES.paperReadinessAudit),
       loadJson(DATA_FILES.paperReadinessWorkQueue),
       loadJson(DATA_FILES.goalProgress),
-      loadJson(DATA_FILES.results),
+      loadDataFile(DATA_FILES.results),
     ]);
     Object.assign(state, {
       benchmarks,

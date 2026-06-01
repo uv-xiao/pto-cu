@@ -642,7 +642,7 @@ def build_readiness_audit(
             "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix.json",
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
-            "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json",
+            "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness/index.json",
             "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_execution_attempts/index.json",
             "docs/nvidia-backend/benchmark-viewer/data/results/index.json",
         ],

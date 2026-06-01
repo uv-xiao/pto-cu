@@ -1,0 +1,145 @@
+{
+  "id": "sglang_serving_and_offline_readiness",
+  "paper_baseline_run_id": "sglang_serving_and_offline",
+  "paper_baseline_id": "sglang",
+  "title": "SGLang Serving And Offline Throughput Readiness",
+  "latest_status": "pass",
+  "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-current-working/",
+  "checks": [
+    {
+      "kind": "source_path",
+      "path": "tmp/baselines/sglang",
+      "status": "pass",
+      "why": "Baseline source checkout used by run_commands."
+    },
+    {
+      "kind": "run_command_contract",
+      "status": "pass",
+      "why": "Run readiness must be tied to explicit reproduction commands."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/paper-baseline-results.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/viewer-result-records.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/attempt-summary.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/status-summary.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/bench-serving-r1-batch1.jsonl",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/bench-serving-r3-batch16.jsonl",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/offline-throughput-r1-batch1.jsonl",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/offline-throughput-r3-batch16.jsonl",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/paper-baseline-results.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/viewer-result-records.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/attempt-summary.json",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/status-summary.txt",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/bench-serving-r1-batch1.jsonl",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/bench-serving-r3-batch16.jsonl",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/offline-throughput-r1-batch1.jsonl",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "expected_artifact_path",
+      "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/offline-throughput-r3-batch16.jsonl",
+      "status": "pass",
+      "why": "Expected artifacts must remain under tmp/."
+    },
+    {
+      "kind": "required_metric",
+      "metric": "correctness",
+      "status": "pass",
+      "why": "Paper-baseline imports must include correctness and raw artifact evidence."
+    },
+    {
+      "kind": "required_metric",
+      "metric": "raw_artifacts",
+      "status": "pass",
+      "why": "Paper-baseline imports must include correctness and raw artifact evidence."
+    },
+    {
+      "kind": "baseline_probe",
+      "name": "sglang_source_entrypoints",
+      "status": "pass",
+      "why": "Latest committed source/dependency probe status for this baseline.",
+      "blocking_gaps": []
+    },
+    {
+      "kind": "environment_plan",
+      "name": "sglang_runtime_environment",
+      "path": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-current-working/environment-plans.json",
+      "status": "pass",
+      "why": "Serving framework dependencies must be installed in an isolated tmp/ environment before benchmark execution."
+    }
+  ],
+  "blocking_gaps": [],
+  "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
+}

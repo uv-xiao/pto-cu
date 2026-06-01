@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 run readiness shards](2026-06-02-run-readiness-shards.md)
 - [2026-06-02 result record shards](2026-06-02-result-record-shards.md)
 - [2026-06-02 execution attempt shards](2026-06-02-execution-attempt-shards.md)
 - [2026-05-31 MPK runtime import guard](2026-05-31-mpk-runtime-import-guard.md)

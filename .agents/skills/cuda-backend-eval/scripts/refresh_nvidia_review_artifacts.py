@@ -52,6 +52,7 @@ def main() -> None:
     audit_module = load_module("paper_readiness_audit")
     work_queue_module = load_module("paper_readiness_work_queue")
     goal_progress_module = load_module("nvidia_goal_progress")
+    viewer_data_module = load_module("viewer_data_io")
 
     commit = REVIEW_SNAPSHOT_ID
     env_output_root = (
@@ -88,7 +89,7 @@ def main() -> None:
         run_readiness,
     )
     run_readiness_path = output_dir / "paper_baseline_run_readiness.json"
-    run_readiness_module.write_json(run_readiness_path, run_readiness)
+    viewer_data_module.write_json(run_readiness_path, run_readiness)
     print(f"wrote {run_readiness_path}")
 
     matrix = audit_module.load_json(audit_module.DEFAULT_MATRIX)

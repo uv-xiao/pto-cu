@@ -244,7 +244,7 @@ def main() -> None:
         matrix=load_json(args.matrix),
         runs=updated_runs,
         probes=load_json(args.probes),
-        run_readiness=load_json(args.run_readiness),
+        run_readiness=load_audit_json(args.run_readiness),
         execution_attempts=load_audit_json(args.execution_attempts),
         results=updated_results,
     )
