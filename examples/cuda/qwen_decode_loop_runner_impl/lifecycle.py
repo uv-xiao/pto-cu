@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-import importlib.util
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
+from qwen_decode_loop_runner_impl.resources import build_resources
+
 
 ROOT = Path(__file__).resolve().parents[3]
-TOKEN_POINTER = ROOT / "examples" / "cuda" / "qwen_token_pointer_table.py"
-KV_CACHE = ROOT / "examples" / "cuda" / "qwen_kv_cache_binding.py"
-RESIDENT_WEIGHTS = ROOT / "examples" / "cuda" / "qwen_resident_weight_table.py"
 LIVE_MICRODECODE_ARTIFACT = (
     "tmp/cuda-backend/pto-serving-decode-loop-live-2026-06-01/"
     "qwen-microdecode-loop.json"
@@ -71,46 +68,6 @@ def repo_relative(path: Path) -> str:
         return path.resolve().relative_to(ROOT.resolve()).as_posix()
     except ValueError:
         return path.as_posix()
-
-
-def load_module(path: Path, module_name: str) -> Any:
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"could not load {path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-def build_resources(
-    *,
-    mode: str,
-    cache_dir: Path | None,
-    token_cuda_live: bool = False,
-    kv_cuda_live: bool = False,
-    device: int = 0,
-    host_runtime: Path | None = None,
-) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
-    token_module = load_module(TOKEN_POINTER, "qwen_token_pointer_for_runner")
-    kv_module = load_module(KV_CACHE, "qwen_kv_cache_for_runner")
-    resident_module = load_module(RESIDENT_WEIGHTS, "qwen_resident_weights_for_runner")
-    token_kwargs: dict[str, Any] = {
-        "mode": mode,
-        "cache_dir": cache_dir,
-        "cuda_live": token_cuda_live,
-        "device": device,
-    }
-    if host_runtime is not None:
-        token_kwargs["host_runtime"] = host_runtime
-    kv_kwargs: dict[str, Any] = {"cuda_live": kv_cuda_live, "device": device}
-    if host_runtime is not None:
-        kv_kwargs["host_runtime"] = host_runtime
-    return (
-        token_module.build_token_pointer_table_lifecycle(**token_kwargs),
-        kv_module.build_kv_cache_lifecycle(**kv_kwargs),
-        resident_module.build_resident_table_lifecycle(),
-    )
 
 
 def decode_arg_records(token_lifecycle: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -255,6 +212,7 @@ def build_decode_loop_runner(
     unit_math_live_payload: dict[str, Any] | None = None,
     token_cuda_live: bool = False,
     kv_cuda_live: bool = False,
+    resident_cuda_live: bool = False,
     device: int = 0,
     host_runtime: Path | None = None,
 ) -> dict[str, Any]:
@@ -263,6 +221,7 @@ def build_decode_loop_runner(
         cache_dir=cache_dir,
         token_cuda_live=token_cuda_live,
         kv_cuda_live=kv_cuda_live,
+        resident_cuda_live=resident_cuda_live,
         device=device,
         host_runtime=host_runtime,
     )
@@ -292,6 +251,8 @@ def build_decode_loop_runner(
         implemented_contracts.append("cuda_live_token_pointer_table_in_runner")
     if kv_lifecycle.get("mode") == "cuda_live":
         implemented_contracts.append("cuda_live_kv_cache_owner_in_runner")
+    if resident_lifecycle.get("mode") == "cuda_live":
+        implemented_contracts.append("cuda_live_resident_weight_table_in_runner")
     return {
         "schema_version": 1,
         "kind": "pto_qwen_decode_loop_runner",

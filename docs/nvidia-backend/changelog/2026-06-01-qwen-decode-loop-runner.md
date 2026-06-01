@@ -16,6 +16,8 @@
   and resident weights remain dry-run.
 - Added `--kv-cuda-live` so the decode-loop runner can also open the full
   planned KV-cache owner in CUDA-live mode.
+- Added `--resident-cuda-live` so the decode-loop runner can invoke the
+  resident weight-table owner in CUDA-live mode.
 - Captured current evidence at
   `tmp/cuda-backend/pto-serving-decode-loop-2026-06-01/`
   `qwen-decode-loop-runner.json`.
@@ -87,8 +89,24 @@ Result: `mode=partial_cuda_live_submission_plan`,
 `cuda_live_resource_owners=["token_pointer_table","kv_cache"]`, and
 `resource_lifecycle_modes.kv_cache=cuda_live`.
 
+Additional token, KV, and resident resource-owner command:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/qwen_decode_loop_runner.py \
+  --mode mock --token-cuda-live --kv-cuda-live --resident-cuda-live \
+  --device 0 --output-json \
+  tmp/cuda-backend/pto-serving-decode-loop-token-kv-resident-live-2026-06-02/\
+qwen-decode-loop-runner.json
+```
+
+Result: `mode=partial_cuda_live_submission_plan`,
+`cuda_live_resource_owners=["token_pointer_table","kv_cache",`
+`"resident_weight_table"]`, and
+`resource_lifecycle_modes.resident_weight_table=cuda_live`.
+
 ## Remaining Gaps
 
 - Generate Qwen kernel bodies that consume token, KV-cache, and weight fields.
-- Add a CUDA-live resident weight owner to the runner, execute the full
-  `cuda_live` decode loop, and import full-serving viewer rows.
+- Execute the full `cuda_live` decode loop and import full-serving viewer
+  rows.

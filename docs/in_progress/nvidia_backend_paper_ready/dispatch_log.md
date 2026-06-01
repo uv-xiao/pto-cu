@@ -38,7 +38,7 @@ Each entry must include:
 - [2026-06-01-part-12.md](dispatch_log/entries/2026-06-01-part-12.md) (6 entries): Qwen Decode Loop Runner Plan through Qwen Microdecode Live CUDA Execution.
 - [2026-06-01-part-13.md](dispatch_log/entries/2026-06-01-part-13.md) (9 entries): Qwen Proxy Decode Loop Live Reuse through Qwen Unit Math Prepared Reuse.
 - [2026-06-01-part-14.md](dispatch_log/entries/2026-06-01-part-14.md) (2 entries): Decode Loop Unit Math Bridge through Decode Loop Token Owner Live.
-- [2026-06-02-part-01.md](dispatch_log/entries/2026-06-02-part-01.md) (1 entry): Decode Loop KV Owner Live.
+- [2026-06-02-part-01.md](dispatch_log/entries/2026-06-02-part-01.md) (2 entries): Decode Loop KV Owner Live through Decode Loop Resident Owner Live.
 
 ## Full Archive
 

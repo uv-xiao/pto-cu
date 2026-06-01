@@ -88,8 +88,8 @@
       "benchmark_id": "llm_serving_decode",
       "method_id": "pto_persistent_device",
       "runtime": "cuda/persistent_device",
-      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode mock --run-unit-math-live --token-cuda-live --kv-cuda-live --device 0 --arch compute_80 --repeat-runs 3 --output-json tmp/cuda-backend/pto-serving-decode-loop-token-kv-live/qwen-decode-loop-runner.json",
-      "expected_output": "command exits 0; output JSON records decode-loop resource owner ordering, persistent DAG submission plans, runner-owned cuda_live token and KV-cache owners, and diagnostic cuda_live bridge contracts.",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode mock --run-unit-math-live --token-cuda-live --kv-cuda-live --resident-cuda-live --device 0 --arch compute_80 --repeat-runs 3 --output-json tmp/cuda-backend/pto-serving-decode-loop-token-kv-resident-live/qwen-decode-loop-runner.json",
+      "expected_output": "command exits 0; output JSON records decode-loop resource owner ordering, persistent DAG submission plans, runner-owned cuda_live token, KV-cache, and resident-weight owners, and diagnostic cuda_live bridge contracts.",
       "evidence_symbols": [
         "pto_qwen_decode_loop_runner",
         "decode_loop_owner_lifetime_order",
@@ -98,7 +98,8 @@
         "cuda_live_resource_bridge_contract",
         "qwen_unit_math_live_bridge_contract",
         "cuda_live_token_pointer_table_in_runner",
-        "cuda_live_kv_cache_owner_in_runner"
+        "cuda_live_kv_cache_owner_in_runner",
+        "cuda_live_resident_weight_table_in_runner"
       ]
     },
     {

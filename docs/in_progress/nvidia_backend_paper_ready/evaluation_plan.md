@@ -133,8 +133,8 @@ The resident weight-table artifact in
 `examples/cuda/qwen_resident_weight_table.py` adds the process-scoped owner
 that keeps a pointer table valid until close, feeds it to materialization, and
 then frees pointers in reverse order. Its current checked artifact uses
-`dry_run_pointer_lifecycle`; `--cuda-live` remains the runner mode needed for
-actual decode submission.
+`dry_run_pointer_lifecycle`; the decode-loop runner can now invoke the same
+owner in CUDA-live mode, while actual Qwen kernel submission remains missing.
 The runtime input-binding artifact in
 `examples/cuda/qwen_runtime_input_binding.py` now converts tokenizer output
 into padded target-length `input_ids`, matching `attention_mask`, and decode
@@ -165,9 +165,8 @@ point; the current bridge artifact is
 `tmp/cuda-backend/pto-serving-decode-loop-unit-math-bridge-2026-06-01/qwen-decode-loop-runner.json`.
 It can also open the token pointer table in CUDA-live mode from the runner;
 the current partial resource-owner artifact is
-`tmp/cuda-backend/pto-serving-decode-loop-token-kv-live-2026-06-02/qwen-decode-loop-runner.json`.
-It now opens both token and KV-cache owners in CUDA-live mode. Resident
-weights remain dry-run in that artifact.
+`tmp/cuda-backend/pto-serving-decode-loop-token-kv-resident-live-2026-06-02/qwen-decode-loop-runner.json`.
+It now opens token, KV-cache, and resident-weight owners in CUDA-live mode.
 The task-body source artifact in
 `examples/cuda/qwen_persistent_task_bodies.py` now renders Qwen persistent
 task bodies through the existing persistent DAG source generator. It records
