@@ -25,6 +25,34 @@ unreachable-task diagnostics. Future malformed normal-graph cases belong with
 the normal PTO graph lowering work above rather than a separate scheduler
 mechanics blocker.
 
+## Current Evidence
+
+Structured coverage lives in
+`docs/nvidia-backend/benchmark-viewer/data/persistent_scheduler_coverage.json`
+and is validated by
+`.agents/checks/benchmark_viewer_validation/persistent_scheduler_coverage.py`.
+Current paired smoke artifacts include
+`tmp/cuda-backend/persistent-graph_descriptor_diamond-repeat2-smoke-072e396c/`
+and
+`tmp/cuda-backend/persistent-graph_descriptor_generic_args4-repeat2-smoke-11db2c9d/`.
+Those prove scheduler mechanics and selected descriptor spellings, not normal
+PTO graph construction.
+
+## Promotion Gate
+
+Close this gap only after normal PTO task graphs lower into the
+persistent-device scheduler path, the lowered graphs run through the paired
+A100/H200 smoke or benchmark harness, and viewer data records the resulting
+raw `tmp/` artifacts without relying on curated descriptor-only inputs.
+
+## Next Actions
+
+- Add normal PTO graph lowering into the CUDA persistent-device builder.
+- Run paired A100/H200 evidence for at least fork-join, chain, fan-in, and
+  layered-cross shapes through the normal graph path.
+- Import or reference those raw artifacts in the benchmark viewer before
+  removing this page from `status.md`.
+
 ## Evidence Archive
 
 The detailed evidence remains split into reviewable chunks so reviewers can

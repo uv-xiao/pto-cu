@@ -99,3 +99,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-66.md](entries/2026-06-02-part-66.md) | 1 | Tensor Import Smoke Commands | Tensor Import Smoke Commands |
 | [2026-06-02-part-67.md](entries/2026-06-02-part-67.md) | 1 | Tensor Import Smoke Record Guard | Tensor Import Smoke Record Guard |
 | [2026-06-02-part-68.md](entries/2026-06-02-part-68.md) | 1 | Dispatcher Backlog Currency Guard | Dispatcher Backlog Currency Guard |
+| [2026-06-02-part-69.md](entries/2026-06-02-part-69.md) | 1 | Remaining Gap Promotion Guard | Remaining Gap Promotion Guard |

@@ -1,6 +1,6 @@
 # CUDA Backend Status: Tuned Tensor Workloads
 
-## Tuned Tensor Workloads
+## Open Gap
 
 The tensor DAG rows validate descriptor metadata, generated dispatch,
 multi-fragment WMMA descriptors, explicit graph tensor descriptors, and
@@ -33,3 +33,28 @@ Needed:
   exists;
 - multi-repeat throughput rows that compare tuned PTO tensor bodies against
   cuBLAS Graph, CUTLASS, Triton, and ThunderKittens baselines.
+
+## Current Evidence
+
+Structured evidence lives in
+`docs/nvidia-backend/benchmark-viewer/data/tensor_workload_coverage.json` and
+is validated by
+`.agents/checks/benchmark_viewer_validation/tensor_workload_coverage.py`.
+The current one-repeat model-shape import smokes are under
+`tmp/cuda-backend/qwen-attention-tensor-target-bdce5ea4/` and
+`tmp/cuda-backend/qwen-mlp-tensor-target-c1110223/`.
+
+## Promotion Gate
+
+Close this gap only after tuned PTO tensor bodies produce multi-repeat A100
+and H200 rows for the Qwen attention and MLP target tiles, those rows import
+through the viewer with correctness and throughput statistics, and baseline
+rows for cuBLAS Graph, CUTLASS, Triton, and ThunderKittens remain comparable.
+
+## Next Actions
+
+- Replace diagnostic PTO tensor bodies with tuned model-shape kernels for
+  `16x64x128` and `16x64x256`.
+- Capture multi-repeat A100/H200 PTO and baseline rows for those tiles.
+- Import the raw `tmp/` artifacts into the viewer and update this page before
+  removing it from `status.md`.
