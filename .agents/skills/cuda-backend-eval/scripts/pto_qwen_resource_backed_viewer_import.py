@@ -133,6 +133,10 @@ def build_result_records(
                         "logits_check_policy",
                         "every_step",
                     ),
+                    "logits_active_cols_policy": repeat_policy.get(
+                        "logits_active_cols_policy",
+                        {"mode": "descriptor_default"},
+                    ),
                     "logits_checked_step_count": int(
                         logits_check.get("checked_step_count", repeat_runs),
                     ),

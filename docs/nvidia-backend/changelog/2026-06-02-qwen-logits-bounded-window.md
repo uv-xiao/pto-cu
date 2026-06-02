@@ -11,6 +11,13 @@
   without positive `cols`, `inner`, and `scalar1` are regenerated.
 - Updated the resource-backed logits summary to report the bounded diagnostic
   write extent instead of treating the full logits allocation as written.
+- Added `--resource-backed-logits-active-cols` so focused live evaluation can
+  request either a wider positive active-vocabulary window or the descriptor's
+  full `cols` extent without generating a second `qwen_logits` task body.
+  The policy lives in
+  `examples/cuda/qwen_decode_loop_runner_impl/logits_active_cols.py`.
+- Recorded the applied active-logits-column policy in resource-backed raw
+  execution results and viewer-import statistics.
 
 ## Architecture Quality
 
@@ -24,6 +31,12 @@ The persistent-device callable remains one generated `qwen_logits` task. This
 does not introduce a separate host-launched kernel form, and it leaves the
 future full-vocabulary tensor-core logits implementation as a clear replacement
 for this diagnostic path.
+
+The active-column override changes the host packet descriptor for
+`qwen_logits` only. It does not mutate resident descriptor artifacts, and it
+does not change the device function ABI. This keeps descriptor-default
+evidence comparable while allowing one-off evaluation runs to prove whether
+full-vocabulary scalar logits execution is viable for a selected workload.
 
 ## Evaluation Run
 
@@ -54,6 +67,17 @@ PYTHONPATH=$PWD:$PWD/python timeout 240 .venv/bin/python \
 
 The command timed out after 240 seconds and did not produce a completed JSON
 result.
+
+Focused regressions for the active-column override passed:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
+  tests/ut/py/test_nvidia_qwen_graph_materialization.py -q -k \
+  'logits_active_cols_override or qwen_weight_descriptors_emit_callable_shape_fields or launch_packet_carries_cuda_task_shape_fields or build_execution_result'
+
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
+  tests/ut/py/test_nvidia_qwen_resource_backed_viewer_import.py -q
+```
 
 ## Remaining Gaps
 

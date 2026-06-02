@@ -86,6 +86,13 @@ def parse_args() -> argparse.Namespace:
         default="every_step",
     )
     parser.add_argument(
+        "--resource-backed-logits-active-cols",
+        help=(
+            "Override qwen_logits active vocab columns; use a positive integer "
+            "or 'full'. Defaults to descriptor scalar1."
+        ),
+    )
+    parser.add_argument(
         "--resource-backed-numeric-task-mode",
         choices=["diagnostic", "unit_math", "unit_math_full_rmsnorm"],
         default="diagnostic",
@@ -153,6 +160,7 @@ def main() -> None:
         resource_backed_logits_check_policy=(
             args.resource_backed_logits_check_policy
         ),
+        resource_backed_logits_active_cols=args.resource_backed_logits_active_cols,
         resource_backed_numeric_task_mode=args.resource_backed_numeric_task_mode,
         arch=args.arch,
     )

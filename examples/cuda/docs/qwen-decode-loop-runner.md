@@ -69,7 +69,13 @@ Use `--resource-backed-repeat-runs` to submit fresh resource-backed graph
 state repeatedly through the same prepared callable and CUDA context.
 Use `--resource-backed-workload` to narrow the diagnostic to a single serving
 policy, and `--resource-backed-logits-check-policy final_step` to defer the
-full logits-buffer readback until the last bounded decode step.
+logits-buffer readback until the last bounded decode step. This check policy
+does not change how many vocabulary columns the `qwen_logits` task computes.
+By default, `qwen_logits.task_shape_fields.scalar1` controls the active
+diagnostic vocabulary window. Use `--resource-backed-logits-active-cols full`
+to request the descriptor's full `cols` extent for focused evaluation runs, or
+pass a positive integer to test a wider bounded window without changing the
+generated device task body.
 Use `--resource-backed-task-selection first_layer_with_logits` when reviewers
 need a bounded representative callable chain instead of a simple descriptor
 prefix. It executes embedding, layer 0 attention and MLP tasks, final RMSNorm,

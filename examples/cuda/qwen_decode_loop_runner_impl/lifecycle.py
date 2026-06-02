@@ -76,6 +76,7 @@ def build_decode_loop_runner(
     resource_backed_task_selection: str = "prefix",
     resource_backed_worker_blocks: int = 1,
     resource_backed_logits_check_policy: str = "every_step",
+    resource_backed_logits_active_cols: str | int | None = None,
     resource_backed_numeric_task_mode: str = "diagnostic",
     arch: str = "compute_80",
 ) -> dict[str, Any]:
@@ -180,6 +181,7 @@ def build_decode_loop_runner(
                 task_selection=resource_backed_task_selection,
                 worker_blocks=resource_backed_worker_blocks,
                 logits_check_policy=resource_backed_logits_check_policy,
+                logits_active_cols=resource_backed_logits_active_cols,
                 numeric_task_mode=resource_backed_numeric_task_mode,
             )
             if session is not None

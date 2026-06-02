@@ -28,6 +28,9 @@ from qwen_decode_loop_runner_impl.resource_backed_results import (  # noqa: E402
     build_execution_result,
     dynamic_rope_refresh_ready,
 )
+from qwen_decode_loop_runner_impl.logits_active_cols import (  # noqa: E402
+    apply_logits_active_cols_override,
+)
 from qwen_decode_loop_runner_impl.resource_backed_execution import (  # noqa: E402
     select_task_descriptors,
 )
@@ -976,6 +979,55 @@ def test_weight_args_loader_rejects_shape_field_stale_artifact():
     )
 
 
+def test_logits_active_cols_override_preserves_original_descriptors():
+    descriptors = [
+        {
+            "id": "layer_0_mlp_down",
+            "callable": "qwen_mlp_down",
+            "task_shape_fields": {"cols": 4, "scalar1": 1024},
+        },
+        {
+            "id": "logits",
+            "callable": "qwen_logits",
+            "task_shape_fields": {"cols": 16, "inner": 4, "scalar1": 1024},
+        },
+    ]
+
+    updated, policy = apply_logits_active_cols_override(descriptors, "full")
+
+    assert policy == {
+        "mode": "full_descriptor_cols",
+        "requested_active_cols": "full",
+        "applied_scalar1_values": [16],
+    }
+    assert descriptors[1]["task_shape_fields"]["scalar1"] == 1024
+    assert updated[0] is descriptors[0]
+    assert updated[1]["task_shape_fields"] == {
+        "cols": 16,
+        "inner": 4,
+        "scalar1": 16,
+    }
+
+
+def test_logits_active_cols_override_accepts_explicit_window():
+    descriptors = [
+        {
+            "id": "logits",
+            "callable": "qwen_logits",
+            "task_shape_fields": {"cols": 151936, "scalar1": 1024},
+        },
+    ]
+
+    updated, policy = apply_logits_active_cols_override(descriptors, 4096)
+
+    assert policy == {
+        "mode": "explicit_active_cols",
+        "requested_active_cols": 4096,
+        "applied_scalar1_values": [4096],
+    }
+    assert updated[0]["task_shape_fields"]["scalar1"] == 4096
+
+
 def test_qwen_weight_descriptors_emit_callable_shape_fields():
     bindings = {
         "model.embed_tokens.weight": {"slot_id": 0},
@@ -1191,6 +1243,7 @@ def test_resource_backed_execution_reports_task_coverage():
         worker_blocks=8,
         grid_dim=9,
         logits_check_policy="final_step",
+        logits_active_cols_policy={"mode": "descriptor_default"},
         numeric_task_mode="unit_math_full_rmsnorm",
         repo_relative=lambda path: str(path),
     )

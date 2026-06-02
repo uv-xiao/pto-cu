@@ -50,6 +50,7 @@ def build_execution_result(
     worker_blocks: int,
     grid_dim: int,
     logits_check_policy: str,
+    logits_active_cols_policy: dict[str, Any],
     numeric_task_mode: str,
     repo_relative,
 ) -> dict[str, Any]:
@@ -84,6 +85,7 @@ def build_execution_result(
             "worker_blocks": int(worker_blocks),
             "grid_dim": int(grid_dim),
             "logits_check_policy": logits_check_policy,
+            "logits_active_cols_policy": logits_active_cols_policy,
             "numeric_task_mode": numeric_task_mode_summary(numeric_task_mode),
             "graph_state_policy": "fresh_graph_state_per_repeat",
         },

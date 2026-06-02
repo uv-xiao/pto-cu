@@ -34,7 +34,14 @@ def test_resource_backed_importer_emits_diagnostic_rows():
             "status": "pass",
             "device": {"arch": "compute_80"},
             "context_policy": "one_cuda_context_for_all_resource_owners",
-            "repeat_policy": {"task_selection": "first_layer_with_logits"},
+            "repeat_policy": {
+                "task_selection": "first_layer_with_logits",
+                "logits_active_cols_policy": {
+                    "mode": "explicit_active_cols",
+                    "requested_active_cols": 4096,
+                    "applied_scalar1_values": [4096],
+                },
+            },
             "task_coverage": {
                 "task_count": 10,
                 "func_id_sequence": list(range(7100, 7110)),
@@ -191,6 +198,11 @@ def test_resource_backed_importer_emits_diagnostic_rows():
         assert record["statistic"]["logits_check_policy"] in {
             "every_step",
             "final_step",
+        }
+        assert record["statistic"]["logits_active_cols_policy"] == {
+            "mode": "explicit_active_cols",
+            "requested_active_cols": 4096,
+            "applied_scalar1_values": [4096],
         }
         if record["statistic"]["workload_id"] == "mpk_offline_decode":
             assert record["statistic"]["logits_check_policy"] == "final_step"
