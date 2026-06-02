@@ -21,7 +21,6 @@ UNIT_NUMERIC_CALLABLES = {
     "qwen_final_norm",
 }
 UNIT_NUMERIC_RMSNORM_SCALE = 1.0
-FULL_RMSNORM_ELEMENT_LIMIT = 4096
 UNIT_NUMERIC_WEIGHTED_ELEMENTWISE_CALLABLES = {
     "qwen_attention_qk_norm",
     "qwen_attention_o",
@@ -179,9 +178,9 @@ def numeric_task_mode_summary(mode: str) -> dict[str, Any]:
         "full_reduction_contracts": [
             {
                 "callable": "qwen_rmsnorm_input",
-                "element_limit": FULL_RMSNORM_ELEMENT_LIMIT,
                 "scalar_arg_count": 1,
                 "scope": "resource_backed_full_rmsnorm_reduction",
+                "threading": "block",
             },
         ]
         if mode == "unit_math_full_rmsnorm"
@@ -216,8 +215,6 @@ def hidden_element_count(
         elements = int(buffers[0].get("element_count", 1))
     else:
         elements = int(workspace["logits_buffer"].get("element_count", 1))
-    if numeric_task_mode == "unit_math_full_rmsnorm":
-        return min(elements, FULL_RMSNORM_ELEMENT_LIMIT)
     return elements
 
 

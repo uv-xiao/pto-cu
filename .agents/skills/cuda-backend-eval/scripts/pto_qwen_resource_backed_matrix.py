@@ -92,7 +92,7 @@ def current_action_phrase() -> str:
         "viewer_result_imports with full-logits-buffer diagnostic writes and "
         "bounded-prefix diagnostic reference checks plus device-side "
         "diagnostic sampled-token feedback, final-step logits-check policy, "
-        "bounded full-RMSNorm reduction diagnostics, and policy-length "
+        "block-wide full-vector RMSNorm reduction diagnostics, and policy-length "
         "MPK/VDCores diagnostic decode runs are present."
     )
 
@@ -128,4 +128,11 @@ def old_action_phrases() -> tuple[str, ...]:
         "bounded-prefix diagnostic reference checks plus device-side "
         "diagnostic sampled-token feedback and final-step logits-check "
         "policy are present.",
+        "diagnostic proxy, unit-math, descriptor-smoke, "
+        "resource-backed execution, and repeated resource-backed execution "
+        "viewer_result_imports with full-logits-buffer diagnostic writes and "
+        "bounded-prefix diagnostic reference checks plus device-side "
+        "diagnostic sampled-token feedback, final-step logits-check policy, "
+        "bounded full-RMSNorm reduction diagnostics, and policy-length "
+        "MPK/VDCores diagnostic decode runs are present.",
     )

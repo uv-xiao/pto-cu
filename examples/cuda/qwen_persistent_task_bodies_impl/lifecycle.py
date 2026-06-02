@@ -52,25 +52,41 @@ task->out[i] = embedding ? embedding[token_id & 3U] : 0.0f;
         {
             "callable": "qwen_rmsnorm_input",
             "phase": "per_layer_decode",
+            "threading": "block",
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["hidden_state", "input_layernorm_weight"],
             "body": """
 const float *weight = task->tensor_args[0];
 if (task->scalar_arg_count == 0) {
-    const float scale = weight ? weight[i & 3U] : 1.0f;
-    task->out[i] = task->a[i] * scale;
+    for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
+        const float scale = weight ? weight[i & 3U] : 1.0f;
+        task->out[i] = task->a[i] * scale;
+    }
 } else if (task->scalar_arg_count > 1) {
-    const float norm_weight = weight ? weight[i & 3U] : 1.0f;
-    task->out[i] = task->a[i] * task->scalar_args[1] * norm_weight;
+    for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
+        const float norm_weight = weight ? weight[i & 3U] : 1.0f;
+        task->out[i] = task->a[i] * task->scalar_args[1] * norm_weight;
+    }
 } else {
+    __shared__ float partial[1024];
     float mean_square = 0.0f;
-    for (unsigned long long j = 0; j < task->n; ++j) {
+    for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
         mean_square += task->a[j] * task->a[j];
     }
-    mean_square /= static_cast<float>(task->n);
-    const float scale = rsqrtf(mean_square + 0.000001f);
-    const float norm_weight = weight ? weight[i & 3U] : 1.0f;
-    task->out[i] = task->a[i] * scale * norm_weight;
+    partial[threadIdx.x] = mean_square;
+    __syncthreads();
+    for (unsigned int stride = blockDim.x >> 1; stride > 0U; stride >>= 1) {
+        if (threadIdx.x < stride) {
+            partial[threadIdx.x] += partial[threadIdx.x + stride];
+        }
+        __syncthreads();
+    }
+    const float scale =
+        rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f);
+    for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
+        const float norm_weight = weight ? weight[i & 3U] : 1.0f;
+        task->out[i] = task->a[i] * scale * norm_weight;
+    }
 }
 """,
         },
@@ -197,6 +213,7 @@ def task_functions() -> list[CudaPersistentTaskFunction]:
             func_id=FUNC_ID_BASE + index,
             name=spec["callable"],
             body=spec["body"],
+            threading=spec.get("threading", "element"),
         )
         for index, spec in enumerate(body_specs())
     ]
@@ -236,6 +253,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
                 "func_id": function.func_id,
                 "callable": spec["callable"],
                 "phase": spec["phase"],
+                "threading": function.threading,
                 "consumes_fields": spec["consumes_fields"],
                 "consumes_roles": spec["consumes_roles"],
             }

@@ -260,14 +260,14 @@ def test_launch_packet_can_select_full_rmsnorm_reduction_branch():
     assert summary["full_reduction_contracts"] == [
         {
             "callable": "qwen_rmsnorm_input",
-            "element_limit": 4096,
             "scalar_arg_count": 1,
             "scope": "resource_backed_full_rmsnorm_reduction",
+            "threading": "block",
         },
     ]
 
 
-def test_full_rmsnorm_mode_caps_hidden_vector_extent():
+def test_full_rmsnorm_mode_uses_full_hidden_vector_extent():
     descriptors = [
         {"callable": "qwen_rmsnorm_input", "tensor_args": []},
         {"callable": "qwen_attention_qkv", "tensor_args": []},
@@ -310,6 +310,6 @@ def test_full_rmsnorm_mode_caps_hidden_vector_extent():
     )
 
     assert packet is not None
-    assert packet[0].n == 4096
-    assert packet[1].n == 4096
-    assert list(packet[2].scalar_args)[:3] == [0.0, 4096.0, 2430976.0]
+    assert packet[0].n == 65536
+    assert packet[1].n == 65536
+    assert list(packet[2].scalar_args)[:3] == [0.0, 65536.0, 2430976.0]

@@ -84,8 +84,16 @@ def test_generated_source_contains_qwen_unit_math_kernels():
 
     manifest = module.build_task_body_manifest(num_hidden_layers=1)
     source = manifest["rendered_source"]["preview"]
+    rmsnorm = next(
+        item
+        for item in manifest["task_bodies"]
+        if item["callable"] == "qwen_rmsnorm_input"
+    )
 
-    assert "rsqrtf(mean_square + 0.000001f)" in source
+    assert "rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f)" in source
+    assert rmsnorm["threading"] == "block"
+    assert "__shared__ float partial[1024];" in source
+    assert "for (unsigned long long j = threadIdx.x;" in source
     assert "task->scalar_args[1] * norm_weight" in source
     assert "task->c[kv_index] = k;" in source
     assert "task->d[kv_index] = v;" in source
