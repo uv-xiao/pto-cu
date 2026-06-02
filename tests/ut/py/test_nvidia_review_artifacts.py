@@ -5339,6 +5339,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "result_records",
         "raw_artifact",
         "correctness",
+        "import_smoke",
+        "Import Smoke",
+        "Import Smoke Scope",
     ]:
         assert required in viewer_js
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -125,7 +126,49 @@ def validate_model_shape_targets(
                 f"{owner} references unknown viewer methods: "
                 f"{sorted(missing_methods)}"
             )
+        validate_import_smoke(target, owner, methods, root)
         check_evidence_refs(target, owner, root)
+
+
+def validate_import_smoke(
+    target: dict[str, Any],
+    owner: str,
+    required_methods: set[str],
+    root: Path,
+) -> None:
+    smoke = target.get("import_smoke")
+    if smoke is None:
+        return
+    if not isinstance(smoke, dict):
+        fail(f"{owner} import_smoke is not an object")
+    status = require_string(smoke, "status", owner)
+    if status not in {"pass", "partial", "fail"}:
+        fail(f"{owner} import_smoke has invalid status: {status}")
+    artifact_root = require_string(smoke, "artifact_root", owner)
+    require_current_artifact_path(root, artifact_root, owner)
+    exported_records_path = require_string(smoke, "exported_records_path", owner)
+    records_path = root / exported_records_path
+    if not records_path.is_file():
+        fail(f"{owner} import_smoke records path missing: {exported_records_path}")
+    try:
+        records = json.loads(records_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"{owner} import_smoke records JSON is invalid: {exc}")
+    if not isinstance(records, list) or not records:
+        fail(f"{owner} import_smoke records are empty")
+    methods = set(require_list(smoke, "methods", owner))
+    if not methods <= required_methods:
+        fail(f"{owner} import_smoke methods are not required methods")
+    record_methods = {record.get("method_id") for record in records}
+    if not methods <= record_methods:
+        fail(f"{owner} import_smoke records missing methods: {sorted(methods)}")
+    sample_count = require_positive_int(smoke, "sample_count", owner)
+    for record in records:
+        statistic = record.get("statistic", {})
+        if record.get("method_id") in methods and (
+            statistic.get("sample_count") != sample_count
+        ):
+            fail(f"{owner} import_smoke sample count mismatch")
 
 
 def require_positive_int(record: dict[str, Any], key: str, owner: str) -> int:

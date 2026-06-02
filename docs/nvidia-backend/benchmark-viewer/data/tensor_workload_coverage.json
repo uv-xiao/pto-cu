@@ -8,7 +8,7 @@
     {
       "id": "qwen_attention_projection_tile",
       "title": "Qwen Attention Projection Tile",
-      "status": "planned_shape_target",
+      "status": "local_import_smoke",
       "model_mapping": "Qwen attention projection slice with 128-wide head or input chunk and 64 output channels.",
       "tensor_tile": {
         "rows": 16,
@@ -32,7 +32,18 @@
             "--tensor-inner"
           ]
         }
-      ]
+      ],
+      "import_smoke": {
+        "status": "pass",
+        "artifact_root": "tmp/cuda-backend/qwen-attention-tensor-target-bdce5ea4/",
+        "exported_records_path": "tmp/cuda-backend/qwen-attention-tensor-target-bdce5ea4/viewer-records.json",
+        "sample_count": 1,
+        "methods": [
+          "pto_persistent_device",
+          "cublas_sgemm_graph"
+        ],
+        "scope": "Local A100 one-repeat import smoke for Qwen attention tile routing; not final paper-grade throughput."
+      }
     },
     {
       "id": "qwen_mlp_projection_tile",

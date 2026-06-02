@@ -15,10 +15,13 @@ is checked against current viewer result records by the benchmark-viewer data
 guard. The same viewer data now lists the first model-shape target tiles that
 must receive tuned PTO rows. Capture import rules are now tensor-tile aware,
 so future model-shape captures can be imported without colliding with the
-existing 16x16x16 diagnostic rows. The remaining gap is
-tuned PTO tensor body work at those model-relevant sizes, not descriptor-shape,
-first tensor-core
-callable plumbing, or baseline viewer coverage.
+existing 16x16x16 diagnostic rows. The Qwen attention target also has a local
+A100 one-repeat import smoke under
+`tmp/cuda-backend/qwen-attention-tensor-target-bdce5ea4/`, proving that PTO
+persistent-device and cuBLAS Graph rows route through the viewer mapping for
+the 16x64x128 tile. The remaining gap is tuned PTO tensor body work at those
+model-relevant sizes, not descriptor-shape, first tensor-core callable
+plumbing, or baseline viewer coverage.
 
 Needed:
 

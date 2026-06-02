@@ -132,6 +132,9 @@ export function renderTensorWorkloadCoverage(state) {
     target.title,
     `${target.tensor_tile.rows}x${target.tensor_tile.cols}x${target.tensor_tile.inner}`,
     target.status,
+    target.import_smoke
+      ? `${target.import_smoke.status}: ${target.import_smoke.artifact_root}`
+      : "none",
     target.model_mapping,
   ]);
   const targetDetails = document.createElement("details");
@@ -139,8 +142,14 @@ export function renderTensorWorkloadCoverage(state) {
   targetSummary.append(text("Model Shape Targets"));
   targetDetails.append(
     targetSummary,
-    table(["Target", "Tile", "Status", "Mapping"], targetRows),
+    table(["Target", "Tile", "Status", "Import Smoke", "Mapping"], targetRows),
     ...namedList("Commands", targets.map((target) => target.run_command)),
+    ...namedList(
+      "Import Smoke Scope",
+      targets
+        .filter((target) => target.import_smoke)
+        .map((target) => target.import_smoke.scope),
+    ),
   );
   const groups = state.tensorWorkloadCoverage.coverage_groups.map((group) => {
     const details = document.createElement("details");
