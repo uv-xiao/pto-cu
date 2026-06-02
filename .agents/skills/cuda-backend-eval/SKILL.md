@@ -163,6 +163,17 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/worker-generic_args4-smoke/a100.json
 ```
 
+Import real PTO Qwen full-serving raw rows only after both MPK-policy and
+VDCores-policy serving runs pass correctness and include latency/throughput
+metrics:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py \
+    tmp/cuda-backend/pto-full-serving/raw.json \
+    --artifact-root tmp/cuda-backend/pto-full-serving/
+```
+
 Use `cuda_smoke_report.py` to turn captured smoke JSON from A100 and H200 into
 Markdown and SVG evidence. Persistent-device reports include dispatch
 `func_id` sequences, device-side scheduler error counters, resource policy,
