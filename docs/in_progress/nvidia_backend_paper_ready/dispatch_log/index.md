@@ -97,3 +97,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-64.md](entries/2026-06-02-part-64.md) | 1 | Qwen Attention Tensor Import Smoke | Qwen Attention Tensor Import Smoke |
 | [2026-06-02-part-65.md](entries/2026-06-02-part-65.md) | 1 | Qwen MLP Tensor Import Smoke | Qwen MLP Tensor Import Smoke |
 | [2026-06-02-part-66.md](entries/2026-06-02-part-66.md) | 1 | Tensor Import Smoke Commands | Tensor Import Smoke Commands |
+| [2026-06-02-part-67.md](entries/2026-06-02-part-67.md) | 1 | Tensor Import Smoke Record Guard | Tensor Import Smoke Record Guard |

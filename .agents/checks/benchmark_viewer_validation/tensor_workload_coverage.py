@@ -155,6 +155,9 @@ def validate_import_smoke(
         fail(f"{owner} import_smoke has invalid status: {status}")
     artifact_root = require_string(smoke, "artifact_root", owner)
     require_current_artifact_path(root, artifact_root, owner)
+    hardware = require_dict(smoke, "hardware", owner)
+    gpu = require_string(hardware, "gpu", owner)
+    compute_target = require_string(hardware, "compute_target", owner)
     exported_records_path = require_string(smoke, "exported_records_path", owner)
     records_path = root / exported_records_path
     if not records_path.is_file():
@@ -174,11 +177,31 @@ def validate_import_smoke(
     if not methods <= record_methods:
         fail(f"{owner} import_smoke records missing methods: {sorted(methods)}")
     sample_count = require_positive_int(smoke, "sample_count", owner)
+    shape = (
+        f"{target['tensor_tile']['rows']}x"
+        f"{target['tensor_tile']['cols']}x"
+        f"{target['tensor_tile']['inner']}"
+    )
     for record in records:
-        statistic = record.get("statistic", {})
-        if record.get("method_id") in methods and (
-            statistic.get("sample_count") != sample_count
+        method = record.get("method_id")
+        if method not in methods:
+            continue
+        if record.get("benchmark_id") != "tensor_core_tile":
+            fail(f"{owner} import_smoke record has wrong benchmark_id")
+        hardware_record = record.get("hardware", {})
+        if (
+            hardware_record.get("gpu") != gpu
+            or hardware_record.get("compute_target") != compute_target
         ):
+            fail(f"{owner} import_smoke record has wrong hardware")
+        if shape not in record.get("inputs", {}).get("shape", ""):
+            fail(f"{owner} import_smoke record has wrong tensor shape")
+        if record.get("raw_artifact") != artifact_root:
+            fail(f"{owner} import_smoke record has wrong raw_artifact")
+        if status == "pass" and record.get("correctness") != "pass":
+            fail(f"{owner} import_smoke record is not correctness pass")
+        statistic = record.get("statistic", {})
+        if statistic.get("sample_count") != sample_count:
             fail(f"{owner} import_smoke sample count mismatch")
     return True
 

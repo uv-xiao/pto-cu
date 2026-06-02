@@ -37,6 +37,10 @@
         "status": "pass",
         "artifact_root": "tmp/cuda-backend/qwen-attention-tensor-target-bdce5ea4/",
         "exported_records_path": "tmp/cuda-backend/qwen-attention-tensor-target-bdce5ea4/viewer-records.json",
+        "hardware": {
+          "gpu": "A100",
+          "compute_target": "compute_80"
+        },
         "sample_count": 1,
         "methods": [
           "pto_persistent_device",
@@ -81,6 +85,10 @@
         "status": "pass",
         "artifact_root": "tmp/cuda-backend/qwen-mlp-tensor-target-c1110223/",
         "exported_records_path": "tmp/cuda-backend/qwen-mlp-tensor-target-c1110223/viewer-records.json",
+        "hardware": {
+          "gpu": "A100",
+          "compute_target": "compute_80"
+        },
         "sample_count": 1,
         "methods": [
           "pto_persistent_device",
