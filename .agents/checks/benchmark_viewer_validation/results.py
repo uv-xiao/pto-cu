@@ -5,6 +5,7 @@ from typing import Any
 
 from .common import *  # noqa: F403
 from .evidence import *  # noqa: F403
+from .pto_full_serving import validate_pto_full_serving_result
 
 
 def validate_capture_imports(
@@ -133,6 +134,12 @@ def validate_results(
                 inputs.get("shape", "")
             ):
                 fail(f"{owner} has proxy coverage but claims full-serving shape")
+            if (
+                method_id == "pto_persistent_device"
+                and coverage == "full_serving"
+                and "Qwen/Qwen3-8B" in str(inputs.get("shape", ""))
+            ):
+                validate_pto_full_serving_result(record, statistic, owner)
         sample_count = statistic.get("sample_count")
         if not isinstance(sample_count, int) or sample_count <= 0:
             fail(f"{owner} has invalid statistic.sample_count")
@@ -156,4 +163,3 @@ def validate_results(
             "not_applicable",
         }:
             fail(f"{owner} has invalid correctness: {record['correctness']}")
-

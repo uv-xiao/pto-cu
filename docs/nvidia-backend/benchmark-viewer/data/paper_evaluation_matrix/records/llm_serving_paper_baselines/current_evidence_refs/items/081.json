@@ -1,0 +1,10 @@
+{
+  "kind": "raw_artifact",
+  "path": "tmp/cuda-backend/pto-full-serving-viewer-validator-gate-2026-06-02/viewer-validator-gate.json",
+  "symbols": [
+    "validate_pto_full_serving_result",
+    "validate_pto_full_serving_correctness",
+    "test_viewer_data_validator_rejects_failed_pto_full_serving_row",
+    "test_viewer_data_validator_rejects_underchecked_pto_full_serving_row"
+  ]
+}

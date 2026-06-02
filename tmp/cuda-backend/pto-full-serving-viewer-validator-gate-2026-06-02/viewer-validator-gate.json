@@ -1,0 +1,25 @@
+{
+  "artifact": "pto-full-serving-viewer-validator-gate",
+  "date": "2026-06-02",
+  "purpose": "Document the benchmark-viewer data validation gate for PTO Qwen full-serving result records.",
+  "validators": [
+    ".agents/checks/benchmark_viewer_validation/results.py",
+    ".agents/checks/benchmark_viewer_validation/pto_full_serving.py"
+  ],
+  "tests": [
+    "tests/ut/py/test_nvidia_benchmark_viewer_result_validation.py::test_viewer_data_validator_accepts_complete_pto_full_serving_row",
+    "tests/ut/py/test_nvidia_benchmark_viewer_result_validation.py::test_viewer_data_validator_rejects_failed_pto_full_serving_row",
+    "tests/ut/py/test_nvidia_benchmark_viewer_result_validation.py::test_viewer_data_validator_rejects_underchecked_pto_full_serving_row"
+  ],
+  "rejected_cases": [
+    "full_serving PTO Qwen row with failed_requests != 0",
+    "full_serving PTO Qwen row with checked_token_count below batch_size * decode_tokens"
+  ],
+  "contract": {
+    "applies_to": "llm_serving_decode / pto_persistent_device / Qwen/Qwen3-8B / full_serving",
+    "workload_id": "mpk_offline_decode or vdcores_offline_decode",
+    "request_accounting": "completed_requests == batch_size and failed_requests == 0",
+    "token_accounting": "total_input_tokens == batch_size * prompt_tokens and total_output_tokens == batch_size * decode_tokens",
+    "correctness": "full_qwen_numerical_correctness with token_match=true and checked_token_count covering generated decode tokens"
+  }
+}
