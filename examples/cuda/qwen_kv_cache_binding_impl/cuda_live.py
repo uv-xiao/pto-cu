@@ -6,6 +6,11 @@ import ctypes
 from pathlib import Path
 from typing import Any, Callable
 
+from qwen_kv_cache_binding_impl.zeroing import (
+    KV_ZERO_CHUNK_BYTES,
+    zero_device_allocation,
+)
+
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -45,6 +50,12 @@ def live_pointer_table(
                     f"{pointer['workload_id']}:{pointer['cache']}"
                 )
             ptr_value = int(ptr)
+            zero_device_allocation(
+                runtime=runtime,
+                ctx=ctx,
+                ptr=ptr_value,
+                byte_count=int(pointer["byte_count"]),
+            )
             ptrs.append(ptr_value)
             pointer["device_ptr"] = ptr_value
             pointer["device_ptr_hex"] = f"0x{ptr_value:x}"
@@ -62,7 +73,12 @@ def live_pointer_table(
         "mode": "cuda_live",
         "device": device,
         "host_runtime": repo_relative(host_runtime),
-        "allocation_policy": "allocate_full_kv_cache_without_prefill_copy",
+        "allocation_policy": "allocate_zeroed_full_kv_cache_without_prefill_copy",
+        "initialization_policy": {
+            "state": "zero_initialized",
+            "chunk_bytes": KV_ZERO_CHUNK_BYTES,
+            "scope": "entire_key_value_cache_allocation",
+        },
         "pointers": pointers,
         "pointer_count": len(pointers),
         "total_byte_count": sum(item["byte_count"] for item in pointers),
@@ -88,6 +104,13 @@ def load_cuda_runtime(host_runtime: Path) -> Any:
     runtime.device_malloc_ctx.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
     runtime.device_malloc_ctx.restype = ctypes.c_void_p
     runtime.device_free_ctx.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    runtime.copy_to_device_ctx.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_size_t,
+    ]
+    runtime.copy_to_device_ctx.restype = ctypes.c_int
     return runtime
 
 

@@ -167,6 +167,10 @@ def test_decode_loop_runner_tracks_cuda_live_resource_owners(monkeypatch):
     kv_lifecycle = {
         "status": "kv_cache_lifecycle_ready",
         "mode": "cuda_live",
+        "pointer_table": {
+            "allocation_policy": "allocate_zeroed_full_kv_cache_without_prefill_copy",
+            "initialization_policy": {"state": "zero_initialized"},
+        },
         "kv_cache_bindings": [
             {
                     "workload_id": "mpk_offline_decode",
@@ -250,6 +254,10 @@ def test_decode_loop_runner_tracks_cuda_live_resource_owners(monkeypatch):
     assert runner["resource_lifecycle_modes"]["token_pointer_table"] == "cuda_live"
     assert runner["resource_lifecycle_modes"]["kv_cache"] == "cuda_live"
     assert runner["resource_lifecycle_modes"]["resident_weight_table"] == "cuda_live"
+    assert runner["resource_lifecycle_policies"]["kv_cache"] == {
+        "allocation_policy": "allocate_zeroed_full_kv_cache_without_prefill_copy",
+        "initialization_policy": {"state": "zero_initialized"},
+    }
     assert runner["cuda_live_resource_owners"] == [
         "token_pointer_table",
         "kv_cache",

@@ -52,18 +52,24 @@ def submission_plan(
     resident_lifecycle: dict[str, Any],
 ) -> dict[str, Any]:
     scalars = decode_record["scalar_fields"]
+    prompt_tokens = int(scalars.get("n", scalars["inner"]))
+    runtime_prompt_tokens = int(
+        scalars.get("runtime_prompt_tokens", prompt_tokens),
+    )
+    active_prompt_tokens = int(
+        scalars.get("active_prompt_tokens", prompt_tokens),
+    )
+    output_start_position = int(
+        scalars.get("output_start_position", scalars["inner"]),
+    )
     return {
         "workload_id": decode_record["workload_id"],
         "status": "submission_plan_ready",
         "max_batch_size": int(scalars["rows"]),
         "decode_steps": int(scalars["cols"]),
         "first_decode_position": int(scalars["inner"]),
-        "runtime_prompt_tokens": int(
-            scalars.get("runtime_prompt_tokens", scalars["n"]),
-        ),
-        "active_prompt_tokens": int(
-            scalars.get("active_prompt_tokens", scalars["n"]),
-        ),
+        "runtime_prompt_tokens": runtime_prompt_tokens,
+        "active_prompt_tokens": active_prompt_tokens,
         "owner_lifetime_order": OWNER_LIFETIME_ORDER,
         "task_argument_fields": TASK_ARGUMENT_FIELDS,
         "token_pointer_fields": decode_record["pointer_bindings"],
@@ -81,16 +87,12 @@ def submission_plan(
         ),
         "output_token_accounting": {
             "output_buffer": "output_ids",
-            "start_position": int(
-                scalars.get("output_start_position", scalars["inner"]),
-            ),
+            "start_position": output_start_position,
             "planned_tokens": int(scalars["cols"]),
             "eos_policy": "planned_stop_after_decode_tokens_or_eos",
         },
         "task_shape_fields": {
-            "a_batch_stride": int(
-                scalars.get("runtime_prompt_tokens", scalars["n"]),
-            ),
+            "a_batch_stride": runtime_prompt_tokens,
             "b_batch_stride": int(kv_record["sequence_capacity_tokens"]),
         },
     }

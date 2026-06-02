@@ -55,6 +55,19 @@ def ready_resident_descriptors(
     ]
 
 
+def resource_lifecycle_policies(
+    *,
+    kv_lifecycle: dict[str, Any],
+) -> dict[str, Any]:
+    kv_table = kv_lifecycle.get("pointer_table", {})
+    return {
+        "kv_cache": {
+            "allocation_policy": kv_table.get("allocation_policy"),
+            "initialization_policy": kv_table.get("initialization_policy"),
+        },
+    }
+
+
 def build_decode_loop_runner(
     *,
     mode: str = "offline",
@@ -326,6 +339,9 @@ def build_decode_loop_runner(
         ),
         "resource_lifecycle_status": resource_status,
         "resource_lifecycle_modes": resource_modes,
+        "resource_lifecycle_policies": resource_lifecycle_policies(
+            kv_lifecycle=kv_lifecycle,
+        ),
         "cuda_live_resource_owners": live_owners,
         "activation_workspace_lifecycle": activation_workspace,
         "single_context_live_session": session_payload,

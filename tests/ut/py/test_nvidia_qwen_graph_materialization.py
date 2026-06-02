@@ -38,6 +38,9 @@ from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph  # noq
 from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
     numeric_task_mode_summary,
 )
+from qwen_kv_cache_binding_impl.zeroing import (  # noqa: E402
+    zero_device_allocation,
+)
 from qwen_persistent_weight_materialization_impl.materializer import (  # noqa: E402
     materialized_descriptor,
 )
@@ -495,6 +498,38 @@ def test_materialized_graph_uses_configured_scheduler_blocks():
     assert graph.scheduler_blocks == 3
     assert state.scheduler_blocks == 3
     assert len(graph.read_counters()["scheduler_processed_by_block"]) == 3
+
+
+def test_kv_cache_zero_initialization_uses_chunked_device_copy():
+    class FakeRuntime:
+        def __init__(self):
+            self.copied = []
+
+        def copy_to_device_ctx(self, ctx, device_ptr, host_ptr, size):
+            del ctx
+            self.copied.append(
+                (
+                    int(device_ptr),
+                    ctypes.string_at(host_ptr, int(size)),
+                )
+            )
+            return 0
+
+    runtime = FakeRuntime()
+
+    zero_device_allocation(
+        runtime=runtime,
+        ctx=object(),
+        ptr=0x1000,
+        byte_count=10,
+        chunk_bytes=4,
+    )
+
+    assert runtime.copied == [
+        (0x1000, b"\x00" * 4),
+        (0x1004, b"\x00" * 4),
+        (0x1008, b"\x00" * 2),
+    ]
 
 
 def test_live_workspace_initializes_rope_tables_from_position_policy():

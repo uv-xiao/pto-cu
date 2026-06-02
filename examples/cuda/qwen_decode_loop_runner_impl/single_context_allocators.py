@@ -13,6 +13,10 @@ from qwen_decode_loop_runner_impl.activation_workspace import (
 )
 from qwen_decode_loop_runner_impl.workspace_pointers import allocate_pointer_set
 from qwen_kv_cache_binding_impl.lifecycle import kv_binding_records, load_lifecycle_plan
+from qwen_kv_cache_binding_impl.zeroing import (
+    KV_ZERO_CHUNK_BYTES,
+    zero_device_allocation,
+)
 from qwen_resident_weight_table_impl.common import (
     DEFAULT_COPY_CHUNK_BYTES,
     load_or_build_weight_binding,
@@ -107,6 +111,12 @@ def open_kv_table(
                 f"{pointer['workload_id']}:{pointer['cache']}"
             )
         ptr_value = int(ptr)
+        zero_device_allocation(
+            runtime=runtime,
+            ctx=ctx,
+            ptr=ptr_value,
+            byte_count=int(pointer["byte_count"]),
+        )
         allocations.append(("kv_cache", ptr_value))
         pointer["device_ptr"] = ptr_value
         pointer["device_ptr_hex"] = f"0x{ptr_value:x}"
@@ -118,7 +128,12 @@ def open_kv_table(
         "device": device,
         "host_runtime": repo_relative(host_runtime),
         "cuda_context_policy": "single_context_session",
-        "allocation_policy": "allocate_full_kv_cache_without_prefill_copy",
+        "allocation_policy": "allocate_zeroed_full_kv_cache_without_prefill_copy",
+        "initialization_policy": {
+            "state": "zero_initialized",
+            "chunk_bytes": KV_ZERO_CHUNK_BYTES,
+            "scope": "entire_key_value_cache_allocation",
+        },
         "pointers": pointers,
         "pointer_count": len(pointers),
         "total_byte_count": sum(item["byte_count"] for item in pointers),
