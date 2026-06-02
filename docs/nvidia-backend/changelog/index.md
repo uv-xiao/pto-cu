@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 tensor capture import shape routing](2026-06-02-tensor-capture-import-shape-routing.md)
 - [2026-06-02 tensor target method guard](2026-06-02-tensor-target-method-guard.md)
 - [2026-06-02 tensor model shape targets](2026-06-02-tensor-model-shape-targets.md)
 - [2026-06-02 persistent scheduler gap narrowing](2026-06-02-persistent-scheduler-gap-narrowing.md)

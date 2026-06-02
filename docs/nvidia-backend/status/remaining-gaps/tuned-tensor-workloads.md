@@ -13,8 +13,11 @@ Structured review evidence lives in
 `docs/nvidia-backend/benchmark-viewer/data/tensor_workload_coverage.json` and
 is checked against current viewer result records by the benchmark-viewer data
 guard. The same viewer data now lists the first model-shape target tiles that
-must receive tuned PTO rows. The remaining gap is tuned PTO tensor body work
-at those model-relevant sizes, not descriptor-shape, first tensor-core
+must receive tuned PTO rows. Capture import rules are now tensor-tile aware,
+so future model-shape captures can be imported without colliding with the
+existing 16x16x16 diagnostic rows. The remaining gap is
+tuned PTO tensor body work at those model-relevant sizes, not descriptor-shape,
+first tensor-core
 callable plumbing, or baseline viewer coverage.
 
 Needed:

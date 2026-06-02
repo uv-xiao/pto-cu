@@ -34,6 +34,10 @@
     "records/020-direct-driver-graph-sgemm-tensor-core-tile-direct-driver-graph-65536.json",
     "records/021-pto-persistent-dag-graph-tensor-core-tensor-core-tile-pto-persistent.json",
     "records/022-pto-persistent-dag-graph-layered-cross-graph-layered-cross-pto-persi.json",
-    "records/023-cublas-sgemm-graph-tensor-core-tile-cublas-sgemm-graph-1024-1.json"
+    "records/023-cublas-sgemm-graph-tensor-core-tile-cublas-sgemm-graph-1024-1.json",
+    "records/024-pto-persistent-qwen-attention-tile.json",
+    "records/025-cublas-graph-qwen-attention-tile.json",
+    "records/026-pto-persistent-qwen-mlp-tile.json",
+    "records/027-cublas-graph-qwen-mlp-tile.json"
   ]
 }

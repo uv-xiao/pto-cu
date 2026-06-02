@@ -6,12 +6,12 @@
   "task_count": 1,
   "tensor_tile": {
     "rows": 16,
-    "cols": 16,
-    "inner": 16
+    "cols": 64,
+    "inner": 256
   },
   "inputs": {
-    "shape": "n=1024, tensor tile 16x16x16",
+    "shape": "n=1024, tensor tile 16x64x256",
     "dtype": "float32 SGEMM",
-    "repeat_policy": "selected row from compact capture"
+    "repeat_policy": "20-repeat Qwen MLP target capture"
   }
 }

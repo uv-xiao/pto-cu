@@ -2468,6 +2468,12 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
                 "baseline": "cublas_sgemm_graph",
                 "n": 1024,
                 "task_count": 1,
+                "tensor_tile": {
+                    "rows": 16,
+                    "cols": 16,
+                    "inner": 16,
+                    "tile_count": 4,
+                },
                 "host_wall_ns": 60,
                 "device_wall_ns": 40,
                 "status": "pass",
@@ -2477,6 +2483,12 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
                 "baseline": "direct_runtime_sgemm",
                 "n": 1024,
                 "task_count": 1,
+                "tensor_tile": {
+                    "rows": 16,
+                    "cols": 16,
+                    "inner": 16,
+                    "tile_count": 4,
+                },
                 "host_wall_ns": 90,
                 "device_wall_ns": 70,
                 "status": "pass",
@@ -2486,8 +2498,44 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
                 "baseline": "pto_persistent_dag_graph_tensor_core",
                 "n": 1024,
                 "task_count": 4,
+                "tensor_tile": {
+                    "rows": 16,
+                    "cols": 16,
+                    "inner": 16,
+                    "tile_count": 4,
+                },
                 "host_wall_ns": 110,
                 "device_wall_ns": 85,
+                "status": "pass",
+            },
+            {
+                "machine": "hina",
+                "baseline": "pto_persistent_dag_graph_tensor_core",
+                "n": 1024,
+                "task_count": 4,
+                "tensor_tile": {
+                    "rows": 16,
+                    "cols": 64,
+                    "inner": 128,
+                    "tile_count": 1,
+                },
+                "host_wall_ns": 210,
+                "device_wall_ns": 185,
+                "status": "pass",
+            },
+            {
+                "machine": "hina",
+                "baseline": "cublas_sgemm_graph",
+                "n": 1024,
+                "task_count": 1,
+                "tensor_tile": {
+                    "rows": 16,
+                    "cols": 64,
+                    "inner": 128,
+                    "tile_count": 1,
+                },
+                "host_wall_ns": 70,
+                "device_wall_ns": 45,
                 "status": "pass",
             },
             {
@@ -2578,6 +2626,22 @@ def test_cuda_viewer_export_generates_contract_records(tmp_path):
         and record["hardware"]["gpu"] == "A100"
         and record["inputs"]["dtype"] == "tf32 WMMA tensor-core, f32 accumulator"
         and record["statistic"]["sample_count"] == 1
+        for record in records
+    )
+    assert any(
+        record["benchmark_id"] == "tensor_core_tile"
+        and record["method_id"] == "pto_persistent_device"
+        and record["hardware"]["gpu"] == "A100"
+        and record["inputs"]["shape"] == "n=1024, tensor tile 16x64x128"
+        and record["statistic"]["device_wall_ns"] == 185
+        for record in records
+    )
+    assert any(
+        record["benchmark_id"] == "tensor_core_tile"
+        and record["method_id"] == "cublas_sgemm_graph"
+        and record["hardware"]["gpu"] == "A100"
+        and record["inputs"]["shape"] == "n=1024, tensor tile 16x64x128"
+        and record["statistic"]["device_wall_ns"] == 45
         for record in records
     )
     assert any(

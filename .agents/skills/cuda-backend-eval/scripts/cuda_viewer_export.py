@@ -80,10 +80,26 @@ def matching_rows(
             continue
         if "task_count" in rule and task_count != int(rule["task_count"]):
             continue
+        if "tensor_tile" in rule:
+            rows = [
+                row for row in rows if tensor_tile_matches(row, rule["tensor_tile"])
+            ]
+            if not rows:
+                continue
         matches.append((key, rows))
     return sorted(
         matches,
         key=lambda item: (str(item[0][0]), item[0][2], item[0][3]),
+    )
+
+
+def tensor_tile_matches(row: dict[str, Any], expected: dict[str, Any]) -> bool:
+    tile = row.get("tensor_tile")
+    if not isinstance(tile, dict):
+        return False
+    return all(
+        int(tile.get(key, -1)) == int(expected[key])
+        for key in ("rows", "cols", "inner")
     )
 
 

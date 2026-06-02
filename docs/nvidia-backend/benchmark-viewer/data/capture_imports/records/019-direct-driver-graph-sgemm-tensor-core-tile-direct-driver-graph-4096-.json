@@ -4,6 +4,11 @@
   "method_id": "direct_driver_graph",
   "n": 4096,
   "task_count": 1,
+  "tensor_tile": {
+    "rows": 16,
+    "cols": 16,
+    "inner": 16
+  },
   "inputs": {
     "shape": "n=4096, tensor tile 16x16x16",
     "dtype": "float32 naive SGEMM",

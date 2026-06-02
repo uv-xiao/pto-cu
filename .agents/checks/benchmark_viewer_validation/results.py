@@ -22,7 +22,7 @@ def validate_capture_imports(
             require_string(record, key, f"capture imports hardware {machine}")
 
     records = require_list(data, "capture_imports", "capture imports")
-    import_keys: set[tuple[str, int, int]] = set()
+    import_keys: set[tuple[str, int, int, tuple[int, int, int] | None]] = set()
     for record in records:
         if not isinstance(record, dict):
             fail("capture import rule is not an object")
@@ -41,7 +41,8 @@ def validate_capture_imports(
             value = record.get(key)
             if not isinstance(value, int) or value <= 0:
                 fail(f"{owner} has invalid {key}")
-        import_key = (baseline, int(n), int(task_count))
+        tensor_tile = optional_tensor_tile(record, owner)
+        import_key = (baseline, int(n), int(task_count), tensor_tile)
         if import_key in import_keys:
             fail(
                 "duplicate capture import rule: "
@@ -51,6 +52,24 @@ def validate_capture_imports(
         inputs = require_dict(record, "inputs", owner)
         for key in ("shape", "dtype", "repeat_policy"):
             require_string(inputs, key, owner)
+
+
+def optional_tensor_tile(
+    record: dict[str, Any],
+    owner: str,
+) -> tuple[int, int, int] | None:
+    value = record.get("tensor_tile")
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        fail(f"{owner} tensor_tile is not an object")
+    tile = []
+    for key in ("rows", "cols", "inner"):
+        field = value.get(key)
+        if not isinstance(field, int) or field <= 0:
+            fail(f"{owner} tensor_tile has invalid {key}")
+        tile.append(field)
+    return tuple(tile)
 
 
 def validate_results(
@@ -137,5 +156,4 @@ def validate_results(
             "not_applicable",
         }:
             fail(f"{owner} has invalid correctness: {record['correctness']}")
-
 

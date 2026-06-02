@@ -6,12 +6,12 @@
   "task_count": 4,
   "tensor_tile": {
     "rows": 16,
-    "cols": 16,
-    "inner": 16
+    "cols": 64,
+    "inner": 128
   },
   "inputs": {
-    "shape": "n=1024, tensor tile 16x16x16",
+    "shape": "n=1024, tensor tile 16x64x128",
     "dtype": "tf32 WMMA tensor-core, f32 accumulator",
-    "repeat_policy": "selected row from compact capture"
+    "repeat_policy": "20-repeat Qwen attention target capture"
   }
 }
