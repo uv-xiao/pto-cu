@@ -4905,6 +4905,10 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
         "persistent-scheduler-generalization" in ref
         for ref in by_id["backend_implementation_closure"]["evidence_refs"]
     )
+    assert not any(
+        "kernel-compiler-integration" in ref
+        for ref in by_id["backend_implementation_closure"]["evidence_refs"]
+    )
     status_remaining = (
         (DOC_ROOT / "status.md")
         .read_text(encoding="utf-8")

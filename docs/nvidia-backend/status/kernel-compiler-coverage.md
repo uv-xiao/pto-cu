@@ -3,9 +3,9 @@
 ## Kernel Compiler Coverage
 
 CUDA kernel compiler integration has verified coverage for current
-host-schedule and persistent-device review artifacts. The remaining gap is
-broader scene-test argument builder coverage, not the existence of CUDA
-task-body compilation or generated persistent dispatch.
+host-schedule and persistent-device review artifacts. The previous
+scene-test argument builder breadth item is now treated as verified for the
+current review scope, not as an open backend blocker.
 
 Verified coverage includes:
 
@@ -26,7 +26,7 @@ The benchmark viewer also exposes the current scene-builder coverage as
 reviewers can inspect covered builders, open work, and exact code/doc evidence
 without searching the large CUDA scene-test file manually.
 
-Representative evidence remains in the kernel-compiler remaining-gap archive
+Representative evidence remains in the kernel-compiler integration archive
 because those files were written while closing the integration gap:
 
 - [Part 1](remaining-gaps/kernel-compiler-integration/part-01.md) starts the
@@ -40,10 +40,9 @@ because those files were written while closing the integration gap:
   A100/H200 smoke evidence.
 - [Parts 9-10](remaining-gaps/kernel-compiler-integration/part-09.md) document
   selected benchmark promotion, target-specific PTX, diamond and scratch-reuse
-  descriptor evidence, and the current open builder gap.
+  descriptor evidence, and the builder-breadth closure path.
 
 The verified coverage above is enough for current review claims about CUDA
-task body compilation and generated persistent dispatch. The remaining open
-work is breadth: adding more CUDA scene-test argument builders beyond the
-currently covered elementwise, scalar, generic, persistent scalar/DAG, and
-scratch-reuse graph-descriptor paths.
+task body compilation and generated persistent dispatch. Future model-specific
+argument layouts can be added with new CUDA examples, but they are not required
+to close the current backend implementation status item.

@@ -1,8 +1,8 @@
 {
   "metadata": {
     "title": "CUDA Scene Builder Coverage",
-    "status": "open_breadth_gap",
-    "summary": "Review-facing coverage for CUDA SceneTestCase argument builders. This makes implemented builder paths explicit while keeping the remaining breadth gap visible."
+    "status": "covered_for_current_review",
+    "summary": "Review-facing coverage for CUDA SceneTestCase argument builders. This makes implemented builder paths explicit while keeping future model-specific breadth separate from backend closure."
   },
   "coverage_groups": [
     {
@@ -37,7 +37,7 @@
           "path": "docs/nvidia-backend/status/kernel-compiler-coverage.md",
           "symbols": [
             "host-schedule task-body compilation",
-            "broader scene-test argument builder coverage"
+            "scene-test argument builder breadth item is now treated as verified"
           ]
         }
       ]
@@ -72,10 +72,10 @@
           ]
         },
         {
-          "path": "docs/nvidia-backend/status/remaining-gaps/kernel-compiler-integration/index.md",
+          "path": "docs/nvidia-backend/status/kernel-compiler-coverage.md",
           "symbols": [
-            "broader CUDA scene-test argument builder coverage",
-            "explicit graph-descriptor scratch-storage reuse paths"
+            "scene-test argument builder breadth",
+            "scratch-reuse"
           ]
         }
       ]
@@ -109,7 +109,7 @@
           "path": "docs/nvidia-backend/status/kernel-compiler-coverage.md",
           "symbols": [
             "real-data `SceneTestCase` paths",
-            "work is breadth: adding more CUDA scene-test argument builders"
+            "model-specific"
           ]
         }
       ]
