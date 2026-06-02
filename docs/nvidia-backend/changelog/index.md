@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 tensor workload coverage viewer](2026-06-02-tensor-workload-coverage-viewer.md)
 - [2026-06-02 persistent scheduler coverage viewer](2026-06-02-persistent-scheduler-coverage-viewer.md)
 - [2026-06-02 scene builder coverage viewer](2026-06-02-scene-builder-coverage-viewer.md)
 - [2026-06-02 kernel compiler coverage status](2026-06-02-kernel-compiler-coverage-status.md)

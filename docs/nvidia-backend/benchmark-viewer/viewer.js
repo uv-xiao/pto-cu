@@ -6,6 +6,7 @@ import {
   renderMethods,
   renderPersistentSchedulerCoverage,
   renderSceneBuilderCoverage,
+  renderTensorWorkloadCoverage,
   renderServingCommandPlan,
   renderServingWorkloads,
 } from "./viewer/render-catalog.js";
@@ -32,6 +33,7 @@ async function main() {
     renderMethods(state);
     renderSceneBuilderCoverage(state);
     renderPersistentSchedulerCoverage(state);
+    renderTensorWorkloadCoverage(state);
     renderServingWorkloads(state, lookup);
     renderServingCommandPlan(state, lookup);
     renderPaperBaselines(state, lookup);

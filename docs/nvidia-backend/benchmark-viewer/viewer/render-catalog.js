@@ -121,6 +121,37 @@ export function renderPersistentSchedulerCoverage(state) {
   root.append(heading, intro, ...groups);
 }
 
+export function renderTensorWorkloadCoverage(state) {
+  const root = document.getElementById("tensor-workload-coverage");
+  const metadata = state.tensorWorkloadCoverage.metadata;
+  const heading = document.createElement("h3");
+  heading.append(text(metadata.title));
+  const intro = paragraph("Status", `${metadata.status}: ${metadata.summary}`);
+  const groups = state.tensorWorkloadCoverage.coverage_groups.map((group) => {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    const resultRefs = group.result_refs.map((ref) => (
+      `${ref.benchmark_id}/${ref.method_id}/${ref.gpu}/${ref.shape_contains}`
+    ));
+    summary.append(text(`${group.title} (${group.status})`));
+    details.append(
+      summary,
+      paragraph("Summary", group.summary),
+      table(["Covered Case"], group.covered_cases.map((item) => [item])),
+      ...namedList("Result Refs", resultRefs.length ? resultRefs : ["none"]),
+      ...namedList("Open Work", group.open_work),
+      ...namedList(
+        "Evidence",
+        group.evidence_refs.map((ref) => (
+          `${ref.path}: ${ref.symbols.join(", ")}`
+        )),
+      ),
+    );
+    return details;
+  });
+  root.append(heading, intro, ...groups);
+}
+
 export function renderServingWorkloads(state, lookup) {
   const root = document.getElementById("serving-list");
   root.replaceChildren(...state.servingWorkloads.serving_workloads.map((workload) => {

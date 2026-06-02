@@ -34,6 +34,7 @@ from .serving import (
     validate_serving_workload_run_refs,
     validate_serving_workloads,
 )
+from .tensor_workload_coverage import validate_tensor_workload_coverage
 
 
 def validate_viewer_data(root: Path = ROOT) -> None:
@@ -43,6 +44,7 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     persistent_scheduler_coverage = load_json(
         root, "persistent_scheduler_coverage.json"
     )
+    tensor_workload_coverage = load_json(root, "tensor_workload_coverage.json")
     paper_baselines = load_json(root, "paper_baselines.json")
     paper_baseline_runs = load_json(root, "paper_baseline_runs.json")
     paper_baseline_probes = load_json(root, "paper_baseline_probes.json")
@@ -124,6 +126,11 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     )
     validate_capture_imports(capture_imports, benchmark_ids, method_ids)
     validate_results(results, benchmark_ids, method_ids, root)
+    validate_tensor_workload_coverage(
+        tensor_workload_coverage,
+        results,
+        root,
+    )
     paper_evaluation_ids = validate_paper_evaluation_matrix(
         paper_evaluation_matrix,
         benchmark_ids,

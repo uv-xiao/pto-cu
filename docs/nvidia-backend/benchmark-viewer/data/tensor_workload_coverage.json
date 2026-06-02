@@ -1,0 +1,166 @@
+{
+  "metadata": {
+    "title": "CUDA Tensor Workload Coverage",
+    "status": "open_pto_tuning_gap",
+    "summary": "Tensor evidence is split from the open tuned PTO body gap."
+  },
+  "coverage_groups": [
+    {
+      "id": "pto_tensor_descriptor_paths",
+      "title": "PTO Tensor Descriptor Paths",
+      "status": "covered_for_current_review",
+      "summary": "PTO persistent tensor rows have current A100/H200 result records.",
+      "covered_cases": [
+        "scalar tensor DAG",
+        "WMMA tensor-core DAG",
+        "explicit graph tensor DAG",
+        "explicit graph tensor-core DAG",
+        "multi-fragment descriptor smoke"
+      ],
+      "open_work": [
+        "replace diagnostic tensor bodies with tuned PTO tensor bodies"
+      ],
+      "result_refs": [
+        {
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "pto_persistent_device",
+          "gpu": "A100",
+          "shape_contains": "16x16x16"
+        },
+        {
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "pto_persistent_device",
+          "gpu": "H200",
+          "shape_contains": "16x16x16"
+        }
+      ],
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py",
+          "symbols": [
+            "pto_persistent_dag_tensor_core",
+            "pto_persistent_dag_graph_tensor_core"
+          ]
+        },
+        {
+          "path": "docs/nvidia-backend/status/evaluation-and-reporting/part-02.md",
+          "symbols": [
+            "32x16x16",
+            "tensor-shape-sweep"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "library_and_generated_baselines",
+      "title": "Library And Generated Baselines",
+      "status": "covered_for_current_review",
+      "summary": "cuBLAS Graph, CUTLASS, and Triton rows exist for A100/H200.",
+      "covered_cases": [
+        "cuBLAS SGEMM Graph",
+        "CUTLASS GEMM",
+        "Triton tl.dot",
+        "CUDA Driver SGEMM",
+        "CUDA Runtime SGEMM"
+      ],
+      "open_work": [
+        "add cuBLASLt or CuTe rows if the paper scope requires them"
+      ],
+      "result_refs": [
+        {
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "cublas_sgemm_graph",
+          "gpu": "A100",
+          "shape_contains": "16x16x16"
+        },
+        {
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "cublas_sgemm_graph",
+          "gpu": "H200",
+          "shape_contains": "16x16x16"
+        },
+        {
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "triton",
+          "gpu": "A100",
+          "shape_contains": "16x16x16"
+        },
+        {
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "triton",
+          "gpu": "H200",
+          "shape_contains": "16x16x16"
+        },
+        {
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "cutlass",
+          "gpu": "A100",
+          "shape_contains": "16x16x16"
+        },
+        {
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "cutlass",
+          "gpu": "H200",
+          "shape_contains": "16x16x16"
+        }
+      ],
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py",
+          "symbols": [
+            "cublas_sgemm_graph",
+            "cublasSgemmStridedBatched"
+          ]
+        },
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/triton_tensor_tile_capture_impl/run.py",
+          "symbols": [
+            "tensor_tile_kernel",
+            "tl.dot"
+          ]
+        },
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cutlass_tensor_tile_capture.py",
+          "symbols": [
+            "generated_source",
+            "cutlass::gemm::device::Gemm"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tuned_pto_tensor_body_gap",
+      "title": "Tuned PTO Tensor Body Gap",
+      "status": "open",
+      "summary": "The open gap is tuned PTO tensor body throughput.",
+      "covered_cases": [
+        "baseline comparison surface",
+        "A100/H200 tensor result rows",
+        "source-paper metadata gates",
+        "command-example gates",
+        "throughput SVG/report generation"
+      ],
+      "open_work": [
+        "implement tuned PTO tensor bodies for model-relevant shapes",
+        "publish multi-repeat tuned PTO rows against library baselines"
+      ],
+      "result_refs": [],
+      "evidence_refs": [
+        {
+          "path": "docs/nvidia-backend/status/remaining-gaps/tuned-tensor-workloads.md",
+          "symbols": [
+            "tuned PTO tensor body work",
+            "model-relevant"
+          ]
+        },
+        {
+          "path": "docs/nvidia-backend/status/evaluation-and-reporting/part-02.md",
+          "symbols": [
+            "remaining gap to a tuned CUDA",
+            "cuBLAS Graph remains the fastest"
+          ]
+        }
+      ]
+    }
+  ]
+}

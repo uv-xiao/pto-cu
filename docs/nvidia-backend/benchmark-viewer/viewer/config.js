@@ -3,6 +3,7 @@ export const DATA_FILES = {
   methods: "data/methods.json",
   sceneBuilderCoverage: "data/scene_builder_coverage.json",
   persistentSchedulerCoverage: "data/persistent_scheduler_coverage.json",
+  tensorWorkloadCoverage: "data/tensor_workload_coverage.json",
   paperBaselines: "data/paper_baselines.json",
   paperBaselineRuns: {
     manifest: "data/paper_baseline_runs/index.json",

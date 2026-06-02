@@ -2,24 +2,25 @@
 
 ## Tuned Tensor Workloads
 
-The tensor DAG row validates descriptor metadata and generated dispatch, but
-the GEMM body is a scalar microbenchmark rather than a tuned tensor-core
-kernel. The first paired tensor-shape sweep now covers `8x4x12`,
-`16x16x64`, and `32x16x64` descriptors on A100 and H200. The first
-`tensor_core_tile` smoke and selected-baseline benchmark row now validate a
-WMMA generated-dispatch task body on both GPUs for one-fragment and
-multi-fragment descriptors. The benchmark report includes a signed
-DAG-increment table and SVG, so scheduler-vs-task work separation exists for
-current microbenchmarks. The remaining gap is tuned tensor execution and
-comparative throughput at model-relevant sizes, not descriptor-shape or first
-tensor-core callable plumbing.
+The tensor DAG rows validate descriptor metadata, generated dispatch,
+multi-fragment WMMA descriptors, explicit graph tensor descriptors, and
+library/generated baseline comparisons. Current viewer data includes A100 and
+H200 tensor rows for PTO persistent tensor paths, cuBLAS Graph, CUTLASS, and
+Triton. The benchmark report includes throughput tables and SVGs, so
+scheduler-vs-task work separation exists for current diagnostic tensor bodies.
+
+Structured review evidence lives in
+`docs/nvidia-backend/benchmark-viewer/data/tensor_workload_coverage.json` and
+is checked against current viewer result records by the benchmark-viewer data
+guard. The remaining gap is tuned PTO tensor body work at model-relevant
+sizes, not descriptor-shape, first tensor-core callable plumbing, or baseline
+viewer coverage.
 
 Needed:
 
-- tensor-core or library-backed callable body tuning beyond the current
-  small multi-fragment WMMA benchmark row;
+- tuned PTO tensor body implementation beyond the current diagnostic WMMA and
+  scalar tiled-GEMM rows;
 - broader model-kernel shape families once the tensor-core/library path
   exists;
-- real tuned-kernel throughput rows beyond the current scheduler-adjusted
-  microbenchmark deltas.
-
+- multi-repeat throughput rows that compare tuned PTO tensor bodies against
+  cuBLAS Graph, CUTLASS, Triton, and ThunderKittens baselines.
