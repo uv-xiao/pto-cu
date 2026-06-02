@@ -35,6 +35,8 @@ def load_claim_status_module():
 def full_serving_raw_result(workload_id):
     return {
         "workload_id": workload_id,
+        "runtime": "cuda/persistent_device",
+        "serving_coverage": "full_serving",
         "hardware": {
             "gpu": "A100",
             "machine": "hina",
@@ -189,6 +191,28 @@ def test_full_serving_importer_rejects_exceeded_correctness_tolerance():
         assert "exceeds correctness_details.tolerance" in str(exc)
     else:
         raise AssertionError("exceeded correctness tolerance was accepted")
+
+
+def test_full_serving_importer_rejects_diagnostic_resource_backed_rows():
+    importer = load_importer_module()
+    row = full_serving_raw_result("mpk_offline_decode")
+    row["serving_coverage"] = "diagnostic_resource_backed_qwen_dag"
+
+    try:
+        importer.build_result_records(
+            {
+                "results": [
+                    row,
+                    full_serving_raw_result("vdcores_offline_decode"),
+                ]
+            },
+            raw_artifact="tmp/cuda-backend/pto-full-serving/run.json",
+            commit="abc1234",
+        )
+    except SystemExit as exc:
+        assert "serving_coverage=full_serving" in str(exc)
+    else:
+        raise AssertionError("diagnostic resource-backed row was accepted")
 
 
 def test_full_serving_importer_merges_viewer_results(tmp_path):

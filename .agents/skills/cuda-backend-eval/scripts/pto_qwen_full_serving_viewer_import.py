@@ -33,6 +33,8 @@ REQUIRED_METRICS = {
 }
 CORRECTNESS_SCOPE = "full_qwen_numerical_correctness"
 MODEL_ID = "Qwen/Qwen3-8B"
+RUNTIME = "cuda/persistent_device"
+SERVING_COVERAGE = "full_serving"
 
 
 def fail(message: str) -> None:
@@ -181,6 +183,10 @@ def result_record(
     if workload_id not in REQUIRED_WORKLOAD_IDS:
         fail(f"raw result has unsupported workload_id: {workload_id}")
     owner = f"raw result {workload_id}"
+    if require_string(raw, "runtime", owner) != RUNTIME:
+        fail(f"{owner} must declare runtime={RUNTIME}")
+    if require_string(raw, "serving_coverage", owner) != SERVING_COVERAGE:
+        fail(f"{owner} must declare serving_coverage={SERVING_COVERAGE}")
     if require_string(raw, "correctness", owner) != "pass":
         fail(f"{owner} must pass correctness before full-serving import")
     correctness = correctness_details(raw, owner)
