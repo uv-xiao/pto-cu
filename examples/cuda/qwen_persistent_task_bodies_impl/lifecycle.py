@@ -419,6 +419,8 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
         query_heads > kv_heads ? query_heads / kv_heads : 1U;
     const unsigned int query_head = col / head_dim;
     const unsigned int head_col = col % head_dim;
+    const float attention_scale = rsqrtf(static_cast<float>(head_dim));
+    const float scaled_query = query * attention_scale;
     const unsigned int mapped_kv_head = query_head / heads_per_kv;
     const unsigned int kv_head =
         mapped_kv_head < kv_heads ? mapped_kv_head : kv_heads - 1U;
@@ -445,6 +447,8 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
         for (unsigned int projection_col = 0U;
              projection_col < projection_input_count; ++projection_col) {
             const float projected_query = task->a[row_base + projection_col];
+            const float scaled_projected_query =
+                projected_query * attention_scale;
             const unsigned int projection_query_head = projection_col / head_dim;
             const unsigned int projection_head_col = projection_col % head_dim;
             const unsigned int projection_mapped_kv_head =
@@ -470,7 +474,8 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                             kv_heads * head_dim +
                         static_cast<unsigned long long>(projection_kv_head) *
                             head_dim + projection_head_col;
-                    const float score = projected_query * task->c[kv_index];
+                    const float score =
+                        scaled_projected_query * task->c[kv_index];
                     projection_max_score = score > projection_max_score ?
                         score : projection_max_score;
                 }
@@ -495,7 +500,7 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                         static_cast<unsigned long long>(projection_kv_head) *
                             head_dim + projection_head_col;
                     const float weight =
-                        expf(projected_query * task->c[kv_index] -
+                        expf(scaled_projected_query * task->c[kv_index] -
                              projection_max_score);
                     projection_weighted_value += weight * task->d[kv_index];
                     projection_normalizer += weight;
@@ -531,7 +536,7 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                         kv_heads * head_dim +
                     static_cast<unsigned long long>(kv_head) * head_dim +
                         head_col;
-                const float score = query * task->c[kv_index];
+                const float score = scaled_query * task->c[kv_index];
                 max_score = score > max_score ? score : max_score;
             }
         }
@@ -555,7 +560,7 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                     static_cast<unsigned long long>(kv_head) * head_dim +
                         head_col;
                 const float weight =
-                    expf(query * task->c[kv_index] - max_score);
+                    expf(scaled_query * task->c[kv_index] - max_score);
                 weighted_value += weight * task->d[kv_index];
                 normalizer += weight;
             }
@@ -830,6 +835,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_final_norm_full_rmsnorm_source",
             "qwen_shape_field_qk_rope_source",
             "qwen_bounded_decode_attention_reduction_source",
+            "qwen_decode_attention_head_dim_scale_source",
             "qwen_attention_o_bounded_projection_source",
             "qwen_mlp_down_residual_add_source",
             "qwen_gqa_decode_attention_head_grouping_source",

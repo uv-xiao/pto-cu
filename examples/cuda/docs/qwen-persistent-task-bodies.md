@@ -32,15 +32,16 @@ separate Q/K norm weight slots and pairwise RoPE rotation when cos/sin table
 slots are bound; descriptors expose Q-width plus KV-width rather than blending
 Q/K weights into one vector. The normalized K region is also written back
 through mutable `task->c` key-cache storage using the decode position and
-descriptor page size; this source path uses identity page mapping because the
-task's tensor slots are already occupied by Q/K norm and RoPE tables. The
-attention-output task now has a shape-gated path that reads mutable
+descriptor page size; QK-norm accepts runtime `tensor_args[4]` as a
+`kv_page_table` and maps logical decode pages before writing normalized K
+cache. The attention-output task now has a shape-gated path that reads mutable
 `c`/`d` KV-cache fields and computes a max-stabilized softmax reduction over
 the bounded `inner` decode window with GQA query-head to KV-head grouping from
-descriptor `rows`, `lda`, and `ldb`. It also accepts runtime
-`tensor_args[1]` as a `kv_page_table` and maps logical decode steps to
-physical pages before reading key/value cache. The softmax max and weighted
-sum passes are bounded by descriptor-controlled attention tiles. When
+descriptor `rows`, `lda`, and `ldb`. It also accepts runtime `tensor_args[1]`
+as a `kv_page_table` and maps logical decode steps to physical pages before
+reading key/value cache. The softmax max and weighted sum passes apply the
+Qwen head-dim attention scale and are bounded by descriptor-controlled
+attention tiles. When
 `o_proj_weight` is bound as `tensor_args[0]`, the task recomputes bounded
 attention columns, multiplies them by `o_proj_weight`, and writes projected
 hidden columns; `scalar_args[1]` limits that diagnostic projection width for
