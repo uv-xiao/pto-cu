@@ -139,8 +139,8 @@ KERNEL_SOURCE_MAP = [
                 "url": "https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/models/qwen3.py",
             },
         ],
-        "pto_status": "diagnostic_logits_formula_ready",
-        "next_step": "Lower the logits task to tiled hidden-by-vocab projection before treating sampled-token feedback as model-correct.",
+        "pto_status": "tiled_vocab_projection_source_ready",
+        "next_step": "Run full hidden-by-vocab logits projection through the resource-backed decode loop before treating sampled-token feedback as model-correct.",
     },
 ]
 

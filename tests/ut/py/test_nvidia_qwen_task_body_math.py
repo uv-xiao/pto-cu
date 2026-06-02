@@ -157,12 +157,21 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "task->out[i] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f)" in (
         full_source
     )
+    assert "const unsigned int logits_tile =" in full_source
+    assert "requested_logits_tile > 0U ? requested_logits_tile : 256U" in (
+        full_source
+    )
+    assert "for (unsigned int tile_begin = 0U; tile_begin < hidden_width;" in (
+        full_source
+    )
+    assert "acc += task->a[a_index] *" in full_source
+    assert "pto_cuda_tensor_arg_f32(task, 0U, weight_index, 0.0f)" in full_source
     assert "for (unsigned int token = 1; token < task->cols; ++token)" in (
         full_source
     )
     assert "sampled_tokens" not in full_source
-    assert "output_ids[decode_step] = best_token;" in source
-    assert "input_ids[0] = best_token;" in source
+    assert "output_ids[decode_step] = best_token;" in full_source
+    assert "input_ids[0] = best_token;" in full_source
     assert "qwen_unit_math_source_coverage" in manifest["implemented_contracts"]
     assert "qwen_shape_field_linear_projection_source" in manifest[
         "implemented_contracts"
@@ -196,6 +205,15 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_logits_full_vocab_argmax_source" in manifest[
         "implemented_contracts"
     ]
+    assert "qwen_logits_tiled_vocab_projection_source" in manifest[
+        "implemented_contracts"
+    ]
+    logits_entry = next(
+        item
+        for item in source_map["entries"]
+        if item["pto_callables"] == ["qwen_logits"]
+    )
+    assert logits_entry["pto_status"] == "tiled_vocab_projection_source_ready"
     assert "qwen_logits_device_sampled_token_feedback_source" in manifest[
         "implemented_contracts"
     ]

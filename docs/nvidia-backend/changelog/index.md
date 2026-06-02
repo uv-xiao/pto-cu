@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen logits tiled vocab projection](2026-06-02-qwen-logits-tiled-vocab-projection.md)
 - [2026-06-02 Qwen slot-mapped KV writeback](2026-06-02-qwen-slot-mapped-kv-writeback.md)
 - [2026-06-02 PTO full-serving correctness contract](2026-06-02-pto-full-serving-correctness-contract.md)
 - [2026-06-02 Qwen policy-length execution contract](2026-06-02-qwen-policy-length-execution-contract.md)

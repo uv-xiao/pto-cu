@@ -35,6 +35,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_paged_kv_attention_index_source",
     "qwen_tiled_decode_attention_softmax_source",
     "qwen_logits_full_vocab_argmax_source",
+    "qwen_logits_tiled_vocab_projection_source",
     "qwen_kernel_kv_field_consumption",
     "qwen_slot_mapped_kv_cache_writeback_source",
     "qwen_kernel_weight_tensor_arg_consumption",
