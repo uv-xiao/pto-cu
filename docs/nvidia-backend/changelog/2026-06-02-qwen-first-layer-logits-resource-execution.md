@@ -17,6 +17,8 @@
   viewer, one for `mpk_offline_decode` and one for `vdcores_offline_decode`.
 - Added a four-step first-layer/logits diagnostic run that checks logits and
   device-committed sampled-token feedback on every executed decode step.
+- Added a sixteen-step first-layer/logits diagnostic run after the 64-step
+  attempt exceeded the quick convergence window without producing an artifact.
 
 ## Architecture Quality
 
@@ -90,6 +92,32 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
 PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
   .agents/skills/cuda-backend-eval/scripts/nvidia_goal_progress.py \
   --output evaluations/nvidia/benchmark-viewer/data/goal_progress.json
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  examples/cuda/qwen_decode_loop_runner.py --mode offline \
+  --single-context-live-session --run-resource-backed-smoke \
+  --resource-backed-task-selection first_layer_with_logits \
+  --resource-backed-decode-steps 16 \
+  --resource-backed-workload mpk_offline_decode \
+  --resource-backed-workload vdcores_offline_decode \
+  --resource-backed-logits-check-policy every_step \
+  --resource-backed-numeric-task-mode unit_math_full_rmsnorm \
+  --device 0 --arch compute_80 \
+  --cache-root tmp/cuda-backend/qwen-first-layer-logits-16step/runner-cache \
+  --output-json tmp/cuda-backend/qwen-first-layer-logits-16step/qwen-decode-loop-runner.json
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  .agents/skills/cuda-backend-eval/scripts/pto_qwen_resource_backed_viewer_import.py \
+  tmp/cuda-backend/qwen-first-layer-logits-16step/qwen-decode-loop-runner.json \
+  --artifact-root tmp/cuda-backend/qwen-first-layer-logits-16step/ \
+  --commit 84a77216
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  .agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py \
+  --output evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  .agents/skills/cuda-backend-eval/scripts/paper_readiness_work_queue.py \
+  --output evaluations/nvidia/benchmark-viewer/data/paper_readiness_work_queue.json
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  .agents/skills/cuda-backend-eval/scripts/nvidia_goal_progress.py \
+  --output evaluations/nvidia/benchmark-viewer/data/goal_progress.json
 ```
 
 Result: tests passed; the live resource-backed diagnostic completed with
@@ -112,6 +140,16 @@ workloads. Each compact viewer row records `executed_decode_steps=4`,
 `logits_check_policy=every_step`, `logits_checked_step_count=4`, zero
 scheduler errors, `diagnostic_logits_reference_status=pass`, and
 `decode_feedback_applied_step_count=4` with device-observed token feedback.
+
+The sixteen-step run under
+`tmp/cuda-backend/qwen-first-layer-logits-16step/` passed for both workloads.
+The imported rows record `executed_decode_steps=16`,
+`logits_checked_step_count=16`, zero scheduler errors,
+`diagnostic_logits_reference_status=pass`, and
+`decode_feedback_applied_step_count=16`. This is still bounded for the
+MPK-policy workload and not full policy length for VDCores, but it exercises
+the representative first-layer/logits chain over more decode positions than
+the four-step smoke while keeping committed viewer data compact.
 
 ## Remaining Gaps
 
