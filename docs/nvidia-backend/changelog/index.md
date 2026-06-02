@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen MLP down residual add](2026-06-02-qwen-mlp-down-residual-add.md)
 - [2026-06-02 Qwen post-attention residual RMSNorm](2026-06-02-qwen-post-attention-residual-rmsnorm.md)
 - [2026-06-02 Qwen QK norm K-cache writeback](2026-06-02-qwen-qk-norm-k-cache-writeback.md)
 - [2026-06-02 Qwen QK norm separate regions](2026-06-02-qwen-qk-norm-separate-regions.md)

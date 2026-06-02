@@ -46,6 +46,7 @@
         "pto_qwen_persistent_task_bodies",
         "generated_qwen_kernel_bodies",
         "qwen_embedding_shape_lookup_source",
+        "qwen_mlp_down_residual_add_source",
         "qwen_post_attention_residual_rmsnorm_source",
         "qwen_qk_norm_separate_qk_regions_source",
         "qwen_qk_norm_normalized_k_cache_writeback_source",

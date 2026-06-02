@@ -649,8 +649,8 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
         {
             "callable": "qwen_mlp_down",
             "phase": "per_layer_decode",
-            "consumes_fields": ["a", "out", "tensor_args"],
-            "consumes_roles": ["mlp_state", "down_proj_weight"],
+            "consumes_fields": ["a", "b", "out", "tensor_args"],
+            "consumes_roles": ["mlp_state", "mlp_residual", "down_proj_weight"],
             "body": """
 if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count > 0U &&
     task->tensor_args[0]) {
@@ -662,11 +662,14 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count > 0U &&
     const unsigned int active_projection_cols =
         requested_active_projection_cols < task->cols ?
         requested_active_projection_cols : task->cols;
-    task->out[i] = col < active_projection_cols ?
+    const float residual_value = task->b ? task->b[i] : 0.0f;
+    const float projected_down = col < active_projection_cols ?
         pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f) : 0.0f;
+    task->out[i] = projected_down + residual_value;
 } else {
     const float down = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
-    task->out[i] = task->a[i] + down;
+    const float residual_value = task->b ? task->b[i] : task->a[i];
+    task->out[i] = residual_value + down;
 }
 """,
         },
@@ -816,6 +819,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_shape_field_qk_rope_source",
             "qwen_bounded_decode_attention_reduction_source",
             "qwen_attention_o_bounded_projection_source",
+            "qwen_mlp_down_residual_add_source",
             "qwen_gqa_decode_attention_head_grouping_source",
             "qwen_paged_kv_attention_index_source",
             "qwen_tiled_decode_attention_softmax_source",

@@ -123,6 +123,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         for item in manifest["task_bodies"]
         if item["callable"] == "qwen_rmsnorm_post_attention"
     )
+    mlp_down = next(
+        item for item in manifest["task_bodies"] if item["callable"] == "qwen_mlp_down"
+    )
 
     assert "rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f)" in source
     assert rmsnorm["threading"] == "block"
@@ -186,6 +189,13 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_post_attention_residual_rmsnorm_source" in manifest[
         "implemented_contracts"
     ]
+    assert mlp_down["consumes_fields"] == ["a", "b", "out", "tensor_args"]
+    assert "mlp_residual" in mlp_down["consumes_roles"]
+    assert "const float residual_value = task->b ? task->b[i] : 0.0f;" in (
+        full_source
+    )
+    assert "task->out[i] = projected_down + residual_value;" in full_source
+    assert "qwen_mlp_down_residual_add_source" in manifest["implemented_contracts"]
     assert (
         "qwen_post_attention_norm_full_rmsnorm_source"
         in manifest["implemented_contracts"]

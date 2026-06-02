@@ -62,7 +62,7 @@ set to `pass`.
 
 ## Remaining Gaps
 
-This still is not full Qwen serving correctness. The MLP residual edge after
-`qwen_mlp_down` still needs an explicit preserved residual source, and the
-paper claim still requires imported full-serving PTO rows with numerical
-correctness, latency, and throughput metrics.
+This still is not full Qwen serving correctness. The following MLP residual
+slice adds a residual source to `qwen_mlp_down`; the paper claim still requires
+imported full-serving PTO rows with numerical correctness, latency, and
+throughput metrics.
