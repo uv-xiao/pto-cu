@@ -366,8 +366,27 @@ def test_preflight_does_not_promote_diagnostic_qwen_rows_to_full_serving():
             {
                 "benchmark_id": "llm_serving_decode",
                 "method_id": "pto_persistent_device",
-                "inputs": {"shape": "Qwen/Qwen3-8B full serving"},
-                "statistic": {"serving_coverage": "full_serving"},
+                "inputs": {
+                    "shape": (
+                        "vdcores_offline_decode,Qwen/Qwen3-8B,batch=2,"
+                        "prompt_tokens=128,decode_tokens=64"
+                    )
+                },
+                "statistic": {
+                    "serving_coverage": "full_serving",
+                    "workload_id": "vdcores_offline_decode",
+                    "sample_count": 3,
+                    "host_wall_ns": 6_000_000_000,
+                    "device_wall_ns": 5_900_000_000,
+                    "end_to_end_latency_ns": 6_000_000_000,
+                    "inter_token_latency_ns": 90_000_000,
+                    "time_to_first_token_ns": 100_000_000,
+                    "throughput_tokens_per_s": 21.3,
+                    "batch_size": 2,
+                    "decode_tokens": 64,
+                },
+                "raw_artifact": "tmp/cuda-backend/pto-full-serving/vdcores/",
+                "correctness": "pass",
             },
         ]
     )
