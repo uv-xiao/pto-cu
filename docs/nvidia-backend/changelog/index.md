@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 CUDA example review-doc guard](2026-06-02-cuda-example-review-doc-guard.md)
 - [2026-06-02 remaining gap promotion guard](2026-06-02-remaining-gap-promotion-guard.md)
 - [2026-06-02 dispatcher backlog currency guard](2026-06-02-dispatcher-backlog-currency-guard.md)
 - [2026-06-02 tensor import smoke record guard](2026-06-02-tensor-import-smoke-record-guard.md)

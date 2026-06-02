@@ -13,6 +13,10 @@ ROOT = Path(__file__).resolve().parents[2]
 EXAMPLES_ROOT = ROOT / "examples" / "cuda"
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 ID_RE = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)*$")
+REVIEW_DOC_RE = re.compile(
+    r"^- \[(?P<title>[^\]]+)\]\((?P<path>docs/[^)]+\.md)\) "
+    r"\((?P<lines>[0-9]+) lines\)$"
+)
 
 
 def fail(message: str) -> None:
@@ -84,6 +88,69 @@ def example_source_text(script: Path) -> str:
     return "\n".join(parts)
 
 
+def load_review_docs(
+    examples_root: Path,
+    readme_text: str,
+) -> dict[str, tuple[Path, str]]:
+    review_docs: dict[str, tuple[Path, str]] = {}
+    for line in readme_text.splitlines():
+        match = REVIEW_DOC_RE.fullmatch(line)
+        if not match:
+            continue
+        title = match.group("title")
+        relpath = match.group("path")
+        doc_path = examples_root / relpath
+        if title in review_docs:
+            fail(f"duplicate CUDA example review doc title: {title}")
+        if not doc_path.is_file():
+            fail(f"missing CUDA example review doc: {relpath}")
+        text = doc_path.read_text(encoding="utf-8")
+        actual_lines = len(text.splitlines())
+        expected_lines = int(match.group("lines"))
+        if actual_lines != expected_lines:
+            fail(
+                f"{relpath} line count is {actual_lines}, "
+                f"README lists {expected_lines}"
+            )
+        if actual_lines > 120:
+            fail(f"{relpath} is too long for focused example review")
+        review_docs[title] = (doc_path, text)
+    if not review_docs:
+        fail("examples/cuda/README.md has no review map docs")
+    return review_docs
+
+
+def validate_review_doc(
+    *,
+    example_id: str,
+    title: str,
+    script: Path,
+    benchmark_id: str,
+    method_id: str,
+    runtime: str,
+    command: str,
+    expected: str,
+    review_docs: dict[str, tuple[Path, str]],
+) -> Path:
+    doc = review_docs.get(title)
+    if doc is None:
+        fail(f"{example_id} has no focused review doc")
+    doc_path, doc_text = doc
+    for value in (
+        f"# CUDA Examples: {title}",
+        f"## {title}",
+        f"Benchmark id: `{benchmark_id}`",
+        f"Runtime: `{runtime}`",
+        f"Method id: `{method_id}`",
+        script.name,
+    ):
+        if value not in doc_text:
+            fail(f"{doc_path.relative_to(ROOT)} missing: {value}")
+    require_in_readme(doc_text, command, example_id)
+    require_in_readme(doc_text, expected, example_id)
+    return doc_path
+
+
 def validate_examples(root: Path = ROOT) -> None:
     examples_root = root / "examples" / "cuda"
     viewer_data = root / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
@@ -96,6 +163,7 @@ def validate_examples(root: Path = ROOT) -> None:
         for path in sorted((examples_root / "docs").glob("*.md"))
     )
     review_text = f"{readme_text}\n{split_doc_text}"
+    review_docs = load_review_docs(examples_root, readme_text)
 
     benchmarks = load_json(viewer_data / "benchmarks.json")
     methods = load_json(viewer_data / "methods.json")
@@ -107,6 +175,7 @@ def validate_examples(root: Path = ROOT) -> None:
         fail("examples/cuda/manifest.json has no examples")
 
     seen_ids: set[str] = set()
+    seen_review_docs: set[Path] = set()
     for example in examples:
         if not isinstance(example, dict):
             fail("example manifest entry is not an object")
@@ -135,6 +204,20 @@ def validate_examples(root: Path = ROOT) -> None:
         expected = require_string(example, "expected_output", example_id)
         for text in (title, benchmark_id, method_id, runtime, command, expected):
             require_in_readme(review_text, text, example_id)
+        review_doc = validate_review_doc(
+            example_id=example_id,
+            title=title,
+            script=script,
+            benchmark_id=benchmark_id,
+            method_id=method_id,
+            runtime=runtime,
+            command=command,
+            expected=expected,
+            review_docs=review_docs,
+        )
+        if review_doc in seen_review_docs:
+            fail(f"multiple examples use {review_doc.relative_to(root)}")
+        seen_review_docs.add(review_doc)
 
         symbols = example.get("evidence_symbols")
         if not isinstance(symbols, list) or not symbols:
@@ -144,6 +227,13 @@ def validate_examples(root: Path = ROOT) -> None:
                 fail(f"{example_id} has empty evidence symbol")
             if symbol not in script_text:
                 fail(f"{example_id} script missing evidence symbol: {symbol}")
+    review_doc_paths = {path for path, _ in review_docs.values()}
+    if seen_review_docs != review_doc_paths:
+        missing = sorted(
+            path.relative_to(root).as_posix()
+            for path in review_doc_paths - seen_review_docs
+        )
+        fail(f"CUDA review docs are not tied to manifest examples: {missing}")
 
 
 def main() -> None:
