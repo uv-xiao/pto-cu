@@ -107,6 +107,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "task->d[static_cast<unsigned long long>(row) * kv_width + kv_col]" in (
         full_source
     )
+    assert "mean_square / static_cast<float>(task->inner)" in full_source
+    assert "task->a[row_base + col] * scale * 0.5f" in full_source
+    assert "(q_weight + k_weight)" in full_source
     assert "task->out[i] = pto_cuda_silu(gate_value) * up_value;" in full_source
     assert "task->out[i] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f)" in (
         full_source
@@ -121,6 +124,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_shape_field_linear_projection_source" in manifest[
         "implemented_contracts"
     ]
+    assert "qwen_shape_field_qk_rmsnorm_source" in manifest["implemented_contracts"]
     assert "qwen_logits_full_vocab_argmax_source" in manifest[
         "implemented_contracts"
     ]

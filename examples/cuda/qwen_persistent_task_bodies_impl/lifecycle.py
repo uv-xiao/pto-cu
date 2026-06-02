@@ -172,9 +172,29 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["q_state", "q_norm_weight", "k_norm_weight"],
             "body": """
-const float q = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
-const float k = pto_cuda_tensor_arg_f32(task, 1U, i & 3U, 1.0f);
-task->out[i] = task->a[i] * 0.5f * (q + k);
+if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
+    task->tensor_args[0] && task->tensor_args[1]) {
+    const unsigned int row = static_cast<unsigned int>(i / task->cols);
+    const unsigned int col = static_cast<unsigned int>(i % task->cols);
+    const unsigned int stride = task->lda > 0U ? task->lda : task->cols;
+    const unsigned long long row_base =
+        static_cast<unsigned long long>(row) * stride;
+    float mean_square = 0.0f;
+    for (unsigned int k = 0U; k < task->inner; ++k) {
+        const float value = task->a[row_base + k];
+        mean_square += value * value;
+    }
+    const float scale =
+        rsqrtf(mean_square / static_cast<float>(task->inner) + 0.000001f);
+    const float q_weight = pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
+    const float k_weight = pto_cuda_tensor_arg_f32(task, 1U, col, 1.0f);
+    task->out[i] = task->a[row_base + col] * scale * 0.5f *
+        (q_weight + k_weight);
+} else {
+    const float q = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
+    const float k = pto_cuda_tensor_arg_f32(task, 1U, i & 3U, 1.0f);
+    task->out[i] = task->a[i] * 0.5f * (q + k);
+}
 """,
         },
         {
@@ -346,6 +366,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_kernel_source_map",
             "qwen_unit_math_source_coverage",
             "qwen_shape_field_linear_projection_source",
+            "qwen_shape_field_qk_rmsnorm_source",
             "qwen_logits_full_vocab_argmax_source",
             "qwen_kernel_token_field_consumption",
             "qwen_kernel_kv_field_consumption",
