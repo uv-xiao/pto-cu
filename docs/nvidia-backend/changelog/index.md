@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 CUDA pair persistent smoke contract split](2026-06-02-cuda-pair-persistent-smoke-contract-split.md)
 - [2026-06-02 CUDA smoke validator contract split](2026-06-02-cuda-smoke-validator-contract-split.md)
 - [2026-06-02 CUDA capture validator preset split](2026-06-02-cuda-capture-validator-preset-split.md)
 - [2026-06-02 CUDA benchmark fallback PTX resources](2026-06-02-cuda-benchmark-fallback-ptx-resources.md)

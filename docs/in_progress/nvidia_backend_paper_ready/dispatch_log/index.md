@@ -74,3 +74,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-41.md](entries/2026-06-02-part-41.md) | 1 | CUDA Benchmark Fallback PTX Resources | CUDA Benchmark Fallback PTX Resources |
 | [2026-06-02-part-42.md](entries/2026-06-02-part-42.md) | 1 | CUDA Capture Validator Preset Split | CUDA Capture Validator Preset Split |
 | [2026-06-02-part-43.md](entries/2026-06-02-part-43.md) | 1 | CUDA Smoke Validator Contract Split | CUDA Smoke Validator Contract Split |
+| [2026-06-02-part-44.md](entries/2026-06-02-part-44.md) | 1 | CUDA Pair Persistent Smoke Contract Split | CUDA Pair Persistent Smoke Contract Split |
