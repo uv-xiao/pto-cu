@@ -153,10 +153,35 @@ zero scheduler errors, observed token feedback for sampled token `105397`, and
 matched the same 3,904-element diagnostic reference with
 `max_abs_error=1.096e-05`.
 
+The full-model reference path is now runnable locally from staged artifacts.
+The temporary HF-style model directory links the staged safetensors and stores
+small metadata files under `tmp/sources/qwen3-8b-local-hf-reference/`. Python
+is run with user-site packages disabled so the local broken `torchvision`
+package does not block importing `Qwen3ForCausalLM`.
+
+```bash
+PYTHONPATH=$PWD:$PWD/python HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+  timeout 1800 .venv/bin/python -s - <<'PY'
+# Load tmp/sources/qwen3-8b-local-hf-reference with AutoModelForCausalLM,
+# feed runtime input ids from runtime-input-binding.json, and compare the
+# last active prompt-token logits against PTO output.
+PY
+```
+
+Result: the HF full-model reference ran and produced
+`tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/reference.json`.
+The comparison artifact at
+`tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/comparison.json`
+currently fails. The reference top token at the last active prompt position is
+`151667`, while both PTO real-resource rows select token `105397`. This keeps
+`full_qwen_numerical_correctness` open and narrows the next implementation
+work to kernel and launch-state fidelity rather than missing reference
+infrastructure.
+
 ## Remaining Gaps
 
-- Compare generated Qwen/Qwen3-8B tokens/logits against a full model reference
-  instead of the current in-run diagnostic projection reference.
+- Fix PTO kernel and launch-state fidelity so generated Qwen/Qwen3-8B
+  tokens/logits match the full HF model reference.
 - Run policy-length full-serving captures for both `mpk_offline_decode` and
   `vdcores_offline_decode`.
 - Import only rows that satisfy `serving_coverage=full_serving` and
