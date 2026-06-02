@@ -68,6 +68,13 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
             "tmp/cuda-backend/qwen-first-layer-logits-16step/",
         )
     ]
+    vdcores_policy_length_logits_rows = [
+        row
+        for row in rows
+        if row["raw_artifact"].startswith(
+            "tmp/cuda-backend/qwen-first-layer-logits-vdcores-64step-final/",
+        )
+    ]
 
     assert {row["statistic"]["workload_id"] for row in rows} == {
         "mpk_offline_decode",
@@ -77,6 +84,7 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
     assert len(first_layer_logits_rows) == 2
     assert len(first_layer_logits_4step_rows) == 2
     assert len(first_layer_logits_16step_rows) == 2
+    assert len(vdcores_policy_length_logits_rows) == 1
     assert all(
         row["statistic"]["completed_count"] == 255
         for row in bounded_projection_rows
@@ -121,6 +129,24 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
         and row["statistic"].get("diagnostic_logits_reference_status") == "pass"
         and row["correctness"] == "pass"
         for row in first_layer_logits_16step_rows
+    )
+    assert all(
+        row["statistic"].get("workload_id") == "vdcores_offline_decode"
+        and row["statistic"].get("task_selection") == "first_layer_with_logits"
+        and row["statistic"].get("task_coverage_count") == 10
+        and row["statistic"].get("task_func_id_sequence") == list(range(7100, 7110))
+        and row["statistic"].get("last_completed_count") == 10
+        and row["statistic"].get("planned_decode_steps") == 64
+        and row["statistic"].get("executed_decode_steps") == 64
+        and row["statistic"].get("logits_check_policy") == "final_step"
+        and row["statistic"].get("logits_checked_step_count") == 1
+        and row["statistic"].get("logits_deferred_step_count") == 63
+        and row["statistic"].get("decode_feedback_applied_step_count") == 64
+        and row["statistic"].get("decode_feedback_status")
+        == "device_token_feedback_observed"
+        and row["statistic"].get("diagnostic_logits_reference_status") == "pass"
+        and row["correctness"] == "pass"
+        for row in vdcores_policy_length_logits_rows
     )
     assert all(
         row["statistic"].get("repeat_runs") == 1
