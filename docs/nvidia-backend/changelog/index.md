@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 review-gate policy gap closure](2026-06-02-review-gate-policy-gap-closure.md)
 - [2026-06-02 target-role gap closure](2026-06-02-target-role-gap-closure.md)
 - [2026-06-02 goal progress status-derived gaps](2026-06-02-goal-progress-status-derived-gaps.md)
 - [2026-06-02 backend gap status sync guard](2026-06-02-backend-gap-status-sync-guard.md)

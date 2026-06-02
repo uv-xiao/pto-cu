@@ -132,8 +132,7 @@
         "docs/nvidia-backend/status.md",
         "docs/nvidia-backend/status/remaining-gaps/kernel-compiler-integration/index.md",
         "docs/nvidia-backend/status/remaining-gaps/persistent-scheduler-generalization/index.md",
-        "docs/nvidia-backend/status/remaining-gaps/tuned-tensor-workloads.md",
-        "docs/nvidia-backend/status/remaining-gaps/ci-coverage.md"
+        "docs/nvidia-backend/status/remaining-gaps/tuned-tensor-workloads.md"
       ],
       "verification": [
         "validate_benchmark_viewer_data.py",

@@ -12,6 +12,7 @@ evaluation results are not mistaken for a complete backend.
 - [Target role cleanup](status/target-role-cleanup.md)
 - [Fourth-tensor persistent DAG verification](status/fourth-tensor-persistent-dag-verification.md)
 - [Evaluation and reporting](status/evaluation-and-reporting/index.md)
+- [Review gate policy](status/review-gate-policy.md)
 
 ## Latest Local Verification
 
@@ -22,7 +23,6 @@ evaluation results are not mistaken for a complete backend.
 - [Kernel compiler integration](status/remaining-gaps/kernel-compiler-integration/index.md)
 - [Persistent scheduler generalization](status/remaining-gaps/persistent-scheduler-generalization/index.md)
 - [Tuned tensor workloads](status/remaining-gaps/tuned-tensor-workloads.md)
-- [CI coverage](status/remaining-gaps/ci-coverage.md)
 
 ## Review Policy
 
