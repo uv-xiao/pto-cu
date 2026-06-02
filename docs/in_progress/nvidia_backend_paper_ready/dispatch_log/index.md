@@ -72,3 +72,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-39.md](entries/2026-06-02-part-39.md) | 1 | Triton Tensor Tile Capture Script Split | Triton Tensor Tile Capture Script Split |
 | [2026-06-02-part-40.md](entries/2026-06-02-part-40.md) | 1 | Persistent Smoke Fallback PTX Resources | Persistent Smoke Fallback PTX Resources |
 | [2026-06-02-part-41.md](entries/2026-06-02-part-41.md) | 1 | CUDA Benchmark Fallback PTX Resources | CUDA Benchmark Fallback PTX Resources |
+| [2026-06-02-part-42.md](entries/2026-06-02-part-42.md) | 1 | CUDA Capture Validator Preset Split | CUDA Capture Validator Preset Split |
