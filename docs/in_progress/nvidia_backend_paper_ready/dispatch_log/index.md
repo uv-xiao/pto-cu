@@ -83,3 +83,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-50.md](entries/2026-06-02-part-50.md) | 1 | Target-Role Gap Closure | Target-Role Gap Closure |
 | [2026-06-02-part-51.md](entries/2026-06-02-part-51.md) | 1 | Review-Gate Policy Gap Closure | Review-Gate Policy Gap Closure |
 | [2026-06-02-part-52.md](entries/2026-06-02-part-52.md) | 1 | Persistent Scheduler Coverage Status | Persistent Scheduler Coverage Status |
+| [2026-06-02-part-53.md](entries/2026-06-02-part-53.md) | 1 | Kernel Compiler Coverage Status | Kernel Compiler Coverage Status |

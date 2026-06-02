@@ -7,6 +7,7 @@ evaluation results are not mistaken for a complete backend.
 ## Implemented And Verified
 
 - [Platform and runtime discovery](status/platform-runtime-discovery.md)
+- [Kernel compiler coverage](status/kernel-compiler-coverage.md)
 - [Host-schedule runtime](status/host-schedule-runtime.md)
 - [Persistent-device runtime](status/persistent-device-runtime.md)
 - [Persistent scheduler coverage](status/persistent-scheduler-coverage.md)
