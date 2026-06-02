@@ -1,0 +1,59 @@
+{
+  "benchmark_id": "llm_serving_decode",
+  "method_id": "sglang",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90",
+    "driver": "580.126.20",
+    "cuda_toolkit": "12.8",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "91ddaf86",
+  "inputs": {
+    "shape": "mpk_offline_decode,Qwen/Qwen3-8B,batch=2,prompt_tokens=64,decode_tokens=1024,mode=offline_engine,repeats=3",
+    "dtype": "bfloat16",
+    "repeat_policy": "3 sglang bench_offline_throughput samples, fixed random length, skip warmup, local ShareGPT-shaped seed file"
+  },
+  "statistic": {
+    "kind": "paper_baseline_offline_repeat_capture",
+    "sample_count": 3,
+    "host_wall_ns": 6006852976,
+    "device_wall_ns": 0,
+    "end_to_end_latency_ns": 6006852976,
+    "time_to_first_token_ns": 0,
+    "inter_token_latency_ns": 5866067,
+    "throughput_tokens_per_s": 340.2783657643086,
+    "throughput_tokens_per_s_stdev": 0.42392773714873055,
+    "throughput_tokens_per_s_min": 339.91990683177966,
+    "throughput_tokens_per_s_max": 340.7462907823083,
+    "throughput": 0.33295339115881467,
+    "total_token_throughput_tokens_per_s": 361.5873827984727,
+    "last_gen_throughput_tokens_per_s": 341.54866552581984,
+    "batch_size": 2,
+    "prompt_tokens": 64,
+    "decode_tokens": 1024,
+    "completed_requests": 2,
+    "failed_requests": 0,
+    "max_concurrent_requests": 2,
+    "total_input_tokens": 128,
+    "total_output_tokens": 2044,
+    "end_to_end_latency_stdev_ns": 7480130,
+    "p50_output_throughput_tokens_per_s": 340.1688996788378,
+    "p90_output_throughput_tokens_per_s": 340.1688996788378,
+    "p99_output_throughput_tokens_per_s": 340.7462907823083,
+    "throughput_tokens_per_s_samples": [
+      339.91990683177966,
+      340.1688996788378,
+      340.7462907823083
+    ],
+    "last_gen_throughput_tokens_per_s_samples": [
+      341.79533272929797,
+      341.68155877921015,
+      341.1691050689514
+    ],
+    "serving_coverage": "full_serving"
+  },
+  "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/",
+  "correctness": "pass"
+}

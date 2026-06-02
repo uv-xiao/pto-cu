@@ -1,0 +1,40 @@
+{
+  "benchmark_id": "host_schedule_vector_ops",
+  "method_id": "direct_driver_graph",
+  "hardware": {
+    "gpu": "A100",
+    "machine": "hina",
+    "compute_target": "compute_80",
+    "driver": "see raw artifact",
+    "cuda_toolkit": "see raw artifact",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "8b6cdaee",
+  "inputs": {
+    "shape": "n=1024 vector",
+    "dtype": "float32",
+    "repeat_policy": "10-repeat host-launch capture"
+  },
+  "statistic": {
+    "kind": "median_capture_group",
+    "sample_count": 10,
+    "host_wall_ns": 31927,
+    "device_wall_ns": 17920,
+    "host_wall_p50_ns": 31927,
+    "host_wall_p90_ns": 33058,
+    "host_wall_p99_ns": 33513,
+    "host_wall_mean_ns": 31972,
+    "host_wall_stdev_ns": 884,
+    "host_wall_min_ns": 30475,
+    "host_wall_max_ns": 33564,
+    "device_wall_p50_ns": 17920,
+    "device_wall_p90_ns": 19455,
+    "device_wall_p99_ns": 19455,
+    "device_wall_mean_ns": 18124,
+    "device_wall_stdev_ns": 1084,
+    "device_wall_min_ns": 16383,
+    "device_wall_max_ns": 19455
+  },
+  "raw_artifact": "tmp/cuda-backend/host-launch-a100-8b6cdaee/",
+  "correctness": "pass"
+}

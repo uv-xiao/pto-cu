@@ -284,6 +284,57 @@ def test_unit_math_live_importer_marks_result_as_diagnostic(tmp_path):
     assert merged["result_records"] == [record]
 
 
+def test_viewer_data_io_keeps_logical_results_path_sharded(tmp_path):
+    scripts = ROOT / ".agents" / "skills" / "cuda-backend-eval" / "scripts"
+    sys.path.insert(0, str(scripts))
+    try:
+        import viewer_data_io
+    finally:
+        sys.path.remove(str(scripts))
+
+    results_path = tmp_path / "results.json"
+    sharded_path = tmp_path / "results"
+    (sharded_path / "records").mkdir(parents=True)
+    (sharded_path / "index.json").write_text(
+        json.dumps(
+            {
+                "snapshot": {"commit": "abcdef0"},
+                "headline_results": [],
+                "selected_rows": [],
+                "collection": "result_records",
+                "record_files_path": "record_files.json",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (sharded_path / "record_files.json").write_text("[]\n", encoding="utf-8")
+
+    viewer_data_io.write_json(
+        results_path,
+        {
+            "snapshot": {"commit": "abcdef1"},
+            "headline_results": [],
+            "selected_rows": [],
+            "result_records": [
+                {
+                    "benchmark_id": "llm_serving_decode",
+                    "method_id": "pto_persistent_device",
+                    "hardware": {"gpu": "A100"},
+                    "inputs": {"shape": "unit"},
+                    "raw_artifact": "tmp/cuda-backend/unit.json",
+                }
+            ],
+        },
+    )
+
+    assert not results_path.exists()
+    loaded = viewer_data_io.load_json(results_path)
+    assert loaded["snapshot"]["commit"] == "abcdef1"
+    assert len(loaded["result_records"]) == 1
+    assert (sharded_path / "records").is_dir()
+
+
 def test_viewer_results_import_repeated_unit_math_as_diagnostic():
     results = load_viewer_results()
 

@@ -1,0 +1,26 @@
+{
+  "benchmark_id": "tensor_core_tile",
+  "method_id": "thunderkittens",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90",
+    "driver": "580.126.20",
+    "cuda_toolkit": "12.8",
+    "clock_policy": "not recorded"
+  },
+  "commit": "5915346e",
+  "inputs": {
+    "shape": "mha_h100,b=1,h=4,n=1536,d=64,causal=True",
+    "dtype": "bfloat16",
+    "repeat_policy": "5 warmup, 20 timed CUDA-event repeats"
+  },
+  "statistic": {
+    "kind": "paper_baseline_capture",
+    "sample_count": 20,
+    "host_wall_ns": 0,
+    "device_wall_ns": 49279
+  },
+  "raw_artifact": "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/",
+  "correctness": "pass"
+}

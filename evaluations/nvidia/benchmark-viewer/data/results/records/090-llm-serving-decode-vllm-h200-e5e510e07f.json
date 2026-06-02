@@ -1,0 +1,42 @@
+{
+  "benchmark_id": "llm_serving_decode",
+  "method_id": "vllm",
+  "hardware": {
+    "gpu": "H200",
+    "machine": "bizhaoh200",
+    "compute_target": "compute_90",
+    "driver": "580.126.20",
+    "cuda_toolkit": "12.8.61",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "908438de",
+  "inputs": {
+    "shape": "mpk_offline_decode,Qwen/Qwen3-8B,batch=16,prompt_tokens=64,decode_tokens=1024",
+    "dtype": "bfloat16",
+    "repeat_policy": "single vllm bench serve request set, max_concurrency=16, request_rate=inf"
+  },
+  "statistic": {
+    "kind": "paper_baseline_serving_capture",
+    "sample_count": 1,
+    "host_wall_ns": 6230821787,
+    "device_wall_ns": 0,
+    "end_to_end_latency_ns": 6230821787,
+    "time_to_first_token_ns": 98910261,
+    "inter_token_latency_ns": 5985481,
+    "time_per_output_token_ns": 5985481,
+    "throughput": 2.567879574665932,
+    "throughput_tokens_per_s": 2629.5086844579146,
+    "total_token_throughput_tokens_per_s": 2793.8529772365346,
+    "batch_size": 16,
+    "prompt_tokens": 64,
+    "decode_tokens": 1024,
+    "completed_requests": 16,
+    "failed_requests": 0,
+    "max_concurrent_requests": 16,
+    "p99_ttft_ns": 104134505,
+    "p99_itl_ns": 6483625,
+    "serving_coverage": "full_serving"
+  },
+  "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-mpk-qwen3-8b-sweep-908438de/batch16/",
+  "correctness": "pass"
+}

@@ -1,0 +1,40 @@
+{
+  "benchmark_id": "graph_layered_cross",
+  "method_id": "pto_persistent_device",
+  "hardware": {
+    "gpu": "A100",
+    "machine": "hina",
+    "compute_target": "compute_80",
+    "driver": "see raw artifact",
+    "cuda_toolkit": "see raw artifact",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "743709f3",
+  "inputs": {
+    "shape": "n=1024, nine-task layered-cross DAG",
+    "dtype": "float32",
+    "repeat_policy": "selected row from compact capture"
+  },
+  "statistic": {
+    "kind": "median_capture_group",
+    "sample_count": 1,
+    "host_wall_ns": 87266,
+    "device_wall_ns": 74752,
+    "host_wall_p50_ns": 87266,
+    "host_wall_p90_ns": 87266,
+    "host_wall_p99_ns": 87266,
+    "host_wall_mean_ns": 87266,
+    "host_wall_stdev_ns": 0,
+    "host_wall_min_ns": 87266,
+    "host_wall_max_ns": 87266,
+    "device_wall_p50_ns": 74752,
+    "device_wall_p90_ns": 74752,
+    "device_wall_p99_ns": 74752,
+    "device_wall_mean_ns": 74752,
+    "device_wall_stdev_ns": 0,
+    "device_wall_min_ns": 74752,
+    "device_wall_max_ns": 74752
+  },
+  "raw_artifact": "tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/",
+  "correctness": "pass"
+}

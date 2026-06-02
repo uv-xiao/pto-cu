@@ -1,0 +1,33 @@
+{
+  "benchmark_id": "llm_serving_decode",
+  "method_id": "pto_persistent_device",
+  "hardware": {
+    "gpu": "A100",
+    "machine": "hina",
+    "compute_target": "compute_80",
+    "driver": "see raw artifact",
+    "cuda_toolkit": "see raw artifact",
+    "clock_policy": "not recorded in current snapshot"
+  },
+  "commit": "198f70b2",
+  "inputs": {
+    "shape": "Qwen/Qwen3-8B unit math, hidden=4, RMSNorm->QKV->SwiGLU->FinalRMSNorm->logits",
+    "dtype": "float32 controlled unit arithmetic",
+    "repeat_policy": "single prepared callable reused across 3 unit-math run_prepared submissions"
+  },
+  "statistic": {
+    "kind": "pto_qwen_unit_math_live",
+    "sample_count": 3,
+    "host_wall_ns": 2469305,
+    "device_wall_ns": 49152,
+    "repeat_runs": 3,
+    "completed_count": 15,
+    "error_count": 0,
+    "scheduler_processed_count": 15,
+    "max_abs_error": 9.999999992515995e-07,
+    "task_count": 5,
+    "serving_coverage": "diagnostic_unit_math"
+  },
+  "raw_artifact": "tmp/cuda-backend/qwen-final-norm-rmsnorm/qwen-unit-math-live.json",
+  "correctness": "pass"
+}
