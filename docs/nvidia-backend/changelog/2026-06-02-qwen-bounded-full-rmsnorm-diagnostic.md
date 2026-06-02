@@ -7,6 +7,8 @@
 - Exposed `element_limit=4096` in the full-RMSNorm numeric-mode contract.
 - Imported the bounded A100 resource-backed diagnostic artifact into the
   benchmark viewer as two `diagnostic_resource_backed_qwen_dag` rows.
+- Imported a VDCores-policy row that combines
+  `unit_math_full_rmsnorm` with `--resource-backed-logits-active-cols full`.
 
 ## Architecture Quality
 
@@ -28,6 +30,31 @@ branch. The rows remain diagnostic and cannot satisfy the full-serving gate.
 - Result: both `mpk_offline_decode` and `vdcores_offline_decode` completed
   255 resource-backed tasks with zero scheduler errors and full logits-buffer
   diagnostic reference checks passing.
+- Passed live A100 combined diagnostic:
+
+  ```bash
+  PYTHONPATH=$PWD:$PWD/python timeout 480 .venv/bin/python \
+    examples/cuda/qwen_decode_loop_runner.py --mode mock \
+    --single-context-live-session --run-resource-backed-smoke \
+    --resource-backed-task-selection first_layer_with_logits \
+    --resource-backed-workload vdcores_offline_decode \
+    --resource-backed-repeat-runs 1 --resource-backed-decode-steps 1 \
+    --resource-backed-worker-blocks 10 \
+    --resource-backed-logits-check-policy final_step \
+    --resource-backed-logits-active-cols full \
+    --resource-backed-numeric-task-mode unit_math_full_rmsnorm \
+    --device 0 --arch compute_80 \
+    --cache-root tmp/cuda-backend/qwen-full-active-logits-full-rmsnorm-vdcores-2026-06-03/cache \
+    --output-json tmp/cuda-backend/qwen-full-active-logits-full-rmsnorm-vdcores-2026-06-03/qwen-decode-loop-runner.json
+  ```
+
+- Result: `vdcores_offline_decode` completed 10 resource-backed task
+  functions with zero scheduler errors, `full_reduction_contract_count=3`,
+  `full_logits_buffer_checked` over 2,430,976 logits elements, and diagnostic
+  projection reference `max_abs_error=0.0`. The diagnostic logits were all
+  zero in this mode, so this row proves the combined contract execution path,
+  not full Qwen numerical quality. The raw 249 KB artifact remains under
+  `tmp/`; one compact viewer row was imported.
 
 ## Remaining Gaps
 
