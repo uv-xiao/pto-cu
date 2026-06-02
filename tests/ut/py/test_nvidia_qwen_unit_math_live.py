@@ -147,8 +147,10 @@ def test_viewer_matrix_tracks_unit_math_live_evidence():
         for item in claim["missing_evidence_details"]
         if item["id"] == "pto_full_serving_qwen3_8b"
     )
-    assert "Diagnostic resource-backed execution is present" in pto_gap["action"]
-    assert "full token-by-token decode-loop execution" in pto_gap["action"]
+    assert "Policy-length diagnostic MPK/VDCores execution is present" in (
+        pto_gap["action"]
+    )
+    assert "full-serving row import" in pto_gap["action"]
     assert "cuda_live execution of the Qwen unit-math" not in pto_gap["action"]
 
 

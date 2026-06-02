@@ -2334,6 +2334,8 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
         "controlled proxy live CUDA execution",
         "controlled proxy live microdecode DAG execution",
         "full logits-buffer diagnostic reference checking",
+        "1024-step MPK-policy and 64-step VDCores-policy diagnostic "
+        "decode-loop execution",
         "decode-loop execution",
     ]:
         assert phrase in action

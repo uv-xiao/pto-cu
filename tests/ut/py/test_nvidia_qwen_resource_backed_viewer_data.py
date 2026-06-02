@@ -97,6 +97,12 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
     assert len(full_mpk_rows) == 1
     assert full_mpk_rows[0]["completed_count"] == 261120
     assert full_mpk_rows[0]["logits_deferred_step_count"] == 1023
+    assert full_mpk_rows[0]["serving_coverage"] == (
+        "diagnostic_resource_backed_qwen_dag"
+    )
+    assert full_mpk_rows[0]["decode_feedback_status"] == (
+        "device_token_feedback_observed"
+    )
     unit_numeric_rows = [
         row["statistic"]
         for row in rows
