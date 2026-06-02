@@ -108,10 +108,23 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         for item in manifest["task_bodies"]
         if item["callable"] == "qwen_rmsnorm_input"
     )
+    final_norm = next(
+        item
+        for item in manifest["task_bodies"]
+        if item["callable"] == "qwen_final_norm"
+    )
 
     assert "rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f)" in source
     assert rmsnorm["threading"] == "block"
+    assert final_norm["threading"] == "block"
     assert "__shared__ float partial[1024];" in source
+    assert (
+        "rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f)"
+        in full_source
+    )
+    assert "qwen_final_norm" in full_source
+    assert "task->out[j] = task->a[j] * external_scale" in full_source
+    assert "task->out[i] = task->a[i] * external_scale" not in full_source
     assert "for (unsigned long long j = threadIdx.x;" in source
     assert "task->scalar_args[1] * norm_weight" in source
     assert "pto_cuda_linear_arg_f32" in full_source
@@ -216,6 +229,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         "implemented_contracts"
     ]
     assert "qwen_shape_field_qk_rmsnorm_source" in manifest["implemented_contracts"]
+    assert "qwen_final_norm_full_rmsnorm_source" in manifest["implemented_contracts"]
     assert "qwen_shape_field_qk_rope_source" in manifest["implemented_contracts"]
     assert "qwen_bounded_decode_attention_reduction_source" in manifest[
         "implemented_contracts"

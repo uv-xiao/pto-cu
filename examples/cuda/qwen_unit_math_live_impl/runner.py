@@ -40,7 +40,15 @@ def _alloc(runtime: Any, ctx: Any, allocated: list[int], size: int) -> int:
 def _observed(hosts: dict[str, Any]) -> dict[str, list[float]]:
     return {
         key: [round(float(value), 6) for value in hosts[key]]
-        for key in ("rmsnorm", "context", "key_cache", "value_cache", "mlp", "logits")
+        for key in (
+            "rmsnorm",
+            "context",
+            "key_cache",
+            "value_cache",
+            "mlp",
+            "final_norm",
+            "logits",
+        )
     }
 
 
@@ -57,6 +65,7 @@ def _status(
         "key_cache": "key_cache",
         "value_cache": "value_cache",
         "mlp": "mlp_swiglu",
+        "final_norm": "final_norm",
         "logits": "logits",
     }
     max_abs_error = max(
@@ -66,9 +75,9 @@ def _status(
     )
     passed = (
         max_abs_error <= 1e-5
-        and int(counters[4]) == 4
+        and int(counters[4]) == len(CALLABLES)
         and int(counters[5]) == 0
-        and int(scheduler_processed[0]) >= 4
+        and int(scheduler_processed[0]) >= len(CALLABLES)
     )
     return "pass" if passed else "fail", max_abs_error
 
@@ -108,12 +117,14 @@ def run_unit_math_live(
             "v_weight": array_t(*plan["inputs"]["v_proj_weight"]),
             "gate_weight": array_t(*plan["inputs"]["gate_proj_weight"]),
             "up_weight": array_t(*plan["inputs"]["up_proj_weight"]),
+            "final_norm_weight": array_t(*plan["inputs"]["final_norm_weight"]),
             "lm_head": array_t(*plan["inputs"]["lm_head_weight"]),
             "rmsnorm": array_t(*([0.0] * 4)),
             "context": array_t(*([0.0] * 4)),
             "key_cache": array_t(*([0.0] * 4)),
             "value_cache": array_t(*([0.0] * 4)),
             "mlp": array_t(*([0.0] * 4)),
+            "final_norm": array_t(*([0.0] * 4)),
             "logits": array_t(*([0.0] * 4)),
         }
         ptrs = {
@@ -128,6 +139,7 @@ def run_unit_math_live(
             "v_weight",
             "gate_weight",
             "up_weight",
+            "final_norm_weight",
             "lm_head",
         ):
             _copy_to_device(runtime, ctx, ptrs[name], hosts[name], name)
@@ -177,6 +189,7 @@ def run_unit_math_live(
                 "key_cache": array_t(*([0.0] * 4)),
                 "value_cache": array_t(*([0.0] * 4)),
                 "mlp": array_t(*([0.0] * 4)),
+                "final_norm": array_t(*([0.0] * 4)),
                 "logits": array_t(*([0.0] * 4)),
             }
             if iteration > 0:
@@ -209,6 +222,7 @@ def run_unit_math_live(
                 "key_cache",
                 "value_cache",
                 "mlp",
+                "final_norm",
                 "logits",
             ):
                 _copy_from_device(runtime, ctx, hosts[name], ptrs[name], name)

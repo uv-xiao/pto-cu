@@ -168,6 +168,10 @@ def task_scalar_args(
                 if numeric_task_mode == "unit_math_full_rmsnorm":
                     return [1.0, 0.0, 0.0, 0.0]
                 return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, 0.0]
+            if descriptor.get("callable") == "qwen_final_norm":
+                if numeric_task_mode == "unit_math_full_rmsnorm":
+                    return [1.0, 0.0, 0.0, 0.0]
+                return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, 0.0]
             return [1.0, 0.0, 0.0, 0.0]
         return [0.0, 0.0, 0.0, 0.0]
     return [
@@ -232,6 +236,12 @@ def numeric_task_mode_summary(mode: str) -> dict[str, Any]:
         "full_reduction_contracts": [
             {
                 "callable": "qwen_rmsnorm_input",
+                "scalar_arg_count": 1,
+                "scope": "resource_backed_full_rmsnorm_reduction",
+                "threading": "block",
+            },
+            {
+                "callable": "qwen_final_norm",
                 "scalar_arg_count": 1,
                 "scope": "resource_backed_full_rmsnorm_reduction",
                 "threading": "block",

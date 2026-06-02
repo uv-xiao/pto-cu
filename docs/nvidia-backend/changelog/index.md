@@ -268,6 +268,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-02 Qwen MPK 1024 diagnostic decode](2026-06-02-qwen-mpk-1024-diagnostic-decode.md)
 - [2026-06-02 Qwen policy-length diagnostic status](2026-06-02-qwen-policy-length-diagnostic-status.md)
 - [2026-06-02 Qwen feedback scope compaction](2026-06-02-qwen-feedback-scope-compaction.md)
+- [2026-06-02 Qwen final norm live](2026-06-02-qwen-final-norm-live.md)
 - [2026-06-02 Qwen MPK full diagnostic decode](2026-06-02-qwen-mpk-full-diagnostic-decode.md)
 - [2026-06-02 Qwen VDCores full diagnostic decode](2026-06-02-qwen-vdcores-full-diagnostic-decode.md)
 - [2026-06-02 Qwen VDCores unit numeric branches](2026-06-02-qwen-vdcores-unit-numeric.md)

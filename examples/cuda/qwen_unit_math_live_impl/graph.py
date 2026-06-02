@@ -55,10 +55,23 @@ def make_graph_arrays(ptrs: dict[str, int]) -> dict[str, Any]:
             ),
         ),
         CudaPtoTaskSubmit(
-            "logits",
+            "final_norm",
             CALLABLES[3][1],
             (
                 CudaPtoTaskArg("mlp", ptr=ptrs["mlp"]),
+                CudaPtoTaskArg(
+                    "final_norm_weight",
+                    role="no_dep",
+                    ptr=ptrs["final_norm_weight"],
+                ),
+                CudaPtoTaskArg("final_norm", role="output", ptr=ptrs["final_norm"]),
+            ),
+        ),
+        CudaPtoTaskSubmit(
+            "logits",
+            CALLABLES[4][1],
+            (
+                CudaPtoTaskArg("final_norm", ptr=ptrs["final_norm"]),
                 CudaPtoTaskArg("lm_head", role="no_dep", ptr=ptrs["lm_head"]),
                 CudaPtoTaskArg("logits", role="output", ptr=ptrs["logits"]),
             ),
@@ -110,9 +123,24 @@ def make_graph_arrays(ptrs: dict[str, int]) -> dict[str, Any]:
                 ),
                 tensor_arg_count=2,
             )
-        return CudaPersistentDagTask(
+        if node.key == "final_norm":
+            return CudaPersistentDagTask(
+                **common,
+                a=ptrs["mlp"],
+                out=ptrs["final_norm"],
+                tensor_args=tensor_args_t(
+                    ptrs["final_norm_weight"], None, None, None
+                ),
+                tensor_arg_count=1,
+            )
+        logits_common = {
             **common,
-            a=ptrs["mlp"],
+            "scalar_args": scalar_args_t(0.0, 4.0, 0.0, 0.0),
+            "scalar_arg_count": 2,
+        }
+        return CudaPersistentDagTask(
+            **logits_common,
+            a=ptrs["final_norm"],
             out=ptrs["logits"],
             tensor_args=tensor_args_t(ptrs["lm_head"], None, None, None),
             tensor_arg_count=1,
@@ -136,9 +164,9 @@ def make_state(plan: dict[str, Any], ptrs: dict[str, int]) -> CudaPersistentDagS
     word = ctypes.sizeof(ctypes.c_uint32)
     return CudaPersistentDagState(
         tasks=ptrs["tasks"],
-        task_count=4,
+        task_count=plan["dag"]["task_count"],
         dependents=ptrs["dependents"],
-        dependent_count=3,
+        dependent_count=plan["dag"]["dependent_count"],
         fanin=ptrs["fanin"],
         ready_queue=ptrs["ready_queue"],
         ready_flags=ptrs["ready_flags"],

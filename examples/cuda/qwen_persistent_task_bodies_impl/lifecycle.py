@@ -434,11 +434,38 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count > 0U &&
         {
             "callable": "qwen_final_norm",
             "phase": "per_token_decode",
+            "threading": "block",
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["hidden_state", "final_norm_weight"],
             "body": """
-const float weight = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
-task->out[i] = task->a[i] * weight;
+if (task->scalar_arg_count == 1) {
+    __shared__ float partial[1024];
+    float mean_square = 0.0f;
+    for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
+        mean_square += task->a[j] * task->a[j];
+    }
+    partial[threadIdx.x] = mean_square;
+    __syncthreads();
+    for (unsigned int stride = blockDim.x >> 1; stride > 0U; stride >>= 1) {
+        if (threadIdx.x < stride) {
+            partial[threadIdx.x] += partial[threadIdx.x + stride];
+        }
+        __syncthreads();
+    }
+    const float scale =
+        rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f);
+    for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
+        const float weight = pto_cuda_tensor_arg_f32(task, 0U, j, 1.0f);
+        task->out[j] = task->a[j] * scale * weight;
+    }
+} else {
+    const float external_scale =
+        task->scalar_arg_count > 1 ? task->scalar_args[1] : 1.0f;
+    for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
+        task->out[j] = task->a[j] * external_scale *
+            pto_cuda_tensor_arg_f32(task, 0U, j, 1.0f);
+    }
+}
 """,
         },
         qwen_logits_spec(),
@@ -540,6 +567,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_unit_math_source_coverage",
             "qwen_shape_field_linear_projection_source",
             "qwen_shape_field_qk_rmsnorm_source",
+            "qwen_final_norm_full_rmsnorm_source",
             "qwen_shape_field_qk_rope_source",
             "qwen_bounded_decode_attention_reduction_source",
             "qwen_gqa_decode_attention_head_grouping_source",

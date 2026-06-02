@@ -561,7 +561,11 @@
         },
         {
           "kind": "raw_artifact",
-          "path": "tmp/cuda-backend/pto-serving-unit-math-live-2026-06-01/qwen-unit-math-live.json"
+          "path": "tmp/cuda-backend/qwen-final-norm-rmsnorm/qwen-unit-math-live.json",
+          "symbols": [
+            "qwen_final_norm_full_rmsnorm_source",
+            "qwen_unit_math_final_norm_live_execution"
+          ]
         },
         {
           "kind": "raw_artifact",

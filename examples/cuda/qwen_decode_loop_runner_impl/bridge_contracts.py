@@ -10,7 +10,7 @@ LIVE_MICRODECODE_ARTIFACT = (
     "qwen-microdecode-loop.json"
 )
 LIVE_UNIT_MATH_ARTIFACT = (
-    "tmp/cuda-backend/pto-serving-unit-math-live-2026-06-01/"
+    "tmp/cuda-backend/qwen-final-norm-rmsnorm/"
     "qwen-unit-math-live.json"
 )
 LIVE_MICRODECODE_FIELDS = {

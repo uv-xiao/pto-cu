@@ -109,7 +109,7 @@ def build_result_record(
         "inputs": {
             "shape": (
                 "Qwen/Qwen3-8B unit math, hidden=4, "
-                "RMSNorm->QKV->SwiGLU->logits"
+                "RMSNorm->QKV->SwiGLU->FinalRMSNorm->logits"
             ),
             "dtype": "float32 controlled unit arithmetic",
             "repeat_policy": repeat_policy,

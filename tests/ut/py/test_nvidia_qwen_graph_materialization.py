@@ -967,9 +967,11 @@ def test_launch_packet_marks_unit_math_numeric_ready_tasks():
     assert list(packet[0].scalar_args)[:2] == [1.0, 1.0]
     assert packet[1].scalar_arg_count == 1
     assert packet[1].scalar_args[0] == 1.0
-    for index in range(2, 7):
+    for index in range(2, 6):
         assert packet[index].scalar_arg_count == 1
         assert packet[index].scalar_args[0] == 1.0
+    assert packet[6].scalar_arg_count == 2
+    assert list(packet[6].scalar_args)[:2] == [1.0, 1.0]
     assert packet[7].scalar_arg_count == 3
     assert list(packet[7].scalar_args)[:3] == [0.0, 1.0, 1.0]
 
@@ -1009,6 +1011,12 @@ def test_launch_packet_can_select_full_rmsnorm_reduction_branch():
     assert summary["full_reduction_contracts"] == [
         {
             "callable": "qwen_rmsnorm_input",
+            "scalar_arg_count": 1,
+            "scope": "resource_backed_full_rmsnorm_reduction",
+            "threading": "block",
+        },
+        {
+            "callable": "qwen_final_norm",
             "scalar_arg_count": 1,
             "scope": "resource_backed_full_rmsnorm_reduction",
             "threading": "block",

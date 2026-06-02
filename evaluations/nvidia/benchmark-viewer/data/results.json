@@ -6254,39 +6254,6 @@
         "cuda_toolkit": "see raw artifact",
         "clock_policy": "not recorded in current snapshot"
       },
-      "commit": "009de8f2",
-      "inputs": {
-        "shape": "Qwen/Qwen3-8B unit math, hidden=4, RMSNorm->QKV->SwiGLU->logits",
-        "dtype": "float32 controlled unit arithmetic",
-        "repeat_policy": "single prepared callable reused across 3 unit-math run_prepared submissions"
-      },
-      "statistic": {
-        "kind": "pto_qwen_unit_math_live",
-        "sample_count": 3,
-        "host_wall_ns": 48836,
-        "device_wall_ns": 39936,
-        "repeat_runs": 3,
-        "completed_count": 12,
-        "error_count": 0,
-        "scheduler_processed_count": 12,
-        "max_abs_error": 0.0,
-        "task_count": 4,
-        "serving_coverage": "diagnostic_unit_math"
-      },
-      "raw_artifact": "tmp/cuda-backend/pto-serving-unit-math-live-2026-06-01/qwen-unit-math-live.json",
-      "correctness": "pass"
-    },
-    {
-      "benchmark_id": "llm_serving_decode",
-      "method_id": "pto_persistent_device",
-      "hardware": {
-        "gpu": "A100",
-        "machine": "hina",
-        "compute_target": "compute_80",
-        "driver": "see raw artifact",
-        "cuda_toolkit": "see raw artifact",
-        "clock_policy": "not recorded in current snapshot"
-      },
       "commit": "working-tree",
       "inputs": {
         "shape": "Qwen/Qwen3-8B diagnostic descriptor smoke, 10 task functions",
@@ -6555,6 +6522,39 @@
         "diagnostic_logits_reference_max_abs_error": 0.0
       },
       "raw_artifact": "tmp/cuda-backend/pto-serving-decode-loop-policy-sampled-ref-5948323b/",
+      "correctness": "pass"
+    },
+    {
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "hardware": {
+        "gpu": "A100",
+        "machine": "hina",
+        "compute_target": "compute_80",
+        "driver": "see raw artifact",
+        "cuda_toolkit": "see raw artifact",
+        "clock_policy": "not recorded in current snapshot"
+      },
+      "commit": "198f70b2",
+      "inputs": {
+        "shape": "Qwen/Qwen3-8B unit math, hidden=4, RMSNorm->QKV->SwiGLU->FinalRMSNorm->logits",
+        "dtype": "float32 controlled unit arithmetic",
+        "repeat_policy": "single prepared callable reused across 3 unit-math run_prepared submissions"
+      },
+      "statistic": {
+        "kind": "pto_qwen_unit_math_live",
+        "sample_count": 3,
+        "host_wall_ns": 2469305,
+        "device_wall_ns": 49152,
+        "repeat_runs": 3,
+        "completed_count": 15,
+        "error_count": 0,
+        "scheduler_processed_count": 15,
+        "max_abs_error": 9.999999992515995e-07,
+        "task_count": 5,
+        "serving_coverage": "diagnostic_unit_math"
+      },
+      "raw_artifact": "tmp/cuda-backend/qwen-final-norm-rmsnorm/qwen-unit-math-live.json",
       "correctness": "pass"
     }
   ]

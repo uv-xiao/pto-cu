@@ -15,6 +15,7 @@ CALLABLES = [
     ("qwen_rmsnorm_input", FUNC_ID_BASE + 1),
     ("qwen_attention_qkv", FUNC_ID_BASE + 2),
     ("qwen_mlp_gate_up", FUNC_ID_BASE + 6),
+    ("qwen_final_norm", FUNC_ID_BASE + 8),
     ("qwen_logits", FUNC_ID_BASE + 9),
 ]
 
@@ -47,8 +48,9 @@ def _unit_expected(hidden: list[float], inputs: dict[str, Any]) -> dict[str, lis
         silu_gate[index] * inputs["up_proj_weight"][index]
         for index in range(4)
     ]
+    final_norm = _rmsnorm(mlp, inputs["final_norm_weight"])
     logits = [
-        mlp[index] * inputs["lm_head_weight"][index]
+        final_norm[index] * inputs["lm_head_weight"][index]
         for index in range(4)
     ]
     return {
@@ -57,6 +59,7 @@ def _unit_expected(hidden: list[float], inputs: dict[str, Any]) -> dict[str, lis
         "key_cache": _round(key_cache),
         "value_cache": _round(value_cache),
         "mlp_swiglu": _round(mlp),
+        "final_norm": _round(final_norm),
         "logits": _round(logits),
     }
 
@@ -102,6 +105,7 @@ def build_unit_math_live_plan(
         "v_proj_weight": [0.4, 0.3, 0.3, 0.2],
         "gate_proj_weight": steps["gate_projection"],
         "up_proj_weight": steps["up_projection"],
+        "final_norm_weight": [1.0, 1.0, 1.0, 1.0],
         "lm_head_weight": [3.4, 4.4, 5.0, 6.0],
     }
     decode_iterations = _decode_iterations(
@@ -117,8 +121,8 @@ def build_unit_math_live_plan(
         "runtime": "cuda/persistent_device",
         "tasks": [name for name, _ in CALLABLES],
         "dag": {
-            "task_count": 4,
-            "dependent_count": 3,
+            "task_count": len(CALLABLES),
+            "dependent_count": len(CALLABLES) - 1,
             "scheduler_blocks": scheduler_blocks,
             "worker_blocks": worker_blocks,
             "queue_capacity": queue_capacity,
@@ -126,7 +130,8 @@ def build_unit_math_live_plan(
             "dependency_edges": [
                 ["qwen_rmsnorm_input", "qwen_attention_qkv"],
                 ["qwen_attention_qkv", "qwen_mlp_gate_up"],
-                ["qwen_mlp_gate_up", "qwen_logits"],
+                ["qwen_mlp_gate_up", "qwen_final_norm"],
+                ["qwen_final_norm", "qwen_logits"],
             ],
         },
         "decode_loop": {
@@ -153,6 +158,7 @@ def build_unit_math_live_plan(
             "qwen_unit_math_cuda_live_execution_plan",
             "persistent_device_unit_math_dag_launch_plan",
             "qwen_unit_math_source_coverage",
+            "qwen_unit_math_final_norm_live_execution",
         ],
         "remaining_runtime_gaps": [
             "full_qwen_decode_loop_execution",
