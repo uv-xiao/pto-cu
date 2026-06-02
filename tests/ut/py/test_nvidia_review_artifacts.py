@@ -648,7 +648,10 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
         in status["missing_requirements"]
         for status in qwen_row_statuses
     )
-    assert checks["qwen_model_loader_or_token_loop"]["status"] == "fail"
+    assert checks["qwen_model_loader_or_token_loop"]["status"] == "pass"
+    assert preflight["blocking_gaps"] == [
+        checks["qwen3_8b_full_serving_rows_imported"]["why"],
+    ]
     lifecycle = preflight["serving_lifecycle"]
     assert lifecycle["kind"] == "pto_qwen_persistent_serving_scaffold"
     assert lifecycle["status"] == "partial"

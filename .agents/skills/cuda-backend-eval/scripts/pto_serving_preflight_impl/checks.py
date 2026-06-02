@@ -20,11 +20,14 @@ def build_preflight_checks(
     qwen8b_present_workloads: list[str],
     qwen8b_row_statuses: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    return (
+    component_checks = (
         core_checks(proxy_rows)
         + qwen_input_checks(serving_scaffold)
         + qwen_weight_checks(serving_scaffold)
         + qwen_runtime_checks(serving_scaffold)
+    )
+    return (
+        component_checks
         + [
             {
                 "id": "qwen3_8b_full_serving_rows_imported",
@@ -40,17 +43,52 @@ def build_preflight_checks(
                 "missing_workload_ids": qwen8b_missing_workloads,
                 "row_statuses": qwen8b_row_statuses,
             },
-            {
-                "id": "qwen_model_loader_or_token_loop",
-                "status": "fail",
-                "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",
-                "why": (
-                    "PTO Qwen lifecycle stages are still missing: "
-                    + ", ".join(serving_scaffold.get("missing_stage_ids", []))
-                ),
-            },
+            model_loader_or_token_loop_check(component_checks),
         ]
     )
+
+
+def model_loader_or_token_loop_check(
+    component_checks: list[dict[str, Any]],
+) -> dict[str, Any]:
+    required_ids = {
+        "qwen_prompt_accounting",
+        "qwen_runtime_input_binding",
+        "qwen_cuda_token_buffer_binding",
+        "qwen_persistent_decode_args",
+        "qwen_token_pointer_table_owner",
+        "qwen_weight_inventory",
+        "qwen_safetensors_shards_present",
+        "qwen_actual_safetensors_metadata",
+        "qwen_cuda_weight_binding_plan",
+        "qwen_persistent_weight_arg_manifest",
+        "qwen_persistent_weight_materialization_plan",
+        "qwen_resident_weight_table_owner",
+        "qwen_kv_cache_binding",
+        "qwen_decode_loop_runner",
+        "qwen_persistent_task_bodies",
+    }
+    by_id = {check["id"]: check for check in component_checks}
+    failing = sorted(
+        check_id
+        for check_id in required_ids
+        if by_id.get(check_id, {}).get("status") != "pass"
+    )
+    return {
+        "id": "qwen_model_loader_or_token_loop",
+        "status": status_if(not failing),
+        "evidence": "examples/cuda/persistent_qwen_serving_scaffold.py",
+        "why": (
+            "PTO Qwen model/token-loop evidence is present through "
+            "token buffers, resident weights, KV-cache binding, decode-loop "
+            "runner, and generated task bodies."
+            if not failing
+            else "PTO Qwen model/token-loop evidence is missing: "
+            + ", ".join(failing)
+        ),
+        "required_check_ids": sorted(required_ids),
+        "failing_check_ids": failing,
+    }
 
 
 def core_checks(proxy_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
