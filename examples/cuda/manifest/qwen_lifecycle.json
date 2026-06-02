@@ -80,6 +80,8 @@
         "qwen_position_rope_table_population",
         "single_context_live_resource_session",
         "qwen_resource_backed_diagnostic_execution",
+        "qwen_resource_backed_decode_step_execution",
+        "qwen_resource_backed_policy_length_decode_execution",
         "qwen_dynamic_rope_table_refresh"
       ]
     },

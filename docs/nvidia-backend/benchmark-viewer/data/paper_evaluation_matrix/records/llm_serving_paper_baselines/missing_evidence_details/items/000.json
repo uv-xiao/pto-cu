@@ -7,7 +7,7 @@
   ],
   "shape_contains": "Qwen/Qwen3-8B",
   "status": "missing",
-  "action": "Implement/import PTO persistent-device Qwen3-8B rows for MPK and VDCores offline decode. Evidence covers diagnostics, Qwen task bodies, RoPE refresh, GQA decode-attention grouping, paged KV-table indexing, tiled softmax passes, and argmax. Remaining gates: full loop, row import.",
+  "action": "Implement/import PTO persistent-device Qwen3-8B rows for MPK and VDCores offline decode. Evidence covers diagnostics, Qwen task bodies, RoPE refresh, GQA decode-attention grouping, paged KV-table indexing, tiled softmax passes, policy-length MPK/VDCores diagnostic decode-loop execution, and argmax. Remaining gates: full Qwen numerical correctness, full-serving row import.",
   "evidence_summary": [
     "Lifecycle and input artifacts: persistent_qwen_serving_scaffold, qwen_serving_lifecycle_plan, qwen_prompt_accounting, qwen_runtime_input_binding, qwen_cuda_token_buffer_binding, qwen_persistent_decode_args, and qwen_kv_cache_binding.",
     "Weight artifacts: qwen_weight_inventory, qwen_safetensors_fetch, qwen_safetensors_metadata, qwen_cuda_weight_binding, qwen_persistent_weight_args, qwen_persistent_weight_materialization, qwen_resident_weight_table, local Qwen shard placement, actual safetensors shape/dtype validation for 399 tensors, stable CUDA weight binding slots and file offsets, full CUDA residency for 16.38 GB of weights, and copy-back verification for 16 small tensors.",

@@ -23,23 +23,34 @@ def decode_step_execution_summary(
 ) -> dict[str, Any]:
     if decode_step_limit is None:
         return {"status": "not_requested"}
+    workloads = [
+        {
+            "workload_id": item["workload_id"],
+            "planned_decode_steps": int(item.get("planned_decode_steps", 0)),
+            "executed_decode_steps": int(item.get("executed_decode_steps", 0)),
+        }
+        for item in workload_results
+    ]
+    policy_length_complete = bool(workloads) and all(
+        item["planned_decode_steps"] > 0
+        and item["executed_decode_steps"] == item["planned_decode_steps"]
+        for item in workloads
+    )
     return {
-        "status": "bounded_decode_steps_executed",
+        "status": (
+            "policy_length_decode_steps_executed"
+            if policy_length_complete
+            else "bounded_decode_steps_executed"
+        ),
         "requested_decode_step_limit": int(decode_step_limit),
         "total_planned_decode_steps": sum(
-            int(item.get("planned_decode_steps", 0)) for item in workload_results
+            item["planned_decode_steps"] for item in workloads
         ),
         "total_executed_decode_steps": sum(
-            int(item.get("executed_decode_steps", 0)) for item in workload_results
+            item["executed_decode_steps"] for item in workloads
         ),
-        "workloads": [
-            {
-                "workload_id": item["workload_id"],
-                "planned_decode_steps": int(item.get("planned_decode_steps", 0)),
-                "executed_decode_steps": int(item.get("executed_decode_steps", 0)),
-            }
-            for item in workload_results
-        ],
+        "policy_length_complete": policy_length_complete,
+        "workloads": workloads,
     }
 
 
@@ -47,10 +58,13 @@ def implemented_contracts(
     decode_step_limit: int | None,
     *,
     token_feedback_status: str = "not_requested",
+    policy_length_complete: bool = False,
 ) -> list[str]:
     contracts = ["qwen_resource_backed_diagnostic_execution"]
     if decode_step_limit is not None:
         contracts.append("qwen_resource_backed_decode_step_execution")
+    if policy_length_complete:
+        contracts.append("qwen_resource_backed_policy_length_decode_execution")
     if token_feedback_status in {
         "diagnostic_token_feedback_applied",
         "device_token_feedback_observed",

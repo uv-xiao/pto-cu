@@ -36,6 +36,10 @@ def build_execution_result(
     passed = workload_results and all(
         item["status"] == "pass" for item in workload_results
     )
+    decode_step_execution = decode_step_execution_summary(
+        workload_results,
+        decode_step_limit=decode_step_limit,
+    )
     return {
         "schema_version": 1,
         "kind": "pto_qwen_resource_backed_execution",
@@ -58,15 +62,13 @@ def build_execution_result(
             "numeric_task_mode": numeric_task_mode_summary(numeric_task_mode),
             "graph_state_policy": "fresh_graph_state_per_repeat",
         },
-        "decode_step_execution": decode_step_execution_summary(
-            workload_results,
-            decode_step_limit=decode_step_limit,
-        ),
+        "decode_step_execution": decode_step_execution,
         "workloads": workload_results,
         "implemented_contracts": execution_contracts(
             decode_step_limit=decode_step_limit,
             workload_results=workload_results,
             numeric_task_mode=numeric_task_mode,
+            decode_step_execution=decode_step_execution,
         ),
         "remaining_runtime_gaps": [
             "full_qwen_numerical_correctness",
@@ -175,10 +177,14 @@ def execution_contracts(
     decode_step_limit: int | None,
     workload_results: list[dict[str, Any]],
     numeric_task_mode: str,
+    decode_step_execution: dict[str, Any],
 ) -> list[str]:
     contracts = implemented_contracts(
         decode_step_limit,
         token_feedback_status=decode_feedback_contract_status(workload_results),
+        policy_length_complete=bool(
+            decode_step_execution.get("policy_length_complete"),
+        ),
     )
     if numeric_task_mode in {"unit_math", "unit_math_full_rmsnorm"}:
         contracts.append("qwen_resource_backed_unit_numeric_task_mode")

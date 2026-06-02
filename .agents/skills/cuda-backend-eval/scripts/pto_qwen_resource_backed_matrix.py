@@ -57,6 +57,7 @@ def raw_artifact_ref(raw_artifact: str) -> dict[str, Any]:
             "pto_qwen_resource_backed_execution",
             "qwen_resource_backed_diagnostic_execution",
             "qwen_resource_backed_decode_step_execution",
+            "qwen_resource_backed_policy_length_decode_execution",
             "qwen_diagnostic_decode_token_feedback",
             "qwen_device_decode_token_feedback",
             "qwen_resource_backed_unit_numeric_task_mode",
@@ -100,7 +101,8 @@ def current_action_phrase() -> str:
         "bounded-prefix diagnostic reference checks plus device-side "
         "diagnostic sampled-token feedback, final-step logits-check policy, "
         "block-wide full-vector RMSNorm reduction diagnostics, and policy-length "
-        "MPK/VDCores diagnostic decode runs are present."
+        "MPK/VDCores diagnostic decode runs are present. Remaining gates: "
+        "full Qwen numerical correctness and full-serving viewer_result_import."
     )
 
 

@@ -221,11 +221,20 @@ def build_decode_loop_runner(
         implemented_contracts.append("single_context_live_resource_session")
         if resource_backed_execution and resource_backed_execution.get("status") == "pass":
             implemented_contracts.append("qwen_resource_backed_diagnostic_execution")
-            if resource_backed_execution.get("decode_step_execution", {}).get(
-                "status",
-            ) == "bounded_decode_steps_executed":
+            decode_step_status = resource_backed_execution.get(
+                "decode_step_execution",
+                {},
+            ).get("status")
+            if decode_step_status in {
+                "bounded_decode_steps_executed",
+                "policy_length_decode_steps_executed",
+            }:
                 implemented_contracts.append(
                     "qwen_resource_backed_decode_step_execution",
+                )
+            if decode_step_status == "policy_length_decode_steps_executed":
+                implemented_contracts.append(
+                    "qwen_resource_backed_policy_length_decode_execution",
                 )
             resource_contracts = resource_backed_execution.get(
                 "implemented_contracts",
@@ -239,6 +248,7 @@ def build_decode_loop_runner(
                 "qwen_resource_backed_full_rmsnorm_reduction",
                 "qwen_resource_backed_weighted_elementwise_branches",
                 "qwen_dynamic_rope_table_refresh",
+                "qwen_resource_backed_policy_length_decode_execution",
             ]:
                 if contract in resource_contracts:
                     implemented_contracts.append(contract)

@@ -41,6 +41,27 @@ def load_resource_graph_module():
     return module
 
 
+def load_resource_execution_policy_module():
+    sys.path.insert(0, str(ROOT / "examples" / "cuda"))
+    script_path = (
+        ROOT
+        / "examples"
+        / "cuda"
+        / "qwen_decode_loop_runner_impl"
+        / "resource_execution_policy.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "qwen_resource_execution_policy_test",
+        script_path,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 class FakeSingleContextSession:
     def __init__(self):
         self.closed = False
@@ -287,10 +308,16 @@ def test_resource_backed_decode_step_limit_runs_before_close(monkeypatch):
         return {
             "status": "pass",
             "decode_step_execution": {
-                "status": "bounded_decode_steps_executed",
+                "status": "policy_length_decode_steps_executed",
                 "total_planned_decode_steps": 4,
-                "total_executed_decode_steps": 2,
+                "total_executed_decode_steps": 4,
+                "policy_length_complete": True,
             },
+            "implemented_contracts": [
+                "qwen_resource_backed_diagnostic_execution",
+                "qwen_resource_backed_decode_step_execution",
+                "qwen_resource_backed_policy_length_decode_execution",
+            ],
             "serving_coverage": "diagnostic_resource_backed_qwen_dag",
             "workloads": [],
         }
@@ -312,6 +339,65 @@ def test_resource_backed_decode_step_limit_runs_before_close(monkeypatch):
     assert "qwen_resource_backed_decode_step_execution" in runner[
         "implemented_contracts"
     ]
+    assert "qwen_resource_backed_policy_length_decode_execution" in runner[
+        "implemented_contracts"
+    ]
+
+
+def test_policy_length_decode_execution_is_explicit():
+    policy = load_resource_execution_policy_module()
+    workload_results = [
+        {
+            "workload_id": "mpk_offline_decode",
+            "planned_decode_steps": 1024,
+            "executed_decode_steps": 1024,
+        },
+        {
+            "workload_id": "vdcores_offline_decode",
+            "planned_decode_steps": 64,
+            "executed_decode_steps": 64,
+        },
+    ]
+
+    summary = policy.decode_step_execution_summary(
+        workload_results,
+        decode_step_limit=1024,
+    )
+    contracts = policy.implemented_contracts(
+        1024,
+        policy_length_complete=summary["policy_length_complete"],
+    )
+
+    assert summary["status"] == "policy_length_decode_steps_executed"
+    assert summary["total_planned_decode_steps"] == 1088
+    assert summary["total_executed_decode_steps"] == 1088
+    assert summary["policy_length_complete"] is True
+    assert "qwen_resource_backed_decode_step_execution" in contracts
+    assert "qwen_resource_backed_policy_length_decode_execution" in contracts
+
+
+def test_partial_decode_execution_remains_bounded_not_policy_length():
+    policy = load_resource_execution_policy_module()
+
+    summary = policy.decode_step_execution_summary(
+        [
+            {
+                "workload_id": "mpk_offline_decode",
+                "planned_decode_steps": 1024,
+                "executed_decode_steps": 2,
+            }
+        ],
+        decode_step_limit=2,
+    )
+    contracts = policy.implemented_contracts(
+        2,
+        policy_length_complete=summary["policy_length_complete"],
+    )
+
+    assert summary["status"] == "bounded_decode_steps_executed"
+    assert summary["policy_length_complete"] is False
+    assert "qwen_resource_backed_decode_step_execution" in contracts
+    assert "qwen_resource_backed_policy_length_decode_execution" not in contracts
 
 
 def test_resource_backed_logits_summary_marks_partial_vocab_coverage():
