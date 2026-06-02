@@ -70,3 +70,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-37.md](entries/2026-06-02-part-37.md) | 1 | Paper Baseline Environment Attempt Script Split | Paper Baseline Environment Attempt Script Split |
 | [2026-06-02-part-38.md](entries/2026-06-02-part-38.md) | 1 | ThunderKittens MHA Capture Script Split | ThunderKittens MHA Capture Script Split |
 | [2026-06-02-part-39.md](entries/2026-06-02-part-39.md) | 1 | Triton Tensor Tile Capture Script Split | Triton Tensor Tile Capture Script Split |
+| [2026-06-02-part-40.md](entries/2026-06-02-part-40.md) | 1 | Persistent Smoke Fallback PTX Resources | Persistent Smoke Fallback PTX Resources |
