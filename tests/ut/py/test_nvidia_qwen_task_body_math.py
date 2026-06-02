@@ -88,6 +88,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     manifest = module.build_task_body_manifest(num_hidden_layers=1)
     source = manifest["rendered_source"]["preview"]
     full_source = render_persistent_dag_source(task_functions())
+    source_map = manifest["qwen_kernel_source_map"]
     rmsnorm = next(
         item
         for item in manifest["task_bodies"]
@@ -101,12 +102,25 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "task->scalar_args[1] * norm_weight" in source
     assert "pto_cuda_linear_arg_f32" in full_source
     assert "task->cols > 0U && task->inner > 0U" in full_source
-    assert "task->c[static_cast<unsigned long long>(row) * kv_width + kv_col]" in (
+    assert "const unsigned int kv_page_size =" in full_source
+    assert "const unsigned int decode_position = task->scalar_arg_count > 2U" in (
         full_source
     )
-    assert "task->d[static_cast<unsigned long long>(row) * kv_width + kv_col]" in (
+    assert "const unsigned int sequence_capacity =" in full_source
+    assert "const unsigned int logical_page = decode_position / kv_page_size;" in (
         full_source
     )
+    assert "const unsigned int page_offset = decode_position % kv_page_size;" in (
+        full_source
+    )
+    assert "const unsigned int physical_page = kv_page_table ?" in full_source
+    assert "const unsigned long long token_slot =" in full_source
+    assert "const unsigned long long kv_write_index =" in full_source
+    assert "static_cast<unsigned long long>(row) * sequence_capacity * kv_width" in (
+        full_source
+    )
+    assert "task->c[kv_write_index] = projected;" in full_source
+    assert "task->d[kv_write_index] = projected;" in full_source
     assert "mean_square / static_cast<float>(task->inner)" in full_source
     assert "const float normalized = task->a[row_base + col] * scale * 0.5f" in (
         full_source
@@ -164,6 +178,18 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_paged_kv_attention_index_source" in manifest[
         "implemented_contracts"
     ]
+    assert "qwen_slot_mapped_kv_cache_writeback_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert manifest["coverage"]["kv_write_policy"] == (
+        "slot_mapped_kv_cache_writeback_ready"
+    )
+    kv_entry = next(
+        item
+        for item in source_map["entries"]
+        if item["pto_callables"] == ["qwen_attention_qkv"]
+    )
+    assert kv_entry["pto_status"] == "slot_mapped_kv_cache_writeback_source_ready"
     assert "qwen_tiled_decode_attention_softmax_source" in manifest[
         "implemented_contracts"
     ]

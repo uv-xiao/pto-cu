@@ -13,6 +13,7 @@ from qwen_decode_loop_runner_impl.launch_preflight import (  # noqa: E402
     keyed_fields,
     launch_packet_preflight,
     set_decode_step_index,
+    set_decode_step_state,
 )
 from qwen_decode_loop_runner_impl.activation_workspace import (  # noqa: E402
     workspace_plan,
@@ -221,6 +222,13 @@ def test_launch_packet_uses_full_logits_extent_for_final_logits_task():
     set_decode_step_index(packet, 7)
     assert packet[1].scalar_arg_count == 4
     assert packet[1].scalar_args[3] == 7.0
+
+    set_decode_step_state(packet, step_index=8, decode_position=136)
+    assert packet[0].scalar_arg_count == 3
+    assert packet[0].scalar_args[2] == 136.0
+    assert packet[1].scalar_arg_count == 4
+    assert packet[1].scalar_args[2] == 136.0
+    assert packet[1].scalar_args[3] == 8.0
 
 
 def test_workspace_plan_sizes_activation_buffers_from_descriptor_outputs():
@@ -762,6 +770,14 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "lda": 4,
         "ldb": 4,
         "ldc": 8,
+        "scalar0": 16,
+    }
+    assert descriptors["layer_0_attention_qkv"]["tensor_args"][3] == {
+        "arg": "tensor_args[3]",
+        "tensor": "kv_page_table",
+        "role": "kv_page_table",
+        "status": "runtime_generated_tensor",
+        "device_ptr_source": "runtime_buffers.kv_page_table",
     }
     qkv_metadata = descriptors["layer_0_attention_qkv"]["tensor_arg_metadata"][0]
     assert qkv_metadata["dtype"] == "bfloat16"

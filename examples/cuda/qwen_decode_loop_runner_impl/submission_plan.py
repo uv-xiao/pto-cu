@@ -79,6 +79,9 @@ def submission_plan(
             "planned_tokens": int(scalars["cols"]),
             "eos_policy": "planned_stop_after_decode_tokens_or_eos",
         },
+        "task_shape_fields": {
+            "b_batch_stride": int(kv_record["sequence_capacity_tokens"]),
+        },
     }
 
 

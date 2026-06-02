@@ -22,6 +22,7 @@ from qwen_decode_loop_runner_impl.launch_helpers import (
     output_ptr_for_task,
     parse_ptr,
     set_decode_step_index,
+    set_decode_step_state,
     task_shape_fields,
     task_n_for_record,
     tensor_arg_dtype_codes,

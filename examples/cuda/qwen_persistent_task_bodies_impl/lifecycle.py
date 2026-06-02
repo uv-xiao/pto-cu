@@ -120,22 +120,49 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
     const unsigned int q_width = task->inner;
     const unsigned int kv_width =
         task->cols > q_width ? (task->cols - q_width) / 2U : q_width;
+    const unsigned int kv_page_size =
+        task->scalar0 > 0.0f ? static_cast<unsigned int>(task->scalar0) : 16U;
+    const unsigned int *kv_page_table =
+        task->tensor_arg_count > 3U && task->tensor_args[3] ?
+        reinterpret_cast<const unsigned int *>(task->tensor_args[3]) : nullptr;
+    const unsigned int decode_position = task->scalar_arg_count > 2U ?
+        static_cast<unsigned int>(task->scalar_args[2]) : row;
+    const unsigned int sequence_capacity =
+        task->b_batch_stride > 0U ? task->b_batch_stride : kv_page_size;
     float projected = 0.0f;
     if (col < q_width) {
         projected = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
     } else if (col < q_width + kv_width) {
         const unsigned int kv_col = col - q_width;
         projected = pto_cuda_linear_arg_f32(task, 1U, row, kv_col, 0.0f);
+        const unsigned int logical_page = decode_position / kv_page_size;
+        const unsigned int page_offset = decode_position % kv_page_size;
+        const unsigned int physical_page = kv_page_table ?
+            kv_page_table[logical_page] : logical_page;
+        const unsigned long long token_slot =
+            static_cast<unsigned long long>(physical_page) * kv_page_size +
+            page_offset;
+        const unsigned long long kv_write_index =
+            static_cast<unsigned long long>(row) * sequence_capacity * kv_width +
+            token_slot * kv_width + kv_col;
         if (task->c) {
-            task->c[static_cast<unsigned long long>(row) * kv_width + kv_col] =
-                projected;
+            task->c[kv_write_index] = projected;
         }
     } else {
         const unsigned int kv_col = col - q_width - kv_width;
         projected = pto_cuda_linear_arg_f32(task, 2U, row, kv_col, 0.0f);
+        const unsigned int logical_page = decode_position / kv_page_size;
+        const unsigned int page_offset = decode_position % kv_page_size;
+        const unsigned int physical_page = kv_page_table ?
+            kv_page_table[logical_page] : logical_page;
+        const unsigned long long token_slot =
+            static_cast<unsigned long long>(physical_page) * kv_page_size +
+            page_offset;
+        const unsigned long long kv_write_index =
+            static_cast<unsigned long long>(row) * sequence_capacity * kv_width +
+            token_slot * kv_width + kv_col;
         if (task->d) {
-            task->d[static_cast<unsigned long long>(row) * kv_width + kv_col] =
-                projected;
+            task->d[kv_write_index] = projected;
         }
     }
     task->out[i] = projected;
@@ -446,7 +473,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
         "coverage": {
             "token_fields": ["a", "b", "out"],
             "kv_fields": ["c", "d"],
-            "kv_write_policy": "mutable_kv_fields_ready",
+            "kv_write_policy": "slot_mapped_kv_cache_writeback_ready",
             "weight_fields": ["tensor_args"],
             "decode_feedback_fields": ["tensor_args[2]", "tensor_args[3]"],
             "descriptor_source": "examples/cuda/qwen_persistent_weight_args.py",
@@ -489,6 +516,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_logits_full_vocab_argmax_source",
             "qwen_kernel_token_field_consumption",
             "qwen_kernel_kv_field_consumption",
+            "qwen_slot_mapped_kv_cache_writeback_source",
             "qwen_kernel_kv_cache_writeback_field_contract",
             "qwen_kernel_weight_tensor_arg_consumption",
             "qwen_logits_device_sampled_token_feedback_source",

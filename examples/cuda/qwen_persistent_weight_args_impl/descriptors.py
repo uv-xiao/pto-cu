@@ -143,6 +143,7 @@ def layer_descriptors(
                 layer_tensor(layer, "self_attn.v_proj"),
             ],
             bindings=bindings,
+            runtime_tensor_roles=["kv_page_table"],
             model_shape=model_shape,
         ),
         descriptor(

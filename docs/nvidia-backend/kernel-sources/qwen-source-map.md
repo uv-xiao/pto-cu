@@ -20,7 +20,7 @@ modified and no external kernel source is vendored into PTO.
 | RMSNorm callables | FlashInfer `norm.cu`, vLLM `layernorm_kernels.cu`, SGLang `rmsnorm.cuh` | Block-threaded diagnostic reduction is live. |
 | MLP gate/up | vLLM `activation_kernels.cu`, SGLang SiLU-mul JIT kernels | Elementwise unit-math formula is live; model-shape gate/up buffers remain missing. |
 | QK norm, RoPE, attention | FlashInfer decode/QK-RoPE, SGLang fused QKNorm-RoPE | PTO has shape-field QK RMSNorm/RoPE formula source, descriptor-level RoPE table slots, launch-packet live RoPE pointer binding, Qwen-theta first-position table population, dynamic per-step RoPE refresh for bounded decode-step runs, and bounded diagnostic decode-attention reduction source with GQA query-head to KV-head grouping, paged KV addressing, and descriptor-bounded tiled softmax passes. Full serving remains open. |
-| KV cache writes | vLLM `cache_kernels.cu`, SGLang `kvcache.cuh` | PTO has mutable `c`/`d` fields; slot-mapped cache writes remain missing. |
+| KV cache writes | vLLM `cache_kernels.cu`, SGLang `kvcache.cuh` | PTO QKV writeback uses runtime `kv_page_table` slots with identity-page initialization and logical-to-physical fallback. |
 | Logits | vLLM Qwen3 model path | PTO has diagnostic logits and sampled-token feedback; tiled vocab projection remains missing. |
 
 The machine-readable copy is emitted in the Qwen task-body manifest as

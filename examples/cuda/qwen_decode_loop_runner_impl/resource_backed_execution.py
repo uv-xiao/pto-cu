@@ -18,7 +18,8 @@ from qwen_decode_loop_runner_impl.decode_feedback import (
 from qwen_decode_loop_runner_impl.launch_preflight import (
     build_host_task_packet,
     keyed_fields,
-    set_decode_step_index,
+    set_decode_step_state,
+    task_shape_defaults,
     workspace_for_workload,
 )
 from qwen_decode_loop_runner_impl.resource_execution_policy import (
@@ -166,6 +167,7 @@ def run_workload(
         kv_fields=plan.get("kv_pointer_fields", {}),
         workspace=workspace,
         numeric_task_mode=numeric_task_mode,
+        task_shape_defaults=task_shape_defaults(plan),
     )
     if packet is None or workspace is None:
         return {"workload_id": plan["workload_id"], "status": "not_run"}
@@ -185,7 +187,11 @@ def run_workload(
             workspace,
             decode_position=decode_position,
         )
-        set_decode_step_index(packet, step_index)
+        set_decode_step_state(
+            packet,
+            step_index=step_index,
+            decode_position=decode_position,
+        )
         graph = MaterializedGraph(session, packet)
         timing = PtoRunTiming()
         args = CudaPersistentDagArgs(state=graph.ptrs["state"])

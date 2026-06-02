@@ -94,6 +94,21 @@ def set_decode_step_index(packet: Any, step_index: int | None) -> None:
     final_task.scalar_arg_count = max(int(final_task.scalar_arg_count), 4)
 
 
+def set_decode_step_state(
+    packet: Any,
+    *,
+    step_index: int | None,
+    decode_position: int | None,
+) -> None:
+    if not packet:
+        return
+    if decode_position is not None:
+        for task in packet:
+            task.scalar_args[2] = float(decode_position)
+            task.scalar_arg_count = max(int(task.scalar_arg_count), 3)
+    set_decode_step_index(packet, step_index)
+
+
 def input_ptr_for_task(
     *,
     index: int,

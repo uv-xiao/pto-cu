@@ -25,6 +25,7 @@ class QwenTaskShape:
 
 
 QWEN3_8B_TASK_SHAPE = QwenTaskShape()
+KV_PAGE_SIZE_TOKENS = 16
 
 
 def shape_contract_payload(shape: QwenTaskShape) -> dict[str, Any]:
@@ -48,7 +49,9 @@ def shape_contract_payload(shape: QwenTaskShape) -> dict[str, Any]:
 def task_shape_fields(callable_name: str, shape: QwenTaskShape) -> dict[str, Any]:
     if callable_name == "qwen_attention_qkv":
         cols = shape.q_width + 2 * shape.kv_width
-        return matrix_fields(cols=cols, inner=shape.hidden_size)
+        fields = matrix_fields(cols=cols, inner=shape.hidden_size)
+        fields["scalar0"] = KV_PAGE_SIZE_TOKENS
+        return fields
     if callable_name == "qwen_attention_o":
         return attention_fields(
             cols=shape.hidden_size,

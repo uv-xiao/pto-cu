@@ -33,15 +33,15 @@ descriptor `rows`, `lda`, and `ldb`. It also accepts runtime
 physical pages before reading key/value cache. The softmax max and weighted
 sum passes are bounded by descriptor-controlled attention tiles. This is
 diagnostic source evidence; full decode-loop import remains open.
-The logits shape path scans the
-descriptor vocab width for device-side argmax feedback. The persistent DAG
-ABI also exposes mutable `c` and `d` fields, so the artifact records KV-cache
-writeback field access before `cuda_live` decode-loop execution. The numeric
-oracle keeps the controlled proxy formulas for fallback review only; it must
-not be promoted as full Qwen correctness. The Qwen unit math oracle records
-RMSNorm, projection, single-token attention cache writeback, SiLU/SwiGLU, and
-logits equations for a hidden-size-4 reference. The generated CUDA source now
-contains that unit-math path, and the live example below executes it. The
-manifest also
+The logits shape path scans the descriptor vocab width for device-side argmax
+feedback. The QKV task now binds runtime `kv_page_table` as `tensor_args[3]`,
+uses descriptor `scalar0` as page size, consumes the current decode position
+from `scalar_args[2]`, and writes key/value projections to batch-local
+physical KV-cache slots with logical-to-physical fallback. The numeric oracle
+keeps the controlled proxy formulas for fallback review only; it must not be
+promoted as full Qwen correctness. The Qwen unit math oracle records RMSNorm,
+projection, single-token attention cache writeback, SiLU/SwiGLU, and logits
+equations for a hidden-size-4 reference. The generated CUDA source now contains
+that unit-math path, and the live example below executes it. The manifest also
 records `qwen_kernel_source_map`, which points reviewers to local FlashInfer,
 vLLM, and SGLang source snapshots under `tmp/sources/kernel-references/`.

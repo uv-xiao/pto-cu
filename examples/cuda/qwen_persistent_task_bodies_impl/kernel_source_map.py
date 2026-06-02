@@ -125,8 +125,8 @@ KERNEL_SOURCE_MAP = [
                 "url": "https://github.com/sgl-project/sglang/blob/main/python/sglang/jit_kernel/csrc/elementwise/kvcache.cuh",
             },
         ],
-        "pto_status": "mutable_c_d_fields_ready",
-        "next_step": "Replace flat diagnostic c/d writes with slot-mapped KV-cache row writes matching the serving decode plan.",
+        "pto_status": "slot_mapped_kv_cache_writeback_source_ready",
+        "next_step": "Run the resource-backed decode loop with slot-mapped KV writes before full-serving promotion.",
     },
     {
         "pto_callables": ["qwen_logits"],
