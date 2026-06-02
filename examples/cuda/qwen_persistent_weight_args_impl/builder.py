@@ -52,6 +52,7 @@ def build_weight_arg_manifest(
     implemented_contracts = [
         "qwen_weight_task_decomposition",
         "qwen_task_shape_field_contract",
+        "qwen_weight_tensor_metadata_contract",
         "persistent_dag_tensor_arg_capacity_check",
     ]
     if complete:

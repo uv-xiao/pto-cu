@@ -257,6 +257,15 @@ def test_materialized_weight_descriptor_preserves_task_shape_fields():
             }
         ],
         "task_shape_fields": {"rows": 16, "cols": 4096, "inner": 4096},
+        "tensor_arg_metadata": [
+            {
+                "arg": "tensor_args[0]",
+                "slot_id": 7,
+                "tensor": "model.layers.0.self_attn.q_proj.weight",
+                "dtype": "bfloat16",
+                "shape": [4096, 4096],
+            }
+        ],
     }
 
     materialized = materialized_descriptor(
@@ -279,13 +288,20 @@ def test_materialized_weight_descriptor_preserves_task_shape_fields():
         "cols": 4096,
         "inner": 4096,
     }
+    assert materialized["tensor_arg_metadata"][0]["dtype"] == "bfloat16"
+    assert materialized["tensor_arg_metadata"][0]["shape"] == [4096, 4096]
 
 
 def test_qwen_weight_descriptors_emit_callable_shape_fields():
     bindings = {
         "model.embed_tokens.weight": {"slot_id": 0},
         "model.layers.0.input_layernorm.weight": {"slot_id": 1},
-        "model.layers.0.self_attn.q_proj.weight": {"slot_id": 2},
+        "model.layers.0.self_attn.q_proj.weight": {
+            "slot_id": 2,
+            "dtype": "bfloat16",
+            "shape": [4, 4],
+            "size_bytes": 32,
+        },
         "model.layers.0.self_attn.k_proj.weight": {"slot_id": 3},
         "model.layers.0.self_attn.v_proj.weight": {"slot_id": 4},
         "model.layers.0.self_attn.q_norm.weight": {"slot_id": 5},
@@ -323,6 +339,10 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "ldb": 4,
         "ldc": 8,
     }
+    qkv_metadata = descriptors["layer_0_attention_qkv"]["tensor_arg_metadata"][0]
+    assert qkv_metadata["dtype"] == "bfloat16"
+    assert qkv_metadata["shape"] == [4, 4]
+    assert qkv_metadata["size_bytes"] == 32
     assert descriptors["layer_0_mlp_down"]["task_shape_fields"] == {
         "cols": 4,
         "inner": 8,

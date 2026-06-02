@@ -75,4 +75,10 @@ def materialized_descriptor(
     for key in ("scalar_fields", "task_shape_fields"):
         if isinstance(descriptor.get(key), dict):
             record[key] = dict(descriptor[key])
+    if isinstance(descriptor.get("tensor_arg_metadata"), list):
+        record["tensor_arg_metadata"] = [
+            dict(item)
+            for item in descriptor["tensor_arg_metadata"]
+            if isinstance(item, dict)
+        ]
     return record

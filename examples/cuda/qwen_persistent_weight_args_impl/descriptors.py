@@ -37,6 +37,28 @@ def tensor_arg_records(
     return records
 
 
+def tensor_arg_metadata(
+    *,
+    tensors: list[str],
+    bindings: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    metadata = []
+    for index, tensor in enumerate(tensors):
+        item = bindings.get(tensor)
+        if item is None:
+            continue
+        record = {
+            "arg": f"tensor_args[{index}]",
+            "slot_id": item["slot_id"],
+            "tensor": tensor,
+        }
+        for key in ("dtype", "shape", "size_bytes"):
+            if key in item:
+                record[key] = item[key]
+        metadata.append(record)
+    return metadata
+
+
 def descriptor(
     *,
     descriptor_id: str,
@@ -64,6 +86,9 @@ def descriptor(
     fields = task_shape_fields(callable_name, model_shape)
     if fields:
         record["task_shape_fields"] = fields
+    metadata = tensor_arg_metadata(tensors=tensors, bindings=bindings)
+    if metadata:
+        record["tensor_arg_metadata"] = metadata
     return record
 
 

@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen weight tensor metadata](2026-06-02-qwen-weight-tensor-metadata.md)
 - [2026-06-02 Qwen weight descriptor shapes](2026-06-02-qwen-weight-descriptor-shapes.md)
 - [2026-06-02 Qwen launch-packet shape fields](2026-06-02-qwen-launch-packet-shape-fields.md)
 - [2026-06-02 Qwen kernel source map](2026-06-02-qwen-kernel-source-map.md)
