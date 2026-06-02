@@ -1,0 +1,118 @@
+{
+  "metadata": {
+    "title": "CUDA Scene Builder Coverage",
+    "status": "open_breadth_gap",
+    "summary": "Review-facing coverage for CUDA SceneTestCase argument builders. This makes implemented builder paths explicit while keeping the remaining breadth gap visible."
+  },
+  "coverage_groups": [
+    {
+      "id": "host_schedule_argument_builders",
+      "title": "Host-Schedule Argument Builders",
+      "status": "covered_for_current_review",
+      "summary": "Current host-schedule coverage includes binary elementwise, unary square, scalar scale, axpy, affine, triad, quad, and generic tensor/scalar argument packets.",
+      "covered_builders": [
+        "binary elementwise",
+        "unary square",
+        "scalar scale",
+        "axpy",
+        "affine",
+        "triad",
+        "quad",
+        "generic_args",
+        "generic_args4"
+      ],
+      "open_work": [
+        "additional model-specific host-schedule argument layouts if future CUDA examples need them"
+      ],
+      "evidence_refs": [
+        {
+          "path": "tests/ut/py/test_cuda_scene_test.py",
+          "symbols": [
+            "test_scene_test_runs_cuda_host_schedule_elementwise_binary_with_real_data",
+            "test_scene_test_runs_cuda_host_schedule_elementwise_affine_with_real_data",
+            "test_scene_test_runs_cuda_host_schedule_elementwise_generic_args_four_slots_with_ctypes_data"
+          ]
+        },
+        {
+          "path": "docs/nvidia-backend/status/kernel-compiler-coverage.md",
+          "symbols": [
+            "host-schedule task-body compilation",
+            "broader scene-test argument builder coverage"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "persistent_graph_descriptor_builders",
+      "title": "Persistent Graph Descriptor Builders",
+      "status": "covered_for_current_review",
+      "summary": "Current persistent-device coverage includes graph descriptors, aliases, role maps, submit groups, node/link forms, callable sidecars, generic args, tensor tiles, and scratch-storage reuse.",
+      "covered_builders": [
+        "tagged task args",
+        "role-keyed task args",
+        "args alias",
+        "task arg role maps",
+        "submit groups",
+        "node/link descriptors",
+        "callable sidecars",
+        "generic_args4",
+        "tensor tile args",
+        "scratch-storage reuse"
+      ],
+      "open_work": [
+        "normal PTO graph construction beyond curated descriptor tracer bullets"
+      ],
+      "evidence_refs": [
+        {
+          "path": "tests/ut/py/test_cuda_scene_test.py",
+          "symbols": [
+            "test_scene_test_builds_cuda_persistent_graph_from_submit_groups",
+            "test_scene_test_builds_cuda_persistent_graph_from_node_links",
+            "test_scene_test_builds_cuda_persistent_graph_with_reused_output_storage"
+          ]
+        },
+        {
+          "path": "docs/nvidia-backend/status/remaining-gaps/kernel-compiler-integration/index.md",
+          "symbols": [
+            "broader CUDA scene-test argument builder coverage",
+            "explicit graph-descriptor scratch-storage reuse paths"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "real_data_scene_paths",
+      "title": "Real-Data Scene Paths",
+      "status": "covered_for_current_review",
+      "summary": "Selected builder spellings are exercised through ctypes-backed real-data SceneTestCase paths, not only descriptor unit construction.",
+      "covered_builders": [
+        "node link graph",
+        "node port dict graph",
+        "dep-gen metadata graph",
+        "auto temporary graph",
+        "scratch reuse graph",
+        "tensor-core tile graph"
+      ],
+      "open_work": [
+        "model-level Qwen decode graph builder coverage with production-shaped argument packets"
+      ],
+      "evidence_refs": [
+        {
+          "path": "tests/ut/py/test_cuda_scene_test.py",
+          "symbols": [
+            "test_scene_test_runs_cuda_persistent_device_node_link_graph_with_ctypes_data",
+            "test_scene_test_runs_cuda_persistent_device_graph_scratch_reuse_with_ctypes_data",
+            "test_scene_test_runs_cuda_persistent_device_graph_tensor_core_tile_with_ctypes_data"
+          ]
+        },
+        {
+          "path": "docs/nvidia-backend/status/kernel-compiler-coverage.md",
+          "symbols": [
+            "real-data `SceneTestCase` paths",
+            "work is breadth: adding more CUDA scene-test argument builders"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -64,6 +64,7 @@ export async function loadViewerData() {
   const [
     benchmarks,
     methods,
+    sceneBuilderCoverage,
     paperBaselines,
     paperBaselineRuns,
     paperBaselineProbes,
@@ -81,6 +82,7 @@ export async function loadViewerData() {
   ] = await Promise.all([
     loadJson(DATA_FILES.benchmarks),
     loadJson(DATA_FILES.methods),
+    loadJson(DATA_FILES.sceneBuilderCoverage),
     loadJson(DATA_FILES.paperBaselines),
     loadDataFile(DATA_FILES.paperBaselineRuns),
     loadDataFile(DATA_FILES.paperBaselineProbes),
@@ -99,6 +101,7 @@ export async function loadViewerData() {
   return {
     benchmarks,
     methods,
+    sceneBuilderCoverage,
     paperBaselines,
     paperBaselineRuns,
     paperBaselineProbes,

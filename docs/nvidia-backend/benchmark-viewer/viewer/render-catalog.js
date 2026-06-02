@@ -65,6 +65,33 @@ export function renderMethods(state) {
   }));
 }
 
+export function renderSceneBuilderCoverage(state) {
+  const root = document.getElementById("scene-builder-coverage");
+  const metadata = state.sceneBuilderCoverage.metadata;
+  const heading = document.createElement("h3");
+  heading.append(text(metadata.title));
+  const intro = paragraph("Status", `${metadata.status}: ${metadata.summary}`);
+  const groups = state.sceneBuilderCoverage.coverage_groups.map((group) => {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.append(text(`${group.title} (${group.status})`));
+    details.append(
+      summary,
+      paragraph("Summary", group.summary),
+      table(["Covered Builder"], group.covered_builders.map((item) => [item])),
+      ...namedList("Open Work", group.open_work),
+      ...namedList(
+        "Evidence",
+        group.evidence_refs.map((ref) => (
+          `${ref.path}: ${ref.symbols.join(", ")}`
+        )),
+      ),
+    );
+    return details;
+  });
+  root.replaceChildren(heading, intro, ...groups);
+}
+
 export function renderServingWorkloads(state, lookup) {
   const root = document.getElementById("serving-list");
   root.replaceChildren(...state.servingWorkloads.serving_workloads.map((workload) => {

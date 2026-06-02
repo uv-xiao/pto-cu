@@ -21,6 +21,11 @@ Verified coverage includes:
   provenance, sanitized reconstruction commands, Markdown/SVG reports, and
   zero scheduler errors for selected generated-dispatch rows.
 
+The benchmark viewer also exposes the current scene-builder coverage as
+`docs/nvidia-backend/benchmark-viewer/data/scene_builder_coverage.json`, so
+reviewers can inspect covered builders, open work, and exact code/doc evidence
+without searching the large CUDA scene-test file manually.
+
 Representative evidence remains in the kernel-compiler remaining-gap archive
 because those files were written while closing the integration gap:
 
