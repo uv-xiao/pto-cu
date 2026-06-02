@@ -105,6 +105,7 @@ class FakeSingleContextSession:
                 {
                     "workload_id": "mpk_offline_decode",
                     "batch_size": 16,
+                    "sequence_capacity_tokens": 128,
                     "key_cache": {"device_ptr_hex": "0x2000"},
                     "value_cache": {"device_ptr_hex": "0x3000"},
                 },
@@ -433,7 +434,7 @@ def test_resource_backed_logits_summary_marks_full_buffer_written_prefix_sampled
         written_element_count=4,
         diagnostic_reference={
             "status": "pass",
-            "scope": "diagnostic_qwen_logits_formula",
+            "scope": "diagnostic_qwen_tiled_vocab_projection",
             "checked_element_count": 4,
             "max_abs_error": 0.0,
         },
@@ -446,33 +447,45 @@ def test_resource_backed_logits_summary_marks_full_buffer_written_prefix_sampled
     assert summary["diagnostic_reference"]["status"] == "pass"
 
 
-def test_diagnostic_logits_reference_compares_sampled_formula():
+def test_diagnostic_logits_reference_compares_tiled_vocab_projection():
     module = load_resource_graph_module()
 
-    reference = module.diagnostic_logits_reference_values(
-        hidden=[2.0, -3.0],
-        lm_head=[0.5, 2.0, 4.0, 8.0],
+    reference = module.diagnostic_logits_projection_values(
+        hidden=[1.0, 2.0, 10.0, 20.0],
+        lm_head=[1.0, 0.0, 2.0, 0.0],
         count=4,
+        cols=2,
+        hidden_width=2,
+        hidden_stride=2,
+        weight_stride=2,
     )
     comparison = module.compare_logits_reference(
-        [1.0, -6.0, 8.0, -24.0],
+        [1.0, 2.0, 10.0, 20.0],
         reference,
     )
 
-    assert reference == [1.0, -6.0, 8.0, -24.0]
+    assert reference == [1.0, 2.0, 10.0, 20.0]
     assert comparison["status"] == "pass"
-    assert comparison["scope"] == "diagnostic_qwen_logits_formula"
+    assert comparison["scope"] == "diagnostic_qwen_tiled_vocab_projection"
     assert comparison["max_abs_error"] == 0.0
 
 
-def test_diagnostic_logits_formula_checks_more_than_hidden_extent():
+def test_diagnostic_logits_projection_checks_batch_rows():
     module = load_resource_graph_module()
 
-    comparison = module.compare_logits_formula(
-        [1.0, -6.0, 8.0, -24.0, 1.0, -6.0],
-        hidden=[2.0, -3.0],
-        lm_head=[0.5, 2.0, 4.0, 8.0],
+    reference = module.diagnostic_logits_projection_values(
+        hidden=[1.0, 2.0, 10.0, 20.0],
+        lm_head=[1.0, 0.0, 2.0, 0.0],
+        count=4,
+        cols=2,
+        hidden_width=2,
+        hidden_stride=2,
+        weight_stride=2,
+    )
+    comparison = module.compare_logits_reference(
+        [1.0, 2.0, 10.0, 20.0],
+        reference,
     )
 
     assert comparison["status"] == "pass"
-    assert comparison["checked_element_count"] == 6
+    assert comparison["checked_element_count"] == 4

@@ -70,7 +70,7 @@ def raw_artifact_ref(raw_artifact: str) -> dict[str, Any]:
             "full_logits_buffer_prefix_sampled",
             "full_logits_buffer_checked",
             "final_step_logits_check_policy",
-            "diagnostic_qwen_logits_formula",
+            "diagnostic_qwen_tiled_vocab_projection",
             "logits_summary_stable",
         ],
     }

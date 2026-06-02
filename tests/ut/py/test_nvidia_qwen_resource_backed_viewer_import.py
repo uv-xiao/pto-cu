@@ -352,7 +352,7 @@ def test_resource_backed_importer_adds_matrix_ref():
     assert "partial_logits_not_full_vocab" in claim[
         "current_evidence_refs"
     ][1]["symbols"]
-    assert "diagnostic_qwen_logits_formula" in claim[
+    assert "diagnostic_qwen_tiled_vocab_projection" in claim[
         "current_evidence_refs"
     ][1]["symbols"]
     assert "final_step_logits_check_policy" in claim[

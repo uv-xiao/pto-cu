@@ -12,6 +12,9 @@ from simpler_setup.cuda_callable_compiler import CudaPersistentDagState
 from qwen_decode_loop_runner_impl.launch_preflight import next_power_of_two
 
 
+MAX_LOGITS_REFERENCE_WEIGHT_ELEMENTS = 1_000_000
+
+
 class MaterializedGraph:
     def __init__(self, session: Any, packet: Any) -> None:
         self.session = session
@@ -166,18 +169,48 @@ class MaterializedGraph:
                 "status": "not_checked",
                 "reason": "missing_hidden_or_weight_pointer",
             }
+        cols = int(final_task.cols) if int(final_task.cols) > 0 else len(values)
+        hidden_width = (
+            int(final_task.inner)
+            if int(final_task.inner) > 0
+            else max(1, hidden_elements // max(1, len(values) // max(1, cols)))
+        )
+        hidden_stride = int(final_task.lda) if int(final_task.lda) > 0 else hidden_width
+        weight_stride = int(final_task.ldb) if int(final_task.ldb) > 0 else hidden_width
+        max_col = max((index % cols for index in range(len(values))), default=0)
+        required_weight_elements = max_col * weight_stride + hidden_width
+        if required_weight_elements > MAX_LOGITS_REFERENCE_WEIGHT_ELEMENTS:
+            return {
+                "status": "not_checked",
+                "reason": "logits_projection_reference_too_large",
+                "scope": "diagnostic_qwen_tiled_vocab_projection",
+                "required_weight_elements": required_weight_elements,
+                "max_reference_weight_elements": (
+                    MAX_LOGITS_REFERENCE_WEIGHT_ELEMENTS
+                ),
+            }
         hidden = (ctypes.c_float * hidden_elements)(*([0.0] * hidden_elements))
-        lm_head = (ctypes.c_float * 4)(0.0, 0.0, 0.0, 0.0)
+        lm_head = (ctypes.c_float * required_weight_elements)(
+            *([0.0] * required_weight_elements),
+        )
         self.copy_from_device(hidden, int(final_task.a), "diagnostic_logits_hidden")
         self.copy_from_device(
             lm_head,
             int(final_task.tensor_args[0]),
             "diagnostic_logits_lm_head",
         )
-        return compare_logits_formula(
-            values,
+        reference = diagnostic_logits_projection_values(
             hidden=[float(value) for value in hidden],
             lm_head=[float(value) for value in lm_head],
+            count=len(values),
+            cols=cols,
+            hidden_width=hidden_width,
+            hidden_stride=hidden_stride,
+            weight_stride=weight_stride,
+        )
+        return compare_logits_reference(
+            values,
+            reference,
         )
 
 
@@ -229,17 +262,33 @@ def summarize_logits_values(
     }
 
 
-def diagnostic_logits_reference_values(
+def diagnostic_logits_projection_values(
     *,
     hidden: list[float],
     lm_head: list[float],
     count: int,
+    cols: int,
+    hidden_width: int,
+    hidden_stride: int,
+    weight_stride: int,
 ) -> list[float]:
-    hidden_count = max(1, len(hidden))
-    return [
-        hidden[index % hidden_count] * lm_head[index & 3]
-        for index in range(count)
-    ]
+    values = []
+    cols = max(1, int(cols))
+    hidden_width = max(1, int(hidden_width))
+    hidden_stride = max(hidden_width, int(hidden_stride))
+    weight_stride = max(hidden_width, int(weight_stride))
+    for index in range(count):
+        row = index // cols
+        col = index % cols
+        acc = 0.0
+        for k in range(hidden_width):
+            a_index = row * hidden_stride + k
+            weight_index = col * weight_stride + k
+            if a_index >= len(hidden) or weight_index >= len(lm_head):
+                break
+            acc += hidden[a_index] * lm_head[weight_index]
+        values.append(acc)
+    return values
 
 
 def compare_logits_reference(
@@ -257,35 +306,11 @@ def compare_logits_reference(
             mismatch_count += 1
     return {
         "status": "pass" if mismatch_count == 0 else "fail",
-        "scope": "diagnostic_qwen_logits_formula",
-        "formula": "out[i]=hidden[i%hidden_elements]*lm_head[i&3]",
-        "checked_element_count": len(values),
-        "tolerance": tolerance,
-        "max_abs_error": round(float(max_abs_error), 8),
-        "mismatch_count": mismatch_count,
-    }
-
-
-def compare_logits_formula(
-    values: list[float],
-    *,
-    hidden: list[float],
-    lm_head: list[float],
-    tolerance: float = 1e-5,
-) -> dict[str, Any]:
-    hidden_count = max(1, len(hidden))
-    max_abs_error = 0.0
-    mismatch_count = 0
-    for index, value in enumerate(values):
-        expected = hidden[index % hidden_count] * lm_head[index & 3]
-        error = abs(value - expected)
-        max_abs_error = max(max_abs_error, error)
-        if error > tolerance:
-            mismatch_count += 1
-    return {
-        "status": "pass" if mismatch_count == 0 else "fail",
-        "scope": "diagnostic_qwen_logits_formula",
-        "formula": "out[i]=hidden[i%hidden_elements]*lm_head[i&3]",
+        "scope": "diagnostic_qwen_tiled_vocab_projection",
+        "formula": (
+            "out[row,col]=sum_k hidden[row*hidden_stride+k]"
+            "*lm_head[col*weight_stride+k]"
+        ),
         "checked_element_count": len(values),
         "tolerance": tolerance,
         "max_abs_error": round(float(max_abs_error), 8),
