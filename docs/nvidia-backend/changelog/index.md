@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 backend gap status sync guard](2026-06-02-backend-gap-status-sync-guard.md)
 - [2026-06-02 fourth-tensor gap closure](2026-06-02-fourth-tensor-gap-closure.md)
 - [2026-06-02 goal progress backend gap guard](2026-06-02-goal-progress-backend-gap-guard.md)
 - [2026-06-02 CUDA benchmark contract split](2026-06-02-cuda-benchmark-contract-split.md)

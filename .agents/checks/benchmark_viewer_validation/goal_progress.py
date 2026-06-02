@@ -1,11 +1,28 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 from .common import *  # noqa: F403
 from .evidence import *  # noqa: F403
 from .generated_builders import load_goal_progress_builder
+
+
+def remaining_gap_refs_from_status() -> set[str]:
+    status = ROOT / "docs" / "nvidia-backend" / "status.md"
+    text = status.read_text(encoding="utf-8")
+    try:
+        body = text.split("\n## Remaining Gaps\n", 1)[1].split("\n## ", 1)[0]
+    except IndexError:
+        fail("status.md has no Remaining Gaps section")
+    refs: set[str] = set()
+    for line in body.splitlines():
+        if not line.startswith("- [") or "](" not in line or ")" not in line:
+            continue
+        relpath = line.split("](", 1)[1].split(")", 1)[0]
+        refs.add(f"docs/nvidia-backend/{relpath}")
+    if not refs:
+        fail("status.md has no remaining-gap links")
+    return refs
 
 
 def validate_goal_progress(
@@ -75,14 +92,12 @@ def validate_goal_progress(
     backend_closure = by_id["backend_implementation_closure"]
     if backend_closure["status"] != "in_progress":
         fail("backend implementation closure must remain in_progress")
-    required_gap_refs = {
-        "docs/nvidia-backend/status/remaining-gaps/kernel-compiler-integration/index.md",
-        "docs/nvidia-backend/status/remaining-gaps/persistent-scheduler-generalization/index.md",
-        "docs/nvidia-backend/status/remaining-gaps/tuned-tensor-workloads.md",
-        "docs/nvidia-backend/status/remaining-gaps/ci-coverage.md",
+    expected_gap_refs = {
+        "docs/nvidia-backend/status.md",
+        *remaining_gap_refs_from_status(),
     }
-    if not required_gap_refs <= set(backend_closure["evidence_refs"]):
-        fail("backend implementation closure is missing remaining-gap refs")
+    if set(backend_closure["evidence_refs"]) != expected_gap_refs:
+        fail("backend implementation closure refs do not match status.md")
     paper_results = by_id["paper_grade_results"]
     if paper_results.get("paper_readiness_status") != audit.get("overall_status"):
         fail("goal progress paper readiness status does not match audit")

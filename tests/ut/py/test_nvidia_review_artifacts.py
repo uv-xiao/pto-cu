@@ -4903,6 +4903,21 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
         "persistent-scheduler-generalization" in ref
         for ref in by_id["backend_implementation_closure"]["evidence_refs"]
     )
+    status_remaining = (
+        (DOC_ROOT / "status.md")
+        .read_text(encoding="utf-8")
+        .split("\n## Remaining Gaps\n", 1)[1]
+        .split("\n## ", 1)[0]
+    )
+    status_gap_refs = {
+        f"docs/nvidia-backend/{line.split('](', 1)[1].split(')', 1)[0]}"
+        for line in status_remaining.splitlines()
+        if line.startswith("- [")
+    }
+    assert set(by_id["backend_implementation_closure"]["evidence_refs"]) == {
+        "docs/nvidia-backend/status.md",
+        *status_gap_refs,
+    }
     assert not any(
         "fourth-tensor-persistent-dag-verification" in ref
         for ref in by_id["backend_implementation_closure"]["evidence_refs"]
