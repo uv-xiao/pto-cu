@@ -6,14 +6,6 @@ from typing import Any, Callable
 
 MakeCriterion = Callable[..., dict[str, Any]]
 
-BACKEND_GAP_REFS = [
-    "docs/nvidia-backend/status/remaining-gaps/kernel-compiler-integration/index.md",
-    "docs/nvidia-backend/status/remaining-gaps/target-role-cleanup.md",
-    "docs/nvidia-backend/status/remaining-gaps/persistent-scheduler-generalization/index.md",
-    "docs/nvidia-backend/status/remaining-gaps/tuned-tensor-workloads.md",
-    "docs/nvidia-backend/status/remaining-gaps/ci-coverage.md",
-]
-
 BACKEND_GAPS = [
     "Close or reclassify every remaining-gap page linked from "
     "docs/nvidia-backend/status.md before claiming backend completion.",
@@ -22,7 +14,10 @@ BACKEND_GAPS = [
 ]
 
 
-def backend_gap_criterion(make_criterion: MakeCriterion) -> dict[str, Any]:
+def backend_gap_criterion(
+    make_criterion: MakeCriterion,
+    backend_gap_refs: list[str],
+) -> dict[str, Any]:
     return make_criterion(
         identifier="backend_implementation_closure",
         title="Backend implementation gaps are explicit",
@@ -33,7 +28,7 @@ def backend_gap_criterion(make_criterion: MakeCriterion) -> dict[str, Any]:
         ),
         evidence_refs=[
             "docs/nvidia-backend/status.md",
-            *BACKEND_GAP_REFS,
+            *backend_gap_refs,
         ],
         verification=[
             "validate_benchmark_viewer_data.py",

@@ -55,6 +55,7 @@ def build_goal_progress(
     default_baselines: Path,
     path_exists: PathExists,
     repo_relative: RepoRelative,
+    backend_gap_refs: list[str],
 ) -> dict[str, Any]:
     queue_items = int(work_queue.get("summary", {}).get("total_work_items", 0))
     paper_readiness_status = str(audit.get("overall_status", "unknown"))
@@ -208,7 +209,7 @@ def build_goal_progress(
             ],
             gaps=[] if baseline_coverage_met else ["Missing required paper baseline coverage."],
         ),
-        backend_gap_criterion(make_criterion),
+        backend_gap_criterion(make_criterion, backend_gap_refs),
         make_criterion(
             identifier="paper_grade_results",
             title="Final paper-grade results",

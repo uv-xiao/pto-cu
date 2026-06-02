@@ -79,3 +79,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-46.md](entries/2026-06-02-part-46.md) | 1 | Goal Progress Backend Gap Guard | Goal Progress Backend Gap Guard |
 | [2026-06-02-part-47.md](entries/2026-06-02-part-47.md) | 1 | Fourth-Tensor Gap Closure | Fourth-Tensor Gap Closure |
 | [2026-06-02-part-48.md](entries/2026-06-02-part-48.md) | 1 | Backend Gap Status Sync Guard | Backend Gap Status Sync Guard |
+| [2026-06-02-part-49.md](entries/2026-06-02-part-49.md) | 1 | Goal Progress Status-Derived Gaps | Goal Progress Status-Derived Gaps |

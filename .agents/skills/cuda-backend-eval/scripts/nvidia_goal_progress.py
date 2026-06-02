@@ -66,6 +66,26 @@ def path_exists(path: str) -> bool:
     )
 
 
+def remaining_gap_refs_from_status() -> list[str]:
+    status = ROOT / "docs" / "nvidia-backend" / "status.md"
+    try:
+        text = status.read_text(encoding="utf-8")
+        body = text.split("\n## Remaining Gaps\n", 1)[1].split("\n## ", 1)[0]
+    except FileNotFoundError:
+        fail(f"missing status file: {status}")
+    except IndexError:
+        fail("status.md has no Remaining Gaps section")
+    refs: list[str] = []
+    for line in body.splitlines():
+        if not line.startswith("- [") or "](" not in line or ")" not in line:
+            continue
+        relpath = line.split("](", 1)[1].split(")", 1)[0]
+        refs.append(f"docs/nvidia-backend/{relpath}")
+    if not refs:
+        fail("status.md has no remaining-gap links")
+    return refs
+
+
 def build_goal_progress(
     *,
     audit: dict[str, Any],
@@ -84,6 +104,7 @@ def build_goal_progress(
         default_baselines=DEFAULT_BASELINES,
         path_exists=path_exists,
         repo_relative=repo_relative,
+        backend_gap_refs=remaining_gap_refs_from_status(),
     )
 
 
