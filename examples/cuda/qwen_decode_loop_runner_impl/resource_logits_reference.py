@@ -167,13 +167,33 @@ def diagnostic_logits_reference_indices(
         // int(weight_stride)
         + 1
     )
-    checked = min(
-        int(value_count),
-        int(max_checked_elements),
-        int(cols),
-        max_weight_backed_cols,
-    )
-    return list(range(max(0, checked)))
+    row_count = max(1, math.ceil(int(value_count) / int(cols)))
+    column_budget = min(int(cols), max_weight_backed_cols)
+    checked = min(int(value_count), int(max_checked_elements))
+    if checked <= 0 or column_budget <= 0:
+        return []
+    rows_to_check = min(row_count, checked)
+    indices = []
+    for col in range(column_budget):
+        for row in range(rows_to_check):
+            row_begin = row * int(cols)
+            row_end = min(row_begin + int(cols), int(value_count))
+            index = row_begin + col
+            if index < row_end:
+                indices.append(index)
+            if len(indices) >= checked:
+                return indices
+    return indices
+
+
+def diagnostic_logits_reference_row_count(
+    *,
+    checked_indices: list[int],
+    cols: int,
+) -> int:
+    if cols <= 0:
+        return 0
+    return len({index // int(cols) for index in checked_indices})
 
 
 def tensor_arg_values_to_f32(values: Any, *, dtype_code: int) -> list[float]:

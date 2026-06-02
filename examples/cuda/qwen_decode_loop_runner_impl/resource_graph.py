@@ -16,6 +16,7 @@ from qwen_decode_loop_runner_impl.resource_logits_reference import (
     compare_logits_reference,
     diagnostic_logits_fallback_values,
     diagnostic_logits_projection_values,
+    diagnostic_logits_reference_row_count,
     diagnostic_logits_reference_indices,
     summarize_logits_values,
     tensor_arg_values_to_f32,
@@ -236,11 +237,16 @@ class MaterializedGraph:
             hidden_stride=hidden_stride,
             weight_stride=weight_stride,
         )
-        return compare_logits_reference(
+        comparison = compare_logits_reference(
             values,
             reference,
             checked_indices=checked_indices,
         )
+        comparison["checked_row_count"] = diagnostic_logits_reference_row_count(
+            checked_indices=checked_indices,
+            cols=cols,
+        )
+        return comparison
 
     def diagnostic_logits_fallback_reference(
         self,

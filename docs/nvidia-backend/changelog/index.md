@@ -8,6 +8,7 @@ what evaluation ran, and what evidence proves the claim.
 
 - [2026-06-03 Persistent scene-test five tensor args](2026-06-03-persistent-scene-test-five-tensor-args.md)
 - [2026-06-03 Persistent tensor-arg helper capacity](2026-06-03-persistent-tensor-arg-helper-capacity.md)
+- [2026-06-03 Qwen logits row reference](2026-06-03-qwen-logits-row-reference.md)
 - [2026-06-03 Qwen QK norm batch row](2026-06-03-qwen-qk-norm-batch-row.md)
 - [2026-06-03 Qwen attention head-dim scale](2026-06-03-qwen-attention-head-dim-scale.md)
 - [2026-06-03 Qwen QK norm paged K-cache](2026-06-03-qwen-qk-norm-paged-k-cache.md)

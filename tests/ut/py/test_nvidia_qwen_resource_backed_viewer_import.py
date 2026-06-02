@@ -126,6 +126,7 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                         "diagnostic_reference": {
                             "status": "pass",
                             "checked_element_count": 65536,
+                            "checked_row_count": 16,
                             "max_abs_error": 0.0,
                         },
                     },
@@ -236,6 +237,13 @@ def test_resource_backed_importer_emits_diagnostic_rows():
         assert (
             record["statistic"]["diagnostic_logits_reference_checked_count"] > 0
         )
+        if record["statistic"]["workload_id"] == "mpk_offline_decode":
+            assert (
+                record["statistic"][
+                    "diagnostic_logits_reference_checked_row_count"
+                ]
+                == 16
+            )
         assert (
             record["statistic"]["diagnostic_logits_reference_max_abs_error"] == 0.0
         )

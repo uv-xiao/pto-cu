@@ -529,7 +529,7 @@ def test_diagnostic_logits_projection_checks_batch_rows():
     assert comparison["checked_element_count"] == 4
 
 
-def test_diagnostic_logits_reference_samples_large_vocab_prefix():
+def test_diagnostic_logits_reference_samples_large_vocab_rows():
     module = load_resource_graph_module()
 
     indices = module.diagnostic_logits_reference_indices(
@@ -541,7 +541,11 @@ def test_diagnostic_logits_reference_samples_large_vocab_prefix():
         max_checked_elements=16,
     )
 
-    assert indices == list(range(16))
+    assert indices == [row * 151_936 for row in range(16)]
+    assert module.diagnostic_logits_reference_row_count(
+        checked_indices=indices,
+        cols=151_936,
+    ) == 16
 
 
 def test_diagnostic_logits_reference_decodes_bfloat16_weights():

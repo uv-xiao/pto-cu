@@ -209,6 +209,9 @@ def build_result_records(
                     "diagnostic_logits_reference_checked_count": int(
                         diagnostic_reference.get("checked_element_count", 0),
                     ),
+                    "diagnostic_logits_reference_checked_row_count": int(
+                        diagnostic_reference.get("checked_row_count", 0),
+                    ),
                     "diagnostic_logits_reference_max_abs_error": float(
                         diagnostic_reference.get("max_abs_error", 0.0),
                     ),

@@ -76,6 +76,11 @@ diagnostic vocabulary window. Use `--resource-backed-logits-active-cols full`
 to request the descriptor's full `cols` extent for focused evaluation runs, or
 pass a positive integer to test a wider bounded window without changing the
 generated device task body.
+The diagnostic logits projection reference samples generated logits across
+batch rows, not only the first row, and records `checked_row_count` in the raw
+artifact and compact resource-backed viewer rows. This is stronger diagnostic
+evidence for batched serving policies while still remaining below full Qwen
+token-level numerical correctness.
 Use `--resource-backed-task-selection first_layer_with_logits` when reviewers
 need a bounded representative callable chain instead of a simple descriptor
 prefix. It executes embedding, layer 0 attention and MLP tasks, final RMSNorm,
