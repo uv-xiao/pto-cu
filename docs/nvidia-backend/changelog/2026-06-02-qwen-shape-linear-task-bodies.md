@@ -19,7 +19,8 @@ reviewable contract instead of separate proxy formulas.
 
 The change does not claim full Qwen serving correctness. It removes the
 projection/logits source-shape blocker while leaving RoPE, paged attention,
-full attention reduction, and sampling as explicit runtime gaps.
+and full attention reduction as explicit runtime gaps. Follow-up source work
+now scans the descriptor vocab width for logits argmax feedback.
 
 ## Evaluation Run
 
@@ -34,6 +35,5 @@ full attention reduction, and sampling as explicit runtime gaps.
 
 ## Remaining Gaps
 
-PTO full-serving rows still require numerically complete Qwen attention,
-sampling, token-by-token decode-loop execution, and viewer import for both
-MPK-policy and VDCores-policy workloads.
+PTO full-serving rows still require full attention, token-by-token decode-loop
+execution, and viewer import for both MPK-policy and VDCores-policy workloads.

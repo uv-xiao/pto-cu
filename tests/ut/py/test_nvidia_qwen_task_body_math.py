@@ -111,10 +111,17 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "task->out[i] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f)" in (
         full_source
     )
+    assert "for (unsigned int token = 1; token < task->cols; ++token)" in (
+        full_source
+    )
+    assert "sampled_tokens" not in full_source
     assert "output_ids[decode_step] = best_token;" in source
     assert "input_ids[0] = best_token;" in source
     assert "qwen_unit_math_source_coverage" in manifest["implemented_contracts"]
     assert "qwen_shape_field_linear_projection_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert "qwen_logits_full_vocab_argmax_source" in manifest[
         "implemented_contracts"
     ]
     assert "qwen_logits_device_sampled_token_feedback_source" in manifest[

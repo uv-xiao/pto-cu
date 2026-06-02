@@ -22,6 +22,6 @@ blocker is full model-shape kernel math plus result import.
 
 ## Remaining Gaps
 
-PTO still needs full attention, sampling, full decode-loop execution, and
-full-serving row import before MPK-policy and VDCores-policy rows can be used
-as paper-ready evidence.
+PTO still needs full attention, full decode-loop execution, and full-serving
+row import before MPK-policy and VDCores-policy rows can be used as
+paper-ready evidence.

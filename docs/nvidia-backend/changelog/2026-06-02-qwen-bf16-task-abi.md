@@ -21,8 +21,8 @@ the same dtype code used by the repo-wide `DataType` enum.
 
 This narrowed the full-serving gap from "device code cannot know resident
 weight dtype" to kernel-math work. Follow-up source work now covers
-shape-field projection and logits linear bodies; attention, sampling, and
-full decode-loop execution remain open.
+shape-field projection, logits linear bodies, and full-vocab argmax source;
+attention and full decode-loop execution remain open.
 
 ## Evaluation Run
 
@@ -38,5 +38,5 @@ full decode-loop execution remain open.
 ## Remaining Gaps
 
 The task bodies are now dtype-aware, but full-serving rows still need RoPE/QK
-norm, paged attention, full attention reduction, sampling logic, and complete
-decode-loop execution.
+norm, paged attention, full attention reduction, and complete decode-loop
+execution.

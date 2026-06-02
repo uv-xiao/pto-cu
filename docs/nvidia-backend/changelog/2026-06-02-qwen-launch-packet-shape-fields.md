@@ -31,5 +31,5 @@ non-final task's `n`.
 
 This change only carries shape metadata to the persistent task ABI. Follow-up
 generated source work uses those fields for projection and logits linear
-bodies. Full-serving Qwen rows still require full attention, sampling, and
-complete decode-loop execution.
+bodies and full-vocab argmax source. Full-serving Qwen rows still require full
+attention and complete decode-loop execution.

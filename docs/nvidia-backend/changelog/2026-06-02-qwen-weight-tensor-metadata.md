@@ -23,5 +23,6 @@ reviewed against descriptor metadata instead of hidden assumptions.
 ## Remaining Gaps
 
 Follow-up work added the BF16 read path and shape-field projection/logits
-linear source. PTO full-serving rows still require full attention, sampling,
-and complete decode-loop execution before they can be imported.
+linear source and full-vocab argmax source. PTO full-serving rows still
+require full attention and complete decode-loop execution before they can be
+imported.

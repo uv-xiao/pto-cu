@@ -32,6 +32,6 @@ host task packet.
 
 This removes one full-model shape blocker for resource-backed Qwen serving.
 Follow-up generated source work uses descriptor shapes for projection and
-logits linear bodies. The branch still needs full attention, sampling, and
-complete decode-loop execution before PTO full-serving rows can be imported as
-paper-ready evidence.
+logits linear bodies and full-vocab argmax source. The branch still needs full
+attention and complete decode-loop execution before PTO full-serving rows can
+be imported as paper-ready evidence.

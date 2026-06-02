@@ -28,6 +28,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_tensor_tile_source_contract",
     "qwen_unit_math_source_coverage",
     "qwen_kernel_token_field_consumption",
+    "qwen_logits_full_vocab_argmax_source",
     "qwen_kernel_kv_field_consumption",
     "qwen_kernel_weight_tensor_arg_consumption",
     "qwen_logits_device_sampled_token_feedback_source",

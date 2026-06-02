@@ -27,9 +27,7 @@ if (task->cols > 0U && task->inner > 0U && has_lm_head) {
         task->tensor_args[3] && i == 0) {
         unsigned int best_token = 0;
         float best_logit = task->out[0];
-        const unsigned int sampled_tokens =
-            task->cols < 4U ? task->cols : 4U;
-        for (unsigned int token = 1; token < sampled_tokens; ++token) {
+        for (unsigned int token = 1; token < task->cols; ++token) {
             const float candidate =
                 pto_cuda_linear_arg_f32(task, 0U, row, token, 0.0f);
             if (candidate > best_logit) {

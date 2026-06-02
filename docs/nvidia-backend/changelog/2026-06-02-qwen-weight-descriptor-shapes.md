@@ -27,5 +27,5 @@ of relying on hardcoded Qwen3-8B constants inside device code.
 
 The descriptors now expose model-shape metadata. Follow-up generated source
 work uses those shapes for projection and logits linear bodies. Full-serving
-rows still need full attention, sampling, and complete decode-loop execution
-before they can be imported.
+rows still need full attention and complete decode-loop execution before they
+can be imported.

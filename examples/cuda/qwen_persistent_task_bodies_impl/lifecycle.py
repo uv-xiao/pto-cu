@@ -346,6 +346,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_kernel_source_map",
             "qwen_unit_math_source_coverage",
             "qwen_shape_field_linear_projection_source",
+            "qwen_logits_full_vocab_argmax_source",
             "qwen_kernel_token_field_consumption",
             "qwen_kernel_kv_field_consumption",
             "qwen_kernel_kv_cache_writeback_field_contract",
