@@ -19,15 +19,22 @@ export function renderPaperWorkQueue(state, lookup) {
     ["Source file", queue.source_file],
   ]);
   const rows = queue.work_items.map((item) => [
+    item.id,
     item.priority,
     item.claim_title,
     item.source,
     item.owner,
+    item.paper_baseline_id ? lookup.paperBaselineName(item.paper_baseline_id) : "-",
+    item.paper_baseline_run_id
+      ? lookup.paperBaselineRunTitle(item.paper_baseline_run_id)
+      : "-",
+    item.execution_attempt_id || "-",
     (item.serving_workload_ids || []).map(lookup.servingWorkloadTitle).join(", ") || "-",
     item.shape_contains || "-",
     item.status,
     item.action,
     (item.evidence_summary || []).join(" | ") || "-",
+    item.promotion_gate,
   ]);
   const heading = document.createElement("h3");
   heading.append(text("Paper Work Queue"));
@@ -36,15 +43,20 @@ export function renderPaperWorkQueue(state, lookup) {
     summary,
     table(
       [
+        "Work Item",
         "Priority",
         "Claim",
         "Source",
         "Owner",
+        "Baseline",
+        "Run",
+        "Execution Attempt",
         "Serving",
         "Shape",
         "Status",
         "Action",
         "Evidence Summary",
+        "Promotion Gate",
       ],
       rows,
     ),
