@@ -36,6 +36,7 @@
         "mpk_offline_decode",
         "vdcores_offline_decode"
       ],
+      "serving_command_plan_selectors": [],
       "shape_contains": "Qwen/Qwen3-8B",
       "status": "missing",
       "action": "Implement and import PTO persistent-device Qwen/Qwen3-8B full-serving rows for mpk_offline_decode and vdcores_offline_decode. Policy-length diagnostic MPK/VDCores execution is present; remaining gaps are numerically correct Qwen kernels and full-serving row import.",
@@ -67,6 +68,9 @@
       "serving_workload_ids": [
         "vdcores_offline_decode"
       ],
+      "serving_command_plan_selectors": [
+        "vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode"
+      ],
       "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
       "status": "missing",
       "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after fixing correctness for the global-instruction capacity path or implementing an equivalent segmented schedule under the shared-instruction runtime.",
@@ -94,6 +98,9 @@
         "mpk_offline_decode",
         "vdcores_offline_decode"
       ],
+      "serving_command_plan_selectors": [
+        "thunderkittens_decode_attention_tile:vdcores_offline_decode"
+      ],
       "shape_contains": "Qwen/Qwen3-8B",
       "status": "missing",
       "action": "Import ThunderKittens-family full-serving Qwen/Qwen3-8B rows beyond the current attention-tile proxy.",
@@ -118,6 +125,7 @@
       "missing_evidence_id": "",
       "method_id": "",
       "serving_workload_ids": [],
+      "serving_command_plan_selectors": [],
       "shape_contains": "",
       "status": "partial",
       "action": "Resolve latest execution attempt vdcores_qwen3_8b_shared_instruction_window_plan_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing.",

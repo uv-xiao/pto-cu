@@ -111,6 +111,7 @@ def main() -> None:
 
     work_queue = work_queue_module.build_work_queue(
         audit,
+        runs=runs,
         audit_path=VIEWER_DATA / "paper_readiness_audit.json",
     )
     work_queue_path = output_dir / "paper_readiness_work_queue.json"

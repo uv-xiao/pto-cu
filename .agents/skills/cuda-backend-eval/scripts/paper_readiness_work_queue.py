@@ -20,6 +20,7 @@ from viewer_data_io import load_json as load_viewer_json
 
 VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
 DEFAULT_AUDIT = VIEWER_DATA / "paper_readiness_audit.json"
+DEFAULT_RUNS = VIEWER_DATA / "paper_baseline_runs.json"
 
 
 def fail(message: str) -> None:
@@ -62,11 +63,13 @@ def require_string(record: dict[str, Any], key: str, owner: str) -> str:
 def build_work_queue(
     audit: dict[str, Any],
     *,
+    runs: dict[str, Any] | None = None,
     audit_path: Path = DEFAULT_AUDIT,
 ) -> dict[str, Any]:
     claims = audit.get("claim_audits")
     if not isinstance(claims, list):
         fail("paper readiness audit has no claim_audits list")
+    run_serving_workloads = baseline_run_serving_workloads(runs)
 
     work_items: list[dict[str, Any]] = []
     for claim in claims:
@@ -91,6 +94,11 @@ def build_work_queue(
                 isinstance(item, str) for item in serving_workload_ids
             ):
                 fail(f"{claim_id} next action has invalid serving_workload_ids")
+            command_selectors = serving_command_plan_selectors(
+                paper_baseline_run_id,
+                serving_workload_ids,
+                run_serving_workloads,
+            )
             owner = paper_baseline_run_id or paper_baseline_id or source
             item_index = len(work_items) + 1
             work_items.append(
@@ -120,6 +128,7 @@ def build_work_queue(
                     ),
                     "method_id": str(action.get("method_id", "")),
                     "serving_workload_ids": serving_workload_ids,
+                    "serving_command_plan_selectors": command_selectors,
                     "shape_contains": str(action.get("shape_contains", "")),
                     "status": require_string(action, "status", claim_id),
                     "action": require_string(action, "action", claim_id),
@@ -147,6 +156,51 @@ def build_work_queue(
     }
 
 
+def serving_command_plan_selectors(
+    paper_baseline_run_id: str,
+    serving_workload_ids: list[str],
+    run_serving_workloads: dict[str, list[str]],
+) -> list[str]:
+    if not paper_baseline_run_id:
+        return []
+    allowed_serving_ids = run_serving_workloads.get(paper_baseline_run_id)
+    if allowed_serving_ids is not None:
+        allowed = set(allowed_serving_ids)
+        serving_workload_ids = [
+            serving_id
+            for serving_id in serving_workload_ids
+            if serving_id in allowed
+        ]
+    return [
+        f"{paper_baseline_run_id}:{serving_workload_id}"
+        for serving_workload_id in serving_workload_ids
+    ]
+
+
+def baseline_run_serving_workloads(
+    runs: dict[str, Any] | None,
+) -> dict[str, list[str]]:
+    if runs is None:
+        return {}
+    records = runs.get("paper_baseline_runs", [])
+    if not isinstance(records, list):
+        fail("paper baseline runs has no paper_baseline_runs list")
+    run_serving_workloads: dict[str, list[str]] = {}
+    for record in records:
+        if not isinstance(record, dict):
+            fail("paper baseline runs contains a non-object record")
+        run_id = str(record.get("id", ""))
+        serving_ids = record.get("serving_workload_ids", [])
+        if not run_id:
+            fail("paper baseline run has empty id")
+        if not isinstance(serving_ids, list) or not all(
+            isinstance(serving_id, str) for serving_id in serving_ids
+        ):
+            fail(f"{run_id} has invalid serving_workload_ids")
+        run_serving_workloads[run_id] = serving_ids
+    return run_serving_workloads
+
+
 def evidence_summary(action: dict[str, Any], owner: str) -> list[str]:
     summary = action.get("evidence_summary", [])
     if summary in (None, ""):
@@ -167,6 +221,12 @@ def parse_args() -> argparse.Namespace:
         help="Input paper_readiness_audit.json path.",
     )
     parser.add_argument(
+        "--baseline-runs",
+        type=Path,
+        default=DEFAULT_RUNS,
+        help="Input paper_baseline_runs.json path.",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=VIEWER_DATA / "paper_readiness_work_queue.json",
@@ -178,7 +238,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     audit = load_json(args.audit)
-    payload = build_work_queue(audit, audit_path=args.audit)
+    runs = load_json(args.baseline_runs)
+    payload = build_work_queue(audit, runs=runs, audit_path=args.audit)
     write_json(args.output, payload)
     print(f"wrote {args.output}")
 

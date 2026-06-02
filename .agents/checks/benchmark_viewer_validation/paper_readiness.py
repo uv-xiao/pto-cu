@@ -150,7 +150,9 @@ def validate_paper_readiness_work_queue(
     work_queue: dict[str, Any],
     *,
     audit: dict[str, Any],
+    runs: dict[str, Any],
     serving_workload_ids: set[str],
+    serving_command_plan: dict[str, Any],
 ) -> None:
     if work_queue.get("schema_version") != 1:
         fail("paper readiness work queue schema_version must be 1")
@@ -180,6 +182,16 @@ def validate_paper_readiness_work_queue(
     if len(work_items) != expected_total:
         fail("paper readiness work queue item count does not match audit")
     item_ids: set[str] = set()
+    command_plan_ids = {
+        record["id"]
+        for record in serving_command_plan.get("serving_command_plans", [])
+        if isinstance(record, dict) and isinstance(record.get("id"), str)
+    }
+    run_serving_ids = {
+        record["id"]: record.get("serving_workload_ids", [])
+        for record in runs.get("paper_baseline_runs", [])
+        if isinstance(record, dict) and isinstance(record.get("id"), str)
+    }
     for expected_priority, item in enumerate(work_items, start=1):
         if not isinstance(item, dict):
             fail("paper readiness work queue item is not an object")
@@ -236,12 +248,38 @@ def validate_paper_readiness_work_queue(
                     f"{owner} references unknown serving_workload_id: "
                     f"{serving_id}"
                 )
+        command_selectors = item.get("serving_command_plan_selectors")
+        if not isinstance(command_selectors, list) or not all(
+            isinstance(selector, str) and selector
+            for selector in command_selectors
+        ):
+            fail(f"{owner} serving_command_plan_selectors is not a string list")
+        expected_serving_ids = serving_ids
+        if item["paper_baseline_run_id"] in run_serving_ids:
+            allowed_serving_ids = set(run_serving_ids[item["paper_baseline_run_id"]])
+            expected_serving_ids = [
+                serving_id
+                for serving_id in serving_ids
+                if serving_id in allowed_serving_ids
+            ]
+        expected_selectors = [
+            f"{item['paper_baseline_run_id']}:{serving_id}"
+            for serving_id in expected_serving_ids
+            if item["paper_baseline_run_id"]
+        ]
+        if command_selectors != expected_selectors:
+            fail(f"{owner} serving command selectors are stale")
+        for selector in command_selectors:
+            if not any(
+                plan_id.startswith(f"{selector}:batch")
+                for plan_id in command_plan_ids
+            ):
+                fail(f"{owner} selector has no serving command plan: {selector}")
         if item["ready_for_paper_claim"]:
             fail(f"{owner} points at a ready paper claim")
-    generated = load_work_queue_builder()(audit)
+    generated = load_work_queue_builder()(audit, runs=runs)
     if work_queue != generated:
         fail(
             "paper readiness work queue is stale; regenerate "
             "paper_readiness_work_queue.json"
         )
-

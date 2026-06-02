@@ -162,7 +162,9 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     validate_paper_readiness_work_queue(
         paper_readiness_work_queue,
         audit=paper_readiness_audit,
+        runs=paper_baseline_runs,
         serving_workload_ids=serving_workload_ids,
+        serving_command_plan=serving_command_plan,
     )
     validate_dispatcher_backlog(paper_readiness_work_queue)
     validate_goal_progress(
