@@ -77,8 +77,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resource-backed-max-tasks", type=int)
     parser.add_argument(
         "--resource-backed-task-selection",
-        choices=["prefix", "first_layer_with_logits"],
+        choices=["prefix", "first_layer_with_logits", "layer_prefix_with_logits"],
         default="prefix",
+    )
+    parser.add_argument(
+        "--resource-backed-layer-count",
+        type=int,
+        help=(
+            "When task selection is layer_prefix_with_logits, include this many "
+            "complete decoder layers plus embedding, final_norm, and logits."
+        ),
     )
     parser.add_argument("--resource-backed-worker-blocks", type=int, default=1)
     parser.add_argument(
@@ -169,6 +177,7 @@ def main() -> None:
         resource_backed_workloads=args.resource_backed_workload,
         resource_backed_max_tasks=args.resource_backed_max_tasks,
         resource_backed_task_selection=args.resource_backed_task_selection,
+        resource_backed_layer_count=args.resource_backed_layer_count,
         resource_backed_worker_blocks=args.resource_backed_worker_blocks,
         resource_backed_logits_check_policy=(
             args.resource_backed_logits_check_policy

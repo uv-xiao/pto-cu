@@ -1490,6 +1490,7 @@ def test_resource_backed_execution_reports_task_coverage():
         workload_ids=None,
         max_task_count=10,
         task_selection="first_layer_with_logits",
+        layer_count=None,
         scheduler_blocks=1,
         worker_blocks=8,
         grid_dim=9,
@@ -1577,6 +1578,62 @@ def test_resource_backed_first_layer_logits_selector_keeps_final_tasks():
         "layer_0_post_attention_norm",
         "layer_0_mlp_gate_up",
         "layer_0_mlp_down",
+        "final_norm",
+        "logits",
+    ]
+
+
+def test_resource_backed_layer_prefix_selector_keeps_complete_layers_and_logits():
+    descriptors = [
+        {"id": "embedding_lookup", "callable": "qwen_embedding_lookup"},
+        {"id": "layer_0_input_norm", "callable": "qwen_rmsnorm_input"},
+        {"id": "layer_0_attention_qkv", "callable": "qwen_attention_qkv"},
+        {"id": "layer_0_attention_qk_norm", "callable": "qwen_attention_qk_norm"},
+        {"id": "layer_0_attention_o", "callable": "qwen_attention_o"},
+        {
+            "id": "layer_0_post_attention_norm",
+            "callable": "qwen_rmsnorm_post_attention",
+        },
+        {"id": "layer_0_mlp_gate_up", "callable": "qwen_mlp_gate_up"},
+        {"id": "layer_0_mlp_down", "callable": "qwen_mlp_down"},
+        {"id": "layer_1_input_norm", "callable": "qwen_rmsnorm_input"},
+        {"id": "layer_1_attention_qkv", "callable": "qwen_attention_qkv"},
+        {"id": "layer_1_attention_qk_norm", "callable": "qwen_attention_qk_norm"},
+        {"id": "layer_1_attention_o", "callable": "qwen_attention_o"},
+        {
+            "id": "layer_1_post_attention_norm",
+            "callable": "qwen_rmsnorm_post_attention",
+        },
+        {"id": "layer_1_mlp_gate_up", "callable": "qwen_mlp_gate_up"},
+        {"id": "layer_1_mlp_down", "callable": "qwen_mlp_down"},
+        {"id": "layer_2_input_norm", "callable": "qwen_rmsnorm_input"},
+        {"id": "final_norm", "callable": "qwen_final_norm"},
+        {"id": "logits", "callable": "qwen_logits"},
+    ]
+
+    selected = select_task_descriptors(
+        descriptors,
+        max_task_count=None,
+        task_selection="layer_prefix_with_logits",
+        layer_count=2,
+    )
+
+    assert [item["id"] for item in selected] == [
+        "embedding_lookup",
+        "layer_0_input_norm",
+        "layer_0_attention_qkv",
+        "layer_0_attention_qk_norm",
+        "layer_0_attention_o",
+        "layer_0_post_attention_norm",
+        "layer_0_mlp_gate_up",
+        "layer_0_mlp_down",
+        "layer_1_input_norm",
+        "layer_1_attention_qkv",
+        "layer_1_attention_qk_norm",
+        "layer_1_attention_o",
+        "layer_1_post_attention_norm",
+        "layer_1_mlp_gate_up",
+        "layer_1_mlp_down",
         "final_norm",
         "logits",
     ]

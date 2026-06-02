@@ -676,30 +676,6 @@
           "path": "tmp/cuda-backend/pto-serving-activation-workspace-2026-06-02/qwen-decode-loop-runner.json"
         },
         {
-          "kind": "viewer_result",
-          "benchmark_id": "llm_serving_decode",
-          "method_id": "pto_persistent_device",
-          "gpu": "A100",
-          "shape_contains": "Qwen/Qwen3-8B controlled proxy microdecode loop",
-          "serving_coverage": "diagnostic_microdecode"
-        },
-        {
-          "kind": "viewer_result",
-          "benchmark_id": "llm_serving_decode",
-          "method_id": "pto_persistent_device",
-          "gpu": "A100",
-          "shape_contains": "Qwen/Qwen3-8B unit math",
-          "serving_coverage": "diagnostic_unit_math"
-        },
-        {
-          "kind": "viewer_result",
-          "benchmark_id": "llm_serving_decode",
-          "method_id": "pto_persistent_device",
-          "gpu": "A100",
-          "shape_contains": "Qwen/Qwen3-8B diagnostic descriptor smoke",
-          "serving_coverage": "diagnostic_qwen_descriptor_smoke"
-        },
-        {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/pto-serving-single-context-session-2026-06-02/qwen-decode-loop-runner.json",
           "symbols": [

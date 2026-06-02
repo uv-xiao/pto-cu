@@ -76,16 +76,17 @@ Projection tasks have their own diagnostic cap. Use
 `cols` for QKV, attention-output, and MLP projections, or pass a positive
 integer for a bounded projection window. A full-Qwen correctness run must set
 both projection and logits active columns to full.
-The diagnostic logits projection reference samples generated logits across
-batch rows, not only the first row, and records `checked_row_count` in the raw
-artifact and compact resource-backed viewer rows. This is stronger diagnostic
-evidence for batched serving policies while still remaining below full Qwen
-token-level numerical correctness.
+The diagnostic logits reference samples batch rows and records
+`checked_row_count` in raw artifacts and compact viewer rows, while still
+remaining below full Qwen token-level numerical correctness.
 Use `--resource-backed-task-selection first_layer_with_logits` when reviewers
 need a bounded representative callable chain instead of a simple descriptor
 prefix. It executes embedding, layer 0 attention and MLP tasks, final RMSNorm,
 and logits so the raw artifact covers Qwen task function ids 7100 through
 7109 without launching all 255 materialized descriptors.
+Use `--resource-backed-task-selection layer_prefix_with_logits` with
+`--resource-backed-layer-count N` to run embedding, the first `N` complete
+decoder layers, final RMSNorm, and logits.
 Use `--resource-backed-numeric-task-mode unit_math` to run the resource-backed
 descriptors with the safe O(n) task bodies that already have unit-math numeric
 branches. RMSNorm uses an explicit external scale, and the QK-norm,

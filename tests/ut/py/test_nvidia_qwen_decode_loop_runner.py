@@ -323,10 +323,10 @@ def test_viewer_matrix_tracks_decode_loop_evidence():
     )
 
 
-def test_viewer_results_import_decode_loop_as_diagnostic_not_full_serving():
+def test_viewer_results_keep_current_resource_backed_qwen_rows_only():
     results = load_viewer_results()
 
-    rows = [
+    proxy_rows = [
         record
         for record in results
         if record["benchmark_id"] == "llm_serving_decode"
@@ -338,15 +338,28 @@ def test_viewer_results_import_decode_loop_as_diagnostic_not_full_serving():
             "qwen-microdecode-loop.json"
         )
     ]
+    assert proxy_rows == []
 
-    assert len(rows) == 1
-    row = rows[0]
-    assert "Qwen/Qwen3-8B controlled proxy microdecode loop" in row["inputs"]["shape"]
-    assert row["statistic"]["serving_coverage"] == "diagnostic_microdecode"
-    assert row["statistic"]["repeat_runs"] == 3
-    assert row["statistic"]["completed_count"] == 9
-    assert row["statistic"]["error_count"] == 0
-    assert row["correctness"] == "pass"
+    resource_rows = [
+        record
+        for record in results
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["method_id"] == "pto_persistent_device"
+        and record["hardware"]["gpu"] == "A100"
+        and record["statistic"]["serving_coverage"]
+        == "diagnostic_resource_backed_qwen_dag"
+    ]
+
+    assert {row["statistic"]["workload_id"] for row in resource_rows} == {
+        "mpk_offline_decode",
+        "vdcores_offline_decode",
+    }
+    for row in resource_rows:
+        assert "Qwen/Qwen3-8B resource-backed diagnostic" in row["inputs"]["shape"]
+        assert row["statistic"]["task_selection"] == "first_layer_with_logits"
+        assert row["statistic"]["completed_count"] == 10
+        assert row["statistic"]["error_count"] == 0
+        assert row["correctness"] == "pass"
 
 
 def test_preflight_does_not_promote_diagnostic_qwen_rows_to_full_serving():

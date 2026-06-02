@@ -14,7 +14,7 @@ they become essential end-to-end examples with benchmark-viewer evidence.
 - [Host-Schedule Vector Ops](docs/host-schedule-vector-ops.md) (21 lines)
 - [Persistent Layered-Cross Graph](docs/persistent-layered-cross-graph.md) (20 lines)
 - [Qwen Persistent Task Bodies](docs/qwen-persistent-task-bodies.md) (81 lines)
-- [Qwen Decode Loop Runner](docs/qwen-decode-loop-runner.md) (119 lines)
+- [Qwen Decode Loop Runner](docs/qwen-decode-loop-runner.md) (120 lines)
 
 ## Contract
 

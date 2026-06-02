@@ -454,6 +454,12 @@ PYTHONPATH=$PWD:$PWD/python \
     --output-json tmp/cuda-backend/pto-serving-decode-loop-submission-descriptors-$(git rev-parse --short HEAD)/qwen-decode-loop-runner.json
 ```
 
+Use `--resource-backed-task-selection layer_prefix_with_logits` with
+`--resource-backed-layer-count <N>` for bounded Qwen diagnostics that keep a
+complete prefix of decoder layers plus embedding, final RMSNorm, and logits.
+This is the preferred scaling path between `first_layer_with_logits` and the
+full 36-layer descriptor list.
+
 Use `examples/cuda/qwen_persistent_task_bodies.py` when reviewers need the
 repo-owned Qwen persistent task-body source manifest. The current artifact
 renders through the existing persistent DAG source generator and records token,

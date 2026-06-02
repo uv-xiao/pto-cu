@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ctypes
 from pathlib import Path
+import re
 from typing import Any
 
 from simpler_setup.cuda_callable_compiler import (
@@ -75,6 +76,7 @@ def run_resource_backed_execution(
     workload_ids: list[str] | None = None,
     max_task_count: int | None = None,
     task_selection: str = "prefix",
+    layer_count: int | None = None,
     worker_blocks: int = 1,
     logits_check_policy: str = "every_step",
     logits_active_cols: str | int | None = None,
@@ -99,6 +101,7 @@ def run_resource_backed_execution(
         descriptors,
         max_task_count=max_task_count,
         task_selection=task_selection,
+        layer_count=layer_count,
     )
     descriptors, projection_active_cols_policy = (
         apply_projection_active_cols_override(
@@ -173,6 +176,7 @@ def run_resource_backed_execution(
         workload_ids=workload_ids,
         max_task_count=max_task_count,
         task_selection=task_selection,
+        layer_count=layer_count,
         scheduler_blocks=scheduler_blocks,
         worker_blocks=worker_blocks,
         grid_dim=grid_dim,
@@ -190,11 +194,17 @@ def select_task_descriptors(
     *,
     max_task_count: int | None,
     task_selection: str,
+    layer_count: int | None = None,
 ) -> list[dict[str, Any]]:
     if task_selection == "prefix":
         selected = descriptors
     elif task_selection == "first_layer_with_logits":
         selected = first_layer_with_logits_descriptors(descriptors)
+    elif task_selection == "layer_prefix_with_logits":
+        selected = layer_prefix_with_logits_descriptors(
+            descriptors,
+            layer_count=layer_count,
+        )
     else:
         raise ValueError(f"unknown resource-backed task selection: {task_selection}")
     if max_task_count is not None:
@@ -214,6 +224,32 @@ def first_layer_with_logits_descriptors(
             or item.get("id") in {"final_norm", "logits"}
         )
     ]
+
+
+def layer_prefix_with_logits_descriptors(
+    descriptors: list[dict[str, Any]],
+    *,
+    layer_count: int | None,
+) -> list[dict[str, Any]]:
+    requested_layers = 1 if layer_count is None else max(1, int(layer_count))
+    return [
+        item
+        for item in descriptors
+        if (
+            item.get("id") == "embedding_lookup"
+            or descriptor_layer_index(item) in range(requested_layers)
+            or item.get("id") in {"final_norm", "logits"}
+        )
+    ]
+
+
+def descriptor_layer_index(descriptor: dict[str, Any]) -> int | None:
+    if "layer_index" in descriptor:
+        return int(descriptor["layer_index"])
+    match = re.match(r"layer_(\d+)_", str(descriptor.get("id", "")))
+    if match is None:
+        return None
+    return int(match.group(1))
 
 
 def prompt_prefill_descriptors(
