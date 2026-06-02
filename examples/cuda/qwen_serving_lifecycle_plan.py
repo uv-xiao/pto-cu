@@ -28,6 +28,7 @@ class QwenModelShape:
     head_dim: int
     vocab_size: int
     max_position_embeddings: int
+    rope_theta: float
 
 
 QWEN3_8B_SHAPE = QwenModelShape(
@@ -42,6 +43,7 @@ QWEN3_8B_SHAPE = QwenModelShape(
     head_dim=128,
     vocab_size=151936,
     max_position_embeddings=40960,
+    rope_theta=1000000.0,
 )
 
 
@@ -74,6 +76,7 @@ def model_shape_payload(shape: QwenModelShape) -> dict[str, Any]:
         "head_dim": shape.head_dim,
         "vocab_size": shape.vocab_size,
         "max_position_embeddings": shape.max_position_embeddings,
+        "rope_theta": shape.rope_theta,
         "source_note": (
             "tmp/sources/qwen3-8b-config-d117af2f.json mirrors the "
             "Hugging Face Qwen/Qwen3-8B config snapshot used for this plan."

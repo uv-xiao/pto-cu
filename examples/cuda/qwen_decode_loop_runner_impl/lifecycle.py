@@ -284,6 +284,13 @@ def build_decode_loop_runner(
         for item in workload_preflights
     ):
         implemented_contracts.append("qwen_rope_table_launch_packet_binding")
+    workspace_plans = activation_workspace.get("workspace_plans", [])
+    if workspace_plans and all(
+        item.get("rope_table_policy")
+        == "position_correct_for_first_decode_position"
+        for item in workspace_plans
+    ):
+        implemented_contracts.append("qwen_position_rope_table_population")
     return {
         "schema_version": 1,
         "kind": "pto_qwen_decode_loop_runner",

@@ -19,6 +19,7 @@ from qwen_decode_loop_runner_impl.activation_workspace import (  # noqa: E402
 )
 from qwen_decode_loop_runner_impl.workspace_pointers import (  # noqa: E402
     initialize_rope_tables,
+    rope_table_values,
 )
 from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
     numeric_task_mode_summary,
@@ -213,10 +214,15 @@ def test_launch_packet_uses_full_logits_extent_for_final_logits_task():
 
 
 def test_workspace_plan_sizes_activation_buffers_from_descriptor_outputs():
-    plan = {"workload_id": "mpk_offline_decode", "max_batch_size": 2}
+    plan = {
+        "workload_id": "mpk_offline_decode",
+        "max_batch_size": 2,
+        "first_decode_position": 4,
+    }
     model_shape = {
         "head_dim": 4,
         "hidden_size": 4,
+        "rope_theta": 100.0,
         "vocab_size": 16,
     }
     descriptors = [
@@ -237,6 +243,11 @@ def test_workspace_plan_sizes_activation_buffers_from_descriptor_outputs():
     assert workspace["activation_buffer_elements"] == 16
     assert workspace["rope_table_count"] == 2
     assert workspace["rope_table_elements"] == 2
+    assert workspace["rope_base_position"] == 4
+    assert workspace["rope_theta"] == 100.0
+    assert workspace["rope_table_policy"] == (
+        "position_correct_for_first_decode_position"
+    )
     assert workspace["total_buffer_count"] == 5
     assert workspace["total_byte_count"] == 32 + 64 + 2 * 16 * 4 + 2 * 2 * 4
 
@@ -298,7 +309,26 @@ def test_launch_packet_binds_runtime_rope_table_tensor_args():
     assert packet[0].tensor_arg_count == 4
 
 
-def test_live_workspace_initializes_rope_tables_as_identity():
+def test_rope_table_values_use_qwen_position_formula():
+    tables = rope_table_values(
+        {
+            "rope_base_position": 4,
+            "rope_table_elements": 2,
+            "rope_theta": 100.0,
+        },
+    )
+
+    assert [round(value, 6) for value in tables["rope_cos_table"]] == [
+        -0.653644,
+        0.921061,
+    ]
+    assert [round(value, 6) for value in tables["rope_sin_table"]] == [
+        -0.756802,
+        0.389418,
+    ]
+
+
+def test_live_workspace_initializes_rope_tables_from_position_policy():
     class FakeRuntime:
         def __init__(self):
             self.copied = {}
@@ -316,25 +346,37 @@ def test_live_workspace_initializes_rope_tables_as_identity():
         {
             "role": "rope_cos_table",
             "device_ptr": 0xA000,
-            "element_count": 3,
+            "element_count": 2,
         },
         {
             "role": "rope_sin_table",
             "device_ptr": 0xB000,
-            "element_count": 3,
+            "element_count": 2,
         },
     ]
 
-    initialize_rope_tables(runtime, object(), rope_tables)
-
-    assert runtime.copied == {
-        0xA000: [1.0, 1.0, 1.0],
-        0xB000: [0.0, 0.0, 0.0],
+    plan = {
+        "rope_base_position": 4,
+        "rope_table_elements": 2,
+        "rope_table_policy": "position_correct_for_first_decode_position",
+        "rope_theta": 100.0,
     }
-    assert [item["initialization"] for item in rope_tables] == [
-        "identity_rope_table",
-        "identity_rope_table",
+
+    initialize_rope_tables(runtime, object(), rope_tables, plan=plan)
+
+    assert [round(value, 6) for value in runtime.copied[0xA000]] == [
+        -0.653644,
+        0.921061,
     ]
+    assert [round(value, 6) for value in runtime.copied[0xB000]] == [
+        -0.756802,
+        0.389418,
+    ]
+    assert [item["initialization"] for item in rope_tables] == [
+        "position_correct_for_first_decode_position",
+        "position_correct_for_first_decode_position",
+    ]
+    assert [item["base_position"] for item in rope_tables] == [4, 4]
 
 
 def test_launch_packet_uses_per_task_activation_output_extent():

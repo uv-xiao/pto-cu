@@ -113,6 +113,8 @@ def workspace_plan(
     hidden_elements = rows * int(model_shape["hidden_size"])
     logits_elements = int(plan["max_batch_size"]) * int(model_shape["vocab_size"])
     rope_table_elements = max(int(model_shape["head_dim"]) // 2, 1)
+    rope_base_position = int(plan.get("first_decode_position", 0))
+    rope_theta = float(model_shape.get("rope_theta", 1000000.0))
     activation_count = max(graph_task_count - 1, 0)
     activation_element_counts = activation_buffer_element_counts(
         rows=rows,
@@ -141,6 +143,9 @@ def workspace_plan(
         "rope_table_count": 2,
         "rope_table_elements": rope_table_elements,
         "rope_table_bytes": rope_table_elements * 4,
+        "rope_base_position": rope_base_position,
+        "rope_theta": rope_theta,
+        "rope_table_policy": "position_correct_for_first_decode_position",
         "total_buffer_count": activation_count + 3,
         "total_byte_count": sum(elements * 4 for elements in activation_element_counts)
         + logits_elements * 4

@@ -19,7 +19,7 @@ modified and no external kernel source is vendored into PTO.
 | --- | --- | --- |
 | RMSNorm callables | FlashInfer `norm.cu`, vLLM `layernorm_kernels.cu`, SGLang `rmsnorm.cuh` | Block-threaded diagnostic reduction is live. |
 | MLP gate/up | vLLM `activation_kernels.cu`, SGLang SiLU-mul JIT kernels | Elementwise unit-math formula is live; model-shape gate/up buffers remain missing. |
-| QK norm, RoPE, attention | FlashInfer decode/QK-RoPE, SGLang fused QKNorm-RoPE | PTO has shape-field QK RMSNorm/RoPE formula source, descriptor-level RoPE table slots, and launch-packet live RoPE pointer binding with identity diagnostic table initialization; position-correct RoPE table population and decode attention remain open. |
+| QK norm, RoPE, attention | FlashInfer decode/QK-RoPE, SGLang fused QKNorm-RoPE | PTO has shape-field QK RMSNorm/RoPE formula source, descriptor-level RoPE table slots, and launch-packet live RoPE pointer binding with Qwen-theta first-position table population; dynamic per-step RoPE refresh and decode attention remain open. |
 | KV cache writes | vLLM `cache_kernels.cu`, SGLang `kvcache.cuh` | PTO has mutable `c`/`d` fields; slot-mapped cache writes remain missing. |
 | Logits | vLLM Qwen3 model path | PTO has diagnostic logits and sampled-token feedback; tiled vocab projection remains missing. |
 

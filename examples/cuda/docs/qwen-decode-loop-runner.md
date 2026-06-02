@@ -47,9 +47,9 @@ a logits/sampling output buffer, and runtime-generated RoPE cos/sin tables.
 The launch-packet preflight resolves `runtime_buffers.rope_cos_table` and
 `runtime_buffers.rope_sin_table` descriptor references into
 `CudaPersistentDagTask::tensor_args` entries before the workspace owner closes.
-For diagnostic execution, live RoPE tables are initialized as identity tables
-with cos `1.0f` and sin `0.0f`; position-correct RoPE table population remains
-part of full-serving correctness work.
+For diagnostic execution, live RoPE tables are populated from Qwen's
+`rope_theta` and the workload `first_decode_position`; dynamic per-step table
+refresh remains part of full decode-loop execution work.
 With `--single-context-live-session`, token buffers, KV-cache, resident weights,
 and activation workspace are allocated under one CUDA context before graph
 materialization and launch-packet preflight, then closed after the preflight
@@ -88,9 +88,9 @@ task descriptors bound to concrete CUDA-live pointers.
 Its launch-packet preflight also packs the host-side `CudaPersistentDagTask`
 array from those pointers. When the activation workspace is live, intermediate
 tasks are chained through activation buffers and the final task writes to a
-float logits/sampling output buffer. QK-norm/RoPE tasks receive live
-runtime-buffer pointers for their cos/sin tables through the same packet.
-Activation buffers are sized from descriptor output shapes when those shapes
-are available, so widened QKV and MLP intermediates no longer share the
-hidden-size fallback. It still does not execute full Qwen kernels or a
-full-serving decode loop.
+float logits/sampling output buffer. QK-norm/RoPE tasks receive live,
+position-populated runtime-buffer pointers for their cos/sin tables through
+the same packet. Activation buffers are sized from descriptor output shapes
+when those shapes are available, so widened QKV and MLP intermediates no
+longer share the hidden-size fallback. It still does not execute full Qwen
+kernels or a full-serving decode loop.

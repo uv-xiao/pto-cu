@@ -37,6 +37,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_resource_backed_launch_packet_preflight",
     "qwen_activation_workspace_launch_packet_binding",
     "qwen_rope_table_launch_packet_binding",
+    "qwen_position_rope_table_population",
     "single_context_live_resource_session",
     "qwen_resource_backed_diagnostic_execution",
     "qwen_resource_backed_decode_step_execution",

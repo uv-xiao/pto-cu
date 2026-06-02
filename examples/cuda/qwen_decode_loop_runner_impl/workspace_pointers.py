@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ctypes
+import math
 from pathlib import Path
 from typing import Any
 
@@ -177,7 +178,7 @@ def allocate_pointer_set(
         )
         for name in ("rope_cos_table", "rope_sin_table")
     ]
-    initialize_rope_tables(runtime, ctx, rope_tables)
+    initialize_rope_tables(runtime, ctx, rope_tables, plan=plan)
     return pointer_set(
         plan=plan,
         activation_buffers=activation_buffers,
@@ -214,12 +215,12 @@ def initialize_rope_tables(
     runtime: Any,
     ctx: Any,
     rope_tables: list[dict[str, Any]],
+    plan: dict[str, Any],
 ) -> None:
+    tables = rope_table_values(plan)
     for item in rope_tables:
-        value = 1.0 if item["role"] == "rope_cos_table" else 0.0
-        host = (ctypes.c_float * int(item["element_count"]))(
-            *([value] * int(item["element_count"]))
-        )
+        values = tables[item["role"]]
+        host = (ctypes.c_float * len(values))(*values)
         status = runtime.copy_to_device_ctx(
             ctx,
             ctypes.c_void_p(int(item["device_ptr"])),
@@ -228,7 +229,24 @@ def initialize_rope_tables(
         )
         if status != 0:
             raise RuntimeError(f"copy_to_device {item['role']} failed")
-        item["initialization"] = "identity_rope_table"
+        item["initialization"] = plan["rope_table_policy"]
+        item["base_position"] = int(plan["rope_base_position"])
+        item["rope_theta"] = float(plan["rope_theta"])
+
+
+def rope_table_values(plan: dict[str, Any]) -> dict[str, list[float]]:
+    count = int(plan["rope_table_elements"])
+    head_dim = max(count * 2, 1)
+    position = int(plan["rope_base_position"])
+    theta = float(plan["rope_theta"])
+    angles = [
+        position / (theta ** (float(index * 2) / float(head_dim)))
+        for index in range(count)
+    ]
+    return {
+        "rope_cos_table": [math.cos(angle) for angle in angles],
+        "rope_sin_table": [math.sin(angle) for angle in angles],
+    }
 
 
 def pointer_set(
@@ -258,16 +276,22 @@ def rope_table_records(
     base_ptr: int,
     stride: int,
 ) -> list[dict[str, Any]]:
-    return [
-        buffer_record(
-            name=name,
-            role=name,
-            ptr=base_ptr + index * stride,
-            byte_count=plan["rope_table_bytes"],
-            element_count=plan["rope_table_elements"],
-        )
+    records = [
+        {
+            **buffer_record(
+                name=name,
+                role=name,
+                ptr=base_ptr + index * stride,
+                byte_count=plan["rope_table_bytes"],
+                element_count=plan["rope_table_elements"],
+            ),
+            "initialization": plan["rope_table_policy"],
+            "base_position": int(plan["rope_base_position"]),
+            "rope_theta": float(plan["rope_theta"]),
+        }
         for index, name in enumerate(("rope_cos_table", "rope_sin_table"))
     ]
+    return records
 
 
 def buffer_record(
