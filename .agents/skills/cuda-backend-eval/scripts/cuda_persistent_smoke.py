@@ -29,6 +29,7 @@ from cuda_persistent_smoke_impl.fallback_ptx import (
     FALLBACK_PERSISTENT_QUEUE_VECTOR_ADD_PTX as _FALLBACK_PERSISTENT_QUEUE_VECTOR_ADD_PTX,
     FALLBACK_PERSISTENT_VECTOR_ADD_PTX as _FALLBACK_PERSISTENT_VECTOR_ADD_PTX,
 )
+from cuda_normal_graph import CudaNormalGraphNode, lower_normal_graph
 
 from simpler_setup.cuda_callable_compiler import (
     CudaPersistentCallableArtifact,
@@ -1663,13 +1664,39 @@ def _make_dag_shape(  # noqa: PLR0912, PLR0915
                 ),
             ),
         )
+    if dag_shape == "graph_descriptor_submits":
+        nodes = (
+            CudaNormalGraphNode("task0", 1, dev_a, dev_b, dev_tmp1, n),
+            CudaNormalGraphNode("task1", 1, dev_tmp1, dev_b, dev_tmp1, n, depends_on=("task0",)),
+            CudaNormalGraphNode("task2", 1, dev_tmp1, dev_a, dev_out, n, depends_on=("task1",)),
+        )
+        lowered = lower_normal_graph(
+            nodes,
+            lambda node, dependent_begin, dependent_count, initial_fanin: make_task(
+                node.func_id,
+                node.a,
+                node.b,
+                node.out,
+                dependent_begin,
+                dependent_count,
+                initial_fanin,
+                node.attrs,
+            ),
+        )
+        host_fanin_t = ctypes.c_uint32 * len(lowered.fanin)
+        dependents_t = ctypes.c_uint32 * len(lowered.dependents)
+        task_t = CudaPersistentDagTask * len(lowered.tasks)
+        return (
+            host_fanin_t(*lowered.fanin),
+            dependents_t(*lowered.dependents),
+            task_t(*lowered.tasks),
+        )
     if dag_shape in {
         "graph_descriptor_compact_role_inout",
         "graph_descriptor_pair_inout",
         "graph_descriptor_role_map_inout",
         "graph_descriptor_tagged_inout",
         "graph_descriptor_role_keyed_inout",
-        "graph_descriptor_submits",
     }:
         task_count = 3
         host_fanin_t = ctypes.c_uint32 * task_count
@@ -2907,6 +2934,8 @@ def _run_dag_smoke(config: DagSmokeConfig) -> dict:  # noqa: PLR0912, PLR0915
                     "task1": "inout:tmp1,input:b",
                     "task2": "input:tmp1,input:a,output_existing:out",
                 }
+                if config.dag_shape == "graph_descriptor_submits":
+                    result["graph_lowering"] = "normal_graph"
             if config.dag_shape == "graph_descriptor_submit_groups":
                 result["graph_task_arg_key"] = "submit_groups"
                 result["graph_task_args"] = {

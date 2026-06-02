@@ -46,6 +46,34 @@ def test_cuda_runtime_builder_discovers_persistent_device():
     assert "persistent_device" in builder.list_runtimes()
 
 
+def test_cuda_normal_graph_lowering_builds_persistent_dag_arrays():
+    sys.path.insert(0, ".agents/skills/cuda-backend-eval/scripts")
+    from cuda_normal_graph import CudaNormalGraphNode, lower_normal_graph
+
+    lowered = lower_normal_graph(
+        (
+            CudaNormalGraphNode("root", 1, 10, 20, 30, 128),
+            CudaNormalGraphNode("middle", 2, 30, 20, 40, 128, depends_on=("root",)),
+            CudaNormalGraphNode("join", 1, 40, 10, 50, 128, depends_on=("middle",)),
+        ),
+        lambda node, begin, count, fanin: {
+            "key": node.key,
+            "func_id": node.func_id,
+            "dependent_begin": begin,
+            "dependent_count": count,
+            "initial_fanin": fanin,
+        },
+    )
+
+    assert lowered.fanin == [0, 1, 1]
+    assert lowered.dependents == [1, 2]
+    assert lowered.tasks == [
+        {"key": "root", "func_id": 1, "dependent_begin": 0, "dependent_count": 1, "initial_fanin": 0},
+        {"key": "middle", "func_id": 2, "dependent_begin": 1, "dependent_count": 1, "initial_fanin": 1},
+        {"key": "join", "func_id": 1, "dependent_begin": 2, "dependent_count": 0, "initial_fanin": 1},
+    ]
+
+
 class CudaHostCallable(ctypes.Structure):
     _fields_ = [
         ("version", ctypes.c_uint32),
@@ -2058,6 +2086,7 @@ assert result["graph_descriptor"] == {
     "fanin": [0, 1, 1],
 }
 assert result["source_kind"] == "generated-dispatch"
+assert result["graph_lowering"] == "normal_graph"
 assert result["graph_task_arg_key"] == "submits"
 assert result["graph_task_args"] == {
     "task0": "input:a,input:b,output:tmp1",

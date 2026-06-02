@@ -81,9 +81,11 @@ DAG specs. The current adapters construct `vector_add_f32`,
 `TaskArgsBuilder` CPU tensors and scalars. This covers the current
 tracer-bullet argument families: unary, binary, triad, quad, fixed scalar
 fields, bounded generic tensor/scalar slots, graph descriptors, scalar tensor
-tiles, and a WMMA tensor-core tile. The remaining work is general lowering
-from normal PTO task graphs into those CUDA descriptor families, plus broader
-tuned tensor kernels beyond the current smoke and microbenchmark bodies.
+tiles, and a WMMA tensor-core tile. The first no-torch normal graph helper now
+lowers node keys plus `depends_on` edges into the CUDA persistent DAG fan-in and
+dependent arrays for `graph_descriptor_submits`. The remaining work is broader
+normal PTO task graph lowering into all CUDA descriptor families, plus tuned
+tensor kernels beyond the current smoke and microbenchmark bodies.
 
 The descriptor now also carries bounded generic argument slots:
 `tensor_args[4]`, `scalar_args[4]`, `tensor_arg_count`, and
@@ -275,4 +277,3 @@ the fixed tile adapters: `rows`, `cols`, `inner`, `lda`, `ldb`, `ldc`,
 explicit graph descriptor run the same scalar tiled-GEMM first task as
 `persistent_dag_tensor_tile_f32`, then combine it with residual, gate, and
 fan-in elementwise tasks without switching to a separate fixed adapter.
-
