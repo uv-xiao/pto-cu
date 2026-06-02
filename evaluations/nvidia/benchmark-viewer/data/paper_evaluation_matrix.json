@@ -1481,6 +1481,25 @@
             "diagnostic_qwen_tiled_vocab_projection",
             "logits_summary_stable"
           ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/qwen-full-rmsnorm-marker-fix-clean-mpk-2026-06-03/",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "final_step_logits_check_policy",
+            "qwen_resource_backed_unit_numeric_task_mode",
+            "qwen_resource_backed_full_rmsnorm_reduction",
+            "qwen_resource_backed_weighted_elementwise_branches",
+            "qwen_device_decode_token_feedback",
+            "full_logits_buffer_checked",
+            "diagnostic_qwen_tiled_vocab_projection",
+            "logits_summary_stable"
+          ]
         }
       ],
       "missing_evidence_details": [

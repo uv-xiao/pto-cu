@@ -9,17 +9,17 @@
     "cuda_toolkit": "see raw artifact",
     "clock_policy": "not recorded in current snapshot"
   },
-  "commit": "c98eabff",
+  "commit": "758c47b3",
   "inputs": {
-    "shape": "Qwen/Qwen3-8B resource-backed diagnostic vdcores_offline_decode, graph_tasks=10, repeat_runs=1",
+    "shape": "Qwen/Qwen3-8B resource-backed diagnostic mpk_offline_decode, graph_tasks=10, repeat_runs=1",
     "dtype": "float32 diagnostic task bodies with real buffers",
     "repeat_policy": "single prepared callable reused across 1 resource-backed run_prepared submission(s) inside one CUDA context"
   },
   "statistic": {
     "kind": "pto_qwen_resource_backed_execution",
     "sample_count": 1,
-    "host_wall_ns": 3892306521,
-    "device_wall_ns": 3892239360,
+    "host_wall_ns": 16511551364,
+    "device_wall_ns": 16511398912,
     "run_prepared_status": 0,
     "completed_count": 10,
     "error_count": 0,
@@ -28,10 +28,17 @@
     "scheduler_processed_count": 10,
     "repeat_runs": 1,
     "execution_mode": "bounded_decode_steps",
-    "planned_decode_steps": 64,
+    "planned_decode_steps": 1024,
     "executed_decode_steps": 1,
     "decode_step_limit": 1,
     "logits_check_policy": "final_step",
+    "logits_active_cols_policy": {
+      "mode": "full_descriptor_cols",
+      "requested_active_cols": "full",
+      "applied_scalar1_values": [
+        151936
+      ]
+    },
     "logits_checked_step_count": 1,
     "logits_deferred_step_count": 0,
     "numeric_task_mode": "unit_math_full_rmsnorm",
@@ -71,19 +78,19 @@
       "qwen_logits"
     ],
     "serving_coverage": "diagnostic_resource_backed_qwen_dag",
-    "workload_id": "vdcores_offline_decode",
+    "workload_id": "mpk_offline_decode",
     "context_policy": "one_cuda_context_for_all_resource_owners",
-    "logits_coverage": "partial_logits_not_full_vocab",
-    "logits_written_element_count": 16384,
+    "logits_coverage": "full_logits_buffer_checked",
+    "logits_written_element_count": 2430976,
     "logits_buffer_element_count": 2430976,
-    "logits_sampled_element_count": 16384,
-    "sampled_token_id": 0,
-    "sampled_token_logit": 0.0,
+    "logits_sampled_element_count": 2430976,
+    "sampled_token_id": 63690,
+    "sampled_token_logit": 0.242661,
     "logits_summary_stable": true,
     "diagnostic_logits_reference_status": "pass",
     "diagnostic_logits_reference_checked_count": 244,
-    "diagnostic_logits_reference_max_abs_error": 0.0
+    "diagnostic_logits_reference_max_abs_error": 1.2e-07
   },
-  "raw_artifact": "tmp/cuda-backend/qwen-full-task-coverage/",
+  "raw_artifact": "tmp/cuda-backend/qwen-full-rmsnorm-marker-fix-clean-mpk-2026-06-03/",
   "correctness": "pass"
 }
