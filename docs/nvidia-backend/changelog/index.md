@@ -7,6 +7,7 @@ what evaluation ran, and what evidence proves the claim.
 ## Reports
 
 - [2026-06-02 paper baseline source provenance guard](2026-06-02-paper-baseline-source-provenance-guard.md)
+- [2026-06-02 dispatcher command selector guard](2026-06-02-dispatcher-command-selector-guard.md)
 - [2026-06-02 paper work queue command selectors](2026-06-02-paper-work-queue-command-selectors.md)
 - [2026-06-02 serving command artifact guard](2026-06-02-serving-command-artifact-guard.md)
 - [2026-06-02 paper work queue rendering guard](2026-06-02-paper-work-queue-rendering-guard.md)

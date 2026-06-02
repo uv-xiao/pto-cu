@@ -29,8 +29,12 @@ The generated paper-readiness queue currently has `4` active paper work items:
   persistent-device Qwen/Qwen3-8B rows for MPK and VDCores policies.
 - `paper_readiness_work_item_002`: run and import the VDCores full-serving
   Qwen/Qwen3-8B row after correctness is fixed for the shared-instruction path.
+  Command-plan selector:
+  `vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode`.
 - `paper_readiness_work_item_003`: import ThunderKittens-family full-serving
   Qwen/Qwen3-8B rows beyond the current attention-tile proxy.
+  Command-plan selector:
+  `thunderkittens_decode_attention_tile:vdcores_offline_decode`.
 - `paper_readiness_work_item_004`: resolve the VDCores shared-instruction
   window plan into a runnable baseline before importing the preflight row.
 

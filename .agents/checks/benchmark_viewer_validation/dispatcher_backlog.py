@@ -60,3 +60,14 @@ def validate_dispatcher_backlog(work_queue: dict[str, Any]) -> None:
         item_id = require_string(item, "id", "paper readiness work item")
         if item_id not in text:
             fail(f"dispatcher backlog missing work item: {item_id}")
+        selectors = item.get("serving_command_plan_selectors", [])
+        if not isinstance(selectors, list) or not all(
+            isinstance(selector, str) for selector in selectors
+        ):
+            fail(f"{item_id} has invalid serving command selectors")
+        for selector in selectors:
+            if selector not in text:
+                fail(
+                    "dispatcher backlog missing serving command selector "
+                    f"for {item_id}: {selector}"
+                )
