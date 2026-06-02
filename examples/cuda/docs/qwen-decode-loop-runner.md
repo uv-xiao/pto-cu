@@ -67,7 +67,10 @@ below full Qwen numerical serving correctness.
 Use `--resource-backed-numeric-task-mode unit_math_full_rmsnorm` when reviewers
 need to exercise the generated RMSNorm full-reduction branch instead of the
 external-scale bridge. This mode is slower and still diagnostic, but it moves
-the resource-backed path closer to full Qwen numerical correctness.
+the resource-backed path closer to full Qwen numerical correctness. The live
+resource-backed diagnostic caps hidden-stage work to one 4,096-element hidden
+vector so the current O(n²) generated RMSNorm branch remains runnable while
+reviewers can still distinguish it from the external-scale shortcut.
 The `cuda_live_submission_descriptor_contract` maps those resource pointers
 to Qwen task function ids 7100 through 7109 and records the `run_prepared`
 repetition count. With `--run-submission-smoke`, it also compiles those same

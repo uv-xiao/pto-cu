@@ -260,7 +260,56 @@ def test_launch_packet_can_select_full_rmsnorm_reduction_branch():
     assert summary["full_reduction_contracts"] == [
         {
             "callable": "qwen_rmsnorm_input",
+            "element_limit": 4096,
             "scalar_arg_count": 1,
             "scope": "resource_backed_full_rmsnorm_reduction",
         },
     ]
+
+
+def test_full_rmsnorm_mode_caps_hidden_vector_extent():
+    descriptors = [
+        {"callable": "qwen_rmsnorm_input", "tensor_args": []},
+        {"callable": "qwen_attention_qkv", "tensor_args": []},
+        {"callable": "qwen_logits", "tensor_args": []},
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x3000"},
+            {"field": "b", "device_ptr_hex": "0x4000"},
+            {"field": "out", "device_ptr_hex": "0x5000"},
+        ],
+    )
+    workspace = {
+        "activation_buffers": [
+            {
+                "device_ptr_hex": "0x8000",
+                "element_count": 65536,
+            },
+            {
+                "device_ptr_hex": "0x9000",
+                "element_count": 65536,
+            },
+        ],
+        "logits_buffer": {
+            "device_ptr_hex": "0xa000",
+            "element_count": 2430976,
+        },
+        "total_byte_count": 0,
+    }
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x6000"},
+            "d": {"device_ptr_hex": "0x7000"},
+        },
+        workspace=workspace,
+        numeric_task_mode="unit_math_full_rmsnorm",
+    )
+
+    assert packet is not None
+    assert packet[0].n == 4096
+    assert packet[1].n == 4096
+    assert list(packet[2].scalar_args)[:3] == [0.0, 4096.0, 2430976.0]

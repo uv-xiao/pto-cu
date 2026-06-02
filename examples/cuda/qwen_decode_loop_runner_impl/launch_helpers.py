@@ -21,6 +21,7 @@ UNIT_NUMERIC_CALLABLES = {
     "qwen_final_norm",
 }
 UNIT_NUMERIC_RMSNORM_SCALE = 1.0
+FULL_RMSNORM_ELEMENT_LIMIT = 4096
 UNIT_NUMERIC_WEIGHTED_ELEMENTWISE_CALLABLES = {
     "qwen_attention_qk_norm",
     "qwen_attention_o",
@@ -107,10 +108,11 @@ def task_n_for_record(
     task_count: int,
     descriptor: dict[str, Any],
     workspace: dict[str, Any] | None,
+    numeric_task_mode: str = "diagnostic",
 ) -> int:
     if is_logits_output_task(index=index, task_count=task_count, descriptor=descriptor):
         return logits_element_count(workspace)
-    return hidden_element_count(workspace)
+    return hidden_element_count(workspace, numeric_task_mode=numeric_task_mode)
 
 
 def task_scalar_args(
@@ -138,7 +140,7 @@ def task_scalar_args(
         return [0.0, 0.0, 0.0, 0.0]
     return [
         0.0,
-        float(hidden_element_count(workspace)),
+        float(hidden_element_count(workspace, numeric_task_mode=numeric_task_mode)),
         float(logits_element_count(workspace)),
         0.0,
     ]
@@ -177,6 +179,7 @@ def numeric_task_mode_summary(mode: str) -> dict[str, Any]:
         "full_reduction_contracts": [
             {
                 "callable": "qwen_rmsnorm_input",
+                "element_limit": FULL_RMSNORM_ELEMENT_LIMIT,
                 "scalar_arg_count": 1,
                 "scope": "resource_backed_full_rmsnorm_reduction",
             },
@@ -201,13 +204,21 @@ def is_logits_output_task(
     return index + 1 == task_count and descriptor.get("callable") == "qwen_logits"
 
 
-def hidden_element_count(workspace: dict[str, Any] | None) -> int:
+def hidden_element_count(
+    workspace: dict[str, Any] | None,
+    *,
+    numeric_task_mode: str = "diagnostic",
+) -> int:
     if workspace is None:
         return 1
     buffers = workspace.get("activation_buffers", [])
     if buffers:
-        return int(buffers[0].get("element_count", 1))
-    return int(workspace["logits_buffer"].get("element_count", 1))
+        elements = int(buffers[0].get("element_count", 1))
+    else:
+        elements = int(workspace["logits_buffer"].get("element_count", 1))
+    if numeric_task_mode == "unit_math_full_rmsnorm":
+        return min(elements, FULL_RMSNORM_ELEMENT_LIMIT)
+    return elements
 
 
 def logits_element_count(workspace: dict[str, Any] | None) -> int:

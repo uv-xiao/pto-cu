@@ -3,9 +3,10 @@
 ## Code And Data Changed
 
 - Added `--resource-backed-numeric-task-mode unit_math_full_rmsnorm`.
-- The new mode keeps the existing resource-backed unit-math branches, but
-  passes `scalar_arg_count == 1` for `qwen_rmsnorm_input` so the generated CUDA
-  task body runs its full hidden-buffer RMSNorm reduction branch.
+- The new mode keeps the existing resource-backed unit-math branches, passes
+  `scalar_arg_count == 1` for `qwen_rmsnorm_input`, and caps the diagnostic
+  hidden-stage packet extent to one 4,096-element hidden vector so the current
+  generated O(n²) RMSNorm branch remains runnable.
 - Preserved the existing `unit_math` mode and its external-scale RMSNorm
   bridge for already captured diagnostic artifacts.
 
@@ -24,6 +25,7 @@ contracts instead of hiding the branch choice inside task arguments.
 
 ## Remaining Gaps
 
-This exposes the generated full RMSNorm reduction branch, but it is still
-diagnostic. PTO still needs full hidden-size Qwen kernels, real full-serving
-execution, and viewer rows for `mpk_offline_decode` and `vdcores_offline_decode`.
+This exposes the generated full RMSNorm reduction branch, but it is still a
+bounded diagnostic. PTO still needs numerically correct full hidden-size Qwen
+kernels, real full-serving execution, and viewer rows for `mpk_offline_decode`
+and `vdcores_offline_decode`.

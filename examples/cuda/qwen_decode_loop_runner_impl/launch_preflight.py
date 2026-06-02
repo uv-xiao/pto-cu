@@ -189,6 +189,7 @@ def host_task_record(
             task_count=task_count,
             descriptor=descriptor,
             workspace=workspace,
+            numeric_task_mode=numeric_task_mode,
         ),
         dependent_begin=index,
         dependent_count=1 if index + 1 < task_count else 0,
