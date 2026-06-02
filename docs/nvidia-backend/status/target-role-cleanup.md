@@ -34,7 +34,9 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
 
 PYTHONPATH=$PWD:$PWD/python .venv/bin/python - <<'PY'
 from simpler_setup.runtime_builder import RuntimeBuilder
-bins = RuntimeBuilder(platform="cuda").get_binaries("persistent_device", build=True)
+bins = RuntimeBuilder(platform="cuda").get_binaries(
+    "persistent_device", build=True
+)
 print(sorted(bins.role_paths))
 print(bins.path_for_role("scheduler"))
 PY
@@ -88,22 +90,22 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
     --output-root tmp/cuda-backend/scheduler-role-working
 ```
 
-Result:
-`tmp/cuda-backend/scheduler-role-working/persistent-graph_descriptor-smoke-539a05b9/`
-contains `a100.json`, `h200.json`, `cuda-smoke-report.md`, and
-`cuda-smoke-report.svg`. The validator required runtime `persistent_device`,
-mode `dag`, `dag_shape=graph_descriptor`, dispatch `[9,2,1]`, graph fan-in
-`[0,0,2]`, graph dependents `[2,2]`, one repeat launch, resource policy
-`scheduler_blocks=1`, `worker_blocks=3`, `block_dim=256`, `grid_dim=4`, report
-files, and zero scheduler errors. A100 reported `device_wall_ns=41984`;
-H200 reported `device_wall_ns=56864`. Both hosts also built
-`libcuda_scheduler_runtime.so` beside `libhost_runtime.so` and
+Result: the output directory under
+`tmp/cuda-backend/scheduler-role-working/`, named
+`persistent-graph_descriptor-smoke-539a05b9/`, contains `a100.json`,
+`h200.json`, `cuda-smoke-report.md`, and `cuda-smoke-report.svg`. The
+validator required runtime `persistent_device`, mode `dag`,
+`dag_shape=graph_descriptor`, dispatch `[9,2,1]`, graph fan-in `[0,0,2]`,
+graph dependents `[2,2]`, one repeat launch, resource policy
+`scheduler_blocks=1`, `worker_blocks=3`, `block_dim=256`, `grid_dim=4`,
+report files, and zero scheduler errors. A100 reported
+`device_wall_ns=41984`; H200 reported `device_wall_ns=56864`. Both hosts also
+built `libcuda_scheduler_runtime.so` beside `libhost_runtime.so` and
 `libcuda_device_runtime.so`.
 
-Needed:
+Compatibility note:
 
-- remove or hide the legacy positional `_ChipWorker.init(...)` path once all
-  host runtimes export `simpler_init_roles(...)`; until then it remains the
-  compatibility path for Ascend and old runtime-binary objects without
-  `role_paths`.
-
+- The legacy positional `_ChipWorker.init(...)` path remains available for
+  Ascend and old runtime-binary objects without `role_paths`. CUDA runtime
+  binaries use role-native paths and `simpler_init_roles(...)` where exported,
+  so this compatibility path is not an open CUDA backend blocker.

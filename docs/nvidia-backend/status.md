@@ -9,6 +9,7 @@ evaluation results are not mistaken for a complete backend.
 - [Platform and runtime discovery](status/platform-runtime-discovery.md)
 - [Host-schedule runtime](status/host-schedule-runtime.md)
 - [Persistent-device runtime](status/persistent-device-runtime.md)
+- [Target role cleanup](status/target-role-cleanup.md)
 - [Fourth-tensor persistent DAG verification](status/fourth-tensor-persistent-dag-verification.md)
 - [Evaluation and reporting](status/evaluation-and-reporting/index.md)
 
@@ -19,7 +20,6 @@ evaluation results are not mistaken for a complete backend.
 ## Remaining Gaps
 
 - [Kernel compiler integration](status/remaining-gaps/kernel-compiler-integration/index.md)
-- [Target role cleanup](status/remaining-gaps/target-role-cleanup.md)
 - [Persistent scheduler generalization](status/remaining-gaps/persistent-scheduler-generalization/index.md)
 - [Tuned tensor workloads](status/remaining-gaps/tuned-tensor-workloads.md)
 - [CI coverage](status/remaining-gaps/ci-coverage.md)
