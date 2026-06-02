@@ -117,6 +117,12 @@ const bool has_projection_weights =
 if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
     const unsigned int row = static_cast<unsigned int>(i / task->cols);
     const unsigned int col = static_cast<unsigned int>(i % task->cols);
+    const unsigned int requested_active_projection_cols =
+        task->scalar1 > 0.0f ? static_cast<unsigned int>(task->scalar1) :
+        task->cols;
+    const unsigned int active_projection_cols =
+        requested_active_projection_cols < task->cols ?
+        requested_active_projection_cols : task->cols;
     const unsigned int q_width = task->inner;
     const unsigned int kv_width =
         task->cols > q_width ? (task->cols - q_width) / 2U : q_width;
@@ -130,8 +136,11 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
     const unsigned int sequence_capacity =
         task->b_batch_stride > 0U ? task->b_batch_stride : kv_page_size;
     float projected = 0.0f;
-    if (col < q_width) {
+    if (col >= active_projection_cols) {
+        task->out[i] = 0.0f;
+    } else if (col < q_width) {
         projected = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
+        task->out[i] = projected;
     } else if (col < q_width + kv_width) {
         const unsigned int kv_col = col - q_width;
         projected = pto_cuda_linear_arg_f32(task, 1U, row, kv_col, 0.0f);
@@ -148,6 +157,7 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
         if (task->c) {
             task->c[kv_write_index] = projected;
         }
+        task->out[i] = projected;
     } else {
         const unsigned int kv_col = col - q_width - kv_width;
         projected = pto_cuda_linear_arg_f32(task, 2U, row, kv_col, 0.0f);
@@ -164,8 +174,8 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
         if (task->d) {
             task->d[kv_write_index] = projected;
         }
+        task->out[i] = projected;
     }
-    task->out[i] = projected;
 } else if (task->scalar_arg_count > 0 && has_projection_weights) {
     const float q = task->a[i] *
         pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
@@ -373,11 +383,21 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
     task->tensor_args[0] && task->tensor_args[1]) {
     const unsigned int row = static_cast<unsigned int>(i / task->cols);
     const unsigned int col = static_cast<unsigned int>(i % task->cols);
-    const float gate_value =
-        pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
-    const float up_value =
-        pto_cuda_linear_arg_f32(task, 1U, row, col, 0.0f);
-    task->out[i] = pto_cuda_silu(gate_value) * up_value;
+    const unsigned int requested_active_projection_cols =
+        task->scalar1 > 0.0f ? static_cast<unsigned int>(task->scalar1) :
+        task->cols;
+    const unsigned int active_projection_cols =
+        requested_active_projection_cols < task->cols ?
+        requested_active_projection_cols : task->cols;
+    if (col < active_projection_cols) {
+        const float gate_value =
+            pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
+        const float up_value =
+            pto_cuda_linear_arg_f32(task, 1U, row, col, 0.0f);
+        task->out[i] = pto_cuda_silu(gate_value) * up_value;
+    } else {
+        task->out[i] = 0.0f;
+    }
 } else {
     const float gate_value =
         pto_cuda_tensor_arg_f32(task, 0U, i & 3U, task->a[i]);
@@ -397,7 +417,14 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count > 0U &&
     task->tensor_args[0]) {
     const unsigned int row = static_cast<unsigned int>(i / task->cols);
     const unsigned int col = static_cast<unsigned int>(i % task->cols);
-    task->out[i] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
+    const unsigned int requested_active_projection_cols =
+        task->scalar1 > 0.0f ? static_cast<unsigned int>(task->scalar1) :
+        task->cols;
+    const unsigned int active_projection_cols =
+        requested_active_projection_cols < task->cols ?
+        requested_active_projection_cols : task->cols;
+    task->out[i] = col < active_projection_cols ?
+        pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f) : 0.0f;
 } else {
     const float down = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
     task->out[i] = task->a[i] + down;

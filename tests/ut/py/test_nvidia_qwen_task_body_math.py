@@ -187,6 +187,11 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         full_source
     )
     assert "if (candidate > local_best_logit)" in full_source
+    assert "active_projection_cols" in full_source
+    assert "col < active_projection_cols" in full_source
+    assert "task->scalar1 > 0.0f ? static_cast<unsigned int>(task->scalar1)" in (
+        full_source
+    )
     assert "logits_best_values[threadIdx.x] = local_best_logit;" in full_source
     assert "logits_best_values[threadIdx.x + stride] >" in full_source
     assert "output_ids[decode_step] = logits_best_tokens[0];" in full_source

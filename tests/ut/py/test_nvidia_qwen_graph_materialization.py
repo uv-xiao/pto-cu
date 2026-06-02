@@ -813,6 +813,7 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "ldb": 4,
         "ldc": 8,
         "scalar0": 16,
+        "scalar1": 1024,
     }
     assert descriptors["layer_0_attention_qkv"]["tensor_args"][3] == {
         "arg": "tensor_args[3]",
@@ -848,6 +849,15 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "lda": 8,
         "ldb": 8,
         "ldc": 4,
+        "scalar1": 1024,
+    }
+    assert descriptors["layer_0_mlp_gate_up"]["task_shape_fields"] == {
+        "cols": 8,
+        "inner": 4,
+        "lda": 4,
+        "ldb": 4,
+        "ldc": 8,
+        "scalar1": 1024,
     }
     assert descriptors["logits"]["task_shape_fields"] == {
         "cols": 16,
