@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 tensor import smoke commands](2026-06-02-tensor-import-smoke-commands.md)
 - [2026-06-02 Qwen MLP tensor import smoke](2026-06-02-qwen-mlp-tensor-import-smoke.md)
 - [2026-06-02 Qwen attention tensor import smoke](2026-06-02-qwen-attention-tensor-import-smoke.md)
 - [2026-06-02 persistent scheduler split gap guard](2026-06-02-persistent-scheduler-split-gap-guard.md)

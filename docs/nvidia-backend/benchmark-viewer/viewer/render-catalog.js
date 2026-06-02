@@ -140,10 +140,17 @@ export function renderTensorWorkloadCoverage(state) {
   const targetDetails = document.createElement("details");
   const targetSummary = document.createElement("summary");
   targetSummary.append(text("Model Shape Targets"));
+  const smokeCommands = targets.flatMap((target) => (
+    target.import_smoke ? target.import_smoke.commands : []
+  ));
   targetDetails.append(
     targetSummary,
     table(["Target", "Tile", "Status", "Import Smoke", "Mapping"], targetRows),
-    ...namedList("Commands", targets.map((target) => target.run_command)),
+    ...namedList(
+      "Paper Target Commands",
+      targets.map((target) => target.run_command),
+    ),
+    ...namedList("Import Smoke Commands", smokeCommands),
     ...namedList(
       "Import Smoke Scope",
       targets

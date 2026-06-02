@@ -5342,6 +5342,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "import_smoke",
         "Import Smoke",
         "Import Smoke Scope",
+        "Import Smoke Commands",
+        "Paper Target Commands",
     ]:
         assert required in viewer_js
 

@@ -168,6 +168,8 @@ def validate_import_smoke(
     methods = set(require_list(smoke, "methods", owner))
     if not methods <= required_methods:
         fail(f"{owner} import_smoke methods are not required methods")
+    commands = require_list(smoke, "commands", owner)
+    check_import_smoke_commands(commands, methods, target, owner)
     record_methods = {record.get("method_id") for record in records}
     if not methods <= record_methods:
         fail(f"{owner} import_smoke records missing methods: {sorted(methods)}")
@@ -179,6 +181,37 @@ def validate_import_smoke(
         ):
             fail(f"{owner} import_smoke sample count mismatch")
     return True
+
+
+def check_import_smoke_commands(
+    commands: list[Any],
+    methods: set[str],
+    target: dict[str, Any],
+    owner: str,
+) -> None:
+    command_text = "\n".join(
+        command for command in commands if isinstance(command, str)
+    )
+    if len(command_text.splitlines()) != len(commands):
+        fail(f"{owner} import_smoke commands must be strings")
+    required_baselines = {
+        "pto_persistent_device": "pto_persistent_dag_graph_tensor_core",
+        "cublas_sgemm_graph": "cublas_sgemm_graph",
+    }
+    for method in methods:
+        baseline = required_baselines.get(method)
+        if baseline and f"--single-baseline {baseline}" not in command_text:
+            fail(f"{owner} import_smoke command missing baseline {baseline}")
+    tile = target["tensor_tile"]
+    for flag, key in (
+        ("--tensor-rows", "rows"),
+        ("--tensor-cols", "cols"),
+        ("--tensor-inner", "inner"),
+    ):
+        if f"{flag} {tile[key]}" not in command_text:
+            fail(f"{owner} import_smoke command missing {flag} {tile[key]}")
+    if "cuda_viewer_export.py" not in command_text:
+        fail(f"{owner} import_smoke command missing viewer export")
 
 
 def require_positive_int(record: dict[str, Any], key: str, owner: str) -> int:
