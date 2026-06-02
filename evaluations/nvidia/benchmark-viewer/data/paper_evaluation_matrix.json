@@ -999,6 +999,31 @@
         },
         {
           "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/qwen-embedding-shape-lookup/qwen-persistent-task-bodies.json",
+          "symbols": [
+            "pto_qwen_persistent_task_bodies",
+            "generated_qwen_kernel_bodies",
+            "qwen_embedding_shape_lookup_source",
+            "qwen_kernel_token_field_consumption",
+            "qwen_kernel_weight_tensor_arg_consumption"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/qwen-embedding-shape-lookup/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "qwen_resource_backed_unit_numeric_task_mode",
+            "qwen_resource_backed_full_rmsnorm_reduction",
+            "qwen_resource_backed_weighted_elementwise_branches",
+            "qwen_embedding_shape_lookup_source",
+            "final_step_logits_check_policy"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
           "path": "tmp/cuda-backend/qwen-attention-o-projection/qwen-decode-loop-runner.json",
           "symbols": [
             "pto_qwen_resource_backed_execution",

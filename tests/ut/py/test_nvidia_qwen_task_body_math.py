@@ -143,6 +143,15 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_qk_norm_block_rmsnorm_rope_source" in manifest[
         "implemented_contracts"
     ]
+    assert "const unsigned int hidden_col =" in full_source
+    assert "const unsigned int embedding_stride =" in full_source
+    assert "const unsigned long long embedding_weight_index =" in full_source
+    assert "static_cast<unsigned long long>(token_id) * embedding_stride" in (
+        full_source
+    )
+    assert "qwen_embedding_shape_lookup_source" in manifest[
+        "implemented_contracts"
+    ]
     assert "qwen_rmsnorm_post_attention" in full_source
     assert (
         "qwen_post_attention_norm_full_rmsnorm_source"

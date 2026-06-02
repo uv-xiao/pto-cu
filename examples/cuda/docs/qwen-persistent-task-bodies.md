@@ -14,12 +14,16 @@ PYTHONPATH=$PWD:$PWD/python \
 ```
 
 Expected output: command exits 0; output JSON records generated Qwen task
-bodies with token, mutable KV-cache, weight, shape-linear, QK RMSNorm/RoPE,
-GQA decode-attention grouping, paged tiled attention, full-vocab argmax,
-proxy numeric oracle, and unit-math/decode-attention oracles.
+bodies with shape-aware token embedding lookup, mutable KV-cache, weight,
+shape-linear, QK RMSNorm/RoPE, GQA decode-attention grouping, paged tiled
+attention, full-vocab argmax, proxy numeric oracle, and
+unit-math/decode-attention oracles.
 
 The artifact renders through the existing persistent DAG source generator.
 It is source-level integration evidence, not full Qwen serving correctness.
+The embedding task uses descriptor `cols`/`ldb` fields to turn runtime
+`input_ids` into hidden-vector columns through `embed_tokens.weight` instead
+of the old four-value proxy index when the weight slot is bound.
 The generated CUDA source now uses descriptor `rows`, `cols`, `inner`, `lda`,
 and `ldb` fields for QKV, attention-output, MLP, and logits linear
 projections when full tensor metadata is present. The QK norm task computes

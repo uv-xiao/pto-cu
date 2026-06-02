@@ -28,6 +28,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_tensor_tile_source_contract",
     "qwen_unit_math_source_coverage",
     "qwen_kernel_token_field_consumption",
+    "qwen_embedding_shape_lookup_source",
     "qwen_shape_field_qk_rmsnorm_source",
     "qwen_post_attention_norm_full_rmsnorm_source",
     "qwen_qk_norm_block_rmsnorm_rope_source",

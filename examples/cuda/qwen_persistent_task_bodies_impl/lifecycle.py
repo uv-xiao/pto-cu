@@ -48,9 +48,25 @@ def body_specs() -> list[dict[str, Any]]:
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["input_ids", "embedding_weight"],
             "body": """
+if (task->cols > 0U && task->tensor_arg_count > 0U && task->tensor_args[0]) {
+    const unsigned int token_index =
+        static_cast<unsigned int>(i / task->cols);
+    const unsigned int hidden_col =
+        static_cast<unsigned int>(i % task->cols);
+    const unsigned int embedding_stride =
+        task->ldb > 0U ? task->ldb : task->cols;
+    const unsigned int token_id =
+        reinterpret_cast<const unsigned int *>(task->a)[token_index];
+    const unsigned long long embedding_weight_index =
+        static_cast<unsigned long long>(token_id) * embedding_stride +
+        hidden_col;
+    task->out[i] =
+        pto_cuda_tensor_arg_f32(task, 0U, embedding_weight_index, 0.0f);
+} else {
 const unsigned int token_id =
     reinterpret_cast<const unsigned int *>(task->a)[i % task->n];
 task->out[i] = pto_cuda_tensor_arg_f32(task, 0U, token_id & 3U, 0.0f);
+}
 """,
         },
         {
@@ -696,6 +712,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_tensor_tile_source_contract",
             "qwen_kernel_source_map",
             "qwen_unit_math_source_coverage",
+            "qwen_embedding_shape_lookup_source",
             "qwen_shape_field_linear_projection_source",
             "qwen_shape_field_qk_rmsnorm_source",
             "qwen_post_attention_norm_full_rmsnorm_source",
