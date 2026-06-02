@@ -2,9 +2,8 @@
 
 ## Code And Data Changed
 
-- Added `.agents/skills/cuda-backend-eval/scripts/cuda_normal_graph.py` with a
-  small normal-graph lowering boundary for CUDA `persistent_device` smoke
-  paths.
+- Added `simpler_setup/cuda_normal_graph.py` with a small normal-graph lowering
+  boundary for CUDA `persistent_device` smoke paths.
 - Routed `graph_descriptor_submits` through that helper so normal graph node
   keys and `depends_on` edges materialize as the persistent DAG fan-in array,
   flattened dependent array, and per-task dependent spans.

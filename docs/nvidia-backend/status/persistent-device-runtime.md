@@ -82,10 +82,9 @@ with a third tensor pointer field, a quad descriptor with third and fourth
 tensor pointer fields, a generic-argument descriptor, and a generated-dispatch
 unary-square descriptor with a single tensor input.
 The `graph_descriptor_submits` no-torch smoke now routes through
-`.agents/skills/cuda-backend-eval/scripts/cuda_normal_graph.py`, which lowers
-normal graph node keys and `depends_on` edges into the persistent DAG fan-in
-array, flattened dependent array, and per-task dependent spans before ABI
-materialization.
+`simpler_setup/cuda_normal_graph.py`, which lowers normal graph node keys and
+`depends_on` edges into the persistent DAG fan-in array, flattened dependent
+array, and per-task dependent spans before ABI materialization.
 The host-schedule scene path also accepts the neutral
 `elementwise_binary_f32` adapter for non-addition task bodies that still use
 the current `(a, b, out, n)` launch ABI. It accepts `elementwise_unary_f32`
@@ -117,9 +116,8 @@ Evidence:
   writing, and cache reuse.
 - `tests/ut/py/test_cuda_kernel_compiler.py` covers both CUDA
   `KernelCompiler` entry points.
-- `.agents/skills/cuda-backend-eval/scripts/cuda_normal_graph.py` provides
-  the first small normal-graph lowering boundary used by a persistent-device
-  smoke path.
+- `simpler_setup/cuda_normal_graph.py` provides the first small normal-graph
+  lowering boundary used by a persistent-device smoke path.
 - `simpler_setup/cuda_preflight.py` gives CUDA real-data tests one shared
   preflight path for `nvcc`, `nvidia-smi`, and driver visibility.
 - `simpler_setup/cuda_callable_compiler.py` contains the generated-dispatch

@@ -1,16 +1,23 @@
-#!/usr/bin/env python3
-"""Normal PTO graph lowering helpers for CUDA persistent-device smoke paths."""
+# Copyright (c) PyPTO Contributors.
+# This program is free software, you can redistribute it and/or modify it under the terms and conditions of
+# CANN Open Software License Agreement Version 2.0 (the "License").
+# Please refer to the License for details. You may not use this file except in compliance with the License.
+# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+# INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+# See LICENSE in the root of the software repository for the full text of the License.
+# -----------------------------------------------------------------------------------------------------------
+"""Normal graph lowering helpers for CUDA persistent-device descriptors."""
 
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 
 @dataclass(frozen=True)
 class CudaNormalGraphNode:
-    """A normalized task node before CUDA persistent DAG ABI materialization."""
+    """A normalized task node before CUDA persistent DAG materialization."""
 
     key: str
     func_id: int
@@ -19,12 +26,12 @@ class CudaNormalGraphNode:
     out: int
     n: int
     depends_on: tuple[str, ...] = ()
-    attrs: Mapping[str, Any] | None = None
+    attrs: Optional[Mapping[str, Any]] = None
 
 
 @dataclass(frozen=True)
 class LoweredCudaNormalGraph:
-    """CUDA persistent DAG descriptor arrays derived from normal graph edges."""
+    """CUDA persistent DAG arrays derived from normal graph edges."""
 
     fanin: list[int]
     dependents: list[int]
@@ -53,10 +60,11 @@ def lower_normal_graph(
 
     flat_dependents: list[int] = []
     tasks = []
-    for node, node_dependents, initial_fanin in zip(nodes, dependents_by_node, fanin, strict=True):
+    for idx, node in enumerate(nodes):
+        node_dependents = dependents_by_node[idx]
         dependent_begin = len(flat_dependents)
         flat_dependents.extend(node_dependents)
-        tasks.append(make_task(node, dependent_begin, len(node_dependents), initial_fanin))
+        tasks.append(make_task(node, dependent_begin, len(node_dependents), fanin[idx]))
     return LoweredCudaNormalGraph(fanin=fanin, dependents=flat_dependents, tasks=tasks)
 
 

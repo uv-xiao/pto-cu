@@ -29,8 +29,6 @@ from cuda_persistent_smoke_impl.fallback_ptx import (
     FALLBACK_PERSISTENT_QUEUE_VECTOR_ADD_PTX as _FALLBACK_PERSISTENT_QUEUE_VECTOR_ADD_PTX,
     FALLBACK_PERSISTENT_VECTOR_ADD_PTX as _FALLBACK_PERSISTENT_VECTOR_ADD_PTX,
 )
-from cuda_normal_graph import CudaNormalGraphNode, lower_normal_graph
-
 from simpler_setup.cuda_callable_compiler import (
     CudaPersistentCallableArtifact,
     CudaPersistentTaskBodyFunction,
@@ -42,6 +40,7 @@ from simpler_setup.cuda_callable_compiler import (
 from simpler_setup.cuda_callable_compiler import (
     CudaPersistentDeviceCallable as CudaPersistentCallable,
 )
+from simpler_setup.cuda_normal_graph import CudaNormalGraphNode, lower_normal_graph
 from simpler_setup.kernel_compiler import KernelCompiler
 from simpler_setup.runtime_builder import RuntimeBuilder
 

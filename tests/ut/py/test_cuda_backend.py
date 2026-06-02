@@ -47,8 +47,7 @@ def test_cuda_runtime_builder_discovers_persistent_device():
 
 
 def test_cuda_normal_graph_lowering_builds_persistent_dag_arrays():
-    sys.path.insert(0, ".agents/skills/cuda-backend-eval/scripts")
-    from cuda_normal_graph import CudaNormalGraphNode, lower_normal_graph
+    from simpler_setup.cuda_normal_graph import CudaNormalGraphNode, lower_normal_graph
 
     lowered = lower_normal_graph(
         (
