@@ -1178,23 +1178,33 @@ def test_projection_active_cols_override_targets_only_projection_callables():
             {
                 "callable": "qwen_attention_qkv",
                 "id": "layer_0_attention_qkv",
-                "scalar1": 6144,
+                "field": "scalar1",
+                "value": 6144,
+            },
+            {
+                "callable": "qwen_attention_o",
+                "id": "layer_0_attention_o",
+                "field": "attention_o_projection_input_count",
+                "value": 4096,
             },
             {
                 "callable": "qwen_mlp_gate_up",
                 "id": "layer_0_mlp_gate_up",
-                "scalar1": 12288,
+                "field": "scalar1",
+                "value": 12288,
             },
             {
                 "callable": "qwen_mlp_down",
                 "id": "layer_0_mlp_down",
-                "scalar1": 4096,
+                "field": "scalar1",
+                "value": 4096,
             },
         ],
     }
     assert descriptors[0]["task_shape_fields"]["scalar1"] == 1024
     assert updated[0]["task_shape_fields"]["scalar1"] == 6144
-    assert updated[1] is descriptors[1]
+    assert updated[1]["task_shape_fields"]["scalar1"] == 16
+    assert updated[1]["attention_o_projection_input_count"] == 4096
     assert updated[2]["task_shape_fields"]["scalar1"] == 12288
     assert updated[3]["task_shape_fields"]["scalar1"] == 4096
     assert updated[4] is descriptors[4]
@@ -1342,6 +1352,7 @@ def test_launch_packet_carries_layer_index_for_kv_tasks():
             "callable": "qwen_attention_o",
             "layer_index": 2,
             "tensor_args": [],
+            "attention_o_projection_input_count": 4096,
         },
         {"id": "logits", "callable": "qwen_logits", "tensor_args": []},
     ]
@@ -1370,6 +1381,7 @@ def test_launch_packet_carries_layer_index_for_kv_tasks():
     assert packet[1].scalar_arg_count == 4
     assert packet[2].scalar_args[3] == 2.0
     assert packet[2].scalar_arg_count == 4
+    assert packet[2].scalar_args[1] == 4096.0
 
     set_decode_step_state(packet, step_index=5, decode_position=17)
 

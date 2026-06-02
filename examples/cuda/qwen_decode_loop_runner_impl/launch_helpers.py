@@ -260,9 +260,15 @@ def task_scalar_args(
                     return [1.0, 0.0, 0.0, layer_index]
                 return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, layer_index]
             if descriptor.get("callable") == "qwen_attention_o":
+                projection_input_count = float(
+                    descriptor.get(
+                        "attention_o_projection_input_count",
+                        UNIT_NUMERIC_ATTENTION_O_PROJECTION_INPUTS,
+                    )
+                )
                 return [
                     1.0,
-                    UNIT_NUMERIC_ATTENTION_O_PROJECTION_INPUTS,
+                    projection_input_count,
                     0.0,
                     layer_index,
                 ]

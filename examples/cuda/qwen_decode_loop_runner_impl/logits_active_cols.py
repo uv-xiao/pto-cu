@@ -8,6 +8,7 @@ from typing import Any
 
 PROJECTION_WINDOW_CALLABLES = {
     "qwen_attention_qkv",
+    "qwen_attention_o",
     "qwen_mlp_gate_up",
     "qwen_mlp_down",
 }
@@ -71,14 +72,22 @@ def apply_projection_active_cols_override(
             active = int(shape["cols"])
         else:
             active = int(policy["requested_active_cols"])
-        shape["scalar1"] = active
+        if descriptor.get("callable") == "qwen_attention_o":
+            item["attention_o_projection_input_count"] = active
+        else:
+            shape["scalar1"] = active
         item["task_shape_fields"] = shape
         updated.append(item)
         applied_values.append(
             {
                 "callable": str(descriptor.get("callable")),
                 "id": str(descriptor.get("id", "")),
-                "scalar1": active,
+                "field": (
+                    "attention_o_projection_input_count"
+                    if descriptor.get("callable") == "qwen_attention_o"
+                    else "scalar1"
+                ),
+                "value": active,
             }
         )
 

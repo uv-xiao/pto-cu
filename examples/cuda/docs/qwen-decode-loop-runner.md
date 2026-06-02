@@ -71,11 +71,11 @@ diagnostic vocabulary window. Use `--resource-backed-logits-active-cols full`
 to request the descriptor's full `cols` extent for focused evaluation runs, or
 pass a positive integer to test a wider bounded window without changing the
 generated device task body.
-Projection tasks have their own diagnostic active-column cap. Use
+Projection tasks have their own diagnostic cap. Use
 `--resource-backed-projection-active-cols full` to request full descriptor
-`cols` for `qwen_attention_qkv`, `qwen_mlp_gate_up`, and `qwen_mlp_down`, or
-pass a positive integer for a bounded projection window. A full-Qwen
-correctness run must set both projection and logits active columns to full.
+`cols` for QKV, attention-output, and MLP projections, or pass a positive
+integer for a bounded projection window. A full-Qwen correctness run must set
+both projection and logits active columns to full.
 The diagnostic logits projection reference samples generated logits across
 batch rows, not only the first row, and records `checked_row_count` in the raw
 artifact and compact resource-backed viewer rows. This is stronger diagnostic
