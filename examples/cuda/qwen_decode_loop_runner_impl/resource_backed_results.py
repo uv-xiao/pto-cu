@@ -20,11 +20,26 @@ from qwen_decode_loop_runner_impl.resource_execution_policy import (
 from qwen_persistent_proxy_live_impl.runtime import device_name
 
 
+QWEN_FUNC_ID_BY_CALLABLE = {
+    "qwen_embedding_lookup": 7100,
+    "qwen_rmsnorm_input": 7101,
+    "qwen_attention_qkv": 7102,
+    "qwen_attention_qk_norm": 7103,
+    "qwen_attention_o": 7104,
+    "qwen_rmsnorm_post_attention": 7105,
+    "qwen_mlp_gate_up": 7106,
+    "qwen_mlp_down": 7107,
+    "qwen_final_norm": 7108,
+    "qwen_logits": 7109,
+}
+
+
 def build_execution_result(
     *,
     session: Any,
     arch: str,
     prepared: Any,
+    descriptors: list[dict[str, Any]],
     workload_results: list[dict[str, Any]],
     repeat_runs: int,
     decode_step_limit: int | None,
@@ -70,6 +85,7 @@ def build_execution_result(
             "numeric_task_mode": numeric_task_mode_summary(numeric_task_mode),
             "graph_state_policy": "fresh_graph_state_per_repeat",
         },
+        "task_coverage": task_coverage(descriptors),
         "decode_step_execution": decode_step_execution,
         "workloads": workload_results,
         "implemented_contracts": execution_contracts(
@@ -82,7 +98,34 @@ def build_execution_result(
             "full_qwen_numerical_correctness",
             "full_serving_viewer_result_import",
         ],
+}
+
+
+def task_coverage(descriptors: list[dict[str, Any]]) -> dict[str, Any]:
+    callables = [
+        item["callable"]
+        for item in descriptors
+        if "callable" in item
+    ]
+    func_ids = []
+    for item in descriptors:
+        func_id = task_func_id(item)
+        if func_id is not None:
+            func_ids.append(func_id)
+    return {
+        "task_count": len(descriptors),
+        "func_id_sequence": func_ids,
+        "callables": callables,
     }
+
+
+def task_func_id(descriptor: dict[str, Any]) -> int | None:
+    if "func_id" in descriptor:
+        return int(descriptor["func_id"])
+    callable_name = descriptor.get("callable")
+    if callable_name not in QWEN_FUNC_ID_BY_CALLABLE:
+        return None
+    return QWEN_FUNC_ID_BY_CALLABLE[callable_name]
 
 
 def build_workload_result(

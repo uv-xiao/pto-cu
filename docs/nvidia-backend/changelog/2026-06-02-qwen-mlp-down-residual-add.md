@@ -8,6 +8,8 @@
   matching layer's pre-MLP residual input instead of the token-side placeholder.
 - Added `qwen_mlp_down_residual_add_source` as compact source evidence in the
   task-body and example manifests.
+- Added resource-backed task coverage metadata so the bounded diagnostic
+  records both callable order and Qwen func-id order.
 - Linked generated-source and bounded live-diagnostic raw artifacts from the
   paper evaluation matrix while keeping raw files under `tmp/`.
 
@@ -47,7 +49,7 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
   --single-context-live-session --run-resource-backed-smoke \
   --token-cuda-live --kv-cuda-live --resident-cuda-live --workspace-cuda-live \
   --resource-backed-repeat-runs 1 --resource-backed-decode-steps 1 \
-  --resource-backed-max-tasks 6 --resource-backed-worker-blocks 6 \
+  --resource-backed-max-tasks 8 --resource-backed-worker-blocks 8 \
   --resource-backed-numeric-task-mode unit_math_full_rmsnorm \
   --resource-backed-logits-check-policy final_step \
   --device 0 --arch compute_80 \
@@ -57,7 +59,9 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
 
 Result: tests passed; generated source compiled to PTX; the bounded
 resource-backed diagnostic completed with `resource_backed_execution.status`
-set to `pass`.
+set to `pass`. The diagnostic recorded `task_coverage.task_count=8`,
+`func_id_sequence=[7100, 7101, 7102, 7103, 7104, 7105, 7106, 7107]`, and
+included `qwen_mlp_down` in the callable sequence.
 
 ## Remaining Gaps
 

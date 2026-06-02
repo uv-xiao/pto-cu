@@ -25,6 +25,7 @@ from qwen_decode_loop_runner_impl.workspace_pointers import (  # noqa: E402
     rope_table_values,
 )
 from qwen_decode_loop_runner_impl.resource_backed_results import (  # noqa: E402
+    build_execution_result,
     dynamic_rope_refresh_ready,
 )
 from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph  # noqa: E402
@@ -1131,6 +1132,68 @@ def test_launch_packet_marks_unit_math_numeric_ready_tasks():
     assert list(packet[6].scalar_args)[:2] == [1.0, 1.0]
     assert packet[7].scalar_arg_count == 3
     assert list(packet[7].scalar_args)[:3] == [0.0, 1.0, 1.0]
+
+
+def test_resource_backed_execution_reports_task_coverage():
+    class FakeSession:
+        device = 0
+
+    class FakeArtifact:
+        cache_key = "fake"
+        cache_hit = False
+        source_path = "tmp/fake.cu"
+        ptx_path = "tmp/fake.ptx"
+        entry_name = "pto_persistent_dag_f32_executor"
+        source_kind = "generated-dispatch"
+
+    class FakePrepared:
+        artifact = FakeArtifact()
+
+    callables = [
+        "qwen_embedding_lookup",
+        "qwen_rmsnorm_input",
+        "qwen_attention_qkv",
+        "qwen_attention_qk_norm",
+        "qwen_attention_o",
+        "qwen_rmsnorm_post_attention",
+        "qwen_mlp_gate_up",
+        "qwen_mlp_down",
+    ]
+    descriptors = [{"callable": callable_name} for callable_name in callables]
+
+    result = build_execution_result(
+        session=FakeSession(),
+        arch="compute_80",
+        prepared=FakePrepared(),
+        descriptors=descriptors,
+        workload_results=[
+            {
+                "workload_id": "mpk_offline_decode",
+                "status": "pass",
+                "planned_decode_steps": 1,
+                "executed_decode_steps": 1,
+                "decode_step_limit": 1,
+                "repeat_results": [],
+                "logits_summary_stable": True,
+            },
+        ],
+        repeat_runs=1,
+        decode_step_limit=1,
+        workload_ids=None,
+        max_task_count=8,
+        scheduler_blocks=1,
+        worker_blocks=8,
+        grid_dim=9,
+        logits_check_policy="final_step",
+        numeric_task_mode="unit_math_full_rmsnorm",
+        repo_relative=lambda path: str(path),
+    )
+
+    assert result["task_coverage"] == {
+        "task_count": 8,
+        "func_id_sequence": list(range(7100, 7108)),
+        "callables": callables,
+    }
 
 
 def test_launch_packet_can_select_full_rmsnorm_reduction_branch():

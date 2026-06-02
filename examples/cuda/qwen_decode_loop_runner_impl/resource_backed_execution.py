@@ -143,6 +143,7 @@ def run_resource_backed_execution(
         session=session,
         arch=arch,
         prepared=prepared,
+        descriptors=descriptors,
         workload_results=workload_results,
         repeat_runs=repeat_runs,
         decode_step_limit=decode_step_limit,
