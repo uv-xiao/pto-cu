@@ -35,7 +35,7 @@
   "missing_evidence": [
     "PTO persistent-device full-serving, VDCores Qwen3-8B full serving after the current global-instruction correctness blocker, and ThunderKittens-family full serving rows are not yet imported for the shared Qwen3-8B serving policies."
   ],
-  "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics.",
+  "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics.",
   "current_evidence_refs_path": "records/llm_serving_paper_baselines/current_evidence_refs",
   "missing_evidence_details_path": "records/llm_serving_paper_baselines/missing_evidence_details"
 }

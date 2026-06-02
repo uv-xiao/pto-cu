@@ -167,6 +167,12 @@ Import real PTO Qwen full-serving raw rows only after both MPK-policy and
 VDCores-policy serving runs pass correctness and include latency/throughput
 metrics:
 
+Each raw row must include `correctness_details` with
+`scope=full_qwen_numerical_correctness`, `model_id=Qwen/Qwen3-8B`,
+`status=pass`, `token_match=true`, a positive `checked_token_count`, and
+finite `max_abs_error <= tolerance`. A top-level `correctness=pass` field is
+not enough for paper-readiness import.
+
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py \

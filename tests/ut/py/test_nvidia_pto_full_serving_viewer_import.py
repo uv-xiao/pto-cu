@@ -64,6 +64,15 @@ def full_serving_raw_result(workload_id):
             "total_output_tokens": 512,
         },
         "correctness": "pass",
+        "correctness_details": {
+            "scope": "full_qwen_numerical_correctness",
+            "model_id": "Qwen/Qwen3-8B",
+            "status": "pass",
+            "token_match": True,
+            "checked_token_count": 512,
+            "max_abs_error": 0.0001,
+            "tolerance": 0.001,
+        },
     }
 
 
@@ -91,6 +100,14 @@ def test_full_serving_importer_builds_audit_acceptable_rows():
         assert record["correctness"] == "pass"
         assert record["statistic"]["kind"] == "pto_qwen_full_serving_capture"
         assert record["statistic"]["serving_coverage"] == "full_serving"
+        assert (
+            record["statistic"]["correctness_scope"]
+            == "full_qwen_numerical_correctness"
+        )
+        assert record["statistic"]["checked_token_count"] == 512
+        assert record["statistic"]["max_abs_error"] == 0.0001
+        assert record["statistic"]["correctness_tolerance"] == 0.001
+        assert record["correctness_details"]["token_match"] is True
         assert "Qwen/Qwen3-8B" in record["inputs"]["shape"]
         assert record["raw_artifact"].startswith("tmp/")
 
@@ -128,6 +145,50 @@ def test_full_serving_importer_rejects_missing_policy_row():
         assert "missing required workloads" in str(exc)
     else:
         raise AssertionError("missing VDCores policy row was accepted")
+
+
+def test_full_serving_importer_rejects_missing_correctness_details():
+    importer = load_importer_module()
+    row = full_serving_raw_result("mpk_offline_decode")
+    row.pop("correctness_details")
+
+    try:
+        importer.build_result_records(
+            {
+                "results": [
+                    row,
+                    full_serving_raw_result("vdcores_offline_decode"),
+                ]
+            },
+            raw_artifact="tmp/cuda-backend/pto-full-serving/run.json",
+            commit="abc1234",
+        )
+    except SystemExit as exc:
+        assert "missing correctness_details" in str(exc)
+    else:
+        raise AssertionError("missing correctness_details was accepted")
+
+
+def test_full_serving_importer_rejects_exceeded_correctness_tolerance():
+    importer = load_importer_module()
+    row = full_serving_raw_result("mpk_offline_decode")
+    row["correctness_details"]["max_abs_error"] = 0.01
+
+    try:
+        importer.build_result_records(
+            {
+                "results": [
+                    row,
+                    full_serving_raw_result("vdcores_offline_decode"),
+                ]
+            },
+            raw_artifact="tmp/cuda-backend/pto-full-serving/run.json",
+            commit="abc1234",
+        )
+    except SystemExit as exc:
+        assert "exceeds correctness_details.tolerance" in str(exc)
+    else:
+        raise AssertionError("exceeded correctness tolerance was accepted")
 
 
 def test_full_serving_importer_merges_viewer_results(tmp_path):

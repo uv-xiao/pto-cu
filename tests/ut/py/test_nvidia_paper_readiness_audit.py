@@ -165,8 +165,21 @@ def test_paper_readiness_accepts_complete_pto_full_serving_row():
                         "throughput_tokens_per_s": 1000.0,
                         "batch_size": 8,
                         "decode_tokens": 64,
+                        "correctness_scope": "full_qwen_numerical_correctness",
+                        "checked_token_count": 512,
+                        "max_abs_error": 0.0001,
+                        "correctness_tolerance": 0.001,
                     },
                     "correctness": "pass",
+                    "correctness_details": {
+                        "scope": "full_qwen_numerical_correctness",
+                        "model_id": "Qwen/Qwen3-8B",
+                        "status": "pass",
+                        "token_match": True,
+                        "checked_token_count": 512,
+                        "max_abs_error": 0.0001,
+                        "tolerance": 0.001,
+                    },
                     "raw_artifact": "tmp/cuda-backend/complete-pto-row/",
                 }
             ]
@@ -213,8 +226,21 @@ def pto_full_serving_row(workload_id):
             "throughput_tokens_per_s": 1000.0,
             "batch_size": 8,
             "decode_tokens": 64,
+            "correctness_scope": "full_qwen_numerical_correctness",
+            "checked_token_count": 512,
+            "max_abs_error": 0.0001,
+            "correctness_tolerance": 0.001,
         },
         "correctness": "pass",
+        "correctness_details": {
+            "scope": "full_qwen_numerical_correctness",
+            "model_id": "Qwen/Qwen3-8B",
+            "status": "pass",
+            "token_match": True,
+            "checked_token_count": 512,
+            "max_abs_error": 0.0001,
+            "tolerance": 0.001,
+        },
         "raw_artifact": f"tmp/cuda-backend/complete-pto-row/{workload_id}/",
     }
 

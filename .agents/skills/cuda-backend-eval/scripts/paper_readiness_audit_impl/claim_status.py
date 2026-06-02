@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections import Counter
 from typing import Any
 
@@ -16,6 +17,8 @@ PTO_FULL_SERVING_METRIC_FIELDS = {
     "throughput_tokens_per_s",
     "time_to_first_token_ns",
 }
+PTO_FULL_SERVING_CORRECTNESS_SCOPE = "full_qwen_numerical_correctness"
+PTO_FULL_SERVING_MODEL_ID = "Qwen/Qwen3-8B"
 
 
 def result_index(results: dict[str, Any]) -> set[ResultKey]:
@@ -83,10 +86,62 @@ def pto_full_serving_row_ready(
         return False
     if not record.get("raw_artifact"):
         return False
+    if not pto_full_serving_correctness_ready(record, statistic):
+        return False
     for key in PTO_FULL_SERVING_METRIC_FIELDS:
         value = statistic.get(key)
         if not isinstance(value, (int, float)) or value <= 0:
             return False
+    return True
+
+
+def pto_full_serving_correctness_ready(
+    record: dict[str, Any],
+    statistic: dict[str, Any],
+) -> bool:
+    details = record.get("correctness_details")
+    if not isinstance(details, dict):
+        return False
+    if details.get("scope") != PTO_FULL_SERVING_CORRECTNESS_SCOPE:
+        return False
+    if details.get("model_id") != PTO_FULL_SERVING_MODEL_ID:
+        return False
+    if details.get("status") != "pass":
+        return False
+    if details.get("token_match") is not True:
+        return False
+    checked_token_count = details.get("checked_token_count")
+    if (
+        isinstance(checked_token_count, bool)
+        or not isinstance(checked_token_count, int)
+        or checked_token_count <= 0
+    ):
+        return False
+    max_abs_error = details.get("max_abs_error")
+    tolerance = details.get("tolerance")
+    if (
+        isinstance(max_abs_error, bool)
+        or not isinstance(max_abs_error, (int, float))
+        or not math.isfinite(max_abs_error)
+        or max_abs_error < 0
+    ):
+        return False
+    if (
+        isinstance(tolerance, bool)
+        or not isinstance(tolerance, (int, float))
+        or not math.isfinite(tolerance)
+        or tolerance <= 0
+        or max_abs_error > tolerance
+    ):
+        return False
+    if statistic.get("correctness_scope") != PTO_FULL_SERVING_CORRECTNESS_SCOPE:
+        return False
+    if statistic.get("checked_token_count") != checked_token_count:
+        return False
+    if statistic.get("max_abs_error") != max_abs_error:
+        return False
+    if statistic.get("correctness_tolerance") != tolerance:
+        return False
     return True
 
 

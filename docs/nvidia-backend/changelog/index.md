@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 PTO full-serving correctness contract](2026-06-02-pto-full-serving-correctness-contract.md)
 - [2026-06-02 Qwen policy-length execution contract](2026-06-02-qwen-policy-length-execution-contract.md)
 - [2026-06-02 Qwen tiled attention source](2026-06-02-qwen-tiled-attention-source.md)
 - [2026-06-02 Qwen paged KV attention source](2026-06-02-qwen-paged-kv-attention-source.md)

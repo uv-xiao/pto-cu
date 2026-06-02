@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -30,6 +31,9 @@ REQUIRED_METRICS = {
     "inter_token_latency_ns",
     "throughput_tokens_per_s",
 }
+CORRECTNESS_SCOPE = "full_qwen_numerical_correctness"
+MODEL_ID = "Qwen/Qwen3-8B"
+
 
 def fail(message: str) -> None:
     raise SystemExit(f"pto qwen full-serving import failed: {message}")
@@ -92,9 +96,60 @@ def require_nonnegative_int(record: dict[str, Any], key: str, owner: str) -> int
 
 def require_positive_number(record: dict[str, Any], key: str, owner: str) -> int | float:
     value = record.get(key)
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value <= 0
+    ):
         fail(f"{owner} has invalid {key}")
     return value
+
+
+def require_nonnegative_number(
+    record: dict[str, Any],
+    key: str,
+    owner: str,
+) -> int | float:
+    value = record.get(key)
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value < 0
+    ):
+        fail(f"{owner} has invalid {key}")
+    return value
+
+
+def correctness_details(raw: dict[str, Any], owner: str) -> dict[str, Any]:
+    details = require_dict(raw, "correctness_details", owner)
+    if require_string(details, "scope", owner) != CORRECTNESS_SCOPE:
+        fail(f"{owner} has invalid correctness_details.scope")
+    if require_string(details, "model_id", owner) != MODEL_ID:
+        fail(f"{owner} has invalid correctness_details.model_id")
+    if require_string(details, "status", owner) != "pass":
+        fail(f"{owner} has invalid correctness_details.status")
+    if details.get("token_match") is not True:
+        fail(f"{owner} has invalid correctness_details.token_match")
+    checked_token_count = require_positive_int(
+        details,
+        "checked_token_count",
+        owner,
+    )
+    max_abs_error = require_nonnegative_number(details, "max_abs_error", owner)
+    tolerance = require_positive_number(details, "tolerance", owner)
+    if max_abs_error > tolerance:
+        fail(f"{owner} exceeds correctness_details.tolerance")
+    return {
+        "scope": CORRECTNESS_SCOPE,
+        "model_id": MODEL_ID,
+        "status": "pass",
+        "token_match": True,
+        "checked_token_count": checked_token_count,
+        "max_abs_error": max_abs_error,
+        "tolerance": tolerance,
+    }
 
 
 def raw_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
@@ -128,6 +183,7 @@ def result_record(
     owner = f"raw result {workload_id}"
     if require_string(raw, "correctness", owner) != "pass":
         fail(f"{owner} must pass correctness before full-serving import")
+    correctness = correctness_details(raw, owner)
     hardware = require_dict(raw, "hardware", owner)
     inputs = require_dict(raw, "inputs", owner)
     metrics = require_dict(raw, "metrics", owner)
@@ -170,6 +226,10 @@ def result_record(
         "decode_tokens": decode_tokens,
         "serving_coverage": "full_serving",
         "workload_id": workload_id,
+        "correctness_scope": correctness["scope"],
+        "checked_token_count": correctness["checked_token_count"],
+        "max_abs_error": correctness["max_abs_error"],
+        "correctness_tolerance": correctness["tolerance"],
     }
     for key in (
         "throughput",
@@ -216,6 +276,7 @@ def result_record(
         "statistic": statistic,
         "raw_artifact": raw_artifact,
         "correctness": "pass",
+        "correctness_details": correctness,
     }
 
 

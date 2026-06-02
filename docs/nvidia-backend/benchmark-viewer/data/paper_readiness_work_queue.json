@@ -46,7 +46,7 @@
         "Persistent DAG artifacts: qwen_persistent_task_bodies, generated persistent-device Qwen task-body source, shape-field linear projection/logits source, shape-field QK RMSNorm source, shape-field QK RoPE formula source, descriptor-level QK RoPE table slots, descriptor-level KV page-table slot, launch-packet live RoPE table and KV page-table pointer binding with Qwen-theta first-position table population and bounded per-step refresh, bounded diagnostic GQA decode-attention reduction over paged mutable c/d KV fields with descriptor-bounded tiled softmax passes, full-vocab logits argmax source, persistent DAG tensor_args manifest, tensor_arg_dtypes BF16/FP32 ABI, dtype-aware generated CUDA tensor-argument reads, resident_weight_ptrs[slot_id], process-scoped resident weight table owner, padded target-length input_ids, attention_mask, persistent decode token argument binding, preserving tensor_args for weights, dry-run KV-cache key/value pointer binding, and persistent DAG c/d mutable KV fields c/d.",
         "Runtime diagnostics: controlled attention-tile proxy, controlled proxy numeric oracle, controlled proxy live CUDA execution, controlled proxy live microdecode DAG execution, resource-backed diagnostic execution, block-wide full-vector RMSNorm reduction diagnostic execution, full logits-buffer diagnostic reference checking for 2,430,976 elements per serving policy, 1024-step MPK-policy and 64-step VDCores-policy diagnostic decode-loop execution, and device-committed sampled-token feedback remain diagnostic rather than full serving."
       ],
-      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
+      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics."
     },
     {
       "id": "paper_readiness_work_item_002",
@@ -75,7 +75,7 @@
       "status": "missing",
       "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after fixing correctness for the global-instruction capacity path or implementing an equivalent segmented schedule under the shared-instruction runtime.",
       "evidence_summary": [],
-      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
+      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics."
     },
     {
       "id": "paper_readiness_work_item_003",
@@ -105,7 +105,7 @@
       "status": "missing",
       "action": "Import ThunderKittens-family full-serving Qwen/Qwen3-8B rows beyond the current attention-tile proxy.",
       "evidence_summary": [],
-      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
+      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics."
     },
     {
       "id": "paper_readiness_work_item_004",
@@ -130,7 +130,7 @@
       "status": "partial",
       "action": "Resolve latest execution attempt vdcores_qwen3_8b_shared_instruction_window_plan_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing.",
       "evidence_summary": [],
-      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show correctness plus latency/throughput statistics."
+      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics."
     }
   ]
 }
