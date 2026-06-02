@@ -4903,6 +4903,10 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
         "persistent-scheduler-generalization" in ref
         for ref in by_id["backend_implementation_closure"]["evidence_refs"]
     )
+    assert not any(
+        "fourth-tensor-persistent-dag-verification" in ref
+        for ref in by_id["backend_implementation_closure"]["evidence_refs"]
+    )
     assert by_id["paper_grade_results"]["status"] == "in_progress"
     assert by_id["paper_grade_results"]["blocking_work_items"] == 4
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (

@@ -77,3 +77,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-44.md](entries/2026-06-02-part-44.md) | 1 | CUDA Pair Persistent Smoke Contract Split | CUDA Pair Persistent Smoke Contract Split |
 | [2026-06-02-part-45.md](entries/2026-06-02-part-45.md) | 1 | CUDA Benchmark Contract Split | CUDA Benchmark Contract Split |
 | [2026-06-02-part-46.md](entries/2026-06-02-part-46.md) | 1 | Goal Progress Backend Gap Guard | Goal Progress Backend Gap Guard |
+| [2026-06-02-part-47.md](entries/2026-06-02-part-47.md) | 1 | Fourth-Tensor Gap Closure | Fourth-Tensor Gap Closure |

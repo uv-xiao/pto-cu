@@ -46,4 +46,3 @@ Result artifacts:
 
 Both A100 and H200 runs reported zero scheduler errors and tensor arguments
 `c=tmp0,d=tmp3`.
-

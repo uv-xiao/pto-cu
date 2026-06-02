@@ -8,7 +8,6 @@ MakeCriterion = Callable[..., dict[str, Any]]
 
 BACKEND_GAP_REFS = [
     "docs/nvidia-backend/status/remaining-gaps/kernel-compiler-integration/index.md",
-    "docs/nvidia-backend/status/remaining-gaps/fourth-tensor-persistent-dag-verification.md",
     "docs/nvidia-backend/status/remaining-gaps/target-role-cleanup.md",
     "docs/nvidia-backend/status/remaining-gaps/persistent-scheduler-generalization/index.md",
     "docs/nvidia-backend/status/remaining-gaps/tuned-tensor-workloads.md",
