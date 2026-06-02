@@ -75,9 +75,19 @@ Each workload records `layer_count = 4`, `task_count = 31`, scheduler
 512-column logits, diagnostic logits reference `status = pass`, 244 checked
 elements, and max absolute error `4.67e-06`.
 
+The same command shape was then scaled to eight complete layers with
+`--resource-backed-layer-count 8`, `--resource-backed-worker-blocks 64`, and
+artifact
+`tmp/cuda-backend/qwen-layer-prefix-eight-2026-06-03/qwen-decode-loop-runner.json`.
+Result: passed for both `mpk_offline_decode` and `vdcores_offline_decode`.
+Each workload records `task_count = 59`, scheduler `completed_count = 59`,
+`error_count = 0`, one checked logits step, 512 sampled logits, diagnostic
+logits reference `status = pass`, 244 checked elements, and max absolute error
+`3.4e-06`.
+
 ## Remaining Gaps
 
-The selector is implemented and live-smoked for four complete layers on both
+The selector is implemented and live-smoked for eight complete layers on both
 serving policies, but full Qwen numerical correctness still requires scaling
 to all 36 layers with full projection/logits columns and policy-length MPK and
 VDCores workloads.
