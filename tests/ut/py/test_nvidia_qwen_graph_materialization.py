@@ -19,7 +19,11 @@ from qwen_decode_loop_runner_impl.activation_workspace import (  # noqa: E402
 )
 from qwen_decode_loop_runner_impl.workspace_pointers import (  # noqa: E402
     initialize_rope_tables,
+    refresh_rope_tables_for_decode_position,
     rope_table_values,
+)
+from qwen_decode_loop_runner_impl.resource_backed_results import (  # noqa: E402
+    dynamic_rope_refresh_ready,
 )
 from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
     numeric_task_mode_summary,
@@ -377,6 +381,95 @@ def test_live_workspace_initializes_rope_tables_from_position_policy():
         "position_correct_for_first_decode_position",
     ]
     assert [item["base_position"] for item in rope_tables] == [4, 4]
+
+
+def test_refresh_rope_tables_for_decode_position_updates_runtime_buffers():
+    class FakeRuntime:
+        def __init__(self):
+            self.copied = {}
+
+        def copy_to_device_ctx(self, ctx, device_ptr, host_ptr, size):
+            del ctx
+            count = int(size) // ctypes.sizeof(ctypes.c_float)
+            host_t = ctypes.c_float * count
+            values = ctypes.cast(host_ptr, ctypes.POINTER(host_t)).contents
+            self.copied[int(device_ptr.value)] = list(values)
+            return 0
+
+    workspace = {
+        "runtime_buffers": {
+            "rope_cos_table": {
+                "role": "rope_cos_table",
+                "device_ptr_hex": "0xa000",
+                "element_count": 2,
+                "rope_theta": 100.0,
+            },
+            "rope_sin_table": {
+                "role": "rope_sin_table",
+                "device_ptr_hex": "0xb000",
+                "element_count": 2,
+                "rope_theta": 100.0,
+            },
+        }
+    }
+    runtime = FakeRuntime()
+
+    refresh = refresh_rope_tables_for_decode_position(
+        runtime,
+        object(),
+        workspace,
+        decode_position=5,
+    )
+
+    assert refresh["status"] == "refreshed"
+    assert refresh["policy"] == "position_correct_for_decode_step"
+    assert refresh["decode_position"] == 5
+    assert [round(value, 6) for value in runtime.copied[0xA000]] == [
+        0.283662,
+        0.877583,
+    ]
+    assert [round(value, 6) for value in runtime.copied[0xB000]] == [
+        -0.958924,
+        0.479426,
+    ]
+    assert workspace["runtime_buffers"]["rope_cos_table"]["base_position"] == 5
+
+
+def test_dynamic_rope_refresh_contract_requires_decode_step_refreshes():
+    assert dynamic_rope_refresh_ready(
+        [
+            {
+                "repeat_results": [
+                    {
+                        "decode_step_index": 0,
+                        "rope_table_refresh": {
+                            "status": "refreshed",
+                            "policy": "position_correct_for_decode_step",
+                        },
+                    },
+                    {
+                        "decode_step_index": 1,
+                        "rope_table_refresh": {
+                            "status": "refreshed",
+                            "policy": "position_correct_for_decode_step",
+                        },
+                    },
+                ]
+            }
+        ]
+    )
+    assert not dynamic_rope_refresh_ready(
+        [
+            {
+                "repeat_results": [
+                    {
+                        "decode_step_index": None,
+                        "rope_table_refresh": {"status": "refreshed"},
+                    }
+                ]
+            }
+        ]
+    )
 
 
 def test_launch_packet_uses_per_task_activation_output_extent():

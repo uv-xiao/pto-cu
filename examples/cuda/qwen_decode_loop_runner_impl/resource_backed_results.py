@@ -187,4 +187,20 @@ def execution_contracts(
         if numeric_task_mode == "unit_math_full_rmsnorm":
             contracts.append("qwen_resource_backed_full_rmsnorm_reduction")
         contracts.append("qwen_resource_backed_weighted_elementwise_branches")
+    if dynamic_rope_refresh_ready(workload_results):
+        contracts.append("qwen_dynamic_rope_table_refresh")
     return contracts
+
+
+def dynamic_rope_refresh_ready(workload_results: list[dict[str, Any]]) -> bool:
+    refreshes = [
+        repeat.get("rope_table_refresh", {})
+        for workload in workload_results
+        for repeat in workload.get("repeat_results", [])
+        if repeat.get("decode_step_index") is not None
+    ]
+    return bool(refreshes) and all(
+        item.get("status") == "refreshed"
+        and item.get("policy") == "position_correct_for_decode_step"
+        for item in refreshes
+    )

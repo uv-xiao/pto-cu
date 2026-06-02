@@ -47,6 +47,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_resource_backed_external_rmsnorm_scale",
     "qwen_resource_backed_full_rmsnorm_reduction",
     "qwen_resource_backed_weighted_elementwise_branches",
+    "qwen_dynamic_rope_table_refresh",
 ]
 
 

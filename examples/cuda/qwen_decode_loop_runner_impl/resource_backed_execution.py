@@ -35,6 +35,9 @@ from qwen_decode_loop_runner_impl.resource_backed_results import (
     build_workload_result,
 )
 from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph
+from qwen_decode_loop_runner_impl.workspace_pointers import (
+    refresh_rope_tables_for_decode_position,
+)
 from qwen_persistent_proxy_live_impl.runtime import (
     PtoRunTiming,
     bind_persistent_runtime,
@@ -175,6 +178,13 @@ def run_workload(
     repeat_results = []
     for repeat_index in range(execution_count):
         step_index = repeat_index if decode_step_limit is not None else None
+        decode_position = int(plan["first_decode_position"]) + int(step_index or 0)
+        rope_table_refresh = refresh_rope_tables_for_decode_position(
+            session.runtime,
+            session.ctx,
+            workspace,
+            decode_position=decode_position,
+        )
         set_decode_step_index(packet, step_index)
         graph = MaterializedGraph(session, packet)
         timing = PtoRunTiming()
@@ -225,6 +235,7 @@ def run_workload(
                     else "fail"
                 ),
                 "run_prepared_status": int(status),
+                "rope_table_refresh": rope_table_refresh,
                 "scheduler_counters": counters,
                 "output_sample": graph.read_output_sample(workspace),
                 "logits_summary": logits_summary,

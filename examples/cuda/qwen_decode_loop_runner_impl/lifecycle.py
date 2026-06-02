@@ -238,6 +238,7 @@ def build_decode_loop_runner(
                 "qwen_resource_backed_external_rmsnorm_scale",
                 "qwen_resource_backed_full_rmsnorm_reduction",
                 "qwen_resource_backed_weighted_elementwise_branches",
+                "qwen_dynamic_rope_table_refresh",
             ]:
                 if contract in resource_contracts:
                     implemented_contracts.append(contract)

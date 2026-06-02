@@ -223,7 +223,7 @@ def initialize_rope_tables(
         host = (ctypes.c_float * len(values))(*values)
         status = runtime.copy_to_device_ctx(
             ctx,
-            ctypes.c_void_p(int(item["device_ptr"])),
+            ctypes.c_void_p(device_ptr_value(item)),
             ctypes.byref(host),
             ctypes.sizeof(host),
         )
@@ -232,6 +232,57 @@ def initialize_rope_tables(
         item["initialization"] = plan["rope_table_policy"]
         item["base_position"] = int(plan["rope_base_position"])
         item["rope_theta"] = float(plan["rope_theta"])
+
+
+def device_ptr_value(item: dict[str, Any]) -> int:
+    if item.get("device_ptr"):
+        return int(item["device_ptr"])
+    return int(str(item["device_ptr_hex"]), 0)
+
+
+def refresh_rope_tables_for_decode_position(
+    runtime: Any,
+    ctx: Any,
+    workspace: dict[str, Any],
+    *,
+    decode_position: int,
+) -> dict[str, Any]:
+    rope_tables = workspace_rope_tables(workspace)
+    if len(rope_tables) != 2:
+        return {
+            "status": "not_refreshed",
+            "reason": "runtime_rope_tables_not_bound",
+        }
+    plan = {
+        "rope_base_position": int(decode_position),
+        "rope_table_elements": int(rope_tables[0]["element_count"]),
+        "rope_table_policy": "position_correct_for_decode_step",
+        "rope_theta": float(rope_tables[0].get("rope_theta", 1000000.0)),
+    }
+    initialize_rope_tables(runtime, ctx, rope_tables, plan=plan)
+    return {
+        "status": "refreshed",
+        "policy": "position_correct_for_decode_step",
+        "decode_position": int(decode_position),
+        "rope_theta": float(plan["rope_theta"]),
+        "rope_table_elements": int(plan["rope_table_elements"]),
+        "runtime_buffers": {
+            item["role"]: item["device_ptr_hex"] for item in rope_tables
+        },
+    }
+
+
+def workspace_rope_tables(workspace: dict[str, Any]) -> list[dict[str, Any]]:
+    runtime_buffers = workspace.get("runtime_buffers", {})
+    if not isinstance(runtime_buffers, dict):
+        return []
+    tables = []
+    for role in ("rope_cos_table", "rope_sin_table"):
+        item = runtime_buffers.get(role)
+        if not isinstance(item, dict):
+            return []
+        tables.append(item)
+    return tables
 
 
 def rope_table_values(plan: dict[str, Any]) -> dict[str, list[float]]:
