@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen bounded full RMSNorm diagnostic](2026-06-02-qwen-bounded-full-rmsnorm-diagnostic.md)
 - [2026-06-02 Qwen full RMSNorm viewer import](2026-06-02-qwen-full-rmsnorm-viewer-import.md)
 - [2026-06-02 Qwen full RMSNorm mode](2026-06-02-qwen-full-rmsnorm-mode.md)
 - [2026-06-02 Qwen MLP oracle correction](2026-06-02-qwen-mlp-oracle-correction.md)

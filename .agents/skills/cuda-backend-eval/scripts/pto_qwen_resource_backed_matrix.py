@@ -61,6 +61,7 @@ def raw_artifact_ref(raw_artifact: str) -> dict[str, Any]:
             "qwen_device_decode_token_feedback",
             "qwen_resource_backed_unit_numeric_task_mode",
             "qwen_resource_backed_external_rmsnorm_scale",
+            "qwen_resource_backed_full_rmsnorm_reduction",
             "qwen_resource_backed_weighted_elementwise_branches",
             "diagnostic_resource_backed_qwen_dag",
             "repeat_runs",
@@ -91,7 +92,8 @@ def current_action_phrase() -> str:
         "viewer_result_imports with full-logits-buffer diagnostic writes and "
         "bounded-prefix diagnostic reference checks plus device-side "
         "diagnostic sampled-token feedback, final-step logits-check policy, "
-        "and policy-length MPK/VDCores diagnostic decode runs are present."
+        "bounded full-RMSNorm reduction diagnostics, and policy-length "
+        "MPK/VDCores diagnostic decode runs are present."
     )
 
 

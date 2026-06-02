@@ -119,6 +119,21 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
     assert rmsnorm_scale_rows[0]["numeric_ready_callable_count"] == 8
     assert rmsnorm_scale_rows[0]["external_scale_contract_count"] == 1
     assert rmsnorm_scale_rows[0]["weighted_elementwise_callable_count"] == 5
+    full_rmsnorm_rows = [
+        row
+        for row in rows
+        if row["statistic"].get("numeric_task_mode") == "unit_math_full_rmsnorm"
+    ]
+    assert {row["statistic"]["workload_id"] for row in full_rmsnorm_rows} == {
+        "mpk_offline_decode",
+        "vdcores_offline_decode",
+    }
+    assert all(
+        row["statistic"].get("external_scale_contract_count") == 0
+        and row["statistic"].get("full_reduction_contract_count") == 1
+        and row["statistic"].get("logits_coverage") == "full_logits_buffer_checked"
+        for row in full_rmsnorm_rows
+    )
     assert all(row["statistic"]["error_count"] == 0 for row in rows)
     assert any(row["correctness"] == "pass" for row in rows)
     assert any(

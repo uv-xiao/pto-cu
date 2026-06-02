@@ -358,6 +358,9 @@ def test_resource_backed_importer_adds_matrix_ref():
     assert "final_step_logits_check_policy" in claim[
         "current_evidence_refs"
     ][1]["symbols"]
+    assert "qwen_resource_backed_full_rmsnorm_reduction" in claim[
+        "current_evidence_refs"
+    ][1]["symbols"]
     assert (
         len(
             [
