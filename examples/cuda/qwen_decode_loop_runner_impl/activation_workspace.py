@@ -7,6 +7,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from qwen_decode_loop_runner_impl.launch_helpers import (
+    required_activation_buffer_count,
+)
 from qwen_decode_loop_runner_impl.workspace_pointers import (
     dry_run_workspace_table,
     live_workspace_table,
@@ -121,7 +124,9 @@ def workspace_plan(
         (max(decode_span, 1) + KV_PAGE_SIZE_TOKENS - 1) // KV_PAGE_SIZE_TOKENS,
         1,
     )
-    activation_count = max(graph_task_count - 1, 0)
+    activation_count = required_activation_buffer_count(descriptors or [])
+    if not descriptors:
+        activation_count = max(graph_task_count - 1, 0)
     activation_element_counts = activation_buffer_element_counts(
         rows=rows,
         hidden_elements=hidden_elements,

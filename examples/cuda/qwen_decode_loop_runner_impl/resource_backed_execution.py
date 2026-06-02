@@ -247,6 +247,7 @@ def run_workload(
         activation_workspace=activation_workspace,
         workload_id=plan["workload_id"],
         task_count=len(descriptors),
+        descriptors=descriptors,
     )
     token_fields = keyed_fields(plan.get("token_pointer_fields", []))
     packet = build_host_task_packet(

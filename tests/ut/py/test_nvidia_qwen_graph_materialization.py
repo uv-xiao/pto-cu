@@ -41,6 +41,7 @@ from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph  # noq
 from qwen_decode_loop_runner_impl.graph_materialization import task_summary  # noqa: E402
 from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
     numeric_task_mode_summary,
+    required_activation_buffer_count,
 )
 from qwen_kv_cache_binding_impl.zeroing import (  # noqa: E402
     zero_device_allocation,
@@ -323,6 +324,35 @@ def test_workspace_plan_sizes_activation_buffers_from_descriptor_outputs():
     assert workspace["kv_page_table_policy"] == "identity_logical_to_physical_pages"
     assert workspace["total_buffer_count"] == 6
     assert workspace["total_byte_count"] == 32 + 64 + 2 * 16 * 4 + 2 * 2 * 4 + 4
+
+
+def test_workspace_plan_keeps_terminal_non_readout_activation_buffer():
+    plan = {
+        "workload_id": "mpk_offline_decode",
+        "max_batch_size": 2,
+        "first_decode_position": 4,
+    }
+    model_shape = {
+        "head_dim": 4,
+        "hidden_size": 4,
+        "rope_theta": 100.0,
+        "vocab_size": 16,
+    }
+    descriptors = [
+        {"callable": "qwen_embedding_lookup", "task_shape_fields": {"cols": 4}},
+        {"callable": "qwen_mlp_down", "task_shape_fields": {"cols": 4}},
+    ]
+
+    workspace = workspace_plan(
+        plan=plan,
+        graph_task_count=len(descriptors),
+        model_shape=model_shape,
+        descriptors=descriptors,
+    )
+
+    assert required_activation_buffer_count(descriptors) == 2
+    assert workspace["activation_buffer_count"] == 2
+    assert workspace["activation_buffer_element_counts"] == [8, 8]
 
 
 def test_launch_packet_binds_runtime_rope_table_tensor_args():

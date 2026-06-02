@@ -22,6 +22,7 @@ from qwen_decode_loop_runner_impl.launch_helpers import (
     output_ptr_for_task,
     parse_ptr,
     residual_ptr_for_task,
+    required_activation_buffer_count,
     set_decode_step_index,
     set_decode_step_state,
     task_shape_fields,
@@ -55,6 +56,7 @@ def launch_packet_preflight(
         activation_workspace=activation_workspace,
         workload_id=plan["workload_id"],
         task_count=len(descriptors),
+        descriptors=descriptors,
     )
     packet = build_host_task_packet(
         descriptors=descriptors,
@@ -91,6 +93,7 @@ def launch_packet_preflight(
         "workspace_pointer_policy": workspace_pointer_policy(
             workspace=workspace,
             task_count=len(descriptors),
+            descriptors=descriptors,
         ),
         "numeric_task_mode": numeric_task_mode_summary(numeric_task_mode),
         "missing_runtime_buffers": missing_launch_buffers(
@@ -266,6 +269,7 @@ def workspace_for_workload(
     activation_workspace: dict[str, Any] | None,
     workload_id: str,
     task_count: int,
+    descriptors: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any] | None:
     if activation_workspace is None:
         return None
@@ -277,7 +281,12 @@ def workspace_for_workload(
     for item in pointer_table.get("pointer_sets", []):
         if item.get("workload_id") != workload_id:
             continue
-        if len(item.get("activation_buffers", [])) < max(task_count - 1, 0):
+        required_count = (
+            required_activation_buffer_count(descriptors)
+            if descriptors is not None
+            else max(task_count - 1, 0)
+        )
+        if len(item.get("activation_buffers", [])) < required_count:
             return None
         if not item.get("logits_buffer", {}).get("device_ptr_hex"):
             return None
@@ -297,19 +306,26 @@ def workspace_pointer_policy(
     *,
     workspace: dict[str, Any] | None,
     task_count: int,
+    descriptors: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    required_count = (
+        required_activation_buffer_count(descriptors)
+        if descriptors is not None
+        else max(task_count - 1, 0)
+    )
     if workspace is None:
         return {
             "status": "not_bound",
             "activation_buffer_count": 0,
             "logits_buffer": "not_bound",
+            "required_activation_buffer_count": required_count,
         }
     return {
         "status": "workspace_bound",
         "task_input_chain": "task0_uses_token_ids_then_activation_i_minus_1",
         "task_output_chain": "intermediate_tasks_use_activation_i_last_uses_logits",
         "activation_buffer_count": len(workspace.get("activation_buffers", [])),
-        "required_activation_buffer_count": max(task_count - 1, 0),
+        "required_activation_buffer_count": required_count,
         "activation_buffer_element_counts": [
             int(item.get("element_count", 0))
             for item in workspace.get("activation_buffers", [])

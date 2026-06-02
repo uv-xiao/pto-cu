@@ -50,6 +50,7 @@ TENSOR_DTYPE_CODES = {
 PERSISTENT_TENSOR_ARG_CAPACITY = 5
 QWEN_ATTENTION_O_FUNC_ID = 7104
 LAYER_INDEX_SCALAR_ARG = 3
+TERMINAL_LOGITS_BUFFER_CALLABLES = {"qwen_final_norm", "qwen_logits"}
 
 
 def normalize_numeric_task_mode(mode: str) -> str:
@@ -210,12 +211,7 @@ def output_ptr_for_task(
 ) -> int:
     if workspace is None:
         return parse_ptr(token_fields["out"].get("device_ptr_hex"))
-    if index + 1 == task_count and descriptor is not None and descriptor.get(
-        "callable"
-    ) in {
-        "qwen_final_norm",
-        "qwen_logits",
-    }:
+    if index + 1 == task_count and terminal_task_writes_logits(descriptor):
         return parse_ptr(workspace["logits_buffer"]["device_ptr_hex"])
     target_index = index if absolute_index is None else absolute_index
     return parse_ptr(workspace["activation_buffers"][target_index]["device_ptr_hex"])
@@ -468,7 +464,7 @@ def missing_launch_buffers(
     return [
         {
             "buffer": "intermediate_activation_buffers",
-            "required_count": max(len(descriptors) - 1, 0),
+            "required_count": required_activation_buffer_count(descriptors),
             "status": "not_allocated",
         },
         {
@@ -477,6 +473,21 @@ def missing_launch_buffers(
             "status": "not_allocated",
         },
     ]
+
+
+def terminal_task_writes_logits(descriptor: dict[str, Any] | None) -> bool:
+    return (
+        descriptor is not None
+        and descriptor.get("callable") in TERMINAL_LOGITS_BUFFER_CALLABLES
+    )
+
+
+def required_activation_buffer_count(descriptors: list[dict[str, Any]]) -> int:
+    if not descriptors:
+        return 0
+    if terminal_task_writes_logits(descriptors[-1]):
+        return max(len(descriptors) - 1, 0)
+    return len(descriptors)
 
 
 def launch_blockers(*, workspace_ready: bool) -> list[str]:
