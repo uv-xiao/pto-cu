@@ -33,6 +33,9 @@ from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
 from qwen_persistent_weight_materialization_impl.materializer import (  # noqa: E402
     materialized_descriptor,
 )
+from qwen_persistent_weight_materialization_impl.loaders import (  # noqa: E402
+    weight_args_shape_fields_ready,
+)
 from qwen_persistent_weight_args_impl.descriptors import (  # noqa: E402
     build_task_descriptors,
 )
@@ -722,6 +725,28 @@ def test_materialized_weight_descriptor_preserves_task_shape_fields():
     }
     assert materialized["tensor_arg_metadata"][0]["dtype"] == "bfloat16"
     assert materialized["tensor_arg_metadata"][0]["shape"] == [4096, 4096]
+
+
+def test_weight_args_loader_rejects_shape_field_stale_artifact():
+    assert not weight_args_shape_fields_ready(
+        {
+            "task_arg_descriptors": [
+                {"id": "final_norm", "callable": "qwen_final_norm"},
+                {"id": "logits", "callable": "qwen_logits"},
+            ],
+        }
+    )
+    assert weight_args_shape_fields_ready(
+        {
+            "task_arg_descriptors": [
+                {
+                    "id": "logits",
+                    "callable": "qwen_logits",
+                    "task_shape_fields": {"cols": 16, "inner": 4},
+                },
+            ],
+        }
+    )
 
 
 def test_qwen_weight_descriptors_emit_callable_shape_fields():

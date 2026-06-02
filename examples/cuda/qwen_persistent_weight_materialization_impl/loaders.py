@@ -19,13 +19,29 @@ def load_or_build_weight_args(path: Path | None) -> tuple[dict[str, Any], str]:
     if path is not None:
         return load_json(path), repo_relative(path)
     if DEFAULT_WEIGHT_ARGS.is_file():
-        return load_json(DEFAULT_WEIGHT_ARGS), repo_relative(DEFAULT_WEIGHT_ARGS)
+        payload = load_json(DEFAULT_WEIGHT_ARGS)
+        if weight_args_shape_fields_ready(payload):
+            return payload, repo_relative(DEFAULT_WEIGHT_ARGS)
     payload = load_python_payload(
         ROOT / "examples" / "cuda" / "qwen_persistent_weight_args.py",
         "qwen_persistent_weight_args",
         "build_weight_arg_manifest",
     )
     return payload, "generated_from_examples/cuda/qwen_persistent_weight_args.py"
+
+
+def weight_args_shape_fields_ready(payload: dict[str, Any]) -> bool:
+    descriptors = payload.get("task_arg_descriptors", [])
+    if not isinstance(descriptors, list):
+        return False
+    shaped = [
+        item
+        for item in descriptors
+        if isinstance(item, dict) and item.get("task_shape_fields")
+    ]
+    return bool(shaped) and any(
+        item.get("callable") == "qwen_logits" for item in shaped
+    )
 
 
 def load_or_build_weight_binding(path: Path | None) -> tuple[dict[str, Any], str]:
