@@ -58,10 +58,12 @@ The remaining shape artifacts complete the paired normal-graph evidence matrix:
 `tmp/cuda-backend/persistent-normal_graph_layered_cross-repeat2-smoke-4c68620e/`.
 Those artifacts validate `graph_lowering=normal_graph`, dispatch sequences,
 fan-in/dependent arrays, and repeat-run completion on both A100 and H200.
-The Qwen unit-math live example now also lowers PTO-style tagged submit
-records through `simpler_setup/cuda_pto_graph.py`, proving a builder-side
-dependency-inference path outside scene-test graph config. That is still not a
-live capture from the C++ hierarchical orchestrator.
+The CUDA PTO graph adapter now converts real `TaskArgs` plus `TensorArgType`
+tags into persistent-device submit records, and the Qwen unit-math live
+example lowers PTO-style tagged submit records through
+`simpler_setup/cuda_pto_graph.py`. These prove builder-side dependency
+inference outside scene-test graph config. They are still not a live capture
+from the C++ hierarchical orchestrator.
 
 ## Promotion Gate
 
@@ -69,8 +71,9 @@ Close this gap only after normal PTO task graphs construct full
 persistent-device scheduler inputs from live hierarchical orchestrator
 submissions and the resulting backend-builder path runs through the paired
 A100/H200 smoke or benchmark harness. The normal-graph shape evidence above no
-longer relies on descriptor spellings, and the tagged-submit adapter proves the
-builder-side dependency rule, but neither is a live orchestrator capture.
+longer relies on descriptor spellings, and the `TaskArgs`/tagged-submit
+adapter proves the builder-side dependency rule, but neither is a live
+orchestrator capture.
 
 ## Next Actions
 

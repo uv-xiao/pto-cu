@@ -22,6 +22,15 @@ from .cuda_normal_graph import (
 )
 
 
+_TENSOR_ARG_ROLE_BY_NAME = {
+    "INPUT": "input",
+    "OUTPUT": "output",
+    "INOUT": "inout",
+    "OUTPUT_EXISTING": "output_existing",
+    "NO_DEP": "no_dep",
+}
+
+
 @dataclass(frozen=True)
 class CudaPtoTaskArg:
     """Tensor argument metadata used for PTO-style dependency inference."""
@@ -41,6 +50,43 @@ class CudaPtoTaskSubmit:
     args: tuple[CudaPtoTaskArg, ...]
     worker_id: int = -1
     attrs: Optional[Mapping[str, Any]] = None
+
+
+def cuda_pto_submit_from_task_args(
+    key: str,
+    callable_id: int,
+    task_args: Any,
+    *,
+    worker_id: int = -1,
+    tensor_names: Sequence[str] | None = None,
+    attrs: Optional[Mapping[str, Any]] = None,
+) -> CudaPtoTaskSubmit:
+    """Convert a PTO TaskArgs object into a CUDA persistent submit record."""
+
+    tensor_count = int(task_args.tensor_count())
+    if tensor_names is not None and len(tensor_names) != tensor_count:
+        raise ValueError("CUDA PTO tensor_names length must match TaskArgs tensor_count")
+
+    args = []
+    for index in range(tensor_count):
+        tensor = task_args.tensor(index)
+        tag = task_args.tag(index)
+        name = tensor_names[index] if tensor_names is not None else _default_tensor_name(tensor, index)
+        args.append(
+            CudaPtoTaskArg(
+                str(name),
+                role=_role_from_tensor_arg_type(tag),
+                ptr=int(getattr(tensor, "data", 0)),
+                child_memory=bool(getattr(tensor, "child_memory", False)),
+            )
+        )
+    return CudaPtoTaskSubmit(
+        key=str(key),
+        callable_id=int(callable_id),
+        args=tuple(args),
+        worker_id=int(worker_id),
+        attrs=attrs,
+    )
 
 
 def lower_cuda_pto_task_graph(
@@ -98,6 +144,20 @@ def _tensor_key(arg: CudaPtoTaskArg, submit: CudaPtoTaskSubmit) -> tuple[Any, in
     key = int(arg.ptr) if arg.ptr else str(arg.name)
     worker_id = int(submit.worker_id) if arg.child_memory else -1
     return key, worker_id
+
+
+def _default_tensor_name(tensor: Any, index: int) -> str:
+    if int(getattr(tensor, "data", 0)) == 0:
+        return ""
+    return f"tensor_{index}"
+
+
+def _role_from_tensor_arg_type(tag: Any) -> str:
+    name = getattr(tag, "name", str(tag).split(".")[-1])
+    try:
+        return _TENSOR_ARG_ROLE_BY_NAME[str(name)]
+    except KeyError as exc:
+        raise ValueError(f"unsupported PTO TensorArgType for CUDA graph lowering: {tag}") from exc
 
 
 def _normalize_role(role: str) -> str:
