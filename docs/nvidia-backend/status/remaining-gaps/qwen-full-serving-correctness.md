@@ -27,6 +27,8 @@ Recent raw A100 evidence stays under `tmp/`:
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`
   records the dot-product attention smoke with zero scheduler errors.
+- `tmp/cuda-backend/qwen-rotate-half-rope-full-descriptor-1step-mpk-2026-06-03/`
+  records the rotate-half RoPE full-descriptor run with zero scheduler errors.
 - `tmp/cuda-backend/qwen-prefill-two-step-first-layer-2026-06-03/`
   records prompt-prefill to readout-only to full-DAG decode feedback.
 

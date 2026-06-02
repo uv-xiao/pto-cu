@@ -31,9 +31,10 @@ final RMSNorm now reduce each batch row over descriptor `cols` and apply
 column-local norm weights instead of computing one `task->n` scale across the
 whole batch. The QK norm task computes RMS scale from descriptor `cols`,
 `inner`, and `lda` fields before applying separate Q/K norm weight slots and
-pairwise RoPE rotation when cos/sin table slots are bound. It uses descriptor
-`a_batch_stride` to read batch rows from QKV's `q_width + 2*kv_width` output
-layout while exposing Q-width plus KV-width as its own output width. The
+Qwen-style split-half `rotate_half` RoPE when cos/sin table slots are bound.
+It uses descriptor `a_batch_stride` to read batch rows from QKV's
+`q_width + 2*kv_width` output layout while exposing Q-width plus KV-width as
+its own output width. The
 normalized K region is also written back through mutable `task->c` key-cache
 storage using the decode position and descriptor page size; QK-norm accepts
 runtime `tensor_args[4]` as a

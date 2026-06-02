@@ -283,8 +283,13 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         full_source
     )
     assert "(q_weight + k_weight)" in full_source
-    assert "const unsigned int pair_col = col ^ 1U;" in full_source
-    assert "const unsigned int rope_index = col >> 1U;" in full_source
+    assert "const unsigned int half_head_dim = head_dim >> 1U;" in full_source
+    assert "const unsigned int half_inner = task->inner >> 1U;" in full_source
+    assert "head_col + half_head_dim" in full_source
+    assert "head_col - half_head_dim" in full_source
+    assert "col + half_inner" in full_source
+    assert "col - half_inner" in full_source
+    assert "const unsigned int rope_index = first_half ?" in full_source
     assert "normalized * cos_value - paired * sin_value" in full_source
     assert "normalized * cos_value + paired * sin_value" in full_source
     assert "const unsigned int kv_window = task->inner;" in full_source
@@ -408,6 +413,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_shape_field_qk_rmsnorm_source" in manifest["implemented_contracts"]
     assert "qwen_final_norm_full_rmsnorm_source" in manifest["implemented_contracts"]
     assert "qwen_shape_field_qk_rope_source" in manifest["implemented_contracts"]
+    assert "qwen_qk_norm_rotate_half_rope_source" in manifest[
+        "implemented_contracts"
+    ]
     assert "qwen_bounded_decode_attention_reduction_source" in manifest[
         "implemented_contracts"
     ]

@@ -314,15 +314,19 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
                 pto_cuda_tensor_arg_f32(task, norm_slot, head_col, 1.0f);
             const float normalized =
                 task->a[row_base + source_col] * scale * norm_weight;
-            const unsigned int pair_head_col = head_col ^ 1U;
-            if (pair_head_col < head_dim) {
+            const unsigned int half_head_dim = head_dim >> 1U;
+            if (half_head_dim > 0U) {
+                const bool first_half = head_col < half_head_dim;
+                const unsigned int pair_head_col = first_half ?
+                    head_col + half_head_dim : head_col - half_head_dim;
                 const unsigned int pair_source_col = head_base + pair_head_col;
                 const float pair_norm_weight =
                     pto_cuda_tensor_arg_f32(task, norm_slot, pair_head_col, 1.0f);
                 const float paired =
                     task->a[row_base + pair_source_col] * scale *
                     pair_norm_weight;
-                const unsigned int rope_index = head_col >> 1U;
+                const unsigned int rope_index = first_half ?
+                    head_col : head_col - half_head_dim;
                 float cos_value = task->scalar_arg_count > 0U ?
                     task->scalar_args[0] : 1.0f;
                 float sin_value = task->scalar_arg_count > 1U ?
@@ -334,7 +338,7 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
                     sin_value =
                         pto_cuda_tensor_arg_f32(task, 3U, rope_index, sin_value);
                 }
-                task->out[j] = (head_col & 1U) == 0U ?
+                task->out[j] = first_half ?
                     normalized * cos_value - paired * sin_value :
                     normalized * cos_value + paired * sin_value;
             } else {
@@ -383,15 +387,19 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
             const float k_weight = pto_cuda_tensor_arg_f32(task, 1U, col, 1.0f);
             const float normalized = task->a[row_base + col] * scale * 0.5f *
                 (q_weight + k_weight);
-            const unsigned int pair_col = col ^ 1U;
-            if (pair_col < task->inner) {
+            const unsigned int half_inner = task->inner >> 1U;
+            if (half_inner > 0U) {
+                const bool first_half = col < half_inner;
+                const unsigned int pair_col = first_half ?
+                    col + half_inner : col - half_inner;
                 const float pair_q_weight =
                     pto_cuda_tensor_arg_f32(task, 0U, pair_col, 1.0f);
                 const float pair_k_weight =
                     pto_cuda_tensor_arg_f32(task, 1U, pair_col, 1.0f);
                 const float paired = task->a[row_base + pair_col] * scale *
                     0.5f * (pair_q_weight + pair_k_weight);
-                const unsigned int rope_index = col >> 1U;
+                const unsigned int rope_index = first_half ?
+                    col : col - half_inner;
                 float cos_value = task->scalar_arg_count > 0U ?
                     task->scalar_args[0] : 1.0f;
                 float sin_value = task->scalar_arg_count > 1U ?
@@ -403,7 +411,7 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
                     sin_value =
                         pto_cuda_tensor_arg_f32(task, 3U, rope_index, sin_value);
                 }
-                task->out[j] = (col & 1U) == 0U ?
+                task->out[j] = first_half ?
                     normalized * cos_value - paired * sin_value :
                     normalized * cos_value + paired * sin_value;
             } else {
@@ -909,6 +917,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_post_attention_norm_full_rmsnorm_source",
             "qwen_post_attention_residual_rmsnorm_source",
             "qwen_qk_norm_block_rmsnorm_rope_source",
+            "qwen_qk_norm_rotate_half_rope_source",
             "qwen_qk_norm_separate_qk_regions_source",
             "qwen_qk_norm_normalized_k_cache_writeback_source",
             "qwen_qk_norm_paged_k_cache_writeback_source",
