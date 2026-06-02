@@ -14,6 +14,7 @@ from .basic import (
     validate_paper_baselines,
 )
 from .common import ROOT, load_json
+from .dispatcher_backlog import validate_dispatcher_backlog
 from .environments import (
     validate_paper_baseline_environment_attempts,
     validate_paper_baseline_environment_plans,
@@ -163,6 +164,7 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         audit=paper_readiness_audit,
         serving_workload_ids=serving_workload_ids,
     )
+    validate_dispatcher_backlog(paper_readiness_work_queue)
     validate_goal_progress(
         goal_progress,
         audit=paper_readiness_audit,
