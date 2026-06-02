@@ -2738,7 +2738,7 @@ def test_scene_test_builds_cuda_persistent_generic_args():
     assert buffers.host_tasks[2].out == buffers.tensor_buffers.ptrs["out"]
 
 
-def test_scene_test_builds_cuda_persistent_generic_args_four_slots():
+def test_scene_test_builds_cuda_persistent_generic_args_five_tensor_slots():
     test_args = TaskArgsBuilder(
         Tensor("a", _FakeTensor(17)),
         Tensor("b", _FakeTensor(17)),
@@ -2746,13 +2746,14 @@ def test_scene_test_builds_cuda_persistent_generic_args_four_slots():
         Tensor("d", _FakeTensor(17)),
         Tensor("e", _FakeTensor(17)),
         Tensor("f", _FakeTensor(17)),
+        Tensor("g", _FakeTensor(17)),
         Tensor("out", _FakeTensor(17)),
     )
     cuda_spec = {
         "arg_builder": "persistent_dag_generic_args_f32",
         "args": ["a", "b", "c", "d", "out"],
         "queue_capacity": 2,
-        "tensor_args": ["c", "d", "e", "f"],
+        "tensor_args": ["c", "d", "e", "f", "g"],
         "scalar_args": [1.5, 0.25, 0.125, 0.0625],
     }
     buffers = _CudaPersistentDagSceneBuffers(_FakeWorker(), test_args, cuda_spec)
@@ -2770,9 +2771,10 @@ def test_scene_test_builds_cuda_persistent_generic_args_four_slots():
         buffers.tensor_buffers.ptrs["d"],
         buffers.tensor_buffers.ptrs["e"],
         buffers.tensor_buffers.ptrs["f"],
+        buffers.tensor_buffers.ptrs["g"],
     ]
     assert list(buffers.host_tasks[0].scalar_args) == pytest.approx([1.5, 0.25, 0.125, 0.0625])
-    assert buffers.host_tasks[0].tensor_arg_count == 4
+    assert buffers.host_tasks[0].tensor_arg_count == 5
     assert buffers.host_tasks[0].scalar_arg_count == 4
 
 
@@ -5037,7 +5039,7 @@ def test_scene_test_rejects_mixed_cuda_persistent_compact_role_task_arg():
         _CudaPersistentDagSceneBuffers(_FakeWorker(), test_args, cuda_spec)
 
 
-def test_scene_test_builds_cuda_persistent_graph_generic_args_four_slots():
+def test_scene_test_builds_cuda_persistent_graph_generic_args_five_tensor_slots():
     test_args = TaskArgsBuilder(
         Tensor("a", _FakeTensor(17)),
         Tensor("b", _FakeTensor(17)),
@@ -5045,11 +5047,12 @@ def test_scene_test_builds_cuda_persistent_graph_generic_args_four_slots():
         Tensor("d", _FakeTensor(17)),
         Tensor("e", _FakeTensor(17)),
         Tensor("f", _FakeTensor(17)),
+        Tensor("g", _FakeTensor(17)),
         Tensor("out", _FakeTensor(17)),
     )
     cuda_spec = {
         "arg_builder": "persistent_dag_graph_f32",
-        "args": ["a", "b", "c", "d", "e", "f", "out"],
+        "args": ["a", "b", "c", "d", "e", "f", "g", "out"],
         "queue_capacity": 2,
         "temporaries": {"tmp0": "out", "tmp1": "out"},
         "graph": {
@@ -5060,7 +5063,7 @@ def test_scene_test_builds_cuda_persistent_graph_generic_args_four_slots():
                     "b": "b",
                     "out": "tmp0",
                     "dependents": [2],
-                    "tensor_args": ["c", "d", "e", "f"],
+                    "tensor_args": ["c", "d", "e", "f", "g"],
                     "scalar_args": [1.5, 0.25, 0.125, 0.0625],
                 },
                 {"func_id": 2, "a": "a", "b": "b", "out": "tmp1", "dependents": [2]},
@@ -5083,9 +5086,10 @@ def test_scene_test_builds_cuda_persistent_graph_generic_args_four_slots():
         buffers.tensor_buffers.ptrs["d"],
         buffers.tensor_buffers.ptrs["e"],
         buffers.tensor_buffers.ptrs["f"],
+        buffers.tensor_buffers.ptrs["g"],
     ]
     assert list(buffers.host_tasks[0].scalar_args) == pytest.approx([1.5, 0.25, 0.125, 0.0625])
-    assert buffers.host_tasks[0].tensor_arg_count == 4
+    assert buffers.host_tasks[0].tensor_arg_count == 5
     assert buffers.host_tasks[0].scalar_arg_count == 4
     assert buffers.host_tasks[2].a == buffers.host_tasks[0].out
     assert buffers.host_tasks[2].b == buffers.host_tasks[1].out

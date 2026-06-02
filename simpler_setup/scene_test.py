@@ -39,6 +39,8 @@ from .pto_isa import ensure_pto_isa_root
 logger = logging.getLogger(__name__)
 
 _compile_cache: dict[tuple[str, str, str], object] = {}
+_CUDA_PERSISTENT_TENSOR_ARG_CAPACITY = 5
+_CUDA_PERSISTENT_SCALAR_ARG_CAPACITY = 4
 
 
 def clear_compile_cache() -> None:
@@ -1001,9 +1003,9 @@ class _CudaPersistentDagSceneBuffers:
             assert d_name is not None
             tensor_arg_names = list(self.cuda_spec.get("tensor_args", [c_name, d_name]))
             scalar_arg_values = list(self.cuda_spec.get("scalar_args", [1.5, 0.25]))
-            if len(tensor_arg_names) > 4:
-                raise ValueError("CUDA persistent_dag_generic_args_f32 supports at most four tensor_args")
-            if len(scalar_arg_values) > 4:
+            if len(tensor_arg_names) > _CUDA_PERSISTENT_TENSOR_ARG_CAPACITY:
+                raise ValueError("CUDA persistent_dag_generic_args_f32 supports at most five tensor_args")
+            if len(scalar_arg_values) > _CUDA_PERSISTENT_SCALAR_ARG_CAPACITY:
                 raise ValueError("CUDA persistent_dag_generic_args_f32 supports at most four scalar_args")
             missing_tensor_args = [name for name in tensor_arg_names if name not in self.tensor_buffers.ptrs]
             if missing_tensor_args:
@@ -1011,8 +1013,8 @@ class _CudaPersistentDagSceneBuffers:
                     "CUDA persistent_dag_generic_args_f32 tensor_args reference unknown tensors: "
                     + ", ".join(missing_tensor_args)
                 )
-            tensor_args_t = ctypes.c_void_p * 4
-            scalar_args_t = ctypes.c_float * 4
+            tensor_args_t = ctypes.c_void_p * _CUDA_PERSISTENT_TENSOR_ARG_CAPACITY
+            scalar_args_t = ctypes.c_float * _CUDA_PERSISTENT_SCALAR_ARG_CAPACITY
             tensor_arg_ptrs = [self.tensor_buffers.ptrs[name] for name in tensor_arg_names]
             scalar_args = [float(value) for value in scalar_arg_values]
             dependents_t = ctypes.c_uint32 * 2
@@ -1028,8 +1030,14 @@ class _CudaPersistentDagSceneBuffers:
                     dependent_begin=0,
                     dependent_count=1,
                     initial_fanin=0,
-                    tensor_args=tensor_args_t(*(tensor_arg_ptrs + [0] * (4 - len(tensor_arg_ptrs)))),
-                    scalar_args=scalar_args_t(*(scalar_args + [0.0] * (4 - len(scalar_args)))),
+                    tensor_args=tensor_args_t(*(
+                        tensor_arg_ptrs
+                        + [0] * (_CUDA_PERSISTENT_TENSOR_ARG_CAPACITY - len(tensor_arg_ptrs))
+                    )),
+                    scalar_args=scalar_args_t(*(
+                        scalar_args
+                        + [0.0] * (_CUDA_PERSISTENT_SCALAR_ARG_CAPACITY - len(scalar_args))
+                    )),
                     tensor_arg_count=len(tensor_arg_ptrs),
                     scalar_arg_count=len(scalar_args),
                 ),
@@ -2231,9 +2239,9 @@ class _CudaPersistentDagSceneBuffers:
     ):
         tensor_args = list(task_spec.get("tensor_args", []))
         scalar_args = [self._graph_scalar_value(value) for value in task_spec.get("scalar_args", [])]
-        if len(tensor_args) > 4:
-            raise ValueError("CUDA persistent_dag_graph_f32 supports at most four tensor_args per task")
-        if len(scalar_args) > 4:
+        if len(tensor_args) > _CUDA_PERSISTENT_TENSOR_ARG_CAPACITY:
+            raise ValueError("CUDA persistent_dag_graph_f32 supports at most five tensor_args per task")
+        if len(scalar_args) > _CUDA_PERSISTENT_SCALAR_ARG_CAPACITY:
             raise ValueError("CUDA persistent_dag_graph_f32 supports at most four scalar_args per task")
         if int(task_spec["func_id"]) == 10 and (
             not _CudaPersistentDagSceneBuffers._is_tensor_core_tile(
@@ -2249,8 +2257,8 @@ class _CudaPersistentDagSceneBuffers:
                 "and inner divisible by 8"
             )
 
-        tensor_args_t = ctypes_module.c_void_p * 4
-        scalar_args_t = ctypes_module.c_float * 4
+        tensor_args_t = ctypes_module.c_void_p * _CUDA_PERSISTENT_TENSOR_ARG_CAPACITY
+        scalar_args_t = ctypes_module.c_float * _CUDA_PERSISTENT_SCALAR_ARG_CAPACITY
         tensor_arg_ptrs = [self._graph_ptr(ptrs, name) for name in tensor_args]
         task = task_type(
             func_id=int(task_spec["func_id"]),
@@ -2265,8 +2273,14 @@ class _CudaPersistentDagSceneBuffers:
             initial_fanin=initial_fanin,
             scalar0=self._graph_scalar_value(task_spec.get("scalar0", 0.0)),
             scalar1=self._graph_scalar_value(task_spec.get("scalar1", 0.0)),
-            tensor_args=tensor_args_t(*(tensor_arg_ptrs + [0] * (4 - len(tensor_arg_ptrs)))),
-            scalar_args=scalar_args_t(*(scalar_args + [0.0] * (4 - len(scalar_args)))),
+            tensor_args=tensor_args_t(*(
+                tensor_arg_ptrs
+                + [0] * (_CUDA_PERSISTENT_TENSOR_ARG_CAPACITY - len(tensor_arg_ptrs))
+            )),
+            scalar_args=scalar_args_t(*(
+                scalar_args
+                + [0.0] * (_CUDA_PERSISTENT_SCALAR_ARG_CAPACITY - len(scalar_args))
+            )),
             tensor_arg_count=len(tensor_arg_ptrs),
             scalar_arg_count=len(scalar_args),
         )

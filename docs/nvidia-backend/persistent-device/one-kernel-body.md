@@ -88,11 +88,11 @@ normal PTO task graph lowering into all CUDA descriptor families, plus tuned
 tensor kernels beyond the current smoke and microbenchmark bodies.
 
 The descriptor now also carries bounded generic argument slots:
-`tensor_args[4]`, `scalar_args[4]`, `tensor_arg_count`, and
+five `tensor_args`, four `scalar_args`, `tensor_arg_count`, and
 `scalar_arg_count`. The current `generic_args` smoke and
 `persistent_dag_generic_args_f32` SceneTestCase adapter use those slots to pass
-the original two auxiliary tensors/scalars and a four-slot variant to a
-generated-dispatch task body without adding more fixed `c`/`d`-style fields.
+auxiliary tensors/scalars to a generated-dispatch task body without adding more
+fixed `c`/`d`-style fields.
 This is still an explicit
 descriptor adapter rather than full PTO graph lowering, but it sets the ABI
 direction for persistent tasks whose arity differs from the early hand-coded
