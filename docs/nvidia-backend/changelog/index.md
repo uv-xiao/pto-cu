@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen resource prefix execution](2026-06-02-qwen-resource-prefix-execution.md)
 - [2026-06-02 Qwen logits bounded window](2026-06-02-qwen-logits-bounded-window.md)
 - [2026-06-02 Qwen shape field materialization guard](2026-06-02-qwen-shape-field-materialization-guard.md)
 - [2026-06-02 Qwen sampled logits reference](2026-06-02-qwen-sampled-logits-reference.md)

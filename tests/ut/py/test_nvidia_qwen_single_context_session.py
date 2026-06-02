@@ -244,6 +244,7 @@ def test_resource_backed_smoke_runs_before_single_context_close(monkeypatch):
         assert kwargs["activation_workspace"] is session.workspace
         assert kwargs["repeat_runs"] == 4
         assert kwargs["decode_step_limit"] is None
+        assert kwargs["max_task_count"] == 8
         return {
             "status": "pass",
             "serving_coverage": "diagnostic_resource_backed_qwen_dag",
@@ -267,6 +268,7 @@ def test_resource_backed_smoke_runs_before_single_context_close(monkeypatch):
         single_context_live_session=True,
         run_resource_backed_smoke=True,
         resource_backed_repeat_runs=4,
+        resource_backed_max_tasks=8,
     )
 
     assert session.closed

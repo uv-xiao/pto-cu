@@ -68,6 +68,7 @@ def run_resource_backed_execution(
     repeat_runs: int = 1,
     decode_step_limit: int | None = None,
     workload_ids: list[str] | None = None,
+    max_task_count: int | None = None,
     logits_check_policy: str = "every_step",
     numeric_task_mode: str = "diagnostic",
 ) -> dict[str, Any]:
@@ -84,6 +85,8 @@ def run_resource_backed_execution(
         for item in materialization.get("materialized_task_descriptors", [])
         if item.get("status") == "ready"
     ]
+    if max_task_count is not None:
+        descriptors = descriptors[: max(1, int(max_task_count))]
     if not descriptors:
         return {"status": "not_run", "reason": "no_ready_descriptors"}
     logits_check_policy = normalize_logits_check_policy(logits_check_policy)
@@ -138,6 +141,7 @@ def run_resource_backed_execution(
         repeat_runs=repeat_runs,
         decode_step_limit=decode_step_limit,
         workload_ids=workload_ids,
+        max_task_count=max_task_count,
         logits_check_policy=logits_check_policy,
         numeric_task_mode=numeric_task_mode,
         repo_relative=repo_relative,
@@ -171,6 +175,7 @@ def run_workload(
     )
     if packet is None or workspace is None:
         return {"workload_id": plan["workload_id"], "status": "not_run"}
+    final_callable = descriptors[-1].get("callable")
 
     execution_count = resource_backed_execution_count(
         plan=plan,
@@ -210,7 +215,14 @@ def run_workload(
             ctypes.byref(timing),
         )
         counters = graph.read_counters()
-        if should_check_logits(
+        if final_callable != "qwen_logits":
+            logits_summary = unchecked_logits_summary(
+                policy=logits_check_policy,
+                repeat_index=repeat_index,
+                execution_count=execution_count,
+                reason="bounded_prefix_without_logits_task",
+            )
+        elif should_check_logits(
             policy=logits_check_policy,
             repeat_index=repeat_index,
             execution_count=execution_count,

@@ -73,6 +73,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resource-backed-repeat-runs", type=int, default=1)
     parser.add_argument("--resource-backed-decode-steps", type=int)
     parser.add_argument("--resource-backed-workload", action="append")
+    parser.add_argument("--resource-backed-max-tasks", type=int)
     parser.add_argument(
         "--resource-backed-logits-check-policy",
         choices=["every_step", "final_step"],
@@ -140,6 +141,7 @@ def main() -> None:
         resource_backed_repeat_runs=args.resource_backed_repeat_runs,
         resource_backed_decode_steps=args.resource_backed_decode_steps,
         resource_backed_workloads=args.resource_backed_workload,
+        resource_backed_max_tasks=args.resource_backed_max_tasks,
         resource_backed_logits_check_policy=(
             args.resource_backed_logits_check_policy
         ),

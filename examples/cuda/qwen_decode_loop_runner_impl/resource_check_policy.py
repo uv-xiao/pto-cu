@@ -42,10 +42,11 @@ def unchecked_logits_summary(
     policy: str,
     repeat_index: int,
     execution_count: int,
+    reason: str = "deferred_by_logits_check_policy",
 ) -> dict[str, Any]:
     return {
         "coverage": "not_checked",
-        "reason": "deferred_by_logits_check_policy",
+        "reason": reason,
         "logits_check_policy": policy,
         "repeat_index": int(repeat_index),
         "is_final_step": repeat_index == execution_count - 1,
