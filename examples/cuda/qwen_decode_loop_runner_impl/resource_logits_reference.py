@@ -36,14 +36,20 @@ def summarize_logits_values(
     logits_buffer_elements: int,
     written_element_count: int,
     diagnostic_reference: dict[str, Any] | None = None,
+    vocab_cols: int | None = None,
+    topk_row: int = 0,
     top_k: int = 5,
 ) -> dict[str, Any]:
-    finite_values = [
-        (index, value)
-        for index, value in enumerate(values)
-        if math.isfinite(value)
-    ]
-    ranked = heapq.nlargest(top_k, finite_values, key=lambda item: item[1])
+    finite_values = finite_indexed_values(values)
+    ranked = heapq.nlargest(
+        top_k,
+        topk_candidates(
+            values,
+            vocab_cols=vocab_cols,
+            topk_row=topk_row,
+        ),
+        key=lambda item: item[1],
+    )
     checksum = sum((index + 1) * value for index, value in enumerate(values))
     full_written = int(written_element_count) >= int(logits_buffer_elements)
     return {
@@ -63,15 +69,41 @@ def summarize_logits_values(
         "nonzero_count": sum(1 for value in values if value != 0.0),
         "topk": [
             {
-                "token_id": int(index),
+                "token_id": int(token_id),
                 "logit": round(float(value), 6),
             }
-            for index, value in ranked
+            for token_id, value in ranked
         ],
         "sample_checksum": round(float(checksum), 6),
         "diagnostic_reference": diagnostic_reference
         or {"status": "not_checked", "reason": "not_requested"},
     }
+
+
+def finite_indexed_values(values: list[float]) -> list[tuple[int, float]]:
+    return [
+        (index, value)
+        for index, value in enumerate(values)
+        if math.isfinite(value)
+    ]
+
+
+def topk_candidates(
+    values: list[float],
+    *,
+    vocab_cols: int | None,
+    topk_row: int,
+) -> list[tuple[int, float]]:
+    if vocab_cols is None or int(vocab_cols) <= 0:
+        return finite_indexed_values(values)
+    cols = int(vocab_cols)
+    row_begin = max(0, int(topk_row)) * cols
+    row_end = min(row_begin + cols, len(values))
+    return [
+        (index - row_begin, value)
+        for index, value in enumerate(values[row_begin:row_end], start=row_begin)
+        if math.isfinite(value)
+    ]
 
 
 def diagnostic_logits_projection_values(

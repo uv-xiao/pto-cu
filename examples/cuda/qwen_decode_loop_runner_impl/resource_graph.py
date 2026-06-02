@@ -171,6 +171,7 @@ class MaterializedGraph:
             values,
             logits_buffer_elements=int(workspace["logits_buffer"]["element_count"]),
             written_element_count=written_elements,
+            vocab_cols=int(final_task.cols),
             diagnostic_reference=self.diagnostic_logits_reference(
                 final_task=final_task,
                 values=values,

@@ -18,6 +18,9 @@
   `examples/cuda/qwen_decode_loop_runner_impl/logits_active_cols.py`.
 - Recorded the applied active-logits-column policy in resource-backed raw
   execution results and viewer-import statistics.
+- Fixed host-side logits top-k summaries for multi-row logits buffers so
+  `token_id` reports the row-0 vocabulary column, matching the device-side
+  diagnostic greedy argmax feedback contract.
 
 ## Architecture Quality
 
@@ -106,10 +109,45 @@ errors, `logits_active_cols_policy.mode=full_descriptor_cols`,
 sampled elements with `max_abs_error=0.0`. One compact viewer row was imported;
 the raw 249 KB JSON remains under `tmp/`.
 
+The same full active-vocabulary policy also completed for one MPK-policy
+resource-backed decode step after fixing the row-0 token-id summary:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python timeout 420 .venv/bin/python \
+  examples/cuda/qwen_decode_loop_runner.py --mode mock \
+  --single-context-live-session --run-resource-backed-smoke \
+  --resource-backed-task-selection first_layer_with_logits \
+  --resource-backed-workload mpk_offline_decode \
+  --resource-backed-repeat-runs 1 --resource-backed-decode-steps 1 \
+  --resource-backed-worker-blocks 10 \
+  --resource-backed-logits-check-policy final_step \
+  --resource-backed-logits-active-cols full \
+  --resource-backed-numeric-task-mode unit_math --device 0 \
+  --arch compute_80 \
+  --cache-root tmp/cuda-backend/qwen-full-active-logits-mpk-2026-06-03-fixed/cache \
+  --output-json tmp/cuda-backend/qwen-full-active-logits-mpk-2026-06-03-fixed/qwen-decode-loop-runner.json
+```
+
+The raw artifact under
+`tmp/cuda-backend/qwen-full-active-logits-mpk-2026-06-03-fixed/` reported
+`status=pass`, 10 completed Qwen task functions, zero scheduler errors,
+`device_token_feedback_observed`, `full_logits_buffer_checked` over 2,430,976
+logits elements, and diagnostic projection reference `max_abs_error=0.0`. One
+compact viewer row was imported; the raw 249 KB JSON remains under `tmp/`.
+
+Focused regressions for the multi-row host-summary fix passed:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
+  tests/ut/py/test_nvidia_qwen_single_context_session.py -q -k \
+  'resource_backed_logits_summary or active_logits_written_elements'
+```
+
 ## Remaining Gaps
 
 This change makes the current Qwen logits path honest and bounded for
-diagnostics, and now proves a selected full active-vocabulary logits pass can
-complete. It is still not a paper-ready full-serving result: the remaining
-implementation gap is full Qwen numerical correctness across the serving
-policy and import through the full-serving viewer gate.
+diagnostics, and now proves selected full active-vocabulary logits passes can
+complete for both MPK and VDCores serving policies. It is still not a
+paper-ready full-serving result: the remaining implementation gap is full Qwen
+numerical correctness across the serving policy and import through the
+full-serving viewer gate.

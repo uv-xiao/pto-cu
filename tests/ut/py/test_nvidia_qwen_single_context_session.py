@@ -467,6 +467,24 @@ def test_resource_backed_logits_summary_marks_full_buffer_written_prefix_sampled
     assert summary["diagnostic_reference"]["status"] == "pass"
 
 
+def test_resource_backed_logits_summary_reports_row0_token_ids():
+    module = load_resource_graph_module()
+
+    summary = module.summarize_logits_values(
+        [0.0, 3.5, 1.0, 2.0, 9.0, 8.0, 7.0, 6.0],
+        logits_buffer_elements=8,
+        written_element_count=8,
+        vocab_cols=4,
+        top_k=2,
+    )
+
+    assert summary["coverage"] == "full_logits_buffer_checked"
+    assert summary["topk"] == [
+        {"token_id": 1, "logit": 3.5},
+        {"token_id": 3, "logit": 2.0},
+    ]
+
+
 def test_diagnostic_logits_reference_compares_tiled_vocab_projection():
     module = load_resource_graph_module()
 
