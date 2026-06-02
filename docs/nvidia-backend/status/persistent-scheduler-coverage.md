@@ -36,10 +36,14 @@ archive because those files were originally written while closing the gap:
 The benchmark viewer also exposes these claims as structured coverage data in
 `docs/nvidia-backend/benchmark-viewer/data/persistent_scheduler_coverage.json`.
 That record is validated against implementation and documentation symbols by
-the benchmark-viewer data guard.
+the benchmark-viewer data guard. The same coverage data now requires a
+normal-graph lowering-boundary group, with evidence tied to
+`simpler_setup/cuda_normal_graph.py`, `simpler_setup/scene_test.py`, the
+no-torch persistent smoke, and the Qwen unit-math CUDA example.
 
 The verified coverage above is enough for current CUDA backend review claims
 about scheduler mechanics. The remaining open work is normal PTO graph
-breadth, including malformed normal-graph lowering cases once that input path
-lands, not the scheduler launch, resource, lifecycle, error-taxonomy, or
-artifact-reporting mechanics already captured here.
+breadth at the backend-builder level, including malformed normal-graph
+lowering cases once that input path lands, not the scheduler launch, resource,
+lifecycle, error-taxonomy, or artifact-reporting mechanics already captured
+here.

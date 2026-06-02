@@ -80,6 +80,54 @@
       ]
     },
     {
+      "id": "normal_graph_lowering_boundary",
+      "title": "Normal Graph Lowering Boundary",
+      "status": "covered_for_edge_lowering",
+      "summary": "Shared lowering now builds fan-in, dependents, and task spans for smoke, scene-test, and Qwen example graph inputs.",
+      "covered_cases": [
+        "node-key dependency lowering from depends_on edges",
+        "explicit dependent-list lowering that preserves dependent order",
+        "scene-test graph descriptor edge lowering after descriptor parsing",
+        "no-torch persistent smoke graph lowering marker",
+        "Qwen unit-math DAG task-array construction"
+      ],
+      "open_work": [
+        "builder-wide construction from normal PTO task graphs",
+        "paired A100/H200 rows for fork-join, chain, fan-in, and layered-cross normal graph inputs"
+      ],
+      "evidence_refs": [
+        {
+          "path": "simpler_setup/cuda_normal_graph.py",
+          "symbols": [
+            "CudaNormalGraphNode",
+            "lower_normal_graph",
+            "lower_normal_graph_from_dependents"
+          ]
+        },
+        {
+          "path": "simpler_setup/scene_test.py",
+          "symbols": [
+            "lower_normal_graph_from_dependents",
+            "persistent_dag_graph_f32"
+          ]
+        },
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_persistent_smoke.py",
+          "symbols": [
+            "graph_lowering",
+            "lower_normal_graph"
+          ]
+        },
+        {
+          "path": "examples/cuda/qwen_unit_math_live_impl/graph.py",
+          "symbols": [
+            "make_graph_arrays",
+            "lower_normal_graph"
+          ]
+        }
+      ]
+    },
+    {
       "id": "scheduler_negative_matrix",
       "title": "Scheduler Negative Matrix",
       "status": "covered_for_current_taxonomy",

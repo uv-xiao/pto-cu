@@ -23,6 +23,7 @@ def validate_persistent_scheduler_coverage(
     required = {
         "launch_and_lifecycle",
         "graph_shape_matrix",
+        "normal_graph_lowering_boundary",
         "scheduler_negative_matrix",
     }
     missing = required - group_ids

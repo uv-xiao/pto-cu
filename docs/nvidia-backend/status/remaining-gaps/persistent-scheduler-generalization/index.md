@@ -12,11 +12,10 @@ The remaining backend gap is normal PTO graph breadth, not the core persistent
 scheduler mechanics. Before this gap can be closed, the CUDA backend still
 needs:
 
-- full graph construction from normal PTO task graphs rather than curated
-  graph-descriptor tracer bullets;
-- broader graph-lowering coverage beyond the current
-  `persistent_dag_graph_f32` descriptor adapter and selected descriptor
-  spellings.
+- builder-wide graph construction from normal PTO task graphs rather than
+  curated graph-descriptor tracer bullets;
+- paired A100/H200 evidence that normal graph inputs, not only descriptor
+  spellings, cover fork-join, chain, fan-in, and layered-cross shapes.
 
 The current scheduler-negative taxonomy is covered for the review scope:
 unsupported `func_id`, invalid dependent IDs, dependent range, fan-in
@@ -31,19 +30,23 @@ Structured coverage lives in
 `docs/nvidia-backend/benchmark-viewer/data/persistent_scheduler_coverage.json`
 and is validated by
 `.agents/checks/benchmark_viewer_validation/persistent_scheduler_coverage.py`.
+That coverage now requires a normal-graph lowering-boundary group tied to
+`simpler_setup/cuda_normal_graph.py`, the persistent-device scene-test adapter,
+the no-torch persistent smoke, and the Qwen unit-math live example.
 Current paired smoke artifacts include
 `tmp/cuda-backend/persistent-graph_descriptor_diamond-repeat2-smoke-072e396c/`
 and
 `tmp/cuda-backend/persistent-graph_descriptor_generic_args4-repeat2-smoke-11db2c9d/`.
 Those prove scheduler mechanics and selected descriptor spellings, not normal
-PTO graph construction.
+PTO graph construction from the backend builder.
 
 ## Promotion Gate
 
-Close this gap only after normal PTO task graphs lower into the
-persistent-device scheduler path, the lowered graphs run through the paired
-A100/H200 smoke or benchmark harness, and viewer data records the resulting
-raw `tmp/` artifacts without relying on curated descriptor-only inputs.
+Close this gap only after normal PTO task graphs construct full
+persistent-device scheduler inputs through the backend builder, the lowered
+graphs run through the paired A100/H200 smoke or benchmark harness, and viewer
+data records the resulting raw `tmp/` artifacts without relying on curated
+descriptor-only inputs.
 
 ## Next Actions
 
