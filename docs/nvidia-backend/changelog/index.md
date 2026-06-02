@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 tensor model shape targets](2026-06-02-tensor-model-shape-targets.md)
 - [2026-06-02 persistent scheduler gap narrowing](2026-06-02-persistent-scheduler-gap-narrowing.md)
 - [2026-06-02 paper readiness serving coverage guard](2026-06-02-paper-readiness-serving-coverage-guard.md)
 - [2026-06-02 kernel compiler gap reclassification](2026-06-02-kernel-compiler-gap-reclassification.md)

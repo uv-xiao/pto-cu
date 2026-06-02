@@ -12,9 +12,10 @@ scheduler-vs-task work separation exists for current diagnostic tensor bodies.
 Structured review evidence lives in
 `docs/nvidia-backend/benchmark-viewer/data/tensor_workload_coverage.json` and
 is checked against current viewer result records by the benchmark-viewer data
-guard. The remaining gap is tuned PTO tensor body work at model-relevant
-sizes, not descriptor-shape, first tensor-core callable plumbing, or baseline
-viewer coverage.
+guard. The same viewer data now lists the first model-shape target tiles that
+must receive tuned PTO rows. The remaining gap is tuned PTO tensor body work
+at those model-relevant sizes, not descriptor-shape, first tensor-core
+callable plumbing, or baseline viewer coverage.
 
 Needed:
 

@@ -58,6 +58,7 @@ def validate_tensor_workload_coverage(
     missing = required - group_ids
     if missing:
         fail(f"tensor workload coverage missing groups: {sorted(missing)}")
+    validate_model_shape_targets(data, root)
     results_seen = _result_index(results)
     for group in groups:
         owner = f"tensor workload coverage group {group['id']}"
@@ -74,3 +75,50 @@ def validate_tensor_workload_coverage(
         _check_result_refs(result_refs, owner, results_seen)
         require_list(group, "open_work", owner)
         check_evidence_refs(group, owner, root)
+
+
+def validate_model_shape_targets(data: dict[str, Any], root: Path) -> None:
+    targets = require_list(
+        data,
+        "model_shape_targets",
+        "tensor workload coverage",
+    )
+    if len(targets) < 2:
+        fail("tensor workload coverage must include at least two model shape targets")
+    required_methods = {
+        "pto_persistent_device",
+        "cublas_sgemm_graph",
+        "cutlass",
+        "triton",
+        "thunderkittens",
+    }
+    for target in targets:
+        owner = f"tensor workload model shape target {target.get('id')}"
+        validate_id(require_string(target, "id", owner), owner)
+        for key in ("title", "status", "model_mapping", "run_command"):
+            require_string(target, key, owner)
+        tile = require_dict(target, "tensor_tile", owner)
+        rows = require_positive_int(tile, "rows", owner)
+        cols = require_positive_int(tile, "cols", owner)
+        inner = require_positive_int(tile, "inner", owner)
+        if rows % 16 != 0 or cols % 16 != 0 or inner % 8 != 0:
+            fail(f"{owner} is not compatible with WMMA tensor-core constraints")
+        command = target["run_command"]
+        for flag, value in (
+            ("--tensor-rows", rows),
+            ("--tensor-cols", cols),
+            ("--tensor-inner", inner),
+        ):
+            if f"{flag} {value}" not in command:
+                fail(f"{owner} command missing {flag} {value}")
+        methods = set(require_list(target, "required_methods", owner))
+        if methods != required_methods:
+            fail(f"{owner} required methods mismatch: {sorted(methods)}")
+        check_evidence_refs(target, owner, root)
+
+
+def require_positive_int(record: dict[str, Any], key: str, owner: str) -> int:
+    value = record.get(key)
+    if not isinstance(value, int) or value <= 0:
+        fail(f"{owner} has invalid positive integer {key}")
+    return value

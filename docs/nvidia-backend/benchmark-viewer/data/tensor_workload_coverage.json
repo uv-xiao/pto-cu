@@ -4,6 +4,65 @@
     "status": "open_pto_tuning_gap",
     "summary": "Tensor evidence is split from the open tuned PTO body gap."
   },
+  "model_shape_targets": [
+    {
+      "id": "qwen_attention_projection_tile",
+      "title": "Qwen Attention Projection Tile",
+      "status": "planned_shape_target",
+      "model_mapping": "Qwen attention projection slice with 128-wide head or input chunk and 64 output channels.",
+      "tensor_tile": {
+        "rows": 16,
+        "cols": 64,
+        "inner": 128
+      },
+      "run_command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py --device 0 --sizes 1024 --repeats 20 --arch compute_80 --include-persistent --tensor-rows 16 --tensor-cols 64 --tensor-inner 128",
+      "required_methods": [
+        "pto_persistent_device",
+        "cublas_sgemm_graph",
+        "cutlass",
+        "triton",
+        "thunderkittens"
+      ],
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py",
+          "symbols": [
+            "--tensor-rows",
+            "--tensor-cols",
+            "--tensor-inner"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "qwen_mlp_projection_tile",
+      "title": "Qwen MLP Projection Tile",
+      "status": "planned_shape_target",
+      "model_mapping": "Qwen MLP projection slice with a 256-wide hidden/intermediate chunk and 64 output channels.",
+      "tensor_tile": {
+        "rows": 16,
+        "cols": 64,
+        "inner": 256
+      },
+      "run_command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py --device 0 --sizes 1024 --repeats 20 --arch compute_80 --include-persistent --tensor-rows 16 --tensor-cols 64 --tensor-inner 256",
+      "required_methods": [
+        "pto_persistent_device",
+        "cublas_sgemm_graph",
+        "cutlass",
+        "triton",
+        "thunderkittens"
+      ],
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py",
+          "symbols": [
+            "_validate_tensor_core_tile",
+            "pto_persistent_dag_graph_tensor_core"
+          ]
+        }
+      ]
+    }
+  ],
   "coverage_groups": [
     {
       "id": "pto_tensor_descriptor_paths",

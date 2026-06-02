@@ -127,6 +127,21 @@ export function renderTensorWorkloadCoverage(state) {
   const heading = document.createElement("h3");
   heading.append(text(metadata.title));
   const intro = paragraph("Status", `${metadata.status}: ${metadata.summary}`);
+  const targets = state.tensorWorkloadCoverage.model_shape_targets || [];
+  const targetRows = targets.map((target) => [
+    target.title,
+    `${target.tensor_tile.rows}x${target.tensor_tile.cols}x${target.tensor_tile.inner}`,
+    target.status,
+    target.model_mapping,
+  ]);
+  const targetDetails = document.createElement("details");
+  const targetSummary = document.createElement("summary");
+  targetSummary.append(text("Model Shape Targets"));
+  targetDetails.append(
+    targetSummary,
+    table(["Target", "Tile", "Status", "Mapping"], targetRows),
+    ...namedList("Commands", targets.map((target) => target.run_command)),
+  );
   const groups = state.tensorWorkloadCoverage.coverage_groups.map((group) => {
     const details = document.createElement("details");
     const summary = document.createElement("summary");
@@ -149,7 +164,7 @@ export function renderTensorWorkloadCoverage(state) {
     );
     return details;
   });
-  root.append(heading, intro, ...groups);
+  root.append(heading, intro, targetDetails, ...groups);
 }
 
 export function renderServingWorkloads(state, lookup) {
