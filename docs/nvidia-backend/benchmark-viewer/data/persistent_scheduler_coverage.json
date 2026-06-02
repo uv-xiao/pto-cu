@@ -82,11 +82,12 @@
     {
       "id": "normal_graph_lowering_boundary",
       "title": "Normal Graph Lowering Boundary",
-      "status": "covered_for_taskargs_submit_lowering",
-      "summary": "Shared lowering now builds fan-in, dependents, and task spans for smoke, scene-test, real TaskArgs submits, PTO-style tagged submits, and Qwen example graph inputs.",
+      "status": "covered_for_python_orchestration_recording",
+      "summary": "Shared lowering now builds fan-in, dependents, and task spans for smoke, scene-test, Python orchestration recording, real TaskArgs submits, PTO-style tagged submits, and Qwen example graph inputs.",
       "covered_cases": [
         "node-key dependency lowering from depends_on edges",
         "explicit dependent-list lowering that preserves dependent order",
+        "Python orchestration submit_next_level recording into CUDA persistent-device submit records",
         "real TaskArgs plus TensorArgType conversion into CUDA persistent-device submit records",
         "PTO-style tagged submit dependency inference for CUDA persistent-device task graphs",
         "scene-test persistent_dag_normal_graph_f32 builder input",
@@ -104,9 +105,11 @@
         {
           "path": "simpler_setup/cuda_pto_graph.py",
           "symbols": [
+            "CudaPtoGraphRecorder",
             "CudaPtoTaskArg",
             "CudaPtoTaskSubmit",
             "cuda_pto_submit_from_task_args",
+            "record_cuda_pto_submits",
             "lower_cuda_pto_task_graph"
           ]
         },

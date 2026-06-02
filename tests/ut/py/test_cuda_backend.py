@@ -170,6 +170,35 @@ def test_cuda_pto_submit_from_task_args_uses_real_tensor_tags():
     assert lowered.tasks == [("root", 1, 0, 1, 0), ("middle", 2, 1, 0, 1)]
 
 
+def test_cuda_pto_graph_recorder_captures_python_orchestration_submits():
+    from simpler.task_interface import CallConfig, ContinuousTensor, DataType, TaskArgs, TensorArgType
+    from simpler_setup.cuda_pto_graph import record_cuda_pto_submits, lower_cuda_pto_task_graph
+
+    def tensor(ptr):
+        return ContinuousTensor.make(ptr, (4,), DataType.FLOAT32, False)
+
+    def orch(orch_ctx, _args, cfg):
+        root_args = TaskArgs()
+        root_args.add_tensor(tensor(10), TensorArgType.INPUT)
+        root_args.add_tensor(tensor(30), TensorArgType.OUTPUT)
+        middle_args = TaskArgs()
+        middle_args.add_tensor(tensor(30), TensorArgType.INPUT)
+        middle_args.add_tensor(tensor(40), TensorArgType.OUTPUT)
+        orch_ctx.submit_next_level(101, root_args, cfg)
+        orch_ctx.submit_next_level(102, middle_args, cfg)
+
+    submits = record_cuda_pto_submits(orch, None, CallConfig(), tensor_names=(("a", "tmp0"), ("tmp0", "tmp1")))
+    lowered = lower_cuda_pto_task_graph(
+        submits,
+        lambda node, begin, count, fanin: (node.key, node.func_id, begin, count, fanin),
+    )
+
+    assert [submit.callable_id for submit in submits] == [101, 102]
+    assert lowered.fanin == [0, 1]
+    assert lowered.dependents == [1]
+    assert lowered.tasks == [("task0", 101, 0, 1, 0), ("task1", 102, 1, 0, 1)]
+
+
 class CudaHostCallable(ctypes.Structure):
     _fields_ = [
         ("version", ctypes.c_uint32),

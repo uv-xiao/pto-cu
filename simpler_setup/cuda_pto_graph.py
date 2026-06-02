@@ -52,6 +52,67 @@ class CudaPtoTaskSubmit:
     attrs: Optional[Mapping[str, Any]] = None
 
 
+class CudaPtoGraphRecorder:
+    """Recording orchestrator for CUDA persistent-device graph construction."""
+
+    def __init__(self, tensor_names: Sequence[Sequence[str] | None] | None = None) -> None:
+        self._tensor_names = tuple(tensor_names or ())
+        self.submits: list[CudaPtoTaskSubmit] = []
+
+    def submit_next_level(self, callable_id: int, args: Any, config: Any = None, *, worker: int = -1):
+        submit_id = len(self.submits)
+        self.submits.append(
+            cuda_pto_submit_from_task_args(
+                f"task{submit_id}",
+                int(callable_id),
+                args,
+                worker_id=int(worker),
+                tensor_names=self._tensor_names_for(submit_id),
+                attrs={"config": config},
+            )
+        )
+        return submit_id
+
+    def submit_next_level_group(
+        self,
+        callable_id: int,
+        args_list: Sequence[Any],
+        config: Any = None,
+        *,
+        workers: Sequence[int] | None = None,
+    ):
+        results = []
+        for index, args in enumerate(args_list):
+            worker = -1 if not workers else int(workers[index])
+            results.append(self.submit_next_level(callable_id, args, config, worker=worker))
+        return results
+
+    def submit_sub(self, callable_id: int, args: Any = None):
+        raise NotImplementedError("CUDA persistent-device graph recording only supports next-level submits")
+
+    def submit_sub_group(self, callable_id: int, args_list: Sequence[Any]):
+        raise NotImplementedError("CUDA persistent-device graph recording only supports next-level submits")
+
+    def _tensor_names_for(self, submit_id: int) -> Sequence[str] | None:
+        if submit_id >= len(self._tensor_names):
+            return None
+        return self._tensor_names[submit_id]
+
+
+def record_cuda_pto_submits(
+    orch_fn: Any,
+    args: Any = None,
+    config: Any = None,
+    *,
+    tensor_names: Sequence[Sequence[str] | None] | None = None,
+) -> tuple[CudaPtoTaskSubmit, ...]:
+    """Run a Python orchestration function and record CUDA PTO submits."""
+
+    recorder = CudaPtoGraphRecorder(tensor_names=tensor_names)
+    orch_fn(recorder, args, config)
+    return tuple(recorder.submits)
+
+
 def cuda_pto_submit_from_task_args(
     key: str,
     callable_id: int,

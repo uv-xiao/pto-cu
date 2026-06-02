@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Python orchestration graph recorder](2026-06-02-python-orchestration-graph-recorder.md)
 - [2026-06-02 TaskArgs PTO submit bridge](2026-06-02-taskargs-pto-submit-bridge.md)
 - [2026-06-02 PTO submit graph builder](2026-06-02-pto-submit-graph-builder.md)
 - [2026-06-02 normal graph paired shape completion](2026-06-02-normal-graph-paired-shape-completion.md)
