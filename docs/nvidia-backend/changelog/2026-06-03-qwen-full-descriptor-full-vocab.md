@@ -103,10 +103,60 @@ buffer, and observed device-committed token feedback for sampled token `64036`.
 Reference checking again covered 3,904 elements across 16 logits rows with
 `max_abs_error=1.236e-05`.
 
+The next A100 runs moved from mock resources to the offline Qwen/Qwen3-8B
+tokenizer and safetensors already staged under `tmp/`. Both runs kept all four
+owners in one CUDA context: token pointer table, KV cache, resident weight
+table, and activation workspace.
+
+```bash
+ARTIFACT=tmp/cuda-backend/qwen-real-resource-full-vocab-1step-mpk-2026-06-03
+PYTHONPATH=$PWD:$PWD/python timeout 1500 .venv/bin/python \
+  examples/cuda/qwen_decode_loop_runner.py --mode offline \
+  --single-context-live-session --run-resource-backed-smoke \
+  --resource-backed-task-selection prefix \
+  --resource-backed-workload mpk_offline_decode \
+  --resource-backed-repeat-runs 1 --resource-backed-decode-steps 1 \
+  --resource-backed-worker-blocks 16 \
+  --resource-backed-logits-check-policy final_step \
+  --resource-backed-logits-active-cols full \
+  --resource-backed-numeric-task-mode unit_math_full_rmsnorm \
+  --device 0 --arch compute_80 --cache-root $ARTIFACT/cache \
+  --output-json $ARTIFACT/qwen-decode-loop-runner.json
+```
+
+Result: `mpk_offline_decode` passed for one decode step with real tokenizer,
+real resident safetensors, and full-vocab logits. The run completed 255
+persistent tasks with zero scheduler errors, checked the full 2,430,976-element
+logits buffer, and observed device-committed token feedback for sampled token
+`105397`. Reference checking covered 3,904 elements across 16 logits rows with
+`max_abs_error=1.096e-05`.
+
+```bash
+ARTIFACT=tmp/cuda-backend/qwen-real-resource-full-vocab-1step-vdcores-2026-06-03
+PYTHONPATH=$PWD:$PWD/python timeout 1500 .venv/bin/python \
+  examples/cuda/qwen_decode_loop_runner.py --mode offline \
+  --single-context-live-session --run-resource-backed-smoke \
+  --resource-backed-task-selection prefix \
+  --resource-backed-workload vdcores_offline_decode \
+  --resource-backed-repeat-runs 1 --resource-backed-decode-steps 1 \
+  --resource-backed-worker-blocks 16 \
+  --resource-backed-logits-check-policy final_step \
+  --resource-backed-logits-active-cols full \
+  --resource-backed-numeric-task-mode unit_math_full_rmsnorm \
+  --device 0 --arch compute_80 --cache-root $ARTIFACT/cache \
+  --output-json $ARTIFACT/qwen-decode-loop-runner.json
+```
+
+Result: `vdcores_offline_decode` also passed for one decode step with the same
+real-resource and full-vocab settings. It completed 255 persistent tasks with
+zero scheduler errors, observed token feedback for sampled token `105397`, and
+matched the same 3,904-element diagnostic reference with
+`max_abs_error=1.096e-05`.
+
 ## Remaining Gaps
 
-- Replace mock resource values with full Qwen/Qwen3-8B numerical correctness
-  against a model reference.
+- Compare generated Qwen/Qwen3-8B tokens/logits against a full model reference
+  instead of the current in-run diagnostic projection reference.
 - Run policy-length full-serving captures for both `mpk_offline_decode` and
   `vdcores_offline_decode`.
 - Import only rows that satisfy `serving_coverage=full_serving` and
