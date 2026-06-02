@@ -5,7 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 
-NUMERIC_TASK_MODES = ("diagnostic", "unit_math")
+NUMERIC_TASK_MODES = (
+    "diagnostic",
+    "unit_math",
+    "unit_math_full_rmsnorm",
+)
 UNIT_NUMERIC_CALLABLES = {
     "qwen_rmsnorm_input",
     "qwen_attention_qkv",
@@ -30,6 +34,10 @@ def normalize_numeric_task_mode(mode: str) -> str:
     if mode not in NUMERIC_TASK_MODES:
         raise ValueError(f"unknown numeric task mode: {mode}")
     return mode
+
+
+def is_unit_numeric_mode(mode: str) -> bool:
+    return normalize_numeric_task_mode(mode) != "diagnostic"
 
 
 def attach_decode_feedback_tensors(
@@ -119,10 +127,12 @@ def task_scalar_args(
         descriptor=descriptor,
     ):
         if (
-            numeric_task_mode == "unit_math"
+            is_unit_numeric_mode(numeric_task_mode)
             and descriptor.get("callable") in UNIT_NUMERIC_CALLABLES
         ):
             if descriptor.get("callable") == "qwen_rmsnorm_input":
+                if numeric_task_mode == "unit_math_full_rmsnorm":
+                    return [1.0, 0.0, 0.0, 0.0]
                 return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, 0.0]
             return [1.0, 0.0, 0.0, 0.0]
         return [0.0, 0.0, 0.0, 0.0]
@@ -143,10 +153,16 @@ def task_scalar_arg_count(scalar_args: list[float]) -> int:
 
 def numeric_task_mode_summary(mode: str) -> dict[str, Any]:
     mode = normalize_numeric_task_mode(mode)
+    if mode == "unit_math_full_rmsnorm":
+        scope = "resource_backed_unit_math_full_rmsnorm_reduction"
+    elif mode == "unit_math":
+        scope = "resource_backed_unit_math_weighted_elementwise_branches"
+    else:
+        scope = "diagnostic_resource_backed_formulas"
     return {
         "mode": mode,
         "numeric_ready_callables": sorted(UNIT_NUMERIC_CALLABLES)
-        if mode == "unit_math"
+        if is_unit_numeric_mode(mode)
         else [],
         "external_scale_contracts": [
             {
@@ -158,16 +174,21 @@ def numeric_task_mode_summary(mode: str) -> dict[str, Any]:
         ]
         if mode == "unit_math"
         else [],
+        "full_reduction_contracts": [
+            {
+                "callable": "qwen_rmsnorm_input",
+                "scalar_arg_count": 1,
+                "scope": "resource_backed_full_rmsnorm_reduction",
+            },
+        ]
+        if mode == "unit_math_full_rmsnorm"
+        else [],
         "weighted_elementwise_callables": sorted(
             UNIT_NUMERIC_WEIGHTED_ELEMENTWISE_CALLABLES,
         )
-        if mode == "unit_math"
+        if is_unit_numeric_mode(mode)
         else [],
-        "scope": (
-            "resource_backed_unit_math_weighted_elementwise_branches"
-            if mode == "unit_math"
-            else "diagnostic_resource_backed_formulas"
-        ),
+        "scope": scope,
     }
 
 

@@ -180,8 +180,11 @@ def execution_contracts(
         decode_step_limit,
         token_feedback_status=decode_feedback_contract_status(workload_results),
     )
-    if numeric_task_mode == "unit_math":
+    if numeric_task_mode in {"unit_math", "unit_math_full_rmsnorm"}:
         contracts.append("qwen_resource_backed_unit_numeric_task_mode")
-        contracts.append("qwen_resource_backed_external_rmsnorm_scale")
+        if numeric_task_mode == "unit_math":
+            contracts.append("qwen_resource_backed_external_rmsnorm_scale")
+        if numeric_task_mode == "unit_math_full_rmsnorm":
+            contracts.append("qwen_resource_backed_full_rmsnorm_reduction")
         contracts.append("qwen_resource_backed_weighted_elementwise_branches")
     return contracts

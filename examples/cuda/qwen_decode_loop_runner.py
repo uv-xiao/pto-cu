@@ -43,6 +43,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_device_decode_token_feedback",
     "qwen_resource_backed_unit_numeric_task_mode",
     "qwen_resource_backed_external_rmsnorm_scale",
+    "qwen_resource_backed_full_rmsnorm_reduction",
     "qwen_resource_backed_weighted_elementwise_branches",
 ]
 
@@ -74,7 +75,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--resource-backed-numeric-task-mode",
-        choices=["diagnostic", "unit_math"],
+        choices=["diagnostic", "unit_math", "unit_math_full_rmsnorm"],
         default="diagnostic",
     )
     parser.add_argument("--device", type=int, default=0)

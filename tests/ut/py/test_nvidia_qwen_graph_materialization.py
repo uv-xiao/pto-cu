@@ -14,6 +14,9 @@ from qwen_decode_loop_runner_impl.launch_preflight import (  # noqa: E402
     launch_packet_preflight,
     set_decode_step_index,
 )
+from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
+    numeric_task_mode_summary,
+)
 
 
 def test_launch_packet_preflight_packs_resource_backed_task_records():
@@ -220,3 +223,44 @@ def test_launch_packet_marks_unit_math_numeric_ready_tasks():
         assert packet[index].scalar_args[0] == 1.0
     assert packet[7].scalar_arg_count == 3
     assert list(packet[7].scalar_args)[:3] == [0.0, 1.0, 1.0]
+
+
+def test_launch_packet_can_select_full_rmsnorm_reduction_branch():
+    descriptors = [
+        {"callable": "qwen_rmsnorm_input", "tensor_args": []},
+        {"callable": "qwen_attention_qkv", "tensor_args": []},
+        {"callable": "qwen_logits", "tensor_args": []},
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x3000"},
+            {"field": "b", "device_ptr_hex": "0x4000"},
+            {"field": "out", "device_ptr_hex": "0x5000"},
+        ],
+    )
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x6000"},
+            "d": {"device_ptr_hex": "0x7000"},
+        },
+        numeric_task_mode="unit_math_full_rmsnorm",
+    )
+
+    assert packet is not None
+    assert packet[0].scalar_arg_count == 1
+    assert list(packet[0].scalar_args)[:2] == [1.0, 0.0]
+    assert packet[1].scalar_arg_count == 1
+    assert packet[1].scalar_args[0] == 1.0
+    summary = numeric_task_mode_summary("unit_math_full_rmsnorm")
+    assert summary["scope"] == "resource_backed_unit_math_full_rmsnorm_reduction"
+    assert summary["external_scale_contracts"] == []
+    assert summary["full_reduction_contracts"] == [
+        {
+            "callable": "qwen_rmsnorm_input",
+            "scalar_arg_count": 1,
+            "scope": "resource_backed_full_rmsnorm_reduction",
+        },
+    ]

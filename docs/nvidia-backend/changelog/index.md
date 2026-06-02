@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen full RMSNorm mode](2026-06-02-qwen-full-rmsnorm-mode.md)
 - [2026-06-02 Qwen MLP oracle correction](2026-06-02-qwen-mlp-oracle-correction.md)
 - [2026-06-02 PTO serving preflight split](2026-06-02-pto-serving-preflight-split.md)
 - [2026-06-02 PTO full-serving viewer import](2026-06-02-pto-full-serving-viewer-import.md)

@@ -64,6 +64,10 @@ branches. RMSNorm uses an explicit external scale, and the QK-norm,
 attention-output, post-attention-norm, MLP-down, and final-norm tasks use
 bounded weighted elementwise branches in this mode, so this still remains
 below full Qwen numerical serving correctness.
+Use `--resource-backed-numeric-task-mode unit_math_full_rmsnorm` when reviewers
+need to exercise the generated RMSNorm full-reduction branch instead of the
+external-scale bridge. This mode is slower and still diagnostic, but it moves
+the resource-backed path closer to full Qwen numerical correctness.
 The `cuda_live_submission_descriptor_contract` maps those resource pointers
 to Qwen task function ids 7100 through 7109 and records the `run_prepared`
 repetition count. With `--run-submission-smoke`, it also compiles those same
@@ -78,4 +82,3 @@ array from those pointers. When the activation workspace is live, intermediate
 tasks are chained through activation buffers and the final task writes to a
 float logits/sampling output buffer. It still does not execute full Qwen
 kernels or a full-serving decode loop.
-
