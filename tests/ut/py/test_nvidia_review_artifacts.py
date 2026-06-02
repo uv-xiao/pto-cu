@@ -1130,6 +1130,7 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     )
     assert attention_o["consumes_fields"] == ["a", "out", "c", "d", "tensor_args"]
     assert {"key_cache", "value_cache"} <= set(attention_o["consumes_roles"])
+    assert "kv_page_table" in attention_o["consumes_roles"]
     assert manifest["coverage"]["token_fields"] == ["a", "b", "out"]
     assert manifest["coverage"]["kv_fields"] == ["c", "d"]
     assert manifest["coverage"]["kv_write_policy"] == "mutable_kv_fields_ready"
@@ -1141,6 +1142,10 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     assert "task->c[kv_index] =" in source
     assert "task->d[kv_index] =" in source
     assert "task->tensor_args[0]" in source
+    assert "task->tensor_args[1]" in source
+    assert "const unsigned int *kv_page_table" in source
+    assert "const unsigned int logical_page = step / kv_page_size;" in source
+    assert "physical_page) * kv_page_size *" in source
     assert "generated_qwen_kernel_bodies" in manifest["implemented_contracts"]
     assert "controlled_proxy_numeric_oracle" in manifest["implemented_contracts"]
     assert "qwen_unit_math_oracle" in manifest["implemented_contracts"]
@@ -1155,6 +1160,10 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     )
     assert (
         "qwen_gqa_decode_attention_head_grouping_source"
+        in manifest["implemented_contracts"]
+    )
+    assert (
+        "qwen_paged_kv_attention_index_source"
         in manifest["implemented_contracts"]
     )
     oracle = manifest["numeric_oracle"]
@@ -2188,7 +2197,7 @@ def test_persistent_qwen_weight_materialization_binds_resident_pointers(tmp_path
             "status": "requires_live_pointer",
         },
     ]
-    assert materialization["symbolic_tensor_pointer_count"] == 2
+    assert materialization["symbolic_tensor_pointer_count"] == 3
     assert materialized_descriptors["layer_0_mlp_gate_up"]["tensor_arg_count"] == 2
     assert materialized_descriptors["logits"]["tensor_args"][0]["tensor"] == (
         "lm_head.weight"

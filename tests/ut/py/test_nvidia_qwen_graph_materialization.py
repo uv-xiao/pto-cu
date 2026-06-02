@@ -18,6 +18,7 @@ from qwen_decode_loop_runner_impl.activation_workspace import (  # noqa: E402
     workspace_plan,
 )
 from qwen_decode_loop_runner_impl.workspace_pointers import (  # noqa: E402
+    initialize_kv_page_table,
     initialize_rope_tables,
     refresh_rope_tables_for_decode_position,
     rope_table_values,
@@ -143,6 +144,10 @@ def test_launch_packet_preflight_binds_activation_workspace():
                             "device_ptr_hex": "0xb000",
                             "element_count": 64,
                         },
+                        "kv_page_table": {
+                            "device_ptr_hex": "0xc000",
+                            "element_count": 1,
+                        },
                     },
                     "total_byte_count": 623616,
                 }
@@ -162,6 +167,7 @@ def test_launch_packet_preflight_binds_activation_workspace():
     assert preflight["workspace_pointer_policy"]["runtime_buffers"] == {
         "rope_cos_table": "0xa000",
         "rope_sin_table": "0xb000",
+        "kv_page_table": "0xc000",
     }
     assert preflight["remaining_gap"] == "run_prepared_resource_backed_decode_loop"
 
@@ -252,8 +258,13 @@ def test_workspace_plan_sizes_activation_buffers_from_descriptor_outputs():
     assert workspace["rope_table_policy"] == (
         "position_correct_for_first_decode_position"
     )
-    assert workspace["total_buffer_count"] == 5
-    assert workspace["total_byte_count"] == 32 + 64 + 2 * 16 * 4 + 2 * 2 * 4
+    assert workspace["kv_page_table_count"] == 1
+    assert workspace["kv_page_size_tokens"] == 16
+    assert workspace["kv_page_table_elements"] == 1
+    assert workspace["kv_page_table_bytes"] == 4
+    assert workspace["kv_page_table_policy"] == "identity_logical_to_physical_pages"
+    assert workspace["total_buffer_count"] == 6
+    assert workspace["total_byte_count"] == 32 + 64 + 2 * 16 * 4 + 2 * 2 * 4 + 4
 
 
 def test_launch_packet_binds_runtime_rope_table_tensor_args():
@@ -311,6 +322,53 @@ def test_launch_packet_binds_runtime_rope_table_tensor_args():
     assert packet[0].tensor_args[2] == 0xA000
     assert packet[0].tensor_args[3] == 0xB000
     assert packet[0].tensor_arg_count == 4
+
+
+def test_launch_packet_binds_runtime_kv_page_table_tensor_arg():
+    descriptors = [
+        {
+            "callable": "qwen_attention_o",
+            "tensor_args": [
+                {"arg": "tensor_args[0]", "device_ptr_hex": "0x1000"},
+                {
+                    "arg": "tensor_args[1]",
+                    "tensor": "kv_page_table",
+                    "status": "requires_live_pointer",
+                    "device_ptr_source": "runtime_buffers.kv_page_table",
+                },
+            ],
+        }
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x3000"},
+            {"field": "b", "device_ptr_hex": "0x4000"},
+            {"field": "out", "device_ptr_hex": "0x5000"},
+        ],
+    )
+    workspace = {
+        "activation_buffers": [{"device_ptr_hex": "0x8000", "element_count": 128}],
+        "logits_buffer": {"device_ptr_hex": "0x9000", "element_count": 16},
+        "runtime_buffers": {
+            "kv_page_table": {"device_ptr_hex": "0xc000", "element_count": 1},
+        },
+        "total_byte_count": 0,
+    }
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x6000"},
+            "d": {"device_ptr_hex": "0x7000"},
+        },
+        workspace=workspace,
+    )
+
+    assert packet is not None
+    assert packet[0].tensor_args[0] == 0x1000
+    assert packet[0].tensor_args[1] == 0xC000
+    assert packet[0].tensor_arg_count == 2
 
 
 def test_rope_table_values_use_qwen_position_formula():
@@ -381,6 +439,38 @@ def test_live_workspace_initializes_rope_tables_from_position_policy():
         "position_correct_for_first_decode_position",
     ]
     assert [item["base_position"] for item in rope_tables] == [4, 4]
+
+
+def test_live_workspace_initializes_identity_kv_page_table():
+    class FakeRuntime:
+        def __init__(self):
+            self.copied = {}
+
+        def copy_to_device_ctx(self, ctx, device_ptr, host_ptr, size):
+            del ctx
+            count = int(size) // ctypes.sizeof(ctypes.c_uint32)
+            host_t = ctypes.c_uint32 * count
+            values = ctypes.cast(host_ptr, ctypes.POINTER(host_t)).contents
+            self.copied[int(device_ptr.value)] = list(values)
+            return 0
+
+    runtime = FakeRuntime()
+    kv_page_table = {
+        "role": "kv_page_table",
+        "device_ptr": 0xC000,
+        "element_count": 3,
+    }
+    plan = {
+        "kv_page_table_elements": 3,
+        "kv_page_table_policy": "identity_logical_to_physical_pages",
+        "kv_page_size_tokens": 16,
+    }
+
+    initialize_kv_page_table(runtime, object(), kv_page_table, plan=plan)
+
+    assert runtime.copied[0xC000] == [0, 1, 2]
+    assert kv_page_table["initialization"] == "identity_logical_to_physical_pages"
+    assert kv_page_table["kv_page_size_tokens"] == 16
 
 
 def test_refresh_rope_tables_for_decode_position_updates_runtime_buffers():
@@ -684,6 +774,14 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "lda": 2,
         "ldb": 1,
         "ldc": 4,
+        "scalar0": 16.0,
+    }
+    assert descriptors["layer_0_attention_o"]["tensor_args"][1] == {
+        "arg": "tensor_args[1]",
+        "tensor": "kv_page_table",
+        "role": "kv_page_table",
+        "status": "runtime_generated_tensor",
+        "device_ptr_source": "runtime_buffers.kv_page_table",
     }
     assert descriptors["layer_0_mlp_down"]["task_shape_fields"] == {
         "cols": 4,

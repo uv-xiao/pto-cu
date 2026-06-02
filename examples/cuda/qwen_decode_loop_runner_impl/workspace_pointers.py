@@ -129,13 +129,16 @@ def pointer_set_for_plan(
         base_ptr=next_ptr,
         stride=pointer_stride,
     )
+    next_ptr += pointer_stride * len(rope_tables)
+    kv_page_table = kv_page_table_record(plan=plan, ptr=next_ptr)
     return pointer_set(
         plan=plan,
         activation_buffers=activation_buffers,
         logits=logits,
         rope_tables=rope_tables,
+        kv_page_table=kv_page_table,
     ), (
-        next_ptr + pointer_stride * len(rope_tables)
+        next_ptr + pointer_stride
     )
 
 
@@ -179,11 +182,23 @@ def allocate_pointer_set(
         for name in ("rope_cos_table", "rope_sin_table")
     ]
     initialize_rope_tables(runtime, ctx, rope_tables, plan=plan)
+    kv_page_table = allocate_record(
+        runtime,
+        ctx,
+        allocated,
+        name="kv_page_table",
+        role="kv_page_table",
+        byte_count=plan["kv_page_table_bytes"],
+        element_count=plan["kv_page_table_elements"],
+        element_dtype="uint32",
+    )
+    initialize_kv_page_table(runtime, ctx, kv_page_table, plan=plan)
     return pointer_set(
         plan=plan,
         activation_buffers=activation_buffers,
         logits=logits,
         rope_tables=rope_tables,
+        kv_page_table=kv_page_table,
     )
 
 
@@ -196,6 +211,7 @@ def allocate_record(
     role: str,
     byte_count: int,
     element_count: int,
+    element_dtype: str = "float32",
 ) -> dict[str, Any]:
     ptr = runtime.device_malloc_ctx(ctx, byte_count)
     if not ptr:
@@ -208,6 +224,7 @@ def allocate_record(
         ptr=ptr_value,
         byte_count=byte_count,
         element_count=element_count,
+        element_dtype=element_dtype,
     )
 
 
@@ -232,6 +249,27 @@ def initialize_rope_tables(
         item["initialization"] = plan["rope_table_policy"]
         item["base_position"] = int(plan["rope_base_position"])
         item["rope_theta"] = float(plan["rope_theta"])
+
+
+def initialize_kv_page_table(
+    runtime: Any,
+    ctx: Any,
+    kv_page_table: dict[str, Any],
+    plan: dict[str, Any],
+) -> None:
+    count = int(plan["kv_page_table_elements"])
+    values = list(range(count))
+    host = (ctypes.c_uint32 * len(values))(*values)
+    status = runtime.copy_to_device_ctx(
+        ctx,
+        ctypes.c_void_p(device_ptr_value(kv_page_table)),
+        ctypes.byref(host),
+        ctypes.sizeof(host),
+    )
+    if status != 0:
+        raise RuntimeError("copy_to_device kv_page_table failed")
+    kv_page_table["initialization"] = plan["kv_page_table_policy"]
+    kv_page_table["kv_page_size_tokens"] = int(plan["kv_page_size_tokens"])
 
 
 def device_ptr_value(item: dict[str, Any]) -> int:
@@ -306,16 +344,19 @@ def pointer_set(
     activation_buffers: list[dict[str, Any]],
     logits: dict[str, Any],
     rope_tables: list[dict[str, Any]],
+    kv_page_table: dict[str, Any],
 ) -> dict[str, Any]:
     runtime_buffers = {item["role"]: item for item in rope_tables}
+    runtime_buffers[kv_page_table["role"]] = kv_page_table
     return {
         "workload_id": plan["workload_id"],
         "status": "workspace_pointers_ready",
-        "pointer_count": len(activation_buffers) + 1 + len(rope_tables),
+        "pointer_count": len(activation_buffers) + 1 + len(rope_tables) + 1,
         "activation_buffer_count": len(activation_buffers),
         "activation_buffers": activation_buffers,
         "logits_buffer": logits,
         "rope_tables": rope_tables,
+        "kv_page_table": kv_page_table,
         "runtime_buffers": runtime_buffers,
         "total_byte_count": plan["total_byte_count"],
     }
@@ -345,6 +386,25 @@ def rope_table_records(
     return records
 
 
+def kv_page_table_record(
+    *,
+    plan: dict[str, Any],
+    ptr: int,
+) -> dict[str, Any]:
+    return {
+        **buffer_record(
+            name="kv_page_table",
+            role="kv_page_table",
+            ptr=ptr,
+            byte_count=plan["kv_page_table_bytes"],
+            element_count=plan["kv_page_table_elements"],
+            element_dtype="uint32",
+        ),
+        "initialization": plan["kv_page_table_policy"],
+        "kv_page_size_tokens": int(plan["kv_page_size_tokens"]),
+    }
+
+
 def buffer_record(
     *,
     name: str,
@@ -352,6 +412,7 @@ def buffer_record(
     ptr: int,
     byte_count: int,
     element_count: int,
+    element_dtype: str = "float32",
 ) -> dict[str, Any]:
     return {
         "name": name,
@@ -360,7 +421,7 @@ def buffer_record(
         "device_ptr_hex": f"0x{ptr:x}",
         "byte_count": byte_count,
         "element_count": element_count,
-        "element_dtype": "float32",
+        "element_dtype": element_dtype,
     }
 
 

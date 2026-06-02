@@ -28,8 +28,10 @@ Q/K norm weight slots and pairwise RoPE rotation when cos/sin table slots are
 bound. The attention-output task now has a shape-gated path that reads mutable
 `c`/`d` KV-cache fields and computes a max-stabilized softmax reduction over
 the bounded `inner` decode window with GQA query-head to KV-head grouping from
-descriptor `rows`, `lda`, and `ldb`. This is diagnostic source evidence;
-paged KV addressing, tiled softmax, and full decode-loop import remain open.
+descriptor `rows`, `lda`, and `ldb`. It also accepts runtime
+`tensor_args[1]` as a `kv_page_table` and maps logical decode steps to
+physical pages before reading key/value cache. This is diagnostic source
+evidence; tiled softmax and full decode-loop import remain open.
 The logits shape path scans the
 descriptor vocab width for device-side argmax feedback. The persistent DAG
 ABI also exposes mutable `c` and `d` fields, so the artifact records KV-cache

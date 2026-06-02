@@ -277,14 +277,19 @@ def build_decode_loop_runner(
         for item in graph_materialization.get("workloads", [])
     ):
         implemented_contracts.append("qwen_activation_workspace_launch_packet_binding")
-    if workload_preflights and all(
-        set(
-            item.get("workspace_pointer_policy", {}).get("runtime_buffers", {})
-        )
-        == {"rope_cos_table", "rope_sin_table"}
+    runtime_buffer_role_sets = [
+        set(item.get("workspace_pointer_policy", {}).get("runtime_buffers", {}))
         for item in workload_preflights
+    ]
+    if runtime_buffer_role_sets and all(
+        {"rope_cos_table", "rope_sin_table"} <= roles
+        for roles in runtime_buffer_role_sets
     ):
         implemented_contracts.append("qwen_rope_table_launch_packet_binding")
+    if runtime_buffer_role_sets and all(
+        "kv_page_table" in roles for roles in runtime_buffer_role_sets
+    ):
+        implemented_contracts.append("qwen_kv_page_table_launch_packet_binding")
     workspace_plans = activation_workspace.get("workspace_plans", [])
     if workspace_plans and all(
         item.get("rope_table_policy")

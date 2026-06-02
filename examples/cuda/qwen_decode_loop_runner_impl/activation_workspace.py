@@ -15,6 +15,7 @@ from qwen_decode_loop_runner_impl.workspace_pointers import (
 
 ROOT = Path(__file__).resolve().parents[3]
 LIFECYCLE_PLAN = ROOT / "examples" / "cuda" / "qwen_serving_lifecycle_plan.py"
+KV_PAGE_SIZE_TOKENS = 16
 DEFAULT_HOST_RUNTIME = (
     ROOT
     / "build"
@@ -115,6 +116,11 @@ def workspace_plan(
     rope_table_elements = max(int(model_shape["head_dim"]) // 2, 1)
     rope_base_position = int(plan.get("first_decode_position", 0))
     rope_theta = float(model_shape.get("rope_theta", 1000000.0))
+    decode_span = rope_base_position + int(plan.get("decode_steps", 1))
+    kv_page_table_elements = max(
+        (max(decode_span, 1) + KV_PAGE_SIZE_TOKENS - 1) // KV_PAGE_SIZE_TOKENS,
+        1,
+    )
     activation_count = max(graph_task_count - 1, 0)
     activation_element_counts = activation_buffer_element_counts(
         rows=rows,
@@ -146,10 +152,16 @@ def workspace_plan(
         "rope_base_position": rope_base_position,
         "rope_theta": rope_theta,
         "rope_table_policy": "position_correct_for_first_decode_position",
-        "total_buffer_count": activation_count + 3,
+        "kv_page_table_count": 1,
+        "kv_page_size_tokens": KV_PAGE_SIZE_TOKENS,
+        "kv_page_table_elements": kv_page_table_elements,
+        "kv_page_table_bytes": kv_page_table_elements * 4,
+        "kv_page_table_policy": "identity_logical_to_physical_pages",
+        "total_buffer_count": activation_count + 4,
         "total_byte_count": sum(elements * 4 for elements in activation_element_counts)
         + logits_elements * 4
-        + rope_table_elements * 4 * 2,
+        + rope_table_elements * 4 * 2
+        + kv_page_table_elements * 4,
     }
 
 

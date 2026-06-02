@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen paged KV attention source](2026-06-02-qwen-paged-kv-attention-source.md)
 - [2026-06-02 Qwen GQA attention shape](2026-06-02-qwen-gqa-attention-shape.md)
 - [2026-06-02 Qwen decode attention reduction](2026-06-02-qwen-decode-attention-reduction.md)
 - [2026-06-02 Qwen dynamic RoPE refresh](2026-06-02-qwen-dynamic-rope-refresh.md)

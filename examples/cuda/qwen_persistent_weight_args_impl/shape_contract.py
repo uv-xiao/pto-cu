@@ -45,7 +45,7 @@ def shape_contract_payload(shape: QwenTaskShape) -> dict[str, Any]:
     }
 
 
-def task_shape_fields(callable_name: str, shape: QwenTaskShape) -> dict[str, int]:
+def task_shape_fields(callable_name: str, shape: QwenTaskShape) -> dict[str, Any]:
     if callable_name == "qwen_attention_qkv":
         cols = shape.q_width + 2 * shape.kv_width
         return matrix_fields(cols=cols, inner=shape.hidden_size)
@@ -95,7 +95,7 @@ def attention_fields(
     query_heads: int,
     kv_heads: int,
     head_dim: int,
-) -> dict[str, int]:
+) -> dict[str, Any]:
     return {
         "rows": query_heads,
         "cols": cols,
@@ -103,6 +103,7 @@ def attention_fields(
         "lda": head_dim,
         "ldb": kv_heads,
         "ldc": cols,
+        "scalar0": 16.0,
     }
 
 

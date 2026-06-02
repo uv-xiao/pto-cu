@@ -124,7 +124,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "mapped_kv_head < kv_heads ? mapped_kv_head : kv_heads - 1U" in (
         full_source
     )
-    assert "static_cast<unsigned long long>(step) * kv_heads * head_dim" in (
+    assert "const unsigned int *kv_page_table" in full_source
+    assert "const unsigned int logical_page = step / kv_page_size;" in full_source
+    assert "static_cast<unsigned long long>(physical_page) * kv_page_size" in (
         full_source
     )
     assert "expf(query * task->c[kv_index] - max_score)" in full_source

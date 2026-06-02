@@ -163,6 +163,7 @@ def layer_descriptors(
             phase="per_layer_decode",
             tensors=[layer_tensor(layer, "self_attn.o_proj")],
             bindings=bindings,
+            runtime_tensor_roles=["kv_page_table"],
             model_shape=model_shape,
         ),
         descriptor(

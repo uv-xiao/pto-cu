@@ -268,6 +268,7 @@ def workspace_for_workload(
             isinstance(runtime_buffers, dict)
             and runtime_buffers.get("rope_cos_table", {}).get("device_ptr_hex")
             and runtime_buffers.get("rope_sin_table", {}).get("device_ptr_hex")
+            and runtime_buffers.get("kv_page_table", {}).get("device_ptr_hex")
         ):
             return None
         return item
