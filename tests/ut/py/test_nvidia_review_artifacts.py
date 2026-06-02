@@ -1132,28 +1132,37 @@ def test_qwen_persistent_task_bodies_render_generated_source():
         for item in manifest["task_bodies"]
         if item["callable"] == "qwen_attention_o"
     )
-    assert attention_o["consumes_fields"] == ["a", "out", "c", "d", "tensor_args"]
+    assert attention_o["consumes_fields"] == [
+        "a",
+        "out",
+        "c",
+        "d",
+        "tensor_args",
+        "scalar_args",
+    ]
     assert {"key_cache", "value_cache"} <= set(attention_o["consumes_roles"])
     assert "kv_page_table" in attention_o["consumes_roles"]
     assert manifest["coverage"]["token_fields"] == ["a", "b", "out"]
     assert manifest["coverage"]["kv_fields"] == ["c", "d"]
-    assert manifest["coverage"]["kv_write_policy"] == "mutable_kv_fields_ready"
+    assert (
+        manifest["coverage"]["kv_write_policy"]
+        == "slot_mapped_kv_cache_writeback_ready"
+    )
     assert manifest["coverage"]["weight_fields"] == ["tensor_args"]
     source = manifest["rendered_source"]["preview"]
     assert "__device__ void pto_task_qwen_attention_qkv" in source
     assert "task->c" in source
     assert "task->d" in source
-    assert "task->c[kv_index] =" in source
-    assert "task->d[kv_index] =" in source
+    assert "kv_write_index" in source
     assert "task->tensor_args[0]" in source
     assert "task->tensor_args[1]" in source
     assert "const unsigned int *kv_page_table" in source
-    assert "const unsigned int logical_page = step / kv_page_size;" in source
-    assert "for (unsigned int tile_begin = 0U;" in source
-    assert "for (unsigned int step = tile_begin; step < tile_end; ++step)" in (
+    assert "const unsigned int logical_page = decode_position / kv_page_size;" in (
         source
     )
-    assert "physical_page) * kv_page_size *" in source
+    assert "const unsigned int projection_input_count =" in source
+    assert "for (unsigned int tile_begin = 0U;" in source
+    assert "physical_page) * kv_page_size +" in source
     assert "generated_qwen_kernel_bodies" in manifest["implemented_contracts"]
     assert "controlled_proxy_numeric_oracle" in manifest["implemented_contracts"]
     assert "qwen_unit_math_oracle" in manifest["implemented_contracts"]

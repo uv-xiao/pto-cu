@@ -205,6 +205,14 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     )
     assert "expf(query * task->c[kv_index] - max_score)" in full_source
     assert "weighted_value / normalizer" in full_source
+    assert "const unsigned int projection_input_count =" in full_source
+    assert "pto_cuda_tensor_arg_f32(task, 0U, o_weight_index, 0.0f)" in (
+        full_source
+    )
+    assert "projected_attention += attention_value * o_weight;" in full_source
+    assert "qwen_attention_o_bounded_projection_source" in manifest[
+        "implemented_contracts"
+    ]
     assert "task->out[i] = pto_cuda_silu(gate_value) * up_value;" in full_source
     assert "task->out[i] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f)" in (
         full_source

@@ -967,9 +967,10 @@ def test_launch_packet_marks_unit_math_numeric_ready_tasks():
     assert list(packet[0].scalar_args)[:2] == [1.0, 1.0]
     assert packet[1].scalar_arg_count == 1
     assert packet[1].scalar_args[0] == 1.0
-    for index in range(2, 4):
-        assert packet[index].scalar_arg_count == 1
-        assert packet[index].scalar_args[0] == 1.0
+    assert packet[2].scalar_arg_count == 1
+    assert packet[2].scalar_args[0] == 1.0
+    assert packet[3].scalar_arg_count == 2
+    assert list(packet[3].scalar_args)[:2] == [1.0, 64.0]
     assert packet[4].scalar_arg_count == 2
     assert list(packet[4].scalar_args)[:2] == [1.0, 1.0]
     assert packet[5].scalar_arg_count == 1

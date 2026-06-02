@@ -31,8 +31,12 @@ the bounded `inner` decode window with GQA query-head to KV-head grouping from
 descriptor `rows`, `lda`, and `ldb`. It also accepts runtime
 `tensor_args[1]` as a `kv_page_table` and maps logical decode steps to
 physical pages before reading key/value cache. The softmax max and weighted
-sum passes are bounded by descriptor-controlled attention tiles. This is
-diagnostic source evidence; full decode-loop import remains open.
+sum passes are bounded by descriptor-controlled attention tiles. When
+`o_proj_weight` is bound as `tensor_args[0]`, the task recomputes bounded
+attention columns, multiplies them by `o_proj_weight`, and writes projected
+hidden columns; `scalar_args[1]` limits that diagnostic projection width for
+resource-backed unit runs. This is diagnostic source evidence; full
+decode-loop import remains open.
 The logits shape path now computes descriptor-bounded hidden-by-vocab tiles
 before device-side argmax feedback. It reads the hidden vector through
 `task->a`, reads vocab projection weights through `tensor_args[0]`, bounds the

@@ -288,7 +288,7 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
         {
             "callable": "qwen_attention_o",
             "phase": "per_layer_decode",
-            "consumes_fields": ["a", "out", "c", "d", "tensor_args"],
+            "consumes_fields": ["a", "out", "c", "d", "tensor_args", "scalar_args"],
             "consumes_roles": [
                 "attention_state",
                 "key_cache",
@@ -323,52 +323,139 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
     unsigned int attention_tile =
         task->scalar1 > 0.0f ? static_cast<unsigned int>(task->scalar1) : 16U;
     attention_tile = attention_tile > 0U ? attention_tile : 16U;
+    const unsigned int requested_projection_input_count =
+        task->scalar_arg_count > 1U ?
+        static_cast<unsigned int>(task->scalar_args[1]) : task->cols;
+    const unsigned int projection_input_count =
+        requested_projection_input_count < task->cols ?
+        requested_projection_input_count : task->cols;
+    const unsigned int projection_stride =
+        task->ldc > 0U ? task->ldc : task->cols;
     const unsigned int *kv_page_table =
         task->tensor_arg_count > 1U && task->tensor_args[1] ?
         reinterpret_cast<const unsigned int *>(task->tensor_args[1]) : nullptr;
-    float max_score = -3.4028234663852886e+38f;
-    for (unsigned int tile_begin = 0U; tile_begin < kv_window;
-         tile_begin += attention_tile) {
-        const unsigned int tile_end =
-            tile_begin + attention_tile < kv_window ?
-            tile_begin + attention_tile : kv_window;
-        for (unsigned int step = tile_begin; step < tile_end; ++step) {
-            const unsigned int logical_page = step / kv_page_size;
-            const unsigned int page_offset = step % kv_page_size;
-            const unsigned int physical_page = kv_page_table ?
-                kv_page_table[logical_page] : logical_page;
-            const unsigned long long kv_index =
-                static_cast<unsigned long long>(physical_page) * kv_page_size *
-                    kv_heads * head_dim +
-                static_cast<unsigned long long>(page_offset) * kv_heads * head_dim +
-                static_cast<unsigned long long>(kv_head) * head_dim + head_col;
-            const float score = query * task->c[kv_index];
-            max_score = score > max_score ? score : max_score;
+    if (task->tensor_arg_count > 0U && task->tensor_args[0]) {
+        float projected_attention = 0.0f;
+        for (unsigned int projection_col = 0U;
+             projection_col < projection_input_count; ++projection_col) {
+            const float projected_query = task->a[row_base + projection_col];
+            const unsigned int projection_query_head = projection_col / head_dim;
+            const unsigned int projection_head_col = projection_col % head_dim;
+            const unsigned int projection_mapped_kv_head =
+                projection_query_head / heads_per_kv;
+            const unsigned int projection_kv_head =
+                projection_mapped_kv_head < kv_heads ?
+                projection_mapped_kv_head : kv_heads - 1U;
+            float projection_max_score = -3.4028234663852886e+38f;
+            for (unsigned int tile_begin = 0U; tile_begin < kv_window;
+                 tile_begin += attention_tile) {
+                const unsigned int tile_end =
+                    tile_begin + attention_tile < kv_window ?
+                    tile_begin + attention_tile : kv_window;
+                for (unsigned int step = tile_begin; step < tile_end; ++step) {
+                    const unsigned int logical_page = step / kv_page_size;
+                    const unsigned int page_offset = step % kv_page_size;
+                    const unsigned int physical_page = kv_page_table ?
+                        kv_page_table[logical_page] : logical_page;
+                    const unsigned long long kv_index =
+                        static_cast<unsigned long long>(physical_page) *
+                            kv_page_size * kv_heads * head_dim +
+                        static_cast<unsigned long long>(page_offset) *
+                            kv_heads * head_dim +
+                        static_cast<unsigned long long>(projection_kv_head) *
+                            head_dim + projection_head_col;
+                    const float score = projected_query * task->c[kv_index];
+                    projection_max_score = score > projection_max_score ?
+                        score : projection_max_score;
+                }
+            }
+            float projection_weighted_value = 0.0f;
+            float projection_normalizer = 0.0f;
+            for (unsigned int tile_begin = 0U; tile_begin < kv_window;
+                 tile_begin += attention_tile) {
+                const unsigned int tile_end =
+                    tile_begin + attention_tile < kv_window ?
+                    tile_begin + attention_tile : kv_window;
+                for (unsigned int step = tile_begin; step < tile_end; ++step) {
+                    const unsigned int logical_page = step / kv_page_size;
+                    const unsigned int page_offset = step % kv_page_size;
+                    const unsigned int physical_page = kv_page_table ?
+                        kv_page_table[logical_page] : logical_page;
+                    const unsigned long long kv_index =
+                        static_cast<unsigned long long>(physical_page) *
+                            kv_page_size * kv_heads * head_dim +
+                        static_cast<unsigned long long>(page_offset) *
+                            kv_heads * head_dim +
+                        static_cast<unsigned long long>(projection_kv_head) *
+                            head_dim + projection_head_col;
+                    const float weight =
+                        expf(projected_query * task->c[kv_index] -
+                             projection_max_score);
+                    projection_weighted_value += weight * task->d[kv_index];
+                    projection_normalizer += weight;
+                }
+            }
+            const float attention_value =
+                projection_normalizer > 0.0f ?
+                projection_weighted_value / projection_normalizer : 0.0f;
+            const unsigned long long o_weight_index =
+                static_cast<unsigned long long>(col) * projection_stride +
+                projection_col;
+            const float o_weight =
+                pto_cuda_tensor_arg_f32(task, 0U, o_weight_index, 0.0f);
+            projected_attention += attention_value * o_weight;
         }
-    }
-    float weighted_value = 0.0f;
-    float normalizer = 0.0f;
-    for (unsigned int tile_begin = 0U; tile_begin < kv_window;
-         tile_begin += attention_tile) {
-        const unsigned int tile_end =
-            tile_begin + attention_tile < kv_window ?
-            tile_begin + attention_tile : kv_window;
-        for (unsigned int step = tile_begin; step < tile_end; ++step) {
-            const unsigned int logical_page = step / kv_page_size;
-            const unsigned int page_offset = step % kv_page_size;
-            const unsigned int physical_page = kv_page_table ?
-                kv_page_table[logical_page] : logical_page;
-            const unsigned long long kv_index =
-                static_cast<unsigned long long>(physical_page) * kv_page_size *
-                    kv_heads * head_dim +
-                static_cast<unsigned long long>(page_offset) * kv_heads * head_dim +
-                static_cast<unsigned long long>(kv_head) * head_dim + head_col;
-            const float weight = expf(query * task->c[kv_index] - max_score);
-            weighted_value += weight * task->d[kv_index];
-            normalizer += weight;
+        task->out[i] = projected_attention;
+    } else {
+        float max_score = -3.4028234663852886e+38f;
+        for (unsigned int tile_begin = 0U; tile_begin < kv_window;
+             tile_begin += attention_tile) {
+            const unsigned int tile_end =
+                tile_begin + attention_tile < kv_window ?
+                tile_begin + attention_tile : kv_window;
+            for (unsigned int step = tile_begin; step < tile_end; ++step) {
+                const unsigned int logical_page = step / kv_page_size;
+                const unsigned int page_offset = step % kv_page_size;
+                const unsigned int physical_page = kv_page_table ?
+                    kv_page_table[logical_page] : logical_page;
+                const unsigned long long kv_index =
+                    static_cast<unsigned long long>(physical_page) *
+                        kv_page_size * kv_heads * head_dim +
+                    static_cast<unsigned long long>(page_offset) *
+                        kv_heads * head_dim +
+                    static_cast<unsigned long long>(kv_head) * head_dim +
+                        head_col;
+                const float score = query * task->c[kv_index];
+                max_score = score > max_score ? score : max_score;
+            }
         }
+        float weighted_value = 0.0f;
+        float normalizer = 0.0f;
+        for (unsigned int tile_begin = 0U; tile_begin < kv_window;
+             tile_begin += attention_tile) {
+            const unsigned int tile_end =
+                tile_begin + attention_tile < kv_window ?
+                tile_begin + attention_tile : kv_window;
+            for (unsigned int step = tile_begin; step < tile_end; ++step) {
+                const unsigned int logical_page = step / kv_page_size;
+                const unsigned int page_offset = step % kv_page_size;
+                const unsigned int physical_page = kv_page_table ?
+                    kv_page_table[logical_page] : logical_page;
+                const unsigned long long kv_index =
+                    static_cast<unsigned long long>(physical_page) *
+                        kv_page_size * kv_heads * head_dim +
+                    static_cast<unsigned long long>(page_offset) *
+                        kv_heads * head_dim +
+                    static_cast<unsigned long long>(kv_head) * head_dim +
+                        head_col;
+                const float weight =
+                    expf(query * task->c[kv_index] - max_score);
+                weighted_value += weight * task->d[kv_index];
+                normalizer += weight;
+            }
+        }
+        task->out[i] = normalizer > 0.0f ? weighted_value / normalizer : 0.0f;
     }
-    task->out[i] = normalizer > 0.0f ? weighted_value / normalizer : 0.0f;
 } else if (task->cols > 0U && task->inner > 0U &&
     task->tensor_arg_count > 0U && task->tensor_args[0]) {
     const unsigned int row = static_cast<unsigned int>(i / task->cols);
@@ -616,6 +703,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_final_norm_full_rmsnorm_source",
             "qwen_shape_field_qk_rope_source",
             "qwen_bounded_decode_attention_reduction_source",
+            "qwen_attention_o_bounded_projection_source",
             "qwen_gqa_decode_attention_head_grouping_source",
             "qwen_paged_kv_attention_index_source",
             "qwen_tiled_decode_attention_softmax_source",

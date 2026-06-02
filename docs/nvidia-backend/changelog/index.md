@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen attention output projection](2026-06-02-qwen-attention-o-projection.md)
 - [2026-06-02 Qwen QK norm block threading](2026-06-02-qwen-qk-norm-block.md)
 - [2026-06-02 Qwen post-attention RMSNorm](2026-06-02-qwen-post-attention-rmsnorm.md)
 - [2026-06-02 Sharded result records restored](2026-06-02-sharded-result-records-restored.md)

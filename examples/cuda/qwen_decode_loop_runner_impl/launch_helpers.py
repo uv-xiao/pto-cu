@@ -21,6 +21,7 @@ UNIT_NUMERIC_CALLABLES = {
     "qwen_final_norm",
 }
 UNIT_NUMERIC_RMSNORM_SCALE = 1.0
+UNIT_NUMERIC_ATTENTION_O_PROJECTION_INPUTS = 64.0
 UNIT_NUMERIC_WEIGHTED_ELEMENTWISE_CALLABLES = {
     "qwen_attention_qk_norm",
     "qwen_attention_o",
@@ -172,6 +173,13 @@ def task_scalar_args(
                 if numeric_task_mode == "unit_math_full_rmsnorm":
                     return [1.0, 0.0, 0.0, 0.0]
                 return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, 0.0]
+            if descriptor.get("callable") == "qwen_attention_o":
+                return [
+                    1.0,
+                    UNIT_NUMERIC_ATTENTION_O_PROJECTION_INPUTS,
+                    0.0,
+                    0.0,
+                ]
             if descriptor.get("callable") == "qwen_final_norm":
                 if numeric_task_mode == "unit_math_full_rmsnorm":
                     return [1.0, 0.0, 0.0, 0.0]
