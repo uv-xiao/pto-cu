@@ -410,6 +410,14 @@ def _expected_graph_task_arg_key(config: PairedPersistentSmokeConfig) -> str | N
     }.get(config.dag_shape)
 
 
+def _expected_graph_lowering(config: PairedPersistentSmokeConfig) -> str | None:
+    if config.mode != "dag":
+        return None
+    return {
+        "graph_descriptor_submits": "normal_graph",
+    }.get(config.dag_shape)
+
+
 def _expected_graph_node_attrs(config: PairedPersistentSmokeConfig) -> str | None:
     if config.mode != "dag":
         return None
@@ -597,6 +605,9 @@ def build_validate_command(config: PairedPersistentSmokeConfig, suffix: str) -> 
     expected_graph_task_arg_key = _expected_graph_task_arg_key(config)
     if expected_graph_task_arg_key is not None:
         command.extend(["--expected-graph-task-arg-key", expected_graph_task_arg_key])
+    expected_graph_lowering = _expected_graph_lowering(config)
+    if expected_graph_lowering is not None:
+        command.extend(["--expected-graph-lowering", expected_graph_lowering])
     expected_graph_node_attrs = _expected_graph_node_attrs(config)
     if expected_graph_node_attrs is not None:
         command.extend(

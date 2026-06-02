@@ -50,6 +50,7 @@ class SmokeValidationExpectation:
     tensor_args: str | None = None
     graph_fanin: str | None = None
     graph_dependents: str | None = None
+    graph_lowering: str | None = None
     graph_task_arg_key: str | None = None
     graph_task_args: str | None = None
     graph_node_attrs: str | None = None

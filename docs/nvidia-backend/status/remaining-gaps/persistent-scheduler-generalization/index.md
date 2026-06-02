@@ -38,8 +38,13 @@ Current paired smoke artifacts include
 `tmp/cuda-backend/persistent-graph_descriptor_diamond-repeat2-smoke-072e396c/`
 and
 `tmp/cuda-backend/persistent-graph_descriptor_generic_args4-repeat2-smoke-11db2c9d/`.
-Those prove scheduler mechanics and selected descriptor spellings, not normal
-PTO graph construction from the backend builder.
+Normal-graph boundary evidence also includes
+`tmp/cuda-backend/persistent-graph_descriptor_submits-repeat2-smoke-ea9dec01/`,
+which passed paired A100/H200 smoke with `graph_lowering=normal_graph` and
+validated the submitted normal graph fan-in/dependent arrays. These artifacts
+prove scheduler mechanics, selected descriptor spellings, and one normal-graph
+edge-lowering path, not full normal PTO graph construction from the backend
+builder.
 
 ## Promotion Gate
 
@@ -52,8 +57,9 @@ descriptor-only inputs.
 ## Next Actions
 
 - Add normal PTO graph lowering into the CUDA persistent-device builder.
-- Run paired A100/H200 evidence for at least fork-join, chain, fan-in, and
-  layered-cross shapes through the normal graph path.
+- Run paired A100/H200 evidence for fork-join, fan-in, layered-cross, and
+  additional chain-shaped normal graph inputs beyond the current submit-chain
+  smoke.
 - Import or reference those raw artifacts in the benchmark viewer before
   removing this page from `status.md`.
 

@@ -90,11 +90,12 @@
         "scene-test persistent_dag_normal_graph_f32 builder input",
         "scene-test graph descriptor edge lowering after descriptor parsing",
         "no-torch persistent smoke graph lowering marker",
+        "paired A100/H200 graph_descriptor_submits normal_graph smoke",
         "Qwen unit-math DAG task-array construction"
       ],
       "open_work": [
         "normal PTO task graph construction beyond scene-test graph config",
-        "paired A100/H200 rows for fork-join, chain, fan-in, and layered-cross normal graph inputs"
+        "paired A100/H200 rows for fork-join, fan-in, layered-cross, and additional chain normal graph inputs"
       ],
       "evidence_refs": [
         {
@@ -118,6 +119,14 @@
           "symbols": [
             "graph_lowering",
             "lower_normal_graph"
+          ]
+        },
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_pair_persistent_smoke.py",
+          "symbols": [
+            "_expected_graph_lowering",
+            "graph_descriptor_submits",
+            "expected_graph_lowering"
           ]
         },
         {

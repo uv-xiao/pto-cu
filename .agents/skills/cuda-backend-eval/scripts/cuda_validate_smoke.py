@@ -387,6 +387,25 @@ def _validate_graph_task_arg_key(
     return errors
 
 
+def _validate_graph_lowering(
+    payloads: list[dict[str, Any]],
+    *,
+    expected_value: str | None,
+) -> list[str]:
+    errors: list[str] = []
+    if expected_value is None:
+        return errors
+    for payload in payloads:
+        artifact = payload.get("_artifact", "unknown")
+        actual = payload.get("graph_lowering")
+        if actual != expected_value:
+            errors.append(
+                f"expected graph_lowering {expected_value} for "
+                f"artifact={artifact}, found {actual}"
+            )
+    return errors
+
+
 def _validate_scratch_reuse(
     payloads: list[dict[str, Any]],
     *,
@@ -664,6 +683,7 @@ def validate_smoke(
         )
     )
     errors.extend(_validate_graph_task_arg_key(payloads, expected_key=expectation.graph_task_arg_key))
+    errors.extend(_validate_graph_lowering(payloads, expected_value=expectation.graph_lowering))
     errors.extend(
         _validate_mapping_field(
             payloads,
@@ -759,6 +779,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--expected-tensor-args")
     parser.add_argument("--expected-graph-fanin")
     parser.add_argument("--expected-graph-dependents")
+    parser.add_argument("--expected-graph-lowering")
     parser.add_argument("--expected-graph-task-arg-key")
     parser.add_argument("--expected-graph-task-args")
     parser.add_argument("--expected-graph-node-attrs")
@@ -815,6 +836,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             tensor_args=args.expected_tensor_args,
             graph_fanin=args.expected_graph_fanin,
             graph_dependents=args.expected_graph_dependents,
+            graph_lowering=args.expected_graph_lowering,
             graph_task_arg_key=args.expected_graph_task_arg_key,
             graph_task_args=args.expected_graph_task_args,
             graph_node_attrs=args.expected_graph_node_attrs,
