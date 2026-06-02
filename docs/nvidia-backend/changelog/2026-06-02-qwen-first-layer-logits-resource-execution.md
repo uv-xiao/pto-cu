@@ -8,6 +8,10 @@
   bounded-prefix diagnostics.
 - Added selector coverage so the bounded diagnostic can execute embedding,
   layer 0, final RMSNorm, and logits in one persistent-device run.
+- Extended the resource-backed viewer importer to preserve task-selection,
+  task func-id sequence, and callable sequence metadata.
+- Imported the two first-layer/logits diagnostic rows into the benchmark
+  viewer, one for `mpk_offline_decode` and one for `vdcores_offline_decode`.
 
 ## Architecture Quality
 
@@ -44,6 +48,17 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
   --device 0 --arch compute_80 \
   --cache-root tmp/cuda-backend/qwen-full-task-coverage/runner-cache \
   --output-json tmp/cuda-backend/qwen-full-task-coverage/qwen-decode-loop-runner.json
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  .agents/skills/cuda-backend-eval/scripts/pto_qwen_resource_backed_viewer_import.py \
+  tmp/cuda-backend/qwen-full-task-coverage/qwen-decode-loop-runner.json \
+  --artifact-root tmp/cuda-backend/qwen-full-task-coverage/ \
+  --commit c98eabff
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  .agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py \
+  --output evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  .agents/skills/cuda-backend-eval/scripts/paper_readiness_work_queue.py \
+  --output evaluations/nvidia/benchmark-viewer/data/paper_readiness_work_queue.json
 ```
 
 Result: tests passed; the live resource-backed diagnostic completed with
@@ -52,6 +67,13 @@ Result: tests passed; the live resource-backed diagnostic completed with
 7109]`. Both MPK-policy and VDCores-policy workloads reported
 `graph_task_count=10`, zero scheduler errors, checked logits on the final
 step, and `device_token_feedback_observed`.
+
+The benchmark viewer now contains two compact rows under
+`tmp/cuda-backend/qwen-full-task-coverage/`. Each row records
+`task_selection=first_layer_with_logits`, `task_coverage_count=10`,
+`task_func_id_sequence=[7100, 7101, 7102, 7103, 7104, 7105, 7106, 7107,
+7108, 7109]`, checked logits, zero scheduler errors, and device token
+feedback.
 
 ## Remaining Gaps
 

@@ -47,23 +47,34 @@ def test_viewer_results_include_resource_backed_diagnostic_rows():
             "tmp/cuda-backend/qwen-projection-bounded/",
         )
     ]
+    first_layer_logits_rows = [
+        row
+        for row in rows
+        if row["raw_artifact"].startswith(
+            "tmp/cuda-backend/qwen-full-task-coverage/",
+        )
+    ]
 
     assert {row["statistic"]["workload_id"] for row in rows} == {
         "mpk_offline_decode",
         "vdcores_offline_decode",
     }
     assert len(bounded_projection_rows) == 2
-    assert all(
-        row["statistic"].get(
-            "last_completed_count",
-            row["statistic"]["completed_count"],
-        )
-        == 255
-        for row in rows
-    )
+    assert len(first_layer_logits_rows) == 2
     assert all(
         row["statistic"]["completed_count"] == 255
         for row in bounded_projection_rows
+    )
+    assert all(
+        row["statistic"].get("task_selection") == "first_layer_with_logits"
+        and row["statistic"].get("task_coverage_count") == 10
+        and row["statistic"].get("task_func_id_sequence") == list(range(7100, 7110))
+        and row["statistic"].get("last_completed_count") == 10
+        and row["statistic"].get("logits_checked_step_count") == 1
+        and row["statistic"].get("decode_feedback_status")
+        == "device_token_feedback_observed"
+        and row["correctness"] == "pass"
+        for row in first_layer_logits_rows
     )
     assert all(
         row["statistic"].get("repeat_runs") == 1

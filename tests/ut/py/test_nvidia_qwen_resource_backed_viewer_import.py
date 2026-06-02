@@ -34,6 +34,23 @@ def test_resource_backed_importer_emits_diagnostic_rows():
             "status": "pass",
             "device": {"arch": "compute_80"},
             "context_policy": "one_cuda_context_for_all_resource_owners",
+            "repeat_policy": {"task_selection": "first_layer_with_logits"},
+            "task_coverage": {
+                "task_count": 10,
+                "func_id_sequence": list(range(7100, 7110)),
+                "callables": [
+                    "qwen_embedding_lookup",
+                    "qwen_rmsnorm_input",
+                    "qwen_attention_qkv",
+                    "qwen_attention_qk_norm",
+                    "qwen_attention_o",
+                    "qwen_rmsnorm_post_attention",
+                    "qwen_mlp_gate_up",
+                    "qwen_mlp_down",
+                    "qwen_final_norm",
+                    "qwen_logits",
+                ],
+            },
             "workloads": [
                 {
                     "workload_id": "mpk_offline_decode",
@@ -184,6 +201,13 @@ def test_resource_backed_importer_emits_diagnostic_rows():
             assert record["statistic"]["external_scale_contract_count"] == 1
             assert record["statistic"]["full_reduction_contract_count"] == 0
             assert record["statistic"]["weighted_elementwise_callable_count"] == 5
+        assert record["statistic"]["task_selection"] == "first_layer_with_logits"
+        assert record["statistic"]["task_coverage_count"] == 10
+        assert record["statistic"]["task_func_id_sequence"] == list(range(7100, 7110))
+        assert record["statistic"]["task_callable_sequence"][-2:] == [
+            "qwen_final_norm",
+            "qwen_logits",
+        ]
         assert record["correctness"] == "pass"
         assert "resource-backed diagnostic" in record["inputs"]["shape"]
         assert "prepared callable reused" in record["inputs"]["repeat_policy"]

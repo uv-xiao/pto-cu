@@ -61,6 +61,8 @@ def build_result_records(
 ) -> list[dict[str, Any]]:
     execution = payload["resource_backed_execution"]
     device = execution["device"]
+    repeat_policy = execution.get("repeat_policy", {})
+    task_coverage = execution.get("task_coverage", {})
     records = []
     for workload in execution["workloads"]:
         counters = workload["scheduler_counters"]
@@ -163,6 +165,18 @@ def build_result_records(
                         decode_feedback.get("applied_step_count", 0),
                     ),
                     "task_count": int(workload["graph_task_count"]),
+                    "task_selection": repeat_policy.get("task_selection", "prefix"),
+                    "task_coverage_count": int(
+                        task_coverage.get("task_count", workload["graph_task_count"]),
+                    ),
+                    "task_func_id_sequence": [
+                        int(item)
+                        for item in task_coverage.get("func_id_sequence", [])
+                    ],
+                    "task_callable_sequence": [
+                        str(item)
+                        for item in task_coverage.get("callables", [])
+                    ],
                     "serving_coverage": COVERAGE,
                     "workload_id": workload["workload_id"],
                     "context_policy": execution["context_policy"],
