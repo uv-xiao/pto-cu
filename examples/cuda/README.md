@@ -5,9 +5,9 @@ review. They are intentionally limited to the paths a reviewer should run
 first: host-schedule launch, persistent-device scheduling, generated Qwen task
 bodies, and the advanced Qwen decode-loop runner.
 
-Development probes and narrow lifecycle checks may remain in this directory as
-support code, but they are not part of the public example catalog unless they
-become an essential end-to-end case.
+Development probes and narrow Qwen lifecycle checks are support code for the
+advanced decode-loop case. They should not be promoted into this catalog unless
+they become essential end-to-end examples with benchmark-viewer evidence.
 
 ## Review Map
 

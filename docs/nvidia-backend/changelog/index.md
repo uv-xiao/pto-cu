@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-03 CUDA example surface policy](2026-06-03-cuda-example-surface-policy.md)
 - [2026-06-02 Qwen first-layer logits resource execution](2026-06-02-qwen-first-layer-logits-resource-execution.md)
 - [2026-06-02 Qwen MLP down residual add](2026-06-02-qwen-mlp-down-residual-add.md)
 - [2026-06-02 Qwen post-attention residual RMSNorm](2026-06-02-qwen-post-attention-residual-rmsnorm.md)
