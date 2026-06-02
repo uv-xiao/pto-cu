@@ -103,7 +103,13 @@ if (task->cols > 0U && task->inner > 0U && has_lm_head) {
             const unsigned long long decode_step =
                 static_cast<unsigned long long>(task->scalar_args[3]);
             output_ids[decode_step] = logits_best_tokens[0];
-            input_ids[0] = logits_best_tokens[0];
+            const unsigned long long next_input_index =
+                static_cast<unsigned long long>(task->scalar_args[2]) + 1ULL;
+            const unsigned long long prompt_stride =
+                task->a_batch_stride > 0ULL ? task->a_batch_stride : 1ULL;
+            if (next_input_index < prompt_stride) {
+                input_ids[next_input_index] = logits_best_tokens[0];
+            }
         }
     }
 } else if (task->scalar_arg_count > 1 && has_lm_head) {
@@ -141,7 +147,13 @@ if (task->cols > 0U && task->inner > 0U && has_lm_head) {
         const unsigned long long decode_step =
             static_cast<unsigned long long>(task->scalar_args[3]);
         output_ids[decode_step] = best_token;
-        input_ids[0] = best_token;
+        const unsigned long long next_input_index =
+            static_cast<unsigned long long>(task->scalar_args[2]) + 1ULL;
+        const unsigned long long prompt_stride =
+            task->a_batch_stride > 0ULL ? task->a_batch_stride : 1ULL;
+        if (next_input_index < prompt_stride) {
+            input_ids[next_input_index] = best_token;
+        }
     }
 } else {
     for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {

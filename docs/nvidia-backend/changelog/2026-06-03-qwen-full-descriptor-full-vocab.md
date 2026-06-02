@@ -215,6 +215,38 @@ still fails against the HF full-model reference token `151667`. The remaining
 gap is therefore true prompt-prefill/KV state and remaining task-math fidelity,
 not padded prompt-position plumbing.
 
+The bounded decode feedback path now writes sampled tokens into the prompt slot
+that the next bounded step will read. Host-side feedback observation and the
+generated `qwen_logits` device body both derive `next_input_index` from
+`decode_position + 1`, guarded by the padded prompt stride. This replaces the
+old diagnostic behavior that always wrote `input_ids[0]`.
+
+```bash
+ARTIFACT=tmp/cuda-backend/qwen-next-token-feedback-mpk-2026-06-03
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  examples/cuda/qwen_decode_loop_runner.py --mode offline \
+  --single-context-live-session --run-resource-backed-smoke \
+  --resource-backed-task-selection prefix \
+  --resource-backed-workload mpk_offline_decode \
+  --resource-backed-repeat-runs 1 --resource-backed-decode-steps 2 \
+  --resource-backed-worker-blocks 16 \
+  --resource-backed-logits-check-policy every_step \
+  --resource-backed-logits-active-cols full \
+  --resource-backed-numeric-task-mode unit_math_full_rmsnorm \
+  --device 0 --arch compute_80 --cache-root $ARTIFACT/cache \
+  --output-json $ARTIFACT/qwen-decode-loop-runner.json
+```
+
+Result: the fresh A100 two-step real-resource run passed with 510 completed
+persistent tasks and zero scheduler errors. Step 0 used RoPE position `17`,
+sampled token `116324`, wrote `output_ids[0]`, and wrote the same token to
+`input_ids[18]`. Step 1 used RoPE position `18`, sampled token `109379`,
+wrote `output_ids[1]`, and wrote the same token to `input_ids[19]`. The compact
+comparison artifact at
+`tmp/cuda-backend/qwen-next-token-feedback-mpk-2026-06-03/comparison.json`
+still fails against the HF reference first-step token `151667`, so full Qwen
+numerical correctness remains open.
+
 ## Remaining Gaps
 
 - Fix PTO kernel and launch-state fidelity so generated Qwen/Qwen3-8B

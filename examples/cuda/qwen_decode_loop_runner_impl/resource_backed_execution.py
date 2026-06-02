@@ -300,6 +300,8 @@ def run_workload(
             session=session,
             token_fields=token_fields,
             decode_step_index=step_index,
+            decode_position=decode_position,
+            prompt_stride=plan.get("runtime_prompt_tokens"),
             logits_summary=logits_summary,
             device_committed=True,
         )

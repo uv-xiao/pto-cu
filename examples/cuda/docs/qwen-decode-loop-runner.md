@@ -56,8 +56,8 @@ active prompt-token logits position for padded prompt buffers. The padded
 length is carried separately as `runtime_prompt_tokens` and `a_batch_stride`,
 while output-token accounting keeps the serving-policy output start. Bounded
 decode steps refresh the live cos/sin tables for each
-`first_decode_position + step_index` before `run_prepared`, and refresh
-`qwen_attention_o.inner` to the current KV window.
+`first_decode_position + step_index`, refresh `qwen_attention_o.inner`, and
+write sampled-token feedback into the next prompt slot when it is in stride.
 With `--single-context-live-session`, token buffers, KV-cache, resident weights,
 and activation workspace are allocated under one CUDA context before graph
 materialization and launch-packet preflight, then closed after the preflight

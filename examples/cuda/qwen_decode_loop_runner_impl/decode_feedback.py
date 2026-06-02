@@ -15,6 +15,8 @@ def apply_decode_feedback(
     session: Any,
     token_fields: dict[str, dict[str, Any]],
     decode_step_index: int | None,
+    decode_position: int | None = None,
+    prompt_stride: int | None = None,
     logits_summary: dict[str, Any],
     device_committed: bool = False,
 ) -> dict[str, Any]:
@@ -29,23 +31,33 @@ def apply_decode_feedback(
     output_ptr = parse_ptr(token_fields["out"].get("device_ptr_hex"))
     input_ptr = parse_ptr(token_fields["a"].get("device_ptr_hex"))
     output_index = int(decode_step_index)
+    next_input_index = feedback_input_index(
+        decode_position,
+        prompt_stride=prompt_stride,
+    )
     if device_committed:
         return observed_device_feedback(
             session=session,
             input_ptr=input_ptr,
             output_ptr=output_ptr,
             output_index=output_index,
+            next_input_index=next_input_index,
             token_id=token_id,
         )
     write_i32(session, output_ptr, output_index, token_id, "output_ids")
-    write_i32(session, input_ptr, 0, token_id, "next_input_id")
+    write_i32(session, input_ptr, next_input_index, token_id, "next_input_id")
     return {
         "status": "feedback_applied",
         "sampled_token_id": int(token_id),
         "output_ids_index": output_index,
         "output_ids_value": read_i32(session, output_ptr, output_index, "output_ids"),
-        "next_input_index": 0,
-        "next_input_value": read_i32(session, input_ptr, 0, "next_input_id"),
+        "next_input_index": next_input_index,
+        "next_input_value": read_i32(
+            session,
+            input_ptr,
+            next_input_index,
+            "next_input_id",
+        ),
         "policy": "host_commits_diagnostic_sampled_token_for_next_step",
         "scope": DECODE_FEEDBACK_SCOPE,
     }
@@ -57,10 +69,11 @@ def observed_device_feedback(
     input_ptr: int,
     output_ptr: int,
     output_index: int,
+    next_input_index: int,
     token_id: int | None,
 ) -> dict[str, Any]:
     output_value = read_i32(session, output_ptr, output_index, "output_ids")
-    input_value = read_i32(session, input_ptr, 0, "next_input_id")
+    input_value = read_i32(session, input_ptr, next_input_index, "next_input_id")
     if token_id is None:
         status = (
             "device_feedback_observed_unchecked"
@@ -79,11 +92,24 @@ def observed_device_feedback(
         "sampled_token_id": int(token_id),
         "output_ids_index": output_index,
         "output_ids_value": output_value,
-        "next_input_index": 0,
+        "next_input_index": next_input_index,
         "next_input_value": input_value,
         "policy": "device_commits_diagnostic_sampled_token_for_next_step",
         "scope": DECODE_FEEDBACK_SCOPE,
     }
+
+
+def feedback_input_index(
+    decode_position: int | None,
+    *,
+    prompt_stride: int | None = None,
+) -> int:
+    if decode_position is None:
+        return 0
+    next_index = max(int(decode_position) + 1, 0)
+    if prompt_stride is not None and next_index >= int(prompt_stride):
+        return 0
+    return next_index
 
 
 def sampled_token_id(logits_summary: dict[str, Any]) -> int | None:

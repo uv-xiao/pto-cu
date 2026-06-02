@@ -382,7 +382,13 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "logits_best_values[threadIdx.x + stride] >" in full_source
     assert "output_ids[decode_step] = logits_best_tokens[0];" in full_source
     assert "output_ids[decode_step] = best_token;" in full_source
-    assert "input_ids[0] = best_token;" in full_source
+    assert "const unsigned long long next_input_index =" in full_source
+    assert "static_cast<unsigned long long>(task->scalar_args[2]) + 1ULL;" in (
+        full_source
+    )
+    assert "input_ids[next_input_index] = logits_best_tokens[0];" in full_source
+    assert "input_ids[next_input_index] = best_token;" in full_source
+    assert "input_ids[0] = best_token;" not in full_source
     assert "qwen_unit_math_source_coverage" in manifest["implemented_contracts"]
     assert "qwen_shape_field_linear_projection_source" in manifest[
         "implemented_contracts"
