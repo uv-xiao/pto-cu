@@ -105,9 +105,20 @@ Each workload records `task_count = 255`, scheduler `completed_count = 255`,
 logits reference `status = pass`, 244 checked elements, and max absolute error
 `6.81e-06`.
 
+The full 36-layer MPK-policy diagnostic was then rerun with full projection
+and logits columns using `--resource-backed-projection-active-cols full` and
+`--resource-backed-logits-active-cols full`. The artifact is
+`tmp/cuda-backend/qwen-full-columns-thirtysix-mpk-2026-06-03/qwen-decode-loop-runner.json`.
+Result: passed for `mpk_offline_decode`. It records `task_count = 255`,
+scheduler `completed_count = 255`, `error_count = 0`, 144 full projection
+field overrides, full-vocab logits coverage with 2,430,976 written and checked
+elements, diagnostic logits reference `status = pass`, 3,904 checked elements
+across 16 rows, and max absolute error `1.543e-05`.
+
 ## Remaining Gaps
 
 The selector is implemented and live-smoked for the full 36-layer descriptor
-set on both serving policies, but full Qwen numerical correctness still
-requires full projection/logits columns and policy-length MPK and VDCores
-decode, not only one bounded diagnostic decode step.
+set on both serving policies. Full-column execution is proven for the
+MPK-policy one-step diagnostic, but full Qwen numerical correctness still
+requires the same full-column run for VDCores plus policy-length MPK and
+VDCores decode, not only one diagnostic decode step.
