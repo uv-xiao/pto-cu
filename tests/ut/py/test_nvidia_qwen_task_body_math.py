@@ -117,6 +117,16 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "normalized * cos_value - paired * sin_value" in full_source
     assert "normalized * cos_value + paired * sin_value" in full_source
     assert "const unsigned int kv_window = task->inner;" in full_source
+    assert "const unsigned int query_head = col / head_dim;" in full_source
+    assert "const unsigned int mapped_kv_head = query_head / heads_per_kv;" in (
+        full_source
+    )
+    assert "mapped_kv_head < kv_heads ? mapped_kv_head : kv_heads - 1U" in (
+        full_source
+    )
+    assert "static_cast<unsigned long long>(step) * kv_heads * head_dim" in (
+        full_source
+    )
     assert "expf(query * task->c[kv_index] - max_score)" in full_source
     assert "weighted_value / normalizer" in full_source
     assert "task->out[i] = pto_cuda_silu(gate_value) * up_value;" in full_source
@@ -136,6 +146,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_shape_field_qk_rmsnorm_source" in manifest["implemented_contracts"]
     assert "qwen_shape_field_qk_rope_source" in manifest["implemented_contracts"]
     assert "qwen_bounded_decode_attention_reduction_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert "qwen_gqa_decode_attention_head_grouping_source" in manifest[
         "implemented_contracts"
     ]
     assert "qwen_logits_full_vocab_argmax_source" in manifest[
@@ -227,19 +240,36 @@ def test_task_body_manifest_tracks_qwen_decode_attention_oracle():
     oracle = manifest["qwen_decode_attention_oracle"]
 
     assert oracle["status"] == "qwen_decode_attention_oracle_ready"
-    assert oracle["scope"] == "bounded_two_step_hidden4_reference"
+    assert oracle["scope"] == "bounded_two_step_gqa_hidden8_reference"
+    assert oracle["head_grouping"] == {
+        "query_heads": 4,
+        "kv_heads": 2,
+        "head_dim": 2,
+        "heads_per_kv": 2,
+    }
     assert oracle["steps"]["attention_context"] == [
         5.63496,
         11.179976,
-        17.309029,
-        21.460162,
+        5.769676,
+        10.460647,
+        16.16257,
+        20.921294,
+        16.432501,
+        25.205456,
     ]
     assert oracle["steps"]["attention_probability_by_col"] == [
         [0.485004, 0.514996],
         [0.490001, 0.509999],
         [0.470036, 0.529964],
-        [0.514996, 0.485004],
+        [0.529964, 0.470036],
+        [0.512497, 0.487503],
+        [0.529964, 0.470036],
+        [0.5025, 0.4975],
+        [0.41096, 0.58904],
     ]
     assert "qwen_bounded_decode_attention_reduction_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert "qwen_gqa_decode_attention_head_grouping_source" in manifest[
         "implemented_contracts"
     ]

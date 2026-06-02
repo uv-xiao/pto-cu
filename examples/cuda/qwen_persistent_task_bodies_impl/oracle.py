@@ -275,34 +275,53 @@ def build_qwen_unit_math_oracle() -> dict[str, Any]:
 
 
 def build_qwen_decode_attention_oracle() -> dict[str, Any]:
-    query = [0.2, -0.1, 0.4, 0.3]
+    query = [0.2, -0.1, 0.4, 0.3, 0.5, -0.2, 0.1, 0.6]
     key_cache = [
-        [0.1, 0.2, -0.1, 0.3],
-        [0.4, -0.2, 0.2, 0.1],
+        [[0.1, 0.2], [0.3, -0.1]],
+        [[0.4, -0.2], [0.2, 0.5]],
     ]
     value_cache = [
-        [1.0, 2.0, 3.0, 4.0],
-        [10.0, 20.0, 30.0, 40.0],
+        [[1.0, 2.0], [3.0, 4.0]],
+        [[10.0, 20.0], [30.0, 40.0]],
     ]
+    query_heads = 4
+    kv_heads = 2
+    head_dim = 2
+    heads_per_kv = query_heads // kv_heads
     context: list[float] = []
     probabilities: list[list[float]] = []
     for col, query_value in enumerate(query):
-        scores = [query_value * cache_row[col] for cache_row in key_cache]
+        query_head = col // head_dim
+        head_col = col % head_dim
+        kv_head = query_head // heads_per_kv
+        scores = [
+            query_value * cache_step[kv_head][head_col]
+            for cache_step in key_cache
+        ]
         max_score = max(scores)
         weights = [math.exp(score - max_score) for score in scores]
         normalizer = sum(weights)
         probabilities.append([weight / normalizer for weight in weights])
         context.append(
             sum(
-                weight * value_row[col]
-                for weight, value_row in zip(weights, value_cache, strict=True)
+                weight * value_step[kv_head][head_col]
+                for weight, value_step in zip(weights, value_cache, strict=True)
             )
             / normalizer
         )
     return {
         "status": "qwen_decode_attention_oracle_ready",
-        "scope": "bounded_two_step_hidden4_reference",
-        "equation": "softmax(query[col] * key_cache[step][col]) over step",
+        "scope": "bounded_two_step_gqa_hidden8_reference",
+        "equation": (
+            "softmax(query[col] * key_cache[step][kv_head][head_col]) "
+            "over step"
+        ),
+        "head_grouping": {
+            "query_heads": query_heads,
+            "kv_heads": kv_heads,
+            "head_dim": head_dim,
+            "heads_per_kv": heads_per_kv,
+        },
         "inputs": {
             "query": query,
             "key_cache": key_cache,

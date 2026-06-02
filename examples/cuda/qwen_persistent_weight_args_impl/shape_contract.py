@@ -50,7 +50,12 @@ def task_shape_fields(callable_name: str, shape: QwenTaskShape) -> dict[str, int
         cols = shape.q_width + 2 * shape.kv_width
         return matrix_fields(cols=cols, inner=shape.hidden_size)
     if callable_name == "qwen_attention_o":
-        return matrix_fields(cols=shape.hidden_size, inner=shape.hidden_size)
+        return attention_fields(
+            cols=shape.hidden_size,
+            query_heads=shape.num_attention_heads,
+            kv_heads=shape.num_key_value_heads,
+            head_dim=shape.head_dim,
+        )
     if callable_name == "qwen_mlp_gate_up":
         return matrix_fields(cols=shape.intermediate_size, inner=shape.hidden_size)
     if callable_name == "qwen_mlp_down":
@@ -80,6 +85,23 @@ def matrix_fields(*, cols: int, inner: int) -> dict[str, int]:
         "inner": inner,
         "lda": inner,
         "ldb": inner,
+        "ldc": cols,
+    }
+
+
+def attention_fields(
+    *,
+    cols: int,
+    query_heads: int,
+    kv_heads: int,
+    head_dim: int,
+) -> dict[str, int]:
+    return {
+        "rows": query_heads,
+        "cols": cols,
+        "inner": head_dim,
+        "lda": head_dim,
+        "ldb": kv_heads,
         "ldc": cols,
     }
 

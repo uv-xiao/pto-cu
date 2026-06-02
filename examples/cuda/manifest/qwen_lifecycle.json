@@ -90,7 +90,7 @@
       "method_id": "pto_persistent_device",
       "runtime": "cuda/persistent_device",
       "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_task_bodies.py --output-json tmp/cuda-backend/pto-serving-task-bodies/qwen-persistent-task-bodies.json --output-source tmp/cuda-backend/pto-serving-task-bodies/qwen-persistent-task-bodies.cu",
-      "expected_output": "command exits 0; output JSON records generated Qwen task bodies with token, mutable KV-cache, weight, shape-linear, QK RMSNorm/RoPE, bounded diagnostic decode-attention reduction, full-vocab argmax, proxy numeric oracle, and unit-math/decode-attention oracles.",
+      "expected_output": "command exits 0; output JSON records generated Qwen task bodies with token, mutable KV-cache, weight, shape-linear, QK RMSNorm/RoPE, GQA decode-attention grouping, full-vocab argmax, proxy numeric oracle, and unit-math/decode-attention oracles.",
       "evidence_symbols": [
         "pto_qwen_persistent_task_bodies",
         "generated_qwen_kernel_bodies",
@@ -100,6 +100,7 @@
         "qwen_shape_field_qk_rmsnorm_source",
         "qwen_shape_field_qk_rope_source",
         "qwen_bounded_decode_attention_reduction_source",
+        "qwen_gqa_decode_attention_head_grouping_source",
         "qwen_logits_full_vocab_argmax_source",
         "qwen_kernel_token_field_consumption",
         "qwen_kernel_kv_field_consumption",

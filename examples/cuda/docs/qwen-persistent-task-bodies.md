@@ -15,8 +15,8 @@ PYTHONPATH=$PWD:$PWD/python \
 
 Expected output: command exits 0; output JSON records generated Qwen task
 bodies with token, mutable KV-cache, weight, shape-linear, QK RMSNorm/RoPE,
-bounded diagnostic decode-attention reduction, full-vocab argmax, proxy
-numeric oracle, and unit-math/decode-attention oracles.
+GQA decode-attention grouping, full-vocab argmax, proxy numeric oracle, and
+unit-math/decode-attention oracles.
 
 The artifact renders through the existing persistent DAG source generator.
 It is source-level integration evidence, not full Qwen serving correctness.
@@ -26,10 +26,11 @@ projections when full tensor metadata is present. The QK norm task computes
 RMS scale from descriptor `cols`, `inner`, and `lda` fields before applying
 Q/K norm weight slots and pairwise RoPE rotation when cos/sin table slots are
 bound. The attention-output task now has a shape-gated path that reads mutable
-`c`/`d` KV-cache fields and computes a max-stabilized, per-column softmax
-reduction over the bounded `inner` decode window. This is diagnostic source
-evidence; model-shape head grouping, paged KV addressing, tiled softmax, and
-full decode-loop import remain open. The logits shape path scans the
+`c`/`d` KV-cache fields and computes a max-stabilized softmax reduction over
+the bounded `inner` decode window with GQA query-head to KV-head grouping from
+descriptor `rows`, `lda`, and `ldb`. This is diagnostic source evidence;
+paged KV addressing, tiled softmax, and full decode-loop import remain open.
+The logits shape path scans the
 descriptor vocab width for device-side argmax feedback. The persistent DAG
 ABI also exposes mutable `c` and `d` fields, so the artifact records KV-cache
 writeback field access before `cuda_live` decode-loop execution. The numeric

@@ -9,7 +9,7 @@
   the reduced context to `out`.
 - Added `qwen_decode_attention_oracle` and
   `qwen_bounded_decode_attention_reduction_source` so reviewers can connect
-  the generated CUDA source to a deterministic hidden-size-4 reference.
+  the generated CUDA source to a deterministic hidden-size-8 GQA reference.
 - Updated the Qwen source map, CUDA example manifest/docs, and paper-readiness
   matrix text to describe this as diagnostic evidence.
 
@@ -17,9 +17,9 @@
 
 The old projection fallback remains available when KV-cache pointers are not
 bound. The new source path is explicitly diagnostic: it proves device-side
-KV-cache consumption and reduction wiring, while keeping model-shape head
-grouping, paged KV addressing, tiled softmax, full decode-loop execution, and
-viewer row import as remaining promotion gates.
+KV-cache consumption, reduction wiring, and GQA head grouping, while keeping
+paged KV addressing, tiled softmax, full decode-loop execution, and viewer row
+import as remaining promotion gates.
 
 ## Evaluation Run
 
@@ -32,6 +32,6 @@ viewer row import as remaining promotion gates.
 
 ## Remaining Gaps
 
-PTO full-serving rows still require model-shape head grouping, paged KV
-addressing, tiled softmax promotion, complete decode-loop execution, and
-viewer import for both MPK-policy and VDCores-policy workloads.
+PTO full-serving rows still require paged KV addressing, tiled softmax
+promotion, complete decode-loop execution, and viewer import for both
+MPK-policy and VDCores-policy workloads.

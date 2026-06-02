@@ -1153,6 +1153,10 @@ def test_qwen_persistent_task_bodies_render_generated_source():
         "qwen_bounded_decode_attention_reduction_source"
         in manifest["implemented_contracts"]
     )
+    assert (
+        "qwen_gqa_decode_attention_head_grouping_source"
+        in manifest["implemented_contracts"]
+    )
     oracle = manifest["numeric_oracle"]
     assert oracle["status"] == "controlled_proxy_numeric_oracle_ready"
     assert oracle["scope"] == "controlled_proxy_not_full_qwen"
@@ -1176,11 +1180,16 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     ]
     attention_oracle = manifest["qwen_decode_attention_oracle"]
     assert attention_oracle["status"] == "qwen_decode_attention_oracle_ready"
+    assert attention_oracle["head_grouping"]["kv_heads"] == 2
     assert attention_oracle["steps"]["attention_context"] == [
         5.63496,
         11.179976,
-        17.309029,
-        21.460162,
+        5.769676,
+        10.460647,
+        16.16257,
+        20.921294,
+        16.432501,
+        25.205456,
     ]
     assert manifest["remaining_runtime_gaps"] == [
         "numerically_correct_qwen_kernel_bodies",

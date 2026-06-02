@@ -249,11 +249,24 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
     const unsigned long long row_base =
         static_cast<unsigned long long>(row) * stride;
     const float query = task->a[row_base + col];
+    const unsigned int query_heads = task->rows > 0U ? task->rows : 1U;
+    unsigned int head_dim = task->lda > 0U ?
+        task->lda : (task->cols / query_heads);
+    head_dim = head_dim > 0U ? head_dim : 1U;
+    const unsigned int kv_heads = task->ldb > 0U ? task->ldb : query_heads;
+    const unsigned int heads_per_kv =
+        query_heads > kv_heads ? query_heads / kv_heads : 1U;
+    const unsigned int query_head = col / head_dim;
+    const unsigned int head_col = col % head_dim;
+    const unsigned int mapped_kv_head = query_head / heads_per_kv;
+    const unsigned int kv_head =
+        mapped_kv_head < kv_heads ? mapped_kv_head : kv_heads - 1U;
     const unsigned int kv_window = task->inner;
     float max_score = -3.4028234663852886e+38f;
     for (unsigned int step = 0U; step < kv_window; ++step) {
         const unsigned long long kv_index =
-            static_cast<unsigned long long>(step) * task->cols + col;
+            static_cast<unsigned long long>(step) * kv_heads * head_dim +
+            static_cast<unsigned long long>(kv_head) * head_dim + head_col;
         const float score = query * task->c[kv_index];
         max_score = score > max_score ? score : max_score;
     }
@@ -261,7 +274,8 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
     float normalizer = 0.0f;
     for (unsigned int step = 0U; step < kv_window; ++step) {
         const unsigned long long kv_index =
-            static_cast<unsigned long long>(step) * task->cols + col;
+            static_cast<unsigned long long>(step) * kv_heads * head_dim +
+            static_cast<unsigned long long>(kv_head) * head_dim + head_col;
         const float weight = expf(query * task->c[kv_index] - max_score);
         weighted_value += weight * task->d[kv_index];
         normalizer += weight;
@@ -434,6 +448,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_shape_field_qk_rmsnorm_source",
             "qwen_shape_field_qk_rope_source",
             "qwen_bounded_decode_attention_reduction_source",
+            "qwen_gqa_decode_attention_head_grouping_source",
             "qwen_logits_full_vocab_argmax_source",
             "qwen_kernel_token_field_consumption",
             "qwen_kernel_kv_field_consumption",

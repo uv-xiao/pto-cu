@@ -105,8 +105,8 @@ KERNEL_SOURCE_MAP = [
                 "url": "https://github.com/sgl-project/sglang/blob/main/python/sglang/jit_kernel/csrc/elementwise/fused_qknorm_rope.cuh",
             },
         ],
-        "pto_status": "qkv_projection_qk_rmsnorm_rope_and_bounded_attention_source_ready",
-        "next_step": "Replace the bounded per-column diagnostic attention reduction with model-shape head grouping, paged KV-cache addressing, and tiled softmax before full-serving promotion.",
+        "pto_status": "qkv_projection_qk_rmsnorm_rope_and_gqa_attention_source_ready",
+        "next_step": "Replace the bounded diagnostic attention reduction with paged KV-cache addressing and tiled softmax before full-serving promotion.",
     },
     {
         "pto_callables": ["qwen_attention_qkv"],
