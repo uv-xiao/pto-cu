@@ -62,7 +62,7 @@ normal L2 `Worker`, builds `persistent_dag_fork_join_f32`,
 `persistent_dag_quad_f32` fourth-tensor descriptors,
 `persistent_dag_generic_args_f32` generic tensor/scalar argument descriptors,
 `persistent_dag_graph_f32` explicit and tensor-flow-inferred graph
-descriptors, and
+descriptors, `persistent_dag_normal_graph_f32` normal-graph descriptors, and
 `persistent_dag_unary_square_f32` unary descriptors, and
 `persistent_dag_tensor_core_tile_f32` WMMA tensor-core descriptors from normal
 `TaskArgsBuilder` CPU tensors and scalars, and validates real copied-back CUDA
@@ -80,6 +80,9 @@ The `persistent_dag_graph_f32` scene-test adapter now uses
 `simpler_setup/cuda_normal_graph.py` for the final normal graph edge lowering
 step after its existing descriptor parsing, task-argument normalization,
 graph-edge handling, and tensor-flow inference have resolved the task graph.
+The `persistent_dag_normal_graph_f32` scene-test adapter accepts the same graph
+shape through `normal_graph` or `normal_graph_path`, then materializes the
+same persistent-device scheduler task, fan-in, and dependent arrays.
 The no-torch
 persistent smoke path also validates a generated-dispatch triad descriptor
 with a third tensor pointer field, a quad descriptor with third and fourth

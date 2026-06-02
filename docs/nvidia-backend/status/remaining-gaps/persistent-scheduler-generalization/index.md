@@ -12,8 +12,8 @@ The remaining backend gap is normal PTO graph breadth, not the core persistent
 scheduler mechanics. Before this gap can be closed, the CUDA backend still
 needs:
 
-- builder-wide graph construction from normal PTO task graphs rather than
-  curated graph-descriptor tracer bullets;
+- normal PTO task graph construction beyond the current scene-test
+  `persistent_dag_normal_graph_f32` graph-config input;
 - paired A100/H200 evidence that normal graph inputs, not only descriptor
   spellings, cover fork-join, chain, fan-in, and layered-cross shapes.
 
@@ -32,7 +32,8 @@ and is validated by
 `.agents/checks/benchmark_viewer_validation/persistent_scheduler_coverage.py`.
 That coverage now requires a normal-graph lowering-boundary group tied to
 `simpler_setup/cuda_normal_graph.py`, the persistent-device scene-test adapter,
-the no-torch persistent smoke, and the Qwen unit-math live example.
+the `persistent_dag_normal_graph_f32` scene-test builder, the no-torch
+persistent smoke, and the Qwen unit-math live example.
 Current paired smoke artifacts include
 `tmp/cuda-backend/persistent-graph_descriptor_diamond-repeat2-smoke-072e396c/`
 and
@@ -43,7 +44,7 @@ PTO graph construction from the backend builder.
 ## Promotion Gate
 
 Close this gap only after normal PTO task graphs construct full
-persistent-device scheduler inputs through the backend builder, the lowered
+persistent-device scheduler inputs beyond scene-test graph config, the lowered
 graphs run through the paired A100/H200 smoke or benchmark harness, and viewer
 data records the resulting raw `tmp/` artifacts without relying on curated
 descriptor-only inputs.

@@ -87,12 +87,13 @@
       "covered_cases": [
         "node-key dependency lowering from depends_on edges",
         "explicit dependent-list lowering that preserves dependent order",
+        "scene-test persistent_dag_normal_graph_f32 builder input",
         "scene-test graph descriptor edge lowering after descriptor parsing",
         "no-torch persistent smoke graph lowering marker",
         "Qwen unit-math DAG task-array construction"
       ],
       "open_work": [
-        "builder-wide construction from normal PTO task graphs",
+        "normal PTO task graph construction beyond scene-test graph config",
         "paired A100/H200 rows for fork-join, chain, fan-in, and layered-cross normal graph inputs"
       ],
       "evidence_refs": [
@@ -108,6 +109,7 @@
           "path": "simpler_setup/scene_test.py",
           "symbols": [
             "lower_normal_graph_from_dependents",
+            "persistent_dag_normal_graph_f32",
             "persistent_dag_graph_f32"
           ]
         },

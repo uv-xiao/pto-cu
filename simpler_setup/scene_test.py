@@ -584,10 +584,15 @@ class _CudaPersistentDagSceneBuffers:
             "persistent_dag_generic_args_f32",
             "persistent_dag_unary_square_f32",
             "persistent_dag_graph_f32",
+            "persistent_dag_normal_graph_f32",
         } | tensor_tile_builders
         if arg_builder not in persistent_builders:
             raise NotImplementedError(f"Unsupported CUDA persistent scene-test arg_builder: {arg_builder}")
-        if arg_builder == "persistent_dag_graph_f32":
+        graph_builders = {
+            "persistent_dag_graph_f32",
+            "persistent_dag_normal_graph_f32",
+        }
+        if arg_builder in graph_builders:
             expected_arg_count = None
         elif arg_builder in {"persistent_dag_quad_f32", "persistent_dag_generic_args_f32"}:
             expected_arg_count = 5
@@ -601,7 +606,7 @@ class _CudaPersistentDagSceneBuffers:
         if missing:
             raise ValueError(f"CUDA persistent DAG args reference unknown tensors: {', '.join(missing)}")
 
-        if arg_builder == "persistent_dag_graph_f32":
+        if arg_builder in graph_builders:
             a_name = self.output_names[0]
             b_name = self.output_names[1] if len(self.output_names) > 1 else self.output_names[0]
             out_name = str(self.cuda_spec.get("output", self.output_names[-1]))
@@ -1087,7 +1092,7 @@ class _CudaPersistentDagSceneBuffers:
                 ),
             )
             self.host_fanin = (ctypes.c_uint32 * 3)(0, 1, 1)
-        elif arg_builder == "persistent_dag_graph_f32":
+        elif arg_builder in graph_builders:
             self._setup_graph_descriptor(ctypes, CudaPersistentDagTask, n, output_nbytes)
         else:
             descriptor = self._tensor_tile_descriptor(n)
@@ -1321,14 +1326,20 @@ class _CudaPersistentDagSceneBuffers:
 
     @staticmethod
     def _graph_descriptor(cuda_spec: dict[str, Any]) -> dict[str, Any]:
-        graph = cuda_spec.get("graph")
-        graph_path = cuda_spec.get("graph_path", cuda_spec.get("graph_file"))
+        is_normal_graph = cuda_spec.get("arg_builder") == "persistent_dag_normal_graph_f32"
+        graph_key = "normal_graph" if is_normal_graph else "graph"
+        path_key = "normal_graph_path" if is_normal_graph else "graph_path"
+        file_key = "normal_graph_file" if is_normal_graph else "graph_file"
+        graph = cuda_spec.get(graph_key)
+        graph_path = cuda_spec.get(path_key, cuda_spec.get(file_key))
         if graph_path is None and isinstance(graph, (str, os.PathLike)):
             graph_path = graph
             graph = None
         if graph_path is None:
             if not isinstance(graph, dict):
-                raise ValueError("CUDA persistent_dag_graph_f32 requires a graph descriptor")
+                raise ValueError(
+                    f"CUDA {cuda_spec.get('arg_builder')} requires a graph descriptor"
+                )
             return _CudaPersistentDagSceneBuffers._graph_with_task_sidecar_files(cuda_spec, graph)
 
         graph_file_path = Path(graph_path)

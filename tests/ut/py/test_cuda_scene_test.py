@@ -3084,6 +3084,42 @@ def test_scene_test_builds_cuda_persistent_graph_from_dep_gen_edges():
     ]
 
 
+def test_scene_test_builds_cuda_persistent_normal_graph_from_dependency_edges():
+    test_args = TaskArgsBuilder(
+        Tensor("a", _FakeTensor(17)),
+        Tensor("b", _FakeTensor(17)),
+        Tensor("out", _FakeTensor(17)),
+    )
+    cuda_spec = {
+        "arg_builder": "persistent_dag_normal_graph_f32",
+        "args": ["a", "b", "out"],
+        "queue_capacity": 2,
+        "normal_graph": {
+            "tasks": [
+                {"name": "left", "func_id": 1, "a": "a", "b": "b", "out": "tmp0"},
+                {"name": "right", "func_id": 2, "a": "a", "b": "b", "out": "tmp1"},
+                {"name": "join", "func_id": 1, "a": "tmp0", "b": "tmp1", "out": "out"},
+            ],
+            "edges": [
+                {"pred": "left", "succ": "join"},
+                {"pred": "right", "succ": "join"},
+            ],
+        },
+    }
+    buffers = _CudaPersistentDagSceneBuffers(_FakeWorker(), test_args, cuda_spec)
+
+    assert list(buffers.host_fanin) == [0, 0, 2]
+    assert list(buffers.host_dependents) == [2, 2]
+    assert [(task.func_id, task.dependent_begin, task.dependent_count) for task in buffers.host_tasks] == [
+        (1, 0, 1),
+        (2, 1, 1),
+        (1, 2, 0),
+    ]
+    assert buffers.host_tasks[2].a == buffers.host_tasks[0].out
+    assert buffers.host_tasks[2].b == buffers.host_tasks[1].out
+    assert buffers.host_tasks[2].out == buffers.tensor_buffers.ptrs["out"]
+
+
 def test_scene_test_builds_cuda_persistent_graph_from_dep_gen_task_id_edges():
     test_args = TaskArgsBuilder(
         Tensor("a", _FakeTensor(17)),
