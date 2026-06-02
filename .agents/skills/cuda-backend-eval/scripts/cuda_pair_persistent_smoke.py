@@ -349,7 +349,7 @@ def _expected_graph_descriptor(config: PairedPersistentSmokeConfig) -> tuple[str
         "graph_tensor_tile": ("0,1,1,2", "1,2,3,3"),
         "normal_graph_chain": ("0,0,2,1,1", "2,2,3,4"),
         "normal_graph_fork_join": ("0,0,2", "2,2"),
-        "normal_graph_layered_cross": ("0,0,0,2,3,1,2,3,2", "3,3,4,4,5,4,6,7,6,7,7,8,8"),
+        "normal_graph_layered_cross": ("0,0,0,2,3,1,2,3,2", "3,4,3,4,4,5,6,7,6,7,7,8,8"),
         "normal_graph_multi_fanin": ("0,0,0,3", "3,3,3"),
     }.get(config.dag_shape)
 

@@ -34,6 +34,7 @@ persistent scheduler ABI and validator contracts.
 
 - Normal PTO task-graph construction beyond scene-test graph config remains
   open.
-- Fork-join, chain, and layered-cross normal graph shapes have local A100
-  smoke evidence, but still need paired A100/H200 rows before the remaining
-  gap can close.
+- Fork-join, chain, and layered-cross normal graph shapes had local A100
+  smoke evidence in this change. The later
+  [normal graph paired shape completion](2026-06-02-normal-graph-paired-shape-completion.md)
+  report adds the paired A100/H200 rows.

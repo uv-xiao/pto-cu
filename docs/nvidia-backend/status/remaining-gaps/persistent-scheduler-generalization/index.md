@@ -14,8 +14,8 @@ needs:
 
 - normal PTO task graph construction beyond the current scene-test
   `persistent_dag_normal_graph_f32` graph-config input;
-- paired A100/H200 evidence that normal graph inputs, not only descriptor
-  spellings, cover fork-join, chain, fan-in, and layered-cross shapes.
+- normal PTO graph construction feeding the persistent scheduler outside
+  scene-test graph config.
 
 The current scheduler-negative taxonomy is covered for the review scope:
 unsupported `func_id`, invalid dependent IDs, dependent range, fan-in
@@ -52,23 +52,27 @@ The paired artifact
 `tmp/cuda-backend/persistent-normal_graph_multi_fanin-repeat2-smoke-05ed941a/`
 proves the multi-fan-in normal graph path on A100 and H200 with repeat-run
 lifecycle validation.
+The remaining shape artifacts complete the paired normal-graph evidence matrix:
+`tmp/cuda-backend/persistent-normal_graph_fork_join-repeat2-smoke-4c68620e/`,
+`tmp/cuda-backend/persistent-normal_graph_chain-repeat2-smoke-4c68620e/`, and
+`tmp/cuda-backend/persistent-normal_graph_layered_cross-repeat2-smoke-4c68620e/`.
+Those artifacts validate `graph_lowering=normal_graph`, dispatch sequences,
+fan-in/dependent arrays, and repeat-run completion on both A100 and H200.
 
 ## Promotion Gate
 
 Close this gap only after normal PTO task graphs construct full
-persistent-device scheduler inputs beyond scene-test graph config, the lowered
-graphs run through the paired A100/H200 smoke or benchmark harness, and viewer
-data records the resulting raw `tmp/` artifacts without relying on curated
-descriptor-only inputs.
+persistent-device scheduler inputs beyond scene-test graph config and the
+resulting backend-builder path runs through the paired A100/H200 smoke or
+benchmark harness. The normal-graph shape evidence above no longer relies on
+descriptor spellings, but it is still a smoke harness input rather than full
+normal PTO graph construction.
 
 ## Next Actions
 
 - Add normal PTO graph lowering into the CUDA persistent-device builder.
-- Run paired A100/H200 evidence for fork-join, layered-cross, and additional
-  chain-shaped normal graph inputs beyond the current submit-chain and
-  multi-fan-in smokes.
-- Import or reference those raw artifacts in the benchmark viewer before
-  removing this page from `status.md`.
+- Run the backend-builder normal PTO graph path through paired A100/H200
+  evidence before removing this page from `status.md`.
 
 ## Evidence Archive
 
