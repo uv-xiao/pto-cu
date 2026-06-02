@@ -1145,6 +1145,10 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     assert "task->tensor_args[1]" in source
     assert "const unsigned int *kv_page_table" in source
     assert "const unsigned int logical_page = step / kv_page_size;" in source
+    assert "for (unsigned int tile_begin = 0U;" in source
+    assert "for (unsigned int step = tile_begin; step < tile_end; ++step)" in (
+        source
+    )
     assert "physical_page) * kv_page_size *" in source
     assert "generated_qwen_kernel_bodies" in manifest["implemented_contracts"]
     assert "controlled_proxy_numeric_oracle" in manifest["implemented_contracts"]
@@ -1164,6 +1168,10 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     )
     assert (
         "qwen_paged_kv_attention_index_source"
+        in manifest["implemented_contracts"]
+    )
+    assert (
+        "qwen_tiled_decode_attention_softmax_source"
         in manifest["implemented_contracts"]
     )
     oracle = manifest["numeric_oracle"]

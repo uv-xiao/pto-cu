@@ -15,8 +15,8 @@ PYTHONPATH=$PWD:$PWD/python \
 
 Expected output: command exits 0; output JSON records generated Qwen task
 bodies with token, mutable KV-cache, weight, shape-linear, QK RMSNorm/RoPE,
-GQA decode-attention grouping, full-vocab argmax, proxy numeric oracle, and
-unit-math/decode-attention oracles.
+GQA decode-attention grouping, paged tiled attention, full-vocab argmax,
+proxy numeric oracle, and unit-math/decode-attention oracles.
 
 The artifact renders through the existing persistent DAG source generator.
 It is source-level integration evidence, not full Qwen serving correctness.
@@ -30,8 +30,9 @@ bound. The attention-output task now has a shape-gated path that reads mutable
 the bounded `inner` decode window with GQA query-head to KV-head grouping from
 descriptor `rows`, `lda`, and `ldb`. It also accepts runtime
 `tensor_args[1]` as a `kv_page_table` and maps logical decode steps to
-physical pages before reading key/value cache. This is diagnostic source
-evidence; tiled softmax and full decode-loop import remain open.
+physical pages before reading key/value cache. The softmax max and weighted
+sum passes are bounded by descriptor-controlled attention tiles. This is
+diagnostic source evidence; full decode-loop import remains open.
 The logits shape path scans the
 descriptor vocab width for device-side argmax feedback. The persistent DAG
 ABI also exposes mutable `c` and `d` fields, so the artifact records KV-cache

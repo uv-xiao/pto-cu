@@ -104,6 +104,7 @@ def attention_fields(
         "ldb": kv_heads,
         "ldc": cols,
         "scalar0": 16.0,
+        "scalar1": 16.0,
     }
 
 

@@ -775,6 +775,7 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "ldb": 1,
         "ldc": 4,
         "scalar0": 16.0,
+        "scalar1": 16.0,
     }
     assert descriptors["layer_0_attention_o"]["tensor_args"][1] == {
         "arg": "tensor_args[1]",

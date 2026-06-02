@@ -126,6 +126,14 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     )
     assert "const unsigned int *kv_page_table" in full_source
     assert "const unsigned int logical_page = step / kv_page_size;" in full_source
+    assert "unsigned int attention_tile =" in full_source
+    assert "for (unsigned int tile_begin = 0U; tile_begin < kv_window;" in (
+        full_source
+    )
+    assert "const unsigned int tile_end =" in full_source
+    assert "for (unsigned int step = tile_begin; step < tile_end; ++step)" in (
+        full_source
+    )
     assert "static_cast<unsigned long long>(physical_page) * kv_page_size" in (
         full_source
     )
@@ -151,6 +159,12 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         "implemented_contracts"
     ]
     assert "qwen_gqa_decode_attention_head_grouping_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert "qwen_paged_kv_attention_index_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert "qwen_tiled_decode_attention_softmax_source" in manifest[
         "implemented_contracts"
     ]
     assert "qwen_logits_full_vocab_argmax_source" in manifest[
