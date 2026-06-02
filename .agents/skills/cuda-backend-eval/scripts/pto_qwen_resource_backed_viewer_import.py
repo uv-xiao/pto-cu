@@ -143,6 +143,9 @@ def build_result_records(
                     "external_scale_contract_count": len(
                         numeric_mode.get("external_scale_contracts", []),
                     ),
+                    "full_reduction_contract_count": len(
+                        numeric_mode.get("full_reduction_contracts", []),
+                    ),
                     "weighted_elementwise_callable_count": len(
                         numeric_mode.get("weighted_elementwise_callables", []),
                     ),

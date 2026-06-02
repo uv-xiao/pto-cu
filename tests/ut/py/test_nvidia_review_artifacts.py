@@ -1082,7 +1082,7 @@ def test_qwen_decode_loop_runner_orders_resource_lifetimes():
     assert "decode_loop_owner_lifetime_order" in runner["implemented_contracts"]
     assert runner["remaining_runtime_gaps"] == [
         "numerically_correct_qwen_kernel_bodies",
-        "cuda_live_decode_loop_execution",
+        "full_cuda_live_decode_loop_execution",
         "viewer_result_import",
     ]
 

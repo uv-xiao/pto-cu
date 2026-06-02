@@ -80,6 +80,7 @@ def test_resource_backed_importer_emits_diagnostic_rows():
                                 "scale": 1.0,
                             },
                         ],
+                        "full_reduction_contracts": [],
                         "weighted_elementwise_callables": [
                             "qwen_attention_qk_norm",
                             "qwen_attention_o",
@@ -177,6 +178,7 @@ def test_resource_backed_importer_emits_diagnostic_rows():
             assert record["statistic"]["numeric_task_mode"] == "unit_math"
             assert record["statistic"]["numeric_ready_callable_count"] == 8
             assert record["statistic"]["external_scale_contract_count"] == 1
+            assert record["statistic"]["full_reduction_contract_count"] == 0
             assert record["statistic"]["weighted_elementwise_callable_count"] == 5
         assert record["correctness"] == "pass"
         assert "resource-backed diagnostic" in record["inputs"]["shape"]
@@ -245,6 +247,60 @@ def test_resource_backed_importer_fails_failed_diagnostic_reference():
     assert (
         records[0]["statistic"]["diagnostic_logits_reference_status"] == "fail"
     )
+
+
+def test_resource_backed_importer_counts_full_rmsnorm_contracts():
+    module = load_importer_module()
+    workload = {
+        "workload_id": "mpk_offline_decode",
+        "status": "pass",
+        "run_prepared_status": 0,
+        "graph_task_count": 255,
+        "timing_ns": {"host_wall": 11, "device_wall": 7},
+        "scheduler_counters": {
+            "completed_count": 255,
+            "error_count": 0,
+            "scheduler_processed_count": 255,
+        },
+        "numeric_task_mode": {
+            "mode": "unit_math_full_rmsnorm",
+            "scope": "resource_backed_unit_math_full_rmsnorm_reduction",
+            "numeric_ready_callables": ["qwen_rmsnorm_input"],
+            "external_scale_contracts": [],
+            "full_reduction_contracts": [
+                {
+                    "callable": "qwen_rmsnorm_input",
+                    "shape": "hidden_size=4096",
+                    "scope": "resource_backed_full_rmsnorm_reduction",
+                },
+            ],
+            "weighted_elementwise_callables": [],
+        },
+        "logits_summary": {
+            "coverage": "full_logits_buffer_prefix_sampled",
+            "written_element_count": 1,
+            "logits_buffer_elements": 2,
+            "sampled_element_count": 1,
+            "topk": [{"token_id": 0, "logit": 0.0}],
+            "diagnostic_reference": {"status": "pass"},
+        },
+    }
+    records = module.build_result_records(
+        {
+            "resource_backed_execution": {
+                "device": {"arch": "compute_80"},
+                "context_policy": "one_cuda_context_for_all_resource_owners",
+                "workloads": [workload],
+            },
+        },
+        raw_artifact="tmp/cuda-backend/full-rmsnorm.json",
+        commit="abc1234",
+    )
+    statistic = records[0]["statistic"]
+
+    assert statistic["numeric_task_mode"] == "unit_math_full_rmsnorm"
+    assert statistic["external_scale_contract_count"] == 0
+    assert statistic["full_reduction_contract_count"] == 1
 
 
 def test_resource_backed_importer_adds_matrix_ref():
