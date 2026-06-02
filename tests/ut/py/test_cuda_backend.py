@@ -249,6 +249,47 @@ def test_cuda_pto_graph_reads_live_cpp_orchestrator_next_level_slots():
     assert lowered.tasks == [("slot0", 201, 0, 1, 0), ("slot1", 202, 1, 0, 1)]
 
 
+def test_cuda_persistent_smoke_builds_cpp_snapshot_normal_graph_shape():
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(".agents/skills/cuda-backend-eval/scripts").resolve()))
+    from cuda_persistent_smoke_impl.normal_graph_shapes import (
+        make_cpp_orchestrator_snapshot_submits,
+    )
+    from simpler_setup.cuda_pto_graph import lower_cuda_pto_task_graph
+
+    submits = make_cpp_orchestrator_snapshot_submits(
+        n=128,
+        dev_a=10,
+        dev_b=20,
+        dev_tmp1=30,
+        dev_out=40,
+    )
+    lowered = lower_cuda_pto_task_graph(
+        submits,
+        lambda node, begin, count, fanin: (
+            node.func_id,
+            node.attrs["submit"].attrs["cuda_task"]["a"],
+            node.attrs["submit"].attrs["cuda_task"]["b"],
+            node.attrs["submit"].attrs["cuda_task"]["out"],
+            begin,
+            count,
+            fanin,
+        ),
+    )
+
+    assert [submit.key for submit in submits] == ["slot0", "slot1", "slot2"]
+    assert [submit.callable_id for submit in submits] == [1, 1, 1]
+    assert lowered.fanin == [0, 1, 1]
+    assert lowered.dependents == [1, 2]
+    assert lowered.tasks == [
+        (1, 10, 20, 30, 0, 1, 0),
+        (1, 30, 20, 30, 1, 1, 1),
+        (1, 30, 10, 40, 2, 0, 1),
+    ]
+
+
 class CudaHostCallable(ctypes.Structure):
     _fields_ = [
         ("version", ctypes.c_uint32),

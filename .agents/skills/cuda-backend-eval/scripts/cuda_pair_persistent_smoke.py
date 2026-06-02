@@ -26,7 +26,10 @@ from cuda_pair_persistent_smoke_impl.contracts import (  # noqa: E402
     PairedPersistentSmokeConfig,
     is_tensor_tile_shape as _is_tensor_tile_shape,
 )
-from cuda_persistent_smoke_impl.normal_graph_shapes import NORMAL_GRAPH_DAG_SHAPES  # noqa: E402
+from cuda_persistent_smoke_impl.normal_graph_shapes import (  # noqa: E402
+    CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE,
+    NORMAL_GRAPH_DAG_SHAPES,
+)
 
 Runner = Callable[..., subprocess.CompletedProcess]
 
@@ -288,6 +291,7 @@ def _expected_dispatch(config: PairedPersistentSmokeConfig) -> str | None:
         "graph_tensor_core_tile": "10,1,2,1",
         "graph_tensor_tile": "3,1,2,1",
         "normal_graph_chain": "1,2,1,2,1",
+        CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE: "1,1,1",
         "normal_graph_fork_join": "1,2,1",
         "normal_graph_layered_cross": "1,2,11,1,2,1,6,1,1",
         "normal_graph_multi_fanin": "1,2,11,6",
@@ -348,6 +352,7 @@ def _expected_graph_descriptor(config: PairedPersistentSmokeConfig) -> tuple[str
         "graph_tensor_core_tile": ("0,1,1,2", "1,2,3,3"),
         "graph_tensor_tile": ("0,1,1,2", "1,2,3,3"),
         "normal_graph_chain": ("0,0,2,1,1", "2,2,3,4"),
+        CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE: ("0,1,1", "1,2"),
         "normal_graph_fork_join": ("0,0,2", "2,2"),
         "normal_graph_layered_cross": ("0,0,0,2,3,1,2,3,2", "3,4,3,4,4,5,6,7,6,7,7,8,8"),
         "normal_graph_multi_fanin": ("0,0,0,3", "3,3,3"),
@@ -386,6 +391,10 @@ def _expected_graph_task_args(config: PairedPersistentSmokeConfig) -> str | None
             "task1=input:a,input:b,output:tmp2;"
             "task2=input:tmp1,input:tmp2,output_existing:out"
         ),
+        CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE: (
+            "slot0=input:a,input:b,output:tmp1;slot1=inout:tmp1,input:b;"
+            "slot2=input:tmp1,input:a,output_existing:out"
+        ),
         "graph_descriptor_node_io": (
             "task0=input:a,input:b,output:tmp0;task1=input:a,input:b,output:tmp1;task2=input:a,input:b,output:out"
         ),
@@ -420,6 +429,7 @@ def _expected_graph_task_arg_key(config: PairedPersistentSmokeConfig) -> str | N
         "graph_descriptor_submits": "submits",
         "graph_descriptor_task_dict": "task_dict",
         "normal_graph_chain": "normal_graph",
+        CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE: "cpp_orchestrator_snapshot",
         "normal_graph_fork_join": "normal_graph",
         "normal_graph_layered_cross": "normal_graph",
         "normal_graph_multi_fanin": "normal_graph",
@@ -432,6 +442,7 @@ def _expected_graph_lowering(config: PairedPersistentSmokeConfig) -> str | None:
     return {
         "graph_descriptor_submits": "normal_graph",
         "normal_graph_chain": "normal_graph",
+        CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE: "normal_graph",
         "normal_graph_fork_join": "normal_graph",
         "normal_graph_layered_cross": "normal_graph",
         "normal_graph_multi_fanin": "normal_graph",

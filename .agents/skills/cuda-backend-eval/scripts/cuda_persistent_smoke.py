@@ -29,7 +29,12 @@ from cuda_persistent_smoke_impl.fallback_ptx import (
     FALLBACK_PERSISTENT_QUEUE_VECTOR_ADD_PTX as _FALLBACK_PERSISTENT_QUEUE_VECTOR_ADD_PTX,
     FALLBACK_PERSISTENT_VECTOR_ADD_PTX as _FALLBACK_PERSISTENT_VECTOR_ADD_PTX,
 )
-from cuda_persistent_smoke_impl.normal_graph_shapes import NORMAL_GRAPH_DAG_SHAPES, make_normal_graph_nodes
+from cuda_persistent_smoke_impl.normal_graph_shapes import (
+    CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE,
+    NORMAL_GRAPH_DAG_SHAPES,
+    make_cpp_orchestrator_snapshot_submits,
+    make_normal_graph_nodes,
+)
 from simpler_setup.cuda_callable_compiler import (
     CudaPersistentCallableArtifact,
     CudaPersistentTaskBodyFunction,
@@ -42,6 +47,7 @@ from simpler_setup.cuda_callable_compiler import (
     CudaPersistentDeviceCallable as CudaPersistentCallable,
 )
 from simpler_setup.cuda_normal_graph import CudaNormalGraphNode, lower_normal_graph
+from simpler_setup.cuda_pto_graph import lower_cuda_pto_task_graph
 from simpler_setup.kernel_compiler import KernelCompiler
 from simpler_setup.runtime_builder import RuntimeBuilder
 
@@ -683,6 +689,35 @@ def _make_dag_shape(  # noqa: PLR0912, PLR0915
             for field, value in descriptor.items():
                 setattr(task, field, value)
         return task
+
+    if dag_shape == CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE:
+        submits = make_cpp_orchestrator_snapshot_submits(
+            n=n,
+            dev_a=dev_a,
+            dev_b=dev_b,
+            dev_tmp1=dev_tmp1,
+            dev_out=dev_out,
+        )
+        lowered = lower_cuda_pto_task_graph(
+            submits,
+            lambda node, dependent_begin, dependent_count, initial_fanin: make_task(
+                int(node.attrs["submit"].attrs["cuda_task"]["func_id"]),
+                int(node.attrs["submit"].attrs["cuda_task"]["a"]),
+                int(node.attrs["submit"].attrs["cuda_task"]["b"]),
+                int(node.attrs["submit"].attrs["cuda_task"]["out"]),
+                dependent_begin,
+                dependent_count,
+                initial_fanin,
+            ),
+        )
+        host_fanin_t = ctypes.c_uint32 * len(lowered.fanin)
+        dependents_t = ctypes.c_uint32 * len(lowered.dependents)
+        task_t = CudaPersistentDagTask * len(lowered.tasks)
+        return (
+            host_fanin_t(*lowered.fanin),
+            dependents_t(*lowered.dependents),
+            task_t(*lowered.tasks),
+        )
 
     if dag_shape in NORMAL_GRAPH_DAG_SHAPES:
         nodes = make_normal_graph_nodes(
@@ -2651,6 +2686,7 @@ def _run_dag_smoke(config: DagSmokeConfig) -> dict:  # noqa: PLR0912, PLR0915
                 expected_tmp2 = [_f32(host_a[i] * host_b[i]) for i in range(n)]
                 expected_out = [_f32(expected_tmp1[i] + expected_tmp2[i]) for i in range(n)]
             if config.dag_shape in {
+                CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE,
                 "graph_descriptor_compact_role_inout",
                 "graph_descriptor_pair_inout",
                 "graph_descriptor_role_map_inout",
@@ -2978,7 +3014,16 @@ def _run_dag_smoke(config: DagSmokeConfig) -> dict:  # noqa: PLR0912, PLR0915
                 "graph_descriptor_submits",
                 *NORMAL_GRAPH_DAG_SHAPES,
             }:
-                if config.dag_shape in NORMAL_GRAPH_DAG_SHAPES:
+                if config.dag_shape == CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE:
+                    result["graph_task_arg_key"] = "cpp_orchestrator_snapshot"
+                    result["graph_lowering"] = "normal_graph"
+                    result["graph_source"] = "cpp_orchestrator_snapshot"
+                    result["graph_task_args"] = {
+                        "slot0": "input:a,input:b,output:tmp1",
+                        "slot1": "inout:tmp1,input:b",
+                        "slot2": "input:tmp1,input:a,output_existing:out",
+                    }
+                elif config.dag_shape in NORMAL_GRAPH_DAG_SHAPES:
                     result["graph_task_arg_key"] = "normal_graph"
                     result["graph_lowering"] = "normal_graph"
                 else:

@@ -97,10 +97,11 @@
         "paired A100/H200 graph_descriptor_submits normal_graph smoke",
         "normal graph fork-join, chain, multi-fan-in, and layered-cross smoke shapes",
         "paired A100/H200 normal graph fork-join, chain, multi-fan-in, and layered-cross smokes",
+        "paired A100/H200 live C++ Orchestrator snapshot normal_graph smoke",
         "Qwen unit-math DAG task-array construction"
       ],
       "open_work": [
-        "paired A100/H200 evidence for live C++ Orchestrator snapshot inputs"
+        "malformed normal-graph lowering cases for live C++ Orchestrator snapshot inputs"
       ],
       "evidence_refs": [
         {
@@ -147,15 +148,19 @@
         {
           "path": ".agents/skills/cuda-backend-eval/scripts/cuda_persistent_smoke.py",
           "symbols": [
+            "CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE",
             "NORMAL_GRAPH_DAG_SHAPES",
             "graph_lowering",
+            "graph_source",
             "lower_normal_graph"
           ]
         },
         {
           "path": ".agents/skills/cuda-backend-eval/scripts/cuda_persistent_smoke_impl/normal_graph_shapes.py",
           "symbols": [
+            "CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE",
             "NORMAL_GRAPH_DAG_SHAPES",
+            "make_cpp_orchestrator_snapshot_submits",
             "make_normal_graph_nodes",
             "normal_graph_multi_fanin"
           ]
@@ -163,6 +168,7 @@
         {
           "path": ".agents/skills/cuda-backend-eval/scripts/cuda_pair_persistent_smoke.py",
           "symbols": [
+            "CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE",
             "_expected_graph_lowering",
             "normal_graph_chain",
             "normal_graph_fork_join",

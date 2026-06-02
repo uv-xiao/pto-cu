@@ -53,10 +53,12 @@ about scheduler mechanics and scene-test normal graph construction. Paired
 A100/H200 smoke now also validates the submit-chain normal graph boundary with
 `graph_lowering=normal_graph`, and the normal graph smoke matrix now covers
 fork-join, chain, multi-fan-in, and layered-cross shape construction with
-paired A100/H200 evidence for each shape. The remaining open work is normal
-PTO graph breadth for paired GPU evidence from live C++ orchestrator snapshot
-inputs, plus malformed normal-graph lowering cases for that live input path.
-It is not the scheduler launch, resource, lifecycle, error-taxonomy, shape
-breadth, C++ orchestrator snapshot capture, Python orchestration recording,
-`TaskArgs` tag conversion, tagged-submit lowering, or artifact-reporting
-mechanics already captured here.
+paired A100/H200 evidence for each shape. Paired A100/H200 smoke also
+validates `normal_graph_cpp_orchestrator_chain` with
+`graph_source=cpp_orchestrator_snapshot`, dispatch `[1,1,1]`, fan-in
+`[0,1,1]`, dependents `[1,2]`, and repeat-run completion on both GPUs. The
+remaining open work is malformed normal-graph lowering cases for that live
+input path. It is not the scheduler launch, resource, lifecycle,
+error-taxonomy, shape breadth, C++ orchestrator snapshot capture, Python
+orchestration recording, `TaskArgs` tag conversion, tagged-submit lowering,
+paired snapshot smoke, or artifact-reporting mechanics already captured here.

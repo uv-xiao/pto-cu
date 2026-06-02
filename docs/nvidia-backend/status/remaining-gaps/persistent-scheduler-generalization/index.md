@@ -10,10 +10,7 @@ the implemented-and-verified summary.
 
 The remaining backend gap is normal PTO graph breadth, not the core persistent
 scheduler mechanics. Before this gap can be closed, the CUDA backend still
-needs:
-
-- paired A100/H200 evidence for the live C++ orchestrator snapshot path;
-- malformed normal-graph coverage for live C++ snapshot inputs.
+needs malformed normal-graph coverage for live C++ snapshot inputs.
 
 The current scheduler-negative taxonomy is covered for the review scope:
 unsupported `func_id`, invalid dependent IDs, dependent range, fan-in
@@ -65,20 +62,24 @@ unit-math live example lowers PTO-style tagged submit records through
 `simpler_setup/cuda_pto_graph.py`. These prove builder-side dependency
 inference outside scene-test graph config and include live C++ task-slot
 capture.
+The paired artifact
+`tmp/cuda-backend/cpp-orchestrator-snapshot-paired-working/`
+`persistent-normal_graph_cpp_orchestrator_chain-repeat2-smoke-8513e1f5/`
+now validates a live C++ orchestrator snapshot input on A100 and H200. It
+requires `dag_shape=normal_graph_cpp_orchestrator_chain`,
+`graph_source=cpp_orchestrator_snapshot`, `graph_lowering=normal_graph`,
+dispatch `[1,1,1]`, fan-in `[0,1,1]`, dependents `[1,2]`, repeat completions
+`[3,3]`, and zero scheduler errors.
 
 ## Promotion Gate
 
-Close this gap only after normal PTO task graphs construct full
-persistent-device scheduler inputs from live hierarchical orchestrator
-snapshot inputs and the resulting backend-builder path runs through the paired
-A100/H200 smoke or benchmark harness. The normal-graph shape evidence above no
-longer relies on descriptor spellings, and the C++ snapshot plus
-`TaskArgs`/tagged-submit adapter proves the builder-side dependency rule.
+Close this gap only after malformed normal-graph lowering cases for live C++
+snapshot inputs have focused coverage. The normal-graph shape evidence above
+no longer relies on descriptor spellings, and the paired C++ snapshot smoke
+plus `TaskArgs`/tagged-submit adapter proves the builder-side dependency rule.
 
 ## Next Actions
 
-- Route the live C++ snapshot input into a paired A100/H200 smoke or benchmark
-  harness.
 - Add malformed normal-graph coverage for snapshot-originated inputs before
   removing this page from `status.md`.
 
