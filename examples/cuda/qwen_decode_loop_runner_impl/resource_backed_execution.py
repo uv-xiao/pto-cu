@@ -24,6 +24,7 @@ from qwen_decode_loop_runner_impl.launch_preflight import (
 )
 from qwen_decode_loop_runner_impl.logits_active_cols import (
     apply_logits_active_cols_override,
+    apply_projection_active_cols_override,
 )
 from qwen_decode_loop_runner_impl.resource_execution_policy import (
     resource_backed_execution_count,
@@ -77,6 +78,7 @@ def run_resource_backed_execution(
     worker_blocks: int = 1,
     logits_check_policy: str = "every_step",
     logits_active_cols: str | int | None = None,
+    projection_active_cols: str | int | None = None,
     numeric_task_mode: str = "diagnostic",
     prefill_prompt: bool = False,
 ) -> dict[str, Any]:
@@ -97,6 +99,12 @@ def run_resource_backed_execution(
         descriptors,
         max_task_count=max_task_count,
         task_selection=task_selection,
+    )
+    descriptors, projection_active_cols_policy = (
+        apply_projection_active_cols_override(
+            descriptors,
+            projection_active_cols,
+        )
     )
     descriptors, logits_active_cols_policy = apply_logits_active_cols_override(
         descriptors,
@@ -170,6 +178,7 @@ def run_resource_backed_execution(
         grid_dim=grid_dim,
         logits_check_policy=logits_check_policy,
         logits_active_cols_policy=logits_active_cols_policy,
+        projection_active_cols_policy=projection_active_cols_policy,
         numeric_task_mode=numeric_task_mode,
         prefill_prompt=prefill_prompt,
         repo_relative=repo_relative,

@@ -35,18 +35,12 @@ activation-workspace owners, Qwen submission descriptors, graph materialization,
 launch-packet preflight, bridge contracts, descriptor smoke execution, and a
 bounded resource-backed run covering task function ids 7100 through 7109.
 
-The artifact composes token pointer, KV-cache, and resident-weight owners into
-a decode-loop submission plan. It records owner open/materialize/submit/close
-ordering plus output-token accounting, and maps the owner-owned `a`, `b`,
-`out`, `c`, `d`, and `tensor_args` fields into the repeated proxy live runner.
-With `--run-unit-math-live`, it also executes the repeated unit-math
-diagnostic from the runner entry point and records the bridge summary. With
-`--token-cuda-live`, it opens the process-scoped token pointer-table owner in
-the runner. With `--kv-cuda-live`, it opens the full planned KV-cache owner
-in the runner. With `--resident-cuda-live`, it opens the resident weight-table
-owner and materializes 399 weight pointers for the submission plan. With
-`--workspace-cuda-live`, it allocates per-workload float32 activation buffers,
-a logits/sampling output buffer, and runtime-generated RoPE cos/sin tables.
+The artifact composes token pointer, KV-cache, resident-weight, and activation
+workspace owners into a decode-loop submission plan. It records owner
+open/materialize/submit/close ordering plus output-token accounting, and maps
+the owner-owned `a`, `b`, `out`, `c`, `d`, and `tensor_args` fields into the
+repeated proxy live runner. With `--run-unit-math-live`, it also executes the
+repeated unit-math diagnostic and records the bridge summary.
 The launch-packet preflight resolves `runtime_buffers.rope_cos_table` and
 `runtime_buffers.rope_sin_table` descriptor references into
 `CudaPersistentDagTask::tensor_args` entries before the workspace owner closes.
@@ -77,6 +71,11 @@ diagnostic vocabulary window. Use `--resource-backed-logits-active-cols full`
 to request the descriptor's full `cols` extent for focused evaluation runs, or
 pass a positive integer to test a wider bounded window without changing the
 generated device task body.
+Projection tasks have their own diagnostic active-column cap. Use
+`--resource-backed-projection-active-cols full` to request full descriptor
+`cols` for `qwen_attention_qkv`, `qwen_mlp_gate_up`, and `qwen_mlp_down`, or
+pass a positive integer for a bounded projection window. A full-Qwen
+correctness run must set both projection and logits active columns to full.
 The diagnostic logits projection reference samples generated logits across
 batch rows, not only the first row, and records `checked_row_count` in the raw
 artifact and compact resource-backed viewer rows. This is stronger diagnostic

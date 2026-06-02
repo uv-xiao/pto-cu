@@ -50,6 +50,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_resource_backed_full_rmsnorm_reduction",
     "qwen_resource_backed_weighted_elementwise_branches",
     "qwen_dynamic_rope_table_refresh",
+    "qwen_resource_backed_projection_active_cols_override",
 ]
 
 
@@ -90,6 +91,13 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Override qwen_logits active vocab columns; use a positive integer "
             "or 'full'. Defaults to descriptor scalar1."
+        ),
+    )
+    parser.add_argument(
+        "--resource-backed-projection-active-cols",
+        help=(
+            "Override qwen_attention_qkv and MLP projection active columns; "
+            "use a positive integer or 'full'. Defaults to descriptor scalar1."
         ),
     )
     parser.add_argument(
@@ -166,6 +174,9 @@ def main() -> None:
             args.resource_backed_logits_check_policy
         ),
         resource_backed_logits_active_cols=args.resource_backed_logits_active_cols,
+        resource_backed_projection_active_cols=(
+            args.resource_backed_projection_active_cols
+        ),
         resource_backed_numeric_task_mode=args.resource_backed_numeric_task_mode,
         resource_backed_prefill_prompt=args.resource_backed_prefill_prompt,
         arch=args.arch,

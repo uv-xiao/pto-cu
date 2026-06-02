@@ -8,10 +8,11 @@ with real tokenizer, resident safetensors, live activation buffers, KV cache,
 and device token feedback, but they still do not match the Hugging Face
 full-model reference token/logit path.
 
-The latest implementation narrows the gap by making `qwen_attention_o` compute
-head-level dot-product decode attention instead of per-channel diagnostic
-scores. This is still not enough to promote PTO rows to full-serving
-correctness.
+Recent implementation work narrows the gap by making `qwen_attention_o`
+compute head-level dot-product decode attention, matching Qwen split-half
+`rotate_half` RoPE, and exposing full projection-column execution for QKV and
+MLP projection tasks. This is still not enough to promote PTO rows to
+full-serving correctness.
 
 ## Current Evidence
 
@@ -29,6 +30,9 @@ Recent raw A100 evidence stays under `tmp/`:
   records the dot-product attention smoke with zero scheduler errors.
 - `tmp/cuda-backend/qwen-rotate-half-rope-full-descriptor-1step-mpk-2026-06-03/`
   records the rotate-half RoPE full-descriptor run with zero scheduler errors.
+- `tmp/cuda-backend/qwen-projection-full-first-layer-2026-06-03-default-cache/`
+  records first-layer full projection-column execution with zero scheduler
+  errors.
 - `tmp/cuda-backend/qwen-prefill-two-step-first-layer-2026-06-03/`
   records prompt-prefill to readout-only to full-DAG decode feedback.
 

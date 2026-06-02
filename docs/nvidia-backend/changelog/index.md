@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-03 Qwen full projection window](2026-06-03-qwen-full-projection-window.md)
 - [2026-06-03 Qwen rotate-half RoPE](2026-06-03-qwen-rotate-half-rope.md)
 - [2026-06-03 Qwen attention dot product](2026-06-03-qwen-attention-dot-product.md)
 - [2026-06-03 Qwen prefill two-step decode](2026-06-03-qwen-prefill-two-step-decode.md)

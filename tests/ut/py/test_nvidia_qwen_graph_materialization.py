@@ -31,6 +31,7 @@ from qwen_decode_loop_runner_impl.resource_backed_results import (  # noqa: E402
 )
 from qwen_decode_loop_runner_impl.logits_active_cols import (  # noqa: E402
     apply_logits_active_cols_override,
+    apply_projection_active_cols_override,
 )
 from qwen_decode_loop_runner_impl.resource_backed_execution import (  # noqa: E402
     prompt_prefill_descriptors,
@@ -1139,6 +1140,66 @@ def test_logits_active_cols_override_accepts_explicit_window():
     assert updated[0]["task_shape_fields"]["scalar1"] == 4096
 
 
+def test_projection_active_cols_override_targets_only_projection_callables():
+    descriptors = [
+        {
+            "id": "layer_0_attention_qkv",
+            "callable": "qwen_attention_qkv",
+            "task_shape_fields": {"cols": 6144, "scalar1": 1024},
+        },
+        {
+            "id": "layer_0_attention_o",
+            "callable": "qwen_attention_o",
+            "task_shape_fields": {"cols": 4096, "scalar1": 16},
+        },
+        {
+            "id": "layer_0_mlp_gate_up",
+            "callable": "qwen_mlp_gate_up",
+            "task_shape_fields": {"cols": 12288, "scalar1": 1024},
+        },
+        {
+            "id": "layer_0_mlp_down",
+            "callable": "qwen_mlp_down",
+            "task_shape_fields": {"cols": 4096, "scalar1": 1024},
+        },
+        {
+            "id": "logits",
+            "callable": "qwen_logits",
+            "task_shape_fields": {"cols": 151936, "scalar1": 1024},
+        },
+    ]
+
+    updated, policy = apply_projection_active_cols_override(descriptors, "full")
+
+    assert policy == {
+        "mode": "full_descriptor_cols",
+        "requested_active_cols": "full",
+        "applied_scalar1_values": [
+            {
+                "callable": "qwen_attention_qkv",
+                "id": "layer_0_attention_qkv",
+                "scalar1": 6144,
+            },
+            {
+                "callable": "qwen_mlp_gate_up",
+                "id": "layer_0_mlp_gate_up",
+                "scalar1": 12288,
+            },
+            {
+                "callable": "qwen_mlp_down",
+                "id": "layer_0_mlp_down",
+                "scalar1": 4096,
+            },
+        ],
+    }
+    assert descriptors[0]["task_shape_fields"]["scalar1"] == 1024
+    assert updated[0]["task_shape_fields"]["scalar1"] == 6144
+    assert updated[1] is descriptors[1]
+    assert updated[2]["task_shape_fields"]["scalar1"] == 12288
+    assert updated[3]["task_shape_fields"]["scalar1"] == 4096
+    assert updated[4] is descriptors[4]
+
+
 def test_qwen_weight_descriptors_emit_callable_shape_fields():
     bindings = {
         "model.embed_tokens.weight": {"slot_id": 0},
@@ -1422,6 +1483,7 @@ def test_resource_backed_execution_reports_task_coverage():
         grid_dim=9,
         logits_check_policy="final_step",
         logits_active_cols_policy={"mode": "descriptor_default"},
+        projection_active_cols_policy={"mode": "descriptor_default"},
         numeric_task_mode="unit_math_full_rmsnorm",
         prefill_prompt=False,
         repo_relative=lambda path: str(path),
@@ -1431,6 +1493,9 @@ def test_resource_backed_execution_reports_task_coverage():
         "task_count": 10,
         "func_id_sequence": list(range(7100, 7110)),
         "callables": callables,
+    }
+    assert result["repeat_policy"]["projection_active_cols_policy"] == {
+        "mode": "descriptor_default",
     }
 
 
