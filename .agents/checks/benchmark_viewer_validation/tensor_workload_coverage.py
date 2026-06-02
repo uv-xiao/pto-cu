@@ -98,11 +98,15 @@ def validate_model_shape_targets(
         "triton",
         "thunderkittens",
     }
+    import_smoke_count = 0
     for target in targets:
         owner = f"tensor workload model shape target {target.get('id')}"
         validate_id(require_string(target, "id", owner), owner)
-        for key in ("title", "status", "model_mapping", "run_command"):
+        for key in ("title", "model_mapping", "run_command"):
             require_string(target, key, owner)
+        status = require_string(target, "status", owner)
+        if status not in {"planned_shape_target", "local_import_smoke"}:
+            fail(f"{owner} has invalid status: {status}")
         tile = require_dict(target, "tensor_tile", owner)
         rows = require_positive_int(tile, "rows", owner)
         cols = require_positive_int(tile, "cols", owner)
@@ -126,8 +130,13 @@ def validate_model_shape_targets(
                 f"{owner} references unknown viewer methods: "
                 f"{sorted(missing_methods)}"
             )
-        validate_import_smoke(target, owner, methods, root)
+        has_import_smoke = validate_import_smoke(target, owner, methods, root)
+        if status == "local_import_smoke" and not has_import_smoke:
+            fail(f"{owner} local_import_smoke status lacks import_smoke")
+        import_smoke_count += int(has_import_smoke)
         check_evidence_refs(target, owner, root)
+    if import_smoke_count < 2:
+        fail("tensor workload coverage needs two model-shape import smokes")
 
 
 def validate_import_smoke(
@@ -135,10 +144,10 @@ def validate_import_smoke(
     owner: str,
     required_methods: set[str],
     root: Path,
-) -> None:
+) -> bool:
     smoke = target.get("import_smoke")
     if smoke is None:
-        return
+        return False
     if not isinstance(smoke, dict):
         fail(f"{owner} import_smoke is not an object")
     status = require_string(smoke, "status", owner)
@@ -169,6 +178,7 @@ def validate_import_smoke(
             statistic.get("sample_count") != sample_count
         ):
             fail(f"{owner} import_smoke sample count mismatch")
+    return True
 
 
 def require_positive_int(record: dict[str, Any], key: str, owner: str) -> int:
