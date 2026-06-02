@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Paper queue BF16 sync](2026-06-02-paper-queue-bf16-sync.md)
 - [2026-06-02 Qwen BF16 task ABI](2026-06-02-qwen-bf16-task-abi.md)
 - [2026-06-02 Qwen weight tensor metadata](2026-06-02-qwen-weight-tensor-metadata.md)
 - [2026-06-02 Qwen weight descriptor shapes](2026-06-02-qwen-weight-descriptor-shapes.md)
