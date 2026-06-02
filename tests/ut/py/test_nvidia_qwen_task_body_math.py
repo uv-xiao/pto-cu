@@ -166,10 +166,25 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     )
     assert "acc += task->a[a_index] *" in full_source
     assert "pto_cuda_tensor_arg_f32(task, 0U, weight_index, 0.0f)" in full_source
-    assert "for (unsigned int token = 1; token < task->cols; ++token)" in (
+    assert "for (unsigned int token = 1; token < task->cols; ++token)" not in (
         full_source
     )
     assert "sampled_tokens" not in full_source
+    logits = next(
+        item
+        for item in manifest["task_bodies"]
+        if item["callable"] == "qwen_logits"
+    )
+    assert logits["threading"] == "block"
+    assert "__shared__ float logits_best_values[1024];" in full_source
+    assert "__shared__ unsigned int logits_best_tokens[1024];" in full_source
+    assert "for (unsigned int token = threadIdx.x; token < task->cols;" in (
+        full_source
+    )
+    assert "if (candidate > local_best_logit)" in full_source
+    assert "logits_best_values[threadIdx.x] = local_best_logit;" in full_source
+    assert "logits_best_values[threadIdx.x + stride] >" in full_source
+    assert "output_ids[decode_step] = logits_best_tokens[0];" in full_source
     assert "output_ids[decode_step] = best_token;" in full_source
     assert "input_ids[0] = best_token;" in full_source
     assert "qwen_unit_math_source_coverage" in manifest["implemented_contracts"]

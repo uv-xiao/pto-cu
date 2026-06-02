@@ -265,6 +265,7 @@ what evaluation ran, and what evidence proves the claim.
 - [2026-06-02 Qwen VDCores unit numeric branches](2026-06-02-qwen-vdcores-unit-numeric.md)
 - [2026-06-02 Qwen VDCores RMSNorm scale bridge](2026-06-02-qwen-vdcores-rmsnorm-scale.md)
 - [2026-06-02 Qwen VDCores weighted elementwise bridge](2026-06-02-qwen-vdcores-weighted-elementwise.md)
+- [2026-06-02 Qwen logits block argmax](2026-06-02-qwen-logits-block-argmax.md)
 - [2026-06-02 Paper work queue evidence summary](2026-06-02-paper-work-queue-evidence-summary.md)
 - [2026-06-01 Qwen KV-cache binding](2026-06-01-qwen-kv-cache-binding.md)
 - [2026-06-01 Qwen token pointer table](2026-06-01-qwen-token-pointer-table.md)
