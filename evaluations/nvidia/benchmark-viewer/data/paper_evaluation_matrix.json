@@ -834,45 +834,7 @@
         },
         {
           "kind": "raw_artifact",
-          "path": "tmp/cuda-backend/pto-serving-resource-backed-vdcores-full-decode-2026-06-02/qwen-decode-loop-runner.json",
-          "symbols": [
-            "pto_qwen_resource_backed_execution",
-            "qwen_resource_backed_diagnostic_execution",
-            "qwen_resource_backed_decode_step_execution",
-            "qwen_diagnostic_decode_token_feedback",
-            "qwen_device_decode_token_feedback",
-            "diagnostic_resource_backed_qwen_dag",
-            "repeat_runs",
-            "partial_logits_not_full_vocab",
-            "full_logits_buffer_prefix_sampled",
-            "full_logits_buffer_checked",
-            "final_step_logits_check_policy",
-            "diagnostic_qwen_logits_formula",
-            "logits_summary_stable"
-          ]
-        },
-        {
-          "kind": "raw_artifact",
           "path": "tmp/cuda-backend/pto-serving-resource-backed-mpk-full-decode-2026-06-02/qwen-decode-loop-runner.json",
-          "symbols": [
-            "pto_qwen_resource_backed_execution",
-            "qwen_resource_backed_diagnostic_execution",
-            "qwen_resource_backed_decode_step_execution",
-            "qwen_diagnostic_decode_token_feedback",
-            "qwen_device_decode_token_feedback",
-            "diagnostic_resource_backed_qwen_dag",
-            "repeat_runs",
-            "partial_logits_not_full_vocab",
-            "full_logits_buffer_prefix_sampled",
-            "full_logits_buffer_checked",
-            "final_step_logits_check_policy",
-            "diagnostic_qwen_logits_formula",
-            "logits_summary_stable"
-          ]
-        },
-        {
-          "kind": "raw_artifact",
-          "path": "tmp/cuda-backend/pto-serving-resource-backed-mpk-1024-decode-2026-06-02/qwen-decode-loop-runner.json",
           "symbols": [
             "pto_qwen_resource_backed_execution",
             "qwen_resource_backed_diagnostic_execution",
@@ -1082,30 +1044,6 @@
         },
         {
           "kind": "raw_artifact",
-          "path": "tmp/cuda-backend/pto-serving-decode-loop-policy-sampled-ref-5948323b/",
-          "symbols": [
-            "pto_qwen_resource_backed_execution",
-            "qwen_resource_backed_diagnostic_execution",
-            "qwen_resource_backed_decode_step_execution",
-            "qwen_resource_backed_policy_length_decode_execution",
-            "qwen_diagnostic_decode_token_feedback",
-            "qwen_device_decode_token_feedback",
-            "qwen_resource_backed_unit_numeric_task_mode",
-            "qwen_resource_backed_external_rmsnorm_scale",
-            "qwen_resource_backed_full_rmsnorm_reduction",
-            "qwen_resource_backed_weighted_elementwise_branches",
-            "diagnostic_resource_backed_qwen_dag",
-            "repeat_runs",
-            "partial_logits_not_full_vocab",
-            "full_logits_buffer_prefix_sampled",
-            "full_logits_buffer_checked",
-            "final_step_logits_check_policy",
-            "diagnostic_qwen_tiled_vocab_projection",
-            "logits_summary_stable"
-          ]
-        },
-        {
-          "kind": "raw_artifact",
           "path": "tmp/cuda-backend/qwen-projection-bounded/qwen-mpk-full-dag-live.json",
           "symbols": [
             "pto_qwen_resource_backed_execution",
@@ -1131,6 +1069,30 @@
         {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/qwen-projection-bounded/qwen-vdcores-full-dag-live.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "qwen_resource_backed_policy_length_decode_execution",
+            "qwen_diagnostic_decode_token_feedback",
+            "qwen_device_decode_token_feedback",
+            "qwen_resource_backed_unit_numeric_task_mode",
+            "qwen_resource_backed_external_rmsnorm_scale",
+            "qwen_resource_backed_full_rmsnorm_reduction",
+            "qwen_resource_backed_weighted_elementwise_branches",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "final_step_logits_check_policy",
+            "diagnostic_qwen_tiled_vocab_projection",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-decode-loop-policy-sampled-ref-5948323b/",
           "symbols": [
             "pto_qwen_resource_backed_execution",
             "qwen_resource_backed_diagnostic_execution",

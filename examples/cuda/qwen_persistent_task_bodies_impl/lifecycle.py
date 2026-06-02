@@ -494,6 +494,11 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
                 "threading": function.threading,
                 "consumes_fields": spec["consumes_fields"],
                 "consumes_roles": spec["consumes_roles"],
+                **(
+                    {"decode_feedback_scope": spec["decode_feedback_scope"]}
+                    if "decode_feedback_scope" in spec
+                    else {}
+                ),
             }
             for function, spec in zip(functions, specs, strict=True)
         ],

@@ -23,6 +23,11 @@ from viewer_data_io import write_json as write_viewer_json
 VIEWER_DATA = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 DEFAULT_RESULTS = VIEWER_DATA / "results.json"
 DEFAULT_MATRIX = VIEWER_DATA / "paper_evaluation_matrix.json"
+DECODE_FEEDBACK_SCOPE = "single_sequence_row0_greedy_argmax"
+FEEDBACK_STATUSES_WITH_KNOWN_SCOPE = {
+    "diagnostic_token_feedback_applied",
+    "device_token_feedback_observed",
+}
 
 
 def write_json(path: Path, payload: Any) -> None:
@@ -153,6 +158,7 @@ def build_result_records(
                         "status",
                         "not_recorded",
                     ),
+                    "decode_feedback_scope": decode_feedback_scope(decode_feedback),
                     "decode_feedback_applied_step_count": int(
                         decode_feedback.get("applied_step_count", 0),
                     ),
@@ -206,6 +212,14 @@ def correctness_status(
     if reference_status in {None, "not_recorded", "not_checked"}:
         return "pass"
     return "pass" if reference_status == "pass" else "fail"
+
+
+def decode_feedback_scope(decode_feedback: dict[str, Any]) -> str:
+    if decode_feedback.get("scope"):
+        return str(decode_feedback["scope"])
+    if decode_feedback.get("status") in FEEDBACK_STATUSES_WITH_KNOWN_SCOPE:
+        return DECODE_FEEDBACK_SCOPE
+    return "not_recorded"
 
 
 def result_key(record: dict[str, Any]) -> tuple[str, str, str, str, str]:

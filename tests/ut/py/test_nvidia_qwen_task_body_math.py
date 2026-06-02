@@ -79,6 +79,20 @@ def test_task_body_manifest_tracks_qwen_unit_math_oracle():
     ]
 
 
+def test_logits_task_body_declares_single_sequence_feedback_scope():
+    module = load_task_bodies_module()
+
+    manifest = module.build_task_body_manifest(num_hidden_layers=1)
+    logits = next(
+        item for item in manifest["task_bodies"] if item["callable"] == "qwen_logits"
+    )
+
+    assert logits["decode_feedback_scope"] == "single_sequence_row0_greedy_argmax"
+    assert "qwen_logits_device_sampled_token_feedback_source" in manifest[
+        "implemented_contracts"
+    ]
+
+
 def test_generated_source_contains_qwen_unit_math_kernels():
     module = load_task_bodies_module()
     sys.path.insert(0, str(ROOT / "examples" / "cuda"))

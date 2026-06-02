@@ -7,6 +7,7 @@ from typing import Any
 
 
 I32_BYTES = ctypes.sizeof(ctypes.c_int32)
+DECODE_FEEDBACK_SCOPE = "single_sequence_row0_greedy_argmax"
 
 
 def apply_decode_feedback(
@@ -46,6 +47,7 @@ def apply_decode_feedback(
         "next_input_index": 0,
         "next_input_value": read_i32(session, input_ptr, 0, "next_input_id"),
         "policy": "host_commits_diagnostic_sampled_token_for_next_step",
+        "scope": DECODE_FEEDBACK_SCOPE,
     }
 
 
@@ -80,6 +82,7 @@ def observed_device_feedback(
         "next_input_index": 0,
         "next_input_value": input_value,
         "policy": "device_commits_diagnostic_sampled_token_for_next_step",
+        "scope": DECODE_FEEDBACK_SCOPE,
     }
 
 
@@ -152,6 +155,7 @@ def feedback_summary(repeat_results: list[dict[str, Any]]) -> dict[str, Any]:
         "step_count": len(feedback),
         "sampled_token_ids": [int(item["sampled_token_id"]) for item in applied],
         "policy": feedback_policy(applied),
+        "scope": feedback_scope(applied),
     }
 
 
@@ -160,3 +164,10 @@ def feedback_policy(applied: list[dict[str, Any]]) -> str:
     if policies == {"device_commits_diagnostic_sampled_token_for_next_step"}:
         return "device_commits_diagnostic_sampled_token_for_next_step"
     return "host_commits_diagnostic_sampled_token_for_next_step"
+
+
+def feedback_scope(applied: list[dict[str, Any]]) -> str:
+    scopes = {item.get("scope") for item in applied if item.get("scope")}
+    if scopes == {DECODE_FEEDBACK_SCOPE}:
+        return DECODE_FEEDBACK_SCOPE
+    return "mixed_or_unrecorded"

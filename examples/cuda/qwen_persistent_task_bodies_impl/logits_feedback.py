@@ -9,6 +9,7 @@ def qwen_logits_spec() -> dict[str, Any]:
     return {
         "callable": "qwen_logits",
         "phase": "per_token_decode",
+        "decode_feedback_scope": "single_sequence_row0_greedy_argmax",
         "consumes_fields": ["a", "out", "tensor_args", "scalar_args"],
         "consumes_roles": [
             "hidden_state",

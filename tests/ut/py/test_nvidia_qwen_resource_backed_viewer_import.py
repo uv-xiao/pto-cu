@@ -167,6 +167,10 @@ def test_resource_backed_importer_emits_diagnostic_rows():
             "device_token_feedback_observed",
             "not_recorded",
         }
+        if record["statistic"]["decode_feedback_status"] != "not_recorded":
+            assert record["statistic"]["decode_feedback_scope"] == (
+                "single_sequence_row0_greedy_argmax"
+            )
         assert record["statistic"]["logits_check_policy"] in {
             "every_step",
             "final_step",
