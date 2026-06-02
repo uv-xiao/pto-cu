@@ -20,6 +20,12 @@ from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
 from qwen_persistent_weight_materialization_impl.materializer import (  # noqa: E402
     materialized_descriptor,
 )
+from qwen_persistent_weight_args_impl.descriptors import (  # noqa: E402
+    build_task_descriptors,
+)
+from qwen_persistent_weight_args_impl.shape_contract import (  # noqa: E402
+    QwenTaskShape,
+)
 
 
 def test_launch_packet_preflight_packs_resource_backed_task_records():
@@ -272,6 +278,64 @@ def test_materialized_weight_descriptor_preserves_task_shape_fields():
         "rows": 16,
         "cols": 4096,
         "inner": 4096,
+    }
+
+
+def test_qwen_weight_descriptors_emit_callable_shape_fields():
+    bindings = {
+        "model.embed_tokens.weight": {"slot_id": 0},
+        "model.layers.0.input_layernorm.weight": {"slot_id": 1},
+        "model.layers.0.self_attn.q_proj.weight": {"slot_id": 2},
+        "model.layers.0.self_attn.k_proj.weight": {"slot_id": 3},
+        "model.layers.0.self_attn.v_proj.weight": {"slot_id": 4},
+        "model.layers.0.self_attn.q_norm.weight": {"slot_id": 5},
+        "model.layers.0.self_attn.k_norm.weight": {"slot_id": 6},
+        "model.layers.0.self_attn.o_proj.weight": {"slot_id": 7},
+        "model.layers.0.post_attention_layernorm.weight": {"slot_id": 8},
+        "model.layers.0.mlp.gate_proj.weight": {"slot_id": 9},
+        "model.layers.0.mlp.up_proj.weight": {"slot_id": 10},
+        "model.layers.0.mlp.down_proj.weight": {"slot_id": 11},
+        "model.norm.weight": {"slot_id": 12},
+        "lm_head.weight": {"slot_id": 13},
+    }
+    model_shape = QwenTaskShape(
+        hidden_size=4,
+        intermediate_size=8,
+        vocab_size=16,
+        num_attention_heads=2,
+        num_key_value_heads=1,
+        head_dim=2,
+    )
+
+    descriptors = {
+        item["id"]: item
+        for item in build_task_descriptors(
+            bindings=bindings,
+            num_hidden_layers=1,
+            model_shape=model_shape,
+        )
+    }
+
+    assert descriptors["layer_0_attention_qkv"]["task_shape_fields"] == {
+        "cols": 8,
+        "inner": 4,
+        "lda": 4,
+        "ldb": 4,
+        "ldc": 8,
+    }
+    assert descriptors["layer_0_mlp_down"]["task_shape_fields"] == {
+        "cols": 4,
+        "inner": 8,
+        "lda": 8,
+        "ldb": 8,
+        "ldc": 4,
+    }
+    assert descriptors["logits"]["task_shape_fields"] == {
+        "cols": 16,
+        "inner": 4,
+        "lda": 4,
+        "ldb": 4,
+        "ldc": 16,
     }
 
 

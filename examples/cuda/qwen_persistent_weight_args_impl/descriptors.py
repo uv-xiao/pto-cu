@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .shape_contract import QWEN3_8B_TASK_SHAPE, QwenTaskShape, task_shape_fields
+
 
 def layer_tensor(layer: int, suffix: str) -> str:
     return f"model.layers.{layer}.{suffix}.weight"
@@ -42,6 +44,7 @@ def descriptor(
     phase: str,
     tensors: list[str],
     bindings: dict[str, dict[str, Any]],
+    model_shape: QwenTaskShape = QWEN3_8B_TASK_SHAPE,
 ) -> dict[str, Any]:
     tensor_args = tensor_arg_records(tensors, bindings)
     missing = [
@@ -49,7 +52,7 @@ def descriptor(
         for item in tensor_args
         if item.get("status") == "missing_weight_binding"
     ]
-    return {
+    record = {
         "id": descriptor_id,
         "callable": callable_name,
         "phase": phase,
@@ -58,12 +61,17 @@ def descriptor(
         "status": "ready" if not missing else "missing_weight_binding",
         "missing_tensors": missing,
     }
+    fields = task_shape_fields(callable_name, model_shape)
+    if fields:
+        record["task_shape_fields"] = fields
+    return record
 
 
 def layer_descriptors(
     *,
     layer: int,
     bindings: dict[str, dict[str, Any]],
+    model_shape: QwenTaskShape = QWEN3_8B_TASK_SHAPE,
 ) -> list[dict[str, Any]]:
     prefix = f"layer_{layer}"
     return [
@@ -73,6 +81,7 @@ def layer_descriptors(
             phase="per_layer_decode",
             tensors=[layer_tensor(layer, "input_layernorm")],
             bindings=bindings,
+            model_shape=model_shape,
         ),
         descriptor(
             descriptor_id=f"{prefix}_attention_qkv",
@@ -84,6 +93,7 @@ def layer_descriptors(
                 layer_tensor(layer, "self_attn.v_proj"),
             ],
             bindings=bindings,
+            model_shape=model_shape,
         ),
         descriptor(
             descriptor_id=f"{prefix}_attention_qk_norm",
@@ -94,6 +104,7 @@ def layer_descriptors(
                 layer_tensor(layer, "self_attn.k_norm"),
             ],
             bindings=bindings,
+            model_shape=model_shape,
         ),
         descriptor(
             descriptor_id=f"{prefix}_attention_o",
@@ -101,6 +112,7 @@ def layer_descriptors(
             phase="per_layer_decode",
             tensors=[layer_tensor(layer, "self_attn.o_proj")],
             bindings=bindings,
+            model_shape=model_shape,
         ),
         descriptor(
             descriptor_id=f"{prefix}_post_attention_norm",
@@ -108,6 +120,7 @@ def layer_descriptors(
             phase="per_layer_decode",
             tensors=[layer_tensor(layer, "post_attention_layernorm")],
             bindings=bindings,
+            model_shape=model_shape,
         ),
         descriptor(
             descriptor_id=f"{prefix}_mlp_gate_up",
@@ -118,6 +131,7 @@ def layer_descriptors(
                 layer_tensor(layer, "mlp.up_proj"),
             ],
             bindings=bindings,
+            model_shape=model_shape,
         ),
         descriptor(
             descriptor_id=f"{prefix}_mlp_down",
@@ -125,6 +139,7 @@ def layer_descriptors(
             phase="per_layer_decode",
             tensors=[layer_tensor(layer, "mlp.down_proj")],
             bindings=bindings,
+            model_shape=model_shape,
         ),
     ]
 
@@ -133,6 +148,7 @@ def build_task_descriptors(
     *,
     bindings: dict[str, dict[str, Any]],
     num_hidden_layers: int,
+    model_shape: QwenTaskShape = QWEN3_8B_TASK_SHAPE,
 ) -> list[dict[str, Any]]:
     descriptors = [
         descriptor(
@@ -141,10 +157,17 @@ def build_task_descriptors(
             phase="prefill_or_decode_input",
             tensors=["model.embed_tokens.weight"],
             bindings=bindings,
+            model_shape=model_shape,
         )
     ]
     for layer in range(num_hidden_layers):
-        descriptors.extend(layer_descriptors(layer=layer, bindings=bindings))
+        descriptors.extend(
+            layer_descriptors(
+                layer=layer,
+                bindings=bindings,
+                model_shape=model_shape,
+            )
+        )
     descriptors.extend(
         [
             descriptor(
@@ -153,6 +176,7 @@ def build_task_descriptors(
                 phase="per_token_decode",
                 tensors=["model.norm.weight"],
                 bindings=bindings,
+                model_shape=model_shape,
             ),
             descriptor(
                 descriptor_id="logits",
@@ -160,6 +184,7 @@ def build_task_descriptors(
                 phase="per_token_decode",
                 tensors=["lm_head.weight"],
                 bindings=bindings,
+                model_shape=model_shape,
             ),
         ]
     )

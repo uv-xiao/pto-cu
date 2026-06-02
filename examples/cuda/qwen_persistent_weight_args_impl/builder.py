@@ -13,6 +13,7 @@ from .common import (
 )
 from .descriptors import build_task_descriptors
 from .loaders import binding_map, load_or_build_weight_binding
+from .shape_contract import QWEN3_8B_TASK_SHAPE, shape_contract_payload
 
 
 def build_weight_arg_manifest(
@@ -50,6 +51,7 @@ def build_weight_arg_manifest(
     complete = not missing and not uncovered_bindings and capacity_ok
     implemented_contracts = [
         "qwen_weight_task_decomposition",
+        "qwen_task_shape_field_contract",
         "persistent_dag_tensor_arg_capacity_check",
     ]
     if complete:
@@ -74,6 +76,7 @@ def build_weight_arg_manifest(
             "tensor_arg_capacity": TENSOR_ARG_CAPACITY,
         },
         "num_hidden_layers": num_hidden_layers,
+        "task_shape_contract": shape_contract_payload(QWEN3_8B_TASK_SHAPE),
         "task_arg_descriptor_count": len(descriptors),
         "task_arg_descriptors": descriptors,
         "covered_tensor_count": len(covered),
