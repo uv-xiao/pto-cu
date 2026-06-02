@@ -61,6 +61,18 @@ def test_task_body_manifest_tracks_qwen_unit_math_oracle():
         0.302409,
         -0.378139,
     ]
+    proxy_oracle = manifest["numeric_oracle"]
+    proxy_mlp = next(
+        item
+        for item in proxy_oracle["sample_outputs"]
+        if item["callable"] == "qwen_mlp_gate_up"
+    )
+    assert proxy_mlp["expected_out"] == [
+        0.365529,
+        2.642391,
+        7.144306,
+        13.748193,
+    ]
     assert "qwen_unit_math_oracle" in manifest["implemented_contracts"]
     assert "cuda_live_qwen_unit_math_execution" in manifest[
         "remaining_runtime_gaps"

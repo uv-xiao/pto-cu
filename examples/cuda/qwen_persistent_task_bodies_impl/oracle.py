@@ -102,11 +102,12 @@ def _rmsnorm_post_attention(inputs: dict[str, Any]) -> list[float]:
 
 
 def _mlp_gate_up(inputs: dict[str, Any]) -> list[float]:
-    return [
-        value * _weight(inputs, 0, index, 1.0)
-        + _weight(inputs, 1, index, 0.0)
-        for index, value in enumerate(inputs["a"])
-    ]
+    expected = []
+    for index, value in enumerate(inputs["a"]):
+        gate = _weight(inputs, 0, index, value)
+        up = _weight(inputs, 1, index, value)
+        expected.append(gate / (1.0 + math.exp(-gate)) * up)
+    return expected
 
 
 def _mlp_down(inputs: dict[str, Any]) -> list[float]:

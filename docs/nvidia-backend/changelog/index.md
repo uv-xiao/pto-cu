@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen MLP oracle correction](2026-06-02-qwen-mlp-oracle-correction.md)
 - [2026-06-02 PTO serving preflight split](2026-06-02-pto-serving-preflight-split.md)
 - [2026-06-02 PTO full-serving viewer import](2026-06-02-pto-full-serving-viewer-import.md)
 - [2026-06-02 Paper audit required workloads](2026-06-02-paper-audit-required-workloads.md)
