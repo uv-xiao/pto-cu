@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 from typing import Any
 
 from paper_serving_command_plan_impl.paths import path_from_cwd
@@ -68,7 +69,9 @@ def vdcores_commands(
 ) -> list[dict[str, str]]:
     del model
     decode_tokens = policy["decode_policy"]["decode_tokens"]
-    raw_json = f"{out_dir}/vdcores-decode-batch{batch_size}.json"
+    raw_log = f"{out_dir}/vdcores-decode-batch{batch_size}.log"
+    raw_log_path = path_from_cwd(raw_log, "tmp/baselines/vdcores")
+    raw_log_dir = PurePosixPath(raw_log_path).parent.as_posix()
     command = shell_join(
         [
             "python",
@@ -85,16 +88,21 @@ def vdcores_commands(
         {
             "kind": "decode_benchmark",
             "command": (
-                "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 "
+                "cd tmp/baselines/vdcores && "
+                + shell_join(["mkdir", "-p", raw_log_dir])
+                + " && HF_TOKEN= HF_HUB_OFFLINE=1 "
                 "TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 "
             )
-            + command,
-            "raw_artifact": raw_json,
+            + command
+            + " 2>&1 | "
+            + shell_join(["tee", raw_log_path]),
+            "raw_artifact": raw_log,
             "note": (
                 "Current VDCores Qwen3-8B path fixes part of the internal "
                 "batch policy; batch_size remains the paper policy target "
                 "until a full serving harness records actual scheduled "
-                "request count."
+                "request count. The raw artifact is a captured log until "
+                "VDCores exposes machine-readable benchmark output."
             ),
         }
     ]

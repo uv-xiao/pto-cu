@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at_utc": "2026-06-01T06:45:37.135958+00:00",
-    "pto_commit": "b6df049f",
+    "generated_at_utc": "2026-06-02T03:06:41.217582+00:00",
+    "pto_commit": "c0262a0a",
     "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs",
     "model_tier": "primary",
     "source_files": [

@@ -12,9 +12,9 @@
   "commands": [
     {
       "kind": "decode_benchmark",
-      "command": "cd tmp/baselines/vdcores && HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir '<shared-hf-cache>/hub' -N 64 --bench 1",
-      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vdcores/vdcores_offline_decode/vdcores-decode-batch1.json",
-      "note": "Current VDCores Qwen3-8B path fixes part of the internal batch policy; batch_size remains the paper policy target until a full serving harness records actual scheduled request count."
+      "command": "cd tmp/baselines/vdcores && mkdir -p ../../cuda-backend/paper-baselines/serving-runs/vdcores/vdcores_offline_decode && HF_TOKEN= HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 CUDA_VISIBLE_DEVICES=0 python app/python/qwen3/sched.py --hf-cache-dir '<shared-hf-cache>/hub' -N 64 --bench 1 2>&1 | tee ../../cuda-backend/paper-baselines/serving-runs/vdcores/vdcores_offline_decode/vdcores-decode-batch1.log",
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/vdcores/vdcores_offline_decode/vdcores-decode-batch1.log",
+      "note": "Current VDCores Qwen3-8B path fixes part of the internal batch policy; batch_size remains the paper policy target until a full serving harness records actual scheduled request count. The raw artifact is a captured log until VDCores exposes machine-readable benchmark output."
     }
   ]
 }

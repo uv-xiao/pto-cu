@@ -7,6 +7,7 @@ what evaluation ran, and what evidence proves the claim.
 ## Reports
 
 - [2026-06-02 paper baseline source provenance guard](2026-06-02-paper-baseline-source-provenance-guard.md)
+- [2026-06-02 serving command artifact guard](2026-06-02-serving-command-artifact-guard.md)
 - [2026-06-02 paper work queue rendering guard](2026-06-02-paper-work-queue-rendering-guard.md)
 - [2026-06-02 CUDA example review-doc guard](2026-06-02-cuda-example-review-doc-guard.md)
 - [2026-06-02 remaining gap promotion guard](2026-06-02-remaining-gap-promotion-guard.md)

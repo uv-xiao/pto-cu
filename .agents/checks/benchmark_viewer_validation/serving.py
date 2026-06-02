@@ -1,10 +1,23 @@
 from __future__ import annotations
 
 from pathlib import Path
+from pathlib import PurePosixPath
 from typing import Any
 
 from .common import *  # noqa: F403
 from .evidence import *  # noqa: F403
+
+
+def command_mentions_artifact(command_text: str, raw_artifact: str) -> bool:
+    path = PurePosixPath(raw_artifact)
+    return (
+        raw_artifact in command_text
+        or raw_artifact.removeprefix("tmp/") in command_text
+        or (
+            path.parent.as_posix() in command_text
+            and path.name in command_text
+        )
+    )
 
 
 def validate_serving_workloads(data: dict[str, Any], root: Path) -> set[str]:
@@ -193,6 +206,11 @@ def validate_serving_command_plan(
                 "tmp/"
             ):
                 fail(f"{owner} raw_artifact must be under tmp/")
+            expected_prefix = f"{artifact_root}/{baseline_id}/{workload_id}/"
+            if not raw_artifact.startswith(expected_prefix):
+                fail(f"{owner} raw_artifact must be under {expected_prefix}")
+            if not command_mentions_artifact(command["command"], raw_artifact):
+                fail(f"{owner} command does not mention raw_artifact")
             raw_artifact_count += 1
         if raw_artifact_count == 0:
             fail(f"{owner} has no raw_artifact-producing command")
@@ -204,5 +222,3 @@ def validate_serving_command_plan(
             "serving command plan coverage mismatch; "
             f"missing={missing}, extra={extra}"
         )
-
-
