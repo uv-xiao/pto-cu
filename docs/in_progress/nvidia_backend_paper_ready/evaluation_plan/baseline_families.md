@@ -261,6 +261,12 @@ materialization. The repo-owned PTO CUDA path still lacks numerically correct
 Qwen kernel bodies, full `cuda_live` decode-loop execution, and full-serving
 `viewer_result_import`, so no PTO `Qwen/Qwen3-8B` full-serving row can be
 imported yet.
+The PTO preflight checks the promotion gate per row: the row must be
+`llm_serving_decode` / `pto_persistent_device`, name `Qwen/Qwen3-8B`, use
+`statistic.serving_coverage=full_serving`, pass correctness, include the MPK
+or VDCores serving workload ID, and carry latency plus throughput metrics.
+Both `mpk_offline_decode` and `vdcores_offline_decode` rows are required before
+the PTO full-serving evidence item can pass.
 Every serving baseline run record must reference one of these policy IDs and
 require both `model_and_prompt_shape` and `batch_or_concurrency_policy` before
 it can be imported. Imported rows must record actual tokenizer counts, model
@@ -272,4 +278,3 @@ full-serving paper comparison. `controlled_attention_tile_proxy`,
 `diagnostic_unit_math`, `diagnostic_microdecode`, and `native_bringup` rows
 remain useful evidence, but they cannot close the PTO, VDCores, or
 ThunderKittens full-serving gaps.
-

@@ -11,6 +11,24 @@ DOC_ROOT = ROOT / "docs" / "nvidia-backend"
 VIEWER_ROOT = DOC_ROOT / "benchmark-viewer"
 
 
+def load_pto_serving_preflight_module():
+    script_path = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "pto_serving_preflight.py"
+    )
+    spec = importlib.util.spec_from_file_location("pto_serving_preflight", script_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def load_viewer_collection(path):
     if path.is_dir():
         index = json.loads((path / "index.json").read_text(encoding="utf-8"))
@@ -615,6 +633,20 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
     assert checks["qwen_decode_loop_runner"]["status"] == "pass"
     assert checks["qwen_persistent_task_bodies"]["status"] == "pass"
     assert checks["qwen3_8b_full_serving_rows_imported"]["status"] == "fail"
+    assert checks["qwen3_8b_full_serving_rows_imported"]["missing_workload_ids"] == [
+        "mpk_offline_decode",
+        "vdcores_offline_decode",
+    ]
+    qwen_row_statuses = checks["qwen3_8b_full_serving_rows_imported"][
+        "row_statuses"
+    ]
+    assert qwen_row_statuses
+    assert all(status["status"] == "fail" for status in qwen_row_statuses)
+    assert any(
+        "statistic.serving_coverage=full_serving"
+        in status["missing_requirements"]
+        for status in qwen_row_statuses
+    )
     assert checks["qwen_model_loader_or_token_loop"]["status"] == "fail"
     lifecycle = preflight["serving_lifecycle"]
     assert lifecycle["kind"] == "pto_qwen_persistent_serving_scaffold"
@@ -714,6 +746,77 @@ def test_pto_serving_preflight_captures_current_full_serving_gap(tmp_path):
         "vdcores_offline_decode",
     }
     assert "Qwen/Qwen3-8B" in preflight["next_action"]
+
+
+def test_pto_full_serving_row_gate_rejects_diagnostic_qwen_row():
+    module = load_pto_serving_preflight_module()
+    row = {
+        "benchmark_id": "llm_serving_decode",
+        "method_id": "pto_persistent_device",
+        "inputs": {
+            "shape": "Qwen/Qwen3-8B resource-backed diagnostic vdcores_offline_decode"
+        },
+        "statistic": {
+            "serving_coverage": "diagnostic_resource_backed_qwen_dag",
+            "workload_id": "vdcores_offline_decode",
+            "sample_count": 64,
+            "host_wall_ns": 9273351357,
+            "device_wall_ns": 9138154496,
+        },
+        "raw_artifact": "tmp/cuda-backend/diagnostic/qwen-decode-loop-runner.json",
+        "correctness": "pass",
+    }
+
+    status = module.full_serving_qwen_row_status(row)
+
+    assert status["status"] == "fail"
+    assert status["workload_id"] == "vdcores_offline_decode"
+    assert "statistic.serving_coverage=full_serving" in status[
+        "missing_requirements"
+    ]
+    assert "statistic.end_to_end_latency_ns>0" in status["missing_requirements"]
+    assert module.full_serving_qwen_rows([row]) == []
+
+
+def test_pto_full_serving_row_gate_accepts_both_policy_rows():
+    module = load_pto_serving_preflight_module()
+
+    def row_for(workload_id):
+        return {
+            "benchmark_id": "llm_serving_decode",
+            "method_id": "pto_persistent_device",
+            "inputs": {
+                "shape": (
+                    f"{workload_id},Qwen/Qwen3-8B,batch=8,"
+                    "prompt_tokens=64,decode_tokens=1024"
+                )
+            },
+            "statistic": {
+                "serving_coverage": "full_serving",
+                "workload_id": workload_id,
+                "sample_count": 3,
+                "host_wall_ns": 6_000_000_000,
+                "device_wall_ns": 5_900_000_000,
+                "end_to_end_latency_ns": 6_000_000_000,
+                "inter_token_latency_ns": 5_800_000,
+                "time_to_first_token_ns": 50_000_000,
+                "throughput_tokens_per_s": 1300.0,
+                "batch_size": 8,
+                "decode_tokens": 1024,
+            },
+            "raw_artifact": f"tmp/cuda-backend/full-serving/{workload_id}/",
+            "correctness": "pass",
+        }
+
+    rows = [row_for("mpk_offline_decode"), row_for("vdcores_offline_decode")]
+    statuses = [module.full_serving_qwen_row_status(row) for row in rows]
+
+    assert all(status["status"] == "pass" for status in statuses)
+    assert {module.row_workload_id(row) for row in rows} == {
+        "mpk_offline_decode",
+        "vdcores_offline_decode",
+    }
+    assert module.full_serving_qwen_rows(rows) == rows
 
 
 def test_persistent_qwen_serving_scaffold_is_reviewable(tmp_path):

@@ -28,6 +28,15 @@ DEFAULT_OUTPUT = (
     / "pto-serving-preflight.json"
 )
 SERVING_SCAFFOLD = ROOT / "examples" / "cuda" / "persistent_qwen_serving_scaffold.py"
+PAPER_WORKLOAD_IDS = {"mpk_offline_decode", "vdcores_offline_decode"}
+FULL_SERVING_METRIC_FIELDS = {
+    "end_to_end_latency_ns",
+    "inter_token_latency_ns",
+    "time_to_first_token_ns",
+    "throughput_tokens_per_s",
+    "batch_size",
+    "decode_tokens",
+}
 
 
 def fail(message: str) -> None:
@@ -91,12 +100,57 @@ def pto_serving_rows(results: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+def row_workload_id(row: dict[str, Any]) -> str:
+    statistic = row.get("statistic", {})
+    workload_id = statistic.get("workload_id")
+    if isinstance(workload_id, str) and workload_id:
+        return workload_id
+    shape = str(row.get("inputs", {}).get("shape", ""))
+    for candidate in PAPER_WORKLOAD_IDS:
+        if candidate in shape:
+            return candidate
+    return ""
+
+
+def full_serving_qwen_row_status(row: dict[str, Any]) -> dict[str, Any]:
+    statistic = row.get("statistic", {})
+    shape = str(row.get("inputs", {}).get("shape", ""))
+    workload_id = row_workload_id(row)
+    missing = []
+    if row.get("benchmark_id") != "llm_serving_decode":
+        missing.append("benchmark_id=llm_serving_decode")
+    if row.get("method_id") != "pto_persistent_device":
+        missing.append("method_id=pto_persistent_device")
+    if "Qwen/Qwen3-8B" not in shape:
+        missing.append("inputs.shape contains Qwen/Qwen3-8B")
+    if statistic.get("serving_coverage") != "full_serving":
+        missing.append("statistic.serving_coverage=full_serving")
+    if row.get("correctness") != "pass":
+        missing.append("correctness=pass")
+    if workload_id not in PAPER_WORKLOAD_IDS:
+        missing.append("workload_id is mpk_offline_decode or vdcores_offline_decode")
+    for key in sorted(FULL_SERVING_METRIC_FIELDS):
+        value = statistic.get(key)
+        if not isinstance(value, (int, float)) or value <= 0:
+            missing.append(f"statistic.{key}>0")
+    if not row.get("raw_artifact"):
+        missing.append("raw_artifact")
+    return {
+        "status": "pass" if not missing else "fail",
+        "workload_id": workload_id,
+        "shape": shape,
+        "raw_artifact": row.get("raw_artifact", ""),
+        "correctness": row.get("correctness", ""),
+        "serving_coverage": statistic.get("serving_coverage", ""),
+        "missing_requirements": missing,
+    }
+
+
 def full_serving_qwen_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         row
         for row in rows
-        if "Qwen/Qwen3-8B" in str(row.get("inputs", {}).get("shape", ""))
-        and row.get("statistic", {}).get("serving_coverage") == "full_serving"
+        if full_serving_qwen_row_status(row)["status"] == "pass"
     ]
 
 
@@ -141,6 +195,17 @@ def build_preflight() -> dict[str, Any]:
     serving_scaffold = load_serving_scaffold()
     pto_rows = pto_serving_rows(results)
     qwen8b_pto_rows = full_serving_qwen_rows(pto_rows)
+    qwen8b_row_statuses = [
+        full_serving_qwen_row_status(row)
+        for row in pto_rows
+        if "Qwen/Qwen3-8B" in str(row.get("inputs", {}).get("shape", ""))
+    ]
+    qwen8b_present_workloads = sorted(
+        {row_workload_id(row) for row in qwen8b_pto_rows}
+    )
+    qwen8b_missing_workloads = sorted(
+        PAPER_WORKLOAD_IDS - set(qwen8b_present_workloads)
+    )
     proxy_rows = [
         row
         for row in pto_rows
@@ -178,9 +243,17 @@ def build_preflight() -> dict[str, Any]:
         },
         {
             "id": "qwen3_8b_full_serving_rows_imported",
-            "status": "pass" if qwen8b_pto_rows else "fail",
+            "status": "pass" if not qwen8b_missing_workloads else "fail",
             "evidence": "docs/nvidia-backend/benchmark-viewer/data/results.json",
-            "why": "Full-serving readiness requires PTO rows whose shape names Qwen/Qwen3-8B.",
+            "why": (
+                "Full-serving readiness requires PTO Qwen/Qwen3-8B rows for "
+                "mpk_offline_decode and vdcores_offline_decode with correctness "
+                "and paper latency/throughput metrics."
+            ),
+            "required_workload_ids": sorted(PAPER_WORKLOAD_IDS),
+            "present_workload_ids": qwen8b_present_workloads,
+            "missing_workload_ids": qwen8b_missing_workloads,
+            "row_statuses": qwen8b_row_statuses,
         },
         {
             "id": "qwen_serving_lifecycle_scaffold",

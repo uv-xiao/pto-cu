@@ -204,10 +204,12 @@ regenerates the audit and fails when the committed JSON is stale.
 Serving rows under `results.json` must include
 `statistic.serving_coverage`. Allowed values are `full_serving`,
 `full_serving_latency_caveat`, `controlled_attention_tile_proxy`,
-`diagnostic_microdecode`, and `native_bringup`. Matrix `viewer_result`
-evidence refs for `llm_serving_decode` must name the same coverage value.
-This prevents controlled attention-tile proxy rows, native bring-up rows, or
-one-token diagnostics from satisfying a full-serving Qwen/Qwen3-8B evidence
+`diagnostic_microdecode`, `diagnostic_qwen_descriptor_smoke`,
+`diagnostic_resource_backed_qwen_dag`, `diagnostic_unit_math`, and
+`native_bringup`. Matrix `viewer_result` evidence refs for
+`llm_serving_decode` must name the same coverage value. This prevents
+controlled attention-tile proxy rows, native bring-up rows, Qwen diagnostics,
+or one-token diagnostics from satisfying a full-serving Qwen/Qwen3-8B evidence
 claim by shape alone.
 
 The generated paper-readiness work queue lives in
