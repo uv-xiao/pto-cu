@@ -83,6 +83,13 @@ def update_pto_gap_action(record: dict[str, Any]) -> None:
         for phrase in old_action_phrases():
             action = action.replace(phrase, current_action_phrase())
         detail["action"] = action
+        detail["evidence_summary"] = [
+            summary.replace(
+                "bounded full-RMSNorm reduction diagnostic execution",
+                "block-wide full-vector RMSNorm reduction diagnostic execution",
+            )
+            for summary in detail.get("evidence_summary", [])
+        ]
 
 
 def current_action_phrase() -> str:
