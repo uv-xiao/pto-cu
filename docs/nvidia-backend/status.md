@@ -9,6 +9,7 @@ evaluation results are not mistaken for a complete backend.
 - [Platform and runtime discovery](status/platform-runtime-discovery.md)
 - [Host-schedule runtime](status/host-schedule-runtime.md)
 - [Persistent-device runtime](status/persistent-device-runtime.md)
+- [Persistent scheduler coverage](status/persistent-scheduler-coverage.md)
 - [Target role cleanup](status/target-role-cleanup.md)
 - [Fourth-tensor persistent DAG verification](status/fourth-tensor-persistent-dag-verification.md)
 - [Evaluation and reporting](status/evaluation-and-reporting/index.md)

@@ -82,3 +82,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-49.md](entries/2026-06-02-part-49.md) | 1 | Goal Progress Status-Derived Gaps | Goal Progress Status-Derived Gaps |
 | [2026-06-02-part-50.md](entries/2026-06-02-part-50.md) | 1 | Target-Role Gap Closure | Target-Role Gap Closure |
 | [2026-06-02-part-51.md](entries/2026-06-02-part-51.md) | 1 | Review-Gate Policy Gap Closure | Review-Gate Policy Gap Closure |
+| [2026-06-02-part-52.md](entries/2026-06-02-part-52.md) | 1 | Persistent Scheduler Coverage Status | Persistent Scheduler Coverage Status |
