@@ -489,3 +489,39 @@ def test_diagnostic_logits_projection_checks_batch_rows():
 
     assert comparison["status"] == "pass"
     assert comparison["checked_element_count"] == 4
+
+
+def test_diagnostic_logits_reference_samples_large_vocab_prefix():
+    module = load_resource_graph_module()
+
+    indices = module.diagnostic_logits_reference_indices(
+        value_count=2_430_976,
+        cols=151_936,
+        hidden_width=4096,
+        weight_stride=4096,
+        max_weight_elements=1_000_000,
+        max_checked_elements=16,
+    )
+
+    assert indices == list(range(16))
+
+
+def test_diagnostic_logits_reference_decodes_bfloat16_weights():
+    module = load_resource_graph_module()
+
+    assert module.tensor_arg_values_to_f32([0x3F80, 0x4000], dtype_code=6) == [
+        1.0,
+        2.0,
+    ]
+
+
+def test_diagnostic_logits_fallback_reference_matches_task_branch():
+    module = load_resource_graph_module()
+
+    reference = module.diagnostic_logits_fallback_values(
+        hidden=[2.0, 3.0, 5.0],
+        lm_head=[0.5, 0.25, 0.125, 2.0],
+        indices=[0, 1, 2, 3, 4],
+    )
+
+    assert reference == [1.0, 0.75, 0.625, 4.0, 1.5]

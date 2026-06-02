@@ -1082,7 +1082,7 @@
         },
         {
           "kind": "raw_artifact",
-          "path": "tmp/cuda-backend/pto-serving-decode-loop-policy-693b793c/",
+          "path": "tmp/cuda-backend/pto-serving-decode-loop-policy-sampled-ref-5948323b/",
           "symbols": [
             "pto_qwen_resource_backed_execution",
             "qwen_resource_backed_diagnostic_execution",

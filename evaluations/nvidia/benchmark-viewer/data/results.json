@@ -8068,7 +8068,7 @@
         "cuda_toolkit": "see raw artifact",
         "clock_policy": "not recorded in current snapshot"
       },
-      "commit": "693b793c",
+      "commit": "sampled-ref-working-tree",
       "inputs": {
         "shape": "Qwen/Qwen3-8B resource-backed diagnostic mpk_offline_decode, graph_tasks=255, repeat_runs=1024",
         "dtype": "float32 diagnostic task bodies with real buffers",
@@ -8077,8 +8077,8 @@
       "statistic": {
         "kind": "pto_qwen_resource_backed_execution",
         "sample_count": 1024,
-        "host_wall_ns": 97313781533,
-        "device_wall_ns": 97062436864,
+        "host_wall_ns": 145328884723,
+        "device_wall_ns": 143553328104,
         "run_prepared_status": 0,
         "completed_count": 261120,
         "error_count": 0,
@@ -8112,11 +8112,11 @@
         "sampled_token_id": 1,
         "sampled_token_logit": -1.6e-05,
         "logits_summary_stable": true,
-        "diagnostic_logits_reference_status": "not_checked",
-        "diagnostic_logits_reference_checked_count": 0,
+        "diagnostic_logits_reference_status": "pass",
+        "diagnostic_logits_reference_checked_count": 65536,
         "diagnostic_logits_reference_max_abs_error": 0.0
       },
-      "raw_artifact": "tmp/cuda-backend/pto-serving-decode-loop-policy-693b793c/",
+      "raw_artifact": "tmp/cuda-backend/pto-serving-decode-loop-policy-sampled-ref-5948323b/",
       "correctness": "pass"
     },
     {
@@ -8130,7 +8130,7 @@
         "cuda_toolkit": "see raw artifact",
         "clock_policy": "not recorded in current snapshot"
       },
-      "commit": "693b793c",
+      "commit": "sampled-ref-working-tree",
       "inputs": {
         "shape": "Qwen/Qwen3-8B resource-backed diagnostic vdcores_offline_decode, graph_tasks=255, repeat_runs=64",
         "dtype": "float32 diagnostic task bodies with real buffers",
@@ -8139,8 +8139,8 @@
       "statistic": {
         "kind": "pto_qwen_resource_backed_execution",
         "sample_count": 64,
-        "host_wall_ns": 9113625961,
-        "device_wall_ns": 9054825472,
+        "host_wall_ns": 8967891816,
+        "device_wall_ns": 8821890040,
         "run_prepared_status": 0,
         "completed_count": 16320,
         "error_count": 0,
@@ -8174,11 +8174,11 @@
         "sampled_token_id": 1,
         "sampled_token_logit": -1.6e-05,
         "logits_summary_stable": true,
-        "diagnostic_logits_reference_status": "not_checked",
-        "diagnostic_logits_reference_checked_count": 0,
+        "diagnostic_logits_reference_status": "pass",
+        "diagnostic_logits_reference_checked_count": 65536,
         "diagnostic_logits_reference_max_abs_error": 0.0
       },
-      "raw_artifact": "tmp/cuda-backend/pto-serving-decode-loop-policy-693b793c/",
+      "raw_artifact": "tmp/cuda-backend/pto-serving-decode-loop-policy-sampled-ref-5948323b/",
       "correctness": "pass"
     }
   ]
