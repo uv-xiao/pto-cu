@@ -292,6 +292,7 @@ class CudaPersistentDagTask(ctypes.Structure):
         ("c", ctypes.c_void_p),
         ("d", ctypes.c_void_p),
         ("tensor_args", ctypes.c_void_p * 4),
+        ("tensor_arg_dtypes", ctypes.c_uint32 * 4),
         ("scalar_args", ctypes.c_float * 4),
         ("tensor_arg_count", ctypes.c_uint32),
         ("scalar_arg_count", ctypes.c_uint32),
@@ -639,12 +640,39 @@ struct PtoCudaPersistentDagTask {{
     float *c;
     float *d;
     const float *tensor_args[4];
+    unsigned int tensor_arg_dtypes[4];
     float scalar_args[4];
     unsigned int tensor_arg_count;
     unsigned int scalar_arg_count;
 }};
 
     {rendered_context_block}\
+enum PtoCudaTensorDtype : unsigned int {{
+    PTO_CUDA_DTYPE_FLOAT32 = 0U,
+    PTO_CUDA_DTYPE_BFLOAT16 = 6U,
+}};
+
+__device__ float pto_cuda_bf16_to_f32(unsigned short raw) {{
+    return __uint_as_float(static_cast<unsigned int>(raw) << 16U);
+}}
+
+__device__ float pto_cuda_tensor_arg_f32(
+    const PtoCudaPersistentDagTask *task,
+    unsigned int slot,
+    unsigned long long index,
+    float fallback) {{
+    if (slot >= 4U || slot >= task->tensor_arg_count ||
+        task->tensor_args[slot] == nullptr) {{
+        return fallback;
+    }}
+    if (task->tensor_arg_dtypes[slot] == PTO_CUDA_DTYPE_BFLOAT16) {{
+        const unsigned short *ptr =
+            reinterpret_cast<const unsigned short *>(task->tensor_args[slot]);
+        return pto_cuda_bf16_to_f32(ptr[index]);
+    }}
+    return task->tensor_args[slot][index];
+}}
+
 struct PtoCudaPersistentDagState {{
     const PtoCudaPersistentDagTask *tasks;
     unsigned long long task_count;

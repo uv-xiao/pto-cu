@@ -42,6 +42,10 @@ TASK_SHAPE_FIELDS = (
     "out_batch_stride",
 )
 FLOAT_TASK_SHAPE_FIELDS = {"scalar0", "scalar1"}
+TENSOR_DTYPE_CODES = {
+    "float32": 0,
+    "bfloat16": 6,
+}
 
 
 def normalize_numeric_task_mode(mode: str) -> str:
@@ -265,6 +269,16 @@ def tensor_arg_index(value: str) -> int:
         return 0
     parsed = int(value[len(prefix) : -1])
     return parsed if 0 <= parsed < 4 else 0
+
+
+def tensor_arg_dtype_codes(descriptor: dict[str, Any]) -> list[int]:
+    codes = [0, 0, 0, 0]
+    for item in descriptor.get("tensor_arg_metadata", []):
+        if not isinstance(item, dict):
+            continue
+        index = tensor_arg_index(str(item.get("arg", "")))
+        codes[index] = TENSOR_DTYPE_CODES.get(str(item.get("dtype", "float32")), 0)
+    return codes
 
 
 def parse_ptr(value: Any) -> int:

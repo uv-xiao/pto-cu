@@ -17,6 +17,7 @@ def dag_task_abi() -> dict[str, Any]:
     fields = {
         "func_id": CudaPersistentDagTask.func_id.offset,
         "tensor_args": CudaPersistentDagTask.tensor_args.offset,
+        "tensor_arg_dtypes": CudaPersistentDagTask.tensor_arg_dtypes.offset,
         "scalar_args": CudaPersistentDagTask.scalar_args.offset,
         "tensor_arg_count": CudaPersistentDagTask.tensor_arg_count.offset,
         "scalar_arg_count": CudaPersistentDagTask.scalar_arg_count.offset,

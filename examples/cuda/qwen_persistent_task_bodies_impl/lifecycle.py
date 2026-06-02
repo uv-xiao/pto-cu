@@ -46,8 +46,7 @@ def body_specs() -> list[dict[str, Any]]:
             "body": """
 const unsigned int token_id =
     reinterpret_cast<const unsigned int *>(task->a)[i % task->n];
-const float *embedding = task->tensor_args[0];
-task->out[i] = embedding ? embedding[token_id & 3U] : 0.0f;
+task->out[i] = pto_cuda_tensor_arg_f32(task, 0U, token_id & 3U, 0.0f);
 """,
         },
         {
@@ -57,15 +56,15 @@ task->out[i] = embedding ? embedding[token_id & 3U] : 0.0f;
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["hidden_state", "input_layernorm_weight"],
             "body": """
-const float *weight = task->tensor_args[0];
 if (task->scalar_arg_count == 0) {
     for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
-        const float scale = weight ? weight[i & 3U] : 1.0f;
+        const float scale = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
         task->out[i] = task->a[i] * scale;
     }
 } else if (task->scalar_arg_count > 1) {
     for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
-        const float norm_weight = weight ? weight[i & 3U] : 1.0f;
+        const float norm_weight =
+            pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
         task->out[i] = task->a[i] * task->scalar_args[1] * norm_weight;
     }
 } else {
@@ -85,7 +84,8 @@ if (task->scalar_arg_count == 0) {
     const float scale =
         rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f);
     for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
-        const float norm_weight = weight ? weight[i & 3U] : 1.0f;
+        const float norm_weight =
+            pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
         task->out[i] = task->a[i] * scale * norm_weight;
     }
 }
@@ -111,13 +111,16 @@ const float mask = task->b ? task->b[i % task->n] : 1.0f;
 const unsigned long long kv_index = i % task->n;
 const float key = task->c ? task->c[kv_index] : 0.0f;
 const float value = task->d ? task->d[kv_index] : 0.0f;
-const float *q_proj = task->tensor_args[0];
-const float *k_proj = task->tensor_args[1];
-const float *v_proj = task->tensor_args[2];
-if (task->scalar_arg_count > 0 && q_proj && k_proj && v_proj) {
-    const float q = task->a[i] * q_proj[i & 3U];
-    const float k = task->a[i] * k_proj[i & 3U];
-    const float v = task->a[i] * v_proj[i & 3U];
+const bool has_projection_weights =
+    task->tensor_arg_count >= 3U && task->tensor_args[0] &&
+    task->tensor_args[1] && task->tensor_args[2];
+if (task->scalar_arg_count > 0 && has_projection_weights) {
+    const float q =
+        task->a[i] * pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
+    const float k =
+        task->a[i] * pto_cuda_tensor_arg_f32(task, 1U, i & 3U, 0.0f);
+    const float v =
+        task->a[i] * pto_cuda_tensor_arg_f32(task, 2U, i & 3U, 0.0f);
     if (task->c) {
         task->c[kv_index] = k;
     }
@@ -126,7 +129,7 @@ if (task->scalar_arg_count > 0 && q_proj && k_proj && v_proj) {
     }
     task->out[i] = v;
 } else {
-    const float q = q_proj ? q_proj[i & 3U] : 0.0f;
+    const float q = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
     task->out[i] = task->a[i] + mask + key + value + q;
     if (task->c) {
         task->c[kv_index] = task->a[i] + q;
@@ -143,10 +146,8 @@ if (task->scalar_arg_count > 0 && q_proj && k_proj && v_proj) {
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["q_state", "q_norm_weight", "k_norm_weight"],
             "body": """
-const float *q_norm = task->tensor_args[0];
-const float *k_norm = task->tensor_args[1];
-const float q = q_norm ? q_norm[i & 3U] : 1.0f;
-const float k = k_norm ? k_norm[i & 3U] : 1.0f;
+const float q = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
+const float k = pto_cuda_tensor_arg_f32(task, 1U, i & 3U, 1.0f);
 task->out[i] = task->a[i] * 0.5f * (q + k);
 """,
         },
@@ -156,8 +157,8 @@ task->out[i] = task->a[i] * 0.5f * (q + k);
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["attention_state", "o_proj_weight"],
             "body": """
-const float *weight = task->tensor_args[0];
-task->out[i] = task->a[i] + (weight ? weight[i & 3U] : 0.0f);
+const float weight = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
+task->out[i] = task->a[i] + weight;
 """,
         },
         {
@@ -166,8 +167,8 @@ task->out[i] = task->a[i] + (weight ? weight[i & 3U] : 0.0f);
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["hidden_state", "post_attention_layernorm_weight"],
             "body": """
-const float *weight = task->tensor_args[0];
-task->out[i] = task->a[i] * (weight ? weight[i & 3U] : 1.0f);
+const float weight = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
+task->out[i] = task->a[i] * weight;
 """,
         },
         {
@@ -176,10 +177,8 @@ task->out[i] = task->a[i] * (weight ? weight[i & 3U] : 1.0f);
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["hidden_state", "gate_proj_weight", "up_proj_weight"],
             "body": """
-const float *gate = task->tensor_args[0];
-const float *up = task->tensor_args[1];
-const float gate_value = gate ? gate[i & 3U] : task->a[i];
-const float up_value = up ? up[i & 3U] : task->a[i];
+const float gate_value = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, task->a[i]);
+const float up_value = pto_cuda_tensor_arg_f32(task, 1U, i & 3U, task->a[i]);
 const float silu_gate = gate_value / (1.0f + expf(-gate_value));
 task->out[i] = silu_gate * up_value;
 """,
@@ -190,8 +189,8 @@ task->out[i] = silu_gate * up_value;
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["mlp_state", "down_proj_weight"],
             "body": """
-const float *down = task->tensor_args[0];
-task->out[i] = task->a[i] + (down ? down[i & 3U] : 0.0f);
+const float down = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
+task->out[i] = task->a[i] + down;
 """,
         },
         {
@@ -200,8 +199,8 @@ task->out[i] = task->a[i] + (down ? down[i & 3U] : 0.0f);
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["hidden_state", "final_norm_weight"],
             "body": """
-const float *weight = task->tensor_args[0];
-task->out[i] = task->a[i] * (weight ? weight[i & 3U] : 1.0f);
+const float weight = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
+task->out[i] = task->a[i] * weight;
 """,
         },
         qwen_logits_spec(),

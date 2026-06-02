@@ -198,7 +198,22 @@ def test_launch_packet_carries_cuda_task_shape_fields():
         {"callable": "qwen_rmsnorm_input", "tensor_args": []},
         {
             "callable": "qwen_attention_qkv",
-            "tensor_args": [],
+            "tensor_args": [
+                {
+                    "arg": "tensor_args[0]",
+                    "slot_id": 2,
+                    "device_ptr_hex": "0xa000",
+                },
+                {
+                    "arg": "tensor_args[1]",
+                    "slot_id": 3,
+                    "device_ptr_hex": "0xb000",
+                },
+            ],
+            "tensor_arg_metadata": [
+                {"arg": "tensor_args[0]", "dtype": "bfloat16"},
+                {"arg": "tensor_args[1]", "dtype": "float32"},
+            ],
             "task_shape_fields": {
                 "rows": 16,
                 "cols": 4096,
@@ -242,6 +257,7 @@ def test_launch_packet_carries_cuda_task_shape_fields():
     assert packet[1].ldc == 4096
     assert packet[1].scalar0 == 1.25
     assert packet[1].a_batch_stride == 4096
+    assert list(packet[1].tensor_arg_dtypes)[:2] == [6, 0]
 
 
 def test_materialized_weight_descriptor_preserves_task_shape_fields():

@@ -24,6 +24,7 @@ from qwen_decode_loop_runner_impl.launch_helpers import (
     set_decode_step_index,
     task_shape_fields,
     task_n_for_record,
+    tensor_arg_dtype_codes,
     task_scalar_arg_count,
     task_scalar_args,
     tensor_arg_count,
@@ -154,8 +155,10 @@ def host_task_record(
     task_shape_defaults: dict[str, Any] | None,
 ) -> CudaPersistentDagTask:
     tensor_args_t = ctypes.c_void_p * 4
+    tensor_arg_dtypes_t = ctypes.c_uint32 * 4
     scalar_args_t = ctypes.c_float * 4
     tensor_args = [0, 0, 0, 0]
+    tensor_arg_dtypes = tensor_arg_dtype_codes(descriptor)
     scalar_args = task_scalar_args(
         index=index,
         task_count=task_count,
@@ -217,6 +220,7 @@ def host_task_record(
         c=parse_ptr(kv_fields["c"].get("device_ptr_hex")),
         d=parse_ptr(kv_fields["d"].get("device_ptr_hex")),
         tensor_args=tensor_args_t(*tensor_args),
+        tensor_arg_dtypes=tensor_arg_dtypes_t(*tensor_arg_dtypes),
         scalar_args=scalar_args_t(*scalar_args),
         tensor_arg_count=tensor_arg_count(tensor_args),
         scalar_arg_count=task_scalar_arg_count(scalar_args),
