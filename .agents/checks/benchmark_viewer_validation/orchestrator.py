@@ -78,7 +78,7 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         persistent_scheduler_coverage,
         root,
     )
-    baseline_ids = validate_paper_baselines(paper_baselines)
+    baseline_ids = validate_paper_baselines(paper_baselines, root)
     serving_workload_ids = validate_serving_workloads(serving_workloads, root)
     validate_paper_baseline_probes(paper_baseline_probes, baseline_ids, root)
     validate_paper_baseline_environment_plans(

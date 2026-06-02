@@ -102,3 +102,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-69.md](entries/2026-06-02-part-69.md) | 1 | Remaining Gap Promotion Guard | Remaining Gap Promotion Guard |
 | [2026-06-02-part-70.md](entries/2026-06-02-part-70.md) | 1 | CUDA Example Review-Doc Guard | CUDA Example Review-Doc Guard |
 | [2026-06-02-part-71.md](entries/2026-06-02-part-71.md) | 1 | Paper Work Queue Rendering Guard | Paper Work Queue Rendering Guard |
+| [2026-06-02-part-72.md](entries/2026-06-02-part-72.md) | 1 | Paper Baseline Source Provenance Guard | Paper Baseline Source Provenance Guard |

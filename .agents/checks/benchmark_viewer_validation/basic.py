@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 from typing import Any
 
 from .common import *  # noqa: F403
@@ -45,7 +46,40 @@ def validate_methods(data: dict[str, Any], root: Path) -> set[str]:
     return method_ids
 
 
-def validate_paper_baselines(data: dict[str, Any]) -> set[str]:
+def validate_paper_baseline_source(
+    source: dict[str, Any],
+    *,
+    owner: str,
+    root: Path,
+) -> None:
+    local_tmp_path = source["local_tmp_path"]
+    if not local_tmp_path.startswith("tmp/"):
+        fail(f"{owner} source local_tmp_path must be under tmp/: {local_tmp_path}")
+    path = root / local_tmp_path
+    if not path.is_dir():
+        fail(f"{owner} source local_tmp_path missing: {local_tmp_path}")
+    if not (path / ".git").exists():
+        fail(f"{owner} source local_tmp_path is not a git clone: {local_tmp_path}")
+    result = subprocess.run(
+        ["git", "-C", str(path), "rev-parse", "HEAD"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        fail(f"{owner} source commit cannot be read: {local_tmp_path}")
+    actual_commit = result.stdout.strip()
+    if actual_commit != source["commit"]:
+        fail(
+            f"{owner} source commit mismatch: "
+            f"{actual_commit} != {source['commit']}"
+        )
+    if not any(path.glob(name) for name in ("README*", "INSTALL*")):
+        fail(f"{owner} source clone has no README or INSTALL document")
+
+
+def validate_paper_baselines(data: dict[str, Any], root: Path) -> set[str]:
     records = require_list(data, "paper_baselines", "paper_baselines")
     baseline_ids = check_unique_ids(records, "paper baseline")
     for record in records:
@@ -57,6 +91,6 @@ def validate_paper_baselines(data: dict[str, Any]) -> set[str]:
             require_string(source, key, owner)
         if len(source["commit"]) != 40:
             fail(f"{owner} source commit is not pinned: {source['commit']}")
+        validate_paper_baseline_source(source, owner=owner, root=root)
         require_list(record, "paper_baselines_to_reproduce", owner)
     return baseline_ids
-
