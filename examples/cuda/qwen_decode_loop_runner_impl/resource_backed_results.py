@@ -142,6 +142,8 @@ def build_workload_result(
     decode_step_limit: int | None,
     logits_check_policy: str,
     numeric_task_mode: str,
+    prefill_packet_len: int = 0,
+    prefill_task_policy: str = "not_requested",
     prefill_results: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     prefill_results = prefill_results or []
@@ -161,6 +163,8 @@ def build_workload_result(
         "prompt_prefill": prompt_prefill_summary(
             plan=plan,
             prefill_results=prefill_results,
+            prefill_packet_len=prefill_packet_len,
+            prefill_task_policy=prefill_task_policy,
         ),
         "execution_mode": (
             "bounded_decode_steps"
@@ -197,6 +201,8 @@ def prompt_prefill_summary(
     *,
     plan: dict[str, Any],
     prefill_results: list[dict[str, Any]],
+    prefill_packet_len: int = 0,
+    prefill_task_policy: str = "not_requested",
 ) -> dict[str, Any]:
     if not prefill_results:
         return {"status": "not_requested"}
@@ -209,6 +215,8 @@ def prompt_prefill_summary(
         "expected_prompt_positions": expected,
         "executed_prompt_positions": executed,
         "first_decode_position": int(plan.get("first_decode_position", 0)),
+        "graph_task_count": int(prefill_packet_len),
+        "task_policy": prefill_task_policy,
         "total_completed_count": total_counter(prefill_results, "completed_count"),
         "total_error_count": total_counter(prefill_results, "error_count"),
     }

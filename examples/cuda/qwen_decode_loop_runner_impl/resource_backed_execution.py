@@ -51,6 +51,7 @@ from qwen_persistent_weight_materialization import build_materialization_manifes
 
 
 ROOT = Path(__file__).resolve().parents[3]
+PREFILL_READOUT_CALLABLES = {"qwen_final_norm", "qwen_logits"}
 
 
 def repo_relative(path: Path) -> str:
@@ -206,6 +207,17 @@ def first_layer_with_logits_descriptors(
     ]
 
 
+def prompt_prefill_descriptors(
+    descriptors: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    return [
+        item
+        for item in descriptors
+        if item.get("callable") not in PREFILL_READOUT_CALLABLES
+        and item.get("id") not in {"final_norm", "logits"}
+    ]
+
+
 def run_workload(
     *,
     session: Any,
@@ -239,15 +251,33 @@ def run_workload(
     final_callable = descriptors[-1].get("callable")
 
     prefill_results = []
+    prefill_packet_len = 0
+    prefill_task_policy = "not_requested"
     if prefill_prompt:
+        prefill_task_policy = "omit_final_norm_and_logits_readout"
+        prefill_items = prompt_prefill_descriptors(descriptors)
+        prefill_packet = build_host_task_packet(
+            descriptors=prefill_items,
+            token_fields=token_fields,
+            kv_fields=plan.get("kv_pointer_fields", {}),
+            workspace=workspace,
+            numeric_task_mode=numeric_task_mode,
+            task_shape_defaults=task_shape_defaults(plan),
+        )
+        if prefill_packet is None:
+            return {"workload_id": plan["workload_id"], "status": "not_run"}
+        prefill_packet_len = len(prefill_packet)
+        prefill_final_callable = (
+            prefill_items[-1].get("callable") if prefill_items else None
+        )
         prefill_count = max(int(plan.get("active_prompt_tokens", 0)), 0)
         for prefill_position in range(prefill_count):
             prefill_results.append(
                 run_packet_once(
                     session=session,
-                    packet=packet,
+                    packet=prefill_packet,
                     workspace=workspace,
-                    final_callable=final_callable,
+                    final_callable=prefill_final_callable,
                     logits_check_policy=logits_check_policy,
                     scheduler_blocks=scheduler_blocks,
                     block_dim=block_dim,
@@ -293,6 +323,8 @@ def run_workload(
         decode_step_limit=decode_step_limit,
         logits_check_policy=logits_check_policy,
         numeric_task_mode=numeric_task_mode,
+        prefill_packet_len=prefill_packet_len,
+        prefill_task_policy=prefill_task_policy,
         prefill_results=prefill_results,
     )
 

@@ -33,6 +33,7 @@ from qwen_decode_loop_runner_impl.logits_active_cols import (  # noqa: E402
     apply_logits_active_cols_override,
 )
 from qwen_decode_loop_runner_impl.resource_backed_execution import (  # noqa: E402
+    prompt_prefill_descriptors,
     select_task_descriptors,
 )
 from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph  # noqa: E402
@@ -1405,6 +1406,8 @@ def test_resource_backed_execution_reports_task_coverage():
 def test_prompt_prefill_summary_reports_executed_prompt_positions():
     summary = prompt_prefill_summary(
         plan={"active_prompt_tokens": 3, "first_decode_position": 64},
+        prefill_packet_len=8,
+        prefill_task_policy="omit_final_norm_and_logits_readout",
         prefill_results=[
             {
                 "status": "pass",
@@ -1426,6 +1429,8 @@ def test_prompt_prefill_summary_reports_executed_prompt_positions():
         "expected_prompt_positions": 3,
         "executed_prompt_positions": 3,
         "first_decode_position": 64,
+        "graph_task_count": 8,
+        "task_policy": "omit_final_norm_and_logits_readout",
         "total_completed_count": 30,
         "total_error_count": 0,
     }
@@ -1466,6 +1471,24 @@ def test_resource_backed_first_layer_logits_selector_keeps_final_tasks():
         "layer_0_mlp_down",
         "final_norm",
         "logits",
+    ]
+
+
+def test_prompt_prefill_descriptors_omit_final_readout_tasks():
+    descriptors = [
+        {"id": "embedding_lookup", "callable": "qwen_embedding_lookup"},
+        {"id": "layer_0_input_norm", "callable": "qwen_rmsnorm_input"},
+        {"id": "layer_0_mlp_down", "callable": "qwen_mlp_down"},
+        {"id": "final_norm", "callable": "qwen_final_norm"},
+        {"id": "logits", "callable": "qwen_logits"},
+    ]
+
+    prefill = prompt_prefill_descriptors(descriptors)
+
+    assert [item["id"] for item in prefill] == [
+        "embedding_lookup",
+        "layer_0_input_norm",
+        "layer_0_mlp_down",
     ]
 
 
