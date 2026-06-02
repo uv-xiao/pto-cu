@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-03 Qwen prefill two-step decode](2026-06-03-qwen-prefill-two-step-decode.md)
 - [2026-06-03 Qwen terminal activation workspace](2026-06-03-qwen-terminal-activation-workspace.md)
 - [2026-06-03 Qwen readout-only first decode](2026-06-03-qwen-readout-only-first-decode.md)
 - [2026-06-03 Qwen prefill readout omission](2026-06-03-qwen-prefill-readout-omission.md)
