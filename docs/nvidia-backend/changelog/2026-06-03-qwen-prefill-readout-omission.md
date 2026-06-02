@@ -53,9 +53,24 @@ The artifact reports `graph_task_count=64`, 18 prompt positions, 1152 completed
 prefill tasks, and zero scheduler errors. The bounded decode packet also
 completed 64 tasks with zero scheduler errors.
 
+A100 full-prefix prompt-prefill smoke passed:
+
+```text
+tmp/cuda-backend/qwen-prefill-readout-omit-full-mpk-2026-06-03-rerun/
+```
+
+The artifact reports `graph_task_count=253`, 18 prompt positions, 4554
+completed prefill tasks, and zero scheduler errors. The following decode step
+completed the full 255-task packet, including final norm and logits, with zero
+scheduler errors. The artifact records about `719665049600` ns of aggregate
+prefill device time and `58209632256` ns for the decode packet, which makes the
+remaining blocker a numerical-correctness and performance-quality problem, not
+a missing full-prefix execution path.
+
 ## Remaining Gaps
 
-- Full-prefix prompt prefill still needs a completion artifact. It was started
-  after this change but remained too slow for the convergence budget.
 - This is still diagnostic resource-backed execution, not paper-ready full
   Qwen numerical correctness against a Hugging Face reference.
+- The current full-prefix device time is far too high for paper-ready serving
+  throughput; task bodies and scheduling need tensor-core/tiled kernels before
+  performance comparisons are meaningful.
