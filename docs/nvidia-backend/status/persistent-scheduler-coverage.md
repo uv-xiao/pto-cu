@@ -46,9 +46,12 @@ unit-math CUDA example.
 The verified coverage above is enough for current CUDA backend review claims
 about scheduler mechanics and scene-test normal graph construction. Paired
 A100/H200 smoke now also validates the submit-chain normal graph boundary with
-`graph_lowering=normal_graph`. The remaining open work is normal PTO
-task-graph breadth beyond scene-test graph config plus paired A100/H200
-normal-graph evidence for fork-join, fan-in, layered-cross, and broader chain
-inputs, including malformed normal-graph lowering cases once that broader
-input path lands. It is not the scheduler launch, resource, lifecycle,
-error-taxonomy, or artifact-reporting mechanics already captured here.
+`graph_lowering=normal_graph`, and the normal graph smoke matrix now covers
+fork-join, chain, multi-fan-in, and layered-cross shape construction. Paired
+A100/H200 evidence exists for `normal_graph_multi_fanin`. The remaining open
+work is normal PTO task-graph breadth beyond scene-test graph config plus
+paired A100/H200 normal-graph evidence for fork-join, layered-cross, and
+broader chain inputs, including malformed normal-graph lowering cases once
+that broader input path lands. It is not the scheduler launch, resource,
+lifecycle, error-taxonomy, or artifact-reporting mechanics already captured
+here.

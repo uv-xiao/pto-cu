@@ -45,6 +45,13 @@ validated the submitted normal graph fan-in/dependent arrays. These artifacts
 prove scheduler mechanics, selected descriptor spellings, and one normal-graph
 edge-lowering path, not full normal PTO graph construction from the backend
 builder.
+The normal graph smoke shape matrix now also supports fork-join, chain,
+multi-fan-in, and layered-cross inputs through
+`.agents/skills/cuda-backend-eval/scripts/cuda_persistent_smoke_impl/normal_graph_shapes.py`.
+The paired artifact
+`tmp/cuda-backend/persistent-normal_graph_multi_fanin-repeat2-smoke-05ed941a/`
+proves the multi-fan-in normal graph path on A100 and H200 with repeat-run
+lifecycle validation.
 
 ## Promotion Gate
 
@@ -57,9 +64,9 @@ descriptor-only inputs.
 ## Next Actions
 
 - Add normal PTO graph lowering into the CUDA persistent-device builder.
-- Run paired A100/H200 evidence for fork-join, fan-in, layered-cross, and
-  additional chain-shaped normal graph inputs beyond the current submit-chain
-  smoke.
+- Run paired A100/H200 evidence for fork-join, layered-cross, and additional
+  chain-shaped normal graph inputs beyond the current submit-chain and
+  multi-fan-in smokes.
 - Import or reference those raw artifacts in the benchmark viewer before
   removing this page from `status.md`.
 

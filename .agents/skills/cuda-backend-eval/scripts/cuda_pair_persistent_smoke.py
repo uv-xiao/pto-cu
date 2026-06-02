@@ -26,6 +26,7 @@ from cuda_pair_persistent_smoke_impl.contracts import (  # noqa: E402
     PairedPersistentSmokeConfig,
     is_tensor_tile_shape as _is_tensor_tile_shape,
 )
+from cuda_persistent_smoke_impl.normal_graph_shapes import NORMAL_GRAPH_DAG_SHAPES  # noqa: E402
 
 Runner = Callable[..., subprocess.CompletedProcess]
 
@@ -235,6 +236,9 @@ def _expected_completed_count(config: PairedPersistentSmokeConfig) -> int:
         "graph_descriptor_scratch_reuse": 6,
         "graph_tensor_core_tile": 4,
         "graph_tensor_tile": 4,
+        "normal_graph_chain": 5,
+        "normal_graph_layered_cross": 9,
+        "normal_graph_multi_fanin": 4,
         "scratch_reuse": 6,
         "tensor_core_tile": 4,
         "tensor_tile": 4,
@@ -283,6 +287,10 @@ def _expected_dispatch(config: PairedPersistentSmokeConfig) -> str | None:
         "graph_descriptor_unary_square": "7,1,1",
         "graph_tensor_core_tile": "10,1,2,1",
         "graph_tensor_tile": "3,1,2,1",
+        "normal_graph_chain": "1,2,1,2,1",
+        "normal_graph_fork_join": "1,2,1",
+        "normal_graph_layered_cross": "1,2,11,1,2,1,6,1,1",
+        "normal_graph_multi_fanin": "1,2,11,6",
         "quad": "8,2,1",
         "scalar_affine": "5,2,1",
         "scalar_axpy": "4,2,1",
@@ -339,6 +347,10 @@ def _expected_graph_descriptor(config: PairedPersistentSmokeConfig) -> tuple[str
         "graph_descriptor_unary_square": ("0,1,1", "1,2"),
         "graph_tensor_core_tile": ("0,1,1,2", "1,2,3,3"),
         "graph_tensor_tile": ("0,1,1,2", "1,2,3,3"),
+        "normal_graph_chain": ("0,0,2,1,1", "2,2,3,4"),
+        "normal_graph_fork_join": ("0,0,2", "2,2"),
+        "normal_graph_layered_cross": ("0,0,0,2,3,1,2,3,2", "3,3,4,4,5,4,6,7,6,7,7,8,8"),
+        "normal_graph_multi_fanin": ("0,0,0,3", "3,3,3"),
     }.get(config.dag_shape)
 
 
@@ -407,6 +419,10 @@ def _expected_graph_task_arg_key(config: PairedPersistentSmokeConfig) -> str | N
         "graph_descriptor_submit_groups": "submit_groups",
         "graph_descriptor_submits": "submits",
         "graph_descriptor_task_dict": "task_dict",
+        "normal_graph_chain": "normal_graph",
+        "normal_graph_fork_join": "normal_graph",
+        "normal_graph_layered_cross": "normal_graph",
+        "normal_graph_multi_fanin": "normal_graph",
     }.get(config.dag_shape)
 
 
@@ -415,6 +431,10 @@ def _expected_graph_lowering(config: PairedPersistentSmokeConfig) -> str | None:
         return None
     return {
         "graph_descriptor_submits": "normal_graph",
+        "normal_graph_chain": "normal_graph",
+        "normal_graph_fork_join": "normal_graph",
+        "normal_graph_layered_cross": "normal_graph",
+        "normal_graph_multi_fanin": "normal_graph",
     }.get(config.dag_shape)
 
 
@@ -450,6 +470,8 @@ def _expected_scalar_args(config: PairedPersistentSmokeConfig) -> str | None:
         ),
         "graph_descriptor_layered_cross": "scalar0=2.0",
         "graph_descriptor_multi_fanin": "scalar0=2.0",
+        "normal_graph_layered_cross": "scalar0=2.0",
+        "normal_graph_multi_fanin": "scalar0=2.0",
         "graph_descriptor_node_attrs": "scalar_args[0]=1.5,scalar_args[1]=0.25",
         "graph_descriptor_reordered": "scalar_args[0]=1.5,scalar_args[1]=0.25",
         "graph_descriptor_scalar_affine": "scalar0=1.5,scalar1=0.5",
@@ -473,6 +495,8 @@ def _expected_tensor_args(config: PairedPersistentSmokeConfig) -> str | None:
         "graph_descriptor_generic_args4": ("tensor_args[0]=tmp0,tensor_args[1]=tmp3,tensor_args[2]=a,tensor_args[3]=b"),
         "graph_descriptor_layered_cross": "c=a",
         "graph_descriptor_multi_fanin": "c=tmp2",
+        "normal_graph_layered_cross": "c=a",
+        "normal_graph_multi_fanin": "c=tmp2",
         "graph_descriptor_node_attrs": "tensor_args[0]=tmp0,tensor_args[1]=tmp3",
         "graph_descriptor_reordered": "tensor_args[0]=tmp0,tensor_args[1]=tmp3",
         "graph_descriptor_tagged": "tensor_args[0]=tmp0,tensor_args[1]=tmp3",
@@ -734,6 +758,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "graph_descriptor_wide_fanout",
             "graph_tensor_core_tile",
             "graph_tensor_tile",
+            *NORMAL_GRAPH_DAG_SHAPES,
             "quad",
             "scalar_affine",
             "scalar_axpy",

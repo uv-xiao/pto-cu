@@ -29,6 +29,7 @@ from cuda_persistent_smoke_impl.fallback_ptx import (
     FALLBACK_PERSISTENT_QUEUE_VECTOR_ADD_PTX as _FALLBACK_PERSISTENT_QUEUE_VECTOR_ADD_PTX,
     FALLBACK_PERSISTENT_VECTOR_ADD_PTX as _FALLBACK_PERSISTENT_VECTOR_ADD_PTX,
 )
+from cuda_persistent_smoke_impl.normal_graph_shapes import NORMAL_GRAPH_DAG_SHAPES, make_normal_graph_nodes
 from simpler_setup.cuda_callable_compiler import (
     CudaPersistentCallableArtifact,
     CudaPersistentTaskBodyFunction,
@@ -682,6 +683,40 @@ def _make_dag_shape(  # noqa: PLR0912, PLR0915
             for field, value in descriptor.items():
                 setattr(task, field, value)
         return task
+
+    if dag_shape in NORMAL_GRAPH_DAG_SHAPES:
+        nodes = make_normal_graph_nodes(
+            dag_shape,
+            n=n,
+            dev_a=dev_a,
+            dev_b=dev_b,
+            dev_tmp0=dev_tmp0,
+            dev_tmp1=dev_tmp1,
+            dev_tmp2=dev_tmp2,
+            dev_tmp3=dev_tmp3,
+            dev_out=dev_out,
+        )
+        lowered = lower_normal_graph(
+            nodes,
+            lambda node, dependent_begin, dependent_count, initial_fanin: make_task(
+                node.func_id,
+                node.a,
+                node.b,
+                node.out,
+                dependent_begin,
+                dependent_count,
+                initial_fanin,
+                node.attrs,
+            ),
+        )
+        host_fanin_t = ctypes.c_uint32 * len(lowered.fanin)
+        dependents_t = ctypes.c_uint32 * len(lowered.dependents)
+        task_t = CudaPersistentDagTask * len(lowered.tasks)
+        return (
+            host_fanin_t(*lowered.fanin),
+            dependents_t(*lowered.dependents),
+            task_t(*lowered.tasks),
+        )
 
     if dag_shape == "fork_join":
         task_count = 3
@@ -2556,7 +2591,7 @@ def _run_dag_smoke(config: DagSmokeConfig) -> dict:  # noqa: PLR0912, PLR0915
             expected_tmp2 = [_f32(expected_tmp0[i] + expected_tmp1[i]) for i in range(n)]
             expected_tmp3 = [_f32(expected_tmp2[i] * host_b[i]) for i in range(n)]
             expected_out = expected_tmp2
-            if config.dag_shape in {"chain", "graph_descriptor_chain"}:
+            if config.dag_shape in {"chain", "graph_descriptor_chain", "normal_graph_chain"}:
                 expected_out = [_f32(expected_tmp2[i] + expected_tmp3[i]) for i in range(n)]
             if config.dag_shape in {"scratch_reuse", "graph_descriptor_scratch_reuse"}:
                 expected_tmp0 = [_f32(expected_tmp2[i] + host_a[i]) for i in range(n)]
@@ -2578,12 +2613,12 @@ def _run_dag_smoke(config: DagSmokeConfig) -> dict:  # noqa: PLR0912, PLR0915
                 expected_tmp2 = child_mul_b
                 expected_tmp0 = [_f32(child_mul_b[i] * expected_tmp3[i]) for i in range(n)]
                 expected_out = [_f32(expected_tmp1[i] + expected_tmp0[i]) for i in range(n)]
-            if config.dag_shape == "graph_descriptor_multi_fanin":
+            if config.dag_shape in {"graph_descriptor_multi_fanin", "normal_graph_multi_fanin"}:
                 expected_tmp0 = [_f32(host_a[i] + host_b[i]) for i in range(n)]
                 expected_tmp1 = [_f32(host_a[i] * host_b[i]) for i in range(n)]
                 expected_tmp2 = [_f32(2.0 * host_a[i]) for i in range(n)]
                 expected_out = [_f32(expected_tmp0[i] * expected_tmp1[i] + expected_tmp2[i]) for i in range(n)]
-            if config.dag_shape == "graph_descriptor_layered_cross":
+            if config.dag_shape in {"graph_descriptor_layered_cross", "normal_graph_layered_cross"}:
                 root_add = [_f32(host_a[i] + host_b[i]) for i in range(n)]
                 root_mul = [_f32(host_a[i] * host_b[i]) for i in range(n)]
                 root_scale = [_f32(2.0 * host_a[i]) for i in range(n)]
@@ -2688,6 +2723,7 @@ def _run_dag_smoke(config: DagSmokeConfig) -> dict:  # noqa: PLR0912, PLR0915
                 in {
                     "chain",
                     "graph_descriptor_chain",
+                    "normal_graph_chain",
                     "scratch_reuse",
                     "graph_tensor_tile",
                     "tensor_core_tile",
@@ -2701,8 +2737,10 @@ def _run_dag_smoke(config: DagSmokeConfig) -> dict:  # noqa: PLR0912, PLR0915
                     "graph_descriptor",
                     "graph_descriptor_diamond",
                     "graph_descriptor_layered_cross",
+                    "normal_graph_layered_cross",
                     "graph_descriptor_generic_args4",
                     "graph_descriptor_multi_fanin",
+                    "normal_graph_multi_fanin",
                     "graph_descriptor_node_attrs",
                     "graph_descriptor_parallel_chains",
                     "graph_descriptor_reordered",
@@ -2719,7 +2757,9 @@ def _run_dag_smoke(config: DagSmokeConfig) -> dict:  # noqa: PLR0912, PLR0915
                 in {
                     "chain",
                     "graph_descriptor_chain",
+                    "normal_graph_chain",
                     "graph_descriptor_layered_cross",
+                    "normal_graph_layered_cross",
                     "graph_descriptor_parallel_chains",
                     "graph_descriptor_wide_fanout",
                     "scratch_reuse",
@@ -2803,10 +2843,10 @@ def _run_dag_smoke(config: DagSmokeConfig) -> dict:  # noqa: PLR0912, PLR0915
             result["scalar_args"] = {"scalar0": 2.0}
         if config.dag_shape in {"scalar_affine", "graph_descriptor_scalar_affine"}:
             result["scalar_args"] = {"scalar0": 1.5, "scalar1": 0.5}
-        if config.dag_shape == "graph_descriptor_multi_fanin":
+        if config.dag_shape in {"graph_descriptor_multi_fanin", "normal_graph_multi_fanin"}:
             result["scalar_args"] = {"scalar0": 2.0}
             result["tensor_args"] = {"c": "tmp2"}
-        if config.dag_shape == "graph_descriptor_layered_cross":
+        if config.dag_shape in {"graph_descriptor_layered_cross", "normal_graph_layered_cross"}:
             result["scalar_args"] = {"scalar0": 2.0}
             result["tensor_args"] = {"c": "a"}
         if config.dag_shape in triad_shapes:
@@ -2860,6 +2900,7 @@ def _run_dag_smoke(config: DagSmokeConfig) -> dict:  # noqa: PLR0912, PLR0915
             "graph_descriptor_wide_fanout",
             "graph_tensor_core_tile",
             "graph_tensor_tile",
+            *NORMAL_GRAPH_DAG_SHAPES,
         }:
             result["graph_descriptor"] = {
                 "tasks": task_count,
@@ -2935,22 +2976,27 @@ def _run_dag_smoke(config: DagSmokeConfig) -> dict:  # noqa: PLR0912, PLR0915
                 "graph_descriptor_tagged_inout",
                 "graph_descriptor_role_keyed_inout",
                 "graph_descriptor_submits",
+                *NORMAL_GRAPH_DAG_SHAPES,
             }:
-                result["graph_task_arg_key"] = {
-                    "graph_descriptor_compact_role_inout": "compact",
-                    "graph_descriptor_pair_inout": "pair",
-                    "graph_descriptor_role_map_inout": "role_map",
-                    "graph_descriptor_role_keyed_inout": "role",
-                    "graph_descriptor_submits": "submits",
-                    "graph_descriptor_tagged_inout": "tag",
-                }[config.dag_shape]
-                result["graph_task_args"] = {
-                    "task0": "input:a,input:b,output:tmp1",
-                    "task1": "inout:tmp1,input:b",
-                    "task2": "input:tmp1,input:a,output_existing:out",
-                }
-                if config.dag_shape == "graph_descriptor_submits":
+                if config.dag_shape in NORMAL_GRAPH_DAG_SHAPES:
+                    result["graph_task_arg_key"] = "normal_graph"
                     result["graph_lowering"] = "normal_graph"
+                else:
+                    result["graph_task_arg_key"] = {
+                        "graph_descriptor_compact_role_inout": "compact",
+                        "graph_descriptor_pair_inout": "pair",
+                        "graph_descriptor_role_map_inout": "role_map",
+                        "graph_descriptor_role_keyed_inout": "role",
+                        "graph_descriptor_submits": "submits",
+                        "graph_descriptor_tagged_inout": "tag",
+                    }[config.dag_shape]
+                    result["graph_task_args"] = {
+                        "task0": "input:a,input:b,output:tmp1",
+                        "task1": "inout:tmp1,input:b",
+                        "task2": "input:tmp1,input:a,output_existing:out",
+                    }
+                    if config.dag_shape == "graph_descriptor_submits":
+                        result["graph_lowering"] = "normal_graph"
             if config.dag_shape == "graph_descriptor_submit_groups":
                 result["graph_task_arg_key"] = "submit_groups"
                 result["graph_task_args"] = {
@@ -3075,6 +3121,7 @@ def run_persistent_smoke(  # noqa: PLR0912, PLR0913, PLR0915
         "graph_descriptor_wide_fanout",
         "graph_tensor_core_tile",
         "graph_tensor_tile",
+        *NORMAL_GRAPH_DAG_SHAPES,
         "quad",
         "scalar_affine",
         "scalar_axpy",
@@ -3155,6 +3202,7 @@ def run_persistent_smoke(  # noqa: PLR0912, PLR0913, PLR0915
             "graph_descriptor_tagged",
             "graph_descriptor_tagged_inout",
             "graph_descriptor_wide_fanout",
+            *NORMAL_GRAPH_DAG_SHAPES,
         }
         and ptx_source.startswith("embedded-")
     ):
@@ -3401,6 +3449,7 @@ def main() -> None:
             "graph_descriptor_wide_fanout",
             "graph_tensor_core_tile",
             "graph_tensor_tile",
+            *NORMAL_GRAPH_DAG_SHAPES,
             "quad",
             "scalar_affine",
             "scalar_axpy",
