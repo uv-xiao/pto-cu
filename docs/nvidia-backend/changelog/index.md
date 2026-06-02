@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 PTO full-serving metric gate](2026-06-02-pto-full-serving-metric-gate.md)
 - [2026-06-02 PTO full-serving import gate](2026-06-02-pto-full-serving-import-gate.md)
 - [2026-06-02 Qwen logits projection reference](2026-06-02-qwen-logits-projection-reference.md)
 - [2026-06-02 Qwen logits tile descriptor](2026-06-02-qwen-logits-tile-descriptor.md)

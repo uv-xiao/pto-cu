@@ -215,6 +215,50 @@ def test_full_serving_importer_rejects_diagnostic_resource_backed_rows():
         raise AssertionError("diagnostic resource-backed row was accepted")
 
 
+def test_full_serving_importer_rejects_failed_requests():
+    importer = load_importer_module()
+    row = full_serving_raw_result("mpk_offline_decode")
+    row["metrics"]["failed_requests"] = 1
+
+    try:
+        importer.build_result_records(
+            {
+                "results": [
+                    row,
+                    full_serving_raw_result("vdcores_offline_decode"),
+                ]
+            },
+            raw_artifact="tmp/cuda-backend/pto-full-serving/run.json",
+            commit="abc1234",
+        )
+    except SystemExit as exc:
+        assert "failed_requests must be zero" in str(exc)
+    else:
+        raise AssertionError("failed full-serving request row was accepted")
+
+
+def test_full_serving_importer_rejects_underchecked_decode_tokens():
+    importer = load_importer_module()
+    row = full_serving_raw_result("mpk_offline_decode")
+    row["correctness_details"]["checked_token_count"] = 511
+
+    try:
+        importer.build_result_records(
+            {
+                "results": [
+                    row,
+                    full_serving_raw_result("vdcores_offline_decode"),
+                ]
+            },
+            raw_artifact="tmp/cuda-backend/pto-full-serving/run.json",
+            commit="abc1234",
+        )
+    except SystemExit as exc:
+        assert "checked_token_count must cover generated tokens" in str(exc)
+    else:
+        raise AssertionError("underchecked full-serving row was accepted")
+
+
 def test_full_serving_importer_merges_viewer_results(tmp_path):
     importer = load_importer_module()
     raw_json = tmp_path / "tmp" / "cuda-backend" / "pto-full-serving" / "raw.json"

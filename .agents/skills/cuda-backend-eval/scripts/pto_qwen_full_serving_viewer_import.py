@@ -35,6 +35,7 @@ CORRECTNESS_SCOPE = "full_qwen_numerical_correctness"
 MODEL_ID = "Qwen/Qwen3-8B"
 RUNTIME = "cuda/persistent_device"
 SERVING_COVERAGE = "full_serving"
+MIN_SAMPLE_COUNT = 3
 
 
 def fail(message: str) -> None:
@@ -124,6 +125,18 @@ def require_nonnegative_number(
     return value
 
 
+def require_exact_int(
+    record: dict[str, Any],
+    key: str,
+    expected: int,
+    owner: str,
+) -> int:
+    value = require_nonnegative_int(record, key, owner)
+    if value != expected:
+        fail(f"{owner} has invalid {key}: expected {expected}, got {value}")
+    return value
+
+
 def correctness_details(raw: dict[str, Any], owner: str) -> dict[str, Any]:
     details = require_dict(raw, "correctness_details", owner)
     if require_string(details, "scope", owner) != CORRECTNESS_SCOPE:
@@ -152,6 +165,40 @@ def correctness_details(raw: dict[str, Any], owner: str) -> dict[str, Any]:
         "max_abs_error": max_abs_error,
         "tolerance": tolerance,
     }
+
+
+def validate_full_serving_metrics(
+    *,
+    metrics: dict[str, Any],
+    correctness: dict[str, Any],
+    batch_size: int,
+    prompt_tokens: int,
+    decode_tokens: int,
+    sample_count: int,
+    owner: str,
+) -> None:
+    if sample_count < MIN_SAMPLE_COUNT:
+        fail(f"{owner} sample_count must be at least {MIN_SAMPLE_COUNT}")
+
+    expected_input_tokens = batch_size * prompt_tokens
+    expected_output_tokens = batch_size * decode_tokens
+    checked_token_count = correctness["checked_token_count"]
+    if checked_token_count < expected_output_tokens:
+        fail(
+            f"{owner} checked_token_count must cover generated tokens: "
+            f"expected at least {expected_output_tokens}, got {checked_token_count}"
+        )
+
+    if "failed_requests" in metrics:
+        failed_requests = require_nonnegative_int(metrics, "failed_requests", owner)
+        if failed_requests != 0:
+            fail(f"{owner} failed_requests must be zero")
+    if "completed_requests" in metrics:
+        require_exact_int(metrics, "completed_requests", batch_size, owner)
+    if "total_input_tokens" in metrics:
+        require_exact_int(metrics, "total_input_tokens", expected_input_tokens, owner)
+    if "total_output_tokens" in metrics:
+        require_exact_int(metrics, "total_output_tokens", expected_output_tokens, owner)
 
 
 def raw_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
@@ -202,6 +249,15 @@ def result_record(
     decode_tokens = require_positive_int(inputs, "decode_tokens", owner)
     sample_count = require_positive_int(metrics, "sample_count", owner)
     device_wall_ns = require_nonnegative_int(metrics, "device_wall_ns", owner)
+    validate_full_serving_metrics(
+        metrics=metrics,
+        correctness=correctness,
+        batch_size=batch_size,
+        prompt_tokens=prompt_tokens,
+        decode_tokens=decode_tokens,
+        sample_count=sample_count,
+        owner=owner,
+    )
     statistic = {
         "kind": "pto_qwen_full_serving_capture",
         "sample_count": sample_count,
