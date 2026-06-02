@@ -113,6 +113,11 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         for item in manifest["task_bodies"]
         if item["callable"] == "qwen_final_norm"
     )
+    qk_norm = next(
+        item
+        for item in manifest["task_bodies"]
+        if item["callable"] == "qwen_attention_qk_norm"
+    )
     post_attention_norm = next(
         item
         for item in manifest["task_bodies"]
@@ -121,6 +126,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
 
     assert "rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f)" in source
     assert rmsnorm["threading"] == "block"
+    assert qk_norm["threading"] == "block"
     assert post_attention_norm["threading"] == "block"
     assert final_norm["threading"] == "block"
     assert "__shared__ float partial[1024];" in source
@@ -129,6 +135,14 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         in full_source
     )
     assert "qwen_final_norm" in full_source
+    assert "qwen_attention_qk_norm" in full_source
+    assert "for (unsigned long long j = threadIdx.x;" in full_source
+    assert "const unsigned int col = static_cast<unsigned int>(j % task->cols);" in (
+        full_source
+    )
+    assert "qwen_qk_norm_block_rmsnorm_rope_source" in manifest[
+        "implemented_contracts"
+    ]
     assert "qwen_rmsnorm_post_attention" in full_source
     assert (
         "qwen_post_attention_norm_full_rmsnorm_source"
@@ -159,7 +173,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     )
     assert "task->c[kv_write_index] = projected;" in full_source
     assert "task->d[kv_write_index] = projected;" in full_source
-    assert "mean_square / static_cast<float>(task->inner)" in full_source
+    assert "partial[0] / static_cast<float>(task->inner)" in full_source
     assert "const float normalized = task->a[row_base + col] * scale * 0.5f" in (
         full_source
     )

@@ -192,6 +192,16 @@
             "qwen_post_attention_norm_full_rmsnorm_source",
             "qwen_resource_backed_diagnostic_execution"
           ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/qwen-qk-norm-block/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_qk_norm_block_rmsnorm_rope_source",
+            "qwen_resource_backed_unit_numeric_task_mode",
+            "qwen_resource_backed_diagnostic_execution"
+          ]
         }
       ]
     },

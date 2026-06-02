@@ -18,7 +18,7 @@
       "matrix_status": "ready_for_paper_claim",
       "ready_for_paper_claim": true,
       "evidence_ref_counts": {
-        "raw_artifact": 10,
+        "raw_artifact": 11,
         "viewer_data": 1,
         "viewer_result": 18
       },

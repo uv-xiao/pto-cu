@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen QK norm block threading](2026-06-02-qwen-qk-norm-block.md)
 - [2026-06-02 Qwen post-attention RMSNorm](2026-06-02-qwen-post-attention-rmsnorm.md)
 - [2026-06-02 Sharded result records restored](2026-06-02-sharded-result-records-restored.md)
 - [2026-06-02 Qwen preflight aggregate](2026-06-02-qwen-preflight-aggregate.md)
