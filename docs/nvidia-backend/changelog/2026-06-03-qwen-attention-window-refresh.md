@@ -60,6 +60,31 @@ with zero scheduler errors, sampled token `63690`, and diagnostic logits
 reference passed across 3,904 checked elements from 16 rows with
 `max_abs_error=1.195e-05` under tolerance `2e-05`.
 
+The same A100 MPK-policy diagnostic was then rerun for two decode steps with
+full active logits checked on every step:
+
+```bash
+ARTIFACT=tmp/cuda-backend/qwen-attention-window-refresh-multistep-mpk-2026-06-03
+PYTHONPATH=$PWD:$PWD/python timeout 480 .venv/bin/python \
+  examples/cuda/qwen_decode_loop_runner.py --mode mock \
+  --single-context-live-session --run-resource-backed-smoke \
+  --resource-backed-task-selection first_layer_with_logits \
+  --resource-backed-workload mpk_offline_decode \
+  --resource-backed-repeat-runs 1 --resource-backed-decode-steps 2 \
+  --resource-backed-worker-blocks 10 \
+  --resource-backed-logits-check-policy every_step \
+  --resource-backed-logits-active-cols full \
+  --resource-backed-numeric-task-mode unit_math_full_rmsnorm \
+  --device 0 --arch compute_80 --cache-root $ARTIFACT/cache \
+  --output-json $ARTIFACT/qwen-decode-loop-runner.json
+```
+
+Result: both materialized decode steps passed. Each step completed 10
+persistent tasks with zero scheduler errors, committed the device-selected
+token back into the next-step input slot, and passed the diagnostic logits
+reference across 3,904 checked elements with `max_abs_error=1.195e-05`.
+Step 0 selected token `63690`; step 1 selected token `48084`.
+
 ## Remaining Gaps
 
 This fixes the per-step launch-packet window for resource-backed diagnostics.
