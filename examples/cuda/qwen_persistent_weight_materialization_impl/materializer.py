@@ -12,6 +12,14 @@ def materialized_tensor_arg(
     pointers: dict[int, dict[str, Any]],
     pointer_table_ready: bool,
 ) -> dict[str, Any]:
+    if arg.get("status") == "runtime_generated_tensor":
+        return {
+            "arg": arg["arg"],
+            "tensor": arg["tensor"],
+            "role": arg.get("role", arg["tensor"]),
+            "device_ptr_source": arg.get("device_ptr_source"),
+            "status": "requires_live_pointer",
+        }
     slot_id = arg["slot_id"]
     binding = bindings.get(slot_id, {})
     record = {

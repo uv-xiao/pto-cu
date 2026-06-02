@@ -2009,8 +2009,11 @@ def test_persistent_qwen_weight_arg_manifest_is_reviewable(tmp_path):
     assert manifest["abi"]["tensor_arg_capacity"] == 4
     assert manifest["covered_tensor_count"] == len(bindings)
     assert manifest["missing_tensor_count"] == 0
-    assert manifest["max_tensor_args_per_task"] == 3
+    assert manifest["max_tensor_args_per_task"] == 4
     assert "qwen_weight_task_decomposition" in manifest["implemented_contracts"]
+    assert "qwen_rope_table_tensor_arg_contract" in manifest[
+        "implemented_contracts"
+    ]
     assert "persistent_task_weight_arg_runtime_binding" in manifest[
         "remaining_runtime_gaps"
     ]
@@ -2038,7 +2041,24 @@ def test_persistent_qwen_weight_arg_manifest_is_reviewable(tmp_path):
             "tensor": "model.layers.0.self_attn.v_proj.weight",
         },
     ]
-    assert descriptors["layer_0_attention_qk_norm"]["tensor_arg_count"] == 2
+    qk_norm = descriptors["layer_0_attention_qk_norm"]
+    assert qk_norm["tensor_arg_count"] == 4
+    assert qk_norm["tensor_args"][2:] == [
+        {
+            "arg": "tensor_args[2]",
+            "tensor": "rope_cos_table",
+            "role": "rope_cos_table",
+            "status": "runtime_generated_tensor",
+            "device_ptr_source": "runtime_buffers.rope_cos_table",
+        },
+        {
+            "arg": "tensor_args[3]",
+            "tensor": "rope_sin_table",
+            "role": "rope_sin_table",
+            "status": "runtime_generated_tensor",
+            "device_ptr_source": "runtime_buffers.rope_sin_table",
+        },
+    ]
     assert descriptors["layer_0_mlp_gate_up"]["tensor_arg_count"] == 2
     assert descriptors["logits"]["tensor_args"][0]["tensor"] == "lm_head.weight"
 
@@ -2122,9 +2142,25 @@ def test_persistent_qwen_weight_materialization_binds_resident_pointers(tmp_path
         "device_ptr_hex": "0x10002000",
         "size_bytes": 8,
     }
-    assert materialized_descriptors["layer_0_attention_qk_norm"][
-        "tensor_arg_count"
-    ] == 2
+    qk_norm = materialized_descriptors["layer_0_attention_qk_norm"]
+    assert qk_norm["tensor_arg_count"] == 4
+    assert qk_norm["tensor_args"][2:] == [
+        {
+            "arg": "tensor_args[2]",
+            "tensor": "rope_cos_table",
+            "role": "rope_cos_table",
+            "device_ptr_source": "runtime_buffers.rope_cos_table",
+            "status": "requires_live_pointer",
+        },
+        {
+            "arg": "tensor_args[3]",
+            "tensor": "rope_sin_table",
+            "role": "rope_sin_table",
+            "device_ptr_source": "runtime_buffers.rope_sin_table",
+            "status": "requires_live_pointer",
+        },
+    ]
+    assert materialization["symbolic_tensor_pointer_count"] == 2
     assert materialized_descriptors["layer_0_mlp_gate_up"]["tensor_arg_count"] == 2
     assert materialized_descriptors["logits"]["tensor_args"][0]["tensor"] == (
         "lm_head.weight"

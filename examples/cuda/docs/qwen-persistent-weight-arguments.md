@@ -14,10 +14,11 @@ PYTHONPATH=$PWD:$PWD/python \
 
 Expected output: command exits 0; output JSON records Qwen weight task
 descriptors whose `tensor_args` fit the four-pointer persistent DAG ABI and
-cover every validated weight tensor.
+cover every validated weight tensor plus runtime-generated RoPE table slots.
 
 This is an ABI manifest, not runtime pointer materialization. It decomposes
 Qwen layer work into persistent task descriptors such as attention QKV,
 attention Q/K norm, MLP gate/up, and MLP down so each task stays within
-`PtoCudaPersistentDagTask::tensor_args[4]`.
-
+`PtoCudaPersistentDagTask::tensor_args[4]`. Attention Q/K norm descriptors bind
+`tensor_args[2]` and `tensor_args[3]` as runtime-generated RoPE cos/sin table
+requirements; live decode-loop pointer binding for those tables remains open.

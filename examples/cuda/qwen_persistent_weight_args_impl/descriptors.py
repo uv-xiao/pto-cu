@@ -37,6 +37,23 @@ def tensor_arg_records(
     return records
 
 
+def runtime_tensor_arg_records(
+    *,
+    start_index: int,
+    roles: list[str],
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "arg": f"tensor_args[{index}]",
+            "tensor": role,
+            "role": role,
+            "status": "runtime_generated_tensor",
+            "device_ptr_source": f"runtime_buffers.{role}",
+        }
+        for index, role in enumerate(roles, start=start_index)
+    ]
+
+
 def tensor_arg_metadata(
     *,
     tensors: list[str],
@@ -66,9 +83,17 @@ def descriptor(
     phase: str,
     tensors: list[str],
     bindings: dict[str, dict[str, Any]],
+    runtime_tensor_roles: list[str] | None = None,
     model_shape: QwenTaskShape = QWEN3_8B_TASK_SHAPE,
 ) -> dict[str, Any]:
     tensor_args = tensor_arg_records(tensors, bindings)
+    if runtime_tensor_roles:
+        tensor_args.extend(
+            runtime_tensor_arg_records(
+                start_index=len(tensor_args),
+                roles=runtime_tensor_roles,
+            )
+        )
     missing = [
         item["tensor"]
         for item in tensor_args
@@ -129,6 +154,7 @@ def layer_descriptors(
                 layer_tensor(layer, "self_attn.k_norm"),
             ],
             bindings=bindings,
+            runtime_tensor_roles=["rope_cos_table", "rope_sin_table"],
             model_shape=model_shape,
         ),
         descriptor(

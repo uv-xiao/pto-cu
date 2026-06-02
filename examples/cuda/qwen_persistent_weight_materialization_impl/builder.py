@@ -82,6 +82,7 @@ def build_materialization_manifest(
     implemented_contracts = [
         "persistent_task_weight_arg_runtime_materializer",
         "ctypes_persistent_dag_task_layout",
+        "runtime_generated_tensor_pointer_requirements",
     ]
     if complete:
         implemented_contracts.append("resident_weight_pointer_table_validation")
@@ -110,11 +111,13 @@ def build_materialization_manifest(
         "materialized_task_descriptors": descriptors,
         "bound_tensor_pointer_count": len(bound),
         "symbolic_tensor_pointer_count": len(symbolic),
+        "symbolic_tensor_pointer_requirements": symbolic[:16],
         "missing_pointer_count": len(missing),
         "missing_pointers": missing,
         "implemented_contracts": implemented_contracts,
         "remaining_runtime_gaps": [
             "live_decode_loop_pointer_table",
+            "rope_table_live_pointer_binding",
             "qwen_kernel_weight_consumption",
         ],
     }

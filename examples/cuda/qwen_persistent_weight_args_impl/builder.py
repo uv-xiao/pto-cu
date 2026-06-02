@@ -53,6 +53,7 @@ def build_weight_arg_manifest(
         "qwen_weight_task_decomposition",
         "qwen_task_shape_field_contract",
         "qwen_weight_tensor_metadata_contract",
+        "qwen_rope_table_tensor_arg_contract",
         "persistent_dag_tensor_arg_capacity_check",
     ]
     if complete:

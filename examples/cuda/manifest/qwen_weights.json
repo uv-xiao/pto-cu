@@ -77,10 +77,11 @@
       "method_id": "pto_persistent_device",
       "runtime": "cuda/persistent_device",
       "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_weight_args.py --output-json tmp/cuda-backend/pto-serving-weight-args/qwen-persistent-weight-args.json",
-      "expected_output": "command exits 0; output JSON records Qwen weight task descriptors whose tensor_args fit the four-pointer persistent DAG ABI and cover every validated weight tensor.",
+      "expected_output": "command exits 0; output JSON records Qwen weight task descriptors whose tensor_args fit the four-pointer persistent DAG ABI and cover every validated weight tensor plus runtime-generated RoPE table slots.",
       "evidence_symbols": [
         "pto_qwen_persistent_weight_args",
         "qwen_weight_task_decomposition",
+        "qwen_rope_table_tensor_arg_contract",
         "persistent_dag_tensor_arg_capacity_check",
         "persistent_task_weight_arg_binding_manifest"
       ]
@@ -93,11 +94,12 @@
       "method_id": "pto_persistent_device",
       "runtime": "cuda/persistent_device",
       "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_weight_materialization.py --output-json tmp/cuda-backend/pto-serving-weight-materialization/qwen-persistent-weight-materialization.json",
-      "expected_output": "command exits 0; output JSON records how Qwen persistent weight task descriptors are materialized through the CudaPersistentDagTask ctypes layout, and binds resident device pointers when a live pointer table is supplied.",
+      "expected_output": "command exits 0; output JSON records how Qwen persistent weight task descriptors are materialized through the CudaPersistentDagTask ctypes layout, binds resident device pointers when a live pointer table is supplied, and preserves runtime-generated RoPE table pointer requirements.",
       "evidence_symbols": [
         "pto_qwen_persistent_weight_materialization",
         "persistent_task_weight_arg_runtime_materializer",
         "ctypes_persistent_dag_task_layout",
+        "runtime_generated_tensor_pointer_requirements",
         "resident_weight_pointer_table_validation"
       ]
     },

@@ -14,12 +14,11 @@ PYTHONPATH=$PWD:$PWD/python \
 
 Expected output: command exits 0; output JSON records how Qwen persistent
 weight task descriptors are materialized through the `CudaPersistentDagTask`
-ctypes layout, and binds resident device pointers when a live pointer table is
-supplied.
+ctypes layout, binds resident device pointers when a live pointer table is
+supplied, and preserves runtime-generated RoPE table pointer requirements.
 
 Without `--pointer-table-json`, this emits a symbolic materialization plan that
 uses `resident_weight_ptrs[slot_id]` as the source for each `tensor_args`
 entry. With a live pointer table from the decode-loop runner, it emits concrete
 device addresses and validates that each pointer matches the expected tensor
 slot before DAG submission.
-
