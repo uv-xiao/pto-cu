@@ -95,3 +95,37 @@ def test_qwen_task_bodies_do_not_exit_grid_stride_wrapper_early():
 
     for spec in body_specs():
         assert "return;" not in spec["body"], spec["callable"]
+
+
+def test_task_body_manifest_tracks_qwen_tensor_tile_source_contract():
+    module = load_task_bodies_module()
+
+    manifest = module.build_task_body_manifest(num_hidden_layers=1)
+    contract = manifest["qwen_tensor_tile_contract"]
+
+    assert contract["status"] == "qwen_tensor_tile_source_contract_ready"
+    assert contract["wmma"] == {
+        "api": "nvcuda::wmma",
+        "mma_shape": "m16n16k8",
+        "input": "tf32",
+        "accumulator": "f32",
+    }
+    assert [task["id"] for task in contract["task_functions"]] == [
+        "qwen_attention_projection_tile",
+        "qwen_mlp_projection_tile",
+    ]
+    assert [task["tensor_tile"] for task in contract["task_functions"]] == [
+        {"rows": 16, "cols": 64, "inner": 128},
+        {"rows": 16, "cols": 64, "inner": 256},
+    ]
+    assert contract["rendered_source"]["required_fragments"] == [
+        "task->rows != 16U",
+        "task->cols != 64U",
+        "k < 128U",
+        "k < 256U",
+        "wmma::mma_sync",
+    ]
+    assert "qwen_tensor_tile_source_contract" in manifest["implemented_contracts"]
+    assert "wire_qwen_tensor_tile_specializations_into_benchmark_runtime" in manifest[
+        "remaining_runtime_gaps"
+    ]

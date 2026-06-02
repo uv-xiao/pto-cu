@@ -31,6 +31,13 @@
             "--tensor-cols",
             "--tensor-inner"
           ]
+        },
+        {
+          "path": "examples/cuda/qwen_persistent_task_bodies_impl/tensor_tiles.py",
+          "symbols": [
+            "qwen_attention_projection_wmma_tile",
+            "16, \"cols\": 64, \"inner\": 128"
+          ]
         }
       ],
       "import_smoke": {
@@ -78,6 +85,13 @@
           "symbols": [
             "_validate_tensor_core_tile",
             "pto_persistent_dag_graph_tensor_core"
+          ]
+        },
+        {
+          "path": "examples/cuda/qwen_persistent_task_bodies_impl/tensor_tiles.py",
+          "symbols": [
+            "qwen_mlp_projection_wmma_tile",
+            "16, \"cols\": 64, \"inner\": 256"
           ]
         }
       ],
@@ -231,7 +245,7 @@
       "id": "tuned_pto_tensor_body_gap",
       "title": "Tuned PTO Tensor Body Gap",
       "status": "open",
-      "summary": "The open gap is tuned PTO tensor body throughput.",
+      "summary": "The open gap is runtime wiring and throughput for the Qwen tensor body specializations.",
       "covered_cases": [
         "baseline comparison surface",
         "A100/H200 tensor result rows",
@@ -240,7 +254,7 @@
         "throughput SVG/report generation"
       ],
       "open_work": [
-        "implement tuned PTO tensor bodies for model-relevant shapes",
+        "route model-shape benchmark descriptors to the Qwen tensor body func_ids",
         "publish multi-repeat tuned PTO rows against library baselines"
       ],
       "result_refs": [],
@@ -248,8 +262,15 @@
         {
           "path": "docs/nvidia-backend/status/remaining-gaps/tuned-tensor-workloads.md",
           "symbols": [
-            "tuned PTO tensor body work",
-            "model-relevant"
+            "source contract is ready",
+            "runtime-wiring gap"
+          ]
+        },
+        {
+          "path": "examples/cuda/qwen_persistent_task_bodies_impl/tensor_tiles.py",
+          "symbols": [
+            "qwen_tensor_tile_task_functions",
+            "wmma::mma_sync"
           ]
         },
         {

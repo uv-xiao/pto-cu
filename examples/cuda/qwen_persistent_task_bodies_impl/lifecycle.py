@@ -14,6 +14,7 @@ from simpler_setup.cuda_callable_compiler import (
 
 from .logits_feedback import qwen_logits_spec
 from .oracle import build_numeric_oracle, build_qwen_unit_math_oracle
+from .tensor_tiles import build_qwen_tensor_tile_contract
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -265,10 +266,12 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
         },
         "numeric_oracle": build_numeric_oracle(callables),
         "qwen_unit_math_oracle": build_qwen_unit_math_oracle(),
+        "qwen_tensor_tile_contract": build_qwen_tensor_tile_contract(),
         "implemented_contracts": [
             "generated_qwen_kernel_bodies",
             "controlled_proxy_numeric_oracle",
             "qwen_unit_math_oracle",
+            "qwen_tensor_tile_source_contract",
             "qwen_unit_math_source_coverage",
             "qwen_kernel_token_field_consumption",
             "qwen_kernel_kv_field_consumption",
@@ -279,6 +282,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
         "remaining_runtime_gaps": [
             "numerically_correct_qwen_kernel_bodies",
             "cuda_live_qwen_unit_math_execution",
+            "wire_qwen_tensor_tile_specializations_into_benchmark_runtime",
             "cuda_live_decode_loop_execution",
             "viewer_result_import",
         ],

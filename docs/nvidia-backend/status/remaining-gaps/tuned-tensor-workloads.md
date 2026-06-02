@@ -20,15 +20,20 @@ also have local A100 one-repeat import smokes under
 `tmp/cuda-backend/qwen-attention-tensor-target-bdce5ea4/` and
 `tmp/cuda-backend/qwen-mlp-tensor-target-c1110223/`, proving that PTO
 persistent-device and cuBLAS Graph rows route through the viewer mapping for
-the 16x64x128 and 16x64x256 tiles. The remaining gap is
-tuned PTO tensor body work at those model-relevant sizes; it is not
-descriptor-shape, first tensor-core callable plumbing, or baseline viewer
-coverage.
+the 16x64x128 and 16x64x256 tiles.
+
+The Qwen tensor-tile source contract is ready in
+`examples/cuda/qwen_persistent_task_bodies_impl/tensor_tiles.py`: it defines
+block-wide WMMA task functions for the attention `16x64x128` tile and MLP
+`16x64x256` tile, with fixed-shape guards and `m16n16k8` TF32/F32 fragment
+metadata. The remaining runtime-wiring gap is routing the benchmark/runtime
+descriptors to those Qwen-specific function ids and proving multi-repeat
+throughput. The gap is not descriptor-shape, first tensor-core callable
+plumbing, baseline viewer coverage, or source-contract definition.
 
 Needed:
 
-- tuned PTO tensor body implementation beyond the current diagnostic WMMA and
-  scalar tiled-GEMM rows;
+- benchmark/runtime selector wiring for the Qwen tensor-tile function ids;
 - broader model-kernel shape families once the tensor-core/library path
   exists;
 - multi-repeat throughput rows that compare tuned PTO tensor bodies against
@@ -43,18 +48,22 @@ is validated by
 The current one-repeat model-shape import smokes are under
 `tmp/cuda-backend/qwen-attention-tensor-target-bdce5ea4/` and
 `tmp/cuda-backend/qwen-mlp-tensor-target-c1110223/`.
+The source-contract evidence is emitted by
+`examples/cuda/qwen_persistent_task_bodies.py` as
+`qwen_tensor_tile_contract`.
 
 ## Promotion Gate
 
-Close this gap only after tuned PTO tensor bodies produce multi-repeat A100
-and H200 rows for the Qwen attention and MLP target tiles, those rows import
-through the viewer with correctness and throughput statistics, and baseline
-rows for cuBLAS Graph, CUTLASS, Triton, and ThunderKittens remain comparable.
+Close this gap only after the Qwen tensor-tile function ids are selectable by
+the persistent benchmark/runtime path, produce multi-repeat A100 and H200 rows
+for the Qwen attention and MLP target tiles, import through the viewer with
+correctness and throughput statistics, and keep baseline rows for cuBLAS Graph,
+CUTLASS, Triton, and ThunderKittens comparable.
 
 ## Next Actions
 
-- Replace diagnostic PTO tensor bodies with tuned model-shape kernels for
-  `16x64x128` and `16x64x256`.
+- Route the model-shape benchmark descriptors to the Qwen tensor-tile function
+  ids instead of the generic diagnostic WMMA `func_id=10`.
 - Capture multi-repeat A100/H200 PTO and baseline rows for those tiles.
 - Import the raw `tmp/` artifacts into the viewer and update this page before
   removing it from `status.md`.
