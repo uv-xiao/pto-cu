@@ -121,6 +121,46 @@ def input_ptr_for_task(
     return parse_ptr(token_fields["a"].get("device_ptr_hex"))
 
 
+def residual_ptr_for_task(
+    *,
+    index: int,
+    descriptors: list[dict[str, Any]],
+    token_fields: dict[str, dict[str, Any]],
+    workspace: dict[str, Any] | None,
+) -> int:
+    descriptor = descriptors[index]
+    if descriptor.get("callable") != "qwen_rmsnorm_post_attention":
+        return parse_ptr(token_fields["b"].get("device_ptr_hex"))
+    residual_index = layer_input_norm_index(
+        descriptors=descriptors,
+        index=index,
+    )
+    if residual_index is None:
+        return parse_ptr(token_fields["a"].get("device_ptr_hex"))
+    return input_ptr_for_task(
+        index=residual_index,
+        token_fields=token_fields,
+        workspace=workspace,
+    )
+
+
+def layer_input_norm_index(
+    *,
+    descriptors: list[dict[str, Any]],
+    index: int,
+) -> int | None:
+    descriptor_id = str(descriptors[index].get("id", ""))
+    layer_prefix = descriptor_id.rsplit("_post_attention_norm", 1)[0]
+    for candidate_index in range(index - 1, -1, -1):
+        candidate = descriptors[candidate_index]
+        if candidate.get("callable") != "qwen_rmsnorm_input":
+            continue
+        candidate_id = str(candidate.get("id", ""))
+        if not layer_prefix or candidate_id.startswith(layer_prefix):
+            return candidate_index
+    return None
+
+
 def output_ptr_for_task(
     *,
     index: int,

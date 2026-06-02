@@ -675,6 +675,74 @@ def test_launch_packet_uses_per_task_activation_output_extent():
     assert list(packet[2].scalar_args)[:3] == [0.0, 16.0, 32.0]
 
 
+def test_launch_packet_binds_post_attention_residual_source():
+    descriptors = [
+        {
+            "id": "layer_0_input_norm",
+            "callable": "qwen_rmsnorm_input",
+            "tensor_args": [],
+        },
+        {
+            "id": "layer_0_attention_qkv",
+            "callable": "qwen_attention_qkv",
+            "tensor_args": [],
+        },
+        {
+            "id": "layer_0_attention_qk_norm",
+            "callable": "qwen_attention_qk_norm",
+            "tensor_args": [],
+        },
+        {
+            "id": "layer_0_attention_o",
+            "callable": "qwen_attention_o",
+            "tensor_args": [],
+        },
+        {
+            "id": "layer_0_post_attention_norm",
+            "callable": "qwen_rmsnorm_post_attention",
+            "tensor_args": [],
+        },
+        {
+            "id": "layer_0_mlp_gate_up",
+            "callable": "qwen_mlp_gate_up",
+            "tensor_args": [],
+        },
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x3000"},
+            {"field": "b", "device_ptr_hex": "0x4000"},
+            {"field": "out", "device_ptr_hex": "0x5000"},
+        ],
+    )
+    workspace = {
+        "activation_buffers": [
+            {"device_ptr_hex": "0x8000", "element_count": 8},
+            {"device_ptr_hex": "0x9000", "element_count": 16},
+            {"device_ptr_hex": "0xa000", "element_count": 16},
+            {"device_ptr_hex": "0xb000", "element_count": 8},
+            {"device_ptr_hex": "0xc000", "element_count": 8},
+            {"device_ptr_hex": "0xd000", "element_count": 16},
+        ],
+        "logits_buffer": {"device_ptr_hex": "0xe000", "element_count": 32},
+        "total_byte_count": 304,
+    }
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x6000"},
+            "d": {"device_ptr_hex": "0x7000"},
+        },
+        workspace=workspace,
+    )
+
+    assert packet is not None
+    assert packet[4].a == 0xB000
+    assert packet[4].b == 0x3000
+
+
 def test_launch_packet_carries_cuda_task_shape_fields():
     descriptors = [
         {"callable": "qwen_rmsnorm_input", "tensor_args": []},

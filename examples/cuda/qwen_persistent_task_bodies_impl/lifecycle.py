@@ -569,14 +569,20 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
             "callable": "qwen_rmsnorm_post_attention",
             "phase": "per_layer_decode",
             "threading": "block",
-            "consumes_fields": ["a", "out", "tensor_args"],
-            "consumes_roles": ["hidden_state", "post_attention_layernorm_weight"],
+            "consumes_fields": ["a", "b", "out", "tensor_args"],
+            "consumes_roles": [
+                "attention_output",
+                "attention_residual",
+                "post_attention_layernorm_weight",
+            ],
             "body": """
 if (task->scalar_arg_count == 1) {
     __shared__ float partial[1024];
     float mean_square = 0.0f;
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
-        mean_square += task->a[j] * task->a[j];
+        const float residual_value = task->b ? task->b[j] : 0.0f;
+        const float value = task->a[j] + residual_value;
+        mean_square += value * value;
     }
     partial[threadIdx.x] = mean_square;
     __syncthreads();
@@ -589,14 +595,18 @@ if (task->scalar_arg_count == 1) {
     const float scale =
         rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f);
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
+        const float residual_value = task->b ? task->b[j] : 0.0f;
+        const float value = task->a[j] + residual_value;
         const float weight = pto_cuda_tensor_arg_f32(task, 0U, j, 1.0f);
-        task->out[j] = task->a[j] * scale * weight;
+        task->out[j] = value * scale * weight;
     }
 } else {
     const float external_scale =
         task->scalar_arg_count > 1 ? task->scalar_args[1] : 1.0f;
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
-        task->out[j] = task->a[j] * external_scale *
+        const float residual_value = task->b ? task->b[j] : 0.0f;
+        const float value = task->a[j] + residual_value;
+        task->out[j] = value * external_scale *
             pto_cuda_tensor_arg_f32(task, 0U, j, 1.0f);
     }
 }
@@ -798,6 +808,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_shape_field_linear_projection_source",
             "qwen_shape_field_qk_rmsnorm_source",
             "qwen_post_attention_norm_full_rmsnorm_source",
+            "qwen_post_attention_residual_rmsnorm_source",
             "qwen_qk_norm_block_rmsnorm_rope_source",
             "qwen_qk_norm_separate_qk_regions_source",
             "qwen_qk_norm_normalized_k_cache_writeback_source",

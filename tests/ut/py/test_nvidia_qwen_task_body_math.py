@@ -128,6 +128,13 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert rmsnorm["threading"] == "block"
     assert qk_norm["threading"] == "block"
     assert post_attention_norm["threading"] == "block"
+    assert post_attention_norm["consumes_fields"] == [
+        "a",
+        "b",
+        "out",
+        "tensor_args",
+    ]
+    assert "attention_residual" in post_attention_norm["consumes_roles"]
     assert final_norm["threading"] == "block"
     assert "__shared__ float partial[1024];" in source
     assert (
@@ -172,6 +179,13 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         "implemented_contracts"
     ]
     assert "qwen_rmsnorm_post_attention" in full_source
+    assert "const float residual_value = task->b ? task->b[j] : 0.0f;" in (
+        full_source
+    )
+    assert "const float value = task->a[j] + residual_value;" in full_source
+    assert "qwen_post_attention_residual_rmsnorm_source" in manifest[
+        "implemented_contracts"
+    ]
     assert (
         "qwen_post_attention_norm_full_rmsnorm_source"
         in manifest["implemented_contracts"]
