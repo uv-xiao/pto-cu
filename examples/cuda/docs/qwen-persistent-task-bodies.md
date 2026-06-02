@@ -26,13 +26,16 @@ The embedding task uses descriptor `cols`/`ldb` fields to turn runtime
 of the old four-value proxy index when the weight slot is bound.
 The generated CUDA source now uses descriptor `rows`, `cols`, `inner`, `lda`,
 and `ldb` fields for QKV, attention-output, MLP, and logits linear
-projections when full tensor metadata is present. The QK norm task computes
-RMS scale from descriptor `cols`, `inner`, and `lda` fields before applying
-separate Q/K norm weight slots and pairwise RoPE rotation when cos/sin table
-slots are bound; descriptors expose Q-width plus KV-width rather than blending
-Q/K weights into one vector. The normalized K region is also written back
-through mutable `task->c` key-cache storage using the decode position and
-descriptor page size; QK-norm accepts runtime `tensor_args[4]` as a
+projections when full tensor metadata is present. Input, post-attention, and
+final RMSNorm now reduce each batch row over descriptor `cols` and apply
+column-local norm weights instead of computing one `task->n` scale across the
+whole batch. The QK norm task computes RMS scale from descriptor `cols`,
+`inner`, and `lda` fields before applying separate Q/K norm weight slots and
+pairwise RoPE rotation when cos/sin table slots are bound; descriptors expose
+Q-width plus KV-width rather than blending Q/K weights into one vector. The
+normalized K region is also written back through mutable `task->c` key-cache
+storage using the decode position and descriptor page size; QK-norm accepts
+runtime `tensor_args[4]` as a
 `kv_page_table` and maps logical decode pages before writing normalized K
 cache. The QK-norm source derives the batch row from `j / task->cols` before
 reading Q/K regions and before forming the batch-local K-cache write index.

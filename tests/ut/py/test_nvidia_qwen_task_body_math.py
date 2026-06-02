@@ -127,7 +127,6 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         item for item in manifest["task_bodies"] if item["callable"] == "qwen_mlp_down"
     )
 
-    assert "rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f)" in source
     assert rmsnorm["threading"] == "block"
     assert qk_norm["threading"] == "block"
     assert post_attention_norm["threading"] == "block"
@@ -139,13 +138,22 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     ]
     assert "attention_residual" in post_attention_norm["consumes_roles"]
     assert final_norm["threading"] == "block"
-    assert "__shared__ float partial[1024];" in source
+    assert "for (unsigned int k = 0U; k < task->cols; ++k)" in source
     assert "task->scalar_args[0] == 1.0f" in full_source
     assert "task->scalar_args[1] == 0.0f" in full_source
-    assert (
-        "rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f)"
-        in full_source
+    assert "rsqrtf(mean_square / static_cast<float>(task->cols) + 0.000001f)" in (
+        full_source
     )
+    assert "partial[0] / static_cast<float>(task->n)" not in full_source
+    assert "const unsigned int row = static_cast<unsigned int>(j / task->cols);" in (
+        full_source
+    )
+    assert "const unsigned int col = static_cast<unsigned int>(j % task->cols);" in (
+        full_source
+    )
+    assert "static_cast<unsigned long long>(row) * input_stride;" in full_source
+    assert "pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f)" in full_source
+    assert "qwen_rowwise_rmsnorm_batch_source" in manifest["implemented_contracts"]
     assert "qwen_final_norm" in full_source
     assert "qwen_attention_qk_norm" in full_source
     assert "for (unsigned long long j = threadIdx.x;" in full_source
@@ -195,15 +203,11 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_qk_norm_block_rmsnorm_rope_source" in manifest[
         "implemented_contracts"
     ]
-    assert "const unsigned int hidden_col = static_cast<unsigned int>(" in (
-        full_source
-    )
     assert "i % task->cols" in full_source
-    assert "pto_cuda_tensor_arg_f32(task, 0U, hidden_col, 1.0f)" in full_source
+    assert "pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f)" in full_source
     assert "qwen_input_rmsnorm_hidden_weight_source" in manifest[
         "implemented_contracts"
     ]
-    assert "const unsigned int hidden_col =" in full_source
     assert "const unsigned int embedding_stride =" in full_source
     assert "const unsigned long long embedding_weight_index =" in full_source
     assert "static_cast<unsigned long long>(token_id) * embedding_stride" in (

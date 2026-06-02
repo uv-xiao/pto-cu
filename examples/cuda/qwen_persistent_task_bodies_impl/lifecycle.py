@@ -76,29 +76,25 @@ task->out[i] = pto_cuda_tensor_arg_f32(task, 0U, token_id & 3U, 0.0f);
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["hidden_state", "input_layernorm_weight"],
             "body": """
-if (task->scalar_arg_count > 0 && task->scalar_args[0] == 1.0f &&
-    task->scalar_args[1] == 0.0f) {
-    __shared__ float partial[1024];
-    float mean_square = 0.0f;
+if (task->scalar_arg_count > 1 && task->scalar_args[0] == 1.0f &&
+    task->scalar_args[1] == 0.0f && task->cols > 0U) {
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
-        mean_square += task->a[j] * task->a[j];
-    }
-    partial[threadIdx.x] = mean_square;
-    __syncthreads();
-    for (unsigned int stride = blockDim.x >> 1; stride > 0U; stride >>= 1) {
-        if (threadIdx.x < stride) {
-            partial[threadIdx.x] += partial[threadIdx.x + stride];
+        const unsigned int row = static_cast<unsigned int>(j / task->cols);
+        const unsigned int col = static_cast<unsigned int>(j % task->cols);
+        const unsigned int input_stride =
+            task->lda > 0U ? task->lda : task->cols;
+        const unsigned long long row_base =
+            static_cast<unsigned long long>(row) * input_stride;
+        float mean_square = 0.0f;
+        for (unsigned int k = 0U; k < task->cols; ++k) {
+            const float value = task->a[row_base + k];
+            mean_square += value * value;
         }
-        __syncthreads();
-    }
-    const float scale =
-        rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f);
-    for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
-        const unsigned int hidden_col = static_cast<unsigned int>(
-            task->cols > 0U ? i % task->cols : i);
+        const float scale =
+            rsqrtf(mean_square / static_cast<float>(task->cols) + 0.000001f);
         const float norm_weight =
-            pto_cuda_tensor_arg_f32(task, 0U, hidden_col, 1.0f);
-        task->out[i] = task->a[i] * scale * norm_weight;
+            pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
+        task->out[j] = task->a[row_base + col] * scale * norm_weight;
     }
 } else if (task->scalar_arg_count == 0) {
     for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
@@ -107,8 +103,10 @@ if (task->scalar_arg_count > 0 && task->scalar_args[0] == 1.0f &&
     }
 } else if (task->scalar_arg_count > 1) {
     for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
+        const unsigned int col = static_cast<unsigned int>(
+            task->cols > 0U ? i % task->cols : i);
         const float norm_weight =
-            pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
+            pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
         task->out[i] = task->a[i] * task->scalar_args[1] * norm_weight;
     }
 }
@@ -592,39 +590,39 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                 "post_attention_layernorm_weight",
             ],
             "body": """
-if (task->scalar_arg_count > 0 && task->scalar_args[0] == 1.0f &&
-    task->scalar_args[1] == 0.0f) {
-    __shared__ float partial[1024];
-    float mean_square = 0.0f;
+if (task->scalar_arg_count > 1 && task->scalar_args[0] == 1.0f &&
+    task->scalar_args[1] == 0.0f && task->cols > 0U) {
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
-        const float residual_value = task->b ? task->b[j] : 0.0f;
-        const float value = task->a[j] + residual_value;
-        mean_square += value * value;
-    }
-    partial[threadIdx.x] = mean_square;
-    __syncthreads();
-    for (unsigned int stride = blockDim.x >> 1; stride > 0U; stride >>= 1) {
-        if (threadIdx.x < stride) {
-            partial[threadIdx.x] += partial[threadIdx.x + stride];
+        const unsigned int row = static_cast<unsigned int>(j / task->cols);
+        const unsigned int col = static_cast<unsigned int>(j % task->cols);
+        const unsigned int input_stride =
+            task->lda > 0U ? task->lda : task->cols;
+        const unsigned long long row_base =
+            static_cast<unsigned long long>(row) * input_stride;
+        float mean_square = 0.0f;
+        for (unsigned int k = 0U; k < task->cols; ++k) {
+            const float residual_value =
+                task->b ? task->b[row_base + k] : 0.0f;
+            const float value = task->a[row_base + k] + residual_value;
+            mean_square += value * value;
         }
-        __syncthreads();
-    }
-    const float scale =
-        rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f);
-    for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
-        const float residual_value = task->b ? task->b[j] : 0.0f;
-        const float value = task->a[j] + residual_value;
-        const float weight = pto_cuda_tensor_arg_f32(task, 0U, j, 1.0f);
+        const float scale =
+            rsqrtf(mean_square / static_cast<float>(task->cols) + 0.000001f);
+        const float residual_value = task->b ? task->b[row_base + col] : 0.0f;
+        const float value = task->a[row_base + col] + residual_value;
+        const float weight = pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
         task->out[j] = value * scale * weight;
     }
 } else {
     const float external_scale =
         task->scalar_arg_count > 1 ? task->scalar_args[1] : 1.0f;
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
+        const unsigned int col = static_cast<unsigned int>(
+            task->cols > 0U ? j % task->cols : j);
         const float residual_value = task->b ? task->b[j] : 0.0f;
         const float value = task->a[j] + residual_value;
         task->out[j] = value * external_scale *
-            pto_cuda_tensor_arg_f32(task, 0U, j, 1.0f);
+            pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
     }
 }
 """,
@@ -697,33 +695,33 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count > 0U &&
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["hidden_state", "final_norm_weight"],
             "body": """
-if (task->scalar_arg_count > 0 && task->scalar_args[0] == 1.0f &&
-    task->scalar_args[1] == 0.0f) {
-    __shared__ float partial[1024];
-    float mean_square = 0.0f;
+if (task->scalar_arg_count > 1 && task->scalar_args[0] == 1.0f &&
+    task->scalar_args[1] == 0.0f && task->cols > 0U) {
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
-        mean_square += task->a[j] * task->a[j];
-    }
-    partial[threadIdx.x] = mean_square;
-    __syncthreads();
-    for (unsigned int stride = blockDim.x >> 1; stride > 0U; stride >>= 1) {
-        if (threadIdx.x < stride) {
-            partial[threadIdx.x] += partial[threadIdx.x + stride];
+        const unsigned int row = static_cast<unsigned int>(j / task->cols);
+        const unsigned int col = static_cast<unsigned int>(j % task->cols);
+        const unsigned int input_stride =
+            task->lda > 0U ? task->lda : task->cols;
+        const unsigned long long row_base =
+            static_cast<unsigned long long>(row) * input_stride;
+        float mean_square = 0.0f;
+        for (unsigned int k = 0U; k < task->cols; ++k) {
+            const float value = task->a[row_base + k];
+            mean_square += value * value;
         }
-        __syncthreads();
-    }
-    const float scale =
-        rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f);
-    for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
-        const float weight = pto_cuda_tensor_arg_f32(task, 0U, j, 1.0f);
-        task->out[j] = task->a[j] * scale * weight;
+        const float scale =
+            rsqrtf(mean_square / static_cast<float>(task->cols) + 0.000001f);
+        const float weight = pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
+        task->out[j] = task->a[row_base + col] * scale * weight;
     }
 } else {
     const float external_scale =
         task->scalar_arg_count > 1 ? task->scalar_args[1] : 1.0f;
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
+        const unsigned int col = static_cast<unsigned int>(
+            task->cols > 0U ? j % task->cols : j);
         task->out[j] = task->a[j] * external_scale *
-            pto_cuda_tensor_arg_f32(task, 0U, j, 1.0f);
+            pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
     }
 }
 """,
@@ -827,6 +825,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_unit_math_source_coverage",
             "qwen_embedding_shape_lookup_source",
             "qwen_input_rmsnorm_hidden_weight_source",
+            "qwen_rowwise_rmsnorm_batch_source",
             "qwen_shape_field_linear_projection_source",
             "qwen_shape_field_qk_rmsnorm_source",
             "qwen_post_attention_norm_full_rmsnorm_source",

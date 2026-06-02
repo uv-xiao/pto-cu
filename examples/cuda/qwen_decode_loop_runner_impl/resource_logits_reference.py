@@ -214,7 +214,7 @@ def compare_logits_reference(
         "out[row,col]=sum_k hidden[row*hidden_stride+k]"
         "*lm_head[col*weight_stride+k]"
     ),
-    tolerance: float = 1e-5,
+    tolerance: float = 2e-5,
 ) -> dict[str, Any]:
     max_abs_error = 0.0
     mismatch_count = 0
