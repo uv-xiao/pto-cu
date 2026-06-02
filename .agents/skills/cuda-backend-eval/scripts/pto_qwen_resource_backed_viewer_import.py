@@ -16,7 +16,11 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from pto_qwen_resource_backed_matrix import COVERAGE, ensure_matrix_ref
+from pto_qwen_resource_backed_matrix import (
+    COVERAGE,
+    ensure_matrix_ref,
+    raw_symbols_from_execution,
+)
 from viewer_data_io import load_json as load_viewer_json
 from viewer_data_io import write_json as write_viewer_json
 
@@ -28,10 +32,6 @@ FEEDBACK_STATUSES_WITH_KNOWN_SCOPE = {
     "diagnostic_token_feedback_applied",
     "device_token_feedback_observed",
 }
-
-
-def write_json(path: Path, payload: Any) -> None:
-    path.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n")
 
 
 def repo_relative(path: Path) -> str:
@@ -293,6 +293,9 @@ def main() -> None:
             logits_check_policy=payload["resource_backed_execution"]
             .get("repeat_policy", {})
             .get("logits_check_policy", "final_step"),
+            raw_symbols=raw_symbols_from_execution(
+                payload["resource_backed_execution"],
+            ),
         ),
     )
     print(f"imported {raw_artifact}")

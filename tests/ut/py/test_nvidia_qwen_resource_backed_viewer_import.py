@@ -428,3 +428,45 @@ def test_resource_backed_importer_adds_matrix_ref():
     assert "repeated resource-backed execution viewer_result_imports" in claim[
         "missing_evidence_details"
     ][0]["action"]
+
+
+def test_resource_backed_matrix_symbols_follow_execution_payload():
+    module = load_importer_module()
+    execution = {
+        "status": "pass",
+        "repeat_policy": {"logits_check_policy": "final_step"},
+        "decode_step_execution": {"status": "bounded_decode_steps_executed"},
+        "workloads": [
+            {
+                "numeric_task_mode": {
+                    "mode": "unit_math",
+                    "external_scale_contracts": [{}],
+                    "weighted_elementwise_callables": ["qwen_logits"],
+                },
+                "decode_feedback": {
+                    "status": "device_token_feedback_observed",
+                },
+                "logits_summary": {
+                    "coverage": "full_logits_buffer_checked",
+                    "diagnostic_reference": {
+                        "scope": "diagnostic_qwen_tiled_vocab_projection",
+                    },
+                },
+                "logits_summary_stable": True,
+            },
+        ],
+    }
+
+    symbols = set(module.raw_symbols_from_execution(execution))
+
+    assert {
+        "full_logits_buffer_checked",
+        "diagnostic_qwen_tiled_vocab_projection",
+        "qwen_device_decode_token_feedback",
+        "qwen_resource_backed_external_rmsnorm_scale",
+    } <= symbols
+    assert {
+        "partial_logits_not_full_vocab",
+        "full_logits_buffer_prefix_sampled",
+        "qwen_resource_backed_full_rmsnorm_reduction",
+    }.isdisjoint(symbols)

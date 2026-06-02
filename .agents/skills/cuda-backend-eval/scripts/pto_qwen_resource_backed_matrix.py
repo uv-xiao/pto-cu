@@ -13,6 +13,7 @@ def ensure_matrix_ref(
     *,
     raw_artifact: str | None = None,
     logits_check_policy: str = "final_step",
+    raw_symbols: list[str] | None = None,
 ) -> dict[str, Any]:
     updated = dict(matrix)
     records = []
@@ -23,6 +24,7 @@ def ensure_matrix_ref(
                 current,
                 raw_artifact=raw_artifact,
                 logits_check_policy=logits_check_policy,
+                raw_symbols=raw_symbols,
             )
             update_pto_gap_action(current)
         records.append(current)
@@ -35,6 +37,7 @@ def ensure_claim_refs(
     *,
     raw_artifact: str | None,
     logits_check_policy: str,
+    raw_symbols: list[str] | None,
 ) -> None:
     refs = record["current_evidence_refs"]
     viewer_ref = {
@@ -60,6 +63,7 @@ def ensure_claim_refs(
             raw_artifact_ref(
                 raw_artifact,
                 logits_check_policy=logits_check_policy,
+                raw_symbols=raw_symbols,
             )
         )
 
@@ -68,7 +72,14 @@ def raw_artifact_ref(
     raw_artifact: str,
     *,
     logits_check_policy: str = "final_step",
+    raw_symbols: list[str] | None = None,
 ) -> dict[str, Any]:
+    if raw_symbols is not None:
+        return {
+            "kind": "raw_artifact",
+            "path": raw_artifact,
+            "symbols": raw_symbols,
+        }
     logits_policy_symbol = (
         "every_step_logits_check_policy"
         if logits_check_policy == "every_step"
@@ -98,6 +109,62 @@ def raw_artifact_ref(
             "logits_summary_stable",
         ],
     }
+
+
+def raw_symbols_from_execution(execution: dict[str, Any]) -> list[str]:
+    symbols = [
+        "pto_qwen_resource_backed_execution",
+        "diagnostic_resource_backed_qwen_dag",
+        "repeat_runs",
+    ]
+    if execution.get("status") == "pass":
+        symbols.append("qwen_resource_backed_diagnostic_execution")
+    decode_status = execution.get("decode_step_execution", {}).get("status")
+    if decode_status in {
+        "bounded_decode_steps_executed",
+        "policy_length_decode_steps_executed",
+    }:
+        symbols.append("qwen_resource_backed_decode_step_execution")
+    if decode_status == "policy_length_decode_steps_executed":
+        symbols.append("qwen_resource_backed_policy_length_decode_execution")
+
+    policy = execution.get("repeat_policy", {})
+    if policy.get("logits_check_policy") == "every_step":
+        symbols.append("every_step_logits_check_policy")
+    else:
+        symbols.append("final_step_logits_check_policy")
+
+    for workload in execution.get("workloads", []):
+        add_workload_symbols(symbols, workload)
+    return list(dict.fromkeys(symbols))
+
+
+def add_workload_symbols(symbols: list[str], workload: dict[str, Any]) -> None:
+    numeric_mode = workload.get("numeric_task_mode", {})
+    if numeric_mode.get("mode") in {"unit_math", "unit_math_full_rmsnorm"}:
+        symbols.append("qwen_resource_backed_unit_numeric_task_mode")
+    if numeric_mode.get("external_scale_contracts"):
+        symbols.append("qwen_resource_backed_external_rmsnorm_scale")
+    if numeric_mode.get("full_reduction_contracts"):
+        symbols.append("qwen_resource_backed_full_rmsnorm_reduction")
+    if numeric_mode.get("weighted_elementwise_callables"):
+        symbols.append("qwen_resource_backed_weighted_elementwise_branches")
+
+    feedback_status = workload.get("decode_feedback", {}).get("status")
+    if feedback_status == "diagnostic_token_feedback_applied":
+        symbols.append("qwen_diagnostic_decode_token_feedback")
+    if feedback_status == "device_token_feedback_observed":
+        symbols.append("qwen_device_decode_token_feedback")
+
+    logits_summary = workload.get("logits_summary", {})
+    coverage = logits_summary.get("coverage")
+    if coverage:
+        symbols.append(str(coverage))
+    diagnostic_reference = logits_summary.get("diagnostic_reference", {})
+    if diagnostic_reference.get("scope"):
+        symbols.append(str(diagnostic_reference["scope"]))
+    if workload.get("logits_summary_stable"):
+        symbols.append("logits_summary_stable")
 
 
 def update_pto_gap_action(record: dict[str, Any]) -> None:

@@ -79,10 +79,37 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
   tests/ut/py/test_nvidia_qwen_resource_backed_viewer_import.py -q
 ```
 
+The full active-vocabulary policy completed for one VDCores-policy
+resource-backed decode step:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python timeout 420 .venv/bin/python \
+  examples/cuda/qwen_decode_loop_runner.py --mode mock \
+  --single-context-live-session --run-resource-backed-smoke \
+  --resource-backed-task-selection first_layer_with_logits \
+  --resource-backed-workload vdcores_offline_decode \
+  --resource-backed-repeat-runs 1 --resource-backed-decode-steps 1 \
+  --resource-backed-worker-blocks 10 \
+  --resource-backed-logits-check-policy final_step \
+  --resource-backed-logits-active-cols full \
+  --resource-backed-numeric-task-mode unit_math --device 0 \
+  --arch compute_80 \
+  --cache-root tmp/cuda-backend/qwen-full-active-logits-2026-06-03/cache \
+  --output-json tmp/cuda-backend/qwen-full-active-logits-2026-06-03/qwen-decode-loop-runner.json
+```
+
+The raw artifact under `tmp/cuda-backend/qwen-full-active-logits-2026-06-03/`
+reported `status=pass`, 10 completed Qwen task functions, zero scheduler
+errors, `logits_active_cols_policy.mode=full_descriptor_cols`,
+`applied_scalar1_values=[151936]`, and `full_logits_buffer_checked` over
+2,430,976 logits elements. The diagnostic projection reference checked 244
+sampled elements with `max_abs_error=0.0`. One compact viewer row was imported;
+the raw 249 KB JSON remains under `tmp/`.
+
 ## Remaining Gaps
 
 This change makes the current Qwen logits path honest and bounded for
-diagnostics, but it is not a paper-ready full-vocabulary serving result. The
-remaining implementation gap is a full-vocabulary logits path backed by tiled
-or tensor-core CUDA math that can complete the resource-backed smoke and then
-scale to the paper evaluation matrix.
+diagnostics, and now proves a selected full active-vocabulary logits pass can
+complete. It is still not a paper-ready full-serving result: the remaining
+implementation gap is full Qwen numerical correctness across the serving
+policy and import through the full-serving viewer gate.
