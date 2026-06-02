@@ -162,6 +162,10 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     )
     assert "const unsigned int q_width = query_heads * head_dim;" in full_source
     assert "const unsigned int kv_width = kv_heads * head_dim;" in full_source
+    assert "const unsigned int qk_norm_input_stride =" in full_source
+    assert "task->a_batch_stride > 0U ? task->a_batch_stride : task->cols;" in (
+        full_source
+    )
     assert "const bool is_query_region = col < q_width;" in full_source
     assert "const unsigned int source_col = is_query_region ?" in full_source
     assert "const unsigned int norm_slot = is_query_region ? 0U : 1U;" in (
@@ -189,6 +193,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         in full_source
     )
     assert "qwen_qk_norm_batch_row_index_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert "qwen_qk_norm_qkv_input_stride_source" in manifest[
         "implemented_contracts"
     ]
     assert "qwen_qk_norm_normalized_k_cache_writeback_source" in manifest[

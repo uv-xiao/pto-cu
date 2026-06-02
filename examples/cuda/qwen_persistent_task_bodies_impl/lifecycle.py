@@ -240,7 +240,8 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
             "body": """
 if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
     task->tensor_args[0] && task->tensor_args[1]) {
-    const unsigned int stride = task->lda > 0U ? task->lda : task->cols;
+    const unsigned int qk_norm_input_stride =
+        task->a_batch_stride > 0U ? task->a_batch_stride : task->cols;
     const unsigned int head_dim = task->inner;
     const unsigned int query_heads = task->rows > 0U ? task->rows : 1U;
     const unsigned int kv_heads = task->ldb > 0U ? task->ldb : query_heads;
@@ -261,7 +262,7 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
         for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
             const unsigned int row = static_cast<unsigned int>(j / task->cols);
             const unsigned long long row_base =
-                static_cast<unsigned long long>(row) * stride;
+                static_cast<unsigned long long>(row) * qk_norm_input_stride;
             const unsigned int col = static_cast<unsigned int>(j % task->cols);
             if (col >= q_width + kv_width) {
                 task->out[j] = 0.0f;
@@ -331,7 +332,7 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
         __shared__ float partial[1024];
         const unsigned int fallback_row = 0U;
         const unsigned long long row_base =
-            static_cast<unsigned long long>(fallback_row) * stride;
+            static_cast<unsigned long long>(fallback_row) * qk_norm_input_stride;
         float mean_square = 0.0f;
         for (unsigned long long k = threadIdx.x; k < task->inner;
              k += blockDim.x) {
@@ -845,6 +846,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_qk_norm_normalized_k_cache_writeback_source",
             "qwen_qk_norm_paged_k_cache_writeback_source",
             "qwen_qk_norm_batch_row_index_source",
+            "qwen_qk_norm_qkv_input_stride_source",
             "qwen_final_norm_full_rmsnorm_source",
             "qwen_shape_field_qk_rope_source",
             "qwen_bounded_decode_attention_reduction_source",

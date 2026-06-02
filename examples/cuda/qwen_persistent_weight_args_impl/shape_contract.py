@@ -83,6 +83,7 @@ def task_shape_fields(callable_name: str, shape: QwenTaskShape) -> dict[str, Any
     }:
         return vector_fields(width=shape.hidden_size)
     if callable_name == "qwen_attention_qk_norm":
+        qkv_stride = shape.q_width + 2 * shape.kv_width
         return {
             "rows": shape.num_attention_heads,
             "cols": shape.q_width + shape.kv_width,
@@ -90,6 +91,7 @@ def task_shape_fields(callable_name: str, shape: QwenTaskShape) -> dict[str, Any
             "lda": shape.head_dim,
             "ldb": shape.num_key_value_heads,
             "ldc": shape.q_width + shape.kv_width,
+            "a_batch_stride": qkv_stride,
             "scalar0": KV_PAGE_SIZE_TOKENS,
         }
     if callable_name == "qwen_embedding_lookup":

@@ -1103,6 +1103,7 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "lda": 2,
         "ldb": 1,
         "ldc": 6,
+        "a_batch_stride": 8,
         "scalar0": 16,
     }
     assert descriptors["layer_0_attention_qk_norm"]["tensor_args"][4] == {
