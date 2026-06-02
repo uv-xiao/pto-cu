@@ -50,8 +50,34 @@ Result: passed. The raw artifact records `task_selection =
 layer_prefix_with_logits`, `layer_count = 2`, `task_count = 17`, scheduler
 `completed_count = 17`, and `error_count = 0`.
 
+```bash
+PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda \
+  .venv/bin/python examples/cuda/qwen_decode_loop_runner.py \
+  --mode offline \
+  --single-context-live-session \
+  --run-resource-backed-smoke \
+  --resource-backed-task-selection layer_prefix_with_logits \
+  --resource-backed-layer-count 4 \
+  --resource-backed-decode-steps 1 \
+  --resource-backed-worker-blocks 32 \
+  --resource-backed-logits-check-policy final_step \
+  --resource-backed-numeric-task-mode unit_math_full_rmsnorm \
+  --resource-backed-projection-active-cols 512 \
+  --resource-backed-logits-active-cols 512 \
+  --device 0 \
+  --arch compute_80 \
+  --output-json tmp/cuda-backend/qwen-layer-prefix-four-2026-06-03/qwen-decode-loop-runner.json
+```
+
+Result: passed for both `mpk_offline_decode` and `vdcores_offline_decode`.
+Each workload records `layer_count = 4`, `task_count = 31`, scheduler
+`completed_count = 31`, `error_count = 0`, one checked logits step, sampled
+512-column logits, diagnostic logits reference `status = pass`, 244 checked
+elements, and max absolute error `4.67e-06`.
+
 ## Remaining Gaps
 
-The selector is implemented and live-smoked for two layers, but full Qwen
-numerical correctness still requires running larger layer prefixes and then all
-36 layers with policy-length MPK and VDCores workloads.
+The selector is implemented and live-smoked for four complete layers on both
+serving policies, but full Qwen numerical correctness still requires scaling
+to all 36 layers with full projection/logits columns and policy-length MPK and
+VDCores workloads.
