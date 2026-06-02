@@ -91,3 +91,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-58.md](entries/2026-06-02-part-58.md) | 1 | Kernel Compiler Gap Reclassification | Kernel Compiler Gap Reclassification |
 | [2026-06-02-part-59.md](entries/2026-06-02-part-59.md) | 1 | Persistent Scheduler Gap Narrowing | Persistent Scheduler Gap Narrowing |
 | [2026-06-02-part-60.md](entries/2026-06-02-part-60.md) | 1 | Tensor Model Shape Targets | Tensor Model Shape Targets |
+| [2026-06-02-part-61.md](entries/2026-06-02-part-61.md) | 1 | Tensor Target Method Guard | Tensor Target Method Guard |

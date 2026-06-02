@@ -129,6 +129,7 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     validate_tensor_workload_coverage(
         tensor_workload_coverage,
         results,
+        method_ids,
         root,
     )
     paper_evaluation_ids = validate_paper_evaluation_matrix(

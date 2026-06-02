@@ -43,6 +43,7 @@ def _check_result_refs(
 def validate_tensor_workload_coverage(
     data: dict[str, Any],
     results: dict[str, Any],
+    method_ids: set[str],
     root: Path,
 ) -> None:
     metadata = require_dict(data, "metadata", "tensor workload coverage")
@@ -58,7 +59,7 @@ def validate_tensor_workload_coverage(
     missing = required - group_ids
     if missing:
         fail(f"tensor workload coverage missing groups: {sorted(missing)}")
-    validate_model_shape_targets(data, root)
+    validate_model_shape_targets(data, method_ids, root)
     results_seen = _result_index(results)
     for group in groups:
         owner = f"tensor workload coverage group {group['id']}"
@@ -77,7 +78,11 @@ def validate_tensor_workload_coverage(
         check_evidence_refs(group, owner, root)
 
 
-def validate_model_shape_targets(data: dict[str, Any], root: Path) -> None:
+def validate_model_shape_targets(
+    data: dict[str, Any],
+    method_ids: set[str],
+    root: Path,
+) -> None:
     targets = require_list(
         data,
         "model_shape_targets",
@@ -114,6 +119,12 @@ def validate_model_shape_targets(data: dict[str, Any], root: Path) -> None:
         methods = set(require_list(target, "required_methods", owner))
         if methods != required_methods:
             fail(f"{owner} required methods mismatch: {sorted(methods)}")
+        missing_methods = methods - method_ids
+        if missing_methods:
+            fail(
+                f"{owner} references unknown viewer methods: "
+                f"{sorted(missing_methods)}"
+            )
         check_evidence_refs(target, owner, root)
 
 
