@@ -12,8 +12,6 @@ def _linked_gap_paths(status_text: str) -> list[str]:
     for line in body.splitlines():
         if line.startswith("- [") and "](" in line and ")" in line:
             paths.append(line.split("](", 1)[1].split(")", 1)[0])
-    if not paths:
-        fail("status.md has no linked remaining gaps")
     return paths
 
 
@@ -28,7 +26,11 @@ def _gap_file(relpath: str):
 def check_remaining_gap_contract() -> None:
     status = DOC_ROOT / "status.md"
     require_file(status)
-    for relpath in _linked_gap_paths(status.read_text(encoding="utf-8")):
+    status_text = status.read_text(encoding="utf-8")
+    linked_gap_paths = _linked_gap_paths(status_text)
+    if not linked_gap_paths and "No open backend implementation gaps." not in status_text:
+        fail("status.md has no linked remaining gaps and no closure statement")
+    for relpath in linked_gap_paths:
         path = _gap_file(relpath)
         text = path.read_text(encoding="utf-8")
         for heading in (

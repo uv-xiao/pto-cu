@@ -26,14 +26,14 @@ The Qwen tensor-tile source contract is ready in
 `examples/cuda/qwen_persistent_task_bodies_impl/tensor_tiles.py`: it defines
 block-wide WMMA task functions for the attention `16x64x128` tile and MLP
 `16x64x256` tile, with fixed-shape guards and `m16n16k8` TF32/F32 fragment
-metadata. The remaining runtime-wiring gap is routing the benchmark/runtime
-descriptors to those Qwen-specific function ids and proving multi-repeat
-throughput. The gap is not descriptor-shape, first tensor-core callable
-plumbing, baseline viewer coverage, or source-contract definition.
+metadata. The benchmark/runtime descriptors now route those two Qwen
+model-shape descriptors to Qwen-specific function ids instead of the generic
+diagnostic WMMA task. The remaining gap is paper-readiness throughput capture,
+not backend descriptor-shape, first tensor-core callable plumbing, baseline
+viewer coverage, source-contract definition, or runtime selector wiring.
 
 Needed:
 
-- benchmark/runtime selector wiring for the Qwen tensor-tile function ids;
 - broader model-kernel shape families once the tensor-core/library path
   exists;
 - multi-repeat throughput rows that compare tuned PTO tensor bodies against
@@ -54,16 +54,14 @@ The source-contract evidence is emitted by
 
 ## Promotion Gate
 
-Close this gap only after the Qwen tensor-tile function ids are selectable by
-the persistent benchmark/runtime path, produce multi-repeat A100 and H200 rows
-for the Qwen attention and MLP target tiles, import through the viewer with
-correctness and throughput statistics, and keep baseline rows for cuBLAS Graph,
-CUTLASS, Triton, and ThunderKittens comparable.
+Close this paper-evaluation gap only after the Qwen tensor-tile function ids
+produce multi-repeat A100 and H200 rows for the Qwen attention and MLP target
+tiles, import through the viewer with correctness and throughput statistics,
+and keep baseline rows for cuBLAS Graph, CUTLASS, Triton, and ThunderKittens
+comparable.
 
 ## Next Actions
 
-- Route the model-shape benchmark descriptors to the Qwen tensor-tile function
-  ids instead of the generic diagnostic WMMA `func_id=10`.
 - Capture multi-repeat A100/H200 PTO and baseline rows for those tiles.
-- Import the raw `tmp/` artifacts into the viewer and update this page before
-  removing it from `status.md`.
+- Import the raw `tmp/` artifacts into the viewer and update this archived
+  page once the paper-readiness work queue is complete.

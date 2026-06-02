@@ -77,6 +77,18 @@ def qwen_tensor_tile_task_functions() -> list[CudaPersistentTaskFunction]:
     return functions
 
 
+def qwen_tensor_tile_func_id(tensor_tile: dict[str, int]) -> int | None:
+    normalized = {
+        "rows": int(tensor_tile["rows"]),
+        "cols": int(tensor_tile["cols"]),
+        "inner": int(tensor_tile["inner"]),
+    }
+    for spec in qwen_tensor_tile_specs():
+        if spec["tensor_tile"] == normalized:
+            return int(spec["func_id"])
+    return None
+
+
 def build_qwen_tensor_tile_contract() -> dict[str, Any]:
     source = render_persistent_dag_source(qwen_tensor_tile_task_functions())
     return {
@@ -101,7 +113,6 @@ def build_qwen_tensor_tile_contract() -> dict[str, Any]:
             ],
         },
         "remaining_wiring": [
-            "route model-shape benchmark descriptors to these Qwen func_ids",
             "capture multi-repeat A100/H200 throughput rows",
         ],
     }

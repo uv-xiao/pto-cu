@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen tensor tile runtime routing](2026-06-02-qwen-tensor-tile-runtime-routing.md)
 - [2026-06-02 Qwen tensor tile source contract](2026-06-02-qwen-tensor-tile-source-contract.md)
 - [2026-06-02 C++ snapshot malformed coverage](2026-06-02-cpp-snapshot-malformed-coverage.md)
 - [2026-06-02 C++ orchestrator snapshot smoke](2026-06-02-cpp-orchestrator-snapshot-smoke.md)

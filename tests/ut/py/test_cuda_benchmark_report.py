@@ -9485,6 +9485,49 @@ def test_graph_tensor_core_tile_dag_shape_uses_block_wide_wmma_task():
     assert tasks[3].out == 301
 
 
+def test_graph_tensor_core_tile_routes_qwen_model_shapes_to_specialized_task_ids():
+    cuda_persistent_smoke = _load_persistent_smoke_module()
+
+    attention = cuda_persistent_smoke._make_tensor_tile_descriptor(
+        rows=16,
+        cols=64,
+        inner=128,
+    )
+    mlp = cuda_persistent_smoke._make_tensor_tile_descriptor(
+        rows=16,
+        cols=64,
+        inner=256,
+    )
+
+    _, _, attention_tasks = cuda_persistent_smoke._make_dag_shape(
+        "graph_tensor_core_tile",
+        1024,
+        101,
+        102,
+        201,
+        202,
+        203,
+        204,
+        301,
+        tensor_tile=attention,
+    )
+    _, _, mlp_tasks = cuda_persistent_smoke._make_dag_shape(
+        "graph_tensor_core_tile",
+        1024,
+        101,
+        102,
+        201,
+        202,
+        203,
+        204,
+        301,
+        tensor_tile=mlp,
+    )
+
+    assert [task.func_id for task in attention_tasks] == [7240, 1, 2, 1]
+    assert [task.func_id for task in mlp_tasks] == [7241, 1, 2, 1]
+
+
 def test_scalar_affine_dag_shape_uses_two_scalar_descriptor_fields():
     cuda_persistent_smoke = _load_persistent_smoke_module()
 

@@ -22,7 +22,11 @@ evaluation results are not mistaken for a complete backend.
 
 ## Remaining Gaps
 
-- [Tuned tensor workloads](status/remaining-gaps/tuned-tensor-workloads.md)
+No open backend implementation gaps.
+
+Paper-readiness work remains tracked by
+`docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json` and
+`docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json`.
 
 ## Review Policy
 

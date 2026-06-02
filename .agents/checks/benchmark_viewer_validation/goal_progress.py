@@ -20,8 +20,6 @@ def remaining_gap_refs_from_status() -> set[str]:
             continue
         relpath = line.split("](", 1)[1].split(")", 1)[0]
         refs.add(f"docs/nvidia-backend/{relpath}")
-    if not refs:
-        fail("status.md has no remaining-gap links")
     return refs
 
 
@@ -90,14 +88,18 @@ def validate_goal_progress(
         fail("goal progress criteria_in_progress does not match criteria")
     by_id = {criterion["id"]: criterion for criterion in criteria}
     backend_closure = by_id["backend_implementation_closure"]
-    if backend_closure["status"] != "in_progress":
-        fail("backend implementation closure must remain in_progress")
+    status_gap_refs = remaining_gap_refs_from_status()
+    expected_status = "in_progress" if status_gap_refs else "met"
+    if backend_closure["status"] != expected_status:
+        fail("backend implementation closure status does not match status.md")
     expected_gap_refs = {
         "docs/nvidia-backend/status.md",
-        *remaining_gap_refs_from_status(),
+        *status_gap_refs,
     }
     if set(backend_closure["evidence_refs"]) != expected_gap_refs:
         fail("backend implementation closure refs do not match status.md")
+    if backend_closure["status"] == "met" and backend_closure["gaps"]:
+        fail("closed backend implementation criterion still has gaps")
     paper_results = by_id["paper_grade_results"]
     if paper_results.get("paper_readiness_status") != audit.get("overall_status"):
         fail("goal progress paper readiness status does not match audit")

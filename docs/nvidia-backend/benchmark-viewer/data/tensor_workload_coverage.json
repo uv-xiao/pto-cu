@@ -1,8 +1,8 @@
 {
   "metadata": {
     "title": "CUDA Tensor Workload Coverage",
-    "status": "open_pto_tuning_gap",
-    "summary": "Tensor evidence is split from the open tuned PTO body gap."
+    "status": "open_paper_throughput_gap",
+    "summary": "Tensor implementation evidence is split from open paper-throughput capture work."
   },
   "model_shape_targets": [
     {
@@ -245,7 +245,7 @@
       "id": "tuned_pto_tensor_body_gap",
       "title": "Tuned PTO Tensor Body Gap",
       "status": "open",
-      "summary": "The open gap is runtime wiring and throughput for the Qwen tensor body specializations.",
+      "summary": "The open gap is multi-repeat paper throughput for the Qwen tensor body specializations.",
       "covered_cases": [
         "baseline comparison surface",
         "A100/H200 tensor result rows",
@@ -254,7 +254,6 @@
         "throughput SVG/report generation"
       ],
       "open_work": [
-        "route model-shape benchmark descriptors to the Qwen tensor body func_ids",
         "publish multi-repeat tuned PTO rows against library baselines"
       ],
       "result_refs": [],
@@ -263,7 +262,14 @@
           "path": "docs/nvidia-backend/status/remaining-gaps/tuned-tensor-workloads.md",
           "symbols": [
             "source contract is ready",
-            "runtime-wiring gap"
+            "runtime selector wiring"
+          ]
+        },
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_persistent_smoke.py",
+          "symbols": [
+            "_tensor_core_func_id",
+            "qwen_tensor_tile_func_id"
           ]
         },
         {

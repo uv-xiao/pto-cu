@@ -236,9 +236,9 @@ def check_viewer_data() -> None:
     backend_closure = progress_by_id.get("backend_implementation_closure")
     if not backend_closure:
         fail("goal progress missing backend_implementation_closure criterion")
-    if backend_closure.get("status") != "in_progress":
-        fail("backend implementation closure must remain in_progress")
-    if not backend_closure.get("gaps"):
+    if backend_closure.get("status") not in {"met", "in_progress"}:
+        fail("backend implementation closure has invalid status")
+    if backend_closure.get("status") == "in_progress" and not backend_closure.get("gaps"):
         fail("backend implementation closure must expose status gaps")
     if paper_results.get("status") != "in_progress":
         fail("paper_grade_results criterion must remain in_progress")

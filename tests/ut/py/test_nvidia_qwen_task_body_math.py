@@ -126,6 +126,6 @@ def test_task_body_manifest_tracks_qwen_tensor_tile_source_contract():
         "wmma::mma_sync",
     ]
     assert "qwen_tensor_tile_source_contract" in manifest["implemented_contracts"]
-    assert "wire_qwen_tensor_tile_specializations_into_benchmark_runtime" in manifest[
-        "remaining_runtime_gaps"
+    assert "capture multi-repeat A100/H200 throughput rows" in contract[
+        "remaining_wiring"
     ]

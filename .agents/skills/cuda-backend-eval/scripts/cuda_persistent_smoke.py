@@ -16,6 +16,7 @@ import ctypes
 import functools
 import json
 import subprocess
+import sys
 import tempfile
 import time
 from dataclasses import dataclass
@@ -34,6 +35,14 @@ from cuda_persistent_smoke_impl.normal_graph_shapes import (
     NORMAL_GRAPH_DAG_SHAPES,
     make_cpp_orchestrator_snapshot_submits,
     make_normal_graph_nodes,
+)
+
+ROOT = Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(ROOT / "examples" / "cuda"))
+
+from qwen_persistent_task_bodies_impl.tensor_tiles import (  # noqa: E402
+    qwen_tensor_tile_func_id,
+    qwen_tensor_tile_task_functions,
 )
 from simpler_setup.cuda_callable_compiler import (
     CudaPersistentCallableArtifact,
@@ -346,7 +355,12 @@ for (unsigned long long tile_id = 0; tile_id < tile_count; ++tile_id) {
 """.strip(),
     ),
 ]
+_PERSISTENT_DAG_TASK_FUNCTIONS.extend(qwen_tensor_tile_task_functions())
 _PERSISTENT_DAG_SOURCE = render_persistent_dag_source(_PERSISTENT_DAG_TASK_FUNCTIONS)
+
+
+def _tensor_core_func_id(descriptor: dict[str, int]) -> int:
+    return qwen_tensor_tile_func_id(descriptor) or 10
 
 
 def _compile_persistent_dag_ptx(work_dir: Path, arch: str) -> tuple[bytes, str, CudaPersistentCallableArtifact]:
@@ -1270,7 +1284,10 @@ def _make_dag_shape(  # noqa: PLR0912, PLR0915
         host_fanin_t = ctypes.c_uint32 * task_count
         dependents_t = ctypes.c_uint32 * 4
         task_t = CudaPersistentDagTask * task_count
-        func_id = 10 if dag_shape in {"graph_tensor_core_tile", "tensor_core_tile"} else 3
+        if dag_shape in {"graph_tensor_core_tile", "tensor_core_tile"}:
+            func_id = _tensor_core_func_id(descriptor)
+        else:
+            func_id = 3
         return (
             host_fanin_t(0, 1, 1, 2),
             dependents_t(1, 2, 3, 3),

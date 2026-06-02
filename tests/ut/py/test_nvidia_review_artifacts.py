@@ -4960,15 +4960,8 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_met"] >= 6
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
-    assert by_id["backend_implementation_closure"]["status"] == "in_progress"
-    assert any(
-        "remaining-gap page" in gap
-        for gap in by_id["backend_implementation_closure"]["gaps"]
-    )
-    assert any(
-        "persistent-scheduler-generalization" in ref
-        for ref in by_id["backend_implementation_closure"]["evidence_refs"]
-    )
+    assert by_id["backend_implementation_closure"]["status"] == "met"
+    assert by_id["backend_implementation_closure"]["gaps"] == []
     assert not any(
         "kernel-compiler-integration" in ref
         for ref in by_id["backend_implementation_closure"]["evidence_refs"]
@@ -4984,9 +4977,9 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
         for line in status_remaining.splitlines()
         if line.startswith("- [")
     }
+    assert status_gap_refs == set()
     assert set(by_id["backend_implementation_closure"]["evidence_refs"]) == {
         "docs/nvidia-backend/status.md",
-        *status_gap_refs,
     }
     assert not any(
         "fourth-tensor-persistent-dag-verification" in ref

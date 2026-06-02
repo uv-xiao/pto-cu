@@ -282,7 +282,6 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
         "remaining_runtime_gaps": [
             "numerically_correct_qwen_kernel_bodies",
             "cuda_live_qwen_unit_math_execution",
-            "wire_qwen_tensor_tile_specializations_into_benchmark_runtime",
             "cuda_live_decode_loop_execution",
             "viewer_result_import",
         ],

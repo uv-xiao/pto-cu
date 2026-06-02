@@ -16,8 +16,6 @@ def _status_gap_refs() -> set[str]:
     for line in body.splitlines():
         if line.startswith("- [") and "](" in line and ")" in line:
             refs.add(line.split("](", 1)[1].split(")", 1)[0])
-    if not refs:
-        fail("status.md has no remaining-gap links")
     return refs
 
 
@@ -47,7 +45,10 @@ def validate_dispatcher_backlog(work_queue: dict[str, Any]) -> None:
     ):
         if stale in text:
             fail(f"dispatcher backlog still contains stale first-pass task: {stale}")
-    for relpath in _status_gap_refs():
+    status_gap_refs = _status_gap_refs()
+    if not status_gap_refs and "No open backend implementation gaps." not in text:
+        fail("dispatcher backlog missing no-backend-gap statement")
+    for relpath in status_gap_refs:
         if relpath not in text:
             fail(f"dispatcher backlog missing status gap: {relpath}")
     work_items = require_list(work_queue, "work_items", "paper readiness work queue")

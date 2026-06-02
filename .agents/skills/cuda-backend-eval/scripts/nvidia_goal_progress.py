@@ -81,8 +81,6 @@ def remaining_gap_refs_from_status() -> list[str]:
             continue
         relpath = line.split("](", 1)[1].split(")", 1)[0]
         refs.append(f"docs/nvidia-backend/{relpath}")
-    if not refs:
-        fail("status.md has no remaining-gap links")
     return refs
 
 

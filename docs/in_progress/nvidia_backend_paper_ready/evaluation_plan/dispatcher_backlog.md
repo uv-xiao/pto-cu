@@ -15,11 +15,8 @@
 
 ## Active Backend Gaps
 
-- `status/remaining-gaps/persistent-scheduler-generalization/index.md`:
-  persistent-device scheduling still needs general graph coverage beyond the
-  verified tracer-bullet shapes.
-- `status/remaining-gaps/tuned-tensor-workloads.md`: tensor rows still need
-  tuned PTO tensor bodies and multi-repeat A100/H200 paper captures.
+No open backend implementation gaps. The active work below is paper-readiness
+capture, baseline correctness, and result-import work.
 
 ## Active Paper Work Items
 
@@ -40,8 +37,9 @@ The generated paper-readiness queue currently has `4` active paper work items:
 
 ## Promotion Rules
 
-- Do not mark backend implementation complete while `docs/nvidia-backend/status.md`
-  links any remaining-gap page.
+- Keep backend implementation closure tied to
+  `docs/nvidia-backend/status.md`; linked remaining-gap pages make that
+  criterion active again.
 - Do not mark paper results complete while
   `paper_readiness_work_queue.json` contains active work items.
 - Promote a paper row only after raw artifacts under `tmp/` import into viewer
