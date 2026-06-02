@@ -12,7 +12,7 @@ commands so reviewers can connect examples, docs, and artifacts directly.
 - [Qwen Serving Lifecycle Plan](docs/qwen-serving-lifecycle-plan.md) (22 lines)
 - [Qwen KV-Cache Binding](docs/qwen-kv-cache-binding.md) (24 lines)
 - [Qwen Decode Loop Runner](docs/qwen-decode-loop-runner.md) (88 lines)
-- [Qwen Persistent Task Bodies](docs/qwen-persistent-task-bodies.md) (39 lines)
+- [Qwen Persistent Task Bodies](docs/qwen-persistent-task-bodies.md) (41 lines)
 - [Qwen Unit Math Live](docs/qwen-unit-math-live.md) (30 lines)
 - [Qwen Persistent Proxy Live](docs/qwen-persistent-proxy-live.md) (25 lines)
 - [Qwen Persistent Microdecode Live](docs/qwen-persistent-microdecode-live.md) (28 lines)

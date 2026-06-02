@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen QK RoPE source](2026-06-02-qwen-qk-rope-source.md)
 - [2026-06-02 Qwen QK RMSNorm source](2026-06-02-qwen-qk-rmsnorm-source.md)
 - [2026-06-02 Qwen full-vocab argmax source](2026-06-02-qwen-full-vocab-argmax-source.md)
 - [2026-06-02 Qwen shape-linear task bodies](2026-06-02-qwen-shape-linear-task-bodies.md)

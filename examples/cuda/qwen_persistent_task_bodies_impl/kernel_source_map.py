@@ -101,8 +101,8 @@ KERNEL_SOURCE_MAP = [
                 "url": "https://github.com/sgl-project/sglang/blob/main/python/sglang/jit_kernel/csrc/elementwise/fused_qknorm_rope.cuh",
             },
         ],
-        "pto_status": "qkv_projection_and_qk_rmsnorm_source_ready",
-        "next_step": "Add RoPE, slot-mapped paged KV-cache addressing, and decode attention reduction before full-serving promotion.",
+        "pto_status": "qkv_projection_qk_rmsnorm_and_rope_source_ready",
+        "next_step": "Bind model RoPE tables through descriptors, add slot-mapped paged KV-cache addressing, and implement decode attention reduction before full-serving promotion.",
     },
     {
         "pto_callables": ["qwen_attention_qkv"],

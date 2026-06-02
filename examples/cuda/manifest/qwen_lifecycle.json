@@ -87,7 +87,7 @@
       "method_id": "pto_persistent_device",
       "runtime": "cuda/persistent_device",
       "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_task_bodies.py --output-json tmp/cuda-backend/pto-serving-task-bodies/qwen-persistent-task-bodies.json --output-source tmp/cuda-backend/pto-serving-task-bodies/qwen-persistent-task-bodies.cu",
-      "expected_output": "command exits 0; output JSON records generated persistent-device Qwen task bodies, token, mutable KV-cache, weight field consumption evidence, shape-field projection source, shape-field QK RMSNorm source, full-vocab logits argmax source, a controlled proxy numeric oracle, and a small Qwen unit math oracle.",
+      "expected_output": "command exits 0; output JSON records generated persistent-device Qwen task bodies, token, mutable KV-cache, weight field consumption evidence, shape-field projection source, shape-field QK RMSNorm source, shape-field QK RoPE formula source, full-vocab logits argmax source, a controlled proxy numeric oracle, and a small Qwen unit math oracle.",
       "evidence_symbols": [
         "pto_qwen_persistent_task_bodies",
         "generated_qwen_kernel_bodies",
@@ -95,6 +95,7 @@
         "qwen_unit_math_oracle",
         "qwen_unit_math_source_coverage",
         "qwen_shape_field_qk_rmsnorm_source",
+        "qwen_shape_field_qk_rope_source",
         "qwen_logits_full_vocab_argmax_source",
         "qwen_kernel_token_field_consumption",
         "qwen_kernel_kv_field_consumption",
