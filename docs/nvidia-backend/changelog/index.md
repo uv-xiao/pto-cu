@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 CUDA benchmark fallback PTX resources](2026-06-02-cuda-benchmark-fallback-ptx-resources.md)
 - [2026-06-02 Persistent smoke fallback PTX resources](2026-06-02-persistent-smoke-fallback-ptx-resources.md)
 - [2026-06-02 Triton tensor tile capture script split](2026-06-02-triton-tensor-tile-capture-script-split.md)
 - [2026-06-02 ThunderKittens MHA capture script split](2026-06-02-thunderkittens-mha-capture-script-split.md)
