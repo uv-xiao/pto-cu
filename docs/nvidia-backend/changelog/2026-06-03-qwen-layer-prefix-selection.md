@@ -115,10 +115,19 @@ field overrides, full-vocab logits coverage with 2,430,976 written and checked
 elements, diagnostic logits reference `status = pass`, 3,904 checked elements
 across 16 rows, and max absolute error `1.543e-05`.
 
+The same full-column 36-layer diagnostic was then rerun for the VDCores-policy
+workload. The artifact is
+`tmp/cuda-backend/qwen-full-columns-thirtysix-vdcores-2026-06-03/qwen-decode-loop-runner.json`.
+Result: passed for `vdcores_offline_decode`. It records `task_count = 255`,
+scheduler `completed_count = 255`, `error_count = 0`, 144 full projection
+field overrides, full-vocab logits coverage with 2,430,976 written and checked
+elements, diagnostic logits reference `status = pass`, 3,904 checked elements
+across 16 rows, and max absolute error `1.543e-05`.
+
 ## Remaining Gaps
 
 The selector is implemented and live-smoked for the full 36-layer descriptor
-set on both serving policies. Full-column execution is proven for the
-MPK-policy one-step diagnostic, but full Qwen numerical correctness still
-requires the same full-column run for VDCores plus policy-length MPK and
-VDCores decode, not only one diagnostic decode step.
+set on both serving policies. Full-column one-step diagnostics are proven for
+both MPK and VDCores policy workloads, but full Qwen numerical correctness
+still requires policy-length MPK and VDCores decode plus token/logit agreement
+against the model reference, not only one diagnostic decode step.
