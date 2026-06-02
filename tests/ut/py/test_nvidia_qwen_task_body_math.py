@@ -161,6 +161,11 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "requested_logits_tile > 0U ? requested_logits_tile : 256U" in (
         full_source
     )
+    assert "const unsigned int active_logits_cols =" in full_source
+    assert "task->scalar1 > 0.0f ? static_cast<unsigned int>(task->scalar1)" in (
+        full_source
+    )
+    assert "i < active_logits_elements" in full_source
     assert "for (unsigned int tile_begin = 0U; tile_begin < hidden_width;" in (
         full_source
     )
@@ -178,7 +183,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert logits["threading"] == "block"
     assert "__shared__ float logits_best_values[1024];" in full_source
     assert "__shared__ unsigned int logits_best_tokens[1024];" in full_source
-    assert "for (unsigned int token = threadIdx.x; token < task->cols;" in (
+    assert "for (unsigned int token = threadIdx.x; token < active_logits_cols;" in (
         full_source
     )
     assert "if (candidate > local_best_logit)" in full_source

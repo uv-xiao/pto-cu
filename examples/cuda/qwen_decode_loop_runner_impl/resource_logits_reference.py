@@ -17,6 +17,19 @@ def logits_written_elements(workspace: dict[str, Any]) -> int:
     return int(workspace["logits_buffer"].get("element_count", 0))
 
 
+def active_logits_written_elements(final_task: Any, workspace: dict[str, Any]) -> int:
+    buffer_elements = logits_written_elements(workspace)
+    cols = int(getattr(final_task, "cols", 0))
+    task_elements = int(getattr(final_task, "n", 0))
+    if buffer_elements <= 0 or cols <= 0 or task_elements <= 0:
+        return buffer_elements
+    requested_active_cols = int(float(getattr(final_task, "scalar1", 0.0)))
+    active_cols = requested_active_cols if requested_active_cols > 0 else cols
+    active_cols = min(active_cols, cols)
+    rows = task_elements // cols
+    return min(buffer_elements, rows * active_cols)
+
+
 def summarize_logits_values(
     values: list[float],
     *,

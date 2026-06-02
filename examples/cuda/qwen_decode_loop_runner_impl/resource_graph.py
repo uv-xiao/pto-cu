@@ -12,11 +12,11 @@ from qwen_decode_loop_runner_impl.resource_logits_reference import (
     MAX_LOGITS_REFERENCE_CHECKED_ELEMENTS,
     MAX_LOGITS_REFERENCE_WEIGHT_ELEMENTS,
     PTO_CUDA_DTYPE_BFLOAT16,
+    active_logits_written_elements,
     compare_logits_reference,
     diagnostic_logits_fallback_values,
     diagnostic_logits_projection_values,
     diagnostic_logits_reference_indices,
-    logits_written_elements,
     summarize_logits_values,
     tensor_arg_values_to_f32,
 )
@@ -137,7 +137,8 @@ class MaterializedGraph:
         return [round(float(value), 6) for value in host]
 
     def read_logits_summary(self, workspace: dict[str, Any]) -> dict[str, Any]:
-        written_elements = logits_written_elements(workspace)
+        final_task = self.packet[self.task_count - 1]
+        written_elements = active_logits_written_elements(final_task, workspace)
         checked_elements = written_elements
         if checked_elements <= 0:
             return {
@@ -153,7 +154,6 @@ class MaterializedGraph:
         ptr = int(workspace["logits_buffer"]["device_ptr_hex"], 0)
         self.copy_from_device(host, ptr, "logits_written_buffer")
         values = [float(value) for value in host]
-        final_task = self.packet[self.task_count - 1]
         return summarize_logits_values(
             values,
             logits_buffer_elements=int(workspace["logits_buffer"]["element_count"]),

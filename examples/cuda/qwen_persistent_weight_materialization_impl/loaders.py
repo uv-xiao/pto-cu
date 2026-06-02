@@ -34,13 +34,19 @@ def weight_args_shape_fields_ready(payload: dict[str, Any]) -> bool:
     descriptors = payload.get("task_arg_descriptors", [])
     if not isinstance(descriptors, list):
         return False
-    shaped = [
-        item
-        for item in descriptors
-        if isinstance(item, dict) and item.get("task_shape_fields")
-    ]
-    return bool(shaped) and any(
-        item.get("callable") == "qwen_logits" for item in shaped
+    return any(logits_shape_fields_ready(item) for item in descriptors)
+
+
+def logits_shape_fields_ready(item: Any) -> bool:
+    if not isinstance(item, dict) or item.get("callable") != "qwen_logits":
+        return False
+    fields = item.get("task_shape_fields")
+    if not isinstance(fields, dict):
+        return False
+    return (
+        int(fields.get("cols", 0)) > 0
+        and int(fields.get("inner", 0)) > 0
+        and float(fields.get("scalar1", 0.0)) > 0.0
     )
 
 

@@ -425,6 +425,22 @@ def test_resource_backed_logits_summary_marks_partial_vocab_coverage():
     ]
 
 
+def test_active_logits_written_elements_uses_diagnostic_window():
+    module = load_resource_graph_module()
+
+    class FinalTask:
+        n = 16
+        cols = 16
+        scalar1 = 4.0
+
+    written = module.active_logits_written_elements(
+        FinalTask(),
+        {"logits_buffer": {"element_count": 32}},
+    )
+
+    assert written == 4
+
+
 def test_resource_backed_logits_summary_marks_full_buffer_written_prefix_sampled():
     module = load_resource_graph_module()
 

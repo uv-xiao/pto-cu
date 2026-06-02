@@ -28,9 +28,24 @@ if (task->cols > 0U && task->inner > 0U && has_lm_head) {
         task->scalar0 > 0.0f ? static_cast<unsigned int>(task->scalar0) : 256U;
     const unsigned int logits_tile =
         requested_logits_tile > 0U ? requested_logits_tile : 256U;
-    for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
-        const unsigned int row = static_cast<unsigned int>(i / task->cols);
-        const unsigned int col = static_cast<unsigned int>(i % task->cols);
+    const unsigned int requested_active_logits_cols =
+        task->scalar1 > 0.0f ? static_cast<unsigned int>(task->scalar1) :
+        task->cols;
+    const unsigned int active_logits_cols =
+        requested_active_logits_cols < task->cols ?
+        requested_active_logits_cols : task->cols;
+    const unsigned long long row_count =
+        task->n / static_cast<unsigned long long>(task->cols);
+    const unsigned long long active_logits_elements =
+        row_count * static_cast<unsigned long long>(active_logits_cols);
+    for (unsigned long long i = threadIdx.x; i < active_logits_elements;
+         i += blockDim.x) {
+        const unsigned int row =
+            static_cast<unsigned int>(i / active_logits_cols);
+        const unsigned int col =
+            static_cast<unsigned int>(i % active_logits_cols);
+        const unsigned long long output_index =
+            static_cast<unsigned long long>(row) * task->cols + col;
         float acc = 0.0f;
         for (unsigned int tile_begin = 0U; tile_begin < hidden_width;
              tile_begin += logits_tile) {
@@ -46,7 +61,7 @@ if (task->cols > 0U && task->inner > 0U && has_lm_head) {
                     pto_cuda_tensor_arg_f32(task, 0U, weight_index, 0.0f);
             }
         }
-        task->out[i] = acc;
+        task->out[output_index] = acc;
     }
     __syncthreads();
     if (task->scalar_arg_count > 3 && task->tensor_args[2] &&
@@ -55,7 +70,7 @@ if (task->cols > 0U && task->inner > 0U && has_lm_head) {
         __shared__ unsigned int logits_best_tokens[1024];
         float local_best_logit = -3.4028234663852886e38f;
         unsigned int local_best_token = 0U;
-        for (unsigned int token = threadIdx.x; token < task->cols;
+        for (unsigned int token = threadIdx.x; token < active_logits_cols;
              token += blockDim.x) {
             const float candidate = task->out[token];
             if (candidate > local_best_logit) {

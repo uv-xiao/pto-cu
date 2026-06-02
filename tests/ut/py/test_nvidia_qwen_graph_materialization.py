@@ -641,6 +641,7 @@ def test_launch_packet_carries_cuda_task_shape_fields():
                 "ldb": 4096,
                 "ldc": 4096,
                 "scalar0": 1.25,
+                "scalar1": 1024,
                 "a_batch_stride": 4096,
             },
         },
@@ -675,6 +676,7 @@ def test_launch_packet_carries_cuda_task_shape_fields():
     assert packet[1].ldb == 4096
     assert packet[1].ldc == 4096
     assert packet[1].scalar0 == 1.25
+    assert packet[1].scalar1 == 1024.0
     assert packet[1].a_batch_stride == 4096
     assert list(packet[1].tensor_arg_dtypes)[:2] == [6, 0]
 
@@ -736,13 +738,28 @@ def test_weight_args_loader_rejects_shape_field_stale_artifact():
             ],
         }
     )
-    assert weight_args_shape_fields_ready(
+    assert not weight_args_shape_fields_ready(
         {
             "task_arg_descriptors": [
                 {
                     "id": "logits",
                     "callable": "qwen_logits",
                     "task_shape_fields": {"cols": 16, "inner": 4},
+                },
+            ],
+        }
+    )
+    assert weight_args_shape_fields_ready(
+        {
+            "task_arg_descriptors": [
+                {
+                    "id": "logits",
+                    "callable": "qwen_logits",
+                    "task_shape_fields": {
+                        "cols": 16,
+                        "inner": 4,
+                        "scalar1": 1024,
+                    },
                 },
             ],
         }
@@ -839,6 +856,7 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "ldb": 4,
         "ldc": 16,
         "scalar0": 256,
+        "scalar1": 1024,
     }
 
 

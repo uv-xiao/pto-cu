@@ -27,6 +27,7 @@ class QwenTaskShape:
 QWEN3_8B_TASK_SHAPE = QwenTaskShape()
 KV_PAGE_SIZE_TOKENS = 16
 LOGITS_TILE_SIZE = 256
+LOGITS_DIAGNOSTIC_ACTIVE_COLUMNS = 1024
 
 
 def shape_contract_payload(shape: QwenTaskShape) -> dict[str, Any]:
@@ -67,6 +68,7 @@ def task_shape_fields(callable_name: str, shape: QwenTaskShape) -> dict[str, Any
     if callable_name == "qwen_logits":
         fields = matrix_fields(cols=shape.vocab_size, inner=shape.hidden_size)
         fields["scalar0"] = LOGITS_TILE_SIZE
+        fields["scalar1"] = LOGITS_DIAGNOSTIC_ACTIVE_COLUMNS
         return fields
     if callable_name in {
         "qwen_rmsnorm_input",
