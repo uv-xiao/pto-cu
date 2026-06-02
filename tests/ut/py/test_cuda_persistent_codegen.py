@@ -346,8 +346,8 @@ def test_render_persistent_dag_source_includes_generic_argument_slots():
         ]
     )
 
-    assert "const float *tensor_args[4];" in source
-    assert "unsigned int tensor_arg_dtypes[4];" in source
+    assert "const float *tensor_args[5];" in source
+    assert "unsigned int tensor_arg_dtypes[5];" in source
     assert "float scalar_args[4];" in source
     assert "unsigned int tensor_arg_count;" in source
     assert "unsigned int scalar_arg_count;" in source

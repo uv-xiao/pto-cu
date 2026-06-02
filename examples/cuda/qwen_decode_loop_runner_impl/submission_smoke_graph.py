@@ -67,21 +67,21 @@ def expected_outputs(
 
 
 def make_tasks(ptrs: dict[str, int]) -> Any:
-    tensor_args_t = ctypes.c_void_p * 4
+    tensor_args_t = ctypes.c_void_p * 5
     scalar_args_t = ctypes.c_float * 4
     task_t = CudaPersistentDagTask * 10
     scalars = scalar_args_t(1.0, 0.0, 0.0, 0.0)
     tensors = [
-        tensor_args_t(ptrs["embedding"], None, None, None),
-        tensor_args_t(ptrs["input_norm"], None, None, None),
-        tensor_args_t(ptrs["q_proj"], ptrs["k_proj"], ptrs["v_proj"], None),
-        tensor_args_t(ptrs["q_norm"], ptrs["k_norm"], None, None),
-        tensor_args_t(ptrs["o_proj"], None, None, None),
-        tensor_args_t(ptrs["post_norm"], None, None, None),
-        tensor_args_t(ptrs["gate_proj"], ptrs["up_proj"], None, None),
-        tensor_args_t(ptrs["down_proj"], None, None, None),
-        tensor_args_t(ptrs["final_norm"], None, None, None),
-        tensor_args_t(ptrs["lm_head"], None, None, None),
+        tensor_args_t(ptrs["embedding"], None, None, None, None),
+        tensor_args_t(ptrs["input_norm"], None, None, None, None),
+        tensor_args_t(ptrs["q_proj"], ptrs["k_proj"], ptrs["v_proj"], None, None),
+        tensor_args_t(ptrs["q_norm"], ptrs["k_norm"], None, None, None),
+        tensor_args_t(ptrs["o_proj"], None, None, None, None),
+        tensor_args_t(ptrs["post_norm"], None, None, None, None),
+        tensor_args_t(ptrs["gate_proj"], ptrs["up_proj"], None, None, None),
+        tensor_args_t(ptrs["down_proj"], None, None, None, None),
+        tensor_args_t(ptrs["final_norm"], None, None, None, None),
+        tensor_args_t(ptrs["lm_head"], None, None, None, None),
     ]
     outputs = ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "logits"]
     inputs = ["token_ids", "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8"]

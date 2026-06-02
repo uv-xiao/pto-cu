@@ -47,6 +47,7 @@ TENSOR_DTYPE_CODES = {
     "float32": 0,
     "bfloat16": 6,
 }
+PERSISTENT_TENSOR_ARG_CAPACITY = 5
 
 
 def normalize_numeric_task_mode(mode: str) -> str:
@@ -411,11 +412,11 @@ def tensor_arg_index(value: str) -> int:
     if not value.startswith(prefix) or not value.endswith("]"):
         return 0
     parsed = int(value[len(prefix) : -1])
-    return parsed if 0 <= parsed < 4 else 0
+    return parsed if 0 <= parsed < PERSISTENT_TENSOR_ARG_CAPACITY else 0
 
 
 def tensor_arg_dtype_codes(descriptor: dict[str, Any]) -> list[int]:
-    codes = [0, 0, 0, 0]
+    codes = [0] * PERSISTENT_TENSOR_ARG_CAPACITY
     for item in descriptor.get("tensor_arg_metadata", []):
         if not isinstance(item, dict):
             continue

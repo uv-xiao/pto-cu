@@ -305,6 +305,12 @@ def test_launch_packet_binds_runtime_rope_table_tensor_args():
                     "status": "requires_live_pointer",
                     "device_ptr_source": "runtime_buffers.rope_sin_table",
                 },
+                {
+                    "arg": "tensor_args[4]",
+                    "tensor": "kv_page_table",
+                    "status": "runtime_generated_tensor",
+                    "device_ptr_source": "runtime_buffers.kv_page_table",
+                },
             ],
         }
     ]
@@ -321,6 +327,7 @@ def test_launch_packet_binds_runtime_rope_table_tensor_args():
         "runtime_buffers": {
             "rope_cos_table": {"device_ptr_hex": "0xa000", "element_count": 64},
             "rope_sin_table": {"device_ptr_hex": "0xb000", "element_count": 64},
+            "kv_page_table": {"device_ptr_hex": "0xc000", "element_count": 1},
         },
         "total_byte_count": 0,
     }
@@ -340,7 +347,8 @@ def test_launch_packet_binds_runtime_rope_table_tensor_args():
     assert packet[0].tensor_args[1] == 0x2000
     assert packet[0].tensor_args[2] == 0xA000
     assert packet[0].tensor_args[3] == 0xB000
-    assert packet[0].tensor_arg_count == 4
+    assert packet[0].tensor_args[4] == 0xC000
+    assert packet[0].tensor_arg_count == 5
 
 
 def test_launch_packet_binds_runtime_kv_page_table_tensor_arg():
@@ -1096,6 +1104,13 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "ldb": 1,
         "ldc": 6,
         "scalar0": 16,
+    }
+    assert descriptors["layer_0_attention_qk_norm"]["tensor_args"][4] == {
+        "arg": "tensor_args[4]",
+        "tensor": "kv_page_table",
+        "role": "kv_page_table",
+        "status": "runtime_generated_tensor",
+        "device_ptr_source": "runtime_buffers.kv_page_table",
     }
     assert descriptors["layer_0_attention_o"]["task_shape_fields"] == {
         "rows": 2,

@@ -18,7 +18,7 @@ DEFAULT_WEIGHT_BINDING = (
     / "qwen-cuda-weight-residency.json"
 )
 ABI_PATH = "src/cuda/platform/include/host/pto_cuda_persistent_device_abi.h"
-TENSOR_ARG_CAPACITY = 4
+TENSOR_ARG_CAPACITY = 5
 MODEL_ID = "Qwen/Qwen3-8B"
 MODEL_REVISION = "d117af2f304f02a8647f88fe05b61cfb405a1d9e"
 

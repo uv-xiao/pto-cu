@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-03 Qwen QK norm paged K-cache](2026-06-03-qwen-qk-norm-paged-k-cache.md)
 - [2026-06-03 Qwen input RMSNorm hidden weight](2026-06-03-qwen-input-rmsnorm-hidden-weight.md)
 - [2026-06-03 CUDA example surface policy](2026-06-03-cuda-example-surface-policy.md)
 - [2026-06-02 Qwen first-layer logits resource execution](2026-06-02-qwen-first-layer-logits-resource-execution.md)

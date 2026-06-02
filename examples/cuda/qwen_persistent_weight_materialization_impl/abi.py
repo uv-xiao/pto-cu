@@ -32,5 +32,5 @@ def dag_task_abi() -> dict[str, Any]:
         ),
         "sizeof_bytes": ctypes.sizeof(CudaPersistentDagTask),
         "field_offsets": fields,
-        "tensor_arg_capacity": 4,
+        "tensor_arg_capacity": 5,
     }

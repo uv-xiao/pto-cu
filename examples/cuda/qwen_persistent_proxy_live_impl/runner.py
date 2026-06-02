@@ -44,7 +44,7 @@ def _single_qkv_function() -> Any:
 
 
 def _make_task(ptrs: dict[str, int]) -> Any:
-    tensor_args_t = ctypes.c_void_p * 4
+    tensor_args_t = ctypes.c_void_p * 5
     scalar_args_t = ctypes.c_float * 4
     task_t = CudaPersistentDagTask * 1
     return task_t(
@@ -70,7 +70,7 @@ def _make_task(ptrs: dict[str, int]) -> Any:
             out_batch_stride=0,
             c=ptrs["c"],
             d=ptrs["d"],
-            tensor_args=tensor_args_t(ptrs["weight"], None, None, None),
+            tensor_args=tensor_args_t(ptrs["weight"], None, None, None, None),
             scalar_args=scalar_args_t(0.0, 0.0, 0.0, 0.0),
             tensor_arg_count=1,
             scalar_arg_count=0,

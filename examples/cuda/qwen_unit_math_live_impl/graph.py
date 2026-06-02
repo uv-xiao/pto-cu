@@ -19,7 +19,7 @@ from qwen_unit_math_live_impl.plan import CALLABLES
 
 
 def make_graph_arrays(ptrs: dict[str, int]) -> dict[str, Any]:
-    tensor_args_t = ctypes.c_void_p * 4
+    tensor_args_t = ctypes.c_void_p * 5
     scalar_args_t = ctypes.c_float * 4
     scalars = scalar_args_t(1.0, 0.0, 0.0, 0.0)
 
@@ -95,7 +95,7 @@ def make_graph_arrays(ptrs: dict[str, int]) -> dict[str, Any]:
                 **common,
                 a=ptrs["hidden"],
                 out=ptrs["rmsnorm"],
-                tensor_args=tensor_args_t(ptrs["norm_weight"], None, None, None),
+                tensor_args=tensor_args_t(ptrs["norm_weight"], None, None, None, None),
                 tensor_arg_count=1,
             )
         if node.key == "attention":
@@ -142,7 +142,7 @@ def make_graph_arrays(ptrs: dict[str, int]) -> dict[str, Any]:
             **logits_common,
             a=ptrs["final_norm"],
             out=ptrs["logits"],
-            tensor_args=tensor_args_t(ptrs["lm_head"], None, None, None),
+            tensor_args=tensor_args_t(ptrs["lm_head"], None, None, None, None),
             tensor_arg_count=1,
         )
 

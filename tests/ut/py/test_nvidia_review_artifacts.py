@@ -2064,10 +2064,10 @@ def test_persistent_qwen_weight_arg_manifest_is_reviewable(tmp_path):
     assert manifest["kind"] == "pto_qwen_persistent_weight_args"
     assert manifest["status"] == "persistent_weight_args_ready"
     assert manifest["abi"]["task_struct"] == "PtoCudaPersistentDagTask"
-    assert manifest["abi"]["tensor_arg_capacity"] == 4
+    assert manifest["abi"]["tensor_arg_capacity"] == 5
     assert manifest["covered_tensor_count"] == len(bindings)
     assert manifest["missing_tensor_count"] == 0
-    assert manifest["max_tensor_args_per_task"] == 4
+    assert manifest["max_tensor_args_per_task"] == 5
     assert "qwen_weight_task_decomposition" in manifest["implemented_contracts"]
     assert "qwen_rope_table_tensor_arg_contract" in manifest[
         "implemented_contracts"
@@ -2081,7 +2081,7 @@ def test_persistent_qwen_weight_arg_manifest_is_reviewable(tmp_path):
     }
     qkv = descriptors["layer_0_attention_qkv"]
     assert qkv["callable"] == "qwen_attention_qkv"
-    assert qkv["tensor_arg_count"] == 3
+    assert qkv["tensor_arg_count"] == 4
     assert qkv["tensor_args"] == [
         {
             "arg": "tensor_args[0]",
@@ -2098,9 +2098,16 @@ def test_persistent_qwen_weight_arg_manifest_is_reviewable(tmp_path):
             "slot_id": 4,
             "tensor": "model.layers.0.self_attn.v_proj.weight",
         },
+        {
+            "arg": "tensor_args[3]",
+            "tensor": "kv_page_table",
+            "role": "kv_page_table",
+            "status": "runtime_generated_tensor",
+            "device_ptr_source": "runtime_buffers.kv_page_table",
+        },
     ]
     qk_norm = descriptors["layer_0_attention_qk_norm"]
-    assert qk_norm["tensor_arg_count"] == 4
+    assert qk_norm["tensor_arg_count"] == 5
     assert qk_norm["tensor_args"][2:] == [
         {
             "arg": "tensor_args[2]",
@@ -2115,6 +2122,13 @@ def test_persistent_qwen_weight_arg_manifest_is_reviewable(tmp_path):
             "role": "rope_sin_table",
             "status": "runtime_generated_tensor",
             "device_ptr_source": "runtime_buffers.rope_sin_table",
+        },
+        {
+            "arg": "tensor_args[4]",
+            "tensor": "kv_page_table",
+            "role": "kv_page_table",
+            "status": "runtime_generated_tensor",
+            "device_ptr_source": "runtime_buffers.kv_page_table",
         },
     ]
     assert descriptors["layer_0_mlp_gate_up"]["tensor_arg_count"] == 2

@@ -155,7 +155,11 @@ def layer_descriptors(
                 layer_tensor(layer, "self_attn.k_norm"),
             ],
             bindings=bindings,
-            runtime_tensor_roles=["rope_cos_table", "rope_sin_table"],
+            runtime_tensor_roles=[
+                "rope_cos_table",
+                "rope_sin_table",
+                "kv_page_table",
+            ],
             model_shape=model_shape,
         ),
         descriptor(

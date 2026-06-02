@@ -165,7 +165,20 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     )
     assert "const unsigned long long qk_norm_kv_write_index =" in full_source
     assert "task->c[qk_norm_kv_write_index] = task->out[j];" in full_source
+    assert "const unsigned int *qk_norm_kv_page_table =" in full_source
+    assert "task->tensor_arg_count > 4U && task->tensor_args[4]" in full_source
+    assert (
+        "reinterpret_cast<const unsigned int *>(task->tensor_args[4])"
+        in full_source
+    )
+    assert "const unsigned int physical_page = qk_norm_kv_page_table ?" in (
+        full_source
+    )
+    assert "qk_norm_kv_page_table[logical_page] : logical_page" in full_source
     assert "qwen_qk_norm_normalized_k_cache_writeback_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert "qwen_qk_norm_paged_k_cache_writeback_source" in manifest[
         "implemented_contracts"
     ]
     assert "qwen_qk_norm_separate_qk_regions_source" in manifest[

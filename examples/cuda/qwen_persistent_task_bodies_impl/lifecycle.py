@@ -237,6 +237,7 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
                 "k_norm_weight",
                 "rope_cos_table",
                 "rope_sin_table",
+                "kv_page_table",
             ],
             "body": """
 if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
@@ -258,6 +259,9 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
         static_cast<unsigned int>(task->scalar_args[2]) : row;
     const unsigned int sequence_capacity =
         task->b_batch_stride > 0U ? task->b_batch_stride : kv_page_size;
+    const unsigned int *qk_norm_kv_page_table =
+        task->tensor_arg_count > 4U && task->tensor_args[4] ?
+        reinterpret_cast<const unsigned int *>(task->tensor_args[4]) : nullptr;
     if (task->cols >= q_width + kv_width) {
         for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
             const unsigned int col = static_cast<unsigned int>(j % task->cols);
@@ -314,7 +318,8 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
             if (!is_query_region && task->c) {
                 const unsigned int logical_page = decode_position / kv_page_size;
                 const unsigned int page_offset = decode_position % kv_page_size;
-                const unsigned int physical_page = logical_page;
+                const unsigned int physical_page = qk_norm_kv_page_table ?
+                    qk_norm_kv_page_table[logical_page] : logical_page;
                 const unsigned long long token_slot =
                     static_cast<unsigned long long>(physical_page) *
                         kv_page_size + page_offset;
@@ -821,6 +826,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_qk_norm_block_rmsnorm_rope_source",
             "qwen_qk_norm_separate_qk_regions_source",
             "qwen_qk_norm_normalized_k_cache_writeback_source",
+            "qwen_qk_norm_paged_k_cache_writeback_source",
             "qwen_final_norm_full_rmsnorm_source",
             "qwen_shape_field_qk_rope_source",
             "qwen_bounded_decode_attention_reduction_source",

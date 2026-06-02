@@ -14,7 +14,7 @@ from qwen_persistent_microdecode_live_impl.plan import CALLABLES
 
 
 def make_tasks(ptrs: dict[str, int]) -> Any:
-    tensor_args_t = ctypes.c_void_p * 4
+    tensor_args_t = ctypes.c_void_p * 5
     scalar_args_t = ctypes.c_float * 4
     task_t = CudaPersistentDagTask * 3
     zero_scalars = scalar_args_t(0.0, 0.0, 0.0, 0.0)
@@ -30,7 +30,7 @@ def make_tasks(ptrs: dict[str, int]) -> Any:
             initial_fanin=0,
             c=ptrs["c"],
             d=ptrs["d"],
-            tensor_args=tensor_args_t(ptrs["q_weight"], None, None, None),
+            tensor_args=tensor_args_t(ptrs["q_weight"], None, None, None, None),
             scalar_args=zero_scalars,
             tensor_arg_count=1,
             scalar_arg_count=0,
@@ -43,7 +43,7 @@ def make_tasks(ptrs: dict[str, int]) -> Any:
             dependent_begin=1,
             dependent_count=1,
             initial_fanin=1,
-            tensor_args=tensor_args_t(ptrs["o_weight"], None, None, None),
+            tensor_args=tensor_args_t(ptrs["o_weight"], None, None, None, None),
             scalar_args=zero_scalars,
             tensor_arg_count=1,
             scalar_arg_count=0,
@@ -56,7 +56,7 @@ def make_tasks(ptrs: dict[str, int]) -> Any:
             dependent_begin=0,
             dependent_count=0,
             initial_fanin=1,
-            tensor_args=tensor_args_t(ptrs["q_weight"], None, None, None),
+            tensor_args=tensor_args_t(ptrs["q_weight"], None, None, None, None),
             scalar_args=zero_scalars,
             tensor_arg_count=1,
             scalar_arg_count=0,
@@ -91,4 +91,3 @@ def make_state(plan: dict[str, Any], ptrs: dict[str, int]) -> CudaPersistentDagS
         scheduler_processed_count=ptrs["counters"] + 10 * word,
         scheduler_processed_by_block=ptrs["scheduler_processed"],
     )
-
