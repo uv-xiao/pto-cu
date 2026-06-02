@@ -189,6 +189,7 @@ def open_workspace(
     plans: list[dict[str, Any]],
     graph_task_count: int,
     allocations: list[tuple[str, int]],
+    descriptors: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     model_shape = load_model_shape()
     workspace_plans = [
@@ -196,6 +197,7 @@ def open_workspace(
             plan=plan,
             graph_task_count=graph_task_count,
             model_shape=model_shape,
+            descriptors=descriptors,
         )
         for plan in plans
     ]

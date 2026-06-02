@@ -100,6 +100,7 @@ class SingleContextLiveSession:
         *,
         plans: list[dict[str, Any]],
         graph_task_count: int,
+        descriptors: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         assert self.runtime is not None and self.ctx is not None
         self.activation_workspace = open_workspace(
@@ -109,6 +110,7 @@ class SingleContextLiveSession:
             device=self.device,
             plans=plans,
             graph_task_count=graph_task_count,
+            descriptors=descriptors,
             allocations=self.allocations,
         )
         return self.activation_workspace

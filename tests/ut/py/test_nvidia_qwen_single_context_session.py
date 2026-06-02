@@ -99,9 +99,10 @@ class FakeSingleContextSession:
             "pointer_table": {"status": "resident_weight_pointer_table_ready"},
         }
 
-    def open_activation_workspace(self, *, plans, graph_task_count):
+    def open_activation_workspace(self, *, plans, graph_task_count, descriptors=None):
         assert plans[0]["workload_id"] == "mpk_offline_decode"
         assert graph_task_count == 1
+        assert descriptors == []
         return self.workspace
 
     def close(self):

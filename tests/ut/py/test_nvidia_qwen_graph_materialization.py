@@ -14,6 +14,9 @@ from qwen_decode_loop_runner_impl.launch_preflight import (  # noqa: E402
     launch_packet_preflight,
     set_decode_step_index,
 )
+from qwen_decode_loop_runner_impl.activation_workspace import (  # noqa: E402
+    workspace_plan,
+)
 from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
     numeric_task_mode_summary,
 )
@@ -188,9 +191,72 @@ def test_launch_packet_uses_full_logits_extent_for_final_logits_task():
     assert packet[1].tensor_arg_count == 4
 
     set_decode_step_index(packet, 7)
-
     assert packet[1].scalar_arg_count == 4
     assert packet[1].scalar_args[3] == 7.0
+
+
+def test_workspace_plan_sizes_activation_buffers_from_descriptor_outputs():
+    plan = {"workload_id": "mpk_offline_decode", "max_batch_size": 2}
+    model_shape = {
+        "hidden_size": 4,
+        "vocab_size": 16,
+    }
+    descriptors = [
+        {"callable": "qwen_rmsnorm_input", "task_shape_fields": {"cols": 4}},
+        {"callable": "qwen_attention_qkv", "task_shape_fields": {"cols": 8}},
+        {"callable": "qwen_logits", "task_shape_fields": {"cols": 16}},
+    ]
+
+    workspace = workspace_plan(
+        plan=plan,
+        graph_task_count=len(descriptors),
+        model_shape=model_shape,
+        descriptors=descriptors,
+    )
+
+    assert workspace["activation_buffer_element_counts"] == [8, 16]
+    assert workspace["activation_buffer_byte_counts"] == [32, 64]
+    assert workspace["activation_buffer_elements"] == 16
+    assert workspace["total_byte_count"] == 32 + 64 + 2 * 16 * 4
+
+
+def test_launch_packet_uses_per_task_activation_output_extent():
+    descriptors = [
+        {"callable": "qwen_rmsnorm_input", "tensor_args": []},
+        {"callable": "qwen_attention_qkv", "tensor_args": []},
+        {"callable": "qwen_logits", "tensor_args": []},
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x3000"},
+            {"field": "b", "device_ptr_hex": "0x4000"},
+            {"field": "out", "device_ptr_hex": "0x5000"},
+        ],
+    )
+    workspace = {
+        "activation_buffers": [
+            {"device_ptr_hex": "0x8000", "element_count": 8},
+            {"device_ptr_hex": "0x9000", "element_count": 16},
+        ],
+        "logits_buffer": {"device_ptr_hex": "0xa000", "element_count": 32},
+        "total_byte_count": 224,
+    }
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x6000"},
+            "d": {"device_ptr_hex": "0x7000"},
+        },
+        workspace=workspace,
+    )
+
+    assert packet is not None
+    assert packet[0].n == 8
+    assert packet[1].n == 16
+    assert packet[2].n == 32
+    assert list(packet[2].scalar_args)[:3] == [0.0, 16.0, 32.0]
 
 
 def test_launch_packet_carries_cuda_task_shape_fields():

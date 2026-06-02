@@ -25,6 +25,7 @@ from qwen_decode_loop_runner_impl.single_context_session import (
 )
 from qwen_decode_loop_runner_impl.submission_plan import build_submission_plans
 from qwen_decode_loop_runner_impl.submission import submission_descriptor_contract
+from qwen_persistent_weight_materialization import build_materialization_manifest
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -39,6 +40,19 @@ def repo_relative(path: Path) -> str:
         return path.resolve().relative_to(ROOT.resolve()).as_posix()
     except ValueError:
         return path.as_posix()
+
+
+def ready_resident_descriptors(
+    resident_lifecycle: dict[str, Any],
+) -> list[dict[str, Any]]:
+    materialization = build_materialization_manifest(
+        pointer_table=resident_lifecycle.get("pointer_table"),
+    )
+    return [
+        item
+        for item in materialization.get("materialized_task_descriptors", [])
+        if item.get("status") == "ready"
+    ]
 
 
 def build_decode_loop_runner(
@@ -90,16 +104,21 @@ def build_decode_loop_runner(
         kv_lifecycle=kv_lifecycle,
         resident_lifecycle=resident_lifecycle,
     )
-    graph_task_count = int(resident_lifecycle.get("materialized_task_count", 0))
+    resident_descriptors = ready_resident_descriptors(resident_lifecycle)
+    graph_task_count = len(resident_descriptors) or int(
+        resident_lifecycle.get("materialized_task_count", 0),
+    )
     activation_workspace = (
         session.open_activation_workspace(
             plans=plans,
             graph_task_count=graph_task_count,
+            descriptors=resident_descriptors,
         )
         if session is not None
         else build_activation_workspace_lifecycle(
             plans=plans,
             graph_task_count=graph_task_count,
+            descriptors=resident_descriptors,
             cuda_live=workspace_cuda_live,
             device=device,
             host_runtime=host_runtime,

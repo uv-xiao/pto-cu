@@ -283,6 +283,10 @@ def workspace_pointer_policy(
         "task_output_chain": "intermediate_tasks_use_activation_i_last_uses_logits",
         "activation_buffer_count": len(workspace.get("activation_buffers", [])),
         "required_activation_buffer_count": max(task_count - 1, 0),
+        "activation_buffer_element_counts": [
+            int(item.get("element_count", 0))
+            for item in workspace.get("activation_buffers", [])
+        ],
         "logits_buffer": workspace["logits_buffer"]["device_ptr_hex"],
         "total_byte_count": workspace["total_byte_count"],
     }

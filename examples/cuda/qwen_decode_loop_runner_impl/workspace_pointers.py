@@ -104,13 +104,14 @@ def pointer_set_for_plan(
     activation_buffers = []
     next_ptr = base_ptr
     for index in range(plan["activation_buffer_count"]):
+        element_count = activation_buffer_elements(plan, index)
         activation_buffers.append(
             buffer_record(
                 name=f"activation_{index}",
                 role="intermediate_activation",
                 ptr=next_ptr,
-                byte_count=plan["activation_buffer_bytes"],
-                element_count=plan["activation_buffer_elements"],
+                byte_count=element_count * 4,
+                element_count=element_count,
             )
         )
         next_ptr += pointer_stride
@@ -139,8 +140,8 @@ def allocate_pointer_set(
             allocated,
             name=f"activation_{index}",
             role="intermediate_activation",
-            byte_count=plan["activation_buffer_bytes"],
-            element_count=plan["activation_buffer_elements"],
+            byte_count=activation_buffer_elements(plan, index) * 4,
+            element_count=activation_buffer_elements(plan, index),
         )
         for index in range(plan["activation_buffer_count"])
     ]
@@ -214,6 +215,13 @@ def buffer_record(
         "element_count": element_count,
         "element_dtype": "float32",
     }
+
+
+def activation_buffer_elements(plan: dict[str, Any], index: int) -> int:
+    counts = plan.get("activation_buffer_element_counts", [])
+    if isinstance(counts, list) and index < len(counts):
+        return int(counts[index])
+    return int(plan["activation_buffer_elements"])
 
 
 def unavailable_workspace_table(reason: str, host_runtime: Path, **extra: Any) -> dict[str, Any]:

@@ -82,5 +82,7 @@ task descriptors bound to concrete CUDA-live pointers.
 Its launch-packet preflight also packs the host-side `CudaPersistentDagTask`
 array from those pointers. When the activation workspace is live, intermediate
 tasks are chained through activation buffers and the final task writes to a
-float logits/sampling output buffer. It still does not execute full Qwen
-kernels or a full-serving decode loop.
+float logits/sampling output buffer. Activation buffers are sized from
+descriptor output shapes when those shapes are available, so widened QKV and
+MLP intermediates no longer share the hidden-size fallback. It still does not
+execute full Qwen kernels or a full-serving decode loop.

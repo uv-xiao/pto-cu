@@ -129,7 +129,7 @@ def task_n_for_record(
 ) -> int:
     if is_logits_output_task(index=index, task_count=task_count, descriptor=descriptor):
         return logits_element_count(workspace)
-    return hidden_element_count(workspace, numeric_task_mode=numeric_task_mode)
+    return task_output_element_count(index=index, workspace=workspace)
 
 
 def task_scalar_args(
@@ -157,7 +157,7 @@ def task_scalar_args(
         return [0.0, 0.0, 0.0, 0.0]
     return [
         0.0,
-        float(hidden_element_count(workspace, numeric_task_mode=numeric_task_mode)),
+        float(task_input_element_count(index=index, workspace=workspace)),
         float(logits_element_count(workspace)),
         0.0,
     ]
@@ -255,6 +255,31 @@ def hidden_element_count(
     else:
         elements = int(workspace["logits_buffer"].get("element_count", 1))
     return elements
+
+
+def task_input_element_count(*, index: int, workspace: dict[str, Any] | None) -> int:
+    if workspace is None:
+        return 1
+    if index > 0:
+        return activation_buffer_element_count(workspace=workspace, index=index - 1)
+    return hidden_element_count(workspace)
+
+
+def task_output_element_count(*, index: int, workspace: dict[str, Any] | None) -> int:
+    if workspace is None:
+        return 1
+    return activation_buffer_element_count(workspace=workspace, index=index)
+
+
+def activation_buffer_element_count(
+    *,
+    workspace: dict[str, Any],
+    index: int,
+) -> int:
+    buffers = workspace.get("activation_buffers", [])
+    if index < len(buffers):
+        return int(buffers[index].get("element_count", 1))
+    return hidden_element_count(workspace)
 
 
 def logits_element_count(workspace: dict[str, Any] | None) -> int:

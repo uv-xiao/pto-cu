@@ -43,6 +43,7 @@ def build_activation_workspace_lifecycle(
     *,
     plans: list[dict[str, Any]],
     graph_task_count: int,
+    descriptors: list[dict[str, Any]] | None = None,
     cuda_live: bool = False,
     device: int = 0,
     host_runtime: Path | None = None,
@@ -53,6 +54,7 @@ def build_activation_workspace_lifecycle(
             plan=plan,
             graph_task_count=graph_task_count,
             model_shape=model_shape,
+            descriptors=descriptors,
         )
         for plan in plans
     ]
@@ -105,22 +107,69 @@ def workspace_plan(
     plan: dict[str, Any],
     graph_task_count: int,
     model_shape: dict[str, Any],
+    descriptors: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    hidden_elements = int(plan["max_batch_size"]) * int(model_shape["hidden_size"])
+    rows = int(plan["max_batch_size"])
+    hidden_elements = rows * int(model_shape["hidden_size"])
     logits_elements = int(plan["max_batch_size"]) * int(model_shape["vocab_size"])
     activation_count = max(graph_task_count - 1, 0)
+    activation_element_counts = activation_buffer_element_counts(
+        rows=rows,
+        hidden_elements=hidden_elements,
+        activation_count=activation_count,
+        descriptors=descriptors or [],
+    )
+    max_activation_elements = (
+        max(activation_element_counts) if activation_element_counts else hidden_elements
+    )
     return {
         "workload_id": plan["workload_id"],
         "status": "activation_workspace_plan_ready",
-        "max_batch_size": int(plan["max_batch_size"]),
+        "max_batch_size": rows,
         "graph_task_count": graph_task_count,
         "activation_buffer_count": activation_count,
-        "activation_buffer_elements": hidden_elements,
-        "activation_buffer_bytes": hidden_elements * 4,
+        "activation_buffer_elements": max_activation_elements,
+        "activation_buffer_element_counts": activation_element_counts,
+        "activation_buffer_bytes": max_activation_elements * 4,
+        "activation_buffer_byte_counts": [
+            elements * 4 for elements in activation_element_counts
+        ],
         "logits_buffer_count": 1,
         "logits_buffer_elements": logits_elements,
         "logits_buffer_bytes": logits_elements * 4,
         "total_buffer_count": activation_count + 1,
-        "total_byte_count": activation_count * hidden_elements * 4
+        "total_byte_count": sum(elements * 4 for elements in activation_element_counts)
         + logits_elements * 4,
     }
+
+
+def activation_buffer_element_counts(
+    *,
+    rows: int,
+    hidden_elements: int,
+    activation_count: int,
+    descriptors: list[dict[str, Any]],
+) -> list[int]:
+    counts = []
+    for index in range(activation_count):
+        counts.append(
+            descriptor_output_elements(
+                rows=rows,
+                hidden_elements=hidden_elements,
+                descriptor=descriptors[index] if index < len(descriptors) else {},
+            )
+        )
+    return counts
+
+
+def descriptor_output_elements(
+    *,
+    rows: int,
+    hidden_elements: int,
+    descriptor: dict[str, Any],
+) -> int:
+    fields = descriptor.get("task_shape_fields", {})
+    cols = fields.get("cols") if isinstance(fields, dict) else None
+    if cols is None:
+        return hidden_elements
+    return max(rows * int(cols), 1)

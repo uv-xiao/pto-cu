@@ -17,9 +17,10 @@ two scalar slots. Descriptor-local fields override workload defaults, which lets
 future projection kernels carry model-specific matrix shapes without rewriting
 the launch-packet builder.
 
-The per-task `n` execution extent is still derived by the runtime workspace and
-callable role. This avoids confusing workload token-count metadata with the
-number of elements a kernel should touch.
+The per-task `n` execution extent is derived by the runtime workspace instead
+of workload token-count metadata. Follow-up shape-aware workspace work now uses
+descriptor output shapes to size each activation buffer and to set each
+non-final task's `n`.
 
 ## Evaluation Run
 
