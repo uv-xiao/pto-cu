@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 paper readiness serving coverage guard](2026-06-02-paper-readiness-serving-coverage-guard.md)
 - [2026-06-02 tensor workload coverage viewer](2026-06-02-tensor-workload-coverage-viewer.md)
 - [2026-06-02 persistent scheduler coverage viewer](2026-06-02-persistent-scheduler-coverage-viewer.md)
 - [2026-06-02 scene builder coverage viewer](2026-06-02-scene-builder-coverage-viewer.md)

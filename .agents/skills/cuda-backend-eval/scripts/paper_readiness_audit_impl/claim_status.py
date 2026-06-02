@@ -6,22 +6,37 @@ from typing import Any
 from .errors import fail
 
 
-def result_index(results: dict[str, Any]) -> set[tuple[str, str, str, str]]:
+ResultKey = tuple[str, str, str, str, str]
+
+
+def result_index(results: dict[str, Any]) -> set[ResultKey]:
     records = require_records(results, "result_records")
-    index: set[tuple[str, str, str, str]] = set()
+    index: set[ResultKey] = set()
     for record in records:
         hardware = record.get("hardware")
         inputs = record.get("inputs")
+        statistic = record.get("statistic")
         if not isinstance(hardware, dict):
             continue
         if not isinstance(inputs, dict):
             inputs = {}
+        if not isinstance(statistic, dict):
+            statistic = {}
         benchmark_id = record.get("benchmark_id")
         method_id = record.get("method_id")
         gpu = hardware.get("gpu")
         shape = inputs.get("shape", "")
+        serving_coverage = statistic.get("serving_coverage", "")
         if all(isinstance(value, str) for value in (benchmark_id, method_id, gpu)):
-            index.add((benchmark_id, method_id, gpu, str(shape)))
+            index.add(
+                (
+                    benchmark_id,
+                    method_id,
+                    gpu,
+                    str(shape),
+                    str(serving_coverage),
+                )
+            )
     return index
 
 
@@ -35,19 +50,32 @@ def require_records(data: dict[str, Any], key: str) -> list[dict[str, Any]]:
 
 
 def has_viewer_result(
-    current_results: set[tuple[str, str, str, str]],
+    current_results: set[ResultKey],
     ref: dict[str, Any],
 ) -> bool:
     benchmark_id = str(ref.get("benchmark_id", ""))
     method_id = str(ref.get("method_id", ""))
     gpu = str(ref.get("gpu", ""))
     shape_contains = ref.get("shape_contains")
-    for current_benchmark, current_method, current_gpu, current_shape in current_results:
+    serving_coverage = ref.get("serving_coverage")
+    for (
+        current_benchmark,
+        current_method,
+        current_gpu,
+        current_shape,
+        current_coverage,
+    ) in current_results:
         if (
             current_benchmark,
             current_method,
             current_gpu,
         ) != (benchmark_id, method_id, gpu):
+            continue
+        if (
+            isinstance(serving_coverage, str)
+            and serving_coverage
+            and serving_coverage != current_coverage
+        ):
             continue
         if shape_contains is None:
             return True
@@ -58,7 +86,7 @@ def has_viewer_result(
 
 def count_evidence_refs(
     evidence_refs: list[dict[str, Any]],
-    current_results: set[tuple[str, str, str, str]],
+    current_results: set[ResultKey],
 ) -> tuple[dict[str, int], list[str]]:
     counts = Counter()
     missing_viewer_results: list[str] = []
@@ -76,6 +104,9 @@ def count_evidence_refs(
             shape_contains = ref.get("shape_contains")
             if isinstance(shape_contains, str) and shape_contains:
                 key.append(f"shape contains {shape_contains}")
+            serving_coverage = ref.get("serving_coverage")
+            if isinstance(serving_coverage, str) and serving_coverage:
+                key.append(f"coverage {serving_coverage}")
             if not has_viewer_result(current_results, ref):
                 missing_viewer_results.append(" / ".join(key))
     return dict(sorted(counts.items())), missing_viewer_results

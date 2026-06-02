@@ -87,3 +87,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-54.md](entries/2026-06-02-part-54.md) | 1 | Scene Builder Coverage Viewer | Scene Builder Coverage Viewer |
 | [2026-06-02-part-55.md](entries/2026-06-02-part-55.md) | 1 | Persistent Scheduler Coverage Viewer | Persistent Scheduler Coverage Viewer |
 | [2026-06-02-part-56.md](entries/2026-06-02-part-56.md) | 1 | Tensor Workload Coverage Viewer | Tensor Workload Coverage Viewer |
+| [2026-06-02-part-57.md](entries/2026-06-02-part-57.md) | 1 | Paper Readiness Serving Coverage Guard | Paper Readiness Serving Coverage Guard |
