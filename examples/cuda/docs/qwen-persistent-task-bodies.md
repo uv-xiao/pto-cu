@@ -37,7 +37,7 @@ The logits shape path now computes descriptor-bounded hidden-by-vocab tiles
 before device-side argmax feedback. It reads the hidden vector through
 `task->a`, reads vocab projection weights through `tensor_args[0]`, bounds the
 hidden loop with `inner`, `lda`, and `ldb`, and uses `scalar0` as the logits
-tile size when present. The QKV task now binds runtime `kv_page_table` as
+tile size from the descriptor. The QKV task now binds runtime `kv_page_table` as
 `tensor_args[3]`, uses descriptor `scalar0` as page size, consumes the current
 decode position from `scalar_args[2]`, and writes key/value projections to
 batch-local physical KV-cache slots with logical-to-physical fallback. The

@@ -813,6 +813,7 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "lda": 4,
         "ldb": 4,
         "ldc": 16,
+        "scalar0": 256,
     }
 
 

@@ -21,4 +21,5 @@ Qwen layer work into persistent task descriptors such as attention QKV,
 attention Q/K norm, MLP gate/up, and MLP down so each task stays within
 `PtoCudaPersistentDagTask::tensor_args[4]`. Attention Q/K norm descriptors bind
 `tensor_args[2]` and `tensor_args[3]` as runtime-generated RoPE cos/sin table
-requirements; live decode-loop pointer binding for those tables remains open.
+requirements. The logits descriptor carries `scalar0=256` as the hidden-by-vocab
+tile size consumed by the generated logits projection source.

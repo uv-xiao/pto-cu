@@ -25,7 +25,7 @@ commands so reviewers can connect examples, docs, and artifacts directly.
 - [Qwen Safetensors Shard Status](docs/qwen-safetensors-shard-status.md) (23 lines)
 - [Qwen Safetensors Metadata Probe](docs/qwen-safetensors-metadata-probe.md) (24 lines)
 - [Qwen CUDA Weight Binding](docs/qwen-cuda-weight-binding.md) (36 lines)
-- [Qwen Persistent Weight Arguments](docs/qwen-persistent-weight-arguments.md) (24 lines)
+- [Qwen Persistent Weight Arguments](docs/qwen-persistent-weight-arguments.md) (25 lines)
 - [Qwen Persistent Weight Materialization](docs/qwen-persistent-weight-materialization.md) (24 lines)
 - [Qwen Resident Weight Table](docs/qwen-resident-weight-table.md) (23 lines)
 

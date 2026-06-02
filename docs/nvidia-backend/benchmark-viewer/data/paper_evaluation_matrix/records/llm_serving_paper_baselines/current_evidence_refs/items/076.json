@@ -1,0 +1,10 @@
+{
+  "kind": "raw_artifact",
+  "path": "tmp/cuda-backend/pto-serving-logits-tile-descriptor-2026-06-02/qwen-persistent-weight-args.json",
+  "symbols": [
+    "qwen_persistent_weight_args",
+    "qwen_weight_descriptor_shapes",
+    "qwen_logits_descriptor_tile_size",
+    "qwen_logits_tiled_vocab_projection_source"
+  ]
+}
