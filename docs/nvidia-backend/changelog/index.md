@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Paper audit PTO full-serving gate](2026-06-02-paper-audit-pto-full-serving-gate.md)
 - [2026-06-02 PTO full-serving row gate](2026-06-02-pto-full-serving-row-gate.md)
 - [2026-06-02 Qwen tensor tile runtime routing](2026-06-02-qwen-tensor-tile-runtime-routing.md)
 - [2026-06-02 Qwen tensor tile source contract](2026-06-02-qwen-tensor-tile-source-contract.md)

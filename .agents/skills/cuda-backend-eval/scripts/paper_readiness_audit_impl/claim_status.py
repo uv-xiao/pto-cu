@@ -6,7 +6,16 @@ from typing import Any
 from .errors import fail
 
 
-ResultKey = tuple[str, str, str, str, str]
+ResultKey = tuple[str, str, str, str, str, str, str, bool]
+PTO_FULL_SERVING_WORKLOAD_IDS = {"mpk_offline_decode", "vdcores_offline_decode"}
+PTO_FULL_SERVING_METRIC_FIELDS = {
+    "batch_size",
+    "decode_tokens",
+    "end_to_end_latency_ns",
+    "inter_token_latency_ns",
+    "throughput_tokens_per_s",
+    "time_to_first_token_ns",
+}
 
 
 def result_index(results: dict[str, Any]) -> set[ResultKey]:
@@ -27,6 +36,8 @@ def result_index(results: dict[str, Any]) -> set[ResultKey]:
         gpu = hardware.get("gpu")
         shape = inputs.get("shape", "")
         serving_coverage = statistic.get("serving_coverage", "")
+        workload_id = pto_workload_id(str(shape), statistic)
+        pto_full_serving_ready = pto_full_serving_row_ready(record, statistic)
         if all(isinstance(value, str) for value in (benchmark_id, method_id, gpu)):
             index.add(
                 (
@@ -35,9 +46,48 @@ def result_index(results: dict[str, Any]) -> set[ResultKey]:
                     gpu,
                     str(shape),
                     str(serving_coverage),
+                    str(record.get("correctness", "")),
+                    workload_id,
+                    pto_full_serving_ready,
                 )
             )
     return index
+
+
+def pto_workload_id(shape: str, statistic: dict[str, Any]) -> str:
+    workload_id = statistic.get("workload_id")
+    if isinstance(workload_id, str) and workload_id:
+        return workload_id
+    for candidate in PTO_FULL_SERVING_WORKLOAD_IDS:
+        if candidate in shape:
+            return candidate
+    return ""
+
+
+def pto_full_serving_row_ready(
+    record: dict[str, Any],
+    statistic: dict[str, Any],
+) -> bool:
+    shape = str(record.get("inputs", {}).get("shape", ""))
+    if record.get("benchmark_id") != "llm_serving_decode":
+        return False
+    if record.get("method_id") != "pto_persistent_device":
+        return False
+    if "Qwen/Qwen3-8B" not in shape:
+        return False
+    if statistic.get("serving_coverage") != "full_serving":
+        return False
+    if pto_workload_id(shape, statistic) not in PTO_FULL_SERVING_WORKLOAD_IDS:
+        return False
+    if record.get("correctness") != "pass":
+        return False
+    if not record.get("raw_artifact"):
+        return False
+    for key in PTO_FULL_SERVING_METRIC_FIELDS:
+        value = statistic.get(key)
+        if not isinstance(value, (int, float)) or value <= 0:
+            return False
+    return True
 
 
 def require_records(data: dict[str, Any], key: str) -> list[dict[str, Any]]:
@@ -64,6 +114,9 @@ def has_viewer_result(
         current_gpu,
         current_shape,
         current_coverage,
+        _current_correctness,
+        _current_workload_id,
+        current_pto_full_serving_ready,
     ) in current_results:
         if (
             current_benchmark,
@@ -75,6 +128,13 @@ def has_viewer_result(
             isinstance(serving_coverage, str)
             and serving_coverage
             and serving_coverage != current_coverage
+        ):
+            continue
+        if (
+            benchmark_id == "llm_serving_decode"
+            and method_id == "pto_persistent_device"
+            and serving_coverage == "full_serving"
+            and not current_pto_full_serving_ready
         ):
             continue
         if shape_contains is None:

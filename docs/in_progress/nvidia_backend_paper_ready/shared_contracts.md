@@ -211,6 +211,11 @@ Serving rows under `results.json` must include
 controlled attention-tile proxy rows, native bring-up rows, Qwen diagnostics,
 or one-token diagnostics from satisfying a full-serving Qwen/Qwen3-8B evidence
 claim by shape alone.
+The paper-readiness audit applies an additional PTO-specific guard for
+`llm_serving_decode` / `pto_persistent_device` / `full_serving` evidence:
+matching rows must pass correctness, identify either `mpk_offline_decode` or
+`vdcores_offline_decode`, carry a raw artifact path, and include latency plus
+throughput metrics before they can satisfy a full-serving viewer-result ref.
 
 The generated paper-readiness work queue lives in
 `docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json`.
