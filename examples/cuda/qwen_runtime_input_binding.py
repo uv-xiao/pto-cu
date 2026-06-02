@@ -195,8 +195,10 @@ def workload_records(
                 ),
                 "scalar_bindings": {
                     "prompt_token_count": len(runtime_ids),
+                    "active_prompt_token_count": len(token_ids),
                     "decode_tokens": decode_tokens,
                     "max_batch_size": max_batch,
+                    "first_logits_position": max(len(token_ids) - 1, 0),
                     "first_decode_position": len(runtime_ids),
                 },
                 "device_binding_state": "host_materialized_not_cuda_allocated",

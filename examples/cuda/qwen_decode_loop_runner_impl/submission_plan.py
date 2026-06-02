@@ -58,6 +58,12 @@ def submission_plan(
         "max_batch_size": int(scalars["rows"]),
         "decode_steps": int(scalars["cols"]),
         "first_decode_position": int(scalars["inner"]),
+        "runtime_prompt_tokens": int(
+            scalars.get("runtime_prompt_tokens", scalars["n"]),
+        ),
+        "active_prompt_tokens": int(
+            scalars.get("active_prompt_tokens", scalars["n"]),
+        ),
         "owner_lifetime_order": OWNER_LIFETIME_ORDER,
         "task_argument_fields": TASK_ARGUMENT_FIELDS,
         "token_pointer_fields": decode_record["pointer_bindings"],
@@ -75,11 +81,16 @@ def submission_plan(
         ),
         "output_token_accounting": {
             "output_buffer": "output_ids",
-            "start_position": int(scalars["inner"]),
+            "start_position": int(
+                scalars.get("output_start_position", scalars["inner"]),
+            ),
             "planned_tokens": int(scalars["cols"]),
             "eos_policy": "planned_stop_after_decode_tokens_or_eos",
         },
         "task_shape_fields": {
+            "a_batch_stride": int(
+                scalars.get("runtime_prompt_tokens", scalars["n"]),
+            ),
             "b_batch_stride": int(kv_record["sequence_capacity_tokens"]),
         },
     }

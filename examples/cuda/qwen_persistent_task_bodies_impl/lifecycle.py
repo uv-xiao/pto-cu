@@ -49,14 +49,24 @@ def body_specs() -> list[dict[str, Any]]:
             "consumes_roles": ["input_ids", "embedding_weight"],
             "body": """
 if (task->cols > 0U && task->tensor_arg_count > 0U && task->tensor_args[0]) {
-    const unsigned int token_index =
+    const unsigned int token_row =
         static_cast<unsigned int>(i / task->cols);
     const unsigned int hidden_col =
         static_cast<unsigned int>(i % task->cols);
+    const unsigned int prompt_stride =
+        task->a_batch_stride > 0U ? task->a_batch_stride : 1U;
+    const unsigned int requested_token_position =
+        task->scalar_arg_count > 2U ?
+        static_cast<unsigned int>(task->scalar_args[2]) : 0U;
+    const unsigned int token_position =
+        requested_token_position < prompt_stride ?
+        requested_token_position : prompt_stride - 1U;
     const unsigned int embedding_stride =
         task->ldb > 0U ? task->ldb : task->cols;
     const unsigned int token_id =
-        reinterpret_cast<const unsigned int *>(task->a)[token_index];
+        reinterpret_cast<const unsigned int *>(task->a)[
+            static_cast<unsigned long long>(token_row) * prompt_stride +
+            token_position];
     const unsigned long long embedding_weight_index =
         static_cast<unsigned long long>(token_id) * embedding_stride +
         hidden_col;

@@ -199,6 +199,13 @@ def workload_decode_args(
         if item.get("status") == "requires_live_pointer"
     ]
     scalars = record["scalar_bindings"]
+    runtime_prompt_tokens = int(scalars["prompt_token_count"])
+    active_prompt_tokens = int(
+        scalars.get("active_prompt_token_count", runtime_prompt_tokens),
+    )
+    first_logits_position = int(
+        scalars.get("first_logits_position", max(active_prompt_tokens - 1, 0)),
+    )
     return {
         "workload_id": workload_id,
         "status": "ready" if not missing and not symbolic else "plan_ready",
@@ -206,10 +213,13 @@ def workload_decode_args(
         "missing_token_buffers": missing,
         "symbolic_token_buffer_count": len(symbolic),
         "scalar_fields": {
-            "n": int(scalars["prompt_token_count"]),
+            "n": runtime_prompt_tokens,
             "rows": int(scalars["max_batch_size"]),
             "cols": int(scalars["decode_tokens"]),
-            "inner": int(scalars["first_decode_position"]),
+            "inner": first_logits_position,
+            "runtime_prompt_tokens": runtime_prompt_tokens,
+            "active_prompt_tokens": active_prompt_tokens,
+            "output_start_position": int(scalars["first_decode_position"]),
         },
     }
 

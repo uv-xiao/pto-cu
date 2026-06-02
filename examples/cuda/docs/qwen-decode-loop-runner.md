@@ -30,12 +30,10 @@ PYTHONPATH=$PWD:$PWD/python \
 ```
 
 Expected output: command exits 0; output JSON records a single CUDA-context
-resource session, runner-owned cuda_live token, KV-cache, resident-weight, and
-activation-workspace owners, resource-backed Qwen submission descriptors,
-compact graph materialization, workspace-bound launch-packet preflight,
-diagnostic bridge contracts, a diagnostic Qwen descriptor smoke execution, and
-a bounded resource-backed run_prepared execution covering task function ids
-7100 through 7109.
+resource session, runner-owned token, KV-cache, resident-weight, and
+activation-workspace owners, Qwen submission descriptors, graph materialization,
+launch-packet preflight, bridge contracts, descriptor smoke execution, and a
+bounded resource-backed run covering task function ids 7100 through 7109.
 
 The artifact composes token pointer, KV-cache, and resident-weight owners into
 a decode-loop submission plan. It records owner open/materialize/submit/close
@@ -53,19 +51,21 @@ The launch-packet preflight resolves `runtime_buffers.rope_cos_table` and
 `runtime_buffers.rope_sin_table` descriptor references into
 `CudaPersistentDagTask::tensor_args` entries before the workspace owner closes.
 For diagnostic execution, live RoPE tables are populated from Qwen's
-`rope_theta` and the workload `first_decode_position`. When bounded decode
-steps are requested, the runner refreshes the same live cos/sin table buffers
-for each `first_decode_position + step_index` before `run_prepared`. It also
-refreshes `qwen_attention_o.inner` to the current KV window.
+`rope_theta` and the workload `first_decode_position`, which is the last
+active prompt-token logits position for padded prompt buffers. The padded
+length is carried separately as `runtime_prompt_tokens` and `a_batch_stride`,
+while output-token accounting keeps the serving-policy output start. Bounded
+decode steps refresh the live cos/sin tables for each
+`first_decode_position + step_index` before `run_prepared`, and refresh
+`qwen_attention_o.inner` to the current KV window.
 With `--single-context-live-session`, token buffers, KV-cache, resident weights,
 and activation workspace are allocated under one CUDA context before graph
 materialization and launch-packet preflight, then closed after the preflight
 evidence is recorded.
 With `--run-resource-backed-smoke`, the runner prepares the generated Qwen
-task-function set and launches the resource-backed DAG packets for both
-serving policies while that same CUDA context is open. This is still
-diagnostic: it proves scheduler completion and pointer wiring for the planned
-DAG, not full Qwen numerical correctness.
+task-function set and launches resource-backed DAG packets while that same
+CUDA context is open. This is still diagnostic: it proves scheduler completion
+and pointer wiring, not full Qwen numerical correctness.
 Use `--resource-backed-repeat-runs` to submit fresh resource-backed graph
 state repeatedly through the same prepared callable and CUDA context.
 Use `--resource-backed-workload` to narrow the diagnostic to a single serving

@@ -178,6 +178,43 @@ currently fails. The reference top token at the last active prompt position is
 work to kernel and launch-state fidelity rather than missing reference
 infrastructure.
 
+The runner now carries active prompt-token semantics separately from padded
+serving-policy buffer shape. `qwen_runtime_input_binding.py` records both the
+runtime prompt length and the active prompt length. The persistent decode args
+use the last active prompt token as the first logits position, while
+submission-plan output accounting keeps the padded serving-policy start
+position. The generated `qwen_embedding_lookup` task reads
+`input_ids[row * prompt_stride + decode_position]`, using `a_batch_stride` for
+the padded prompt stride and `scalar_args[2]` for the current logits position.
+
+```bash
+ARTIFACT=tmp/cuda-backend/qwen-active-prompt-token-lookup-mpk-2026-06-03
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  examples/cuda/qwen_decode_loop_runner.py --mode offline \
+  --single-context-live-session --run-resource-backed-smoke \
+  --resource-backed-task-selection prefix \
+  --resource-backed-workload mpk_offline_decode \
+  --resource-backed-repeat-runs 1 --resource-backed-decode-steps 1 \
+  --resource-backed-worker-blocks 16 \
+  --resource-backed-logits-check-policy final_step \
+  --resource-backed-logits-active-cols full \
+  --resource-backed-numeric-task-mode unit_math_full_rmsnorm \
+  --device 0 --arch compute_80 --cache-root $ARTIFACT/cache \
+  --output-json $ARTIFACT/qwen-decode-loop-runner.json
+```
+
+Result: the fresh A100 run passed scheduler execution with zero device-side
+errors and used `first_decode_position=17`, `runtime_prompt_tokens=64`,
+`active_prompt_tokens=18`, `a_batch_stride=64`, and RoPE
+`decode_position=17`. This proves the first resource-backed step now consumes
+the last active prompt token position instead of row 0 token 0. The top token
+changed from the earlier real-resource `105397` to `116324`, but the compact
+comparison artifact at
+`tmp/cuda-backend/qwen-active-prompt-token-lookup-mpk-2026-06-03/comparison.json`
+still fails against the HF full-model reference token `151667`. The remaining
+gap is therefore true prompt-prefill/KV state and remaining task-math fidelity,
+not padded prompt-position plumbing.
+
 ## Remaining Gaps
 
 - Fix PTO kernel and launch-state fidelity so generated Qwen/Qwen3-8B

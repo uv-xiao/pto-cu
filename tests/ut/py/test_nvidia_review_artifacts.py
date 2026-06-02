@@ -1388,6 +1388,12 @@ def test_qwen_runtime_input_binding_materializes_token_buffers():
     assert mpk["scalar_bindings"]["first_decode_position"] == (
         mpk["target_prompt_tokens"]
     )
+    assert mpk["scalar_bindings"]["active_prompt_token_count"] == (
+        mpk["prompt_token_count"]
+    )
+    assert mpk["scalar_bindings"]["first_logits_position"] == (
+        mpk["prompt_token_count"] - 1
+    )
     assert mpk["device_binding_state"] == "host_materialized_not_cuda_allocated"
     assert "target_prompt_shape_alignment" not in binding["remaining_runtime_gaps"]
     assert "cuda_token_buffer_allocation" in binding["remaining_runtime_gaps"]
@@ -1454,8 +1460,10 @@ def test_qwen_persistent_decode_args_bind_token_pointer_roles(tmp_path):
                 },
                 "scalar_bindings": {
                     "prompt_token_count": 64,
+                    "active_prompt_token_count": 18,
                     "decode_tokens": 1024,
                     "max_batch_size": 16,
+                    "first_logits_position": 17,
                     "first_decode_position": 64,
                 },
             }
@@ -1552,7 +1560,10 @@ def test_qwen_persistent_decode_args_bind_token_pointer_roles(tmp_path):
     assert record["scalar_fields"]["n"] == 64
     assert record["scalar_fields"]["rows"] == 16
     assert record["scalar_fields"]["cols"] == 1024
-    assert record["scalar_fields"]["inner"] == 64
+    assert record["scalar_fields"]["inner"] == 17
+    assert record["scalar_fields"]["runtime_prompt_tokens"] == 64
+    assert record["scalar_fields"]["active_prompt_tokens"] == 18
+    assert record["scalar_fields"]["output_start_position"] == 64
     assert "persistent_decode_token_arg_binding" in manifest[
         "implemented_contracts"
     ]

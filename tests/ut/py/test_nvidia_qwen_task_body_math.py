@@ -152,6 +152,11 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         full_source
     )
     assert "static_cast<unsigned long long>(row) * input_stride;" in full_source
+    assert "const unsigned int prompt_stride =" in full_source
+    assert "const unsigned int requested_token_position =" in full_source
+    assert "static_cast<unsigned long long>(token_row) * prompt_stride +" in (
+        full_source
+    )
     assert "pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f)" in full_source
     assert "qwen_rowwise_rmsnorm_batch_source" in manifest["implemented_contracts"]
     assert "qwen_final_norm" in full_source
