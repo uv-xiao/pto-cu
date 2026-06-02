@@ -16,7 +16,7 @@ from simpler_setup.cuda_callable_compiler import (
 from qwen_persistent_proxy_live_impl.runner import _copy_from_device, _copy_to_device
 from qwen_persistent_proxy_live_impl.runtime import PtoRunTiming, device_name, load_runtime
 from qwen_persistent_task_bodies_impl.lifecycle import task_functions
-from qwen_unit_math_live_impl.graph import make_state, make_tasks
+from qwen_unit_math_live_impl.graph import make_graph_arrays, make_state
 from qwen_unit_math_live_impl.plan import (
     CALLABLES,
     build_unit_math_live_plan,
@@ -132,14 +132,15 @@ def run_unit_math_live(
         ):
             _copy_to_device(runtime, ctx, ptrs[name], hosts[name], name)
 
-        u32_3 = ctypes.c_uint32 * 3
-        u32_4 = ctypes.c_uint32 * 4
         u32_8 = ctypes.c_uint32 * 8
         u32_11 = ctypes.c_uint32 * 11
+        graph_arrays = make_graph_arrays(ptrs)
+        fanin_t = type(graph_arrays["fanin"])
+        fanin_values = list(graph_arrays["fanin"])
         graph_hosts = {
-            "tasks": make_tasks(ptrs),
-            "dependents": u32_3(1, 2, 3),
-            "fanin": u32_4(0, 1, 1, 1),
+            "tasks": graph_arrays["tasks"],
+            "dependents": graph_arrays["dependents"],
+            "fanin": graph_arrays["fanin"],
             "ready_flags": u32_8(*([0] * 8)),
             "completion_flags": u32_8(*([0] * 8)),
             "counters": u32_11(*([0] * 11)),
@@ -166,7 +167,7 @@ def run_unit_math_live(
         launch_records = []
         for iteration in range(repeat_runs):
             launch_state = {
-                "fanin": u32_4(0, 1, 1, 1),
+                "fanin": fanin_t(*fanin_values),
                 "ready_flags": u32_8(*([0] * 8)),
                 "completion_flags": u32_8(*([0] * 8)),
                 "counters": u32_11(*([0] * 11)),

@@ -24,3 +24,7 @@ RMSNorm, QKV cache writeback, SiLU/SwiGLU, and logits task-body path can be
 compiled, scheduled, reused across prepared submissions, and copied back. It
 is not a full Qwen decode loop.
 
+The DAG descriptor arrays are materialized through
+`simpler_setup.cuda_normal_graph`, so task dependencies, fan-in, and
+dependent spans share the same lowering boundary used by CUDA scene tests and
+persistent-device smoke tests.

@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen unit math normal graph](2026-06-02-qwen-unit-math-normal-graph.md)
 - [2026-06-02 scene graph normal lowering](2026-06-02-scene-graph-normal-lowering.md)
 - [2026-06-02 normal graph package boundary](2026-06-02-normal-graph-package-boundary.md)
 - [2026-06-02 normal graph lowering adapter](2026-06-02-normal-graph-lowering-adapter.md)

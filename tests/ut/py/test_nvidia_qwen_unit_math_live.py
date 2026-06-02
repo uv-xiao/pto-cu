@@ -123,6 +123,46 @@ def test_unit_math_live_plan_matches_oracle_contract():
     ]
 
 
+def test_unit_math_live_graph_uses_normal_lowering():
+    load_unit_math_live_module()
+    from qwen_unit_math_live_impl.graph import make_graph_arrays
+    from qwen_unit_math_live_impl.plan import CALLABLES
+
+    names = (
+        "hidden",
+        "norm_weight",
+        "q_weight",
+        "k_weight",
+        "v_weight",
+        "gate_weight",
+        "up_weight",
+        "lm_head",
+        "rmsnorm",
+        "context",
+        "key_cache",
+        "value_cache",
+        "mlp",
+        "logits",
+    )
+    graph = make_graph_arrays(
+        {name: index + 100 for index, name in enumerate(names)}
+    )
+
+    assert list(graph["dependents"]) == [1, 2, 3]
+    assert list(graph["fanin"]) == [0, 1, 1, 1]
+    assert [int(task.func_id) for task in graph["tasks"]] == [
+        func_id for _, func_id in CALLABLES
+    ]
+    assert [
+        (
+            int(task.dependent_begin),
+            int(task.dependent_count),
+            int(task.initial_fanin),
+        )
+        for task in graph["tasks"]
+    ] == [(0, 1, 0), (1, 1, 1), (2, 1, 1), (3, 0, 1)]
+
+
 def test_viewer_matrix_tracks_unit_math_live_evidence():
     matrix = load_viewer_collection(
         VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"

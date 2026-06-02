@@ -9,76 +9,92 @@ from simpler_setup.cuda_callable_compiler import (
     CudaPersistentDagState,
     CudaPersistentDagTask,
 )
+from simpler_setup.cuda_normal_graph import CudaNormalGraphNode, lower_normal_graph
 
 from qwen_unit_math_live_impl.plan import CALLABLES
 
 
-def make_tasks(ptrs: dict[str, int]) -> Any:
+def make_graph_arrays(ptrs: dict[str, int]) -> dict[str, Any]:
     tensor_args_t = ctypes.c_void_p * 4
     scalar_args_t = ctypes.c_float * 4
     scalars = scalar_args_t(1.0, 0.0, 0.0, 0.0)
-    task_t = CudaPersistentDagTask * 4
-    return task_t(
-        CudaPersistentDagTask(
-            func_id=CALLABLES[0][1],
-            a=ptrs["hidden"],
-            out=ptrs["rmsnorm"],
-            n=4,
-            dependent_begin=0,
-            dependent_count=1,
-            initial_fanin=0,
-            tensor_args=tensor_args_t(ptrs["norm_weight"], None, None, None),
-            scalar_args=scalars,
-            tensor_arg_count=1,
-            scalar_arg_count=1,
+
+    nodes = (
+        CudaNormalGraphNode("rmsnorm", func_id=CALLABLES[0][1]),
+        CudaNormalGraphNode(
+            "attention", depends_on=("rmsnorm",), func_id=CALLABLES[1][1]
         ),
-        CudaPersistentDagTask(
-            func_id=CALLABLES[1][1],
-            a=ptrs["rmsnorm"],
-            out=ptrs["context"],
-            n=4,
-            dependent_begin=1,
-            dependent_count=1,
-            initial_fanin=1,
-            c=ptrs["key_cache"],
-            d=ptrs["value_cache"],
-            tensor_args=tensor_args_t(
-                ptrs["q_weight"],
-                ptrs["k_weight"],
-                ptrs["v_weight"],
-                None,
-            ),
-            scalar_args=scalars,
-            tensor_arg_count=3,
-            scalar_arg_count=1,
+        CudaNormalGraphNode(
+            "mlp", depends_on=("attention",), func_id=CALLABLES[2][1]
         ),
-        CudaPersistentDagTask(
-            func_id=CALLABLES[2][1],
-            a=ptrs["context"],
-            out=ptrs["mlp"],
-            n=4,
-            dependent_begin=2,
-            dependent_count=1,
-            initial_fanin=1,
-            tensor_args=tensor_args_t(ptrs["gate_weight"], ptrs["up_weight"], None, None),
-            scalar_args=scalars,
-            tensor_arg_count=2,
-            scalar_arg_count=1,
-        ),
-        CudaPersistentDagTask(
-            func_id=CALLABLES[3][1],
-            a=ptrs["mlp"],
-            out=ptrs["logits"],
-            n=4,
-            dependent_begin=0,
-            dependent_count=0,
-            initial_fanin=1,
-            tensor_args=tensor_args_t(ptrs["lm_head"], None, None, None),
-            scalar_args=scalars,
-            tensor_arg_count=1,
-            scalar_arg_count=1,
+        CudaNormalGraphNode(
+            "logits", depends_on=("mlp",), func_id=CALLABLES[3][1]
         ),
     )
+
+    def make_task(node, dependent_begin, dependent_count, initial_fanin):
+        common = {
+            "func_id": node.func_id,
+            "n": 4,
+            "dependent_begin": dependent_begin,
+            "dependent_count": dependent_count,
+            "initial_fanin": initial_fanin,
+            "scalar_args": scalars,
+            "scalar_arg_count": 1,
+        }
+        if node.key == "rmsnorm":
+            return CudaPersistentDagTask(
+                **common,
+                a=ptrs["hidden"],
+                out=ptrs["rmsnorm"],
+                tensor_args=tensor_args_t(ptrs["norm_weight"], None, None, None),
+                tensor_arg_count=1,
+            )
+        if node.key == "attention":
+            return CudaPersistentDagTask(
+                **common,
+                a=ptrs["rmsnorm"],
+                out=ptrs["context"],
+                c=ptrs["key_cache"],
+                d=ptrs["value_cache"],
+                tensor_args=tensor_args_t(
+                    ptrs["q_weight"],
+                    ptrs["k_weight"],
+                    ptrs["v_weight"],
+                    None,
+                ),
+                tensor_arg_count=3,
+            )
+        if node.key == "mlp":
+            return CudaPersistentDagTask(
+                **common,
+                a=ptrs["context"],
+                out=ptrs["mlp"],
+                tensor_args=tensor_args_t(
+                    ptrs["gate_weight"], ptrs["up_weight"], None, None
+                ),
+                tensor_arg_count=2,
+            )
+        return CudaPersistentDagTask(
+            **common,
+            a=ptrs["mlp"],
+            out=ptrs["logits"],
+            tensor_args=tensor_args_t(ptrs["lm_head"], None, None, None),
+            tensor_arg_count=1,
+        )
+
+    lowered = lower_normal_graph(nodes, make_task)
+    return {
+        "tasks": (CudaPersistentDagTask * len(lowered.tasks))(*lowered.tasks),
+        "dependents": (ctypes.c_uint32 * len(lowered.dependents))(
+            *lowered.dependents
+        ),
+        "fanin": (ctypes.c_uint32 * len(lowered.fanin))(*lowered.fanin),
+    }
+
+
+def make_tasks(ptrs: dict[str, int]) -> Any:
+    return make_graph_arrays(ptrs)["tasks"]
 
 
 def make_state(plan: dict[str, Any], ptrs: dict[str, int]) -> CudaPersistentDagState:
