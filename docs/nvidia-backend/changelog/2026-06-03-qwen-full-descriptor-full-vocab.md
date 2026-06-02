@@ -25,6 +25,8 @@ full Qwen numerical correctness or full-serving row-import gates.
 
 ## Evaluation Run
 
+The first A100 run covered a one-step MPK-policy decode:
+
 ```bash
 ARTIFACT=tmp/cuda-backend/qwen-full-descriptor-full-vocab-1step-2026-06-03
 PYTHONPATH=$PWD:$PWD/python timeout 600 .venv/bin/python \
@@ -50,6 +52,56 @@ sampled elements with `max_abs_error=1.236e-05` under tolerance `2e-05`.
 Device token feedback was observed for the generated token path:
 `sampled_token_id=64036`, with policy
 `device_commits_diagnostic_sampled_token_for_next_step`.
+
+A second A100 run used the same full descriptor and full-vocab settings for
+two MPK-policy decode steps:
+
+```bash
+ARTIFACT=tmp/cuda-backend/qwen-full-descriptor-full-vocab-2step-mpk-2026-06-03
+PYTHONPATH=$PWD:$PWD/python timeout 900 .venv/bin/python \
+  examples/cuda/qwen_decode_loop_runner.py --mode mock \
+  --single-context-live-session --run-resource-backed-smoke \
+  --resource-backed-task-selection prefix \
+  --resource-backed-workload mpk_offline_decode \
+  --resource-backed-repeat-runs 1 --resource-backed-decode-steps 2 \
+  --resource-backed-worker-blocks 16 \
+  --resource-backed-logits-check-policy every_step \
+  --resource-backed-logits-active-cols full \
+  --resource-backed-numeric-task-mode unit_math_full_rmsnorm \
+  --device 0 --arch compute_80 --cache-root $ARTIFACT/cache \
+  --output-json $ARTIFACT/qwen-decode-loop-runner.json
+```
+
+Result: both decode steps passed. The run completed 510 total persistent tasks
+with zero scheduler errors, checked the full logits buffer on both steps, and
+observed device-committed feedback for sampled tokens `64036` then `107152`.
+Each step checked 3,904 reference elements across 16 logits rows with
+`max_abs_error=1.236e-05`.
+
+A third A100 run covered the VDCores-policy workload with the same full
+descriptor and full-vocab settings:
+
+```bash
+ARTIFACT=tmp/cuda-backend/qwen-full-descriptor-full-vocab-vdcores-1step-2026-06-03
+PYTHONPATH=$PWD:$PWD/python timeout 900 .venv/bin/python \
+  examples/cuda/qwen_decode_loop_runner.py --mode mock \
+  --single-context-live-session --run-resource-backed-smoke \
+  --resource-backed-task-selection prefix \
+  --resource-backed-workload vdcores_offline_decode \
+  --resource-backed-repeat-runs 1 --resource-backed-decode-steps 1 \
+  --resource-backed-worker-blocks 16 \
+  --resource-backed-logits-check-policy final_step \
+  --resource-backed-logits-active-cols full \
+  --resource-backed-numeric-task-mode unit_math_full_rmsnorm \
+  --device 0 --arch compute_80 --cache-root $ARTIFACT/cache \
+  --output-json $ARTIFACT/qwen-decode-loop-runner.json
+```
+
+Result: `vdcores_offline_decode` passed for one decode step. The run completed
+255 persistent tasks with zero scheduler errors, checked the full logits
+buffer, and observed device-committed token feedback for sampled token `64036`.
+Reference checking again covered 3,904 elements across 16 logits rows with
+`max_abs_error=1.236e-05`.
 
 ## Remaining Gaps
 
