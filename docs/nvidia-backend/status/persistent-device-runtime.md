@@ -76,6 +76,10 @@ selected non-default runtime stream. After each persistent-device scene-test
 launch, the L2 path now copies back device scheduler counters and raises on
 nonzero scheduler errors or incomplete DAG execution, so scheduler failures
 are visible even when a diagnostic test intentionally skips golden comparison.
+The `persistent_dag_graph_f32` scene-test adapter now uses
+`simpler_setup/cuda_normal_graph.py` for the final normal graph edge lowering
+step after its existing descriptor parsing, task-argument normalization,
+graph-edge handling, and tensor-flow inference have resolved the task graph.
 The no-torch
 persistent smoke path also validates a generated-dispatch triad descriptor
 with a third tensor pointer field, a quad descriptor with third and fourth
@@ -116,8 +120,9 @@ Evidence:
   writing, and cache reuse.
 - `tests/ut/py/test_cuda_kernel_compiler.py` covers both CUDA
   `KernelCompiler` entry points.
-- `simpler_setup/cuda_normal_graph.py` provides the first small normal-graph
-  lowering boundary used by a persistent-device smoke path.
+- `simpler_setup/cuda_normal_graph.py` provides the normal-graph edge lowering
+  boundary used by the persistent-device scene graph adapter and no-torch smoke
+  path.
 - `simpler_setup/cuda_preflight.py` gives CUDA real-data tests one shared
   preflight path for `nvcc`, `nvidia-smi`, and driver visibility.
 - `simpler_setup/cuda_callable_compiler.py` contains the generated-dispatch

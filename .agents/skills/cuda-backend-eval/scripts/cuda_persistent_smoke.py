@@ -1665,9 +1665,25 @@ def _make_dag_shape(  # noqa: PLR0912, PLR0915
         )
     if dag_shape == "graph_descriptor_submits":
         nodes = (
-            CudaNormalGraphNode("task0", 1, dev_a, dev_b, dev_tmp1, n),
-            CudaNormalGraphNode("task1", 1, dev_tmp1, dev_b, dev_tmp1, n, depends_on=("task0",)),
-            CudaNormalGraphNode("task2", 1, dev_tmp1, dev_a, dev_out, n, depends_on=("task1",)),
+            CudaNormalGraphNode("task0", func_id=1, a=dev_a, b=dev_b, out=dev_tmp1, n=n),
+            CudaNormalGraphNode(
+                "task1",
+                depends_on=("task0",),
+                func_id=1,
+                a=dev_tmp1,
+                b=dev_b,
+                out=dev_tmp1,
+                n=n,
+            ),
+            CudaNormalGraphNode(
+                "task2",
+                depends_on=("task1",),
+                func_id=1,
+                a=dev_tmp1,
+                b=dev_a,
+                out=dev_out,
+                n=n,
+            ),
         )
         lowered = lower_normal_graph(
             nodes,

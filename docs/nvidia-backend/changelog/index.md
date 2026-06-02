@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 scene graph normal lowering](2026-06-02-scene-graph-normal-lowering.md)
 - [2026-06-02 normal graph package boundary](2026-06-02-normal-graph-package-boundary.md)
 - [2026-06-02 normal graph lowering adapter](2026-06-02-normal-graph-lowering-adapter.md)
 - [2026-06-02 paper baseline source provenance guard](2026-06-02-paper-baseline-source-provenance-guard.md)

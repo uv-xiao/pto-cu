@@ -47,13 +47,17 @@ def test_cuda_runtime_builder_discovers_persistent_device():
 
 
 def test_cuda_normal_graph_lowering_builds_persistent_dag_arrays():
-    from simpler_setup.cuda_normal_graph import CudaNormalGraphNode, lower_normal_graph
+    from simpler_setup.cuda_normal_graph import (
+        CudaNormalGraphNode,
+        lower_normal_graph,
+        lower_normal_graph_from_dependents,
+    )
 
     lowered = lower_normal_graph(
         (
-            CudaNormalGraphNode("root", 1, 10, 20, 30, 128),
-            CudaNormalGraphNode("middle", 2, 30, 20, 40, 128, depends_on=("root",)),
-            CudaNormalGraphNode("join", 1, 40, 10, 50, 128, depends_on=("middle",)),
+            CudaNormalGraphNode("root", func_id=1, a=10, b=20, out=30, n=128),
+            CudaNormalGraphNode("middle", depends_on=("root",), func_id=2, a=30, b=20, out=40, n=128),
+            CudaNormalGraphNode("join", depends_on=("middle",), func_id=1, a=40, b=10, out=50, n=128),
         ),
         lambda node, begin, count, fanin: {
             "key": node.key,
@@ -71,6 +75,15 @@ def test_cuda_normal_graph_lowering_builds_persistent_dag_arrays():
         {"key": "middle", "func_id": 2, "dependent_begin": 1, "dependent_count": 1, "initial_fanin": 1},
         {"key": "join", "func_id": 1, "dependent_begin": 2, "dependent_count": 0, "initial_fanin": 1},
     ]
+
+    explicit = lower_normal_graph_from_dependents(
+        (CudaNormalGraphNode("0"), CudaNormalGraphNode("1"), CudaNormalGraphNode("2")),
+        ([2, 1], [], []),
+        lambda node, begin, count, fanin: (node.key, begin, count, fanin),
+    )
+    assert explicit.dependents == [2, 1]
+    assert explicit.fanin == [0, 1, 1]
+    assert explicit.tasks == [("0", 0, 2, 0), ("1", 2, 0, 1), ("2", 2, 0, 1)]
 
 
 class CudaHostCallable(ctypes.Structure):

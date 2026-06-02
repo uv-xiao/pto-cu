@@ -32,6 +32,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, NamedTuple
 
+from .cuda_normal_graph import CudaNormalGraphNode, lower_normal_graph_from_dependents
 from .log_config import DEFAULT_LOG_LEVEL, LOG_LEVEL_CHOICES, configure_logging
 from .pto_isa import ensure_pto_isa_root
 
@@ -1286,46 +1287,35 @@ class _CudaPersistentDagSceneBuffers:
             self._bind_graph_task_output_storage(task_spec, ptrs, add_temporary, output_nbytes)
 
         graph_dependents = self._graph_dependents_from_task_specs(task_specs, self._graph_edges(graph))
-        dependents: list[int] = []
-        fanin = [0 for _ in task_specs]
-        for task_id, task_spec in enumerate(task_specs):
-            task_dependents = graph_dependents[task_id]
-            for dependent in task_dependents:
-                dependent_id = int(dependent)
-                if dependent_id < 0 or dependent_id >= len(task_specs):
-                    raise ValueError(
-                        "CUDA persistent_dag_graph_f32 dependent task id "
-                        f"{dependent_id} for task {task_id} is outside the graph"
-                    )
-                dependents.append(dependent_id)
-                fanin[dependent_id] += 1
+        normal_nodes = [
+            CudaNormalGraphNode(str(task_id))
+            for task_id in range(len(task_specs))
+        ]
 
-        for task_id, task_spec in enumerate(task_specs):
-            if "initial_fanin" in task_spec:
-                fanin[task_id] = int(task_spec["initial_fanin"])
-
-        dependents_t = ctypes_module.c_uint32 * len(dependents)
-        self.host_dependents = dependents_t(*dependents)
-        task_t = task_type * len(task_specs)
-        task_values = []
-        dependent_begin = 0
-        for task_id, task_spec in enumerate(task_specs):
-            task_dependents = graph_dependents[task_id]
-            task_values.append(
-                self._make_graph_task(
-                    ctypes_module,
-                    task_type,
-                    task_spec,
-                    ptrs,
-                    n,
-                    dependent_begin,
-                    len(task_dependents),
-                    fanin[len(task_values)],
-                )
+        def make_task(node, dependent_begin, dependent_count, initial_fanin):
+            task_id = int(node.key)
+            task_spec = task_specs[task_id]
+            return self._make_graph_task(
+                ctypes_module,
+                task_type,
+                task_spec,
+                ptrs,
+                n,
+                dependent_begin,
+                dependent_count,
+                int(task_spec.get("initial_fanin", initial_fanin)),
             )
-            dependent_begin += len(task_dependents)
 
-        self.host_tasks = task_t(*task_values)
+        lowered = lower_normal_graph_from_dependents(normal_nodes, graph_dependents, make_task)
+        fanin = [
+            int(task_spec.get("initial_fanin", lowered.fanin[task_id]))
+            for task_id, task_spec in enumerate(task_specs)
+        ]
+
+        dependents_t = ctypes_module.c_uint32 * len(lowered.dependents)
+        self.host_dependents = dependents_t(*lowered.dependents)
+        task_t = task_type * len(lowered.tasks)
+        self.host_tasks = task_t(*lowered.tasks)
         fanin_t = ctypes_module.c_uint32 * len(fanin)
         self.host_fanin = fanin_t(*fanin)
 
