@@ -27,5 +27,6 @@ controlled proxy formulas only; it must not be promoted as full Qwen
 correctness. The Qwen unit math oracle records RMSNorm, projection,
 single-token attention cache writeback, SiLU/SwiGLU, and logits equations
 for a hidden-size-4 reference. The generated CUDA source now contains that
-unit-math path, and the live example below executes it.
-
+unit-math path, and the live example below executes it. The manifest also
+records `qwen_kernel_source_map`, which points reviewers to local FlashInfer,
+vLLM, and SGLang source snapshots under `tmp/sources/kernel-references/`.

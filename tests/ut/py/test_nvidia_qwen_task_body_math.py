@@ -149,3 +149,35 @@ def test_task_body_manifest_tracks_qwen_tensor_tile_source_contract():
     assert "capture multi-repeat A100/H200 throughput rows" in contract[
         "remaining_wiring"
     ]
+
+
+def test_task_body_manifest_tracks_external_kernel_source_map():
+    module = load_task_bodies_module()
+
+    manifest = module.build_task_body_manifest(num_hidden_layers=1)
+    source_map = manifest["qwen_kernel_source_map"]
+
+    assert source_map["status"] == "qwen_kernel_source_map_ready"
+    assert {item["project"] for item in source_map["reference_snapshots"]} == {
+        "FlashInfer",
+        "SGLang",
+        "vLLM",
+    }
+    mapped_callables = {
+        callable_name
+        for entry in source_map["entries"]
+        for callable_name in entry["pto_callables"]
+    }
+    assert {
+        "qwen_attention_qkv",
+        "qwen_attention_qk_norm",
+        "qwen_logits",
+        "qwen_mlp_gate_up",
+        "qwen_rmsnorm_input",
+    } <= mapped_callables
+    assert any(
+        reference["path"] == "csrc/libtorch_stable/activation_kernels.cu"
+        for entry in source_map["entries"]
+        for reference in entry["reference_files"]
+    )
+    assert "qwen_kernel_source_map" in manifest["implemented_contracts"]
