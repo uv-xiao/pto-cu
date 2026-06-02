@@ -216,6 +216,9 @@ The paper-readiness audit applies an additional PTO-specific guard for
 matching rows must pass correctness, identify either `mpk_offline_decode` or
 `vdcores_offline_decode`, carry a raw artifact path, and include latency plus
 throughput metrics before they can satisfy a full-serving viewer-result ref.
+Refs that need multiple serving policies must set `required_workload_ids`; a
+single matching row is not enough when that list names both MPK and VDCores
+policy IDs.
 
 The generated paper-readiness work queue lives in
 `docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json`.

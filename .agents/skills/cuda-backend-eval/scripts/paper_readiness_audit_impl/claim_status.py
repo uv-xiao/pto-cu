@@ -108,6 +108,17 @@ def has_viewer_result(
     gpu = str(ref.get("gpu", ""))
     shape_contains = ref.get("shape_contains")
     serving_coverage = ref.get("serving_coverage")
+    required_workload_ids = ref.get("required_workload_ids", [])
+    if required_workload_ids:
+        return has_required_viewer_results(
+            current_results,
+            benchmark_id=benchmark_id,
+            method_id=method_id,
+            gpu=gpu,
+            shape_contains=shape_contains,
+            serving_coverage=serving_coverage,
+            required_workload_ids=required_workload_ids,
+        )
     for (
         current_benchmark,
         current_method,
@@ -144,6 +155,57 @@ def has_viewer_result(
     return False
 
 
+def has_required_viewer_results(
+    current_results: set[ResultKey],
+    *,
+    benchmark_id: str,
+    method_id: str,
+    gpu: str,
+    shape_contains: Any,
+    serving_coverage: Any,
+    required_workload_ids: Any,
+) -> bool:
+    if not isinstance(required_workload_ids, list) or not all(
+        isinstance(workload_id, str) and workload_id
+        for workload_id in required_workload_ids
+    ):
+        return False
+    remaining = set(required_workload_ids)
+    for (
+        current_benchmark,
+        current_method,
+        current_gpu,
+        current_shape,
+        current_coverage,
+        _current_correctness,
+        current_workload_id,
+        current_pto_full_serving_ready,
+    ) in current_results:
+        if (
+            current_benchmark,
+            current_method,
+            current_gpu,
+        ) != (benchmark_id, method_id, gpu):
+            continue
+        if (
+            isinstance(serving_coverage, str)
+            and serving_coverage
+            and serving_coverage != current_coverage
+        ):
+            continue
+        if (
+            benchmark_id == "llm_serving_decode"
+            and method_id == "pto_persistent_device"
+            and serving_coverage == "full_serving"
+            and not current_pto_full_serving_ready
+        ):
+            continue
+        if isinstance(shape_contains, str) and shape_contains not in current_shape:
+            continue
+        remaining.discard(current_workload_id)
+    return not remaining
+
+
 def count_evidence_refs(
     evidence_refs: list[dict[str, Any]],
     current_results: set[ResultKey],
@@ -167,6 +229,9 @@ def count_evidence_refs(
             serving_coverage = ref.get("serving_coverage")
             if isinstance(serving_coverage, str) and serving_coverage:
                 key.append(f"coverage {serving_coverage}")
+            required_workload_ids = ref.get("required_workload_ids")
+            if isinstance(required_workload_ids, list) and required_workload_ids:
+                key.append("workloads " + ",".join(map(str, required_workload_ids)))
             if not has_viewer_result(current_results, ref):
                 missing_viewer_results.append(" / ".join(key))
     return dict(sorted(counts.items())), missing_viewer_results

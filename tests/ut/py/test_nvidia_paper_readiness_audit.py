@@ -188,3 +188,71 @@ def test_paper_readiness_accepts_complete_pto_full_serving_row():
     )
 
     assert missing == []
+
+
+def pto_full_serving_row(workload_id):
+    return {
+        "benchmark_id": "llm_serving_decode",
+        "method_id": "pto_persistent_device",
+        "hardware": {"gpu": "A100"},
+        "inputs": {
+            "shape": (
+                f"{workload_id},Qwen/Qwen3-8B,batch=8,"
+                "prompt_tokens=128,decode_tokens=64"
+            )
+        },
+        "statistic": {
+            "serving_coverage": "full_serving",
+            "workload_id": workload_id,
+            "sample_count": 3,
+            "host_wall_ns": 100,
+            "device_wall_ns": 90,
+            "end_to_end_latency_ns": 100,
+            "inter_token_latency_ns": 2,
+            "time_to_first_token_ns": 1,
+            "throughput_tokens_per_s": 1000.0,
+            "batch_size": 8,
+            "decode_tokens": 64,
+        },
+        "correctness": "pass",
+        "raw_artifact": f"tmp/cuda-backend/complete-pto-row/{workload_id}/",
+    }
+
+
+def test_paper_readiness_requires_both_pto_full_serving_policies():
+    claim_status = load_claim_status_module()
+    current_results = claim_status.result_index(
+        {"result_records": [pto_full_serving_row("mpk_offline_decode")]}
+    )
+
+    ref = {
+        "kind": "viewer_result",
+        "benchmark_id": "llm_serving_decode",
+        "method_id": "pto_persistent_device",
+        "gpu": "A100",
+        "shape_contains": "Qwen/Qwen3-8B",
+        "serving_coverage": "full_serving",
+        "required_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode",
+        ],
+    }
+    _counts, missing = claim_status.count_evidence_refs([ref], current_results)
+
+    assert missing == [
+        "llm_serving_decode / pto_persistent_device / A100 / "
+        "shape contains Qwen/Qwen3-8B / coverage full_serving / "
+        "workloads mpk_offline_decode,vdcores_offline_decode"
+    ]
+
+    current_results = claim_status.result_index(
+        {
+            "result_records": [
+                pto_full_serving_row("mpk_offline_decode"),
+                pto_full_serving_row("vdcores_offline_decode"),
+            ]
+        }
+    )
+    _counts, missing = claim_status.count_evidence_refs([ref], current_results)
+
+    assert missing == []

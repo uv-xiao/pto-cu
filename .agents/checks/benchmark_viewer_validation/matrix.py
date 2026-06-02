@@ -37,6 +37,7 @@ def validate_paper_evaluation_matrix(
             result["hardware"]["gpu"],
             result.get("inputs", {}).get("shape", ""),
             result.get("statistic", {}).get("serving_coverage", ""),
+            result_workload_id(result),
         )
         for result in results["result_records"]
     ]
@@ -199,6 +200,23 @@ def validate_paper_evaluation_matrix(
                         )
                 elif serving_coverage is not None:
                     fail(f"{owner} non-serving viewer_result has serving_coverage")
+                required_workload_ids = ref.get("required_workload_ids", [])
+                if not isinstance(required_workload_ids, list) or not all(
+                    isinstance(workload_id, str)
+                    and workload_id in serving_workload_ids
+                    for workload_id in required_workload_ids
+                ):
+                    fail(f"{owner} viewer_result required_workload_ids is invalid")
+                if required_workload_ids and not has_required_workload_results(
+                    result_index,
+                    key=key,
+                    shape_contains=shape_contains,
+                    serving_coverage=serving_coverage,
+                    required_workload_ids=required_workload_ids,
+                ):
+                    fail(
+                        f"{owner} viewer_result evidence lacks required workloads"
+                    )
                 if not any(
                     result_key[:3] == key
                     and (
@@ -240,3 +258,35 @@ def validate_paper_evaluation_matrix(
     return matrix_ids
 
 
+def result_workload_id(result: dict[str, Any]) -> str:
+    statistic = result.get("statistic", {})
+    if not isinstance(statistic, dict):
+        statistic = {}
+    workload_id = statistic.get("workload_id")
+    if isinstance(workload_id, str) and workload_id:
+        return workload_id
+    shape = str(result.get("inputs", {}).get("shape", ""))
+    for candidate in ("mpk_offline_decode", "vdcores_offline_decode"):
+        if candidate in shape:
+            return candidate
+    return ""
+
+
+def has_required_workload_results(
+    result_index: list[tuple[str, str, str, Any, Any, str]],
+    *,
+    key: tuple[str, str, str],
+    shape_contains: Any,
+    serving_coverage: Any,
+    required_workload_ids: list[str],
+) -> bool:
+    remaining = set(required_workload_ids)
+    for result_key in result_index:
+        if result_key[:3] != key:
+            continue
+        if shape_contains is not None and shape_contains not in str(result_key[3]):
+            continue
+        if serving_coverage is not None and serving_coverage != result_key[4]:
+            continue
+        remaining.discard(result_key[5])
+    return not remaining
