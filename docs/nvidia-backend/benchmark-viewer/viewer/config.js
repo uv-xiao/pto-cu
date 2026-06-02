@@ -2,6 +2,7 @@ export const DATA_FILES = {
   benchmarks: "data/benchmarks.json",
   methods: "data/methods.json",
   sceneBuilderCoverage: "data/scene_builder_coverage.json",
+  persistentSchedulerCoverage: "data/persistent_scheduler_coverage.json",
   paperBaselines: "data/paper_baselines.json",
   paperBaselineRuns: {
     manifest: "data/paper_baseline_runs/index.json",

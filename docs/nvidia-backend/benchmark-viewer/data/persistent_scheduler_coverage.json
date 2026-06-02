@@ -1,0 +1,121 @@
+{
+  "metadata": {
+    "title": "CUDA Persistent Scheduler Coverage",
+    "status": "open_graph_breadth_gap",
+    "summary": "Review coverage for persistent-device scheduler mechanics."
+  },
+  "coverage_groups": [
+    {
+      "id": "launch_and_lifecycle",
+      "title": "Launch And Lifecycle",
+      "status": "covered_for_current_review",
+      "summary": "Smokes cover DAG, graph, scratch, tensor, and repeat paths.",
+      "covered_cases": [
+        "descriptor-driven DAG launch",
+        "completion-ring dispatch",
+        "repeat-run launch counter reset",
+        "scratch buffer reuse",
+        "tensor-tile graph descriptor"
+      ],
+      "open_work": [
+        "normal PTO graph construction feeding the same scheduler path"
+      ],
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_pair_persistent_smoke.py",
+          "symbols": [
+            "repeat_runs",
+            "scheduler_blocks",
+            "worker_blocks_per_task"
+          ]
+        },
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_validate_smoke.py",
+          "symbols": [
+            "expected_repeat_runs",
+            "expected_scheduler_blocks",
+            "expected_worker_blocks_per_task"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "graph_shape_matrix",
+      "title": "Graph Shape Matrix",
+      "status": "covered_for_selected_descriptors",
+      "summary": "Selected benchmark rows exercise major descriptor spellings.",
+      "covered_cases": [
+        "reordered roots",
+        "named callables",
+        "linear chain",
+        "scratch reuse",
+        "diamond dependency",
+        "parallel chains",
+        "wide fanout",
+        "multi fan-in",
+        "layered cross edges",
+        "tagged and role-keyed I/O",
+        "submit groups"
+      ],
+      "open_work": [
+        "graph lowering from regular PTO task graphs beyond curated descriptors"
+      ],
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_pair_benchmark.py",
+          "symbols": [
+            "pto_persistent_dag_graph_named_callable",
+            "pto_persistent_dag_graph_layered_cross",
+            "pto_persistent_dag_graph_submit_groups"
+          ]
+        },
+        {
+          "path": "docs/nvidia-backend/status/persistent-scheduler-coverage.md",
+          "symbols": [
+            "reordered",
+            "multi-fan-in",
+            "layered-cross"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scheduler_negative_matrix",
+      "title": "Scheduler Negative Matrix",
+      "status": "covered_for_current_taxonomy",
+      "summary": "The matrix covers stable labels and expected task/count checks.",
+      "covered_cases": [
+        "invalid dispatch",
+        "invalid dependent ID",
+        "invalid dependent range",
+        "fan-in underflow",
+        "initial fan-in mismatch",
+        "no root task",
+        "unreachable task",
+        "duplicate dependent",
+        "self dependent"
+      ],
+      "open_work": [
+        "more malformed normal-graph lowering cases once normal PTO graph input lands"
+      ],
+      "evidence_refs": [
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_scheduler_error_matrix.py",
+          "symbols": [
+            "SchedulerErrorCase",
+            "bad_duplicate_dependent",
+            "bad_unreachable"
+          ]
+        },
+        {
+          "path": "tests/ut/py/test_cuda_backend.py",
+          "symbols": [
+            "test_cuda_persistent_device_smoke_reports_no_root_dag_errors",
+            "test_cuda_persistent_device_smoke_reports_unreachable_dag_errors",
+            "test_cuda_persistent_device_smoke_reports_self_dependent_errors"
+          ]
+        }
+      ]
+    }
+  ]
+}

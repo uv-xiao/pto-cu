@@ -24,6 +24,9 @@ from .paper_readiness import (
     validate_paper_readiness_audit,
     validate_paper_readiness_work_queue,
 )
+from .persistent_scheduler_coverage import (
+    validate_persistent_scheduler_coverage,
+)
 from .results import validate_capture_imports, validate_results
 from .scene_builder_coverage import validate_scene_builder_coverage
 from .serving import (
@@ -37,6 +40,9 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     benchmarks = load_json(root, "benchmarks.json")
     methods = load_json(root, "methods.json")
     scene_builder_coverage = load_json(root, "scene_builder_coverage.json")
+    persistent_scheduler_coverage = load_json(
+        root, "persistent_scheduler_coverage.json"
+    )
     paper_baselines = load_json(root, "paper_baselines.json")
     paper_baseline_runs = load_json(root, "paper_baseline_runs.json")
     paper_baseline_probes = load_json(root, "paper_baseline_probes.json")
@@ -65,6 +71,10 @@ def validate_viewer_data(root: Path = ROOT) -> None:
     benchmark_ids = validate_benchmarks(benchmarks, root)
     method_ids = validate_methods(methods, root)
     validate_scene_builder_coverage(scene_builder_coverage, root)
+    validate_persistent_scheduler_coverage(
+        persistent_scheduler_coverage,
+        root,
+    )
     baseline_ids = validate_paper_baselines(paper_baselines)
     serving_workload_ids = validate_serving_workloads(serving_workloads, root)
     validate_paper_baseline_probes(paper_baseline_probes, baseline_ids, root)

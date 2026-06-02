@@ -92,6 +92,35 @@ export function renderSceneBuilderCoverage(state) {
   root.replaceChildren(heading, intro, ...groups);
 }
 
+export function renderPersistentSchedulerCoverage(state) {
+  const root = document.getElementById("persistent-scheduler-coverage");
+  const metadata = state.persistentSchedulerCoverage.metadata;
+  const heading = document.createElement("h3");
+  heading.append(text(metadata.title));
+  const intro = paragraph("Status", `${metadata.status}: ${metadata.summary}`);
+  const groups = state.persistentSchedulerCoverage.coverage_groups.map(
+    (group) => {
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.append(text(`${group.title} (${group.status})`));
+      details.append(
+        summary,
+        paragraph("Summary", group.summary),
+        table(["Covered Case"], group.covered_cases.map((item) => [item])),
+        ...namedList("Open Work", group.open_work),
+        ...namedList(
+          "Evidence",
+          group.evidence_refs.map((ref) => (
+            `${ref.path}: ${ref.symbols.join(", ")}`
+          )),
+        ),
+      );
+      return details;
+    },
+  );
+  root.append(heading, intro, ...groups);
+}
+
 export function renderServingWorkloads(state, lookup) {
   const root = document.getElementById("serving-list");
   root.replaceChildren(...state.servingWorkloads.serving_workloads.map((workload) => {

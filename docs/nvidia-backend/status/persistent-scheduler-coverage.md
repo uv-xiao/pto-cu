@@ -33,6 +33,11 @@ archive because those files were originally written while closing the gap:
   records lifecycle, resource-policy, scheduler-scaling, graph-family, and
   error-taxonomy evidence.
 
+The benchmark viewer also exposes these claims as structured coverage data in
+`docs/nvidia-backend/benchmark-viewer/data/persistent_scheduler_coverage.json`.
+That record is validated against implementation and documentation symbols by
+the benchmark-viewer data guard.
+
 The verified coverage above is enough for current CUDA backend review claims
 about scheduler mechanics. The remaining open work is normal PTO graph breadth
 and additional scheduler-negative coverage, not the scheduler launch,

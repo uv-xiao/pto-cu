@@ -4,6 +4,7 @@ import { renderPaperBaselines } from "./viewer/render-baselines.js";
 import {
   renderBenchmarks,
   renderMethods,
+  renderPersistentSchedulerCoverage,
   renderSceneBuilderCoverage,
   renderServingCommandPlan,
   renderServingWorkloads,
@@ -30,6 +31,7 @@ async function main() {
     renderBenchmarks(state);
     renderMethods(state);
     renderSceneBuilderCoverage(state);
+    renderPersistentSchedulerCoverage(state);
     renderServingWorkloads(state, lookup);
     renderServingCommandPlan(state, lookup);
     renderPaperBaselines(state, lookup);
