@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen RoPE table launch binding](2026-06-02-qwen-rope-table-launch-binding.md)
 - [2026-06-02 Qwen RoPE table descriptor slots](2026-06-02-qwen-rope-table-descriptor-slots.md)
 - [2026-06-02 Qwen QK RoPE source](2026-06-02-qwen-qk-rope-source.md)
 - [2026-06-02 Qwen QK RMSNorm source](2026-06-02-qwen-qk-rmsnorm-source.md)

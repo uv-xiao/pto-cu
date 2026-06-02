@@ -75,6 +75,7 @@
         "qwen_resource_backed_launch_packet_preflight",
         "cuda_live_activation_workspace_in_runner",
         "qwen_activation_workspace_launch_packet_binding",
+        "qwen_rope_table_launch_packet_binding",
         "single_context_live_resource_session",
         "qwen_resource_backed_diagnostic_execution"
       ]

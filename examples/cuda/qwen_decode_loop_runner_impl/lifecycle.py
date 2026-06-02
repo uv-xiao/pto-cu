@@ -266,12 +266,24 @@ def build_decode_loop_runner(
         for item in graph_materialization.get("workloads", [])
     ):
         implemented_contracts.append("qwen_resource_backed_launch_packet_preflight")
+    workload_preflights = [
+        item.get("launch_packet_preflight", {})
+        for item in graph_materialization.get("workloads", [])
+    ]
     if all(
         item.get("launch_packet_preflight", {}).get("status")
         == "resource_backed_launch_packet_workspace_bound"
         for item in graph_materialization.get("workloads", [])
     ):
         implemented_contracts.append("qwen_activation_workspace_launch_packet_binding")
+    if workload_preflights and all(
+        set(
+            item.get("workspace_pointer_policy", {}).get("runtime_buffers", {})
+        )
+        == {"rope_cos_table", "rope_sin_table"}
+        for item in workload_preflights
+    ):
+        implemented_contracts.append("qwen_rope_table_launch_packet_binding")
     return {
         "schema_version": 1,
         "kind": "pto_qwen_decode_loop_runner",

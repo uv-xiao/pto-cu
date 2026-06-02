@@ -167,8 +167,9 @@ def host_task_record(
         numeric_task_mode=numeric_task_mode,
     )
     for arg in descriptor.get("tensor_args", [])[:4]:
-        tensor_args[tensor_arg_index(arg["arg"])] = parse_ptr(
-            arg.get("device_ptr_hex"),
+        tensor_args[tensor_arg_index(arg["arg"])] = tensor_arg_ptr(
+            arg=arg,
+            workspace=workspace,
         )
     attach_decode_feedback_tensors(
         index=index,
@@ -262,6 +263,13 @@ def workspace_for_workload(
             return None
         if not item.get("logits_buffer", {}).get("device_ptr_hex"):
             return None
+        runtime_buffers = item.get("runtime_buffers", {})
+        if not (
+            isinstance(runtime_buffers, dict)
+            and runtime_buffers.get("rope_cos_table", {}).get("device_ptr_hex")
+            and runtime_buffers.get("rope_sin_table", {}).get("device_ptr_hex")
+        ):
+            return None
         return item
     return None
 
@@ -288,5 +296,33 @@ def workspace_pointer_policy(
             for item in workspace.get("activation_buffers", [])
         ],
         "logits_buffer": workspace["logits_buffer"]["device_ptr_hex"],
+        "runtime_buffers": {
+            name: item.get("device_ptr_hex")
+            for name, item in workspace.get("runtime_buffers", {}).items()
+            if isinstance(item, dict)
+        },
         "total_byte_count": workspace["total_byte_count"],
     }
+
+
+def tensor_arg_ptr(
+    *,
+    arg: dict[str, Any],
+    workspace: dict[str, Any] | None,
+) -> int:
+    direct = parse_ptr(arg.get("device_ptr_hex"))
+    if direct:
+        return direct
+    if workspace is None:
+        return 0
+    source = arg.get("device_ptr_source")
+    if not isinstance(source, str) or not source.startswith("runtime_buffers."):
+        return 0
+    role = source.split(".", 1)[1]
+    runtime_buffers = workspace.get("runtime_buffers", {})
+    if not isinstance(runtime_buffers, dict):
+        return 0
+    item = runtime_buffers.get(role, {})
+    if not isinstance(item, dict):
+        return 0
+    return parse_ptr(item.get("device_ptr_hex"))

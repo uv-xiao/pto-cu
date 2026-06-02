@@ -142,11 +142,23 @@ def task_summary(descriptor: dict[str, Any]) -> dict[str, Any]:
         "func_id": CALLABLE_FUNC_IDS[descriptor["callable"]],
         "tensor_arg_count": descriptor["tensor_arg_count"],
         "tensor_arg_slots": [
-            {
-                "arg": arg["arg"],
-                "slot_id": arg["slot_id"],
-                "device_ptr_hex": arg["device_ptr_hex"],
-            }
+            tensor_arg_summary(arg)
             for arg in descriptor["tensor_args"]
         ],
+    }
+
+
+def tensor_arg_summary(arg: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: arg[key]
+        for key in (
+            "arg",
+            "slot_id",
+            "tensor",
+            "role",
+            "status",
+            "device_ptr_source",
+            "device_ptr_hex",
+        )
+        if key in arg
     }

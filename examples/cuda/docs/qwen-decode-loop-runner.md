@@ -42,12 +42,18 @@ diagnostic from the runner entry point and records the bridge summary. With
 the runner. With `--kv-cuda-live`, it opens the full planned KV-cache owner
 in the runner. With `--resident-cuda-live`, it opens the resident weight-table
 owner and materializes 399 weight pointers for the submission plan. With
-`--workspace-cuda-live`, it allocates per-workload float32 activation buffers
-plus a logits/sampling output buffer and closes the owner after launch-packet
-preflight capture. With `--single-context-live-session`, token buffers,
-KV-cache, resident weights, and activation workspace are allocated under one
-CUDA context before graph materialization and launch-packet preflight, then
-closed after the preflight evidence is recorded.
+`--workspace-cuda-live`, it allocates per-workload float32 activation buffers,
+a logits/sampling output buffer, and runtime-generated RoPE cos/sin tables.
+The launch-packet preflight resolves `runtime_buffers.rope_cos_table` and
+`runtime_buffers.rope_sin_table` descriptor references into
+`CudaPersistentDagTask::tensor_args` entries before the workspace owner closes.
+For diagnostic execution, live RoPE tables are initialized as identity tables
+with cos `1.0f` and sin `0.0f`; position-correct RoPE table population remains
+part of full-serving correctness work.
+With `--single-context-live-session`, token buffers, KV-cache, resident weights,
+and activation workspace are allocated under one CUDA context before graph
+materialization and launch-packet preflight, then closed after the preflight
+evidence is recorded.
 With `--run-resource-backed-smoke`, the runner prepares the generated Qwen
 task-function set and launches the resource-backed DAG packets for both
 serving policies while that same CUDA context is open. This is still
@@ -82,7 +88,9 @@ task descriptors bound to concrete CUDA-live pointers.
 Its launch-packet preflight also packs the host-side `CudaPersistentDagTask`
 array from those pointers. When the activation workspace is live, intermediate
 tasks are chained through activation buffers and the final task writes to a
-float logits/sampling output buffer. Activation buffers are sized from
-descriptor output shapes when those shapes are available, so widened QKV and
-MLP intermediates no longer share the hidden-size fallback. It still does not
-execute full Qwen kernels or a full-serving decode loop.
+float logits/sampling output buffer. QK-norm/RoPE tasks receive live
+runtime-buffer pointers for their cos/sin tables through the same packet.
+Activation buffers are sized from descriptor output shapes when those shapes
+are available, so widened QKV and MLP intermediates no longer share the
+hidden-size fallback. It still does not execute full Qwen kernels or a
+full-serving decode loop.

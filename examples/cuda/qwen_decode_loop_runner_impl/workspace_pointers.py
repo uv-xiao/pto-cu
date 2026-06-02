@@ -122,8 +122,19 @@ def pointer_set_for_plan(
         byte_count=plan["logits_buffer_bytes"],
         element_count=plan["logits_buffer_elements"],
     )
-    return pointer_set(plan=plan, activation_buffers=activation_buffers, logits=logits), (
-        next_ptr + pointer_stride
+    next_ptr += pointer_stride
+    rope_tables = rope_table_records(
+        plan=plan,
+        base_ptr=next_ptr,
+        stride=pointer_stride,
+    )
+    return pointer_set(
+        plan=plan,
+        activation_buffers=activation_buffers,
+        logits=logits,
+        rope_tables=rope_tables,
+    ), (
+        next_ptr + pointer_stride * len(rope_tables)
     )
 
 
@@ -154,7 +165,25 @@ def allocate_pointer_set(
         byte_count=plan["logits_buffer_bytes"],
         element_count=plan["logits_buffer_elements"],
     )
-    return pointer_set(plan=plan, activation_buffers=activation_buffers, logits=logits)
+    rope_tables = [
+        allocate_record(
+            runtime,
+            ctx,
+            allocated,
+            name=name,
+            role=name,
+            byte_count=plan["rope_table_bytes"],
+            element_count=plan["rope_table_elements"],
+        )
+        for name in ("rope_cos_table", "rope_sin_table")
+    ]
+    initialize_rope_tables(runtime, ctx, rope_tables)
+    return pointer_set(
+        plan=plan,
+        activation_buffers=activation_buffers,
+        logits=logits,
+        rope_tables=rope_tables,
+    )
 
 
 def allocate_record(
@@ -181,21 +210,64 @@ def allocate_record(
     )
 
 
+def initialize_rope_tables(
+    runtime: Any,
+    ctx: Any,
+    rope_tables: list[dict[str, Any]],
+) -> None:
+    for item in rope_tables:
+        value = 1.0 if item["role"] == "rope_cos_table" else 0.0
+        host = (ctypes.c_float * int(item["element_count"]))(
+            *([value] * int(item["element_count"]))
+        )
+        status = runtime.copy_to_device_ctx(
+            ctx,
+            ctypes.c_void_p(int(item["device_ptr"])),
+            ctypes.byref(host),
+            ctypes.sizeof(host),
+        )
+        if status != 0:
+            raise RuntimeError(f"copy_to_device {item['role']} failed")
+        item["initialization"] = "identity_rope_table"
+
+
 def pointer_set(
     *,
     plan: dict[str, Any],
     activation_buffers: list[dict[str, Any]],
     logits: dict[str, Any],
+    rope_tables: list[dict[str, Any]],
 ) -> dict[str, Any]:
+    runtime_buffers = {item["role"]: item for item in rope_tables}
     return {
         "workload_id": plan["workload_id"],
         "status": "workspace_pointers_ready",
-        "pointer_count": len(activation_buffers) + 1,
+        "pointer_count": len(activation_buffers) + 1 + len(rope_tables),
         "activation_buffer_count": len(activation_buffers),
         "activation_buffers": activation_buffers,
         "logits_buffer": logits,
+        "rope_tables": rope_tables,
+        "runtime_buffers": runtime_buffers,
         "total_byte_count": plan["total_byte_count"],
     }
+
+
+def rope_table_records(
+    *,
+    plan: dict[str, Any],
+    base_ptr: int,
+    stride: int,
+) -> list[dict[str, Any]]:
+    return [
+        buffer_record(
+            name=name,
+            role=name,
+            ptr=base_ptr + index * stride,
+            byte_count=plan["rope_table_bytes"],
+            element_count=plan["rope_table_elements"],
+        )
+        for index, name in enumerate(("rope_cos_table", "rope_sin_table"))
+    ]
 
 
 def buffer_record(

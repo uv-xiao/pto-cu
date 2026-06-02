@@ -17,6 +17,9 @@ from qwen_decode_loop_runner_impl.launch_preflight import (  # noqa: E402
 from qwen_decode_loop_runner_impl.activation_workspace import (  # noqa: E402
     workspace_plan,
 )
+from qwen_decode_loop_runner_impl.workspace_pointers import (  # noqa: E402
+    initialize_rope_tables,
+)
 from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
     numeric_task_mode_summary,
 )
@@ -126,6 +129,16 @@ def test_launch_packet_preflight_binds_activation_workspace():
                         "device_ptr_hex": "0x9000",
                         "element_count": 151936,
                     },
+                    "runtime_buffers": {
+                        "rope_cos_table": {
+                            "device_ptr_hex": "0xa000",
+                            "element_count": 64,
+                        },
+                        "rope_sin_table": {
+                            "device_ptr_hex": "0xb000",
+                            "element_count": 64,
+                        },
+                    },
                     "total_byte_count": 623616,
                 }
             ],
@@ -141,6 +154,10 @@ def test_launch_packet_preflight_binds_activation_workspace():
     assert preflight["status"] == "resource_backed_launch_packet_workspace_bound"
     assert preflight["missing_runtime_buffers"] == []
     assert preflight["workspace_pointer_policy"]["status"] == "workspace_bound"
+    assert preflight["workspace_pointer_policy"]["runtime_buffers"] == {
+        "rope_cos_table": "0xa000",
+        "rope_sin_table": "0xb000",
+    }
     assert preflight["remaining_gap"] == "run_prepared_resource_backed_decode_loop"
 
 
@@ -198,6 +215,7 @@ def test_launch_packet_uses_full_logits_extent_for_final_logits_task():
 def test_workspace_plan_sizes_activation_buffers_from_descriptor_outputs():
     plan = {"workload_id": "mpk_offline_decode", "max_batch_size": 2}
     model_shape = {
+        "head_dim": 4,
         "hidden_size": 4,
         "vocab_size": 16,
     }
@@ -217,7 +235,106 @@ def test_workspace_plan_sizes_activation_buffers_from_descriptor_outputs():
     assert workspace["activation_buffer_element_counts"] == [8, 16]
     assert workspace["activation_buffer_byte_counts"] == [32, 64]
     assert workspace["activation_buffer_elements"] == 16
-    assert workspace["total_byte_count"] == 32 + 64 + 2 * 16 * 4
+    assert workspace["rope_table_count"] == 2
+    assert workspace["rope_table_elements"] == 2
+    assert workspace["total_buffer_count"] == 5
+    assert workspace["total_byte_count"] == 32 + 64 + 2 * 16 * 4 + 2 * 2 * 4
+
+
+def test_launch_packet_binds_runtime_rope_table_tensor_args():
+    descriptors = [
+        {
+            "callable": "qwen_attention_qk_norm",
+            "tensor_args": [
+                {"arg": "tensor_args[0]", "device_ptr_hex": "0x1000"},
+                {"arg": "tensor_args[1]", "device_ptr_hex": "0x2000"},
+                {
+                    "arg": "tensor_args[2]",
+                    "tensor": "rope_cos_table",
+                    "status": "requires_live_pointer",
+                    "device_ptr_source": "runtime_buffers.rope_cos_table",
+                },
+                {
+                    "arg": "tensor_args[3]",
+                    "tensor": "rope_sin_table",
+                    "status": "requires_live_pointer",
+                    "device_ptr_source": "runtime_buffers.rope_sin_table",
+                },
+            ],
+        }
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x3000"},
+            {"field": "b", "device_ptr_hex": "0x4000"},
+            {"field": "out", "device_ptr_hex": "0x5000"},
+        ],
+    )
+    workspace = {
+        "activation_buffers": [{"device_ptr_hex": "0x8000", "element_count": 128}],
+        "logits_buffer": {"device_ptr_hex": "0x9000", "element_count": 16},
+        "runtime_buffers": {
+            "rope_cos_table": {"device_ptr_hex": "0xa000", "element_count": 64},
+            "rope_sin_table": {"device_ptr_hex": "0xb000", "element_count": 64},
+        },
+        "total_byte_count": 0,
+    }
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x6000"},
+            "d": {"device_ptr_hex": "0x7000"},
+        },
+        workspace=workspace,
+    )
+
+    assert packet is not None
+    assert packet[0].tensor_args[0] == 0x1000
+    assert packet[0].tensor_args[1] == 0x2000
+    assert packet[0].tensor_args[2] == 0xA000
+    assert packet[0].tensor_args[3] == 0xB000
+    assert packet[0].tensor_arg_count == 4
+
+
+def test_live_workspace_initializes_rope_tables_as_identity():
+    class FakeRuntime:
+        def __init__(self):
+            self.copied = {}
+
+        def copy_to_device_ctx(self, ctx, device_ptr, host_ptr, size):
+            del ctx
+            count = int(size) // ctypes.sizeof(ctypes.c_float)
+            host_t = ctypes.c_float * count
+            values = ctypes.cast(host_ptr, ctypes.POINTER(host_t)).contents
+            self.copied[int(device_ptr.value)] = list(values)
+            return 0
+
+    runtime = FakeRuntime()
+    rope_tables = [
+        {
+            "role": "rope_cos_table",
+            "device_ptr": 0xA000,
+            "element_count": 3,
+        },
+        {
+            "role": "rope_sin_table",
+            "device_ptr": 0xB000,
+            "element_count": 3,
+        },
+    ]
+
+    initialize_rope_tables(runtime, object(), rope_tables)
+
+    assert runtime.copied == {
+        0xA000: [1.0, 1.0, 1.0],
+        0xB000: [0.0, 0.0, 0.0],
+    }
+    assert [item["initialization"] for item in rope_tables] == [
+        "identity_rope_table",
+        "identity_rope_table",
+    ]
 
 
 def test_launch_packet_uses_per_task_activation_output_extent():
