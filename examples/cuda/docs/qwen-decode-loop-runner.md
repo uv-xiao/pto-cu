@@ -14,6 +14,10 @@ PYTHONPATH=$PWD:$PWD/python \
   --run-submission-smoke \
   --single-context-live-session \
   --run-resource-backed-smoke \
+  --resource-backed-task-selection first_layer_with_logits \
+  --resource-backed-max-tasks 10 \
+  --resource-backed-worker-blocks 10 \
+  --resource-backed-logits-check-policy final_step \
   --resource-backed-repeat-runs 3 \
   --token-cuda-live \
   --kv-cuda-live \
@@ -30,7 +34,8 @@ resource session, runner-owned cuda_live token, KV-cache, resident-weight, and
 activation-workspace owners, resource-backed Qwen submission descriptors,
 compact graph materialization, workspace-bound launch-packet preflight,
 diagnostic bridge contracts, a diagnostic Qwen descriptor smoke execution, and
-repeated diagnostic resource-backed `run_prepared` execution.
+a bounded resource-backed run_prepared execution covering task function ids
+7100 through 7109.
 
 The artifact composes token pointer, KV-cache, and resident-weight owners into
 a decode-loop submission plan. It records owner open/materialize/submit/close
@@ -65,6 +70,11 @@ state repeatedly through the same prepared callable and CUDA context.
 Use `--resource-backed-workload` to narrow the diagnostic to a single serving
 policy, and `--resource-backed-logits-check-policy final_step` to defer the
 full logits-buffer readback until the last bounded decode step.
+Use `--resource-backed-task-selection first_layer_with_logits` when reviewers
+need a bounded representative callable chain instead of a simple descriptor
+prefix. It executes embedding, layer 0 attention and MLP tasks, final RMSNorm,
+and logits so the raw artifact covers Qwen task function ids 7100 through
+7109 without launching all 255 materialized descriptors.
 Use `--resource-backed-numeric-task-mode unit_math` to run the resource-backed
 descriptors with the safe O(n) task bodies that already have unit-math numeric
 branches. RMSNorm uses an explicit external scale, and the QK-norm,

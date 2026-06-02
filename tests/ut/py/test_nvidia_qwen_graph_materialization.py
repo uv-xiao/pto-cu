@@ -28,6 +28,9 @@ from qwen_decode_loop_runner_impl.resource_backed_results import (  # noqa: E402
     build_execution_result,
     dynamic_rope_refresh_ready,
 )
+from qwen_decode_loop_runner_impl.resource_backed_execution import (  # noqa: E402
+    select_task_descriptors,
+)
 from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph  # noqa: E402
 from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
     numeric_task_mode_summary,
@@ -1158,6 +1161,8 @@ def test_resource_backed_execution_reports_task_coverage():
         "qwen_rmsnorm_post_attention",
         "qwen_mlp_gate_up",
         "qwen_mlp_down",
+        "qwen_final_norm",
+        "qwen_logits",
     ]
     descriptors = [{"callable": callable_name} for callable_name in callables]
 
@@ -1180,7 +1185,8 @@ def test_resource_backed_execution_reports_task_coverage():
         repeat_runs=1,
         decode_step_limit=1,
         workload_ids=None,
-        max_task_count=8,
+        max_task_count=10,
+        task_selection="first_layer_with_logits",
         scheduler_blocks=1,
         worker_blocks=8,
         grid_dim=9,
@@ -1190,10 +1196,48 @@ def test_resource_backed_execution_reports_task_coverage():
     )
 
     assert result["task_coverage"] == {
-        "task_count": 8,
-        "func_id_sequence": list(range(7100, 7108)),
+        "task_count": 10,
+        "func_id_sequence": list(range(7100, 7110)),
         "callables": callables,
     }
+
+
+def test_resource_backed_first_layer_logits_selector_keeps_final_tasks():
+    descriptors = [
+        {"id": "embedding_lookup", "callable": "qwen_embedding_lookup"},
+        {"id": "layer_0_input_norm", "callable": "qwen_rmsnorm_input"},
+        {"id": "layer_0_attention_qkv", "callable": "qwen_attention_qkv"},
+        {"id": "layer_0_attention_qk_norm", "callable": "qwen_attention_qk_norm"},
+        {"id": "layer_0_attention_o", "callable": "qwen_attention_o"},
+        {
+            "id": "layer_0_post_attention_norm",
+            "callable": "qwen_rmsnorm_post_attention",
+        },
+        {"id": "layer_0_mlp_gate_up", "callable": "qwen_mlp_gate_up"},
+        {"id": "layer_0_mlp_down", "callable": "qwen_mlp_down"},
+        {"id": "layer_1_input_norm", "callable": "qwen_rmsnorm_input"},
+        {"id": "final_norm", "callable": "qwen_final_norm"},
+        {"id": "logits", "callable": "qwen_logits"},
+    ]
+
+    selected = select_task_descriptors(
+        descriptors,
+        max_task_count=10,
+        task_selection="first_layer_with_logits",
+    )
+
+    assert [item["id"] for item in selected] == [
+        "embedding_lookup",
+        "layer_0_input_norm",
+        "layer_0_attention_qkv",
+        "layer_0_attention_qk_norm",
+        "layer_0_attention_o",
+        "layer_0_post_attention_norm",
+        "layer_0_mlp_gate_up",
+        "layer_0_mlp_down",
+        "final_norm",
+        "logits",
+    ]
 
 
 def test_launch_packet_can_select_full_rmsnorm_reduction_branch():

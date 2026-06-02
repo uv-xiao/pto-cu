@@ -69,6 +69,7 @@ def run_resource_backed_execution(
     decode_step_limit: int | None = None,
     workload_ids: list[str] | None = None,
     max_task_count: int | None = None,
+    task_selection: str = "prefix",
     worker_blocks: int = 1,
     logits_check_policy: str = "every_step",
     numeric_task_mode: str = "diagnostic",
@@ -86,8 +87,11 @@ def run_resource_backed_execution(
         for item in materialization.get("materialized_task_descriptors", [])
         if item.get("status") == "ready"
     ]
-    if max_task_count is not None:
-        descriptors = descriptors[: max(1, int(max_task_count))]
+    descriptors = select_task_descriptors(
+        descriptors,
+        max_task_count=max_task_count,
+        task_selection=task_selection,
+    )
     if not descriptors:
         return {"status": "not_run", "reason": "no_ready_descriptors"}
     scheduler_blocks = 1
@@ -149,6 +153,7 @@ def run_resource_backed_execution(
         decode_step_limit=decode_step_limit,
         workload_ids=workload_ids,
         max_task_count=max_task_count,
+        task_selection=task_selection,
         scheduler_blocks=scheduler_blocks,
         worker_blocks=worker_blocks,
         grid_dim=grid_dim,
@@ -156,6 +161,37 @@ def run_resource_backed_execution(
         numeric_task_mode=numeric_task_mode,
         repo_relative=repo_relative,
     )
+
+
+def select_task_descriptors(
+    descriptors: list[dict[str, Any]],
+    *,
+    max_task_count: int | None,
+    task_selection: str,
+) -> list[dict[str, Any]]:
+    if task_selection == "prefix":
+        selected = descriptors
+    elif task_selection == "first_layer_with_logits":
+        selected = first_layer_with_logits_descriptors(descriptors)
+    else:
+        raise ValueError(f"unknown resource-backed task selection: {task_selection}")
+    if max_task_count is not None:
+        return selected[: max(1, int(max_task_count))]
+    return selected
+
+
+def first_layer_with_logits_descriptors(
+    descriptors: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    return [
+        item
+        for item in descriptors
+        if (
+            item.get("id") == "embedding_lookup"
+            or str(item.get("id", "")).startswith("layer_0_")
+            or item.get("id") in {"final_norm", "logits"}
+        )
+    ]
 
 
 def run_workload(
