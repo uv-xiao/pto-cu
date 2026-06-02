@@ -61,6 +61,7 @@ def validate_goal_progress(
         "changelog_reports",
         "remote_evaluation",
         "paper_evaluation_plan",
+        "backend_implementation_closure",
         "paper_grade_results",
         "dispatcher_log",
     }
@@ -71,6 +72,17 @@ def validate_goal_progress(
     if summary.get("criteria_in_progress") != statuses.get("in_progress", 0):
         fail("goal progress criteria_in_progress does not match criteria")
     by_id = {criterion["id"]: criterion for criterion in criteria}
+    backend_closure = by_id["backend_implementation_closure"]
+    if backend_closure["status"] != "in_progress":
+        fail("backend implementation closure must remain in_progress")
+    required_gap_refs = {
+        "docs/nvidia-backend/status/remaining-gaps/kernel-compiler-integration/index.md",
+        "docs/nvidia-backend/status/remaining-gaps/persistent-scheduler-generalization/index.md",
+        "docs/nvidia-backend/status/remaining-gaps/tuned-tensor-workloads.md",
+        "docs/nvidia-backend/status/remaining-gaps/ci-coverage.md",
+    }
+    if not required_gap_refs <= set(backend_closure["evidence_refs"]):
+        fail("backend implementation closure is missing remaining-gap refs")
     paper_results = by_id["paper_grade_results"]
     if paper_results.get("paper_readiness_status") != audit.get("overall_status"):
         fail("goal progress paper readiness status does not match audit")

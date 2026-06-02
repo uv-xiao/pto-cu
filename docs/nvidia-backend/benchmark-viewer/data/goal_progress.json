@@ -14,15 +14,17 @@
     "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/metrics.md",
     "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/reproducibility.md",
     "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/paper_outputs.md",
-    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/dispatcher_backlog.md"
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/dispatcher_backlog.md",
+    "docs/nvidia-backend/status.md",
+    "docs/nvidia-backend/status/remaining-gaps/"
   ],
   "overall_status": "in_progress",
   "summary": {
-    "criteria_total": 8,
+    "criteria_total": 9,
     "criteria_met": 7,
-    "criteria_in_progress": 1,
+    "criteria_in_progress": 2,
     "criteria_by_status": {
-      "in_progress": 1,
+      "in_progress": 2,
       "met": 7
     }
   },
@@ -120,6 +122,29 @@
         "test_ultimate_goal_artifacts_define_paper_ready_cuda_path"
       ],
       "gaps": []
+    },
+    {
+      "id": "backend_implementation_closure",
+      "title": "Backend implementation gaps are explicit",
+      "status": "in_progress",
+      "summary": "The CUDA backend status archive still lists implementation gaps, so goal progress must not imply only paper-result work remains.",
+      "evidence_refs": [
+        "docs/nvidia-backend/status.md",
+        "docs/nvidia-backend/status/remaining-gaps/kernel-compiler-integration/index.md",
+        "docs/nvidia-backend/status/remaining-gaps/fourth-tensor-persistent-dag-verification.md",
+        "docs/nvidia-backend/status/remaining-gaps/target-role-cleanup.md",
+        "docs/nvidia-backend/status/remaining-gaps/persistent-scheduler-generalization/index.md",
+        "docs/nvidia-backend/status/remaining-gaps/tuned-tensor-workloads.md",
+        "docs/nvidia-backend/status/remaining-gaps/ci-coverage.md"
+      ],
+      "verification": [
+        "validate_benchmark_viewer_data.py",
+        "check_nvidia_review_ready.py"
+      ],
+      "gaps": [
+        "Close or reclassify every remaining-gap page linked from docs/nvidia-backend/status.md before claiming backend completion.",
+        "Keep paper/evaluation readiness separate from backend implementation closure until the status archive has no open remaining-gap links."
+      ]
     },
     {
       "id": "paper_grade_results",

@@ -4890,10 +4890,19 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     )
     assert generated == committed
     assert committed["overall_status"] == "in_progress"
-    assert committed["summary"]["criteria_total"] == 8
+    assert committed["summary"]["criteria_total"] == 9
     assert committed["summary"]["criteria_met"] >= 6
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
+    assert by_id["backend_implementation_closure"]["status"] == "in_progress"
+    assert any(
+        "remaining-gap page" in gap
+        for gap in by_id["backend_implementation_closure"]["gaps"]
+    )
+    assert any(
+        "persistent-scheduler-generalization" in ref
+        for ref in by_id["backend_implementation_closure"]["evidence_refs"]
+    )
     assert by_id["paper_grade_results"]["status"] == "in_progress"
     assert by_id["paper_grade_results"]["blocking_work_items"] == 4
     assert by_id["paper_grade_results"]["paper_readiness_status"] == (

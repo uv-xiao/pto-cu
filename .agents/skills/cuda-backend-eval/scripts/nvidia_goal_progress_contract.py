@@ -5,6 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
+from nvidia_goal_progress_contract_impl.backend_gaps import (
+    backend_gap_criterion,
+)
+
 
 PathExists = Callable[[str], bool]
 RepoRelative = Callable[[Path], str]
@@ -204,6 +208,7 @@ def build_goal_progress(
             ],
             gaps=[] if baseline_coverage_met else ["Missing required paper baseline coverage."],
         ),
+        backend_gap_criterion(make_criterion),
         make_criterion(
             identifier="paper_grade_results",
             title="Final paper-grade results",
@@ -271,6 +276,8 @@ def build_goal_progress(
             "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/reproducibility.md",
             "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/paper_outputs.md",
             "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/dispatcher_backlog.md",
+            "docs/nvidia-backend/status.md",
+            "docs/nvidia-backend/status/remaining-gaps/",
         ],
         "overall_status": overall_status,
         "summary": {
