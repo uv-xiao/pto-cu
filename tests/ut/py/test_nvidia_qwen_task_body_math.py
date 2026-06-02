@@ -118,6 +118,11 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         for item in manifest["task_bodies"]
         if item["callable"] == "qwen_attention_qk_norm"
     )
+    attention_o = next(
+        item
+        for item in manifest["task_bodies"]
+        if item["callable"] == "qwen_attention_o"
+    )
     post_attention_norm = next(
         item
         for item in manifest["task_bodies"]
@@ -129,6 +134,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
 
     assert rmsnorm["threading"] == "block"
     assert qk_norm["threading"] == "block"
+    assert attention_o["threading"] == "block"
     assert post_attention_norm["threading"] == "block"
     assert post_attention_norm["consumes_fields"] == [
         "a",
@@ -324,19 +330,19 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "const unsigned int projection_query_base =" in full_source
     assert "for (unsigned int dim = 0U; dim < head_dim; ++dim)" in full_source
     assert "score += task->a[row_base + query_base + dim] *" in full_source
-    assert "score += task->a[row_base + projection_query_base + dim] *" in (
-        full_source
-    )
+    assert "row_base + projection_query_base + dim" in full_source
+    assert "__shared__ float attention_values[4096];" in full_source
+    assert "attention_values[projection_col] =" in full_source
+    assert "projected_attention +=" in full_source
+    assert "attention_values[projection_col] * o_weight;" in full_source
     assert "score *= attention_scale;" in full_source
     assert "const unsigned long long value_kv_index =" in full_source
     assert "expf(score - max_score)" in full_source
     assert "expf(score - projection_max_score)" in full_source
     assert "weighted_value / normalizer" in full_source
     assert "const unsigned int projection_input_count =" in full_source
-    assert "pto_cuda_tensor_arg_f32(task, 0U, o_weight_index, 0.0f)" in (
-        full_source
-    )
-    assert "projected_attention += attention_value * o_weight;" in full_source
+    assert "pto_cuda_tensor_arg_f32(" in full_source
+    assert "task, 0U, o_weight_index, 0.0f" in full_source
     assert "const unsigned int sequence_capacity =" in full_source
     assert "const unsigned long long kv_read_base =" in full_source
     assert full_source.count("kv_layer_base +") >= 4
@@ -350,6 +356,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_attention_o_bounded_projection_source" in manifest[
         "implemented_contracts"
     ]
+    assert "qwen_attention_o_cached_projection_source" in manifest[
+        "implemented_contracts"
+    ]
     assert "qwen_decode_attention_head_dim_scale_source" in manifest[
         "implemented_contracts"
     ]
@@ -357,7 +366,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         "implemented_contracts"
     ]
     assert "task->out[i] = pto_cuda_silu(gate_value) * up_value;" in full_source
-    assert "task->out[i] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f)" in (
+    assert "task->out[j] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f)" in (
         full_source
     )
     assert "const unsigned int logits_tile =" in full_source

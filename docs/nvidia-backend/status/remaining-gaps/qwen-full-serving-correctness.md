@@ -11,8 +11,10 @@ full-model reference token/logit path.
 Recent implementation work narrows the gap by making `qwen_attention_o`
 compute head-level dot-product decode attention, matching Qwen split-half
 `rotate_half` RoPE, and exposing one projection-window policy for QKV,
-attention-output, and MLP projection tasks. This is still not enough to promote
-PTO rows to full-serving correctness.
+attention-output, and MLP projection tasks. The attention-output task now
+caches bounded attention values before applying `o_proj_weight`, which makes
+full first-layer projection execution practical. This is still not enough to
+promote PTO rows to full-serving correctness.
 
 ## Current Evidence
 
@@ -36,6 +38,9 @@ Recent raw A100 evidence stays under `tmp/`:
 - `tmp/cuda-backend/qwen-attention-o-projection-window-256-first-layer-2026-06-03/`
   records bounded attention-output projection-window execution with zero
   scheduler errors.
+- `tmp/cuda-backend/qwen-attention-o-cached-full-projection-first-layer-2026-06-03/`
+  records cached attention-output execution with full first-layer projection
+  windows and zero scheduler errors.
 - `tmp/cuda-backend/qwen-prefill-two-step-first-layer-2026-06-03/`
   records prompt-prefill to readout-only to full-DAG decode feedback.
 
@@ -53,9 +58,8 @@ Close this gap only after PTO rows for both `mpk_offline_decode` and
 
 - Continue replacing diagnostic scalar task-body math with model-correct Qwen
   kernels.
-- Replace the naive `qwen_attention_o` output projection loop with a practical
-  tiled or reduced implementation before attempting full projection windows in
-  paper-scale runs.
+- Extend cached attention-output projection evidence from first-layer smoke to
+  all selected layers and full logits when runtime is practical.
 - Re-run the Hugging Face comparison after each kernel-fidelity fix.
 - Capture policy-length MPK and VDCores serving rows only after correctness
   passes.

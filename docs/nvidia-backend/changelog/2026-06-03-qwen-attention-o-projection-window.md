@@ -40,8 +40,7 @@ scheduler errors, and passed the diagnostic logits projection reference.
 
 ## Remaining Gaps
 
-A full first-layer projection run with `--resource-backed-projection-active-cols
-full` is impractical with the current naive `qwen_attention_o` body because it
-nests output projection, KV-window, and head-dim loops per output element.
-Full-serving correctness still needs a tiled or reduced attention-output
-implementation before full projection windows can be used in paper-scale runs.
+Superseded by
+[Qwen attention-O cached projection](2026-06-03-qwen-attention-o-cached-projection.md).
+The bounded `256` run remains useful launch-packet evidence, but full
+first-layer projection now executes with the cached task body.

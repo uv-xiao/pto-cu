@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-03 Qwen attention-O cached projection](2026-06-03-qwen-attention-o-cached-projection.md)
 - [2026-06-03 Qwen attention-O projection window](2026-06-03-qwen-attention-o-projection-window.md)
 - [2026-06-03 Qwen full projection window](2026-06-03-qwen-full-projection-window.md)
 - [2026-06-03 Qwen rotate-half RoPE](2026-06-03-qwen-rotate-half-rope.md)

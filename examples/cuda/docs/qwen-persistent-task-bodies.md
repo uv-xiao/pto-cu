@@ -53,10 +53,11 @@ sequence base used by QKV and QK-norm KV-cache writeback, so batched decode
 rows do not reuse row-zero cache entries. The softmax max and weighted sum
 passes apply the Qwen head-dim attention scale and are bounded by
 descriptor-controlled attention tiles. When
-`o_proj_weight` is bound as `tensor_args[0]`, the task recomputes bounded
-attention columns, multiplies them by `o_proj_weight`, and writes projected
-hidden columns; `scalar_args[1]` limits that diagnostic projection width for
-resource-backed unit runs. Post-attention RMSNorm now consumes `task->b` as
+`o_proj_weight` is bound as `tensor_args[0]`, the block-threaded task caches
+bounded attention columns in shared memory, multiplies them by `o_proj_weight`,
+and writes projected hidden columns; `scalar_args[1]` limits that diagnostic
+projection width for resource-backed unit runs. Post-attention RMSNorm now
+consumes `task->b` as
 the layer residual source and reduces over `attention_output + residual`
 before applying `post_attention_layernorm.weight`. The MLP down-projection
 task also consumes `task->b` and adds the launch-packet residual source after

@@ -40,6 +40,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_shape_field_qk_rope_source",
     "qwen_bounded_decode_attention_reduction_source",
     "qwen_attention_o_bounded_projection_source",
+    "qwen_attention_o_cached_projection_source",
     "qwen_gqa_decode_attention_head_grouping_source",
     "qwen_paged_kv_attention_index_source",
     "qwen_tiled_decode_attention_softmax_source",
