@@ -14,7 +14,7 @@ become an essential end-to-end case.
 - [Host-Schedule Vector Ops](docs/host-schedule-vector-ops.md) (21 lines)
 - [Persistent Layered-Cross Graph](docs/persistent-layered-cross-graph.md) (20 lines)
 - [Qwen Persistent Task Bodies](docs/qwen-persistent-task-bodies.md) (51 lines)
-- [Qwen Decode Loop Runner](docs/qwen-decode-loop-runner.md) (98 lines)
+- [Qwen Decode Loop Runner](docs/qwen-decode-loop-runner.md) (99 lines)
 
 ## Contract
 

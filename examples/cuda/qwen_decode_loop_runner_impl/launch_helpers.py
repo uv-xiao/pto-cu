@@ -168,6 +168,10 @@ def task_scalar_args(
                 if numeric_task_mode == "unit_math_full_rmsnorm":
                     return [1.0, 0.0, 0.0, 0.0]
                 return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, 0.0]
+            if descriptor.get("callable") == "qwen_rmsnorm_post_attention":
+                if numeric_task_mode == "unit_math_full_rmsnorm":
+                    return [1.0, 0.0, 0.0, 0.0]
+                return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, 0.0]
             if descriptor.get("callable") == "qwen_final_norm":
                 if numeric_task_mode == "unit_math_full_rmsnorm":
                     return [1.0, 0.0, 0.0, 0.0]
@@ -230,12 +234,24 @@ def numeric_task_mode_summary(mode: str) -> dict[str, Any]:
                 "scale": UNIT_NUMERIC_RMSNORM_SCALE,
                 "scope": "resource_backed_external_rmsnorm_scale",
             },
+            {
+                "callable": "qwen_rmsnorm_post_attention",
+                "scale_arg": "scalar_args[1]",
+                "scale": UNIT_NUMERIC_RMSNORM_SCALE,
+                "scope": "resource_backed_external_rmsnorm_scale",
+            },
         ]
         if mode == "unit_math"
         else [],
         "full_reduction_contracts": [
             {
                 "callable": "qwen_rmsnorm_input",
+                "scalar_arg_count": 1,
+                "scope": "resource_backed_full_rmsnorm_reduction",
+                "threading": "block",
+            },
+            {
+                "callable": "qwen_rmsnorm_post_attention",
                 "scalar_arg_count": 1,
                 "scope": "resource_backed_full_rmsnorm_reduction",
                 "threading": "block",

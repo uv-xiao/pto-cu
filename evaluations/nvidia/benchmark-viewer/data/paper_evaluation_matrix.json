@@ -182,6 +182,16 @@
         {
           "kind": "raw_artifact",
           "path": "tmp/cuda-backend/direct-launch-sweep-626b8c75/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/qwen-post-attention-rmsnorm/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_full_rmsnorm_reduction",
+            "qwen_post_attention_norm_full_rmsnorm_source",
+            "qwen_resource_backed_diagnostic_execution"
+          ]
         }
       ]
     },

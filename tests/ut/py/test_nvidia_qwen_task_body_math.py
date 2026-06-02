@@ -113,9 +113,15 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         for item in manifest["task_bodies"]
         if item["callable"] == "qwen_final_norm"
     )
+    post_attention_norm = next(
+        item
+        for item in manifest["task_bodies"]
+        if item["callable"] == "qwen_rmsnorm_post_attention"
+    )
 
     assert "rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f)" in source
     assert rmsnorm["threading"] == "block"
+    assert post_attention_norm["threading"] == "block"
     assert final_norm["threading"] == "block"
     assert "__shared__ float partial[1024];" in source
     assert (
@@ -123,6 +129,11 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         in full_source
     )
     assert "qwen_final_norm" in full_source
+    assert "qwen_rmsnorm_post_attention" in full_source
+    assert (
+        "qwen_post_attention_norm_full_rmsnorm_source"
+        in manifest["implemented_contracts"]
+    )
     assert "task->out[j] = task->a[j] * external_scale" in full_source
     assert "task->out[i] = task->a[i] * external_scale" not in full_source
     assert "for (unsigned long long j = threadIdx.x;" in source
