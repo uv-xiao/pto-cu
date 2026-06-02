@@ -183,15 +183,16 @@
   resource partitioning, root seeding, completion-ring ownership,
   graph-size reporting, or artifact
   validation;
-- broader scheduler error taxonomy beyond the current unsupported-`func_id`
-  invalid-dependent-ID, dependent-range, fan-in-underflow,
-  duplicate-dependent, self-dependent, initial-fan-in, and
-  no-root/unreachable-task
-  diagnostics. The current validators, smoke reports, lifecycle matrix
-  reports, benchmark validators, and local artifact index render known
-  nonzero scheduler codes with stable labels such as `7(unreachable_task)`,
-  so negative A100/H200 captures are easier to triage without cross-reading
-  raw runtime constants.
+The current scheduler-negative taxonomy is covered for the review scope:
+unsupported `func_id`, invalid dependent IDs, dependent range, fan-in
+underflow, duplicate dependent, self dependent, initial fan-in, no-root, and
+unreachable-task diagnostics. The current validators, smoke reports, lifecycle
+matrix reports, benchmark validators, and local artifact index render known
+nonzero scheduler codes with stable labels such as `7(unreachable_task)`, so
+negative A100/H200 captures are easier to triage without cross-reading raw
+runtime constants. Future malformed normal-graph lowering cases belong with
+the normal PTO graph breadth work above, not a separate scheduler mechanics
+blocker.
 
 The role-map graph descriptor row is now part of the selected benchmark
 matrix, not only the paired smoke path. The focused TDD first failed because
@@ -231,4 +232,3 @@ paired A100/H200 gate under
 `tmp/cuda-backend/submit-groups-selected-benchmark-working/`
 `combined-current-193ccc4d/` remains useful as the focused selector gate and
 validated `100` non-batch samples before this full refresh.
-

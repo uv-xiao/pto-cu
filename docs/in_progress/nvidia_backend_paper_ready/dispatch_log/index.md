@@ -93,3 +93,4 @@ Use `../dispatch_log.md` for the logging schema and current review path.
 | [2026-06-02-part-60.md](entries/2026-06-02-part-60.md) | 1 | Tensor Model Shape Targets | Tensor Model Shape Targets |
 | [2026-06-02-part-61.md](entries/2026-06-02-part-61.md) | 1 | Tensor Target Method Guard | Tensor Target Method Guard |
 | [2026-06-02-part-62.md](entries/2026-06-02-part-62.md) | 1 | Tensor Capture Import Shape Routing | Tensor Capture Import Shape Routing |
+| [2026-06-02-part-63.md](entries/2026-06-02-part-63.md) | 1 | Persistent Scheduler Split Gap Guard | Persistent Scheduler Split Gap Guard |

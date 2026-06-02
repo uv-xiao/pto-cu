@@ -41,14 +41,13 @@ def validate_persistent_scheduler_coverage(
 
 
 def check_persistent_scheduler_gap_docs(root: Path) -> None:
-    gap_path = (
+    gap_root = (
         root
         / "docs"
         / "nvidia-backend"
         / "status"
         / "remaining-gaps"
         / "persistent-scheduler-generalization"
-        / "index.md"
     )
     coverage_path = (
         root
@@ -57,14 +56,18 @@ def check_persistent_scheduler_gap_docs(root: Path) -> None:
         / "status"
         / "persistent-scheduler-coverage.md"
     )
-    gap_text = gap_path.read_text(encoding="utf-8")
     coverage_text = coverage_path.read_text(encoding="utf-8")
     stale_phrases = (
         "additional scheduler-negative cases beyond the current labeled",
         "and additional scheduler-negative coverage",
+        "broader scheduler error taxonomy",
+    )
+    split_gap_text = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted(gap_root.glob("*.md"))
     )
     for phrase in stale_phrases:
-        if phrase in gap_text or phrase in coverage_text:
+        if phrase in split_gap_text or phrase in coverage_text:
             fail(
                 "persistent scheduler coverage reintroduced a standalone "
                 f"negative-coverage blocker: {phrase}"
@@ -74,7 +77,7 @@ def check_persistent_scheduler_gap_docs(root: Path) -> None:
         "current scheduler-negative taxonomy is covered",
         "malformed normal-graph lowering cases",
     )
-    combined = f"{gap_text}\n{coverage_text}"
+    combined = f"{split_gap_text}\n{coverage_text}"
     for phrase in required_phrases:
         if phrase not in combined:
             fail(
