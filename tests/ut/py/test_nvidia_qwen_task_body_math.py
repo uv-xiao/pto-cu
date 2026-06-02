@@ -147,6 +147,15 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "const unsigned int norm_slot = is_query_region ? 0U : 1U;" in (
         full_source
     )
+    assert "const unsigned int kv_page_size =" in full_source
+    assert "const unsigned int decode_position = task->scalar_arg_count > 2U" in (
+        full_source
+    )
+    assert "const unsigned long long qk_norm_kv_write_index =" in full_source
+    assert "task->c[qk_norm_kv_write_index] = task->out[j];" in full_source
+    assert "qwen_qk_norm_normalized_k_cache_writeback_source" in manifest[
+        "implemented_contracts"
+    ]
     assert "qwen_qk_norm_separate_qk_regions_source" in manifest[
         "implemented_contracts"
     ]

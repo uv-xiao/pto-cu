@@ -896,6 +896,7 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "lda": 2,
         "ldb": 1,
         "ldc": 6,
+        "scalar0": 16,
     }
     assert descriptors["layer_0_attention_o"]["task_shape_fields"] == {
         "rows": 2,

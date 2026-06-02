@@ -227,7 +227,7 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
             "callable": "qwen_attention_qk_norm",
             "phase": "per_layer_decode",
             "threading": "block",
-            "consumes_fields": ["a", "out", "tensor_args", "scalar_args"],
+            "consumes_fields": ["a", "out", "c", "tensor_args", "scalar_args"],
             "consumes_roles": [
                 "q_state",
                 "q_norm_weight",
@@ -247,6 +247,14 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
     const unsigned int kv_heads = task->ldb > 0U ? task->ldb : query_heads;
     const unsigned int q_width = query_heads * head_dim;
     const unsigned int kv_width = kv_heads * head_dim;
+    const unsigned int raw_kv_page_size =
+        task->scalar0 > 0.0f ? static_cast<unsigned int>(task->scalar0) : 16U;
+    const unsigned int kv_page_size =
+        raw_kv_page_size > 0U ? raw_kv_page_size : 16U;
+    const unsigned int decode_position = task->scalar_arg_count > 2U ?
+        static_cast<unsigned int>(task->scalar_args[2]) : row;
+    const unsigned int sequence_capacity =
+        task->b_batch_stride > 0U ? task->b_batch_stride : kv_page_size;
     if (task->cols >= q_width + kv_width) {
         for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
             const unsigned int col = static_cast<unsigned int>(j % task->cols);
@@ -299,6 +307,18 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
                     normalized * cos_value + paired * sin_value;
             } else {
                 task->out[j] = normalized;
+            }
+            if (!is_query_region && task->c) {
+                const unsigned int logical_page = decode_position / kv_page_size;
+                const unsigned int page_offset = decode_position % kv_page_size;
+                const unsigned int physical_page = logical_page;
+                const unsigned long long token_slot =
+                    static_cast<unsigned long long>(physical_page) *
+                        kv_page_size + page_offset;
+                const unsigned long long qk_norm_kv_write_index =
+                    static_cast<unsigned long long>(row) * sequence_capacity *
+                        kv_width + token_slot * kv_width + region_col;
+                task->c[qk_norm_kv_write_index] = task->out[j];
             }
         }
     } else {
@@ -780,6 +800,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_post_attention_norm_full_rmsnorm_source",
             "qwen_qk_norm_block_rmsnorm_rope_source",
             "qwen_qk_norm_separate_qk_regions_source",
+            "qwen_qk_norm_normalized_k_cache_writeback_source",
             "qwen_final_norm_full_rmsnorm_source",
             "qwen_shape_field_qk_rope_source",
             "qwen_bounded_decode_attention_reduction_source",

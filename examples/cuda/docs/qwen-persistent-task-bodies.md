@@ -30,8 +30,11 @@ projections when full tensor metadata is present. The QK norm task computes
 RMS scale from descriptor `cols`, `inner`, and `lda` fields before applying
 separate Q/K norm weight slots and pairwise RoPE rotation when cos/sin table
 slots are bound; descriptors expose Q-width plus KV-width rather than blending
-Q/K weights into one vector. The attention-output task now has a shape-gated
-path that reads mutable
+Q/K weights into one vector. The normalized K region is also written back
+through mutable `task->c` key-cache storage using the decode position and
+descriptor page size; this source path uses identity page mapping because the
+task's tensor slots are already occupied by Q/K norm and RoPE tables. The
+attention-output task now has a shape-gated path that reads mutable
 `c`/`d` KV-cache fields and computes a max-stabilized softmax reduction over
 the bounded `inner` decode window with GQA query-head to KV-head grouping from
 descriptor `rows`, `lda`, and `ldb`. It also accepts runtime

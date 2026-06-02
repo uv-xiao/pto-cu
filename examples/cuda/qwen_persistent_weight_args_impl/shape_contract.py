@@ -90,6 +90,7 @@ def task_shape_fields(callable_name: str, shape: QwenTaskShape) -> dict[str, Any
             "lda": shape.head_dim,
             "ldb": shape.num_key_value_heads,
             "ldc": shape.q_width + shape.kv_width,
+            "scalar0": KV_PAGE_SIZE_TOKENS,
         }
     if callable_name == "qwen_embedding_lookup":
         return {
