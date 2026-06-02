@@ -91,6 +91,7 @@ def build_decode_loop_runner(
     resource_backed_logits_check_policy: str = "every_step",
     resource_backed_logits_active_cols: str | int | None = None,
     resource_backed_numeric_task_mode: str = "diagnostic",
+    resource_backed_prefill_prompt: bool = False,
     arch: str = "compute_80",
 ) -> dict[str, Any]:
     session_payload: dict[str, Any] | None = None
@@ -196,6 +197,7 @@ def build_decode_loop_runner(
                 logits_check_policy=resource_backed_logits_check_policy,
                 logits_active_cols=resource_backed_logits_active_cols,
                 numeric_task_mode=resource_backed_numeric_task_mode,
+                prefill_prompt=resource_backed_prefill_prompt,
             )
             if session is not None
             else {

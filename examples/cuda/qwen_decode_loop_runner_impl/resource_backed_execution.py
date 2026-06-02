@@ -77,6 +77,7 @@ def run_resource_backed_execution(
     logits_check_policy: str = "every_step",
     logits_active_cols: str | int | None = None,
     numeric_task_mode: str = "diagnostic",
+    prefill_prompt: bool = False,
 ) -> dict[str, Any]:
     runtime = session.runtime
     ctx = session.ctx
@@ -140,6 +141,7 @@ def run_resource_backed_execution(
                 decode_step_limit=decode_step_limit,
                 logits_check_policy=logits_check_policy,
                 numeric_task_mode=numeric_task_mode,
+                prefill_prompt=prefill_prompt,
                 scheduler_blocks=scheduler_blocks,
                 block_dim=64,
             )
@@ -168,6 +170,7 @@ def run_resource_backed_execution(
         logits_check_policy=logits_check_policy,
         logits_active_cols_policy=logits_active_cols_policy,
         numeric_task_mode=numeric_task_mode,
+        prefill_prompt=prefill_prompt,
         repo_relative=repo_relative,
     )
 
@@ -213,6 +216,7 @@ def run_workload(
     decode_step_limit: int | None,
     logits_check_policy: str,
     numeric_task_mode: str,
+    prefill_prompt: bool = False,
     scheduler_blocks: int = 1,
     block_dim: int = 64,
 ) -> dict[str, Any]:
@@ -234,6 +238,27 @@ def run_workload(
         return {"workload_id": plan["workload_id"], "status": "not_run"}
     final_callable = descriptors[-1].get("callable")
 
+    prefill_results = []
+    if prefill_prompt:
+        prefill_count = max(int(plan.get("active_prompt_tokens", 0)), 0)
+        for prefill_position in range(prefill_count):
+            prefill_results.append(
+                run_packet_once(
+                    session=session,
+                    packet=packet,
+                    workspace=workspace,
+                    final_callable=final_callable,
+                    logits_check_policy=logits_check_policy,
+                    scheduler_blocks=scheduler_blocks,
+                    block_dim=block_dim,
+                    decode_position=prefill_position,
+                    decode_step_index=None,
+                    phase="prompt_prefill",
+                    prompt_stride=plan.get("runtime_prompt_tokens"),
+                    token_fields=token_fields,
+                )
+            )
+
     execution_count = resource_backed_execution_count(
         plan=plan,
         repeat_runs=repeat_runs,
@@ -243,90 +268,23 @@ def run_workload(
     for repeat_index in range(execution_count):
         step_index = repeat_index if decode_step_limit is not None else None
         decode_position = int(plan["first_decode_position"]) + int(step_index or 0)
-        rope_table_refresh = refresh_rope_tables_for_decode_position(
-            session.runtime,
-            session.ctx,
-            workspace,
-            decode_position=decode_position,
-        )
-        set_decode_step_state(
-            packet,
-            step_index=step_index,
-            decode_position=decode_position,
-        )
-        graph = MaterializedGraph(
-            session,
-            packet,
-            scheduler_blocks=scheduler_blocks,
-            block_dim=block_dim,
-        )
-        timing = PtoRunTiming()
-        args = CudaPersistentDagArgs(state=graph.ptrs["state"])
-        status = session.runtime.run_prepared(
-            session.ctx,
-            None,
-            0,
-            ctypes.byref(args),
-            graph.block_dim,
-            0,
-            0,
-            0,
-            0,
-            0,
-            None,
-            ctypes.byref(timing),
-        )
-        counters = graph.read_counters()
-        if final_callable != "qwen_logits":
-            logits_summary = unchecked_logits_summary(
-                policy=logits_check_policy,
-                repeat_index=repeat_index,
-                execution_count=execution_count,
-                reason="bounded_prefix_without_logits_task",
-            )
-        elif should_check_logits(
-            policy=logits_check_policy,
-            repeat_index=repeat_index,
-            execution_count=execution_count,
-        ):
-            logits_summary = graph.read_logits_summary(workspace)
-        else:
-            logits_summary = unchecked_logits_summary(
-                policy=logits_check_policy,
-                repeat_index=repeat_index,
-                execution_count=execution_count,
-            )
-        decode_feedback = apply_decode_feedback(
-            session=session,
-            token_fields=token_fields,
-            decode_step_index=step_index,
-            decode_position=decode_position,
-            prompt_stride=plan.get("runtime_prompt_tokens"),
-            logits_summary=logits_summary,
-            device_committed=True,
-        )
         repeat_results.append(
-            {
-                "repeat_index": repeat_index,
-                "decode_step_index": step_index,
-                "status": (
-                    "pass"
-                    if status == 0
-                    and counters["completed_count"] == len(packet)
-                    and counters["error_count"] == 0
-                    else "fail"
-                ),
-                "run_prepared_status": int(status),
-                "rope_table_refresh": rope_table_refresh,
-                "scheduler_counters": counters,
-                "output_sample": graph.read_output_sample(workspace),
-                "logits_summary": logits_summary,
-                "decode_feedback": decode_feedback,
-                "timing_ns": {
-                    "host_wall": int(timing.host_wall_ns),
-                    "device_wall": int(timing.device_wall_ns),
-                },
-            }
+            run_packet_once(
+                session=session,
+                packet=packet,
+                workspace=workspace,
+                final_callable=final_callable,
+                logits_check_policy=logits_check_policy,
+                scheduler_blocks=scheduler_blocks,
+                block_dim=block_dim,
+                decode_position=decode_position,
+                decode_step_index=step_index,
+                phase="decode",
+                prompt_stride=plan.get("runtime_prompt_tokens"),
+                token_fields=token_fields,
+                repeat_index=repeat_index,
+                execution_count=execution_count,
+            )
         )
     return build_workload_result(
         plan=plan,
@@ -335,4 +293,118 @@ def run_workload(
         decode_step_limit=decode_step_limit,
         logits_check_policy=logits_check_policy,
         numeric_task_mode=numeric_task_mode,
+        prefill_results=prefill_results,
     )
+
+
+def run_packet_once(
+    *,
+    session: Any,
+    packet: Any,
+    workspace: dict[str, Any],
+    final_callable: str | None,
+    logits_check_policy: str,
+    scheduler_blocks: int,
+    block_dim: int,
+    decode_position: int,
+    decode_step_index: int | None,
+    phase: str,
+    prompt_stride: int | None,
+    token_fields: dict[str, dict[str, Any]],
+    repeat_index: int = 0,
+    execution_count: int = 1,
+) -> dict[str, Any]:
+    rope_table_refresh = refresh_rope_tables_for_decode_position(
+        session.runtime,
+        session.ctx,
+        workspace,
+        decode_position=decode_position,
+    )
+    set_decode_step_state(
+        packet,
+        step_index=decode_step_index,
+        decode_position=decode_position,
+    )
+    graph = MaterializedGraph(
+        session,
+        packet,
+        scheduler_blocks=scheduler_blocks,
+        block_dim=block_dim,
+    )
+    timing = PtoRunTiming()
+    args = CudaPersistentDagArgs(state=graph.ptrs["state"])
+    status = session.runtime.run_prepared(
+        session.ctx,
+        None,
+        0,
+        ctypes.byref(args),
+        graph.block_dim,
+        0,
+        0,
+        0,
+        0,
+        0,
+        None,
+        ctypes.byref(timing),
+    )
+    counters = graph.read_counters()
+    if phase == "prompt_prefill":
+        logits_summary = unchecked_logits_summary(
+            policy=logits_check_policy,
+            repeat_index=repeat_index,
+            execution_count=execution_count,
+            reason="prompt_prefill_logits_not_checked",
+        )
+    elif final_callable != "qwen_logits":
+        logits_summary = unchecked_logits_summary(
+            policy=logits_check_policy,
+            repeat_index=repeat_index,
+            execution_count=execution_count,
+            reason="bounded_prefix_without_logits_task",
+        )
+    elif should_check_logits(
+        policy=logits_check_policy,
+        repeat_index=repeat_index,
+        execution_count=execution_count,
+    ):
+        logits_summary = graph.read_logits_summary(workspace)
+    else:
+        logits_summary = unchecked_logits_summary(
+            policy=logits_check_policy,
+            repeat_index=repeat_index,
+            execution_count=execution_count,
+        )
+    decode_feedback = {"status": "not_requested"}
+    if phase != "prompt_prefill":
+        decode_feedback = apply_decode_feedback(
+            session=session,
+            token_fields=token_fields,
+            decode_step_index=decode_step_index,
+            decode_position=decode_position,
+            prompt_stride=prompt_stride,
+            logits_summary=logits_summary,
+            device_committed=True,
+        )
+    return {
+        "repeat_index": repeat_index,
+        "decode_step_index": decode_step_index,
+        "decode_position": int(decode_position),
+        "phase": phase,
+        "status": (
+            "pass"
+            if status == 0
+            and counters["completed_count"] == len(packet)
+            and counters["error_count"] == 0
+            else "fail"
+        ),
+        "run_prepared_status": int(status),
+        "rope_table_refresh": rope_table_refresh,
+        "scheduler_counters": counters,
+        "output_sample": graph.read_output_sample(workspace),
+        "logits_summary": logits_summary,
+        "decode_feedback": decode_feedback,
+        "timing_ns": {
+            "host_wall": int(timing.host_wall_ns),
+            "device_wall": int(timing.device_wall_ns),
+        },
+    }

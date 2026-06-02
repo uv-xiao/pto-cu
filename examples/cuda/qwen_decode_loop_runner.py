@@ -97,6 +97,11 @@ def parse_args() -> argparse.Namespace:
         choices=["diagnostic", "unit_math", "unit_math_full_rmsnorm"],
         default="diagnostic",
     )
+    parser.add_argument(
+        "--resource-backed-prefill-prompt",
+        action="store_true",
+        help="Replay active prompt token positions into the live KV cache before decode.",
+    )
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--arch", default="compute_80")
     parser.add_argument("--cache-root", type=Path)
@@ -162,6 +167,7 @@ def main() -> None:
         ),
         resource_backed_logits_active_cols=args.resource_backed_logits_active_cols,
         resource_backed_numeric_task_mode=args.resource_backed_numeric_task_mode,
+        resource_backed_prefill_prompt=args.resource_backed_prefill_prompt,
         arch=args.arch,
     )
     if args.output_json:

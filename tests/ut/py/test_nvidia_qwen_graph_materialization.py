@@ -27,6 +27,7 @@ from qwen_decode_loop_runner_impl.workspace_pointers import (  # noqa: E402
 from qwen_decode_loop_runner_impl.resource_backed_results import (  # noqa: E402
     build_execution_result,
     dynamic_rope_refresh_ready,
+    prompt_prefill_summary,
 )
 from qwen_decode_loop_runner_impl.logits_active_cols import (  # noqa: E402
     apply_logits_active_cols_override,
@@ -1390,6 +1391,7 @@ def test_resource_backed_execution_reports_task_coverage():
         logits_check_policy="final_step",
         logits_active_cols_policy={"mode": "descriptor_default"},
         numeric_task_mode="unit_math_full_rmsnorm",
+        prefill_prompt=False,
         repo_relative=lambda path: str(path),
     )
 
@@ -1397,6 +1399,35 @@ def test_resource_backed_execution_reports_task_coverage():
         "task_count": 10,
         "func_id_sequence": list(range(7100, 7110)),
         "callables": callables,
+    }
+
+
+def test_prompt_prefill_summary_reports_executed_prompt_positions():
+    summary = prompt_prefill_summary(
+        plan={"active_prompt_tokens": 3, "first_decode_position": 64},
+        prefill_results=[
+            {
+                "status": "pass",
+                "scheduler_counters": {"completed_count": 10, "error_count": 0},
+            },
+            {
+                "status": "pass",
+                "scheduler_counters": {"completed_count": 10, "error_count": 0},
+            },
+            {
+                "status": "pass",
+                "scheduler_counters": {"completed_count": 10, "error_count": 0},
+            },
+        ],
+    )
+
+    assert summary == {
+        "status": "prompt_prefill_executed",
+        "expected_prompt_positions": 3,
+        "executed_prompt_positions": 3,
+        "first_decode_position": 64,
+        "total_completed_count": 30,
+        "total_error_count": 0,
     }
 
 

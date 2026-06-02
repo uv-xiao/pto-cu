@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-03 Qwen prompt prefill replay](2026-06-03-qwen-prompt-prefill-replay.md)
 - [2026-06-03 Persistent scene-test five tensor args](2026-06-03-persistent-scene-test-five-tensor-args.md)
 - [2026-06-03 Persistent tensor-arg helper capacity](2026-06-03-persistent-tensor-arg-helper-capacity.md)
 - [2026-06-03 Qwen layer KV layout](2026-06-03-qwen-layer-kv-layout.md)

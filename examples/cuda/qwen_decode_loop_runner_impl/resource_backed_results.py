@@ -52,6 +52,7 @@ def build_execution_result(
     logits_check_policy: str,
     logits_active_cols_policy: dict[str, Any],
     numeric_task_mode: str,
+    prefill_prompt: bool,
     repo_relative,
 ) -> dict[str, Any]:
     passed = workload_results and all(
@@ -88,6 +89,7 @@ def build_execution_result(
             "logits_active_cols_policy": logits_active_cols_policy,
             "numeric_task_mode": numeric_task_mode_summary(numeric_task_mode),
             "graph_state_policy": "fresh_graph_state_per_repeat",
+            "prompt_prefill": bool(prefill_prompt),
         },
         "task_coverage": task_coverage(descriptors),
         "decode_step_execution": decode_step_execution,
@@ -140,11 +142,15 @@ def build_workload_result(
     decode_step_limit: int | None,
     logits_check_policy: str,
     numeric_task_mode: str,
+    prefill_results: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    prefill_results = prefill_results or []
     last = repeat_results[-1]
     return {
         "workload_id": plan["workload_id"],
-        "status": "pass" if all_success(repeat_results) else "fail",
+        "status": "pass"
+        if all_success(prefill_results) and all_success(repeat_results)
+        else "fail",
         "run_prepared_status": int(last["run_prepared_status"]),
         "repeat_runs": len(repeat_results),
         "planned_decode_steps": int(plan["decode_steps"]),
@@ -152,6 +158,10 @@ def build_workload_result(
             len(repeat_results) if decode_step_limit is not None else 0
         ),
         "decode_step_limit": decode_step_limit,
+        "prompt_prefill": prompt_prefill_summary(
+            plan=plan,
+            prefill_results=prefill_results,
+        ),
         "execution_mode": (
             "bounded_decode_steps"
             if decode_step_limit is not None
@@ -161,6 +171,7 @@ def build_workload_result(
         "numeric_task_mode": numeric_task_mode_summary(numeric_task_mode),
         "logits_check_summary": logits_check_summary(repeat_results),
         "repeat_results": repeat_results,
+        "prefill_results": prefill_results,
         "graph_task_count": packet_len,
         "scheduler_counters": last["scheduler_counters"],
         "total_completed_count": total_counter(repeat_results, "completed_count"),
@@ -177,7 +188,30 @@ def build_workload_result(
 
 
 def all_success(repeat_results: list[dict[str, Any]]) -> bool:
+    if not repeat_results:
+        return True
     return all(item["status"] == "pass" for item in repeat_results)
+
+
+def prompt_prefill_summary(
+    *,
+    plan: dict[str, Any],
+    prefill_results: list[dict[str, Any]],
+) -> dict[str, Any]:
+    if not prefill_results:
+        return {"status": "not_requested"}
+    expected = int(plan.get("active_prompt_tokens", 0))
+    executed = len(prefill_results)
+    return {
+        "status": "prompt_prefill_executed"
+        if executed == expected and all_success(prefill_results)
+        else "prompt_prefill_incomplete",
+        "expected_prompt_positions": expected,
+        "executed_prompt_positions": executed,
+        "first_decode_position": int(plan.get("first_decode_position", 0)),
+        "total_completed_count": total_counter(prefill_results, "completed_count"),
+        "total_error_count": total_counter(prefill_results, "error_count"),
+    }
 
 
 def total_counter(repeat_results: list[dict[str, Any]], name: str) -> int:
