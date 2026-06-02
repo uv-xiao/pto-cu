@@ -9,7 +9,11 @@ from simpler_setup.cuda_callable_compiler import (
     CudaPersistentDagState,
     CudaPersistentDagTask,
 )
-from simpler_setup.cuda_normal_graph import CudaNormalGraphNode, lower_normal_graph
+from simpler_setup.cuda_pto_graph import (
+    CudaPtoTaskArg,
+    CudaPtoTaskSubmit,
+    lower_cuda_pto_task_graph,
+)
 
 from qwen_unit_math_live_impl.plan import CALLABLES
 
@@ -19,22 +23,53 @@ def make_graph_arrays(ptrs: dict[str, int]) -> dict[str, Any]:
     scalar_args_t = ctypes.c_float * 4
     scalars = scalar_args_t(1.0, 0.0, 0.0, 0.0)
 
-    nodes = (
-        CudaNormalGraphNode("rmsnorm", func_id=CALLABLES[0][1]),
-        CudaNormalGraphNode(
-            "attention", depends_on=("rmsnorm",), func_id=CALLABLES[1][1]
+    submits = (
+        CudaPtoTaskSubmit(
+            "rmsnorm",
+            CALLABLES[0][1],
+            (
+                CudaPtoTaskArg("hidden", ptr=ptrs["hidden"]),
+                CudaPtoTaskArg("norm_weight", role="no_dep", ptr=ptrs["norm_weight"]),
+                CudaPtoTaskArg("rmsnorm", role="output", ptr=ptrs["rmsnorm"]),
+            ),
         ),
-        CudaNormalGraphNode(
-            "mlp", depends_on=("attention",), func_id=CALLABLES[2][1]
+        CudaPtoTaskSubmit(
+            "attention",
+            CALLABLES[1][1],
+            (
+                CudaPtoTaskArg("rmsnorm", ptr=ptrs["rmsnorm"]),
+                CudaPtoTaskArg("q_weight", role="no_dep", ptr=ptrs["q_weight"]),
+                CudaPtoTaskArg("k_weight", role="no_dep", ptr=ptrs["k_weight"]),
+                CudaPtoTaskArg("v_weight", role="no_dep", ptr=ptrs["v_weight"]),
+                CudaPtoTaskArg("context", role="output", ptr=ptrs["context"]),
+            ),
         ),
-        CudaNormalGraphNode(
-            "logits", depends_on=("mlp",), func_id=CALLABLES[3][1]
+        CudaPtoTaskSubmit(
+            "mlp",
+            CALLABLES[2][1],
+            (
+                CudaPtoTaskArg("context", ptr=ptrs["context"]),
+                CudaPtoTaskArg("gate_weight", role="no_dep", ptr=ptrs["gate_weight"]),
+                CudaPtoTaskArg("up_weight", role="no_dep", ptr=ptrs["up_weight"]),
+                CudaPtoTaskArg("mlp", role="output", ptr=ptrs["mlp"]),
+            ),
+        ),
+        CudaPtoTaskSubmit(
+            "logits",
+            CALLABLES[3][1],
+            (
+                CudaPtoTaskArg("mlp", ptr=ptrs["mlp"]),
+                CudaPtoTaskArg("lm_head", role="no_dep", ptr=ptrs["lm_head"]),
+                CudaPtoTaskArg("logits", role="output", ptr=ptrs["logits"]),
+            ),
         ),
     )
 
     def make_task(node, dependent_begin, dependent_count, initial_fanin):
+        assert node.attrs is not None
+        submit = node.attrs["submit"]
         common = {
-            "func_id": node.func_id,
+            "func_id": submit.callable_id,
             "n": 4,
             "dependent_begin": dependent_begin,
             "dependent_count": dependent_count,
@@ -83,7 +118,7 @@ def make_graph_arrays(ptrs: dict[str, int]) -> dict[str, Any]:
             tensor_arg_count=1,
         )
 
-    lowered = lower_normal_graph(nodes, make_task)
+    lowered = lower_cuda_pto_task_graph(submits, make_task)
     return {
         "tasks": (CudaPersistentDagTask * len(lowered.tasks))(*lowered.tasks),
         "dependents": (ctypes.c_uint32 * len(lowered.dependents))(

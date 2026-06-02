@@ -38,10 +38,12 @@ The benchmark viewer also exposes these claims as structured coverage data in
 That record is validated against implementation and documentation symbols by
 the benchmark-viewer data guard. The same coverage data now requires a
 normal-graph lowering-boundary group, with evidence tied to
-`simpler_setup/cuda_normal_graph.py`, the
+`simpler_setup/cuda_pto_graph.py`, `simpler_setup/cuda_normal_graph.py`, the
 `persistent_dag_normal_graph_f32` scene-test builder in
 `simpler_setup/scene_test.py`, the no-torch persistent smoke, and the Qwen
-unit-math CUDA example.
+unit-math CUDA example. The Qwen example now constructs the persistent DAG
+from PTO-style tagged submits, so there is concrete builder-side evidence
+outside scene-test graph config.
 
 The verified coverage above is enough for current CUDA backend review claims
 about scheduler mechanics and scene-test normal graph construction. Paired
@@ -49,7 +51,8 @@ A100/H200 smoke now also validates the submit-chain normal graph boundary with
 `graph_lowering=normal_graph`, and the normal graph smoke matrix now covers
 fork-join, chain, multi-fan-in, and layered-cross shape construction with
 paired A100/H200 evidence for each shape. The remaining open work is normal
-PTO task-graph breadth beyond scene-test graph config, including malformed
-normal-graph lowering cases once that broader input path lands. It is not the
-scheduler launch, resource, lifecycle, error-taxonomy, shape breadth, or
+PTO graph breadth from the live hierarchical orchestrator into the CUDA
+persistent-device builder, plus malformed normal-graph lowering cases once
+that live input path lands. It is not the scheduler launch, resource,
+lifecycle, error-taxonomy, shape breadth, tagged-submit lowering, or
 artifact-reporting mechanics already captured here.

@@ -82,11 +82,12 @@
     {
       "id": "normal_graph_lowering_boundary",
       "title": "Normal Graph Lowering Boundary",
-      "status": "covered_for_edge_lowering",
-      "summary": "Shared lowering now builds fan-in, dependents, and task spans for smoke, scene-test, and Qwen example graph inputs.",
+      "status": "covered_for_tagged_submit_lowering",
+      "summary": "Shared lowering now builds fan-in, dependents, and task spans for smoke, scene-test, PTO-style tagged submits, and Qwen example graph inputs.",
       "covered_cases": [
         "node-key dependency lowering from depends_on edges",
         "explicit dependent-list lowering that preserves dependent order",
+        "PTO-style tagged submit dependency inference for CUDA persistent-device task graphs",
         "scene-test persistent_dag_normal_graph_f32 builder input",
         "scene-test graph descriptor edge lowering after descriptor parsing",
         "no-torch persistent smoke graph lowering marker",
@@ -96,9 +97,17 @@
         "Qwen unit-math DAG task-array construction"
       ],
       "open_work": [
-        "normal PTO task graph construction beyond scene-test graph config"
+        "normal PTO graph breadth from the live hierarchical orchestrator into paired GPU evidence"
       ],
       "evidence_refs": [
+        {
+          "path": "simpler_setup/cuda_pto_graph.py",
+          "symbols": [
+            "CudaPtoTaskArg",
+            "CudaPtoTaskSubmit",
+            "lower_cuda_pto_task_graph"
+          ]
+        },
         {
           "path": "simpler_setup/cuda_normal_graph.py",
           "symbols": [
@@ -146,7 +155,7 @@
           "path": "examples/cuda/qwen_unit_math_live_impl/graph.py",
           "symbols": [
             "make_graph_arrays",
-            "lower_normal_graph"
+            "lower_cuda_pto_task_graph"
           ]
         }
       ]

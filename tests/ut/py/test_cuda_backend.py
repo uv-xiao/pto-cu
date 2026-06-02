@@ -86,6 +86,62 @@ def test_cuda_normal_graph_lowering_builds_persistent_dag_arrays():
     assert explicit.tasks == [("0", 0, 2, 0), ("1", 2, 0, 1), ("2", 2, 0, 1)]
 
 
+def test_cuda_pto_task_graph_lowers_tagged_submits_to_persistent_dag_arrays():
+    from simpler_setup.cuda_pto_graph import (
+        CudaPtoTaskArg,
+        CudaPtoTaskSubmit,
+        lower_cuda_pto_task_graph,
+    )
+
+    submits = (
+        CudaPtoTaskSubmit(
+            "root",
+            1,
+            (
+                CudaPtoTaskArg("a", ptr=10),
+                CudaPtoTaskArg("tmp0", role="output", ptr=30),
+            ),
+        ),
+        CudaPtoTaskSubmit(
+            "middle",
+            2,
+            (
+                CudaPtoTaskArg("tmp0", ptr=30),
+                CudaPtoTaskArg("tmp1", role="output", ptr=40),
+            ),
+        ),
+        CudaPtoTaskSubmit(
+            "join",
+            1,
+            (
+                CudaPtoTaskArg("tmp1", ptr=40),
+                CudaPtoTaskArg("out", role="output", ptr=50),
+            ),
+        ),
+    )
+
+    def make_task(node, begin, count, fanin):
+        assert node.attrs is not None
+        submit = node.attrs["submit"]
+        return {
+            "key": submit.key,
+            "func_id": submit.callable_id,
+            "dependent_begin": begin,
+            "dependent_count": count,
+            "initial_fanin": fanin,
+        }
+
+    lowered = lower_cuda_pto_task_graph(submits, make_task)
+
+    assert lowered.fanin == [0, 1, 1]
+    assert lowered.dependents == [1, 2]
+    assert lowered.tasks == [
+        {"key": "root", "func_id": 1, "dependent_begin": 0, "dependent_count": 1, "initial_fanin": 0},
+        {"key": "middle", "func_id": 2, "dependent_begin": 1, "dependent_count": 1, "initial_fanin": 1},
+        {"key": "join", "func_id": 1, "dependent_begin": 2, "dependent_count": 0, "initial_fanin": 1},
+    ]
+
+
 class CudaHostCallable(ctypes.Structure):
     _fields_ = [
         ("version", ctypes.c_uint32),

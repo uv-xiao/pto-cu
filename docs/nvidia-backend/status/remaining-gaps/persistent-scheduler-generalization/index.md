@@ -12,10 +12,9 @@ The remaining backend gap is normal PTO graph breadth, not the core persistent
 scheduler mechanics. Before this gap can be closed, the CUDA backend still
 needs:
 
-- normal PTO task graph construction beyond the current scene-test
-  `persistent_dag_normal_graph_f32` graph-config input;
-- normal PTO graph construction feeding the persistent scheduler outside
-  scene-test graph config.
+- live hierarchical orchestrator submissions captured into the CUDA
+  persistent-device builder;
+- paired A100/H200 evidence for that live normal PTO graph input path.
 
 The current scheduler-negative taxonomy is covered for the review scope:
 unsupported `func_id`, invalid dependent IDs, dependent range, fan-in
@@ -31,9 +30,10 @@ Structured coverage lives in
 and is validated by
 `.agents/checks/benchmark_viewer_validation/persistent_scheduler_coverage.py`.
 That coverage now requires a normal-graph lowering-boundary group tied to
-`simpler_setup/cuda_normal_graph.py`, the persistent-device scene-test adapter,
-the `persistent_dag_normal_graph_f32` scene-test builder, the no-torch
-persistent smoke, and the Qwen unit-math live example.
+`simpler_setup/cuda_pto_graph.py`, `simpler_setup/cuda_normal_graph.py`, the
+persistent-device scene-test adapter, the `persistent_dag_normal_graph_f32`
+scene-test builder, the no-torch persistent smoke, and the Qwen unit-math
+live example.
 Current paired smoke artifacts include
 `tmp/cuda-backend/persistent-graph_descriptor_diamond-repeat2-smoke-072e396c/`
 and
@@ -58,21 +58,26 @@ The remaining shape artifacts complete the paired normal-graph evidence matrix:
 `tmp/cuda-backend/persistent-normal_graph_layered_cross-repeat2-smoke-4c68620e/`.
 Those artifacts validate `graph_lowering=normal_graph`, dispatch sequences,
 fan-in/dependent arrays, and repeat-run completion on both A100 and H200.
+The Qwen unit-math live example now also lowers PTO-style tagged submit
+records through `simpler_setup/cuda_pto_graph.py`, proving a builder-side
+dependency-inference path outside scene-test graph config. That is still not a
+live capture from the C++ hierarchical orchestrator.
 
 ## Promotion Gate
 
 Close this gap only after normal PTO task graphs construct full
-persistent-device scheduler inputs beyond scene-test graph config and the
-resulting backend-builder path runs through the paired A100/H200 smoke or
-benchmark harness. The normal-graph shape evidence above no longer relies on
-descriptor spellings, but it is still a smoke harness input rather than full
-normal PTO graph construction.
+persistent-device scheduler inputs from live hierarchical orchestrator
+submissions and the resulting backend-builder path runs through the paired
+A100/H200 smoke or benchmark harness. The normal-graph shape evidence above no
+longer relies on descriptor spellings, and the tagged-submit adapter proves the
+builder-side dependency rule, but neither is a live orchestrator capture.
 
 ## Next Actions
 
-- Add normal PTO graph lowering into the CUDA persistent-device builder.
-- Run the backend-builder normal PTO graph path through paired A100/H200
-  evidence before removing this page from `status.md`.
+- Bridge live hierarchical orchestrator task slots into the CUDA
+  persistent-device builder.
+- Run that live normal PTO graph path through paired A100/H200 evidence before
+  removing this page from `status.md`.
 
 ## Evidence Archive
 
