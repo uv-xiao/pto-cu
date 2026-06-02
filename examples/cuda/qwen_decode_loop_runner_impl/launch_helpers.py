@@ -28,6 +28,20 @@ UNIT_NUMERIC_WEIGHTED_ELEMENTWISE_CALLABLES = {
     "qwen_mlp_down",
     "qwen_final_norm",
 }
+TASK_SHAPE_FIELDS = (
+    "scalar0",
+    "scalar1",
+    "rows",
+    "cols",
+    "inner",
+    "lda",
+    "ldb",
+    "ldc",
+    "a_batch_stride",
+    "b_batch_stride",
+    "out_batch_stride",
+)
+FLOAT_TASK_SHAPE_FIELDS = {"scalar0", "scalar1"}
 
 
 def normalize_numeric_task_mode(mode: str) -> str:
@@ -150,6 +164,27 @@ def task_scalar_arg_count(scalar_args: list[float]) -> int:
         if scalar_args[index] != 0.0:
             return index + 1
     return 0
+
+
+def task_shape_fields(
+    *,
+    descriptor: dict[str, Any],
+    defaults: dict[str, Any] | None = None,
+) -> dict[str, int | float]:
+    fields: dict[str, int | float] = {}
+    for source in (
+        defaults or {},
+        descriptor.get("task_shape_fields", {}),
+        descriptor.get("scalar_fields", {}),
+    ):
+        for name, value in source.items():
+            if name not in TASK_SHAPE_FIELDS or value is None:
+                continue
+            if name in FLOAT_TASK_SHAPE_FIELDS:
+                fields[name] = float(value)
+            else:
+                fields[name] = int(value)
+    return fields
 
 
 def numeric_task_mode_summary(mode: str) -> dict[str, Any]:

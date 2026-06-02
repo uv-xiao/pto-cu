@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Qwen launch-packet shape fields](2026-06-02-qwen-launch-packet-shape-fields.md)
 - [2026-06-02 Qwen kernel source map](2026-06-02-qwen-kernel-source-map.md)
 - [2026-06-02 Qwen block RMSNorm diagnostic](2026-06-02-qwen-block-rmsnorm-diagnostic.md)
 - [2026-06-02 Qwen bounded full RMSNorm diagnostic](2026-06-02-qwen-bounded-full-rmsnorm-diagnostic.md)

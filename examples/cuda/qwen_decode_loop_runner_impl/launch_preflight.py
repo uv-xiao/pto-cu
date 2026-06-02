@@ -22,6 +22,7 @@ from qwen_decode_loop_runner_impl.launch_helpers import (
     output_ptr_for_task,
     parse_ptr,
     set_decode_step_index,
+    task_shape_fields,
     task_n_for_record,
     task_scalar_arg_count,
     task_scalar_args,
@@ -57,6 +58,7 @@ def launch_packet_preflight(
         kv_fields=kv_fields,
         workspace=workspace,
         numeric_task_mode=numeric_task_mode,
+        task_shape_defaults=task_shape_defaults(plan),
     )
     workspace_ready = workspace is not None
     return {
@@ -115,6 +117,7 @@ def build_host_task_packet(
     kv_fields: dict[str, Any],
     workspace: dict[str, Any] | None = None,
     numeric_task_mode: str = "diagnostic",
+    task_shape_defaults: dict[str, Any] | None = None,
 ) -> Any | None:
     numeric_task_mode = normalize_numeric_task_mode(numeric_task_mode)
     if not descriptors or {"a", "b", "out"} - set(token_fields):
@@ -132,6 +135,7 @@ def build_host_task_packet(
                 kv_fields=kv_fields,
                 workspace=workspace,
                 numeric_task_mode=numeric_task_mode,
+                task_shape_defaults=task_shape_defaults,
             )
             for index, descriptor in enumerate(descriptors)
         ]
@@ -147,6 +151,7 @@ def host_task_record(
     kv_fields: dict[str, Any],
     workspace: dict[str, Any] | None,
     numeric_task_mode: str,
+    task_shape_defaults: dict[str, Any] | None,
 ) -> CudaPersistentDagTask:
     tensor_args_t = ctypes.c_void_p * 4
     scalar_args_t = ctypes.c_float * 4
@@ -169,6 +174,10 @@ def host_task_record(
         tensor_args=tensor_args,
         token_fields=token_fields,
         workspace=workspace,
+    )
+    shape = task_shape_fields(
+        descriptor=descriptor,
+        defaults=task_shape_defaults,
     )
     return CudaPersistentDagTask(
         func_id=CALLABLE_FUNC_IDS[descriptor["callable"]],
@@ -194,6 +203,17 @@ def host_task_record(
         dependent_begin=index,
         dependent_count=1 if index + 1 < task_count else 0,
         initial_fanin=0 if index == 0 else 1,
+        scalar0=shape.get("scalar0", 0.0),
+        scalar1=shape.get("scalar1", 0.0),
+        rows=shape.get("rows", 0),
+        cols=shape.get("cols", 0),
+        inner=shape.get("inner", 0),
+        lda=shape.get("lda", 0),
+        ldb=shape.get("ldb", 0),
+        ldc=shape.get("ldc", 0),
+        a_batch_stride=shape.get("a_batch_stride", 0),
+        b_batch_stride=shape.get("b_batch_stride", 0),
+        out_batch_stride=shape.get("out_batch_stride", 0),
         c=parse_ptr(kv_fields["c"].get("device_ptr_hex")),
         d=parse_ptr(kv_fields["d"].get("device_ptr_hex")),
         tensor_args=tensor_args_t(*tensor_args),
@@ -201,6 +221,21 @@ def host_task_record(
         tensor_arg_count=tensor_arg_count(tensor_args),
         scalar_arg_count=task_scalar_arg_count(scalar_args),
     )
+
+
+def task_shape_defaults(plan: dict[str, Any]) -> dict[str, Any]:
+    if isinstance(plan.get("task_shape_fields"), dict):
+        return plan["task_shape_fields"]
+    if isinstance(plan.get("scalar_fields"), dict):
+        return plan["scalar_fields"]
+    fields = {}
+    if "max_batch_size" in plan:
+        fields["rows"] = plan["max_batch_size"]
+    if "decode_steps" in plan:
+        fields["cols"] = plan["decode_steps"]
+    if "first_decode_position" in plan:
+        fields["inner"] = plan["first_decode_position"]
+    return fields
 
 
 def workspace_for_workload(

@@ -63,7 +63,7 @@ def materialized_descriptor(
             "pointer_tensor_mismatch",
         }
     ]
-    return {
+    record = {
         "id": descriptor["id"],
         "callable": descriptor["callable"],
         "phase": descriptor["phase"],
@@ -72,3 +72,7 @@ def materialized_descriptor(
         "status": "ready" if not missing else "missing_resident_pointer",
         "missing_tensors": missing,
     }
+    for key in ("scalar_fields", "task_shape_fields"):
+        if isinstance(descriptor.get(key), dict):
+            record[key] = dict(descriptor[key])
+    return record

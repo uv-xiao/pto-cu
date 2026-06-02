@@ -17,6 +17,9 @@ from qwen_decode_loop_runner_impl.launch_preflight import (  # noqa: E402
 from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
     numeric_task_mode_summary,
 )
+from qwen_persistent_weight_materialization_impl.materializer import (  # noqa: E402
+    materialized_descriptor,
+)
 
 
 def test_launch_packet_preflight_packs_resource_backed_task_records():
@@ -182,6 +185,94 @@ def test_launch_packet_uses_full_logits_extent_for_final_logits_task():
 
     assert packet[1].scalar_arg_count == 4
     assert packet[1].scalar_args[3] == 7.0
+
+
+def test_launch_packet_carries_cuda_task_shape_fields():
+    descriptors = [
+        {"callable": "qwen_rmsnorm_input", "tensor_args": []},
+        {
+            "callable": "qwen_attention_qkv",
+            "tensor_args": [],
+            "task_shape_fields": {
+                "rows": 16,
+                "cols": 4096,
+                "inner": 4096,
+                "lda": 4096,
+                "ldb": 4096,
+                "ldc": 4096,
+                "scalar0": 1.25,
+                "a_batch_stride": 4096,
+            },
+        },
+        {"callable": "qwen_logits", "tensor_args": []},
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x3000"},
+            {"field": "b", "device_ptr_hex": "0x4000"},
+            {"field": "out", "device_ptr_hex": "0x5000"},
+        ],
+    )
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x6000"},
+            "d": {"device_ptr_hex": "0x7000"},
+        },
+        task_shape_defaults={"rows": 2, "cols": 64, "inner": 128},
+    )
+
+    assert packet is not None
+    assert packet[0].rows == 2
+    assert packet[0].cols == 64
+    assert packet[0].inner == 128
+    assert packet[1].rows == 16
+    assert packet[1].cols == 4096
+    assert packet[1].inner == 4096
+    assert packet[1].lda == 4096
+    assert packet[1].ldb == 4096
+    assert packet[1].ldc == 4096
+    assert packet[1].scalar0 == 1.25
+    assert packet[1].a_batch_stride == 4096
+
+
+def test_materialized_weight_descriptor_preserves_task_shape_fields():
+    descriptor = {
+        "id": "layer_0_attention_qkv",
+        "callable": "qwen_attention_qkv",
+        "phase": "per_layer_decode",
+        "tensor_args": [
+            {
+                "arg": "tensor_args[0]",
+                "slot_id": 7,
+                "tensor": "model.layers.0.self_attn.q_proj.weight",
+            }
+        ],
+        "task_shape_fields": {"rows": 16, "cols": 4096, "inner": 4096},
+    }
+
+    materialized = materialized_descriptor(
+        descriptor=descriptor,
+        bindings={7: {"size_bytes": 1024}},
+        pointers={
+            7: {
+                "tensor": "model.layers.0.self_attn.q_proj.weight",
+                "device_ptr": 0x1000,
+                "device_ptr_hex": "0x1000",
+                "size_bytes": 1024,
+            }
+        },
+        pointer_table_ready=True,
+    )
+
+    assert materialized["status"] == "ready"
+    assert materialized["task_shape_fields"] == {
+        "rows": 16,
+        "cols": 4096,
+        "inner": 4096,
+    }
 
 
 def test_launch_packet_marks_unit_math_numeric_ready_tasks():
