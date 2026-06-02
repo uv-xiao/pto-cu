@@ -8,6 +8,7 @@ what evaluation ran, and what evidence proves the claim.
 
 - [2026-06-03 Persistent scene-test five tensor args](2026-06-03-persistent-scene-test-five-tensor-args.md)
 - [2026-06-03 Persistent tensor-arg helper capacity](2026-06-03-persistent-tensor-arg-helper-capacity.md)
+- [2026-06-03 Qwen full descriptor full vocab](2026-06-03-qwen-full-descriptor-full-vocab.md)
 - [2026-06-03 Benchmark viewer result compaction](2026-06-03-benchmark-viewer-result-compaction.md)
 - [2026-06-03 Qwen attention window refresh](2026-06-03-qwen-attention-window-refresh.md)
 - [2026-06-03 Qwen QK norm input stride](2026-06-03-qwen-qk-norm-input-stride.md)
