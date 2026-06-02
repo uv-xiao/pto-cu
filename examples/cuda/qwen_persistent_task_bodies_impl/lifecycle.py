@@ -76,18 +76,8 @@ task->out[i] = pto_cuda_tensor_arg_f32(task, 0U, token_id & 3U, 0.0f);
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["hidden_state", "input_layernorm_weight"],
             "body": """
-if (task->scalar_arg_count == 0) {
-    for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
-        const float scale = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
-        task->out[i] = task->a[i] * scale;
-    }
-} else if (task->scalar_arg_count > 1) {
-    for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
-        const float norm_weight =
-            pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
-        task->out[i] = task->a[i] * task->scalar_args[1] * norm_weight;
-    }
-} else {
+if (task->scalar_arg_count > 0 && task->scalar_args[0] == 1.0f &&
+    task->scalar_args[1] == 0.0f) {
     __shared__ float partial[1024];
     float mean_square = 0.0f;
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
@@ -107,6 +97,17 @@ if (task->scalar_arg_count == 0) {
         const float norm_weight =
             pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
         task->out[i] = task->a[i] * scale * norm_weight;
+    }
+} else if (task->scalar_arg_count == 0) {
+    for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
+        const float scale = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
+        task->out[i] = task->a[i] * scale;
+    }
+} else if (task->scalar_arg_count > 1) {
+    for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
+        const float norm_weight =
+            pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
+        task->out[i] = task->a[i] * task->scalar_args[1] * norm_weight;
     }
 }
 """,
@@ -576,7 +577,8 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                 "post_attention_layernorm_weight",
             ],
             "body": """
-if (task->scalar_arg_count == 1) {
+if (task->scalar_arg_count > 0 && task->scalar_args[0] == 1.0f &&
+    task->scalar_args[1] == 0.0f) {
     __shared__ float partial[1024];
     float mean_square = 0.0f;
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
@@ -680,7 +682,8 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count > 0U &&
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["hidden_state", "final_norm_weight"],
             "body": """
-if (task->scalar_arg_count == 1) {
+if (task->scalar_arg_count > 0 && task->scalar_args[0] == 1.0f &&
+    task->scalar_args[1] == 0.0f) {
     __shared__ float partial[1024];
     float mean_square = 0.0f;
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {

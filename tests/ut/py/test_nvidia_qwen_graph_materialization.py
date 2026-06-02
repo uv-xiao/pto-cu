@@ -1322,6 +1322,9 @@ def test_launch_packet_can_select_full_rmsnorm_reduction_branch():
     assert list(packet[0].scalar_args)[:2] == [1.0, 0.0]
     assert packet[1].scalar_arg_count == 1
     assert packet[1].scalar_args[0] == 1.0
+    set_decode_step_state(packet, step_index=0, decode_position=128)
+    assert packet[0].scalar_arg_count == 3
+    assert list(packet[0].scalar_args)[:3] == [1.0, 0.0, 128.0]
     summary = numeric_task_mode_summary("unit_math_full_rmsnorm")
     assert summary["scope"] == "resource_backed_unit_math_full_rmsnorm_reduction"
     assert summary["external_scale_contracts"] == []

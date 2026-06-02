@@ -140,6 +140,8 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "attention_residual" in post_attention_norm["consumes_roles"]
     assert final_norm["threading"] == "block"
     assert "__shared__ float partial[1024];" in source
+    assert "task->scalar_args[0] == 1.0f" in full_source
+    assert "task->scalar_args[1] == 0.0f" in full_source
     assert (
         "rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f)"
         in full_source
