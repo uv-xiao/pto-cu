@@ -14,7 +14,11 @@ from simpler_setup.cuda_callable_compiler import (
 
 from .logits_feedback import qwen_logits_spec
 from .kernel_source_map import build_kernel_source_map
-from .oracle import build_numeric_oracle, build_qwen_unit_math_oracle
+from .oracle import (
+    build_numeric_oracle,
+    build_qwen_decode_attention_oracle,
+    build_qwen_unit_math_oracle,
+)
 from .tensor_tiles import build_qwen_tensor_tile_contract
 
 
@@ -230,11 +234,41 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
         {
             "callable": "qwen_attention_o",
             "phase": "per_layer_decode",
-            "consumes_fields": ["a", "out", "tensor_args"],
-            "consumes_roles": ["attention_state", "o_proj_weight"],
+            "consumes_fields": ["a", "out", "c", "d", "tensor_args"],
+            "consumes_roles": [
+                "attention_state",
+                "key_cache",
+                "value_cache",
+                "o_proj_weight",
+            ],
             "body": """
-if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count > 0U &&
-    task->tensor_args[0]) {
+if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
+    const unsigned int row = static_cast<unsigned int>(i / task->cols);
+    const unsigned int col = static_cast<unsigned int>(i % task->cols);
+    const unsigned int stride = task->lda > 0U ? task->lda : task->cols;
+    const unsigned long long row_base =
+        static_cast<unsigned long long>(row) * stride;
+    const float query = task->a[row_base + col];
+    const unsigned int kv_window = task->inner;
+    float max_score = -3.4028234663852886e+38f;
+    for (unsigned int step = 0U; step < kv_window; ++step) {
+        const unsigned long long kv_index =
+            static_cast<unsigned long long>(step) * task->cols + col;
+        const float score = query * task->c[kv_index];
+        max_score = score > max_score ? score : max_score;
+    }
+    float weighted_value = 0.0f;
+    float normalizer = 0.0f;
+    for (unsigned int step = 0U; step < kv_window; ++step) {
+        const unsigned long long kv_index =
+            static_cast<unsigned long long>(step) * task->cols + col;
+        const float weight = expf(query * task->c[kv_index] - max_score);
+        weighted_value += weight * task->d[kv_index];
+        normalizer += weight;
+    }
+    task->out[i] = normalizer > 0.0f ? weighted_value / normalizer : 0.0f;
+} else if (task->cols > 0U && task->inner > 0U &&
+    task->tensor_arg_count > 0U && task->tensor_args[0]) {
     const unsigned int row = static_cast<unsigned int>(i / task->cols);
     const unsigned int col = static_cast<unsigned int>(i % task->cols);
     task->out[i] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
@@ -386,6 +420,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
         },
         "numeric_oracle": build_numeric_oracle(callables),
         "qwen_unit_math_oracle": build_qwen_unit_math_oracle(),
+        "qwen_decode_attention_oracle": build_qwen_decode_attention_oracle(),
         "qwen_tensor_tile_contract": build_qwen_tensor_tile_contract(),
         "qwen_kernel_source_map": build_kernel_source_map(),
         "implemented_contracts": [
@@ -398,6 +433,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_shape_field_linear_projection_source",
             "qwen_shape_field_qk_rmsnorm_source",
             "qwen_shape_field_qk_rope_source",
+            "qwen_bounded_decode_attention_reduction_source",
             "qwen_logits_full_vocab_argmax_source",
             "qwen_kernel_token_field_consumption",
             "qwen_kernel_kv_field_consumption",

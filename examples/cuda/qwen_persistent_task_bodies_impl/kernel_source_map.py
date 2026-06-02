@@ -79,7 +79,11 @@ KERNEL_SOURCE_MAP = [
         "next_step": "Make gate/up projection outputs explicit buffers, then run the same SiLU-mul formula over model-shape MLP intermediate rows.",
     },
     {
-        "pto_callables": ["qwen_attention_qkv", "qwen_attention_qk_norm"],
+        "pto_callables": [
+            "qwen_attention_qkv",
+            "qwen_attention_qk_norm",
+            "qwen_attention_o",
+        ],
         "required_semantics": "Q/K/V projection, QK RMSNorm, RoPE, KV-cache writeback, and decode attention.",
         "reference_files": [
             {
@@ -101,8 +105,8 @@ KERNEL_SOURCE_MAP = [
                 "url": "https://github.com/sgl-project/sglang/blob/main/python/sglang/jit_kernel/csrc/elementwise/fused_qknorm_rope.cuh",
             },
         ],
-        "pto_status": "qkv_projection_qk_rmsnorm_and_rope_source_ready",
-        "next_step": "Bind model RoPE tables through descriptors, add slot-mapped paged KV-cache addressing, and implement decode attention reduction before full-serving promotion.",
+        "pto_status": "qkv_projection_qk_rmsnorm_rope_and_bounded_attention_source_ready",
+        "next_step": "Replace the bounded per-column diagnostic attention reduction with model-shape head grouping, paged KV-cache addressing, and tiled softmax before full-serving promotion.",
     },
     {
         "pto_callables": ["qwen_attention_qkv"],

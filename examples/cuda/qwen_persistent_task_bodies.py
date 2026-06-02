@@ -30,6 +30,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_kernel_token_field_consumption",
     "qwen_shape_field_qk_rmsnorm_source",
     "qwen_shape_field_qk_rope_source",
+    "qwen_bounded_decode_attention_reduction_source",
     "qwen_logits_full_vocab_argmax_source",
     "qwen_kernel_kv_field_consumption",
     "qwen_kernel_weight_tensor_arg_consumption",

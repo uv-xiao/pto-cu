@@ -1123,6 +1123,13 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     )
     assert qkv["consumes_fields"] == ["a", "b", "out", "c", "d", "tensor_args"]
     assert {"key_cache", "value_cache"} <= set(qkv["consumes_roles"])
+    attention_o = next(
+        item
+        for item in manifest["task_bodies"]
+        if item["callable"] == "qwen_attention_o"
+    )
+    assert attention_o["consumes_fields"] == ["a", "out", "c", "d", "tensor_args"]
+    assert {"key_cache", "value_cache"} <= set(attention_o["consumes_roles"])
     assert manifest["coverage"]["token_fields"] == ["a", "b", "out"]
     assert manifest["coverage"]["kv_fields"] == ["c", "d"]
     assert manifest["coverage"]["kv_write_policy"] == "mutable_kv_fields_ready"
@@ -1140,6 +1147,10 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     assert "qwen_unit_math_source_coverage" in manifest["implemented_contracts"]
     assert (
         "qwen_kernel_kv_cache_writeback_field_contract"
+        in manifest["implemented_contracts"]
+    )
+    assert (
+        "qwen_bounded_decode_attention_reduction_source"
         in manifest["implemented_contracts"]
     )
     oracle = manifest["numeric_oracle"]
@@ -1162,6 +1173,14 @@ def test_qwen_persistent_task_bodies_render_generated_source():
         -0.05402,
         0.060482,
         -0.063023,
+    ]
+    attention_oracle = manifest["qwen_decode_attention_oracle"]
+    assert attention_oracle["status"] == "qwen_decode_attention_oracle_ready"
+    assert attention_oracle["steps"]["attention_context"] == [
+        5.63496,
+        11.179976,
+        17.309029,
+        21.460162,
     ]
     assert manifest["remaining_runtime_gaps"] == [
         "numerically_correct_qwen_kernel_bodies",

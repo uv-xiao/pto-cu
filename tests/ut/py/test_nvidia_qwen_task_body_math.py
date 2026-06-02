@@ -116,6 +116,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "const unsigned int rope_index = col >> 1U;" in full_source
     assert "normalized * cos_value - paired * sin_value" in full_source
     assert "normalized * cos_value + paired * sin_value" in full_source
+    assert "const unsigned int kv_window = task->inner;" in full_source
+    assert "expf(query * task->c[kv_index] - max_score)" in full_source
+    assert "weighted_value / normalizer" in full_source
     assert "task->out[i] = pto_cuda_silu(gate_value) * up_value;" in full_source
     assert "task->out[i] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f)" in (
         full_source
@@ -132,6 +135,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     ]
     assert "qwen_shape_field_qk_rmsnorm_source" in manifest["implemented_contracts"]
     assert "qwen_shape_field_qk_rope_source" in manifest["implemented_contracts"]
+    assert "qwen_bounded_decode_attention_reduction_source" in manifest[
+        "implemented_contracts"
+    ]
     assert "qwen_logits_full_vocab_argmax_source" in manifest[
         "implemented_contracts"
     ]
@@ -212,3 +218,28 @@ def test_task_body_manifest_tracks_external_kernel_source_map():
         for reference in entry["reference_files"]
     )
     assert "qwen_kernel_source_map" in manifest["implemented_contracts"]
+
+
+def test_task_body_manifest_tracks_qwen_decode_attention_oracle():
+    module = load_task_bodies_module()
+
+    manifest = module.build_task_body_manifest(num_hidden_layers=1)
+    oracle = manifest["qwen_decode_attention_oracle"]
+
+    assert oracle["status"] == "qwen_decode_attention_oracle_ready"
+    assert oracle["scope"] == "bounded_two_step_hidden4_reference"
+    assert oracle["steps"]["attention_context"] == [
+        5.63496,
+        11.179976,
+        17.309029,
+        21.460162,
+    ]
+    assert oracle["steps"]["attention_probability_by_col"] == [
+        [0.485004, 0.514996],
+        [0.490001, 0.509999],
+        [0.470036, 0.529964],
+        [0.514996, 0.485004],
+    ]
+    assert "qwen_bounded_decode_attention_reduction_source" in manifest[
+        "implemented_contracts"
+    ]

@@ -13,11 +13,10 @@ PYTHONPATH=$PWD:$PWD/python \
   --output-source tmp/cuda-backend/pto-serving-task-bodies/qwen-persistent-task-bodies.cu
 ```
 
-Expected output: command exits 0; output JSON records generated
-persistent-device Qwen task bodies, token, mutable KV-cache, weight field
-consumption evidence, shape-field projection source, shape-field QK RMSNorm
-source, shape-field QK RoPE formula source, full-vocab logits argmax source,
-a controlled proxy numeric oracle, and a small Qwen unit math oracle.
+Expected output: command exits 0; output JSON records generated Qwen task
+bodies with token, mutable KV-cache, weight, shape-linear, QK RMSNorm/RoPE,
+bounded diagnostic decode-attention reduction, full-vocab argmax, proxy
+numeric oracle, and unit-math/decode-attention oracles.
 
 The artifact renders through the existing persistent DAG source generator.
 It is source-level integration evidence, not full Qwen serving correctness.
@@ -26,9 +25,12 @@ and `ldb` fields for QKV, attention-output, MLP, and logits linear
 projections when full tensor metadata is present. The QK norm task computes
 RMS scale from descriptor `cols`, `inner`, and `lda` fields before applying
 Q/K norm weight slots and pairwise RoPE rotation when cos/sin table slots are
-bound. Model RoPE table binding and decode attention reduction remain open.
-The logits shape path scans the descriptor vocab width for device-side argmax
-feedback. The persistent DAG
+bound. The attention-output task now has a shape-gated path that reads mutable
+`c`/`d` KV-cache fields and computes a max-stabilized, per-column softmax
+reduction over the bounded `inner` decode window. This is diagnostic source
+evidence; model-shape head grouping, paged KV addressing, tiled softmax, and
+full decode-loop import remain open. The logits shape path scans the
+descriptor vocab width for device-side argmax feedback. The persistent DAG
 ABI also exposes mutable `c` and `d` fields, so the artifact records KV-cache
 writeback field access before `cuda_live` decode-loop execution. The numeric
 oracle keeps the controlled proxy formulas for fallback review only; it must
