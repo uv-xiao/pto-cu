@@ -27,6 +27,7 @@ from qwen_decode_loop_runner_impl.workspace_pointers import (  # noqa: E402
 from qwen_decode_loop_runner_impl.resource_backed_results import (  # noqa: E402
     dynamic_rope_refresh_ready,
 )
+from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph  # noqa: E402
 from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
     numeric_task_mode_summary,
 )
@@ -399,6 +400,68 @@ def test_rope_table_values_use_qwen_position_formula():
         -0.756802,
         0.389418,
     ]
+
+
+def test_materialized_graph_uses_configured_scheduler_blocks():
+    class FakeRuntime:
+        def __init__(self):
+            self.next_ptr = 0x100000
+            self.memory = {}
+
+        def device_malloc_ctx(self, ctx, size):
+            del ctx
+            self.next_ptr += 0x1000
+            self.memory[self.next_ptr] = bytearray(int(size))
+            return self.next_ptr
+
+        def copy_to_device_ctx(self, ctx, device_ptr, host_ptr, size):
+            del ctx
+            self.memory[int(device_ptr)][: int(size)] = ctypes.string_at(
+                host_ptr,
+                int(size),
+            )
+            return 0
+
+        def copy_from_device_ctx(self, ctx, host_ptr, device_ptr, size):
+            del ctx
+            ctypes.memmove(host_ptr, bytes(self.memory[int(device_ptr)]), int(size))
+            return 0
+
+    class FakeSession:
+        def __init__(self):
+            self.runtime = FakeRuntime()
+            self.ctx = object()
+            self.allocations = []
+
+    packet = build_host_task_packet(
+        descriptors=[
+            {"callable": "qwen_embedding_lookup", "tensor_args": []},
+            {"callable": "qwen_logits", "tensor_args": []},
+        ],
+        token_fields={
+            "a": {"device_ptr_hex": "0x1000"},
+            "b": {"device_ptr_hex": "0x2000"},
+            "out": {"device_ptr_hex": "0x3000"},
+        },
+        kv_fields={
+            "c": {"device_ptr_hex": "0x4000"},
+            "d": {"device_ptr_hex": "0x5000"},
+        },
+        workspace=None,
+    )
+    graph = MaterializedGraph(
+        FakeSession(),
+        packet,
+        scheduler_blocks=3,
+        block_dim=128,
+    )
+
+    state = graph.make_state()
+
+    assert graph.block_dim == 128
+    assert graph.scheduler_blocks == 3
+    assert state.scheduler_blocks == 3
+    assert len(graph.read_counters()["scheduler_processed_by_block"]) == 3
 
 
 def test_live_workspace_initializes_rope_tables_from_position_policy():

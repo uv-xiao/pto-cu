@@ -23,12 +23,20 @@ from qwen_decode_loop_runner_impl.resource_logits_reference import (
 
 
 class MaterializedGraph:
-    def __init__(self, session: Any, packet: Any) -> None:
+    def __init__(
+        self,
+        session: Any,
+        packet: Any,
+        *,
+        scheduler_blocks: int = 1,
+        block_dim: int = 64,
+    ) -> None:
         self.session = session
         self.packet = packet
         self.task_count = len(packet)
         self.queue_capacity = next_power_of_two(max(self.task_count + 1, 16))
-        self.block_dim = 64
+        self.scheduler_blocks = max(1, int(scheduler_blocks))
+        self.block_dim = max(1, int(block_dim))
         self.ptrs: dict[str, int] = {}
         self.hosts = self.make_hosts()
         for name, host in self.hosts.items():
@@ -54,7 +62,9 @@ class MaterializedGraph:
                 *([0] * self.queue_capacity),
             ),
             "counters": (u32 * 11)(*([0] * 11)),
-            "scheduler_processed": (u32 * 1)(0),
+            "scheduler_processed": (u32 * self.scheduler_blocks)(
+                *([0] * self.scheduler_blocks),
+            ),
         }
 
     def make_state(self) -> CudaPersistentDagState:
@@ -78,7 +88,7 @@ class MaterializedGraph:
             error_count=self.ptrs["counters"] + 5 * word,
             error_code=self.ptrs["counters"] + 6 * word,
             error_task_id=self.ptrs["counters"] + 7 * word,
-            scheduler_blocks=1,
+            scheduler_blocks=self.scheduler_blocks,
             scheduler_init_count=self.ptrs["counters"] + 8 * word,
             scheduler_loop_count=self.ptrs["counters"] + 9 * word,
             scheduler_processed_count=self.ptrs["counters"] + 10 * word,
@@ -127,7 +137,10 @@ class MaterializedGraph:
             "error_code": int(counters[6]),
             "error_task_id": int(counters[7]),
             "scheduler_processed_count": int(counters[10]),
-            "scheduler_processed_by_block": [int(self.hosts["scheduler_processed"][0])],
+            "scheduler_processed_by_block": [
+                int(self.hosts["scheduler_processed"][index])
+                for index in range(self.scheduler_blocks)
+            ],
         }
 
     def read_output_sample(self, workspace: dict[str, Any]) -> list[float]:

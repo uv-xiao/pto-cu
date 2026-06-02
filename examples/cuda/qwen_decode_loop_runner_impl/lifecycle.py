@@ -73,6 +73,7 @@ def build_decode_loop_runner(
     resource_backed_decode_steps: int | None = None,
     resource_backed_workloads: list[str] | None = None,
     resource_backed_max_tasks: int | None = None,
+    resource_backed_worker_blocks: int = 1,
     resource_backed_logits_check_policy: str = "every_step",
     resource_backed_numeric_task_mode: str = "diagnostic",
     arch: str = "compute_80",
@@ -175,6 +176,7 @@ def build_decode_loop_runner(
                 decode_step_limit=resource_backed_decode_steps,
                 workload_ids=resource_backed_workloads,
                 max_task_count=resource_backed_max_tasks,
+                worker_blocks=resource_backed_worker_blocks,
                 logits_check_policy=resource_backed_logits_check_policy,
                 numeric_task_mode=resource_backed_numeric_task_mode,
             )

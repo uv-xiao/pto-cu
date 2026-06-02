@@ -69,6 +69,7 @@ def run_resource_backed_execution(
     decode_step_limit: int | None = None,
     workload_ids: list[str] | None = None,
     max_task_count: int | None = None,
+    worker_blocks: int = 1,
     logits_check_policy: str = "every_step",
     numeric_task_mode: str = "diagnostic",
 ) -> dict[str, Any]:
@@ -89,6 +90,9 @@ def run_resource_backed_execution(
         descriptors = descriptors[: max(1, int(max_task_count))]
     if not descriptors:
         return {"status": "not_run", "reason": "no_ready_descriptors"}
+    scheduler_blocks = 1
+    worker_blocks = max(1, int(worker_blocks))
+    grid_dim = scheduler_blocks + worker_blocks
     logits_check_policy = normalize_logits_check_policy(logits_check_policy)
     selected_plans = select_workload_plans(plans, workload_ids)
     if not selected_plans:
@@ -108,7 +112,7 @@ def run_resource_backed_execution(
         )
         prepared = prepare_cuda_persistent_device_callable(
             artifact,
-            grid_dim=2,
+            grid_dim=grid_dim,
             block_dim=64,
         )
         if runtime.prepare_callable(ctx, 0, prepared.byref()) != 0:
@@ -124,6 +128,8 @@ def run_resource_backed_execution(
                 decode_step_limit=decode_step_limit,
                 logits_check_policy=logits_check_policy,
                 numeric_task_mode=numeric_task_mode,
+                scheduler_blocks=scheduler_blocks,
+                block_dim=64,
             )
             for plan in selected_plans
         ]
@@ -142,6 +148,9 @@ def run_resource_backed_execution(
         decode_step_limit=decode_step_limit,
         workload_ids=workload_ids,
         max_task_count=max_task_count,
+        scheduler_blocks=scheduler_blocks,
+        worker_blocks=worker_blocks,
+        grid_dim=grid_dim,
         logits_check_policy=logits_check_policy,
         numeric_task_mode=numeric_task_mode,
         repo_relative=repo_relative,
@@ -158,6 +167,8 @@ def run_workload(
     decode_step_limit: int | None,
     logits_check_policy: str,
     numeric_task_mode: str,
+    scheduler_blocks: int = 1,
+    block_dim: int = 64,
 ) -> dict[str, Any]:
     workspace = workspace_for_workload(
         activation_workspace=activation_workspace,
@@ -197,7 +208,12 @@ def run_workload(
             step_index=step_index,
             decode_position=decode_position,
         )
-        graph = MaterializedGraph(session, packet)
+        graph = MaterializedGraph(
+            session,
+            packet,
+            scheduler_blocks=scheduler_blocks,
+            block_dim=block_dim,
+        )
         timing = PtoRunTiming()
         args = CudaPersistentDagArgs(state=graph.ptrs["state"])
         status = session.runtime.run_prepared(
