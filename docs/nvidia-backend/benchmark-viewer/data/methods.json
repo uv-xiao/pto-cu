@@ -162,10 +162,15 @@
       "lifecycle": "The host prepares deterministic torch tensors, launches the Triton kernel for warmup and repeated measurements, checks against torch.matmul, and writes raw JSON plus viewer rows under tmp/.",
       "evidence_refs": [
         {
-          "path": ".agents/skills/cuda-backend-eval/scripts/triton_tensor_tile_capture.py",
+          "path": ".agents/skills/cuda-backend-eval/scripts/triton_tensor_tile_capture_impl/run.py",
           "symbols": [
             "tensor_tile_kernel",
-            "tl.dot",
+            "tl.dot"
+          ]
+        },
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/triton_tensor_tile_capture_impl/record.py",
+          "symbols": [
             "viewer_record"
           ]
         }
