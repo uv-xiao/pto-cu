@@ -39,6 +39,7 @@ That record is validated against implementation and documentation symbols by
 the benchmark-viewer data guard.
 
 The verified coverage above is enough for current CUDA backend review claims
-about scheduler mechanics. The remaining open work is normal PTO graph breadth
-and additional scheduler-negative coverage, not the scheduler launch,
-resource, lifecycle, or artifact-reporting mechanics already captured here.
+about scheduler mechanics. The remaining open work is normal PTO graph
+breadth, including malformed normal-graph lowering cases once that input path
+lands, not the scheduler launch, resource, lifecycle, error-taxonomy, or
+artifact-reporting mechanics already captured here.

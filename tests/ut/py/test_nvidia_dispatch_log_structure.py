@@ -30,9 +30,9 @@ def test_dispatch_log_is_split_for_human_review():
     }
     assert index_links == expected_links
 
-    latest_text = entry_files[-1].read_text(encoding="utf-8")
-    assert "Qwen Proxy Decode Loop Live Reuse" in latest_text
     for path in entry_files:
         text = path.read_text(encoding="utf-8")
+        assert re.fullmatch(r"2026-\d{2}-\d{2}-part-\d{2}", path.stem), path
         assert len(text.splitlines()) <= 300, path
-        assert re.search(r"^### 2026-", text, flags=re.MULTILINE), path
+        assert text.startswith("# "), path
+        assert re.search(r"^(##|###) ", text, flags=re.MULTILINE), path

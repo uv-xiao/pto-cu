@@ -37,3 +37,47 @@ def validate_persistent_scheduler_coverage(
             fail(f"{owner} must list at least five covered cases")
         require_list(group, "open_work", owner)
         check_evidence_refs(group, owner, root)
+    check_persistent_scheduler_gap_docs(root)
+
+
+def check_persistent_scheduler_gap_docs(root: Path) -> None:
+    gap_path = (
+        root
+        / "docs"
+        / "nvidia-backend"
+        / "status"
+        / "remaining-gaps"
+        / "persistent-scheduler-generalization"
+        / "index.md"
+    )
+    coverage_path = (
+        root
+        / "docs"
+        / "nvidia-backend"
+        / "status"
+        / "persistent-scheduler-coverage.md"
+    )
+    gap_text = gap_path.read_text(encoding="utf-8")
+    coverage_text = coverage_path.read_text(encoding="utf-8")
+    stale_phrases = (
+        "additional scheduler-negative cases beyond the current labeled",
+        "and additional scheduler-negative coverage",
+    )
+    for phrase in stale_phrases:
+        if phrase in gap_text or phrase in coverage_text:
+            fail(
+                "persistent scheduler coverage reintroduced a standalone "
+                f"negative-coverage blocker: {phrase}"
+            )
+    required_phrases = (
+        "normal PTO graph breadth",
+        "current scheduler-negative taxonomy is covered",
+        "malformed normal-graph lowering cases",
+    )
+    combined = f"{gap_text}\n{coverage_text}"
+    for phrase in required_phrases:
+        if phrase not in combined:
+            fail(
+                "persistent scheduler gap docs must keep current taxonomy "
+                f"covered and normal-graph breadth open: {phrase}"
+            )

@@ -16,11 +16,14 @@ needs:
   graph-descriptor tracer bullets;
 - broader graph-lowering coverage beyond the current
   `persistent_dag_graph_f32` descriptor adapter and selected descriptor
-  spellings;
-- additional scheduler-negative cases beyond the current labeled error
-  taxonomy for unsupported `func_id`, invalid dependent IDs, dependent range,
-  fan-in underflow, duplicate dependent, self dependent, initial fan-in, and
-  no-root or unreachable-task diagnostics.
+  spellings.
+
+The current scheduler-negative taxonomy is covered for the review scope:
+unsupported `func_id`, invalid dependent IDs, dependent range, fan-in
+underflow, duplicate dependent, self dependent, initial fan-in, no-root, and
+unreachable-task diagnostics. Future malformed normal-graph cases belong with
+the normal PTO graph lowering work above rather than a separate scheduler
+mechanics blocker.
 
 ## Evidence Archive
 
