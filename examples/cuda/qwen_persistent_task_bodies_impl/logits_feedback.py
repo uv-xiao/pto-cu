@@ -19,7 +19,36 @@ def qwen_logits_spec() -> dict[str, Any]:
         ],
         "body": """
 const bool has_lm_head = task->tensor_arg_count > 0U && task->tensor_args[0];
-if (task->scalar_arg_count > 1 && has_lm_head) {
+if (task->cols > 0U && task->inner > 0U && has_lm_head) {
+    const unsigned int row = static_cast<unsigned int>(i / task->cols);
+    const unsigned int col = static_cast<unsigned int>(i % task->cols);
+    task->out[i] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
+    if (task->scalar_arg_count > 3 && task->tensor_args[2] &&
+        task->tensor_args[3] && i == 0) {
+        unsigned int best_token = 0;
+        float best_logit = task->out[0];
+        const unsigned int sampled_tokens =
+            task->cols < 4U ? task->cols : 4U;
+        for (unsigned int token = 1; token < sampled_tokens; ++token) {
+            const float candidate =
+                pto_cuda_linear_arg_f32(task, 0U, row, token, 0.0f);
+            if (candidate > best_logit) {
+                best_logit = candidate;
+                best_token = token;
+            }
+        }
+        unsigned int *input_ids =
+            const_cast<unsigned int *>(
+                reinterpret_cast<const unsigned int *>(task->tensor_args[2]));
+        unsigned int *output_ids =
+            const_cast<unsigned int *>(
+                reinterpret_cast<const unsigned int *>(task->tensor_args[3]));
+        const unsigned long long decode_step =
+            static_cast<unsigned long long>(task->scalar_args[3]);
+        output_ids[decode_step] = best_token;
+        input_ids[0] = best_token;
+    }
+} else if (task->scalar_arg_count > 1 && has_lm_head) {
     const unsigned long long hidden_elements =
         static_cast<unsigned long long>(task->scalar_args[1]);
     const unsigned long long hidden_index = i % max(1ULL, hidden_elements);

@@ -22,6 +22,6 @@ reviewed against descriptor metadata instead of hidden assumptions.
 
 ## Remaining Gaps
 
-The generated Qwen task bodies still need a BF16 read path and numerically
-complete projection, attention, MLP, logits, and sampling kernels before
-full-serving rows can be imported.
+Follow-up work added the BF16 read path and shape-field projection/logits
+linear source. PTO full-serving rows still require full attention, sampling,
+and complete decode-loop execution before they can be imported.

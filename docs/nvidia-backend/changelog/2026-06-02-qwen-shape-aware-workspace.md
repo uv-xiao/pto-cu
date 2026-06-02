@@ -31,6 +31,7 @@ host task packet.
 ## Remaining Gaps
 
 This removes one full-model shape blocker for resource-backed Qwen serving.
-The branch still needs numerically complete projection, attention, MLP, logits,
-and sampling task bodies before PTO full-serving rows can be imported as
+Follow-up generated source work uses descriptor shapes for projection and
+logits linear bodies. The branch still needs full attention, sampling, and
+complete decode-loop execution before PTO full-serving rows can be imported as
 paper-ready evidence.

@@ -107,20 +107,42 @@ if (task->scalar_arg_count == 0) {
                 "v_proj_weight",
             ],
             "body": """
-const float mask = task->b ? task->b[i % task->n] : 1.0f;
-const unsigned long long kv_index = i % task->n;
-const float key = task->c ? task->c[kv_index] : 0.0f;
-const float value = task->d ? task->d[kv_index] : 0.0f;
 const bool has_projection_weights =
     task->tensor_arg_count >= 3U && task->tensor_args[0] &&
     task->tensor_args[1] && task->tensor_args[2];
-if (task->scalar_arg_count > 0 && has_projection_weights) {
-    const float q =
-        task->a[i] * pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
-    const float k =
-        task->a[i] * pto_cuda_tensor_arg_f32(task, 1U, i & 3U, 0.0f);
-    const float v =
-        task->a[i] * pto_cuda_tensor_arg_f32(task, 2U, i & 3U, 0.0f);
+if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
+    const unsigned int row = static_cast<unsigned int>(i / task->cols);
+    const unsigned int col = static_cast<unsigned int>(i % task->cols);
+    const unsigned int q_width = task->inner;
+    const unsigned int kv_width =
+        task->cols > q_width ? (task->cols - q_width) / 2U : q_width;
+    float projected = 0.0f;
+    if (col < q_width) {
+        projected = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
+    } else if (col < q_width + kv_width) {
+        const unsigned int kv_col = col - q_width;
+        projected = pto_cuda_linear_arg_f32(task, 1U, row, kv_col, 0.0f);
+        if (task->c) {
+            task->c[static_cast<unsigned long long>(row) * kv_width + kv_col] =
+                projected;
+        }
+    } else {
+        const unsigned int kv_col = col - q_width - kv_width;
+        projected = pto_cuda_linear_arg_f32(task, 2U, row, kv_col, 0.0f);
+        if (task->d) {
+            task->d[static_cast<unsigned long long>(row) * kv_width + kv_col] =
+                projected;
+        }
+    }
+    task->out[i] = projected;
+} else if (task->scalar_arg_count > 0 && has_projection_weights) {
+    const float q = task->a[i] *
+        pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
+    const float k = task->a[i] *
+        pto_cuda_tensor_arg_f32(task, 1U, i & 3U, 0.0f);
+    const float v = task->a[i] *
+        pto_cuda_tensor_arg_f32(task, 2U, i & 3U, 0.0f);
+    const unsigned long long kv_index = i % task->n;
     if (task->c) {
         task->c[kv_index] = k;
     }
@@ -129,6 +151,10 @@ if (task->scalar_arg_count > 0 && has_projection_weights) {
     }
     task->out[i] = v;
 } else {
+    const float mask = task->b ? task->b[i % task->n] : 1.0f;
+    const unsigned long long kv_index = i % task->n;
+    const float key = task->c ? task->c[kv_index] : 0.0f;
+    const float value = task->d ? task->d[kv_index] : 0.0f;
     const float q = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
     task->out[i] = task->a[i] + mask + key + value + q;
     if (task->c) {
@@ -157,8 +183,15 @@ task->out[i] = task->a[i] * 0.5f * (q + k);
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["attention_state", "o_proj_weight"],
             "body": """
-const float weight = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
-task->out[i] = task->a[i] + weight;
+if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count > 0U &&
+    task->tensor_args[0]) {
+    const unsigned int row = static_cast<unsigned int>(i / task->cols);
+    const unsigned int col = static_cast<unsigned int>(i % task->cols);
+    task->out[i] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
+} else {
+    const float weight = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
+    task->out[i] = task->a[i] + weight;
+}
 """,
         },
         {
@@ -177,10 +210,22 @@ task->out[i] = task->a[i] * weight;
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["hidden_state", "gate_proj_weight", "up_proj_weight"],
             "body": """
-const float gate_value = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, task->a[i]);
-const float up_value = pto_cuda_tensor_arg_f32(task, 1U, i & 3U, task->a[i]);
-const float silu_gate = gate_value / (1.0f + expf(-gate_value));
-task->out[i] = silu_gate * up_value;
+if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
+    task->tensor_args[0] && task->tensor_args[1]) {
+    const unsigned int row = static_cast<unsigned int>(i / task->cols);
+    const unsigned int col = static_cast<unsigned int>(i % task->cols);
+    const float gate_value =
+        pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
+    const float up_value =
+        pto_cuda_linear_arg_f32(task, 1U, row, col, 0.0f);
+    task->out[i] = pto_cuda_silu(gate_value) * up_value;
+} else {
+    const float gate_value =
+        pto_cuda_tensor_arg_f32(task, 0U, i & 3U, task->a[i]);
+    const float up_value =
+        pto_cuda_tensor_arg_f32(task, 1U, i & 3U, task->a[i]);
+    task->out[i] = pto_cuda_silu(gate_value) * up_value;
+}
 """,
         },
         {
@@ -189,8 +234,15 @@ task->out[i] = silu_gate * up_value;
             "consumes_fields": ["a", "out", "tensor_args"],
             "consumes_roles": ["mlp_state", "down_proj_weight"],
             "body": """
-const float down = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
-task->out[i] = task->a[i] + down;
+if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count > 0U &&
+    task->tensor_args[0]) {
+    const unsigned int row = static_cast<unsigned int>(i / task->cols);
+    const unsigned int col = static_cast<unsigned int>(i % task->cols);
+    task->out[i] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
+} else {
+    const float down = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
+    task->out[i] = task->a[i] + down;
+}
 """,
         },
         {
@@ -293,6 +345,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_tensor_tile_source_contract",
             "qwen_kernel_source_map",
             "qwen_unit_math_source_coverage",
+            "qwen_shape_field_linear_projection_source",
             "qwen_kernel_token_field_consumption",
             "qwen_kernel_kv_field_consumption",
             "qwen_kernel_kv_cache_writeback_field_contract",

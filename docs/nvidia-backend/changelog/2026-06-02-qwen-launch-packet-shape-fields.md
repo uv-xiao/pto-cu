@@ -29,6 +29,7 @@ non-final task's `n`.
 
 ## Remaining Gaps
 
-This change only carries shape metadata to the persistent task ABI. Full-serving
-Qwen rows still require numerically complete Qwen projection, attention, MLP,
-normalization, logits, and sampling kernels.
+This change only carries shape metadata to the persistent task ABI. Follow-up
+generated source work uses those fields for projection and logits linear
+bodies. Full-serving Qwen rows still require full attention, sampling, and
+complete decode-loop execution.

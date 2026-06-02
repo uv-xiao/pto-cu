@@ -25,6 +25,7 @@ of relying on hardcoded Qwen3-8B constants inside device code.
 
 ## Remaining Gaps
 
-The descriptors now expose model-shape metadata, but the persistent task bodies
-still need numerically complete Qwen projection, attention, MLP, normalization,
-logits, and sampling implementations before full-serving rows can be imported.
+The descriptors now expose model-shape metadata. Follow-up generated source
+work uses those shapes for projection and logits linear bodies. Full-serving
+rows still need full attention, sampling, and complete decode-loop execution
+before they can be imported.

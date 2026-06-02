@@ -673,6 +673,32 @@ __device__ float pto_cuda_tensor_arg_f32(
     return task->tensor_args[slot][index];
 }}
 
+__device__ float pto_cuda_linear_arg_f32(
+    const PtoCudaPersistentDagTask *task,
+    unsigned int slot,
+    unsigned int row,
+    unsigned int col,
+    float fallback) {{
+    if (task->a == nullptr || task->inner == 0U || task->lda == 0U ||
+        task->ldb == 0U) {{
+        return fallback;
+    }}
+    float acc = 0.0f;
+    for (unsigned int k = 0U; k < task->inner; ++k) {{
+        const unsigned long long a_index =
+            static_cast<unsigned long long>(row) * task->lda + k;
+        const unsigned long long weight_index =
+            static_cast<unsigned long long>(col) * task->ldb + k;
+        acc += task->a[a_index] *
+            pto_cuda_tensor_arg_f32(task, slot, weight_index, 0.0f);
+    }}
+    return acc;
+}}
+
+__device__ float pto_cuda_silu(float value) {{
+    return value / (1.0f + expf(-value));
+}}
+
 struct PtoCudaPersistentDagState {{
     const PtoCudaPersistentDagTask *tasks;
     unsigned long long task_count;

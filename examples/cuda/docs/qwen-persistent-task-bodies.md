@@ -15,18 +15,20 @@ PYTHONPATH=$PWD:$PWD/python \
 
 Expected output: command exits 0; output JSON records generated
 persistent-device Qwen task bodies, token, mutable KV-cache, weight field
-consumption evidence, a controlled proxy numeric oracle, and a small Qwen
-unit math oracle.
+consumption evidence, shape-field projection source, a controlled proxy
+numeric oracle, and a small Qwen unit math oracle.
 
 The artifact renders through the existing persistent DAG source generator.
-It is source-level integration evidence, not a numerically correct Qwen kernel
-implementation. The persistent DAG ABI now exposes mutable `c` and `d`
-fields, so the artifact records KV-cache writeback field access before
-`cuda_live` decode-loop execution. The numeric oracle checks the current
-controlled proxy formulas only; it must not be promoted as full Qwen
-correctness. The Qwen unit math oracle records RMSNorm, projection,
-single-token attention cache writeback, SiLU/SwiGLU, and logits equations
-for a hidden-size-4 reference. The generated CUDA source now contains that
-unit-math path, and the live example below executes it. The manifest also
+It is source-level integration evidence, not full Qwen serving correctness.
+The generated CUDA source now uses descriptor `rows`, `cols`, `inner`, `lda`,
+and `ldb` fields for QKV, attention-output, MLP, and logits linear
+projections when full tensor metadata is present. The persistent DAG ABI also
+exposes mutable `c` and `d` fields, so the artifact records KV-cache writeback
+field access before `cuda_live` decode-loop execution. The numeric oracle keeps
+the controlled proxy formulas for fallback review only; it must not be
+promoted as full Qwen correctness. The Qwen unit math oracle records RMSNorm,
+projection, single-token attention cache writeback, SiLU/SwiGLU, and logits
+equations for a hidden-size-4 reference. The generated CUDA source now contains
+that unit-math path, and the live example below executes it. The manifest also
 records `qwen_kernel_source_map`, which points reviewers to local FlashInfer,
 vLLM, and SGLang source snapshots under `tmp/sources/kernel-references/`.

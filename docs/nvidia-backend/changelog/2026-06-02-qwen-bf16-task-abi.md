@@ -19,9 +19,10 @@ that Qwen weights are BF16, but device task bodies only saw pointer slots. The
 new dtype slots keep pointer ABI compatibility and let task bodies branch on
 the same dtype code used by the repo-wide `DataType` enum.
 
-This narrows the full-serving gap from "device code cannot know resident
-weight dtype" to the remaining kernel-math work: model-shape projection,
-attention, MLP, logits, and sampling implementations.
+This narrowed the full-serving gap from "device code cannot know resident
+weight dtype" to kernel-math work. Follow-up source work now covers
+shape-field projection and logits linear bodies; attention, sampling, and
+full decode-loop execution remain open.
 
 ## Evaluation Run
 
@@ -36,6 +37,6 @@ attention, MLP, logits, and sampling implementations.
 
 ## Remaining Gaps
 
-The task bodies are now dtype-aware, but they still use diagnostic sampled
-formulas rather than full model-shape matrix projection, RoPE/QK norm, paged
-attention, full logits, and sampling logic.
+The task bodies are now dtype-aware, but full-serving rows still need RoPE/QK
+norm, paged attention, full attention reduction, sampling logic, and complete
+decode-loop execution.

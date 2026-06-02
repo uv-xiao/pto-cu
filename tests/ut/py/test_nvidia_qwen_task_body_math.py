@@ -81,9 +81,13 @@ def test_task_body_manifest_tracks_qwen_unit_math_oracle():
 
 def test_generated_source_contains_qwen_unit_math_kernels():
     module = load_task_bodies_module()
+    sys.path.insert(0, str(ROOT / "examples" / "cuda"))
+    from qwen_persistent_task_bodies_impl.lifecycle import task_functions
+    from simpler_setup.cuda_callable_compiler import render_persistent_dag_source
 
     manifest = module.build_task_body_manifest(num_hidden_layers=1)
     source = manifest["rendered_source"]["preview"]
+    full_source = render_persistent_dag_source(task_functions())
     rmsnorm = next(
         item
         for item in manifest["task_bodies"]
@@ -95,16 +99,24 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "__shared__ float partial[1024];" in source
     assert "for (unsigned long long j = threadIdx.x;" in source
     assert "task->scalar_args[1] * norm_weight" in source
-    assert "pto_cuda_tensor_arg_f32(task, 0U" in source
-    assert "task->c[kv_index] = k;" in source
-    assert "task->d[kv_index] = v;" in source
-    assert "task->out[i] = v;" in source
-    assert "1.0f + expf(-gate_value)" in source
-    assert "task->out[i] = silu_gate * up_value;" in source
-    assert "lm_head" in source
+    assert "pto_cuda_linear_arg_f32" in full_source
+    assert "task->cols > 0U && task->inner > 0U" in full_source
+    assert "task->c[static_cast<unsigned long long>(row) * kv_width + kv_col]" in (
+        full_source
+    )
+    assert "task->d[static_cast<unsigned long long>(row) * kv_width + kv_col]" in (
+        full_source
+    )
+    assert "task->out[i] = pto_cuda_silu(gate_value) * up_value;" in full_source
+    assert "task->out[i] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f)" in (
+        full_source
+    )
     assert "output_ids[decode_step] = best_token;" in source
     assert "input_ids[0] = best_token;" in source
     assert "qwen_unit_math_source_coverage" in manifest["implemented_contracts"]
+    assert "qwen_shape_field_linear_projection_source" in manifest[
+        "implemented_contracts"
+    ]
     assert "qwen_logits_device_sampled_token_feedback_source" in manifest[
         "implemented_contracts"
     ]
