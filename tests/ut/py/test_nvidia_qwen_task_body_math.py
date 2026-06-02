@@ -174,6 +174,14 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_qk_norm_block_rmsnorm_rope_source" in manifest[
         "implemented_contracts"
     ]
+    assert "const unsigned int hidden_col = static_cast<unsigned int>(" in (
+        full_source
+    )
+    assert "i % task->cols" in full_source
+    assert "pto_cuda_tensor_arg_f32(task, 0U, hidden_col, 1.0f)" in full_source
+    assert "qwen_input_rmsnorm_hidden_weight_source" in manifest[
+        "implemented_contracts"
+    ]
     assert "const unsigned int hidden_col =" in full_source
     assert "const unsigned int embedding_stride =" in full_source
     assert "const unsigned long long embedding_weight_index =" in full_source

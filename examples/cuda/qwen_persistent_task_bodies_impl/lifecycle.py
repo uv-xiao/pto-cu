@@ -94,8 +94,10 @@ if (task->scalar_arg_count > 0 && task->scalar_args[0] == 1.0f &&
     const float scale =
         rsqrtf(partial[0] / static_cast<float>(task->n) + 0.000001f);
     for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
+        const unsigned int hidden_col = static_cast<unsigned int>(
+            task->cols > 0U ? i % task->cols : i);
         const float norm_weight =
-            pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 1.0f);
+            pto_cuda_tensor_arg_f32(task, 0U, hidden_col, 1.0f);
         task->out[i] = task->a[i] * scale * norm_weight;
     }
 } else if (task->scalar_arg_count == 0) {
@@ -811,6 +813,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_kernel_source_map",
             "qwen_unit_math_source_coverage",
             "qwen_embedding_shape_lookup_source",
+            "qwen_input_rmsnorm_hidden_weight_source",
             "qwen_shape_field_linear_projection_source",
             "qwen_shape_field_qk_rmsnorm_source",
             "qwen_post_attention_norm_full_rmsnorm_source",
