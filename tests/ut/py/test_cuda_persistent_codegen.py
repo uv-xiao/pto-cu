@@ -353,6 +353,9 @@ def test_render_persistent_dag_source_includes_generic_argument_slots():
     assert "unsigned int scalar_arg_count;" in source
     assert "PTO_CUDA_DTYPE_BFLOAT16 = 6U" in source
     assert "__device__ float pto_cuda_tensor_arg_f32" in source
+    assert "PTO_CUDA_PERSISTENT_TENSOR_ARG_CAPACITY = 5U" in source
+    assert "slot >= PTO_CUDA_PERSISTENT_TENSOR_ARG_CAPACITY" in source
+    assert "slot >= 4U" not in source
     assert "task->tensor_args[1][i]" in source
     assert "task->scalar_args[1]" in source
 

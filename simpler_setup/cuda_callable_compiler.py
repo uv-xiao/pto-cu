@@ -652,6 +652,10 @@ enum PtoCudaTensorDtype : unsigned int {{
     PTO_CUDA_DTYPE_BFLOAT16 = 6U,
 }};
 
+enum PtoCudaPersistentDagLimits : unsigned int {{
+    PTO_CUDA_PERSISTENT_TENSOR_ARG_CAPACITY = 5U,
+}};
+
 __device__ float pto_cuda_bf16_to_f32(unsigned short raw) {{
     return __uint_as_float(static_cast<unsigned int>(raw) << 16U);
 }}
@@ -661,7 +665,8 @@ __device__ float pto_cuda_tensor_arg_f32(
     unsigned int slot,
     unsigned long long index,
     float fallback) {{
-    if (slot >= 4U || slot >= task->tensor_arg_count ||
+    if (slot >= PTO_CUDA_PERSISTENT_TENSOR_ARG_CAPACITY ||
+        slot >= task->tensor_arg_count ||
         task->tensor_args[slot] == nullptr) {{
         return fallback;
     }}
