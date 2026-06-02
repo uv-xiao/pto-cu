@@ -1,0 +1,23 @@
+{
+  "artifact": "pto-full-serving-audit-metric-gate",
+  "date": "2026-06-02",
+  "purpose": "Document paper-readiness audit cases that must not count as PTO Qwen full-serving evidence even if they appear in viewer result data.",
+  "audit_module": ".agents/skills/cuda-backend-eval/scripts/paper_readiness_audit_impl/claim_status.py",
+  "tests": [
+    "tests/ut/py/test_nvidia_paper_readiness_audit.py::test_paper_readiness_rejects_failed_pto_full_serving_requests",
+    "tests/ut/py/test_nvidia_paper_readiness_audit.py::test_paper_readiness_rejects_underchecked_pto_decode_tokens"
+  ],
+  "readiness_contract": {
+    "benchmark_id": "llm_serving_decode",
+    "method_id": "pto_persistent_device",
+    "model_shape_contains": "Qwen/Qwen3-8B",
+    "serving_coverage": "full_serving",
+    "sample_count_minimum": 3,
+    "failed_requests": 0,
+    "completed_requests": "batch_size",
+    "total_input_tokens": "batch_size * prompt_tokens",
+    "total_output_tokens": "batch_size * decode_tokens",
+    "checked_token_count": "at least batch_size * decode_tokens"
+  },
+  "why": "The audit consumes viewer JSON, so it needs an independent evidence gate instead of trusting every full_serving-labeled PTO row."
+}

@@ -1,0 +1,10 @@
+{
+  "kind": "raw_artifact",
+  "path": "tmp/cuda-backend/pto-full-serving-audit-metric-gate-2026-06-02/audit-metric-gate.json",
+  "symbols": [
+    "pto_full_serving_accounting_ready",
+    "pto_full_serving_row_ready",
+    "test_paper_readiness_rejects_failed_pto_full_serving_requests",
+    "test_paper_readiness_rejects_underchecked_pto_decode_tokens"
+  ]
+}

@@ -14,11 +14,14 @@ PTO_FULL_SERVING_METRIC_FIELDS = {
     "decode_tokens",
     "end_to_end_latency_ns",
     "inter_token_latency_ns",
+    "prompt_tokens",
+    "sample_count",
     "throughput_tokens_per_s",
     "time_to_first_token_ns",
 }
 PTO_FULL_SERVING_CORRECTNESS_SCOPE = "full_qwen_numerical_correctness"
 PTO_FULL_SERVING_MODEL_ID = "Qwen/Qwen3-8B"
+PTO_FULL_SERVING_MIN_SAMPLE_COUNT = 3
 
 
 def result_index(results: dict[str, Any]) -> set[ResultKey]:
@@ -90,8 +93,52 @@ def pto_full_serving_row_ready(
         return False
     for key in PTO_FULL_SERVING_METRIC_FIELDS:
         value = statistic.get(key)
-        if not isinstance(value, (int, float)) or value <= 0:
+        if not positive_number(value):
             return False
+    if not pto_full_serving_accounting_ready(statistic):
+        return False
+    return True
+
+
+def positive_number(value: Any) -> bool:
+    return (
+        not isinstance(value, bool)
+        and isinstance(value, (int, float))
+        and math.isfinite(value)
+        and value > 0
+    )
+
+
+def nonnegative_int(value: Any) -> bool:
+    return not isinstance(value, bool) and isinstance(value, int) and value >= 0
+
+
+def pto_full_serving_accounting_ready(statistic: dict[str, Any]) -> bool:
+    batch_size = statistic.get("batch_size")
+    prompt_tokens = statistic.get("prompt_tokens")
+    decode_tokens = statistic.get("decode_tokens")
+    sample_count = statistic.get("sample_count")
+    if not all(
+        not isinstance(value, bool) and isinstance(value, int) and value > 0
+        for value in (batch_size, prompt_tokens, decode_tokens, sample_count)
+    ):
+        return False
+    if sample_count < PTO_FULL_SERVING_MIN_SAMPLE_COUNT:
+        return False
+    expected_input_tokens = batch_size * prompt_tokens
+    expected_output_tokens = batch_size * decode_tokens
+    if statistic.get("checked_token_count") < expected_output_tokens:
+        return False
+    if statistic.get("failed_requests") != 0:
+        return False
+    if statistic.get("completed_requests") != batch_size:
+        return False
+    if statistic.get("total_input_tokens") != expected_input_tokens:
+        return False
+    if statistic.get("total_output_tokens") != expected_output_tokens:
+        return False
+    if not nonnegative_int(statistic.get("device_wall_ns")):
+        return False
     return True
 
 

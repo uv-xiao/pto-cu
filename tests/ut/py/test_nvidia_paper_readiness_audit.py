@@ -164,7 +164,12 @@ def test_paper_readiness_accepts_complete_pto_full_serving_row():
                         "time_to_first_token_ns": 1,
                         "throughput_tokens_per_s": 1000.0,
                         "batch_size": 8,
+                        "prompt_tokens": 128,
                         "decode_tokens": 64,
+                        "completed_requests": 8,
+                        "failed_requests": 0,
+                        "total_input_tokens": 1024,
+                        "total_output_tokens": 512,
                         "correctness_scope": "full_qwen_numerical_correctness",
                         "checked_token_count": 512,
                         "max_abs_error": 0.0001,
@@ -225,7 +230,12 @@ def pto_full_serving_row(workload_id):
             "time_to_first_token_ns": 1,
             "throughput_tokens_per_s": 1000.0,
             "batch_size": 8,
+            "prompt_tokens": 128,
             "decode_tokens": 64,
+            "completed_requests": 8,
+            "failed_requests": 0,
+            "total_input_tokens": 1024,
+            "total_output_tokens": 512,
             "correctness_scope": "full_qwen_numerical_correctness",
             "checked_token_count": 512,
             "max_abs_error": 0.0001,
@@ -243,6 +253,59 @@ def pto_full_serving_row(workload_id):
         },
         "raw_artifact": f"tmp/cuda-backend/complete-pto-row/{workload_id}/",
     }
+
+
+def test_paper_readiness_rejects_failed_pto_full_serving_requests():
+    claim_status = load_claim_status_module()
+    row = pto_full_serving_row("mpk_offline_decode")
+    row["statistic"]["failed_requests"] = 1
+    current_results = claim_status.result_index({"result_records": [row]})
+
+    _counts, missing = claim_status.count_evidence_refs(
+        [
+            {
+                "kind": "viewer_result",
+                "benchmark_id": "llm_serving_decode",
+                "method_id": "pto_persistent_device",
+                "gpu": "A100",
+                "shape_contains": "Qwen/Qwen3-8B",
+                "serving_coverage": "full_serving",
+            }
+        ],
+        current_results,
+    )
+
+    assert missing == [
+        "llm_serving_decode / pto_persistent_device / A100 / "
+        "shape contains Qwen/Qwen3-8B / coverage full_serving"
+    ]
+
+
+def test_paper_readiness_rejects_underchecked_pto_decode_tokens():
+    claim_status = load_claim_status_module()
+    row = pto_full_serving_row("vdcores_offline_decode")
+    row["statistic"]["checked_token_count"] = 511
+    row["correctness_details"]["checked_token_count"] = 511
+    current_results = claim_status.result_index({"result_records": [row]})
+
+    _counts, missing = claim_status.count_evidence_refs(
+        [
+            {
+                "kind": "viewer_result",
+                "benchmark_id": "llm_serving_decode",
+                "method_id": "pto_persistent_device",
+                "gpu": "A100",
+                "shape_contains": "Qwen/Qwen3-8B",
+                "serving_coverage": "full_serving",
+            }
+        ],
+        current_results,
+    )
+
+    assert missing == [
+        "llm_serving_decode / pto_persistent_device / A100 / "
+        "shape contains Qwen/Qwen3-8B / coverage full_serving"
+    ]
 
 
 def test_paper_readiness_requires_both_pto_full_serving_policies():
