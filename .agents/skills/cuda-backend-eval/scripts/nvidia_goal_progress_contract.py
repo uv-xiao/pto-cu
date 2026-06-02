@@ -83,8 +83,8 @@ def build_goal_progress(
             title="Human-reviewable benchmark viewer",
             status=criterion_status(
                 [
-                    "docs/nvidia-backend/benchmark-viewer/index.html",
-                    "docs/nvidia-backend/benchmark-viewer/viewer.js",
+                    "evaluations/nvidia/benchmark-viewer/viewer/index.html",
+                    "evaluations/nvidia/benchmark-viewer/viewer/viewer.js",
                     "evaluations/nvidia/benchmark-viewer/data/benchmarks.json",
                     "evaluations/nvidia/benchmark-viewer/data/results.json",
                     "evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json",
@@ -94,8 +94,8 @@ def build_goal_progress(
             ),
             summary="Benchmark setup, methods, results, paper audit, and work queue are JSON-backed.",
             evidence_refs=[
-                "docs/nvidia-backend/benchmark-viewer/index.html",
-                "docs/nvidia-backend/benchmark-viewer/viewer.js",
+                "evaluations/nvidia/benchmark-viewer/viewer/index.html",
+                "evaluations/nvidia/benchmark-viewer/viewer/viewer.js",
                 "evaluations/nvidia/benchmark-viewer/data/",
             ],
             verification=[

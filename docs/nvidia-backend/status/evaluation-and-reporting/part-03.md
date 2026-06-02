@@ -3,8 +3,8 @@
 - [evaluation.md](evaluation.md) is the evaluation landing page.
 - [evaluation-current.md](evaluation-current.md) summarizes the latest paired
   A100/H200 capture.
-- [benchmark-viewer/index.html](benchmark-viewer/index.html) is the static
-  human-review viewer backed by committed JSON data.
+- [benchmark viewer](../../../../evaluations/nvidia/benchmark-viewer/viewer/index.html)
+  is the static human-review viewer backed by committed JSON data.
 - [history/index.md](history/index.md) preserves earlier captures.
 - [changelog/index.md](changelog/index.md) records review-facing change
   reports.
@@ -62,4 +62,3 @@
   metadata.
 - `.agents/skills/cuda-backend-eval/SKILL.md` documents the current paired
   A100/H200 recipe.
-

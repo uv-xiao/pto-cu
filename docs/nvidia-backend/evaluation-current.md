@@ -45,15 +45,17 @@ that descriptor metadata is still visible in generated reports and validators.
 
 ## Viewer
 
-Open [benchmark-viewer/index.html](benchmark-viewer/index.html) through a
-local static file server to inspect the benchmark setups, method definitions,
-result snapshot, paper-baseline execution attempts, and commands:
+Open
+[evaluations/nvidia/benchmark-viewer/viewer/index.html](../../evaluations/nvidia/benchmark-viewer/viewer/index.html)
+through a local static file server to inspect the benchmark setups, method
+definitions, result snapshot, paper-baseline execution attempts, and commands:
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Then open `http://localhost:8000/docs/nvidia-backend/benchmark-viewer/`.
+Then open
+`http://localhost:8000/evaluations/nvidia/benchmark-viewer/viewer/`.
 
 ## History
 

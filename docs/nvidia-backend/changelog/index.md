@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Benchmark viewer evaluation home](2026-06-02-benchmark-viewer-evaluation-home.md)
 - [2026-06-02 Qwen worker block plumbing](2026-06-02-qwen-worker-block-plumbing.md)
 - [2026-06-02 Qwen bounded projection DAG](2026-06-02-qwen-bounded-projection-dag.md)
 - [2026-06-02 Qwen resource prefix execution](2026-06-02-qwen-resource-prefix-execution.md)

@@ -27,8 +27,8 @@ from viewer_data_io import load_json as load_viewer_json
 ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_MAPPING = (
     ROOT
-    / "docs"
-    / "nvidia-backend"
+    / "evaluations"
+    / "nvidia"
     / "benchmark-viewer"
     / "data"
     / "capture_imports.json"

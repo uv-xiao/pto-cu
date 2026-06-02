@@ -15,7 +15,7 @@ not end-to-end model serving results.
 
 Use the static viewer for the human-reviewable benchmark matrix:
 
-- [Benchmark viewer](benchmark-viewer/index.html)
+- [Benchmark viewer](../../evaluations/nvidia/benchmark-viewer/viewer/index.html)
 - [Current capture summary](evaluation-current.md)
 - [Historical capture archive](history/index.md)
 - [Changelog reports](changelog/index.md)

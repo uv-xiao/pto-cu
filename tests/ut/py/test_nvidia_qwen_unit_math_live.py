@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
-VIEWER_ROOT = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer"
+VIEWER_ROOT = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "viewer"
 VIEWER_DATA = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 
 
