@@ -17,7 +17,9 @@
     "source_refs": [
       "tmp/sources/arxiv-2605.03190-vdcores.txt",
       "tmp/sources/arxiv-2512.22219v1-mirage-persistent-kernel.txt"
-    ]
+    ],
+    "committed_result_records": 44,
+    "compaction_note": "Committed viewer rows keep current representative evidence only; raw and historical captures remain under tmp/ artifact roots."
   },
   "headline_results": [
     {

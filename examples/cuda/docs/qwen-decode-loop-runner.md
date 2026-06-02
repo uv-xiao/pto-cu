@@ -55,7 +55,8 @@ The launch-packet preflight resolves `runtime_buffers.rope_cos_table` and
 For diagnostic execution, live RoPE tables are populated from Qwen's
 `rope_theta` and the workload `first_decode_position`. When bounded decode
 steps are requested, the runner refreshes the same live cos/sin table buffers
-for each `first_decode_position + step_index` before `run_prepared`.
+for each `first_decode_position + step_index` before `run_prepared`. It also
+refreshes `qwen_attention_o.inner` to the current KV window.
 With `--single-context-live-session`, token buffers, KV-cache, resident weights,
 and activation workspace are allocated under one CUDA context before graph
 materialization and launch-packet preflight, then closed after the preflight
@@ -116,5 +117,4 @@ position-populated runtime-buffer pointers for their cos/sin tables through
 the same packet, and bounded decode-step submissions refresh those table
 contents per step. Activation buffers are sized from descriptor output shapes
 when those shapes are available, so widened QKV and MLP intermediates no
-longer share the hidden-size fallback. It still does not execute full Qwen
-kernels or a full-serving decode loop.
+longer share the hidden-size fallback.

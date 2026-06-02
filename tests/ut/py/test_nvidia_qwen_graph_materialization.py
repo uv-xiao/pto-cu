@@ -242,6 +242,24 @@ def test_launch_packet_uses_full_logits_extent_for_final_logits_task():
     assert packet[1].scalar_args[3] == 8.0
 
 
+def test_decode_step_state_extends_attention_o_kv_window():
+    task_t = CudaPersistentDagTask * 2
+    packet = task_t(
+        CudaPersistentDagTask(func_id=7104, inner=128),
+        CudaPersistentDagTask(func_id=7109, inner=151936),
+    )
+
+    set_decode_step_state(packet, step_index=3, decode_position=130)
+
+    assert packet[0].scalar_arg_count == 3
+    assert packet[0].scalar_args[2] == 130.0
+    assert packet[0].inner == 131
+    assert packet[1].scalar_arg_count == 4
+    assert packet[1].scalar_args[2] == 130.0
+    assert packet[1].scalar_args[3] == 3.0
+    assert packet[1].inner == 151936
+
+
 def test_workspace_plan_sizes_activation_buffers_from_descriptor_outputs():
     plan = {
         "workload_id": "mpk_offline_decode",

@@ -48,6 +48,7 @@ TENSOR_DTYPE_CODES = {
     "bfloat16": 6,
 }
 PERSISTENT_TENSOR_ARG_CAPACITY = 5
+QWEN_ATTENTION_O_FUNC_ID = 7104
 
 
 def normalize_numeric_task_mode(mode: str) -> str:
@@ -105,9 +106,12 @@ def set_decode_step_state(
     if not packet:
         return
     if decode_position is not None:
+        kv_window = max(int(decode_position) + 1, 1)
         for task in packet:
             task.scalar_args[2] = float(decode_position)
             task.scalar_arg_count = max(int(task.scalar_arg_count), 3)
+            if int(task.func_id) == QWEN_ATTENTION_O_FUNC_ID:
+                task.inner = kv_window
     set_decode_step_index(packet, step_index)
 
 
