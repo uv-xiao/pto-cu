@@ -258,6 +258,11 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         full_source
     )
     assert "const unsigned int sequence_capacity =" in full_source
+    assert "const unsigned int cache_batch_size =" in full_source
+    assert "const unsigned int kv_layer_index = task->scalar_arg_count > 3U" in (
+        full_source
+    )
+    assert "const unsigned long long kv_layer_base =" in full_source
     assert "const unsigned int logical_page = decode_position / kv_page_size;" in (
         full_source
     )
@@ -267,6 +272,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "const unsigned int physical_page = kv_page_table ?" in full_source
     assert "const unsigned long long token_slot =" in full_source
     assert "const unsigned long long kv_write_index =" in full_source
+    assert "kv_layer_base +" in full_source
     assert "static_cast<unsigned long long>(row) * sequence_capacity * kv_width" in (
         full_source
     )
@@ -322,10 +328,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "projected_attention += attention_value * o_weight;" in full_source
     assert "const unsigned int sequence_capacity =" in full_source
     assert "const unsigned long long kv_read_base =" in full_source
-    assert (
-        "static_cast<unsigned long long>(row) * sequence_capacity * kv_heads *"
-        in full_source
-    )
+    assert full_source.count("kv_layer_base +") >= 4
     assert full_source.count("kv_read_base +") == 4
     assert "qwen_attention_o_batch_local_kv_read_source" in manifest[
         "implemented_contracts"
@@ -403,6 +406,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         "implemented_contracts"
     ]
     assert "qwen_paged_kv_attention_index_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert "qwen_layer_partitioned_kv_cache_source" in manifest[
         "implemented_contracts"
     ]
     assert "qwen_slot_mapped_kv_cache_writeback_source" in manifest[

@@ -84,6 +84,7 @@ def descriptor(
     tensors: list[str],
     bindings: dict[str, dict[str, Any]],
     runtime_tensor_roles: list[str] | None = None,
+    layer_index: int | None = None,
     model_shape: QwenTaskShape = QWEN3_8B_TASK_SHAPE,
 ) -> dict[str, Any]:
     tensor_args = tensor_arg_records(tensors, bindings)
@@ -108,6 +109,8 @@ def descriptor(
         "status": "ready" if not missing else "missing_weight_binding",
         "missing_tensors": missing,
     }
+    if layer_index is not None:
+        record["layer_index"] = int(layer_index)
     fields = task_shape_fields(callable_name, model_shape)
     if fields:
         record["task_shape_fields"] = fields
@@ -131,6 +134,7 @@ def layer_descriptors(
             phase="per_layer_decode",
             tensors=[layer_tensor(layer, "input_layernorm")],
             bindings=bindings,
+            layer_index=layer,
             model_shape=model_shape,
         ),
         descriptor(
@@ -144,6 +148,7 @@ def layer_descriptors(
             ],
             bindings=bindings,
             runtime_tensor_roles=["kv_page_table"],
+            layer_index=layer,
             model_shape=model_shape,
         ),
         descriptor(
@@ -160,6 +165,7 @@ def layer_descriptors(
                 "rope_sin_table",
                 "kv_page_table",
             ],
+            layer_index=layer,
             model_shape=model_shape,
         ),
         descriptor(
@@ -169,6 +175,7 @@ def layer_descriptors(
             tensors=[layer_tensor(layer, "self_attn.o_proj")],
             bindings=bindings,
             runtime_tensor_roles=["kv_page_table"],
+            layer_index=layer,
             model_shape=model_shape,
         ),
         descriptor(
@@ -177,6 +184,7 @@ def layer_descriptors(
             phase="per_layer_decode",
             tensors=[layer_tensor(layer, "post_attention_layernorm")],
             bindings=bindings,
+            layer_index=layer,
             model_shape=model_shape,
         ),
         descriptor(
@@ -188,6 +196,7 @@ def layer_descriptors(
                 layer_tensor(layer, "mlp.up_proj"),
             ],
             bindings=bindings,
+            layer_index=layer,
             model_shape=model_shape,
         ),
         descriptor(
@@ -196,6 +205,7 @@ def layer_descriptors(
             phase="per_layer_decode",
             tensors=[layer_tensor(layer, "mlp.down_proj")],
             bindings=bindings,
+            layer_index=layer,
             model_shape=model_shape,
         ),
     ]

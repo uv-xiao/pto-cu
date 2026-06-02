@@ -136,7 +136,7 @@ def ready_kv_fields(bindings: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def task_summary(descriptor: dict[str, Any]) -> dict[str, Any]:
-    return {
+    summary = {
         "id": descriptor["id"],
         "callable": descriptor["callable"],
         "func_id": CALLABLE_FUNC_IDS[descriptor["callable"]],
@@ -146,6 +146,9 @@ def task_summary(descriptor: dict[str, Any]) -> dict[str, Any]:
             for arg in descriptor["tensor_args"]
         ],
     }
+    if "layer_index" in descriptor:
+        summary["layer_index"] = int(descriptor["layer_index"])
+    return summary
 
 
 def tensor_arg_summary(arg: dict[str, Any]) -> dict[str, Any]:

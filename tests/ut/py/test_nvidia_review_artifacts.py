@@ -977,7 +977,9 @@ def test_persistent_qwen_serving_lifecycle_plan_is_reviewable(tmp_path):
     assert mpk_batch1["sequence_capacity_tokens"] == 64 + 1024
     expected_elements = 1 * (64 + 1024) * 36 * 2 * 8 * 128
     assert mpk_batch1["element_count"] == expected_elements
-    assert mpk_batch1["bytes"] == expected_elements * 2
+    assert mpk_batch1["element_dtype"] == "float32"
+    assert mpk_batch1["model_compute_dtype"] == "bfloat16"
+    assert mpk_batch1["bytes"] == expected_elements * 4
     assert any(
         item["callable"] == "qwen_layer_attention"
         for item in plan["persistent_task_mapping"]
@@ -1017,8 +1019,10 @@ def test_qwen_kv_cache_binding_maps_key_value_fields():
     assert mpk["sequence_capacity_tokens"] == 1088
     assert mpk["key_cache"]["field"] == "c"
     assert mpk["value_cache"]["field"] == "d"
-    assert mpk["key_cache"]["byte_count"] == 1283457024
-    assert mpk["value_cache"]["byte_count"] == 1283457024
+    assert mpk["key_cache"]["byte_count"] == 2566914048
+    assert mpk["value_cache"]["byte_count"] == 2566914048
+    assert mpk["key_cache"]["element_dtype"] == "float32"
+    assert mpk["value_cache"]["element_dtype"] == "float32"
     assert "decode step t writes position prompt_tokens + t" in mpk[
         "token_position_lifecycle"
     ]
@@ -2216,7 +2220,7 @@ def test_persistent_qwen_weight_materialization_binds_resident_pointers(tmp_path
         for item in materialization["materialized_task_descriptors"]
     }
     qkv = materialized_descriptors["layer_0_attention_qkv"]
-    assert qkv["tensor_arg_count"] == 3
+    assert qkv["tensor_arg_count"] == 4
     assert qkv["tensor_args"][0] == {
         "arg": "tensor_args[0]",
         "slot_id": 2,
@@ -2225,8 +2229,15 @@ def test_persistent_qwen_weight_materialization_binds_resident_pointers(tmp_path
         "device_ptr_hex": "0x10002000",
         "size_bytes": 8,
     }
+    assert qkv["tensor_args"][3] == {
+        "arg": "tensor_args[3]",
+        "tensor": "kv_page_table",
+        "role": "kv_page_table",
+        "device_ptr_source": "runtime_buffers.kv_page_table",
+        "status": "requires_live_pointer",
+    }
     qk_norm = materialized_descriptors["layer_0_attention_qk_norm"]
-    assert qk_norm["tensor_arg_count"] == 4
+    assert qk_norm["tensor_arg_count"] == 5
     assert qk_norm["tensor_args"][2:] == [
         {
             "arg": "tensor_args[2]",
@@ -2242,8 +2253,15 @@ def test_persistent_qwen_weight_materialization_binds_resident_pointers(tmp_path
             "device_ptr_source": "runtime_buffers.rope_sin_table",
             "status": "requires_live_pointer",
         },
+        {
+            "arg": "tensor_args[4]",
+            "tensor": "kv_page_table",
+            "role": "kv_page_table",
+            "device_ptr_source": "runtime_buffers.kv_page_table",
+            "status": "requires_live_pointer",
+        },
     ]
-    assert materialization["symbolic_tensor_pointer_count"] == 3
+    assert materialization["symbolic_tensor_pointer_count"] == 5
     assert materialized_descriptors["layer_0_mlp_gate_up"]["tensor_arg_count"] == 2
     assert materialized_descriptors["logits"]["tensor_args"][0]["tensor"] == (
         "lm_head.weight"

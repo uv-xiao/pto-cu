@@ -94,6 +94,7 @@ def submission_plan(
         "task_shape_fields": {
             "a_batch_stride": runtime_prompt_tokens,
             "b_batch_stride": int(kv_record["sequence_capacity_tokens"]),
+            "out_batch_stride": int(scalars["rows"]),
         },
     }
 

@@ -162,6 +162,13 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
         static_cast<unsigned int>(task->scalar_args[2]) : row;
     const unsigned int sequence_capacity =
         task->b_batch_stride > 0U ? task->b_batch_stride : kv_page_size;
+    const unsigned int cache_batch_size =
+        task->out_batch_stride > 0U ? task->out_batch_stride : task->rows;
+    const unsigned int kv_layer_index = task->scalar_arg_count > 3U ?
+        static_cast<unsigned int>(task->scalar_args[3]) : 0U;
+    const unsigned long long kv_layer_base =
+        static_cast<unsigned long long>(kv_layer_index) * cache_batch_size *
+        sequence_capacity * kv_width;
     float projected = 0.0f;
     if (col >= active_projection_cols) {
         task->out[i] = 0.0f;
@@ -179,6 +186,7 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
             static_cast<unsigned long long>(physical_page) * kv_page_size +
             page_offset;
         const unsigned long long kv_write_index =
+            kv_layer_base +
             static_cast<unsigned long long>(row) * sequence_capacity * kv_width +
             token_slot * kv_width + kv_col;
         if (task->c) {
@@ -196,6 +204,7 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
             static_cast<unsigned long long>(physical_page) * kv_page_size +
             page_offset;
         const unsigned long long kv_write_index =
+            kv_layer_base +
             static_cast<unsigned long long>(row) * sequence_capacity * kv_width +
             token_slot * kv_width + kv_col;
         if (task->d) {
@@ -265,6 +274,13 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
         static_cast<unsigned int>(task->scalar_args[2]) : 0U;
     const unsigned int sequence_capacity =
         task->b_batch_stride > 0U ? task->b_batch_stride : kv_page_size;
+    const unsigned int cache_batch_size =
+        task->out_batch_stride > 0U ? task->out_batch_stride : task->rows;
+    const unsigned int kv_layer_index = task->scalar_arg_count > 3U ?
+        static_cast<unsigned int>(task->scalar_args[3]) : 0U;
+    const unsigned long long kv_layer_base =
+        static_cast<unsigned long long>(kv_layer_index) * cache_batch_size *
+        sequence_capacity * kv_width;
     const unsigned int *qk_norm_kv_page_table =
         task->tensor_arg_count > 4U && task->tensor_args[4] ?
         reinterpret_cast<const unsigned int *>(task->tensor_args[4]) : nullptr;
@@ -333,6 +349,7 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
                     static_cast<unsigned long long>(physical_page) *
                         kv_page_size + page_offset;
                 const unsigned long long qk_norm_kv_write_index =
+                    kv_layer_base +
                     static_cast<unsigned long long>(row) * sequence_capacity *
                         kv_width + token_slot * kv_width + region_col;
                 task->c[qk_norm_kv_write_index] = task->out[j];
@@ -443,7 +460,15 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
     kv_page_size = kv_page_size > 0U ? kv_page_size : kv_window;
     const unsigned int sequence_capacity =
         task->b_batch_stride > 0U ? task->b_batch_stride : kv_page_size;
+    const unsigned int cache_batch_size =
+        task->out_batch_stride > 0U ? task->out_batch_stride : task->rows;
+    const unsigned int kv_layer_index = task->scalar_arg_count > 3U ?
+        static_cast<unsigned int>(task->scalar_args[3]) : 0U;
+    const unsigned long long kv_layer_base =
+        static_cast<unsigned long long>(kv_layer_index) * cache_batch_size *
+        sequence_capacity * kv_heads * head_dim;
     const unsigned long long kv_read_base =
+        kv_layer_base +
         static_cast<unsigned long long>(row) * sequence_capacity * kv_heads *
         head_dim;
     unsigned int attention_tile =
@@ -763,7 +788,7 @@ def task_functions() -> list[CudaPersistentTaskFunction]:
     ]
 
 
-def source_preview(source: str, callables: list[str], *, window_lines: int = 44) -> str:
+def source_preview(source: str, callables: list[str], *, window_lines: int = 64) -> str:
     lines = source.splitlines()
     selected: list[str] = []
     for callable_name in callables:
@@ -867,6 +892,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_mlp_down_residual_add_source",
             "qwen_gqa_decode_attention_head_grouping_source",
             "qwen_paged_kv_attention_index_source",
+            "qwen_layer_partitioned_kv_cache_source",
             "qwen_tiled_decode_attention_softmax_source",
             "qwen_logits_full_vocab_argmax_source",
             "qwen_logits_tiled_vocab_projection_source",

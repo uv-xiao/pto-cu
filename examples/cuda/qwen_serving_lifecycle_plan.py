@@ -45,6 +45,8 @@ QWEN3_8B_SHAPE = QwenModelShape(
     max_position_embeddings=40960,
     rope_theta=1000000.0,
 )
+KV_CACHE_RUNTIME_DTYPE = "float32"
+KV_CACHE_RUNTIME_DTYPE_BYTES = 4
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -108,9 +110,10 @@ def kv_cache_plan(
         "decode_tokens": decode_tokens,
         "sequence_capacity_tokens": sequence_capacity,
         "layout": "contiguous[layer][kv][batch][token][kv_head][head_dim]",
-        "element_dtype": shape.dtype,
+        "element_dtype": KV_CACHE_RUNTIME_DTYPE,
         "element_count": elements,
-        "bytes": elements * shape.dtype_bytes,
+        "bytes": elements * KV_CACHE_RUNTIME_DTYPE_BYTES,
+        "model_compute_dtype": shape.dtype,
         "token_position_lifecycle": [
             "prefill writes positions [0, prompt_tokens)",
             "decode step t reads [0, prompt_tokens + t)",

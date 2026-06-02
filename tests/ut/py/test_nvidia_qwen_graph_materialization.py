@@ -35,6 +35,7 @@ from qwen_decode_loop_runner_impl.resource_backed_execution import (  # noqa: E4
     select_task_descriptors,
 )
 from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph  # noqa: E402
+from qwen_decode_loop_runner_impl.graph_materialization import task_summary  # noqa: E402
 from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
     numeric_task_mode_summary,
 )
@@ -114,6 +115,20 @@ def test_launch_packet_preflight_packs_resource_backed_task_records():
     assert "intermediate_activation_buffers_not_allocated" in preflight[
         "launch_blockers"
     ]
+
+
+def test_graph_task_summary_preserves_layer_index():
+    summary = task_summary(
+        {
+            "id": "layer_7_attention_qkv",
+            "callable": "qwen_attention_qkv",
+            "layer_index": 7,
+            "tensor_arg_count": 0,
+            "tensor_args": [],
+        }
+    )
+
+    assert summary["layer_index"] == 7
 
 
 def test_launch_packet_preflight_binds_activation_workspace():
@@ -960,6 +975,7 @@ def test_materialized_weight_descriptor_preserves_task_shape_fields():
         "id": "layer_0_attention_qkv",
         "callable": "qwen_attention_qkv",
         "phase": "per_layer_decode",
+        "layer_index": 3,
         "tensor_args": [
             {
                 "arg": "tensor_args[0]",
@@ -994,6 +1010,7 @@ def test_materialized_weight_descriptor_preserves_task_shape_fields():
     )
 
     assert materialized["status"] == "ready"
+    assert materialized["layer_index"] == 3
     assert materialized["task_shape_fields"] == {
         "rows": 16,
         "cols": 4096,
@@ -1145,6 +1162,7 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "status": "runtime_generated_tensor",
         "device_ptr_source": "runtime_buffers.kv_page_table",
     }
+    assert descriptors["layer_0_attention_qkv"]["layer_index"] == 0
     qkv_metadata = descriptors["layer_0_attention_qkv"]["tensor_arg_metadata"][0]
     assert qkv_metadata["dtype"] == "bfloat16"
     assert qkv_metadata["shape"] == [4, 4]
@@ -1209,6 +1227,63 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "scalar0": 256,
         "scalar1": 1024,
     }
+
+
+def test_launch_packet_carries_layer_index_for_kv_tasks():
+    descriptors = [
+        {
+            "id": "layer_2_attention_qkv",
+            "callable": "qwen_attention_qkv",
+            "layer_index": 2,
+            "tensor_args": [],
+        },
+        {
+            "id": "layer_2_attention_qk_norm",
+            "callable": "qwen_attention_qk_norm",
+            "layer_index": 2,
+            "tensor_args": [],
+        },
+        {
+            "id": "layer_2_attention_o",
+            "callable": "qwen_attention_o",
+            "layer_index": 2,
+            "tensor_args": [],
+        },
+        {"id": "logits", "callable": "qwen_logits", "tensor_args": []},
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x3000"},
+            {"field": "b", "device_ptr_hex": "0x4000"},
+            {"field": "out", "device_ptr_hex": "0x5000"},
+        ],
+    )
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x6000"},
+            "d": {"device_ptr_hex": "0x7000"},
+        },
+        numeric_task_mode="unit_math_full_rmsnorm",
+    )
+
+    assert packet is not None
+    assert packet[0].scalar_args[3] == 2.0
+    assert packet[0].scalar_arg_count == 4
+    assert packet[1].scalar_args[3] == 2.0
+    assert packet[1].scalar_arg_count == 4
+    assert packet[2].scalar_args[3] == 2.0
+    assert packet[2].scalar_arg_count == 4
+
+    set_decode_step_state(packet, step_index=5, decode_position=17)
+
+    assert packet[0].scalar_args[2] == 17.0
+    assert packet[0].scalar_args[3] == 2.0
+    assert packet[2].scalar_args[2] == 17.0
+    assert packet[2].scalar_args[3] == 2.0
+    assert packet[3].scalar_args[3] == 5.0
 
 
 def test_launch_packet_marks_unit_math_numeric_ready_tasks():

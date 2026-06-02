@@ -49,6 +49,7 @@ TENSOR_DTYPE_CODES = {
 }
 PERSISTENT_TENSOR_ARG_CAPACITY = 5
 QWEN_ATTENTION_O_FUNC_ID = 7104
+LAYER_INDEX_SCALAR_ARG = 3
 
 
 def normalize_numeric_task_mode(mode: str) -> str:
@@ -93,8 +94,11 @@ def set_decode_step_index(packet: Any, step_index: int | None) -> None:
     if step_index is None or not packet:
         return
     final_task = packet[len(packet) - 1]
-    final_task.scalar_args[3] = float(step_index)
-    final_task.scalar_arg_count = max(int(final_task.scalar_arg_count), 4)
+    final_task.scalar_args[LAYER_INDEX_SCALAR_ARG] = float(step_index)
+    final_task.scalar_arg_count = max(
+        int(final_task.scalar_arg_count),
+        LAYER_INDEX_SCALAR_ARG + 1,
+    )
 
 
 def set_decode_step_state(
@@ -235,31 +239,32 @@ def task_scalar_args(
         task_count=task_count,
         descriptor=descriptor,
     ):
+        layer_index = float(descriptor.get("layer_index", 0))
         if (
             is_unit_numeric_mode(numeric_task_mode)
             and descriptor.get("callable") in UNIT_NUMERIC_CALLABLES
         ):
             if descriptor.get("callable") == "qwen_rmsnorm_input":
                 if numeric_task_mode == "unit_math_full_rmsnorm":
-                    return [1.0, 0.0, 0.0, 0.0]
-                return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, 0.0]
+                    return [1.0, 0.0, 0.0, layer_index]
+                return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, layer_index]
             if descriptor.get("callable") == "qwen_rmsnorm_post_attention":
                 if numeric_task_mode == "unit_math_full_rmsnorm":
-                    return [1.0, 0.0, 0.0, 0.0]
-                return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, 0.0]
+                    return [1.0, 0.0, 0.0, layer_index]
+                return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, layer_index]
             if descriptor.get("callable") == "qwen_attention_o":
                 return [
                     1.0,
                     UNIT_NUMERIC_ATTENTION_O_PROJECTION_INPUTS,
                     0.0,
-                    0.0,
+                    layer_index,
                 ]
             if descriptor.get("callable") == "qwen_final_norm":
                 if numeric_task_mode == "unit_math_full_rmsnorm":
                     return [1.0, 0.0, 0.0, 0.0]
                 return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, 0.0]
-            return [1.0, 0.0, 0.0, 0.0]
-        return [0.0, 0.0, 0.0, 0.0]
+            return [1.0, 0.0, 0.0, layer_index]
+        return [0.0, 0.0, 0.0, layer_index]
     return [
         0.0,
         float(task_input_element_count(index=index, workspace=workspace)),
