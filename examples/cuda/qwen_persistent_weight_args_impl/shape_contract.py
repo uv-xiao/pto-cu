@@ -118,6 +118,7 @@ def attention_fields(
     kv_heads: int,
     head_dim: int,
 ) -> dict[str, Any]:
+    qk_norm_stride = (query_heads + kv_heads) * head_dim
     return {
         "rows": query_heads,
         "cols": cols,
@@ -125,6 +126,7 @@ def attention_fields(
         "lda": head_dim,
         "ldb": kv_heads,
         "ldc": cols,
+        "a_batch_stride": qk_norm_stride,
         "scalar0": 16.0,
         "scalar1": 16.0,
     }

@@ -44,11 +44,13 @@ The attention-output task now has a shape-gated path that reads mutable
 the bounded `inner` decode window with GQA query-head to KV-head grouping from
 descriptor `rows`, `lda`, and `ldb`. It also accepts runtime `tensor_args[1]`
 as a `kv_page_table` and maps logical decode steps to physical pages before
-reading key/value cache. The read index includes the same batch-row sequence
-base used by QKV and QK-norm KV-cache writeback, so batched decode rows do not
-reuse row-zero cache entries. The softmax max and weighted sum passes apply
-the Qwen head-dim attention scale and are bounded by descriptor-controlled
-attention tiles. When
+reading key/value cache. The task uses descriptor `a_batch_stride` to read
+batch rows from QK-norm's `q_width + kv_width` output layout while keeping
+`lda` as the per-head dimension. The read index includes the same batch-row
+sequence base used by QKV and QK-norm KV-cache writeback, so batched decode
+rows do not reuse row-zero cache entries. The softmax max and weighted sum
+passes apply the Qwen head-dim attention scale and are bounded by
+descriptor-controlled attention tiles. When
 `o_proj_weight` is bound as `tensor_args[0]`, the task recomputes bounded
 attention columns, multiplies them by `o_proj_weight`, and writes projected
 hidden columns; `scalar_args[1]` limits that diagnostic projection width for

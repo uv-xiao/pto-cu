@@ -270,6 +270,10 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "normalized * cos_value - paired * sin_value" in full_source
     assert "normalized * cos_value + paired * sin_value" in full_source
     assert "const unsigned int kv_window = task->inner;" in full_source
+    assert "const unsigned int input_stride =" in full_source
+    assert "task->a_batch_stride > 0U ? task->a_batch_stride : task->cols;" in (
+        full_source
+    )
     assert "const unsigned int query_head = col / head_dim;" in full_source
     assert "const unsigned int mapped_kv_head = query_head / heads_per_kv;" in (
         full_source
@@ -312,6 +316,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     )
     assert full_source.count("kv_read_base +") == 4
     assert "qwen_attention_o_batch_local_kv_read_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert "qwen_attention_o_qk_norm_input_stride_source" in manifest[
         "implemented_contracts"
     ]
     assert "qwen_attention_o_bounded_projection_source" in manifest[

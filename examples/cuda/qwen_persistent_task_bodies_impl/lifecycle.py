@@ -407,9 +407,10 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
 if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
     const unsigned int row = static_cast<unsigned int>(i / task->cols);
     const unsigned int col = static_cast<unsigned int>(i % task->cols);
-    const unsigned int stride = task->lda > 0U ? task->lda : task->cols;
+    const unsigned int input_stride =
+        task->a_batch_stride > 0U ? task->a_batch_stride : task->cols;
     const unsigned long long row_base =
-        static_cast<unsigned long long>(row) * stride;
+        static_cast<unsigned long long>(row) * input_stride;
     const float query = task->a[row_base + col];
     const unsigned int query_heads = task->rows > 0U ? task->rows : 1U;
     unsigned int head_dim = task->lda > 0U ?
@@ -849,6 +850,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_bounded_decode_attention_reduction_source",
             "qwen_decode_attention_head_dim_scale_source",
             "qwen_attention_o_batch_local_kv_read_source",
+            "qwen_attention_o_qk_norm_input_stride_source",
             "qwen_attention_o_bounded_projection_source",
             "qwen_mlp_down_residual_add_source",
             "qwen_gqa_decode_attention_head_grouping_source",
