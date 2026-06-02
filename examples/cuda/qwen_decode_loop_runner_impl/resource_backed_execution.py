@@ -218,6 +218,17 @@ def prompt_prefill_descriptors(
     ]
 
 
+def prompt_readout_descriptors(
+    descriptors: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    return [
+        item
+        for item in descriptors
+        if item.get("callable") in PREFILL_READOUT_CALLABLES
+        or item.get("id") in {"final_norm", "logits"}
+    ]
+
+
 def run_workload(
     *,
     session: Any,
@@ -253,6 +264,9 @@ def run_workload(
     prefill_results = []
     prefill_packet_len = 0
     prefill_task_policy = "not_requested"
+    readout_packet = None
+    readout_final_callable = None
+    readout_index_offset = 0
     if prefill_prompt:
         prefill_task_policy = "omit_final_norm_and_logits_readout"
         prefill_items = prompt_prefill_descriptors(descriptors)
@@ -270,6 +284,21 @@ def run_workload(
         prefill_final_callable = (
             prefill_items[-1].get("callable") if prefill_items else None
         )
+        readout_items = prompt_readout_descriptors(descriptors)
+        if readout_items and readout_items[-1].get("callable") == "qwen_logits":
+            readout_index_offset = len(prefill_items)
+            readout_packet = build_host_task_packet(
+                descriptors=readout_items,
+                token_fields=token_fields,
+                kv_fields=plan.get("kv_pointer_fields", {}),
+                workspace=workspace,
+                numeric_task_mode=numeric_task_mode,
+                task_shape_defaults=task_shape_defaults(plan),
+                packet_index_offset=readout_index_offset,
+            )
+            if readout_packet is None:
+                return {"workload_id": plan["workload_id"], "status": "not_run"}
+            readout_final_callable = readout_items[-1].get("callable")
         prefill_count = max(int(plan.get("active_prompt_tokens", 0)), 0)
         for prefill_position in range(prefill_count):
             prefill_results.append(
@@ -298,12 +327,19 @@ def run_workload(
     for repeat_index in range(execution_count):
         step_index = repeat_index if decode_step_limit is not None else None
         decode_position = int(plan["first_decode_position"]) + int(step_index or 0)
+        decode_packet = packet
+        decode_final_callable = final_callable
+        decode_task_policy = "full_selected_dag"
+        if prefill_prompt and repeat_index == 0 and readout_packet is not None:
+            decode_packet = readout_packet
+            decode_final_callable = readout_final_callable
+            decode_task_policy = "prefill_reused_hidden_readout_only"
         repeat_results.append(
             run_packet_once(
                 session=session,
-                packet=packet,
+                packet=decode_packet,
                 workspace=workspace,
-                final_callable=final_callable,
+                final_callable=decode_final_callable,
                 logits_check_policy=logits_check_policy,
                 scheduler_blocks=scheduler_blocks,
                 block_dim=block_dim,
@@ -314,6 +350,10 @@ def run_workload(
                 token_fields=token_fields,
                 repeat_index=repeat_index,
                 execution_count=execution_count,
+                task_policy=decode_task_policy,
+                packet_index_offset=readout_index_offset
+                if decode_packet is readout_packet
+                else 0,
             )
         )
     return build_workload_result(
@@ -345,6 +385,8 @@ def run_packet_once(
     token_fields: dict[str, dict[str, Any]],
     repeat_index: int = 0,
     execution_count: int = 1,
+    task_policy: str = "full_selected_dag",
+    packet_index_offset: int = 0,
 ) -> dict[str, Any]:
     rope_table_refresh = refresh_rope_tables_for_decode_position(
         session.runtime,
@@ -422,6 +464,9 @@ def run_packet_once(
         "decode_step_index": decode_step_index,
         "decode_position": int(decode_position),
         "phase": phase,
+        "graph_task_count": len(packet),
+        "task_policy": task_policy,
+        "packet_index_offset": int(packet_index_offset),
         "status": (
             "pass"
             if status == 0

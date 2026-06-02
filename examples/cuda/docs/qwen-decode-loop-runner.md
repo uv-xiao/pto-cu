@@ -62,12 +62,12 @@ With `--single-context-live-session`, token buffers, KV-cache, resident weights,
 and activation workspace are allocated under one CUDA context before graph
 materialization and launch-packet preflight, then closed after the preflight
 evidence is recorded.
-With `--run-resource-backed-smoke`, the runner prepares the generated Qwen
-task-function set and launches resource-backed DAG packets while that same
-CUDA context is open. This is still diagnostic: it proves scheduler completion
-and pointer wiring, not full Qwen numerical correctness.
-Use `--resource-backed-repeat-runs` to submit fresh resource-backed graph
-state repeatedly through the same prepared callable and CUDA context.
+With `--run-resource-backed-smoke`, the runner launches resource-backed Qwen
+DAG packets in the same CUDA context to prove scheduler completion and pointer
+wiring, not full Qwen numerical correctness.
+Use `--resource-backed-repeat-runs` to submit fresh graph state through the
+same prepared callable. With `--resource-backed-prefill-prompt`, decode step 0
+uses a two-task readout packet over the prefilled hidden state.
 Use `--resource-backed-workload` to narrow the diagnostic to a single serving
 policy, and `--resource-backed-logits-check-policy final_step` to defer the
 logits-buffer readback until the last bounded decode step. This check policy

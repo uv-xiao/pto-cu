@@ -202,20 +202,29 @@ def layer_post_attention_norm_index(
 def output_ptr_for_task(
     *,
     index: int,
+    absolute_index: int | None = None,
     task_count: int,
+    descriptor: dict[str, Any] | None = None,
     token_fields: dict[str, dict[str, Any]],
     workspace: dict[str, Any] | None,
 ) -> int:
     if workspace is None:
         return parse_ptr(token_fields["out"].get("device_ptr_hex"))
-    if index + 1 == task_count:
+    if index + 1 == task_count and descriptor is not None and descriptor.get(
+        "callable"
+    ) in {
+        "qwen_final_norm",
+        "qwen_logits",
+    }:
         return parse_ptr(workspace["logits_buffer"]["device_ptr_hex"])
-    return parse_ptr(workspace["activation_buffers"][index]["device_ptr_hex"])
+    target_index = index if absolute_index is None else absolute_index
+    return parse_ptr(workspace["activation_buffers"][target_index]["device_ptr_hex"])
 
 
 def task_n_for_record(
     *,
     index: int,
+    absolute_index: int | None = None,
     task_count: int,
     descriptor: dict[str, Any],
     workspace: dict[str, Any] | None,
@@ -223,12 +232,14 @@ def task_n_for_record(
 ) -> int:
     if is_logits_output_task(index=index, task_count=task_count, descriptor=descriptor):
         return logits_element_count(workspace)
-    return task_output_element_count(index=index, workspace=workspace)
+    target_index = index if absolute_index is None else absolute_index
+    return task_output_element_count(index=target_index, workspace=workspace)
 
 
 def task_scalar_args(
     *,
     index: int,
+    absolute_index: int | None = None,
     task_count: int,
     descriptor: dict[str, Any],
     workspace: dict[str, Any] | None,
@@ -267,7 +278,12 @@ def task_scalar_args(
         return [0.0, 0.0, 0.0, layer_index]
     return [
         0.0,
-        float(task_input_element_count(index=index, workspace=workspace)),
+        float(
+            task_input_element_count(
+                index=index if absolute_index is None else absolute_index,
+                workspace=workspace,
+            )
+        ),
         float(logits_element_count(workspace)),
         0.0,
     ]

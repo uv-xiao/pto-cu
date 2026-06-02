@@ -122,6 +122,7 @@ def build_host_task_packet(
     workspace: dict[str, Any] | None = None,
     numeric_task_mode: str = "diagnostic",
     task_shape_defaults: dict[str, Any] | None = None,
+    packet_index_offset: int = 0,
 ) -> Any | None:
     numeric_task_mode = normalize_numeric_task_mode(numeric_task_mode)
     if not descriptors or {"a", "b", "out"} - set(token_fields):
@@ -141,6 +142,7 @@ def build_host_task_packet(
                 workspace=workspace,
                 numeric_task_mode=numeric_task_mode,
                 task_shape_defaults=task_shape_defaults,
+                packet_index_offset=packet_index_offset,
             )
             for index, descriptor in enumerate(descriptors)
         ]
@@ -158,14 +160,17 @@ def host_task_record(
     workspace: dict[str, Any] | None,
     numeric_task_mode: str,
     task_shape_defaults: dict[str, Any] | None,
+    packet_index_offset: int = 0,
 ) -> CudaPersistentDagTask:
     tensor_args_t = ctypes.c_void_p * PERSISTENT_TENSOR_ARG_CAPACITY
     tensor_arg_dtypes_t = ctypes.c_uint32 * PERSISTENT_TENSOR_ARG_CAPACITY
     scalar_args_t = ctypes.c_float * 4
+    absolute_index = max(int(packet_index_offset), 0) + index
     tensor_args = [0] * PERSISTENT_TENSOR_ARG_CAPACITY
     tensor_arg_dtypes = tensor_arg_dtype_codes(descriptor)
     scalar_args = task_scalar_args(
         index=index,
+        absolute_index=absolute_index,
         task_count=task_count,
         descriptor=descriptor,
         workspace=workspace,
@@ -191,7 +196,7 @@ def host_task_record(
     return CudaPersistentDagTask(
         func_id=CALLABLE_FUNC_IDS[descriptor["callable"]],
         a=input_ptr_for_task(
-            index=index,
+            index=absolute_index,
             token_fields=token_fields,
             workspace=workspace,
         ),
@@ -203,12 +208,15 @@ def host_task_record(
         ),
         out=output_ptr_for_task(
             index=index,
+            absolute_index=absolute_index,
             task_count=task_count,
+            descriptor=descriptor,
             token_fields=token_fields,
             workspace=workspace,
         ),
         n=task_n_for_record(
             index=index,
+            absolute_index=absolute_index,
             task_count=task_count,
             descriptor=descriptor,
             workspace=workspace,

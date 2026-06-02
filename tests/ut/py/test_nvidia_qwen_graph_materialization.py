@@ -34,6 +34,7 @@ from qwen_decode_loop_runner_impl.logits_active_cols import (  # noqa: E402
 )
 from qwen_decode_loop_runner_impl.resource_backed_execution import (  # noqa: E402
     prompt_prefill_descriptors,
+    prompt_readout_descriptors,
     select_task_descriptors,
 )
 from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph  # noqa: E402
@@ -1490,6 +1491,95 @@ def test_prompt_prefill_descriptors_omit_final_readout_tasks():
         "layer_0_input_norm",
         "layer_0_mlp_down",
     ]
+
+
+def test_prompt_readout_descriptors_keep_final_norm_and_logits():
+    descriptors = [
+        {"id": "embedding_lookup", "callable": "qwen_embedding_lookup"},
+        {"id": "layer_0_mlp_down", "callable": "qwen_mlp_down"},
+        {"id": "final_norm", "callable": "qwen_final_norm"},
+        {"id": "logits", "callable": "qwen_logits"},
+    ]
+
+    readout = prompt_readout_descriptors(descriptors)
+
+    assert [item["id"] for item in readout] == ["final_norm", "logits"]
+
+
+def test_readout_packet_uses_offset_activation_as_first_input():
+    descriptors = [
+        {"id": "final_norm", "callable": "qwen_final_norm", "tensor_args": []},
+        {"id": "logits", "callable": "qwen_logits", "tensor_args": []},
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x1000"},
+            {"field": "b", "device_ptr_hex": "0x2000"},
+            {"field": "out", "device_ptr_hex": "0x3000"},
+        ],
+    )
+    workspace = {
+        "activation_buffers": [
+            {"device_ptr_hex": "0x4000", "element_count": 16},
+            {"device_ptr_hex": "0x5000", "element_count": 16},
+            {"device_ptr_hex": "0x6000", "element_count": 16},
+            {"device_ptr_hex": "0x7000", "element_count": 16},
+        ],
+        "logits_buffer": {"device_ptr_hex": "0x8000", "element_count": 32},
+    }
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x9000"},
+            "d": {"device_ptr_hex": "0xa000"},
+        },
+        workspace=workspace,
+        numeric_task_mode="unit_math_full_rmsnorm",
+        packet_index_offset=3,
+    )
+
+    assert packet is not None
+    assert packet[0].a == 0x6000
+    assert packet[0].out == 0x7000
+    assert packet[1].a == 0x7000
+    assert packet[1].out == 0x8000
+
+
+def test_prefill_packet_keeps_last_non_logits_output_in_activation_chain():
+    descriptors = [
+        {"id": "embedding_lookup", "callable": "qwen_embedding_lookup"},
+        {"id": "layer_0_mlp_down", "callable": "qwen_mlp_down"},
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x1000"},
+            {"field": "b", "device_ptr_hex": "0x2000"},
+            {"field": "out", "device_ptr_hex": "0x3000"},
+        ],
+    )
+    workspace = {
+        "activation_buffers": [
+            {"device_ptr_hex": "0x4000", "element_count": 16},
+            {"device_ptr_hex": "0x5000", "element_count": 16},
+        ],
+        "logits_buffer": {"device_ptr_hex": "0x8000", "element_count": 32},
+    }
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x9000"},
+            "d": {"device_ptr_hex": "0xa000"},
+        },
+        workspace=workspace,
+        numeric_task_mode="unit_math_full_rmsnorm",
+    )
+
+    assert packet is not None
+    assert packet[1].out == 0x5000
 
 
 def test_launch_packet_can_select_full_rmsnorm_reduction_branch():
