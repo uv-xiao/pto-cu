@@ -238,58 +238,120 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
             "body": """
 if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
     task->tensor_args[0] && task->tensor_args[1]) {
-    __shared__ float partial[1024];
     const unsigned int stride = task->lda > 0U ? task->lda : task->cols;
     const unsigned int row = 0U;
     const unsigned long long row_base =
         static_cast<unsigned long long>(row) * stride;
-    float mean_square = 0.0f;
-    for (unsigned long long k = threadIdx.x; k < task->inner; k += blockDim.x) {
-        const float value = task->a[row_base + k];
-        mean_square += value * value;
-    }
-    partial[threadIdx.x] = mean_square;
-    __syncthreads();
-    for (unsigned int reduction_stride = blockDim.x >> 1;
-         reduction_stride > 0U; reduction_stride >>= 1) {
-        if (threadIdx.x < reduction_stride) {
-            partial[threadIdx.x] += partial[threadIdx.x + reduction_stride];
-        }
-        __syncthreads();
-    }
-    const float scale =
-        rsqrtf(partial[0] / static_cast<float>(task->inner) + 0.000001f);
-    for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
-        const unsigned int col = static_cast<unsigned int>(j % task->cols);
-        const float q_weight = pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
-        const float k_weight = pto_cuda_tensor_arg_f32(task, 1U, col, 1.0f);
-        const float normalized = task->a[row_base + col] * scale * 0.5f *
-            (q_weight + k_weight);
-        const unsigned int pair_col = col ^ 1U;
-        if (pair_col < task->inner) {
-            const float pair_q_weight =
-                pto_cuda_tensor_arg_f32(task, 0U, pair_col, 1.0f);
-            const float pair_k_weight =
-                pto_cuda_tensor_arg_f32(task, 1U, pair_col, 1.0f);
-            const float paired = task->a[row_base + pair_col] * scale * 0.5f *
-                (pair_q_weight + pair_k_weight);
-            const unsigned int rope_index = col >> 1U;
-            float cos_value = task->scalar_arg_count > 0U ?
-                task->scalar_args[0] : 1.0f;
-            float sin_value = task->scalar_arg_count > 1U ?
-                task->scalar_args[1] : 0.0f;
-            if (task->tensor_arg_count >= 4U &&
-                task->tensor_args[2] && task->tensor_args[3]) {
-                cos_value =
-                    pto_cuda_tensor_arg_f32(task, 2U, rope_index, cos_value);
-                sin_value =
-                    pto_cuda_tensor_arg_f32(task, 3U, rope_index, sin_value);
+    const unsigned int head_dim = task->inner;
+    const unsigned int query_heads = task->rows > 0U ? task->rows : 1U;
+    const unsigned int kv_heads = task->ldb > 0U ? task->ldb : query_heads;
+    const unsigned int q_width = query_heads * head_dim;
+    const unsigned int kv_width = kv_heads * head_dim;
+    if (task->cols >= q_width + kv_width) {
+        for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
+            const unsigned int col = static_cast<unsigned int>(j % task->cols);
+            if (col >= q_width + kv_width) {
+                task->out[j] = 0.0f;
+                continue;
             }
-            task->out[j] = (col & 1U) == 0U ?
-                normalized * cos_value - paired * sin_value :
-                normalized * cos_value + paired * sin_value;
-        } else {
-            task->out[j] = normalized;
+            const bool is_query_region = col < q_width;
+            const unsigned int region_col =
+                is_query_region ? col : col - q_width;
+            const unsigned int source_col = is_query_region ?
+                col : q_width + region_col;
+            const unsigned int norm_slot = is_query_region ? 0U : 1U;
+            const unsigned int head_base =
+                source_col - (source_col % head_dim);
+            float mean_square = 0.0f;
+            for (unsigned int k = 0U; k < head_dim; ++k) {
+                const float value = task->a[row_base + head_base + k];
+                mean_square += value * value;
+            }
+            const float scale =
+                rsqrtf(mean_square / static_cast<float>(head_dim) + 0.000001f);
+            const unsigned int head_col = source_col % head_dim;
+            const float norm_weight =
+                pto_cuda_tensor_arg_f32(task, norm_slot, head_col, 1.0f);
+            const float normalized =
+                task->a[row_base + source_col] * scale * norm_weight;
+            const unsigned int pair_head_col = head_col ^ 1U;
+            if (pair_head_col < head_dim) {
+                const unsigned int pair_source_col = head_base + pair_head_col;
+                const float pair_norm_weight =
+                    pto_cuda_tensor_arg_f32(task, norm_slot, pair_head_col, 1.0f);
+                const float paired =
+                    task->a[row_base + pair_source_col] * scale *
+                    pair_norm_weight;
+                const unsigned int rope_index = head_col >> 1U;
+                float cos_value = task->scalar_arg_count > 0U ?
+                    task->scalar_args[0] : 1.0f;
+                float sin_value = task->scalar_arg_count > 1U ?
+                    task->scalar_args[1] : 0.0f;
+                if (task->tensor_arg_count >= 4U &&
+                    task->tensor_args[2] && task->tensor_args[3]) {
+                    cos_value =
+                        pto_cuda_tensor_arg_f32(task, 2U, rope_index, cos_value);
+                    sin_value =
+                        pto_cuda_tensor_arg_f32(task, 3U, rope_index, sin_value);
+                }
+                task->out[j] = (head_col & 1U) == 0U ?
+                    normalized * cos_value - paired * sin_value :
+                    normalized * cos_value + paired * sin_value;
+            } else {
+                task->out[j] = normalized;
+            }
+        }
+    } else {
+        __shared__ float partial[1024];
+        float mean_square = 0.0f;
+        for (unsigned long long k = threadIdx.x; k < task->inner;
+             k += blockDim.x) {
+            const float value = task->a[row_base + k];
+            mean_square += value * value;
+        }
+        partial[threadIdx.x] = mean_square;
+        __syncthreads();
+        for (unsigned int reduction_stride = blockDim.x >> 1;
+             reduction_stride > 0U; reduction_stride >>= 1) {
+            if (threadIdx.x < reduction_stride) {
+                partial[threadIdx.x] += partial[threadIdx.x + reduction_stride];
+            }
+            __syncthreads();
+        }
+        const float scale =
+            rsqrtf(partial[0] / static_cast<float>(task->inner) + 0.000001f);
+        for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
+            const unsigned int col = static_cast<unsigned int>(j % task->cols);
+            const float q_weight = pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
+            const float k_weight = pto_cuda_tensor_arg_f32(task, 1U, col, 1.0f);
+            const float normalized = task->a[row_base + col] * scale * 0.5f *
+                (q_weight + k_weight);
+            const unsigned int pair_col = col ^ 1U;
+            if (pair_col < task->inner) {
+                const float pair_q_weight =
+                    pto_cuda_tensor_arg_f32(task, 0U, pair_col, 1.0f);
+                const float pair_k_weight =
+                    pto_cuda_tensor_arg_f32(task, 1U, pair_col, 1.0f);
+                const float paired = task->a[row_base + pair_col] * scale *
+                    0.5f * (pair_q_weight + pair_k_weight);
+                const unsigned int rope_index = col >> 1U;
+                float cos_value = task->scalar_arg_count > 0U ?
+                    task->scalar_args[0] : 1.0f;
+                float sin_value = task->scalar_arg_count > 1U ?
+                    task->scalar_args[1] : 0.0f;
+                if (task->tensor_arg_count >= 4U &&
+                    task->tensor_args[2] && task->tensor_args[3]) {
+                    cos_value =
+                        pto_cuda_tensor_arg_f32(task, 2U, rope_index, cos_value);
+                    sin_value =
+                        pto_cuda_tensor_arg_f32(task, 3U, rope_index, sin_value);
+                }
+                task->out[j] = (col & 1U) == 0U ?
+                    normalized * cos_value - paired * sin_value :
+                    normalized * cos_value + paired * sin_value;
+            } else {
+                task->out[j] = normalized;
+            }
         }
     }
 } else {
@@ -717,6 +779,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_shape_field_qk_rmsnorm_source",
             "qwen_post_attention_norm_full_rmsnorm_source",
             "qwen_qk_norm_block_rmsnorm_rope_source",
+            "qwen_qk_norm_separate_qk_regions_source",
             "qwen_final_norm_full_rmsnorm_source",
             "qwen_shape_field_qk_rope_source",
             "qwen_bounded_decode_attention_reduction_source",

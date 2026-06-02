@@ -140,6 +140,16 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "const unsigned int col = static_cast<unsigned int>(j % task->cols);" in (
         full_source
     )
+    assert "const unsigned int q_width = query_heads * head_dim;" in full_source
+    assert "const unsigned int kv_width = kv_heads * head_dim;" in full_source
+    assert "const bool is_query_region = col < q_width;" in full_source
+    assert "const unsigned int source_col = is_query_region ?" in full_source
+    assert "const unsigned int norm_slot = is_query_region ? 0U : 1U;" in (
+        full_source
+    )
+    assert "qwen_qk_norm_separate_qk_regions_source" in manifest[
+        "implemented_contracts"
+    ]
     assert "qwen_qk_norm_block_rmsnorm_rope_source" in manifest[
         "implemented_contracts"
     ]

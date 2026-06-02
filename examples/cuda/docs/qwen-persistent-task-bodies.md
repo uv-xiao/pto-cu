@@ -28,8 +28,10 @@ The generated CUDA source now uses descriptor `rows`, `cols`, `inner`, `lda`,
 and `ldb` fields for QKV, attention-output, MLP, and logits linear
 projections when full tensor metadata is present. The QK norm task computes
 RMS scale from descriptor `cols`, `inner`, and `lda` fields before applying
-Q/K norm weight slots and pairwise RoPE rotation when cos/sin table slots are
-bound. The attention-output task now has a shape-gated path that reads mutable
+separate Q/K norm weight slots and pairwise RoPE rotation when cos/sin table
+slots are bound; descriptors expose Q-width plus KV-width rather than blending
+Q/K weights into one vector. The attention-output task now has a shape-gated
+path that reads mutable
 `c`/`d` KV-cache fields and computes a max-stabilized softmax reduction over
 the bounded `inner` decode window with GQA query-head to KV-head grouping from
 descriptor `rows`, `lda`, and `ldb`. It also accepts runtime
