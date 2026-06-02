@@ -1,7 +1,0 @@
-{
-  "kind": "viewer_result",
-  "benchmark_id": "llm_serving_decode",
-  "method_id": "vdcores",
-  "gpu": "H200",
-  "serving_coverage": "diagnostic_microdecode"
-}

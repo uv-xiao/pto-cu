@@ -1,0 +1,650 @@
+{
+  "schema_version": 1,
+  "source_files": [
+    "evaluations/nvidia/benchmark-viewer/data/paper_evaluation_matrix.json",
+    "evaluations/nvidia/benchmark-viewer/data/paper_baseline_runs.json",
+    "evaluations/nvidia/benchmark-viewer/data/paper_baseline_probes.json",
+    "evaluations/nvidia/benchmark-viewer/data/paper_baseline_run_readiness.json",
+    "evaluations/nvidia/benchmark-viewer/data/paper_baseline_execution_attempts.json",
+    "evaluations/nvidia/benchmark-viewer/data/results.json"
+  ],
+  "overall_status": "not_paper_ready",
+  "ready_claims": 3,
+  "blocked_claims": 1,
+  "claim_audits": [
+    {
+      "id": "host_schedule_launch_overhead",
+      "title": "Host-Schedule Launch Overhead",
+      "matrix_status": "ready_for_paper_claim",
+      "ready_for_paper_claim": true,
+      "evidence_ref_counts": {
+        "raw_artifact": 9,
+        "viewer_data": 1,
+        "viewer_result": 18
+      },
+      "missing_evidence_count": 0,
+      "missing_evidence_details": [],
+      "evidence_policy_exceptions": [],
+      "missing_viewer_results": [],
+      "paper_baseline_run_statuses": [],
+      "paper_baseline_run_readiness_statuses": [],
+      "execution_attempt_statuses": [],
+      "probe_statuses": [],
+      "blockers": [],
+      "next_actions": [],
+      "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, stream-concurrency sweeps, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts for each launch family."
+    },
+    {
+      "id": "persistent_device_scheduler_overhead",
+      "title": "Persistent-Device Scheduler Overhead",
+      "matrix_status": "ready_for_paper_claim",
+      "ready_for_paper_claim": true,
+      "evidence_ref_counts": {
+        "raw_artifact": 4,
+        "stable_doc": 1,
+        "viewer_result": 4
+      },
+      "missing_evidence_count": 0,
+      "missing_evidence_details": [],
+      "evidence_policy_exceptions": [],
+      "missing_viewer_results": [],
+      "paper_baseline_run_statuses": [
+        {
+          "id": "mpk_persistent_scheduler_trace",
+          "paper_baseline_id": "mpk",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-trace.json",
+            "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-profile.log"
+          ]
+        },
+        {
+          "id": "vdcores_resource_policy_trace",
+          "paper_baseline_id": "vdcores",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/viewer-import.json",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-summary.json",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-bench-only.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-bench-only-status.txt",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-correctness-fresh.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/queue-scheduler-correctness-fresh-status.txt",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/rebuild-qwen-compute-ops.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/rebuild-qwen-compute-ops-status.txt",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/qwen3-1p7b-compute-ops.vdcore.build",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/vdcores-queue-scheduler-diagnostics.patch"
+          ]
+        }
+      ],
+      "paper_baseline_run_readiness_statuses": [],
+      "execution_attempt_statuses": [],
+      "probe_statuses": [
+        {
+          "paper_baseline_id": "mpk",
+          "latest_status": "pass",
+          "next_action": "Install MPK dependencies, run the Qwen3 native and --use-mirage commands, then export raw latency and throughput JSON.",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        },
+        {
+          "paper_baseline_id": "vdcores",
+          "latest_status": "pass",
+          "next_action": "Run the Qwen3-1.7B dry-build, correctness, and benchmark commands, then import measured resource-policy artifacts.",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        }
+      ],
+      "blockers": [],
+      "next_actions": [],
+      "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, latency distributions, and an explicit measurement scope separating diagnostic instrumentation from final baseline timing rows."
+    },
+    {
+      "id": "tensor_core_tile_baselines",
+      "title": "Tensor-Core Tile Baselines",
+      "matrix_status": "ready_for_paper_claim",
+      "ready_for_paper_claim": true,
+      "evidence_ref_counts": {
+        "raw_artifact": 1,
+        "viewer_result": 9
+      },
+      "missing_evidence_count": 0,
+      "missing_evidence_details": [],
+      "evidence_policy_exceptions": [
+        {
+          "id": "thunderkittens_dense_pytorch_12288_oom_policy",
+          "title": "ThunderKittens 12288-token dense PyTorch reference OOM policy",
+          "status": "accepted",
+          "scope": "Only the official ThunderKittens H100 MHA dense PyTorch reference rows at sequence length 12288 on H200.",
+          "decision": "Accept the tensor-core tile claim without those dense PyTorch reference rows because every selected 6144-token dense reference cell passes in fresh processes, FA3 forward/backward comparator rows cover 12288, and the remaining dense reference rows exceed practical H200 memory capacity.",
+          "rationale": "The excluded rows are reference-oracle capacity failures, not missing ThunderKittens, FA3, PTO, cuBLAS/CUTLASS, or Triton measurements. They cannot provide timing evidence and should be reported as infeasible reference cells rather than blocking the tensor-core comparison.",
+          "review_rule": "Paper tables may include the 12288-token dense PyTorch reference cells only as OOM/not-applicable footnotes; do not impute performance or correctness numbers from them.",
+          "evidence_refs": [
+            {
+              "kind": "tmp_artifact",
+              "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/isolated-pt-reference-summary.json"
+            },
+            {
+              "kind": "tmp_artifact",
+              "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/upstream-fa3-summary.json"
+            },
+            {
+              "kind": "changelog",
+              "path": "docs/nvidia-backend/changelog/2026-06-01-thunderkittens-isolated-pytorch-reference.md"
+            }
+          ]
+        }
+      ],
+      "missing_viewer_results": [],
+      "paper_baseline_run_statuses": [
+        {
+          "id": "thunderkittens_tile_kernel",
+          "paper_baseline_id": "thunderkittens",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [
+            "vdcores_offline_decode"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/build.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/quick-smoke.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/capture.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/viewer-result-records.json"
+          ]
+        },
+        {
+          "id": "thunderkittens_full_sweep",
+          "paper_baseline_id": "thunderkittens",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/correctness.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/benchmark.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/upstream-summary.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/run-after-build.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-5cda2076/correctness.log",
+            "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/environment.txt",
+            "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/fa3-build.log",
+            "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/fa3-build-status.txt",
+            "tmp/cuda-backend/paper-baselines/flash-attention/fa3-hopper-build-narrow-7371626c/fa3-api-probe.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/upstream-fa3-summary.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/benchmark-fa3.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/benchmark-fa3-status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/correctness-fa3.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/correctness-fa3-status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/metadata.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/shim/flash_attn_interface.py",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/run_pt_reference_cell.py",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/run-manifest.tsv",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/isolated-pt-reference-summary.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n12288.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n6144.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n12288.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n6144.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n12288.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n6144.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n12288.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n6144.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n12288.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n6144.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n12288.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n6144.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n12288.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n6144.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n12288.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n6144.status.txt",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n12288.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_cfalse_n6144.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n12288.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/bwd_ctrue_n6144.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n12288.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_cfalse_n6144.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n12288.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/fwd_ctrue_n6144.log"
+          ]
+        },
+        {
+          "id": "thunderkittens_non_mha_rotary",
+          "paper_baseline_id": "thunderkittens",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/build.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/correctness.log",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/capture.json",
+            "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/nvidia-smi-gpus.txt"
+          ]
+        }
+      ],
+      "paper_baseline_run_readiness_statuses": [],
+      "execution_attempt_statuses": [],
+      "probe_statuses": [
+        {
+          "paper_baseline_id": "thunderkittens",
+          "latest_status": "pass",
+          "next_action": "Build the selected ThunderKittens kernel on H200/H100-class hardware and capture correctness plus benchmark JSON.",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        }
+      ],
+      "blockers": [],
+      "next_actions": [],
+      "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts."
+    },
+    {
+      "id": "llm_serving_paper_baselines",
+      "title": "LLM Serving Paper Baselines",
+      "matrix_status": "partial_current_capture",
+      "ready_for_paper_claim": false,
+      "evidence_ref_counts": {
+        "baseline_survey": 1,
+        "raw_artifact": 67,
+        "viewer_data": 3,
+        "viewer_result": 11
+      },
+      "missing_evidence_count": 1,
+      "missing_evidence_details": [
+        {
+          "id": "pto_full_serving_qwen3_8b",
+          "method_id": "pto_persistent_device",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Implement/import PTO persistent-device Qwen3-8B rows for MPK and VDCores offline decode. Evidence covers diagnostics, Qwen task bodies, RoPE refresh, GQA decode-attention grouping, paged KV-table indexing, tiled softmax passes, policy-length MPK/VDCores diagnostic decode-loop execution, and argmax. Remaining gates: full Qwen numerical correctness, full-serving row import.",
+          "evidence_summary": [
+            "Lifecycle and input artifacts: persistent_qwen_serving_scaffold, qwen_serving_lifecycle_plan, qwen_prompt_accounting, qwen_runtime_input_binding, qwen_cuda_token_buffer_binding, qwen_persistent_decode_args, and qwen_kv_cache_binding.",
+            "Weight artifacts: qwen_weight_inventory, qwen_safetensors_fetch, qwen_safetensors_metadata, qwen_cuda_weight_binding, qwen_persistent_weight_args, qwen_persistent_weight_materialization, qwen_resident_weight_table, local Qwen shard placement, actual safetensors shape/dtype validation for 399 tensors, stable CUDA weight binding slots and file offsets, full CUDA residency for 16.38 GB of weights, and copy-back verification for 16 small tensors.",
+            "Persistent DAG artifacts: qwen_persistent_task_bodies, generated persistent-device Qwen task-body source, shape-field linear projection/logits source, shape-field QK RMSNorm source, shape-field QK RoPE formula source, descriptor-level QK RoPE table slots, descriptor-level KV page-table slot, descriptor-level logits tile-size scalar, launch-packet live RoPE table and KV page-table pointer binding with Qwen-theta first-position table population and bounded per-step refresh, decode-position-aware slot-mapped QKV writeback through runtime kv_page_table, bounded diagnostic GQA decode-attention reduction over paged mutable c/d KV fields with descriptor-bounded tiled softmax passes, descriptor-bounded tiled hidden-by-vocab logits projection source, full-vocab logits argmax source, persistent DAG tensor_args manifest, tensor_arg_dtypes BF16/FP32 ABI, dtype-aware generated CUDA tensor-argument reads, resident_weight_ptrs[slot_id], process-scoped resident weight table owner, padded target-length input_ids, attention_mask, persistent decode token argument binding, preserving tensor_args for weights, and dry-run KV-cache key/value pointer binding.",
+            "Runtime diagnostics: controlled attention-tile proxy, controlled proxy numeric oracle, controlled proxy live CUDA execution, controlled proxy live microdecode DAG execution, resource-backed diagnostic execution, block-wide full-vector RMSNorm reduction diagnostic execution, bounded tiled logits projection reference checking, 1024-step MPK-policy and 64-step VDCores-policy diagnostic decode-loop execution, device-committed sampled-token feedback, full-serving import gates requiring runtime=cuda/persistent_device, serving_coverage=full_serving, zero failed requests, consistent request/token accounting, and correctness coverage for all generated decode tokens, plus matching benchmark-viewer data validation and paper-audit gates for viewer JSON remain diagnostic rather than full serving."
+          ]
+        },
+        {
+          "id": "vdcores_full_serving_qwen3_8b",
+          "paper_baseline_id": "vdcores",
+          "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
+          "method_id": "vdcores",
+          "serving_workload_ids": [
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after fixing correctness for the global-instruction capacity path or implementing an equivalent segmented schedule under the shared-instruction runtime."
+        },
+        {
+          "id": "thunderkittens_full_serving_qwen3_8b",
+          "paper_baseline_id": "thunderkittens",
+          "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
+          "method_id": "thunderkittens",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Import ThunderKittens-family full-serving Qwen/Qwen3-8B rows beyond the current attention-tile proxy."
+        }
+      ],
+      "evidence_policy_exceptions": [],
+      "missing_viewer_results": [],
+      "paper_baseline_run_statuses": [
+        {
+          "id": "mpk_qwen3_native_vs_persistent",
+          "paper_baseline_id": "mpk",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [
+            "mpk_offline_decode"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/attempt-summary.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/paper-baseline-results.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/viewer-result-records.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2-status.txt",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/native-token2.log",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2-status.txt",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.json.predecode.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-token2.log",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024-status.txt",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.json.predecode.json",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.log",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/pto-commit.txt",
+            "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/remote-refresh-path.txt"
+          ]
+        },
+        {
+          "id": "mpk_qwen3_native_token_bringup",
+          "paper_baseline_id": "mpk",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [
+            "mpk_native_qwen3_0p6b_token2_bringup"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json",
+            "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.log",
+            "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2-paper-results.json",
+            "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2-viewer-result-records.json"
+          ]
+        },
+        {
+          "id": "vdcores_qwen3_8b_decode_preflight",
+          "paper_baseline_id": "vdcores",
+          "status": "planned_not_run",
+          "serving_workload_ids": [
+            "vdcores_offline_decode"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-preflight-summary.json",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight-hub-cache.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-correctness-preflight-hub-cache-status.txt",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-rebuild-correctness-bench-summary.json",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-compute-ops.vdcore.build",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/rebuild-qwen3-8b-runtime-cfloat.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/rebuild-qwen3-8b-runtime-cfloat-status.txt",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-correctness-after-rebuild.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-correctness-after-rebuild-status.txt",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-token1-after-rebuild.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-token1-after-rebuild-status.txt",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-after-rebuild.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-bench-after-rebuild-status.txt",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-instruction-capacity-0a0392d2/instruction-capacity-n64.json",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-global-insts-summary.json",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-bench-n64-b5-global-insts.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/qwen3-8b-correctness-global-insts.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-global-insts-0a0392d2/rebuild-restored-shared-insts.log",
+            "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-shared-window-plan-0a0392d2/shared-window-plan.json"
+          ]
+        },
+        {
+          "id": "vllm_serving_and_throughput",
+          "paper_baseline_id": "vllm",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/paper-baseline-results.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/viewer-result-records.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/attempt-summary.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/status-summary.txt",
+            "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/vdcores/r1-batch1/bench-serve.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/vdcores/r3-batch16/bench-serve.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/mpk/r1-batch1/bench-serve.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/mpk/r3-batch16/bench-serve.json"
+          ]
+        },
+        {
+          "id": "sglang_serving_and_offline",
+          "paper_baseline_id": "sglang",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/paper-baseline-results.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/viewer-result-records.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/attempt-summary.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/status-summary.txt",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/bench-serving-r1-batch1.jsonl",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/bench-serving-r3-batch16.jsonl",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/offline-throughput-r1-batch1.jsonl",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/offline-throughput-r3-batch16.jsonl",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/paper-baseline-results.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/viewer-result-records.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/attempt-summary.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/status-summary.txt",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/bench-serving-r1-batch1.jsonl",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/bench-serving-r3-batch16.jsonl",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/offline-throughput-r1-batch1.jsonl",
+            "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/offline-throughput-r3-batch16.jsonl"
+          ]
+        },
+        {
+          "id": "thunderkittens_decode_attention_tile",
+          "paper_baseline_id": "thunderkittens",
+          "status": "imported_to_viewer",
+          "serving_workload_ids": [
+            "vdcores_offline_decode"
+          ],
+          "expected_artifacts": [
+            "tmp/cuda-backend/paper-baselines/serving-runs/plan-43b927ed.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch1.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch2.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch4.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch8.json",
+            "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/vdcores_offline_decode/thunderkittens-mha-batch16.json"
+          ]
+        }
+      ],
+      "paper_baseline_run_readiness_statuses": [
+        {
+          "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
+          "paper_baseline_id": "vdcores",
+          "latest_status": "pass",
+          "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-current-working/",
+          "blocking_gaps": [],
+          "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
+        }
+      ],
+      "execution_attempt_statuses": [
+        {
+          "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
+          "paper_baseline_id": "vdcores",
+          "execution_attempt_id": "vdcores_qwen3_8b_shared_instruction_window_plan_h200",
+          "title": "VDCores Qwen3-8B Shared-Instruction Window Plan",
+          "status": "partial",
+          "artifact_root": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-shared-window-plan-0a0392d2/",
+          "blocker": "This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing.",
+          "summary": {
+            "model": "Qwen/Qwen3-8B",
+            "analysis_status": "pass",
+            "shared_instruction_limit": 512,
+            "num_sms": 132,
+            "max_cinsts_per_sm_required": 2177,
+            "max_minsts_per_sm_required": 15042,
+            "minimum_compute_instruction_windows": 5,
+            "minimum_memory_instruction_windows": 30,
+            "minimum_worst_case_windows_per_sm": 30,
+            "segmented_window_manifest_status": "generated",
+            "segmented_window_manifest_kind": "per_sm_uniform_lower_bound",
+            "max_compute_window_instruction_count": 512,
+            "max_memory_window_instruction_count": 512,
+            "pre_import_check_count": 4,
+            "preferred_path": "segmented_token_windowed_shared_instruction_schedule",
+            "paper_row_importable": false,
+            "failure_kind": "shared_instruction_windowing_not_implemented"
+          }
+        }
+      ],
+      "probe_statuses": [
+        {
+          "paper_baseline_id": "mpk",
+          "latest_status": "pass",
+          "next_action": "Install MPK dependencies, run the Qwen3 native and --use-mirage commands, then export raw latency and throughput JSON.",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        },
+        {
+          "paper_baseline_id": "vdcores",
+          "latest_status": "pass",
+          "next_action": "Run the Qwen3-1.7B dry-build, correctness, and benchmark commands, then import measured resource-policy artifacts.",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        },
+        {
+          "paper_baseline_id": "vllm",
+          "latest_status": "pass",
+          "next_action": "vLLM A100 and H200 entrypoint imports pass under isolated runtime environments; keep serving-result rows tied to raw benchmark artifacts before promotion.",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        },
+        {
+          "paper_baseline_id": "sglang",
+          "latest_status": "pass",
+          "next_action": "SGLang A100 and H200 entrypoint imports pass under isolated runtime environments; keep serving-result rows tied to raw benchmark artifacts before promotion.",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        },
+        {
+          "paper_baseline_id": "thunderkittens",
+          "latest_status": "pass",
+          "next_action": "Build the selected ThunderKittens kernel on H200/H100-class hardware and capture correctness plus benchmark JSON.",
+          "machines": [
+            {
+              "gpu": "A100",
+              "status": "pass",
+              "blocking_gaps": []
+            },
+            {
+              "gpu": "H200",
+              "status": "pass",
+              "blocking_gaps": []
+            }
+          ]
+        }
+      ],
+      "blockers": [
+        "PTO persistent-device full-serving, VDCores Qwen3-8B full serving after the current global-instruction correctness blocker, and ThunderKittens-family full serving rows are not yet imported for the shared Qwen3-8B serving policies.",
+        "Paper baseline run vdcores_qwen3_8b_decode_preflight is planned_not_run, not imported_to_viewer.",
+        "Latest execution attempt vdcores_qwen3_8b_shared_instruction_window_plan_h200 for vdcores_qwen3_8b_decode_preflight is partial: This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing."
+      ],
+      "next_actions": [
+        {
+          "source": "matrix_missing_evidence",
+          "missing_evidence_id": "pto_full_serving_qwen3_8b",
+          "paper_baseline_id": "",
+          "paper_baseline_run_id": "",
+          "method_id": "pto_persistent_device",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Implement/import PTO persistent-device Qwen3-8B rows for MPK and VDCores offline decode. Evidence covers diagnostics, Qwen task bodies, RoPE refresh, GQA decode-attention grouping, paged KV-table indexing, tiled softmax passes, policy-length MPK/VDCores diagnostic decode-loop execution, and argmax. Remaining gates: full Qwen numerical correctness, full-serving row import.",
+          "evidence_summary": [
+            "Lifecycle and input artifacts: persistent_qwen_serving_scaffold, qwen_serving_lifecycle_plan, qwen_prompt_accounting, qwen_runtime_input_binding, qwen_cuda_token_buffer_binding, qwen_persistent_decode_args, and qwen_kv_cache_binding.",
+            "Weight artifacts: qwen_weight_inventory, qwen_safetensors_fetch, qwen_safetensors_metadata, qwen_cuda_weight_binding, qwen_persistent_weight_args, qwen_persistent_weight_materialization, qwen_resident_weight_table, local Qwen shard placement, actual safetensors shape/dtype validation for 399 tensors, stable CUDA weight binding slots and file offsets, full CUDA residency for 16.38 GB of weights, and copy-back verification for 16 small tensors.",
+            "Persistent DAG artifacts: qwen_persistent_task_bodies, generated persistent-device Qwen task-body source, shape-field linear projection/logits source, shape-field QK RMSNorm source, shape-field QK RoPE formula source, descriptor-level QK RoPE table slots, descriptor-level KV page-table slot, descriptor-level logits tile-size scalar, launch-packet live RoPE table and KV page-table pointer binding with Qwen-theta first-position table population and bounded per-step refresh, decode-position-aware slot-mapped QKV writeback through runtime kv_page_table, bounded diagnostic GQA decode-attention reduction over paged mutable c/d KV fields with descriptor-bounded tiled softmax passes, descriptor-bounded tiled hidden-by-vocab logits projection source, full-vocab logits argmax source, persistent DAG tensor_args manifest, tensor_arg_dtypes BF16/FP32 ABI, dtype-aware generated CUDA tensor-argument reads, resident_weight_ptrs[slot_id], process-scoped resident weight table owner, padded target-length input_ids, attention_mask, persistent decode token argument binding, preserving tensor_args for weights, and dry-run KV-cache key/value pointer binding.",
+            "Runtime diagnostics: controlled attention-tile proxy, controlled proxy numeric oracle, controlled proxy live CUDA execution, controlled proxy live microdecode DAG execution, resource-backed diagnostic execution, block-wide full-vector RMSNorm reduction diagnostic execution, bounded tiled logits projection reference checking, 1024-step MPK-policy and 64-step VDCores-policy diagnostic decode-loop execution, device-committed sampled-token feedback, full-serving import gates requiring runtime=cuda/persistent_device, serving_coverage=full_serving, zero failed requests, consistent request/token accounting, and correctness coverage for all generated decode tokens, plus matching benchmark-viewer data validation and paper-audit gates for viewer JSON remain diagnostic rather than full serving."
+          ]
+        },
+        {
+          "source": "matrix_missing_evidence",
+          "missing_evidence_id": "vdcores_full_serving_qwen3_8b",
+          "paper_baseline_id": "vdcores",
+          "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
+          "method_id": "vdcores",
+          "serving_workload_ids": [
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after fixing correctness for the global-instruction capacity path or implementing an equivalent segmented schedule under the shared-instruction runtime.",
+          "evidence_summary": []
+        },
+        {
+          "source": "matrix_missing_evidence",
+          "missing_evidence_id": "thunderkittens_full_serving_qwen3_8b",
+          "paper_baseline_id": "thunderkittens",
+          "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
+          "method_id": "thunderkittens",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Import ThunderKittens-family full-serving Qwen/Qwen3-8B rows beyond the current attention-tile proxy.",
+          "evidence_summary": []
+        },
+        {
+          "source": "execution_attempt",
+          "paper_baseline_id": "vdcores",
+          "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
+          "execution_attempt_id": "vdcores_qwen3_8b_shared_instruction_window_plan_h200",
+          "status": "partial",
+          "action": "Resolve latest execution attempt vdcores_qwen3_8b_shared_instruction_window_plan_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing."
+        }
+      ],
+      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics."
+    }
+  ]
+}

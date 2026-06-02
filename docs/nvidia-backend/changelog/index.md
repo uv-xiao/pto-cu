@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 Compact evaluation data](2026-06-02-compact-evaluation-data.md)
 - [2026-06-02 PTO full-serving viewer validator gate](2026-06-02-pto-full-serving-viewer-validator-gate.md)
 - [2026-06-02 PTO full-serving audit metric gate](2026-06-02-pto-full-serving-audit-metric-gate.md)
 - [2026-06-02 PTO full-serving metric gate](2026-06-02-pto-full-serving-metric-gate.md)

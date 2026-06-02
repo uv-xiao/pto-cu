@@ -15,7 +15,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 THIS_DIR = Path(__file__).resolve().parent
 PROMPT_ACCOUNTING = THIS_DIR / "qwen_prompt_accounting.py"
-VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
+VIEWER_DATA = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 DEFAULT_CACHE_DIR = ROOT / "tmp" / "hf-tokenizers" / "qwen3-8b-d117af2f"
 TARGET_WORKLOAD_IDS = {"mpk_offline_decode", "vdcores_offline_decode"}
 MODEL_ID = "Qwen/Qwen3-8B"

@@ -59,7 +59,7 @@ def core_stages(artifacts: dict[str, dict[str, Any]], flags: dict[str, Any]) -> 
             owner="benchmark_viewer",
             required_for_full_serving=True,
             status="pass" if serving_workload_contracts() else "fail",
-            evidence="docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json",
+            evidence="evaluations/nvidia/benchmark-viewer/data/serving_workloads.json",
             next_action="Keep MPK and VDCores serving policies in viewer data.",
         ),
         stage(

@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "pto_commit": "current-working",
+    "artifact_root": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-current-working/",
+    "source_files": [
+      "evaluations/nvidia/benchmark-viewer/data/paper_baselines.json"
+    ]
+  },
+  "paper_baseline_environment_plans": [
+    {
+      "id": "vllm_runtime_environment",
+      "paper_baseline_id": "vllm",
+      "title": "vLLM Isolated Runtime Environment",
+      "status": "plan_ready",
+      "source_path": "tmp/baselines/vllm",
+      "source_commit": "27fa5aa3b952a6108de127423397e50364a95fcb",
+      "build_source_path": "tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython",
+      "source_overlay_commands": [
+        "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_source_overlay.py --source tmp/baselines/vllm --overlay tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython"
+      ],
+      "environment_path": "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+      "python_policy": "Create a dedicated venv under tmp/ with --system-site-packages; never install these serving framework dependencies into the project .venv or user site.",
+      "dependency_sources": [
+        "pyproject.toml",
+        "requirements/build/cuda.txt",
+        "requirements/common.txt",
+        "requirements/cuda.txt"
+      ],
+      "critical_packages": [
+        {
+          "name": "cmake",
+          "declared": true,
+          "evidence": [
+            "pyproject.toml: cmake>=3.26.1",
+            "requirements/build/cuda.txt: cmake>=3.26.1"
+          ]
+        },
+        {
+          "name": "ninja",
+          "declared": true,
+          "evidence": [
+            "pyproject.toml: ninja",
+            "requirements/build/cuda.txt: ninja",
+            "requirements/common.txt: ninja"
+          ]
+        },
+        {
+          "name": "setuptools-rust",
+          "declared": true,
+          "evidence": [
+            "pyproject.toml: setuptools-rust>=1.9.0",
+            "requirements/build/cuda.txt: setuptools-rust>=1.9.0"
+          ]
+        },
+        {
+          "name": "setuptools-scm",
+          "declared": true,
+          "evidence": [
+            "pyproject.toml: setuptools-scm>=8.0",
+            "requirements/build/cuda.txt: setuptools-scm>=8"
+          ]
+        },
+        {
+          "name": "torch",
+          "declared": true,
+          "evidence": [
+            "pyproject.toml: torch == 2.11.0",
+            "requirements/build/cuda.txt: torch==2.11.0",
+            "requirements/cuda.txt: torch==2.11.0"
+          ]
+        },
+        {
+          "name": "torchvision",
+          "declared": true,
+          "evidence": [
+            "requirements/cuda.txt: torchvision==0.26.0"
+          ]
+        },
+        {
+          "name": "pydantic",
+          "declared": true,
+          "evidence": [
+            "requirements/common.txt: pydantic >= 2.12.0"
+          ]
+        },
+        {
+          "name": "cbor2",
+          "declared": true,
+          "evidence": [
+            "requirements/common.txt: cbor2"
+          ]
+        },
+        {
+          "name": "flashinfer-python",
+          "declared": true,
+          "evidence": [
+            "requirements/cuda.txt: flashinfer-python==0.6.11.post2"
+          ]
+        },
+        {
+          "name": "tilelang",
+          "declared": true,
+          "evidence": [
+            "requirements/cuda.txt: tilelang==0.1.9"
+          ]
+        }
+      ],
+      "manual_packages": [
+        {
+          "name": "uvloop",
+          "why": "The pinned api_server.py imports uvloop, but uvloop is not declared in the inspected runtime requirement files."
+        },
+        {
+          "name": "scipy",
+          "why": "The --system-site-packages environment can otherwise import an old system SciPy that is incompatible with the NumPy version installed by the pinned vLLM dependency set during Transformers/OpenAI entrypoint imports."
+        },
+        {
+          "name": "pandas",
+          "why": "H200 serving model inspection imports vllm._aiter_ops, which imports pandas before the server is ready; an old system pandas can be binary-incompatible with the env NumPy under --system-site-packages."
+        },
+        {
+          "name": "numexpr",
+          "why": "Env-local pandas can still import a binary-incompatible system numexpr unless the package is installed inside the isolated vLLM environment."
+        },
+        {
+          "name": "bottleneck",
+          "why": "Env-local pandas can still import a binary-incompatible system bottleneck unless the package is installed inside the isolated vLLM environment."
+        }
+      ],
+      "install_commands": [
+        "python3 -m venv --system-site-packages tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3",
+        "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --upgrade pip setuptools wheel",
+        "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install uvloop",
+        "REPO_ROOT=$PWD && cd tmp/baselines/vllm && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install -r requirements/common.txt -r requirements/cuda.txt",
+        "REPO_ROOT=$PWD && cd tmp/baselines/vllm && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install -r requirements/build/cuda.txt",
+        "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_source_overlay.py --source tmp/baselines/vllm --overlay tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython",
+        "REPO_ROOT=$PWD && VLLM_VERSION_OVERRIDE=$($REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import setuptools_scm; print(setuptools_scm.get_version(root='$REPO_ROOT/tmp/baselines/vllm'))\") && cd tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython && env VLLM_VERSION_OVERRIDE=$VLLM_VERSION_OVERRIDE PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install --no-build-isolation -e .",
+        "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin:$PATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -m pip install 'scipy>=1.15.0' 'pandas>=2.2.0' numexpr bottleneck"
+      ],
+      "preflight_commands": [
+        "tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python .agents/skills/cuda-backend-eval/scripts/vllm_spinloop_preflight.py --source tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython --env-python tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python"
+      ],
+      "preflight_after_install_steps": 6,
+      "validation_commands": [
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.cli.main')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.entrypoints.openai.api_server')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.engine.arg_utils')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython:$PWD/tmp/cuda-backend/paper-baselines/source-overlays/vllm-27fa5aa3-spinloop-cpython/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/vllm-27fa5aa3/bin/python -c \"import importlib; importlib.import_module('vllm.model_executor.models.qwen3')\""
+      ],
+      "execution_gaps": [
+        "Environment has not been materialized by this planner artifact.",
+        "Serving benchmarks still need raw JSON capture after validation passes."
+      ],
+      "notes": [
+        "The vLLM source declares torch==2.11.0 while the project venv may carry a different CUDA/PyTorch stack, so the serving baseline must use a dedicated environment under tmp/.",
+        "Editable installation is kept in the isolated environment because the installed vllm module and console script are required before server and throughput runs.",
+        "The Python 3.10 evaluation host builds vLLM from a copied source overlay that unsets Py_LIMITED_API for the spinloop CXX compile; the pinned upstream checkout under tmp/baselines is not modified.",
+        "Editable install derives VLLM_VERSION_OVERRIDE from the pinned upstream checkout before changing into the overlay, because the overlay intentionally omits Git metadata."
+      ],
+      "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-current-working/environment-plans.json"
+    },
+    {
+      "id": "sglang_runtime_environment",
+      "paper_baseline_id": "sglang",
+      "title": "SGLang Isolated Runtime Environment",
+      "status": "plan_ready",
+      "source_path": "tmp/baselines/sglang",
+      "source_commit": "7ed53d15f357ea4d722c1980c2cb35e8367d8bb0",
+      "build_source_path": "tmp/baselines/sglang",
+      "source_overlay_commands": [],
+      "environment_path": "tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15",
+      "python_policy": "Create a dedicated venv under tmp/ with --system-site-packages; never install these serving framework dependencies into the project .venv or user site.",
+      "dependency_sources": [
+        "python/pyproject.toml"
+      ],
+      "critical_packages": [
+        {
+          "name": "torch",
+          "declared": true,
+          "evidence": [
+            "python/pyproject.toml: torch==2.11.0"
+          ]
+        },
+        {
+          "name": "torchvision",
+          "declared": true,
+          "evidence": [
+            "python/pyproject.toml: torchvision"
+          ]
+        },
+        {
+          "name": "orjson",
+          "declared": true,
+          "evidence": [
+            "python/pyproject.toml: orjson"
+          ]
+        },
+        {
+          "name": "uvloop",
+          "declared": true,
+          "evidence": [
+            "python/pyproject.toml: uvloop"
+          ]
+        },
+        {
+          "name": "flashinfer_python",
+          "declared": true,
+          "evidence": [
+            "python/pyproject.toml: flashinfer_python[cu13]==0.6.11.post1"
+          ]
+        },
+        {
+          "name": "tilelang",
+          "declared": true,
+          "evidence": [
+            "python/pyproject.toml: tilelang==0.1.8"
+          ]
+        }
+      ],
+      "manual_packages": [],
+      "install_commands": [
+        "python3 -m venv --system-site-packages tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15",
+        "env PYTHONNOUSERSITE=1 PATH=tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin:$PATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -m pip install --upgrade pip setuptools wheel",
+        "REPO_ROOT=$PWD && cd tmp/baselines/sglang && env PYTHONNOUSERSITE=1 PATH=$REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin:$PATH $REPO_ROOT/tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -m pip install --no-build-isolation -e \"python[all]\""
+      ],
+      "preflight_commands": [],
+      "preflight_after_install_steps": 2,
+      "validation_commands": [
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('orjson')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('torchvision')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang.bench_serving')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang.bench_offline_throughput')\"",
+        "env PYTHONNOUSERSITE=1 PYTHONPATH=$PWD/tmp/baselines/sglang:$PWD/tmp/baselines/sglang/python:$PYTHONPATH tmp/cuda-backend/paper-baselines/envs/sglang-7ed53d15/bin/python -c \"import importlib; importlib.import_module('sglang.bench_one_batch')\""
+      ],
+      "execution_gaps": [
+        "Environment has not been materialized by this planner artifact.",
+        "Serving benchmarks still need raw JSON capture after validation passes."
+      ],
+      "notes": [
+        "SGLang imports orjson and torchvision during benchmark module initialization, so dependency validation must run with PYTHONNOUSERSITE=1 to avoid user-site leakage.",
+        "The pinned source declares torch==2.11.0 and CUDA 13 packages; installing it into the project venv would make PTO tests non-reproducible."
+      ],
+      "next_action": "Run the install_commands on the evaluation host, then run the validation_commands before starting serving benchmarks.",
+      "raw_artifact": "tmp/cuda-backend/paper-baselines/environment-plans/environment-plans-current-working/environment-plans.json"
+    }
+  ]
+}

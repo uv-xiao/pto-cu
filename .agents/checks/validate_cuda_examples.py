@@ -11,7 +11,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 EXAMPLES_ROOT = ROOT / "examples" / "cuda"
-VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
+VIEWER_DATA = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 ID_RE = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)*$")
 REVIEW_DOC_RE = re.compile(
     r"^- \[(?P<title>[^\]]+)\]\((?P<path>docs/[^)]+\.md)\) "
@@ -153,7 +153,7 @@ def validate_review_doc(
 
 def validate_examples(root: Path = ROOT) -> None:
     examples_root = root / "examples" / "cuda"
-    viewer_data = root / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
+    viewer_data = root / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
     readme = examples_root / "README.md"
     if not readme.is_file():
         fail(f"missing {readme.relative_to(root)}")

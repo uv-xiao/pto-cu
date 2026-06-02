@@ -16,9 +16,9 @@ preserving the original `baseline_survey.md` path used by review guards.
 | ThunderKittens | `tmp/baselines/thunderkittens` | source includes kernel Makefiles, correctness tests, and benchmark scripts |
 
 Committed viewer data mirrors this source state in
-`docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json`,
-`docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json`, and
-`docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json`. The current
+`evaluations/nvidia/benchmark-viewer/data/paper_baselines.json`,
+`evaluations/nvidia/benchmark-viewer/data/paper_baseline_runs.json`, and
+`evaluations/nvidia/benchmark-viewer/data/serving_workloads.json`. The current
 serving policy IDs are `mpk_offline_decode` and `vdcores_offline_decode`.
 
 ## Survey Map

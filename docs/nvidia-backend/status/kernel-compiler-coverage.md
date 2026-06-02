@@ -22,7 +22,7 @@ Verified coverage includes:
   zero scheduler errors for selected generated-dispatch rows.
 
 The benchmark viewer also exposes the current scene-builder coverage as
-`docs/nvidia-backend/benchmark-viewer/data/scene_builder_coverage.json`, so
+`evaluations/nvidia/benchmark-viewer/data/scene_builder_coverage.json`, so
 reviewers can inspect covered builders, open work, and exact code/doc evidence
 without searching the large CUDA scene-test file manually.
 

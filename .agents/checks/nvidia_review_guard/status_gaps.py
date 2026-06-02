@@ -42,7 +42,7 @@ def check_remaining_gap_contract() -> None:
             if heading not in text:
                 fail(f"{path.relative_to(ROOT)} missing {heading}")
         for needle in (
-            "docs/nvidia-backend/benchmark-viewer/data/",
+            "evaluations/nvidia/benchmark-viewer/data/",
             ".agents/checks/",
         ):
             if needle not in text:

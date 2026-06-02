@@ -18,7 +18,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from viewer_data_io import load_json as load_viewer_json
 from nvidia_goal_progress_contract import build_goal_progress as build_goal_progress_contract
 
-VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
+VIEWER_DATA = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 DEFAULT_AUDIT = VIEWER_DATA / "paper_readiness_audit.json"
 DEFAULT_WORK_QUEUE = VIEWER_DATA / "paper_readiness_work_queue.json"
 DEFAULT_MATRIX = VIEWER_DATA / "paper_evaluation_matrix.json"

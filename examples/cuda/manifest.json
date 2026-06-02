@@ -1,9 +1,67 @@
 {
   "schema_version": 1,
-  "example_files": [
-    "manifest/core.json",
-    "manifest/qwen_lifecycle.json",
-    "manifest/qwen_tokens.json",
-    "manifest/qwen_weights.json"
+  "examples": [
+    {
+      "id": "host_schedule_vector_ops",
+      "title": "Host-Schedule Vector Ops",
+      "script": "examples/cuda/host_schedule_vector_ops.py",
+      "benchmark_id": "host_schedule_vector_ops",
+      "method_id": "pto_host_schedule",
+      "runtime": "cuda/host_schedule",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/host_schedule_vector_ops.py --op add --n 1024 --arch compute_80",
+      "expected_output": "command exits 0; optional output JSON records status=pass for the selected host-schedule vector operation.",
+      "evidence_symbols": [
+        "cuda_smoke.py",
+        "--runner",
+        "worker",
+        "--op"
+      ]
+    },
+    {
+      "id": "persistent_layered_cross",
+      "title": "Persistent Layered-Cross Graph",
+      "script": "examples/cuda/persistent_layered_cross.py",
+      "benchmark_id": "graph_layered_cross",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/persistent_layered_cross.py --n 1024 --arch compute_80 --scheduler-blocks 3",
+      "expected_output": "command exits 0; optional output JSON records status=pass and the graph_descriptor_layered_cross DAG shape.",
+      "evidence_symbols": [
+        "cuda_persistent_smoke.py",
+        "graph_descriptor_layered_cross",
+        "--scheduler-blocks",
+        "--worker-blocks"
+      ]
+    },
+    {
+      "id": "qwen_persistent_task_bodies",
+      "title": "Qwen Persistent Task Bodies",
+      "script": "examples/cuda/qwen_persistent_task_bodies.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_persistent_task_bodies.py --output-json tmp/cuda-backend/pto-serving-task-bodies/qwen-persistent-task-bodies.json --output-source tmp/cuda-backend/pto-serving-task-bodies/qwen-persistent-task-bodies.cu",
+      "expected_output": "command exits 0; output JSON records generated Qwen task bodies with token, mutable KV-cache, weight, shape-linear, QK RMSNorm/RoPE, GQA decode-attention grouping, paged tiled attention, full-vocab argmax, proxy numeric oracle, and unit-math/decode-attention oracles.",
+      "evidence_symbols": [
+        "pto_qwen_persistent_task_bodies",
+        "generated_qwen_kernel_bodies",
+        "qwen_logits_full_vocab_argmax_source"
+      ]
+    },
+    {
+      "id": "qwen_decode_loop_runner",
+      "title": "Qwen Decode Loop Runner",
+      "script": "examples/cuda/qwen_decode_loop_runner.py",
+      "benchmark_id": "llm_serving_decode",
+      "method_id": "pto_persistent_device",
+      "runtime": "cuda/persistent_device",
+      "command": "PYTHONPATH=$PWD:$PWD/python .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode mock --run-unit-math-live --run-submission-smoke --single-context-live-session --run-resource-backed-smoke --resource-backed-repeat-runs 3 --token-cuda-live --kv-cuda-live --resident-cuda-live --workspace-cuda-live --device 0 --arch compute_80 --repeat-runs 3 --output-json tmp/cuda-backend/pto-serving-decode-loop-submission-descriptors/qwen-decode-loop-runner.json",
+      "expected_output": "command exits 0; output JSON records a single CUDA-context resource session, runner-owned cuda_live token, KV-cache, resident-weight, and activation-workspace owners, resource-backed Qwen submission descriptors, compact graph materialization, workspace-bound launch-packet preflight, diagnostic bridge contracts, a diagnostic Qwen descriptor smoke execution, and repeated diagnostic resource-backed run_prepared execution.",
+      "evidence_symbols": [
+        "pto_qwen_decode_loop_runner",
+        "single_context_live_resource_session",
+        "qwen_resource_backed_diagnostic_execution"
+      ]
+    }
   ]
 }

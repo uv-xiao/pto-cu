@@ -111,7 +111,7 @@ def validate_paper_baseline_runs(
         import_target = require_dict(record, "import_target", owner)
         if (
             require_string(import_target, "viewer_file", owner)
-            != "docs/nvidia-backend/benchmark-viewer/data/results.json"
+            != "evaluations/nvidia/benchmark-viewer/data/results.json"
         ):
             fail(f"{owner} import target must be viewer results.json")
         for key in ("result_kind", "notes"):

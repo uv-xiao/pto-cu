@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read and write benchmark-viewer JSON, including sharded collections."""
+"""Read and write benchmark-viewer JSON."""
 
 from __future__ import annotations
 
@@ -17,7 +17,4 @@ from viewer_data_io_impl.sidecars import expand_record_sidecars
 from viewer_data_io_impl.sidecars import load_sidecar_list
 from viewer_data_io_impl.sidecars import split_record_sidecars
 from viewer_data_io_impl.sidecars import write_sidecar_list
-from viewer_data_io_impl.write import collection_key
-from viewer_data_io_impl.write import sharded_target
 from viewer_data_io_impl.write import write_json
-from viewer_data_io_impl.write import write_sharded_collection

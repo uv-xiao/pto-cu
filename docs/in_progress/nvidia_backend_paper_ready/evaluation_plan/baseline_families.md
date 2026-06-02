@@ -25,17 +25,17 @@ Local source notes already include extracted MPK and VDCores paper text under
 `baseline_survey.md` records the current source state for MPK and VDCores and
 the planned source-capture state for vLLM, SGLang, and ThunderKittens. The
 benchmark viewer loads the same baseline readiness data from
-`docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json`.
+`evaluations/nvidia/benchmark-viewer/data/paper_baselines.json`.
 
 Paper claim readiness is tracked in
-`docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix.json`.
+`evaluations/nvidia/benchmark-viewer/data/paper_evaluation_matrix.json`.
 That matrix names each claim's workloads, methods, paper baselines, hardware
 targets, required metrics, current evidence, missing evidence, and promotion
 gate. A claim is not paper-ready until the matrix status and raw artifacts
 show complete baseline coverage.
 
 The generated readiness audit in
-`docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json` is the
+`evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json` is the
 human-reviewable summary of that matrix. It is produced by
 `.agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py` and folds
 matrix gaps, paper-baseline run statuses, run-readiness statuses,
@@ -45,12 +45,12 @@ claim. The audit must stay
 `not_paper_ready` until every claim has a ready matrix status and no generated
 blockers.
 The generated work queue in
-`docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json`
+`evaluations/nvidia/benchmark-viewer/data/paper_readiness_work_queue.json`
 flattens those next actions into one prioritized table for the HTML viewer, so
 reviewers can see the remaining MPK, VDCores, vLLM, SGLang, ThunderKittens,
 and PTO serving work without expanding each matrix claim.
 The generated goal-progress audit in
-`docs/nvidia-backend/benchmark-viewer/data/goal_progress.json` summarizes the
+`evaluations/nvidia/benchmark-viewer/data/goal_progress.json` summarizes the
 overall NVIDIA backend objective. It should remain `in_progress` while the
 paper-grade results criterion still points at queued raw captures.
 Use `.agents/skills/cuda-backend-eval/scripts/refresh_nvidia_review_artifacts.py`
@@ -58,7 +58,7 @@ after changing matrix, baseline, readiness, probe, result, or goal-progress
 inputs so the audit, work queue, and goal-progress data move together.
 
 Paper-baseline reproduction commands are tracked in
-`docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json`. Those
+`evaluations/nvidia/benchmark-viewer/data/paper_baseline_runs.json`. Those
 records name the setup commands, run commands, expected tmp artifacts, required
 metrics, and viewer import target for MPK, VDCores, vLLM, SGLang, and
 ThunderKittens.
@@ -69,7 +69,7 @@ paths and required scheduler/resource-policy fields before those long runs
 are captured.
 
 Shared LLM-serving workload policies are tracked in
-`docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json`. The first
+`evaluations/nvidia/benchmark-viewer/data/serving_workloads.json`. The first
 two policies are `mpk_offline_decode` and `vdcores_offline_decode`, because
 the MPK and VDCores papers use different decode lengths and context policies.
 The MPK-comparable policy uses Qwen3-8B as the primary model, Qwen3-1.7B for

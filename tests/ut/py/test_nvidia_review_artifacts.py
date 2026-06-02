@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 DOC_ROOT = ROOT / "docs" / "nvidia-backend"
 VIEWER_ROOT = DOC_ROOT / "benchmark-viewer"
+VIEWER_DATA = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 
 
 def load_pto_serving_preflight_module():
@@ -371,7 +372,7 @@ def test_imported_paper_baseline_run_rejects_missing_expected_artifact(tmp_path)
             ],
             "import_target": {
                 "viewer_file": (
-                    "docs/nvidia-backend/benchmark-viewer/data/results.json"
+                    "evaluations/nvidia/benchmark-viewer/data/results.json"
                 ),
                 "result_kind": "paper_baseline_result_record",
                 "notes": "fixture",
@@ -497,7 +498,7 @@ def test_llm_serving_paper_baseline_run_requires_shape_and_concurrency(tmp_path)
             or ["correctness", "raw_artifacts"],
             "import_target": {
                 "viewer_file": (
-                    "docs/nvidia-backend/benchmark-viewer/data/results.json"
+                    "evaluations/nvidia/benchmark-viewer/data/results.json"
                 ),
                 "result_kind": "paper_baseline_result_record",
                 "notes": "fixture",
@@ -2355,7 +2356,7 @@ def test_persistent_qwen_safetensors_fetch_status_is_reviewable(tmp_path):
 
 def test_llm_serving_matrix_tracks_pto_preflight_blocker():
     matrix = load_viewer_collection(
-        VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
+        VIEWER_DATA / "paper_evaluation_matrix.json"
     )
     claim = next(
         item
@@ -2528,7 +2529,7 @@ def test_llm_serving_matrix_tracks_pto_preflight_blocker():
 
 def test_vdcores_scheduler_trace_keeps_diagnostic_scope_separate():
     matrix = load_viewer_collection(
-        VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
+        VIEWER_DATA / "paper_evaluation_matrix.json"
     )
     claim = next(
         item
@@ -2546,7 +2547,7 @@ def test_vdcores_scheduler_trace_keeps_diagnostic_scope_separate():
     assert "measurement scope" in claim["promotion_gate"]
 
     runs = load_viewer_collection(
-        VIEWER_ROOT / "data" / "paper_baseline_runs.json"
+        VIEWER_DATA / "paper_baseline_runs.json"
     )
     vdcores_run = next(
         item
@@ -2558,7 +2559,7 @@ def test_vdcores_scheduler_trace_keeps_diagnostic_scope_separate():
     assert "diagnostic-scope" in scope["scheduler_queue_policy"]
     assert "Do not treat diagnostic scheduler fields" in scope["paper_use_rule"]
 
-    results = load_viewer_collection(VIEWER_ROOT / "data" / "results.json")
+    results = load_viewer_collection(VIEWER_DATA / "results.json")
     vdcores_result = next(
         item
         for item in results["result_records"]
@@ -3527,7 +3528,7 @@ def test_paper_baseline_results_update_marks_imported_run(tmp_path):
     viewer_path = tmp_path / "viewer-records.json"
     results_path.write_text(
         json.dumps(
-            load_viewer_collection(VIEWER_ROOT / "data" / "results.json"),
+            load_viewer_collection(VIEWER_DATA / "results.json"),
             indent=2,
         ),
         encoding="utf-8",
@@ -3535,7 +3536,7 @@ def test_paper_baseline_results_update_marks_imported_run(tmp_path):
     runs_path.write_text(
         json.dumps(
             load_viewer_collection(
-                VIEWER_ROOT / "data" / "paper_baseline_runs.json"
+                VIEWER_DATA / "paper_baseline_runs.json"
             ),
             indent=2,
         ),
@@ -3650,7 +3651,7 @@ def test_paper_baseline_results_update_rejects_missing_required_metric(tmp_path)
     viewer_path = tmp_path / "viewer-records.json"
     results_path.write_text(
         json.dumps(
-            load_viewer_collection(VIEWER_ROOT / "data" / "results.json"),
+            load_viewer_collection(VIEWER_DATA / "results.json"),
             indent=2,
         ),
         encoding="utf-8",
@@ -3658,7 +3659,7 @@ def test_paper_baseline_results_update_rejects_missing_required_metric(tmp_path)
     runs_path.write_text(
         json.dumps(
             load_viewer_collection(
-                VIEWER_ROOT / "data" / "paper_baseline_runs.json"
+                VIEWER_DATA / "paper_baseline_runs.json"
             ),
             indent=2,
         ),
@@ -4327,7 +4328,7 @@ def test_paper_baseline_environment_attempt_captures_bounded_steps(tmp_path):
                     "pto_commit": "abc1234",
                     "artifact_root": "tmp/environment-plans/",
                     "source_files": [
-                        "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
+                        "evaluations/nvidia/benchmark-viewer/data/paper_baselines.json"
                     ],
                 },
                 "paper_baseline_environment_plans": [
@@ -4418,7 +4419,7 @@ def test_paper_baseline_environment_attempt_appends_resume_window(tmp_path):
                     "pto_commit": "abc1234",
                     "artifact_root": "tmp/environment-plans/",
                     "source_files": [
-                        "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json"
+                        "evaluations/nvidia/benchmark-viewer/data/paper_baselines.json"
                     ],
                 },
                 "paper_baseline_environment_plans": [
@@ -4836,7 +4837,7 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
 
     generated = json.loads(output_path.read_text(encoding="utf-8"))
     committed = load_viewer_collection(
-        VIEWER_ROOT / "data" / "paper_readiness_audit.json"
+        VIEWER_DATA / "paper_readiness_audit.json"
     )
     assert generated == committed
     assert committed["overall_status"] == "not_paper_ready"
@@ -5016,7 +5017,7 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
 
     generated = json.loads(output_path.read_text(encoding="utf-8"))
     committed = json.loads(
-        (VIEWER_ROOT / "data" / "paper_readiness_work_queue.json").read_text(
+        (VIEWER_DATA / "paper_readiness_work_queue.json").read_text(
             encoding="utf-8"
         )
     )
@@ -5134,7 +5135,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
 
     generated = json.loads(output_path.read_text(encoding="utf-8"))
     committed = json.loads(
-        (VIEWER_ROOT / "data" / "goal_progress.json").read_text(
+        (VIEWER_DATA / "goal_progress.json").read_text(
             encoding="utf-8"
         )
     )
@@ -5215,7 +5216,7 @@ def test_nvidia_review_artifact_refresh_regenerates_all_generated_json(tmp_path)
         "goal_progress.json",
     ]:
         generated = load_viewer_collection(output_dir / filename)
-        committed = load_viewer_collection(VIEWER_ROOT / "data" / filename)
+        committed = load_viewer_collection(VIEWER_DATA / filename)
         assert generated == committed
     assert "paper_readiness_audit.json" in result.stdout
     assert "paper_readiness_work_queue.json" in result.stdout
@@ -5434,31 +5435,26 @@ def test_benchmark_viewer_has_json_backed_review_data():
     assert (VIEWER_ROOT / "index.html").is_file()
     assert (VIEWER_ROOT / "styles.css").is_file()
     assert (VIEWER_ROOT / "viewer.js").is_file()
-    assert (VIEWER_ROOT / "data" / "paper_baselines.json").is_file()
-    paper_baseline_runs_dir = VIEWER_ROOT / "data" / "paper_baseline_runs"
-    assert (paper_baseline_runs_dir / "index.json").is_file()
-    paper_baseline_probes_dir = VIEWER_ROOT / "data" / "paper_baseline_probes"
-    assert (paper_baseline_probes_dir / "index.json").is_file()
-    assert (
-        VIEWER_ROOT / "data" / "paper_baseline_environment_plans.json"
-    ).is_file()
-    environment_attempts_dir = VIEWER_ROOT / "data" / "paper_baseline_environment_attempts"
-    assert (environment_attempts_dir / "index.json").is_file()
-    run_readiness_dir = VIEWER_ROOT / "data" / "paper_baseline_run_readiness"
-    assert (run_readiness_dir / "index.json").is_file()
-    execution_attempts_dir = VIEWER_ROOT / "data" / "paper_baseline_execution_attempts"
-    assert (execution_attempts_dir / "index.json").is_file()
-    serving_command_plan_dir = VIEWER_ROOT / "data" / "serving_command_plan"
-    assert (serving_command_plan_dir / "index.json").is_file()
-    assert (VIEWER_ROOT / "data" / "serving_workloads.json").is_file()
-    paper_evaluation_dir = VIEWER_ROOT / "data" / "paper_evaluation_matrix"
-    assert (paper_evaluation_dir / "index.json").is_file()
-    paper_readiness_audit_dir = VIEWER_ROOT / "data" / "paper_readiness_audit"
-    assert (paper_readiness_audit_dir / "index.json").is_file()
-    assert (VIEWER_ROOT / "data" / "paper_readiness_work_queue.json").is_file()
-    assert (VIEWER_ROOT / "data" / "goal_progress.json").is_file()
-    capture_imports_dir = VIEWER_ROOT / "data" / "capture_imports"
-    assert (capture_imports_dir / "index.json").is_file()
+    for filename in [
+        "benchmarks.json",
+        "methods.json",
+        "paper_baselines.json",
+        "paper_baseline_runs.json",
+        "paper_baseline_probes.json",
+        "paper_baseline_environment_plans.json",
+        "paper_baseline_environment_attempts.json",
+        "paper_baseline_run_readiness.json",
+        "paper_baseline_execution_attempts.json",
+        "serving_command_plan.json",
+        "serving_workloads.json",
+        "paper_evaluation_matrix.json",
+        "paper_readiness_audit.json",
+        "paper_readiness_work_queue.json",
+        "goal_progress.json",
+        "capture_imports.json",
+        "results.json",
+    ]:
+        assert (VIEWER_DATA / filename).is_file()
     viewer_files = [VIEWER_ROOT / "viewer.js", *sorted((VIEWER_ROOT / "viewer").glob("*.js"))]
     viewer_js = "\n".join(path.read_text(encoding="utf-8") for path in viewer_files)
     for required in [
@@ -5469,10 +5465,8 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "method.launch_model",
         "paperBaselineRuns",
         "paper_baseline_runs",
-        "data/paper_baseline_runs/index.json",
         "paperBaselineProbes",
         "paper_baseline_probes",
-        "data/paper_baseline_probes/index.json",
         "paperBaselineEnvironmentPlans",
         "paper_baseline_environment_plans",
         "Environment Plans",
@@ -5490,7 +5484,6 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "next_actions",
         "Next Actions",
         "servingCommandPlan",
-        "data/serving_command_plan/index.json",
         "Serving Command Plan",
         "servingWorkloads",
         "serving_workloads",
@@ -5501,7 +5494,6 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paper_evaluation_matrix",
         "paperReadinessAudit",
         "paper_readiness_audit",
-        "data/paper_readiness_audit/index.json",
         "paperReadinessWorkQueue",
         "paper_readiness_work_queue",
         "Paper Work Queue",
@@ -5530,59 +5522,59 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert required in viewer_js
 
     benchmarks = json.loads(
-        (VIEWER_ROOT / "data" / "benchmarks.json").read_text(encoding="utf-8")
+        (VIEWER_DATA / "benchmarks.json").read_text(encoding="utf-8")
     )
     methods = json.loads(
-        (VIEWER_ROOT / "data" / "methods.json").read_text(encoding="utf-8")
+        (VIEWER_DATA / "methods.json").read_text(encoding="utf-8")
     )
     paper_baselines = json.loads(
-        (VIEWER_ROOT / "data" / "paper_baselines.json").read_text(
+        (VIEWER_DATA / "paper_baselines.json").read_text(
             encoding="utf-8"
         )
     )
     paper_baseline_runs = load_viewer_collection(
-        VIEWER_ROOT / "data" / "paper_baseline_runs.json"
+        VIEWER_DATA / "paper_baseline_runs.json"
     )
     paper_baseline_probes = load_viewer_collection(
-        VIEWER_ROOT / "data" / "paper_baseline_probes.json"
+        VIEWER_DATA / "paper_baseline_probes.json"
     )
     paper_baseline_run_readiness = load_viewer_collection(
-        VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json"
+        VIEWER_DATA / "paper_baseline_run_readiness.json"
     )
     paper_baseline_environment_attempts = load_viewer_collection(
-        VIEWER_ROOT / "data" / "paper_baseline_environment_attempts.json"
+        VIEWER_DATA / "paper_baseline_environment_attempts.json"
     )
     paper_baseline_execution_attempts = load_viewer_collection(
-        execution_attempts_dir
+        VIEWER_DATA / "paper_baseline_execution_attempts.json"
     )
     serving_command_plan = load_viewer_collection(
-        VIEWER_ROOT / "data" / "serving_command_plan.json"
+        VIEWER_DATA / "serving_command_plan.json"
     )
     serving_workloads = json.loads(
-        (VIEWER_ROOT / "data" / "serving_workloads.json").read_text(
+        (VIEWER_DATA / "serving_workloads.json").read_text(
             encoding="utf-8"
         )
     )
     paper_evaluation = load_viewer_collection(
-        VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
+        VIEWER_DATA / "paper_evaluation_matrix.json"
     )
     paper_readiness_audit = load_viewer_collection(
-        VIEWER_ROOT / "data" / "paper_readiness_audit.json"
+        VIEWER_DATA / "paper_readiness_audit.json"
     )
     paper_readiness_work_queue = json.loads(
-        (VIEWER_ROOT / "data" / "paper_readiness_work_queue.json").read_text(
+        (VIEWER_DATA / "paper_readiness_work_queue.json").read_text(
             encoding="utf-8"
         )
     )
     goal_progress = json.loads(
-        (VIEWER_ROOT / "data" / "goal_progress.json").read_text(
+        (VIEWER_DATA / "goal_progress.json").read_text(
             encoding="utf-8"
         )
     )
     capture_imports = load_viewer_collection(
-        VIEWER_ROOT / "data" / "capture_imports.json"
+        VIEWER_DATA / "capture_imports.json"
     )
-    results = load_viewer_collection(VIEWER_ROOT / "data" / "results.json")
+    results = load_viewer_collection(VIEWER_DATA / "results.json")
 
     benchmark_ids = {item["id"] for item in benchmarks["benchmarks"]}
     assert "llm_serving_decode" in benchmark_ids
@@ -5679,7 +5671,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "target_prompt_tokens"
     ] == 128
     assert any(
-        ref["path"] == "docs/nvidia-backend/benchmark-viewer/data/results.json"
+        ref["path"] == "evaluations/nvidia/benchmark-viewer/data/results.json"
         and "pto_controlled_serving_equivalent" in ref["symbols"]
         for ref in serving_by_id["vdcores_offline_decode"]["evidence_refs"]
     )
@@ -7494,12 +7486,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
             )
             assert any(
                 ref.get("path")
-                == "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json"
+                == "evaluations/nvidia/benchmark-viewer/data/serving_workloads.json"
                 for ref in item["current_evidence_refs"]
             )
             assert any(
                 ref.get("path")
-                == "docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json"
+                == "evaluations/nvidia/benchmark-viewer/data/serving_command_plan.json"
                 for ref in item["current_evidence_refs"]
             )
             assert any(

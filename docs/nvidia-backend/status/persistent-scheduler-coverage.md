@@ -34,7 +34,7 @@ archive because those files were originally written while closing the gap:
   error-taxonomy evidence.
 
 The benchmark viewer also exposes these claims as structured coverage data in
-`docs/nvidia-backend/benchmark-viewer/data/persistent_scheduler_coverage.json`.
+`evaluations/nvidia/benchmark-viewer/data/persistent_scheduler_coverage.json`.
 That record is validated against implementation and documentation symbols by
 the benchmark-viewer data guard. The same coverage data now requires a
 normal-graph lowering-boundary group, with evidence tied to

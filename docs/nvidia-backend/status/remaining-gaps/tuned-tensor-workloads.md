@@ -10,7 +10,7 @@ Triton. The benchmark report includes throughput tables and SVGs, so
 scheduler-vs-task work separation exists for current diagnostic tensor bodies.
 
 Structured review evidence lives in
-`docs/nvidia-backend/benchmark-viewer/data/tensor_workload_coverage.json` and
+`evaluations/nvidia/benchmark-viewer/data/tensor_workload_coverage.json` and
 is checked against current viewer result records by the benchmark-viewer data
 guard. The same viewer data now lists the first model-shape target tiles that
 must receive tuned PTO rows. Capture import rules are now tensor-tile aware,
@@ -42,7 +42,7 @@ Needed:
 ## Current Evidence
 
 Structured evidence lives in
-`docs/nvidia-backend/benchmark-viewer/data/tensor_workload_coverage.json` and
+`evaluations/nvidia/benchmark-viewer/data/tensor_workload_coverage.json` and
 is validated by
 `.agents/checks/benchmark_viewer_validation/tensor_workload_coverage.py`.
 The current one-repeat model-shape import smokes are under

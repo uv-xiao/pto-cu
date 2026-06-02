@@ -1,0 +1,346 @@
+{
+  "paper_baseline_probes": [
+    {
+      "id": "mpk_source_entrypoints",
+      "paper_baseline_id": "mpk",
+      "title": "MPK Source Entrypoints",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/",
+      "checks": [
+        {
+          "kind": "path_exists",
+          "path": "demo/qwen3/demo.py",
+          "why": "MPK Qwen3 native and persistent-kernel demo command."
+        },
+        {
+          "kind": "py_compile",
+          "path": "demo/qwen3/demo.py",
+          "why": "The selected MPK demo entrypoint must at least parse before setup or model-loading runs."
+        },
+        {
+          "kind": "python_module",
+          "module": "torch",
+          "why": "MPK native and persistent paths depend on PyTorch model execution."
+        },
+        {
+          "kind": "python_module",
+          "module": "transformers",
+          "why": "MPK Qwen3 demo imports AutoTokenizer and AutoConfig from Transformers."
+        },
+        {
+          "kind": "python_module",
+          "module": "triton",
+          "why": "The MPK paper compares against Triton-style operator paths."
+        },
+        {
+          "kind": "python_import",
+          "module": "mirage.mpk.base_dynamic_shard_loader",
+          "pythonpath": "python",
+          "why": "MPK Qwen3 persistent runs import the Mirage MPK dynamic shard loader from the pinned source checkout."
+        }
+      ],
+      "next_action": "Install MPK dependencies, run the Qwen3 native and --use-mirage commands, then export raw latency and throughput JSON.",
+      "latest_machine_status": [
+        {
+          "gpu": "A100",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/a100-probe.json",
+          "blocking_gaps": []
+        },
+        {
+          "gpu": "H200",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/h200-probe.json",
+          "blocking_gaps": []
+        }
+      ]
+    },
+    {
+      "id": "vdcores_source_entrypoints",
+      "paper_baseline_id": "vdcores",
+      "title": "VDCores Source Entrypoints",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/",
+      "checks": [
+        {
+          "kind": "path_exists",
+          "path": "app/python/qwen3_1p7b/sched.py",
+          "why": "Selected VDCores public Qwen resource-policy entrypoint."
+        },
+        {
+          "kind": "py_compile",
+          "path": "app/python/qwen3_1p7b/sched.py",
+          "why": "The selected scheduler entrypoint must parse before model-loading runs."
+        },
+        {
+          "kind": "py_compile",
+          "path": "app/python/qwen3_1p7b/runtime_context.py",
+          "why": "The public Qwen runtime context owns HF auth and dry-build behavior."
+        },
+        {
+          "kind": "python_module",
+          "module": "torch",
+          "why": "VDCores Qwen materialization, dry-build tensors, and correctness paths depend on PyTorch."
+        },
+        {
+          "kind": "python_module",
+          "module": "transformers",
+          "why": "VDCores Qwen runtime context imports AutoModelForCausalLM and AutoConfig from Transformers."
+        }
+      ],
+      "next_action": "Run the Qwen3-1.7B dry-build, correctness, and benchmark commands, then import measured resource-policy artifacts.",
+      "latest_machine_status": [
+        {
+          "gpu": "A100",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/a100-probe.json",
+          "blocking_gaps": []
+        },
+        {
+          "gpu": "H200",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/h200-probe.json",
+          "blocking_gaps": []
+        }
+      ]
+    },
+    {
+      "id": "vllm_source_entrypoints",
+      "paper_baseline_id": "vllm",
+      "title": "vLLM Source Entrypoints",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/vllm-a100-h200-env-27fa5aa3/",
+      "checks": [
+        {
+          "kind": "path_exists",
+          "path": "benchmarks/benchmark_serving.py",
+          "why": "vLLM serving benchmark entrypoint."
+        },
+        {
+          "kind": "py_compile",
+          "path": "benchmarks/benchmark_serving.py",
+          "why": "The serving benchmark script must parse before package installation runs."
+        },
+        {
+          "kind": "path_exists",
+          "path": "benchmarks/benchmark_throughput.py",
+          "why": "vLLM offline throughput benchmark entrypoint."
+        },
+        {
+          "kind": "py_compile",
+          "path": "benchmarks/benchmark_throughput.py",
+          "why": "The throughput benchmark script must parse before package installation runs."
+        },
+        {
+          "kind": "python_module",
+          "module": "vllm",
+          "why": "Installed vLLM module is required before actual serving runs."
+        },
+        {
+          "kind": "python_import",
+          "module": "vllm",
+          "pythonpath": ".",
+          "python_no_user_site": true,
+          "why": "The pinned source checkout must resolve as a Python package before an editable install is attempted."
+        },
+        {
+          "kind": "python_import",
+          "module": "vllm.entrypoints.cli.main",
+          "pythonpath": ".",
+          "python_no_user_site": true,
+          "why": "The vLLM CLI entrypoint is the canonical path for bench serve and throughput commands."
+        },
+        {
+          "kind": "python_import",
+          "module": "vllm.entrypoints.openai.api_server",
+          "pythonpath": ".",
+          "python_no_user_site": true,
+          "why": "The OpenAI-compatible server entrypoint is required before vLLM serving benchmarks can run."
+        },
+        {
+          "kind": "python_import",
+          "module": "vllm.engine.arg_utils",
+          "pythonpath": ".",
+          "python_no_user_site": true,
+          "why": "The benchmark CLI imports engine argument parsing before launching throughput runs."
+        }
+      ],
+      "next_action": "vLLM A100 and H200 entrypoint imports pass under isolated runtime environments; keep serving-result rows tied to raw benchmark artifacts before promotion.",
+      "latest_machine_status": [
+        {
+          "gpu": "A100",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/vllm-a100-h200-env-27fa5aa3/a100-probe.json",
+          "blocking_gaps": []
+        },
+        {
+          "gpu": "H200",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/vllm-a100-h200-env-27fa5aa3/h200-probe.json",
+          "blocking_gaps": []
+        }
+      ]
+    },
+    {
+      "id": "sglang_source_entrypoints",
+      "paper_baseline_id": "sglang",
+      "title": "SGLang Source Entrypoints",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/sglang-a100-h200-env-7ed53d15/",
+      "checks": [
+        {
+          "kind": "path_exists",
+          "path": "python/sglang/bench_serving.py",
+          "why": "SGLang serving benchmark entrypoint."
+        },
+        {
+          "kind": "py_compile",
+          "path": "python/sglang/bench_serving.py",
+          "why": "The serving benchmark script must parse before server runs."
+        },
+        {
+          "kind": "path_exists",
+          "path": "python/sglang/bench_offline_throughput.py",
+          "why": "SGLang offline throughput benchmark entrypoint."
+        },
+        {
+          "kind": "py_compile",
+          "path": "python/sglang/bench_offline_throughput.py",
+          "why": "The offline throughput script must parse before package setup."
+        },
+        {
+          "kind": "python_module",
+          "module": "sglang",
+          "why": "SGLang module resolution is required before actual serving runs."
+        },
+        {
+          "kind": "python_module",
+          "module": "orjson",
+          "python_no_user_site": true,
+          "why": "SGLang imports orjson during source package initialization."
+        },
+        {
+          "kind": "python_module",
+          "module": "torchvision",
+          "python_no_user_site": true,
+          "why": "SGLang imports torchvision.io.decode_jpeg during benchmark module initialization."
+        },
+        {
+          "kind": "python_import",
+          "module": "sglang.bench_serving",
+          "pythonpath": "python",
+          "python_no_user_site": true,
+          "why": "The selected serving benchmark module must import from the pinned source checkout."
+        },
+        {
+          "kind": "python_import",
+          "module": "sglang.bench_offline_throughput",
+          "pythonpath": "python",
+          "python_no_user_site": true,
+          "why": "The selected offline throughput benchmark module must import from the pinned source checkout."
+        },
+        {
+          "kind": "python_import",
+          "module": "sglang.bench_one_batch",
+          "pythonpath": "python",
+          "python_no_user_site": true,
+          "why": "The selected one-batch benchmark module must import from the pinned source checkout."
+        }
+      ],
+      "next_action": "SGLang A100 and H200 entrypoint imports pass under isolated runtime environments; keep serving-result rows tied to raw benchmark artifacts before promotion.",
+      "latest_machine_status": [
+        {
+          "gpu": "A100",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/sglang-a100-h200-env-7ed53d15/a100-probe.json",
+          "blocking_gaps": []
+        },
+        {
+          "gpu": "H200",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/sglang-a100-h200-env-7ed53d15/h200-probe.json",
+          "blocking_gaps": []
+        }
+      ]
+    },
+    {
+      "id": "thunderkittens_source_entrypoints",
+      "paper_baseline_id": "thunderkittens",
+      "title": "ThunderKittens Source Entrypoints",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/",
+      "checks": [
+        {
+          "kind": "path_exists",
+          "path": "kernels/attention/mha_h100/Makefile",
+          "why": "Selected attention-kernel build target for Hopper-class comparison."
+        },
+        {
+          "kind": "path_exists",
+          "path": "kernels/attention/mha_h100/benchmark.py",
+          "why": "Selected attention-kernel benchmark script."
+        },
+        {
+          "kind": "py_compile",
+          "path": "kernels/attention/mha_h100/benchmark.py",
+          "why": "The selected benchmark script must parse before make or CUDA execution."
+        },
+        {
+          "kind": "path_exists",
+          "path": "kernels/attention/mha_h100/test_correctness.py",
+          "why": "Selected attention-kernel correctness script."
+        },
+        {
+          "kind": "py_compile",
+          "path": "kernels/attention/mha_h100/test_correctness.py",
+          "why": "The selected correctness script must parse before make or CUDA execution."
+        },
+        {
+          "kind": "python_module",
+          "module": "torch",
+          "why": "The selected ThunderKittens kernel builds as a PyTorch extension and benchmark.py imports torch."
+        },
+        {
+          "kind": "python_module",
+          "module": "pybind11",
+          "why": "ThunderKittens common.mk calls python3 -m pybind11 --includes for PyTorch extension builds."
+        },
+        {
+          "kind": "python_module",
+          "module": "numpy",
+          "why": "benchmark.py and test_correctness.py import numpy for tabulation and correctness checks."
+        },
+        {
+          "kind": "python_module",
+          "module": "pandas",
+          "why": "benchmark.py imports pandas to render benchmark tables."
+        },
+        {
+          "kind": "python_module",
+          "module": "matplotlib",
+          "why": "test_correctness.py imports matplotlib to write correctness plots."
+        },
+        {
+          "kind": "python_module",
+          "module": "tqdm",
+          "why": "test_correctness.py imports tqdm for correctness sweep progress."
+        }
+      ],
+      "next_action": "Build the selected ThunderKittens kernel on H200/H100-class hardware and capture correctness plus benchmark JSON.",
+      "latest_machine_status": [
+        {
+          "gpu": "A100",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/a100-probe.json",
+          "blocking_gaps": []
+        },
+        {
+          "gpu": "H200",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-86ea3913/h200-probe.json",
+          "blocking_gaps": []
+        }
+      ]
+    }
+  ]
+}

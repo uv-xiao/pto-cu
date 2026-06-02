@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 DOC_ROOT = ROOT / "docs" / "nvidia-backend"
 VIEWER_ROOT = DOC_ROOT / "benchmark-viewer"
+VIEWER_DATA_ROOT = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 GOAL_ROOT = ROOT / "docs" / "in_progress" / "nvidia_backend_paper_ready"
 WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 ARCHIVED_WORKFLOW = ROOT / "docs" / "ci" / "nvidia-manual-review.workflow.yml"

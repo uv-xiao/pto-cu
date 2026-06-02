@@ -9,6 +9,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[3]
+VIEWER_DATA_ROOT = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 ID_RE = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)*$")
 
 
@@ -17,9 +18,7 @@ def fail(message: str) -> None:
 
 
 def load_json(root: Path, name: str) -> dict[str, Any]:
-    path = (
-        root / "docs" / "nvidia-backend" / "benchmark-viewer" / "data" / name
-    )
+    path = root / "evaluations" / "nvidia" / "benchmark-viewer" / "data" / name
     if path.is_dir():
         return load_sharded_collection(path)
     if not path.is_file() and path.suffix == ".json":
@@ -239,4 +238,3 @@ def load_current_json_artifact(root: Path, relpath: str, owner: str) -> dict[str
     if not isinstance(data, dict):
         fail(f"{owner} current artifact JSON is not an object: {relpath}")
     return data
-

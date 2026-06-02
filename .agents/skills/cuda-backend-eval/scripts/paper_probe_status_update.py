@@ -18,7 +18,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from viewer_data_io import load_json as load_viewer_json
 from viewer_data_io import write_json as write_viewer_json
 
-VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
+VIEWER_DATA = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 DEFAULT_PROBES = VIEWER_DATA / "paper_baseline_probes.json"
 MACHINE_ARTIFACTS = {
     "A100": "a100-probe.json",

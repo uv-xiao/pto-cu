@@ -12,7 +12,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[4]
 SCRIPT_ROOT = ROOT / ".agents" / "skills" / "cuda-backend-eval" / "scripts"
-VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
+VIEWER_DATA = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 REVIEW_SNAPSHOT_ID = "current-working"
 
 
@@ -112,7 +112,7 @@ def main() -> None:
     work_queue = work_queue_module.build_work_queue(
         audit,
         runs=runs,
-        audit_path=VIEWER_DATA / "paper_readiness_audit.json",
+        audit_path=output_dir / "paper_readiness_audit.json",
     )
     work_queue_path = output_dir / "paper_readiness_work_queue.json"
     work_queue_module.write_json(work_queue_path, work_queue)

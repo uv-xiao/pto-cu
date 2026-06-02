@@ -25,7 +25,7 @@ def validate_paper_baseline_environment_plans(
         require_list(metadata, "source_files", "environment plan metadata")
     )
     if source_files != {
-        "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
+        "evaluations/nvidia/benchmark-viewer/data/paper_baselines.json",
     }:
         fail("paper baseline environment plan source_files are stale")
     records = require_list(
@@ -149,7 +149,7 @@ def validate_paper_baseline_environment_attempts(
         require_list(metadata, "source_files", "environment attempt metadata")
     )
     if source_files != {
-        "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_environment_plans.json",
+        "evaluations/nvidia/benchmark-viewer/data/paper_baseline_environment_plans.json",
     }:
         fail("paper baseline environment attempt source_files are stale")
 

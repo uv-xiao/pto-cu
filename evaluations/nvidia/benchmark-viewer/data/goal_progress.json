@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "source_files": [
+    "evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json",
+    "evaluations/nvidia/benchmark-viewer/data/paper_readiness_work_queue.json",
+    "evaluations/nvidia/benchmark-viewer/data/paper_evaluation_matrix.json",
+    "evaluations/nvidia/benchmark-viewer/data/paper_baselines.json",
+    "docs/in_progress/nvidia_backend_paper_ready.md",
+    "docs/in_progress/nvidia_backend_paper_ready/shared_contracts.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/baseline_families.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/workloads.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/hardware_matrix.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/metrics.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/reproducibility.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/paper_outputs.md",
+    "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan/dispatcher_backlog.md",
+    "docs/nvidia-backend/status.md",
+    "docs/nvidia-backend/status/remaining-gaps/"
+  ],
+  "overall_status": "in_progress",
+  "summary": {
+    "criteria_total": 9,
+    "criteria_met": 8,
+    "criteria_in_progress": 1,
+    "criteria_by_status": {
+      "in_progress": 1,
+      "met": 8
+    }
+  },
+  "acceptance_criteria": [
+    {
+      "id": "benchmark_viewer",
+      "title": "Human-reviewable benchmark viewer",
+      "status": "met",
+      "summary": "Benchmark setup, methods, results, paper audit, and work queue are JSON-backed.",
+      "evidence_refs": [
+        "docs/nvidia-backend/benchmark-viewer/index.html",
+        "docs/nvidia-backend/benchmark-viewer/viewer.js",
+        "evaluations/nvidia/benchmark-viewer/data/"
+      ],
+      "verification": [
+        "validate_benchmark_viewer_data.py",
+        "test_benchmark_viewer_has_json_backed_review_data"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "nvidia_examples",
+      "title": "NVIDIA examples match evaluated workloads",
+      "status": "met",
+      "summary": "CUDA examples are declared in a manifest and linked to viewer benchmark/method IDs.",
+      "evidence_refs": [
+        "examples/cuda/manifest.json",
+        "examples/cuda/README.md"
+      ],
+      "verification": [
+        "validate_cuda_examples.py",
+        "test_benchmark_viewer_has_json_backed_review_data"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "stable_docs_evidence",
+      "title": "Stable docs distinguish implementation from plans",
+      "status": "met",
+      "summary": "Status docs, shared contracts, and review guards tie claims to explicit code or data evidence.",
+      "evidence_refs": [
+        "docs/nvidia-backend/status.md",
+        "docs/nvidia-backend/status/",
+        "docs/in_progress/nvidia_backend_paper_ready/shared_contracts.md",
+        ".agents/checks/check_nvidia_review_ready.py"
+      ],
+      "verification": [
+        "check_nvidia_review_ready.py",
+        "validate_benchmark_viewer_data.py"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "changelog_reports",
+      "title": "Changelog and reporting workflow",
+      "status": "met",
+      "summary": "Every NVIDIA backend slice is indexed under the changelog and checked for required sections.",
+      "evidence_refs": [
+        "docs/nvidia-backend/changelog/index.md",
+        ".agents/checks/validate_nvidia_changelog.py"
+      ],
+      "verification": [
+        "validate_nvidia_changelog.py"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "remote_evaluation",
+      "title": "Remote evaluation fallback policy",
+      "status": "met",
+      "summary": "Remote evaluation supports guarded Git refresh and SSH tree-sync fallback.",
+      "evidence_refs": [
+        ".agents/checks/validate_remote_evaluation.py",
+        ".agents/skills/cuda-backend-eval/scripts/paper_baseline_pair_probe.py"
+      ],
+      "verification": [
+        "validate_remote_evaluation.py",
+        "test_paper_baseline_pair_probe_uses_remote_fallback_contract"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "paper_evaluation_plan",
+      "title": "Paper-ready evaluation plan covers MPK, VDCores, and baselines",
+      "status": "met",
+      "summary": "The paper matrix and baseline records cover MPK, VDCores, vLLM, SGLang, and ThunderKittens.",
+      "evidence_refs": [
+        "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan.md",
+        "docs/in_progress/nvidia_backend_paper_ready/baseline_survey.md",
+        "evaluations/nvidia/benchmark-viewer/data/paper_baselines.json",
+        "evaluations/nvidia/benchmark-viewer/data/paper_evaluation_matrix.json"
+      ],
+      "verification": [
+        "validate_benchmark_viewer_data.py",
+        "test_ultimate_goal_artifacts_define_paper_ready_cuda_path"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "backend_implementation_closure",
+      "title": "Backend implementation gaps are explicit",
+      "status": "met",
+      "summary": "CUDA backend implementation gaps are closed or reclassified; remaining work is tracked by paper-readiness artifacts.",
+      "evidence_refs": [
+        "docs/nvidia-backend/status.md"
+      ],
+      "verification": [
+        "validate_benchmark_viewer_data.py",
+        "check_nvidia_review_ready.py"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "paper_grade_results",
+      "title": "Final paper-grade results",
+      "status": "in_progress",
+      "summary": "Final paper-grade status depends on imported A100/H200 raw artifacts and zero audit blockers.",
+      "evidence_refs": [
+        "evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json",
+        "evaluations/nvidia/benchmark-viewer/data/paper_readiness_work_queue.json"
+      ],
+      "verification": [
+        "paper_readiness_audit.py",
+        "paper_readiness_work_queue.py",
+        "validate_benchmark_viewer_data.py"
+      ],
+      "gaps": [
+        "Import the remaining queued paper-readiness artifacts listed in paper_readiness_work_queue.json.",
+        "Promote paper readiness only after the audit has zero blockers."
+      ],
+      "paper_readiness_status": "not_paper_ready",
+      "blocking_work_items": 4
+    },
+    {
+      "id": "dispatcher_log",
+      "title": "Dispatcher log is resumable",
+      "status": "met",
+      "summary": "Goal state, branches, PR target, verification, and handoffs are recorded for later sessions in a split dispatch archive.",
+      "evidence_refs": [
+        "docs/in_progress/nvidia_backend_paper_ready.md",
+        "docs/in_progress/nvidia_backend_paper_ready/dispatch_log.md",
+        "docs/in_progress/nvidia_backend_paper_ready/dispatch_log/index.md"
+      ],
+      "verification": [
+        "check_nvidia_review_ready.py"
+      ],
+      "gaps": []
+    }
+  ]
+}

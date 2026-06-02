@@ -3,7 +3,7 @@
 ## Benchmark Viewer Contract
 
 Benchmark data lives under
-`docs/nvidia-backend/benchmark-viewer/data/`. Viewer records must be readable
+`evaluations/nvidia/benchmark-viewer/data/`. Viewer records must be readable
 without private context and pass
 `.agents/checks/validate_benchmark_viewer_data.py`.
 
@@ -52,7 +52,7 @@ and raw artifact path.
 Raw CUDA benchmark captures should flow into viewer result records through
 `.agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py`, using
 the sharded
-`docs/nvidia-backend/benchmark-viewer/data/capture_imports/` collection as
+`evaluations/nvidia/benchmark-viewer/data/capture_imports/` collection as
 the committed mapping between raw capture baselines and viewer
 benchmark/method IDs. Hand-edited result rows must match this schema and
 identify the raw artifact directory under `tmp/`.
@@ -114,7 +114,7 @@ metadata mandatory for every MPK, VDCores, vLLM, SGLang, and controlled
 serving-equivalent baseline row before import.
 
 The committed serving command plan lives in
-`docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json`. It is
+`evaluations/nvidia/benchmark-viewer/data/serving_command_plan.json`. It is
 derived from `serving_workloads.json` and `paper_baseline_runs.json`, and must
 cover every LLM-serving run, serving policy, and batch size before reviewers
 spend H200 time on long baseline captures. Each plan row records the target
@@ -175,7 +175,7 @@ Each paper-evaluation matrix claim must include:
   paper-ready.
 
 The generated paper-readiness audit lives in
-`docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json`. It is
+`evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json`. It is
 derived from the paper-evaluation matrix, paper-baseline runs, readiness
 probes, run-readiness records, paper-baseline execution attempts, and current
 viewer results. Do not hand-edit it after changing those inputs; regenerate it
@@ -221,7 +221,7 @@ single matching row is not enough when that list names both MPK and VDCores
 policy IDs.
 
 The generated paper-readiness work queue lives in
-`docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json`.
+`evaluations/nvidia/benchmark-viewer/data/paper_readiness_work_queue.json`.
 It is derived from `paper_readiness_audit.json` by
 `.agents/skills/cuda-backend-eval/scripts/paper_readiness_work_queue.py` and
 must not be hand-edited. It flattens every blocked claim's `next_actions` into
@@ -232,7 +232,7 @@ sanitizer or launch-failure evidence. The viewer renders it as the `Work
 Queue` tab, and the data validator regenerates it from the audit.
 
 The generated ultimate-goal progress audit lives in
-`docs/nvidia-backend/benchmark-viewer/data/goal_progress.json`. It is derived
+`evaluations/nvidia/benchmark-viewer/data/goal_progress.json`. It is derived
 from current viewer data and goal docs by
 `.agents/skills/cuda-backend-eval/scripts/nvidia_goal_progress.py`. It maps
 the goal acceptance criteria to status, evidence refs, verification commands,

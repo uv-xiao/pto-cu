@@ -29,7 +29,7 @@ DEFAULT_RESULTS = VIEWER_DATA / "results.json"
 DEFAULT_MATRIX = VIEWER_DATA / "paper_evaluation_matrix.json"
 DEFAULT_PROBES = VIEWER_DATA / "paper_baseline_probes.json"
 DEFAULT_RUN_READINESS = VIEWER_DATA / "paper_baseline_run_readiness.json"
-DEFAULT_ATTEMPTS = VIEWER_DATA / "paper_baseline_execution_attempts"
+DEFAULT_ATTEMPTS = VIEWER_DATA / "paper_baseline_execution_attempts.json"
 DEFAULT_AUDIT = VIEWER_DATA / "paper_readiness_audit.json"
 REQUIRED_METRIC_KEYS = {
     "correctness": ("correctness",),

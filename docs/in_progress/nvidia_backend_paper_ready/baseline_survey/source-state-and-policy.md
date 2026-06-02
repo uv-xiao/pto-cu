@@ -24,14 +24,14 @@ FlashAttention-3 Hopper module required by the official ThunderKittens H100
 MHA benchmark.
 
 The committed viewer data mirrors this table in
-`docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json` so the
+`evaluations/nvidia/benchmark-viewer/data/paper_baselines.json` so the
 human-reviewable benchmark viewer can show baseline readiness without relying
 on private terminal history. Reproduction commands for these systems live in
-`docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json` so the
+`evaluations/nvidia/benchmark-viewer/data/paper_baseline_runs.json` so the
 viewer can show which setup/run commands and tmp artifacts are expected before
 a baseline can be imported as paper evidence.
 Serving workload policies live in
-`docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json`. The MPK
+`evaluations/nvidia/benchmark-viewer/data/serving_workloads.json`. The MPK
 and VDCores papers use different context and decode lengths, so the current
 survey records two comparable policy IDs instead of pretending there is one
 universal serving row:

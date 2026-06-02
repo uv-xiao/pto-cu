@@ -1,0 +1,270 @@
+{
+  "serving_workloads": [
+    {
+      "id": "mpk_offline_decode",
+      "title": "MPK-Comparable Offline Decode",
+      "status": "partial_controlled_results",
+      "paper_source": {
+        "paper": "Mirage Persistent Kernel",
+        "evidence": "tmp/sources/arxiv-2512.22219v1-mirage-persistent-kernel.txt",
+        "notes": "The MPK paper uses offline batched inference, fixed prompt length 64, decode length 1024, maximum batch sizes from 1 to 16, and compares MPK with vLLM and SGLang on A100/H100/B200."
+      },
+      "model_policy": {
+        "primary_model": "Qwen/Qwen3-8B",
+        "bringup_model": "Qwen/Qwen3-1.7B",
+        "fallback_model": "Qwen/Qwen3-0.6B",
+        "selection_reason": "Qwen3-8B is common to the MPK paper and VDCores paper model sets; smaller Qwen3 models are allowed only for setup and correctness bring-up."
+      },
+      "prompt_policy": {
+        "prompt_text": "Give me a short introduction to large language model.",
+        "target_prompt_tokens": 64,
+        "tokenization_rule": "Each backend must record the actual tokenizer, chat template, and token count in raw JSON; prompts are padded or regenerated only in a documented raw artifact."
+      },
+      "decode_policy": {
+        "decode_tokens": 1024,
+        "batch_sizes": [
+          1,
+          2,
+          4,
+          8,
+          16
+        ],
+        "traffic_mode": "offline batched inference without request-arrival variability",
+        "generation_mode": "deterministic greedy decode unless a baseline cannot expose greedy mode, in which case the raw artifact must document the substitute."
+      },
+      "hardware_targets": [
+        "A100",
+        "H200"
+      ],
+      "baseline_run_ids": [
+        "mpk_qwen3_native_vs_persistent",
+        "vllm_serving_and_throughput",
+        "sglang_serving_and_offline"
+      ],
+      "required_metrics": [
+        "correctness",
+        "end_to_end_latency",
+        "time_to_first_token",
+        "inter_token_latency",
+        "throughput_tokens_per_s",
+        "batch_size",
+        "prompt_tokens",
+        "decode_tokens",
+        "raw_artifacts"
+      ],
+      "current_blockers": [
+        "PTO CUDA does not yet have a serving-equivalent workload for this policy.",
+        "MPK Qwen3-8B persistent evidence is imported only as a single batch=1 execution row with an asynchronous timing caveat; repeat the full batch ladder before using it for final latency-distribution claims."
+      ],
+      "evidence_refs": [
+        {
+          "path": "tmp/sources/arxiv-2512.22219v1-mirage-persistent-kernel.txt",
+          "symbols": [
+            "fixed prompt length of 64",
+            "decode 1024 tokens",
+            "maximum batch sizes ranging"
+          ]
+        },
+        {
+          "path": "tmp/baselines/mirage-mpk/demo/qwen3/demo.py",
+          "symbols": [
+            "--model",
+            "Qwen/Qwen3-8B",
+            "--max-new-tokens"
+          ]
+        },
+        {
+          "path": "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/paper-baseline-results.json",
+          "symbols": [
+            "mpk_qwen3_native_vs_persistent",
+            "decode_tokens=1024",
+            "mode=mpk_persistent"
+          ]
+        },
+        {
+          "path": "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/persistent-batch1-decode1024.json",
+          "symbols": [
+            "latency_ms_per_token",
+            "prompt_length",
+            "generate_length"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mpk_native_qwen3_0p6b_token2_bringup",
+      "title": "MPK Native Qwen3 0.6B Token Bring-Up",
+      "status": "imported_to_viewer",
+      "paper_source": {
+        "paper": "Mirage Persistent Kernel",
+        "evidence": "tmp/sources/arxiv-2512.22219v1-mirage-persistent-kernel.txt",
+        "notes": "This is an MPK native torch environment bring-up workload, not the MPK persistent-kernel paper-serving workload."
+      },
+      "model_policy": {
+        "primary_model": "Qwen/Qwen3-0.6B",
+        "bringup_model": "Qwen/Qwen3-0.6B",
+        "fallback_model": "Qwen/Qwen3-0.6B",
+        "selection_reason": "The imported H200 artifact uses Qwen3-0.6B for bounded MPK native setup validation. Full paper comparison remains on Qwen3-8B."
+      },
+      "prompt_policy": {
+        "prompt_text": "Give me a short introduction to large language model.",
+        "target_prompt_tokens": 39,
+        "tokenization_rule": "The MPK native demo records the tokenizer-observed prompt length in native-token2.json."
+      },
+      "decode_policy": {
+        "decode_tokens": 2,
+        "batch_sizes": [
+          1
+        ],
+        "traffic_mode": "single native torch offline request",
+        "generation_mode": "deterministic greedy decode with ignore_eos for bounded bring-up"
+      },
+      "hardware_targets": [
+        "H200"
+      ],
+      "baseline_run_ids": [
+        "mpk_qwen3_native_token_bringup"
+      ],
+      "required_metrics": [
+        "correctness",
+        "end_to_end_latency",
+        "inter_token_latency",
+        "throughput_tokens_per_s",
+        "batch_size",
+        "prompt_tokens",
+        "decode_tokens",
+        "raw_artifacts"
+      ],
+      "current_blockers": [
+        "This workload is native torch bring-up evidence only; persistent-kernel paper evidence is tracked by mpk_offline_decode and mpk_qwen3_native_vs_persistent."
+      ],
+      "evidence_refs": [
+        {
+          "path": "tmp/sources/arxiv-2512.22219v1-mirage-persistent-kernel.txt",
+          "symbols": [
+            "fixed prompt length of 64",
+            "decode 1024 tokens"
+          ]
+        },
+        {
+          "path": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/native-token2.json",
+          "symbols": [
+            "latency_ms_per_token",
+            "prompt_length",
+            "generate_length"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vdcores_offline_decode",
+      "title": "VDCores-Comparable Offline Decode",
+      "status": "partial_controlled_results",
+      "paper_source": {
+        "paper": "VDCores",
+        "evidence": "tmp/sources/arxiv-2605.03190-vdcores.txt",
+        "notes": "The VDCores paper evaluates offline decoding of a fixed batch for 64 steps from a 128-token context, batch sizes 1 to 16, and baselines including vLLM, SGLang, Mirage, ThunderKittens variants, and Torch plus ThunderKittens."
+      },
+      "model_policy": {
+        "primary_model": "Qwen/Qwen3-8B",
+        "bringup_model": "Qwen/Qwen3-1.7B",
+        "fallback_model": "Qwen/Qwen3-1.7B",
+        "selection_reason": "Qwen3-8B appears in the VDCores and MPK paper model sets. The VDCores tree now has an explicit Qwen3-8B schedule path; Qwen3-1.7B remains the bring-up path for runtime diagnostics."
+      },
+      "prompt_policy": {
+        "prompt_text": "Give me a short introduction to large language model.",
+        "target_prompt_tokens": 128,
+        "tokenization_rule": "Each backend must record actual tokenizer, chat template, and token count. VDCores runs must also record the scheduled decode count after KV-block rounding."
+      },
+      "decode_policy": {
+        "decode_tokens": 64,
+        "batch_sizes": [
+          1,
+          2,
+          4,
+          8,
+          16
+        ],
+        "traffic_mode": "offline fixed batch",
+        "generation_mode": "deterministic greedy decode with correctness against the baseline framework where available"
+      },
+      "hardware_targets": [
+        "H200"
+      ],
+      "baseline_run_ids": [
+        "vdcores_qwen3_8b_decode_preflight",
+        "vllm_serving_and_throughput",
+        "sglang_serving_and_offline",
+        "thunderkittens_tile_kernel",
+        "thunderkittens_decode_attention_tile"
+      ],
+      "required_metrics": [
+        "correctness",
+        "end_to_end_latency",
+        "inter_token_latency",
+        "throughput_tokens_per_s",
+        "batch_size",
+        "prompt_tokens",
+        "decode_tokens",
+        "resource_policy",
+        "raw_artifacts"
+      ],
+      "current_blockers": [
+        "VDCores Qwen3-8B now rebuilds with the required compute-operator set and passes the bounded correctness preflight.",
+        "A token-1 benchmark emits timing, but the 64-token VDCores paper policy fails before launch in dae.launcher.Builder.build with assert len(self.cinsts) <= ctensor.shape[0].",
+        "ThunderKittens has imported padded H100 MHA decode-attention tile rows for the policy batch ladder, but not the full Qwen serving-family sweep.",
+        "PTO persistent_device has an imported controlled attention-tile proxy; a full Qwen serving-family PTO sweep remains absent.",
+        "VDCores Qwen3-8B 64-token schedule capacity is measured at up to 2177 compute and 15042 memory instructions per SM. A temporary global-instruction runtime with numInsts=16384 runs -N 64 -b 5, but fails correctness thresholds, so the serving row remains blocked."
+      ],
+      "evidence_refs": [
+        {
+          "path": "tmp/sources/arxiv-2605.03190-vdcores.txt",
+          "symbols": [
+            "128-token context",
+            "64 steps",
+            "batch sizes 1"
+          ]
+        },
+        {
+          "path": "tmp/baselines/vdcores/app/python/qwen3/cli.py",
+          "symbols": [
+            "Qwen/Qwen3-8B",
+            "--num-generates",
+            "--correctness"
+          ]
+        },
+        {
+          "path": "tmp/baselines/vdcores/agents/knowledge/qwen3-1p7b-scheduling.md",
+          "symbols": [
+            "Qwen/Qwen3-1.7B",
+            "HF_TOKEN"
+          ]
+        },
+        {
+          "path": "evaluations/nvidia/benchmark-viewer/data/results.json",
+          "symbols": [
+            "pto_controlled_serving_equivalent",
+            "paper_baseline_serving_tile_capture",
+            "vdcores_offline_decode attention tile proxy"
+          ]
+        },
+        {
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-preflight-b6df049f/qwen3-8b-preflight-summary.json",
+          "symbols": [
+            "\"model_load\": \"pass\"",
+            "missing_compiled_compute_operators",
+            "DAE_COMPUTE_OPS"
+          ]
+        },
+        {
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-8b-runtime-rebuild-4778a9a1/qwen3-8b-rebuild-correctness-bench-summary.json",
+          "symbols": [
+            "\"correctness\": {",
+            "\"status\": \"pass\"",
+            "instruction_buffer_capacity_assertion"
+          ]
+        }
+      ]
+    }
+  ]
+}

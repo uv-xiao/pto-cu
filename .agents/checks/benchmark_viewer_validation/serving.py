@@ -120,8 +120,8 @@ def validate_serving_command_plan(
     if require_string(metadata, "model_tier", "serving command plan") != "primary":
         fail("serving command plan must use primary model tier")
     expected_sources = {
-        "docs/nvidia-backend/benchmark-viewer/data/serving_workloads.json",
-        "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
+        "evaluations/nvidia/benchmark-viewer/data/serving_workloads.json",
+        "evaluations/nvidia/benchmark-viewer/data/paper_baseline_runs.json",
     }
     source_files = set(
         require_list(metadata, "source_files", "serving command plan")

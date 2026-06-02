@@ -1,9 +1,0 @@
-{
-  "kind": "raw_artifact",
-  "path": "tmp/cuda-backend/pto-serving-logits-projection-reference-2026-06-02/logits-projection-reference.json",
-  "symbols": [
-    "diagnostic_qwen_tiled_vocab_projection",
-    "diagnostic_logits_projection_values",
-    "compare_logits_reference"
-  ]
-}

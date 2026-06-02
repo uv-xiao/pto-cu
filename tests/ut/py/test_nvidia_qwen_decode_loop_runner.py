@@ -6,14 +6,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 VIEWER_ROOT = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer"
+VIEWER_DATA = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 
 
 def load_viewer_results():
-    path = VIEWER_ROOT / "data" / "results"
+    path = VIEWER_DATA / "results.json"
     return load_viewer_collection(path)["result_records"]
 
 
 def load_viewer_collection(path):
+    if path.is_file():
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if "collection" not in payload:
+            return payload
+        return payload
     if path.suffix == ".json" and path.with_suffix("").is_dir():
         path = path.with_suffix("")
     index = json.loads((path / "index.json").read_text(encoding="utf-8"))
@@ -163,11 +169,12 @@ def test_decode_loop_runner_tracks_cuda_live_resource_owners(monkeypatch):
         "mode": "cuda_live",
         "kv_cache_bindings": [
             {
-                "workload_id": "mpk_offline_decode",
-                "batch_size": 16,
-                "key_cache": {"device_ptr_hex": "0x1"},
-                "value_cache": {"device_ptr_hex": "0x2"},
-            }
+                    "workload_id": "mpk_offline_decode",
+                    "batch_size": 16,
+                    "sequence_capacity_tokens": 1024,
+                    "key_cache": {"device_ptr_hex": "0x1"},
+                    "value_cache": {"device_ptr_hex": "0x2"},
+                }
         ],
     }
     resident_lifecycle = {
@@ -280,7 +287,7 @@ def test_decode_loop_runner_tracks_cuda_live_resource_owners(monkeypatch):
 
 def test_viewer_matrix_tracks_decode_loop_evidence():
     matrix = load_viewer_collection(
-        VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
+        VIEWER_DATA / "paper_evaluation_matrix.json"
     )["paper_evaluation_matrix"]
     claim = next(
         item

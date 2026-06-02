@@ -1,9 +1,0 @@
-{
-  "kind": "raw_artifact",
-  "path": "tmp/cuda-backend/pto-full-serving-import-gate-2026-06-02/full-serving-import-gate.json",
-  "symbols": [
-    "pto_qwen_full_serving_viewer_import",
-    "full_serving_import_runtime_gate",
-    "full_serving_import_coverage_gate"
-  ]
-}

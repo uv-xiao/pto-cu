@@ -29,7 +29,7 @@ def build_preflight_checks(
             {
                 "id": "qwen3_8b_full_serving_rows_imported",
                 "status": status_if(not qwen8b_missing_workloads),
-                "evidence": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+                "evidence": "evaluations/nvidia/benchmark-viewer/data/results.json",
                 "why": (
                     "Full-serving readiness requires PTO Qwen/Qwen3-8B rows for "
                     "mpk_offline_decode and vdcores_offline_decode with correctness "
@@ -80,7 +80,7 @@ def core_checks(proxy_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         {
             "id": "pto_controlled_serving_proxy_imported",
             "status": status_if(bool(proxy_rows)),
-            "evidence": "docs/nvidia-backend/benchmark-viewer/data/results.json",
+            "evidence": "evaluations/nvidia/benchmark-viewer/data/results.json",
             "why": "Viewer contains the current PTO attention-tile serving-equivalent proxy row.",
         },
     ]

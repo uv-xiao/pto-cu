@@ -65,7 +65,7 @@ def build_attempt(
             "pto_commit": commit,
             "artifact_root": repo_relative(output_root) + "/",
             "source_files": [
-                "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_environment_plans.json",
+                "evaluations/nvidia/benchmark-viewer/data/paper_baseline_environment_plans.json",
             ],
         },
         "paper_baseline_environment_attempts": [attempt],

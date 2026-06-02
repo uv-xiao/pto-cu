@@ -23,7 +23,7 @@ rather than a separate scheduler mechanics blocker.
 ## Current Evidence
 
 Structured coverage lives in
-`docs/nvidia-backend/benchmark-viewer/data/persistent_scheduler_coverage.json`
+`evaluations/nvidia/benchmark-viewer/data/persistent_scheduler_coverage.json`
 and is validated by
 `.agents/checks/benchmark_viewer_validation/persistent_scheduler_coverage.py`.
 That coverage now requires a normal-graph lowering-boundary group tied to

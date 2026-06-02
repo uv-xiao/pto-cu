@@ -1,8 +1,0 @@
-{
-  "kind": "viewer_result",
-  "benchmark_id": "llm_serving_decode",
-  "method_id": "mpk",
-  "gpu": "H200",
-  "shape_contains": "Qwen/Qwen3-0.6B",
-  "serving_coverage": "native_bringup"
-}

@@ -1,8 +1,0 @@
-{
-  "source": "execution_attempt",
-  "paper_baseline_id": "vdcores",
-  "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
-  "execution_attempt_id": "vdcores_qwen3_8b_shared_instruction_window_plan_h200",
-  "status": "partial",
-  "action": "Resolve latest execution attempt vdcores_qwen3_8b_shared_instruction_window_plan_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing."
-}

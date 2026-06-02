@@ -10,7 +10,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[3]
-VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
+VIEWER_DATA = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 TARGET_WORKLOAD_IDS = {"mpk_offline_decode", "vdcores_offline_decode"}
 LIFECYCLE_PLAN = ROOT / "examples" / "cuda" / "qwen_serving_lifecycle_plan.py"
 PROMPT_ACCOUNTING = ROOT / "examples" / "cuda" / "qwen_prompt_accounting.py"

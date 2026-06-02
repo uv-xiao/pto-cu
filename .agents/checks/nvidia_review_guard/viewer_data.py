@@ -59,28 +59,28 @@ def check_viewer_data() -> None:
         if needle not in viewer_script:
             fail(f"viewer.js does not render contract field: {needle}")
 
-    benchmarks = load_json(VIEWER_ROOT / "data" / "benchmarks.json")
-    methods = load_json(VIEWER_ROOT / "data" / "methods.json")
-    capture_imports = load_json(VIEWER_ROOT / "data" / "capture_imports.json")
-    paper_baselines = load_json(VIEWER_ROOT / "data" / "paper_baselines.json")
+    benchmarks = load_json(VIEWER_DATA_ROOT / "benchmarks.json")
+    methods = load_json(VIEWER_DATA_ROOT / "methods.json")
+    capture_imports = load_json(VIEWER_DATA_ROOT / "capture_imports.json")
+    paper_baselines = load_json(VIEWER_DATA_ROOT / "paper_baselines.json")
     paper_baseline_runs = load_json(
-        VIEWER_ROOT / "data" / "paper_baseline_runs.json"
+        VIEWER_DATA_ROOT / "paper_baseline_runs.json"
     )
     paper_baseline_probes = load_json(
-        VIEWER_ROOT / "data" / "paper_baseline_probes.json"
+        VIEWER_DATA_ROOT / "paper_baseline_probes.json"
     )
     paper_baseline_run_readiness = load_json(
-        VIEWER_ROOT / "data" / "paper_baseline_run_readiness.json"
+        VIEWER_DATA_ROOT / "paper_baseline_run_readiness.json"
     )
-    serving_workloads = load_json(VIEWER_ROOT / "data" / "serving_workloads.json")
+    serving_workloads = load_json(VIEWER_DATA_ROOT / "serving_workloads.json")
     paper_evaluation = load_json(
-        VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
+        VIEWER_DATA_ROOT / "paper_evaluation_matrix.json"
     )
     paper_readiness_audit = load_json(
-        VIEWER_ROOT / "data" / "paper_readiness_audit.json"
+        VIEWER_DATA_ROOT / "paper_readiness_audit.json"
     )
-    goal_progress = load_json(VIEWER_ROOT / "data" / "goal_progress.json")
-    results = load_json(VIEWER_ROOT / "data" / "results.json")
+    goal_progress = load_json(VIEWER_DATA_ROOT / "goal_progress.json")
+    results = load_json(VIEWER_DATA_ROOT / "results.json")
 
     benchmark_ids = {item["id"] for item in benchmarks.get("benchmarks", [])}
     required_benchmarks = {

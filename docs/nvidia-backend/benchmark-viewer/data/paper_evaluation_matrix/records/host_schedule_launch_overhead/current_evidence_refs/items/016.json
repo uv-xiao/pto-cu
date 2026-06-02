@@ -1,6 +1,0 @@
-{
-  "kind": "viewer_result",
-  "benchmark_id": "tensor_core_tile",
-  "method_id": "direct_runtime",
-  "gpu": "H200"
-}

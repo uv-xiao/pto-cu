@@ -177,7 +177,7 @@ def build_environment_plans(
             "pto_commit": commit,
             "artifact_root": repo_relative(output_root) + "/",
             "source_files": [
-                "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
+                "evaluations/nvidia/benchmark-viewer/data/paper_baselines.json",
             ],
         },
         "paper_baseline_environment_plans": plans,

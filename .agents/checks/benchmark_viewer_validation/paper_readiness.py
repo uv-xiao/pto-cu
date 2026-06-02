@@ -25,18 +25,12 @@ def validate_paper_readiness_audit(
     if audit.get("schema_version") != 1:
         fail("paper readiness audit schema_version must be 1")
     required_sources = {
-        "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix/index.json",
-        "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
-        "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
-        (
-            "docs/nvidia-backend/benchmark-viewer/data/"
-            "paper_baseline_run_readiness/index.json"
-        ),
-        (
-            "docs/nvidia-backend/benchmark-viewer/data/"
-            "paper_baseline_execution_attempts/index.json"
-        ),
-        "docs/nvidia-backend/benchmark-viewer/data/results/index.json",
+        "evaluations/nvidia/benchmark-viewer/data/paper_evaluation_matrix.json",
+        "evaluations/nvidia/benchmark-viewer/data/paper_baseline_runs.json",
+        "evaluations/nvidia/benchmark-viewer/data/paper_baseline_probes.json",
+        "evaluations/nvidia/benchmark-viewer/data/paper_baseline_run_readiness.json",
+        "evaluations/nvidia/benchmark-viewer/data/paper_baseline_execution_attempts.json",
+        "evaluations/nvidia/benchmark-viewer/data/results.json",
     }
     sources = audit.get("source_files")
     if not isinstance(sources, list) or set(sources) != required_sources:
@@ -158,7 +152,7 @@ def validate_paper_readiness_work_queue(
         fail("paper readiness work queue schema_version must be 1")
     if (
         work_queue.get("source_file")
-        != "docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json"
+        != "evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json"
     ):
         fail("paper readiness work queue source_file is stale")
     if work_queue.get("overall_status") != audit.get("overall_status"):

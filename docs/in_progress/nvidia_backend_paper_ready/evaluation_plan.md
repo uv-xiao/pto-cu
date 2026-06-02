@@ -39,7 +39,7 @@ on A100 and H200 where applicable.
 ## Generated Review Data
 
 The benchmark viewer loads committed JSON data under
-`docs/nvidia-backend/benchmark-viewer/data/`. Paper claim readiness is tracked
+`evaluations/nvidia/benchmark-viewer/data/`. Paper claim readiness is tracked
 by the paper evaluation matrix, readiness audit, readiness work queue, and goal
 progress data. The capture-import mapping now uses a sharded
 `capture_imports/` collection instead of one long JSON file.

@@ -17,7 +17,7 @@ into the viewer data. A paper result is not accepted unless it records:
 
 Current PTO microbenchmark captures can be converted to viewer result records
 with `.agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py`. The
-script uses the sharded `docs/nvidia-backend/benchmark-viewer/data/`
+script uses the sharded `evaluations/nvidia/benchmark-viewer/data/`
 `capture_imports/` collection to map raw capture baselines onto viewer
 benchmark and method IDs.
 The host-launch A100 capture at
@@ -71,7 +71,7 @@ Serving baseline commands can be materialized with
 The script reads `serving_workloads.json` plus `paper_baseline_runs.json` and
 emits one command-plan row per baseline, policy, and batch size. The current
 primary-model command plan is committed as
-`docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json` for
+`evaluations/nvidia/benchmark-viewer/data/serving_command_plan.json` for
 human review and is also regenerated under `tmp/cuda-backend/` before long
 runs. The current command planner emits 35 rows covering MPK, VDCores, vLLM,
 SGLang, and the ThunderKittens decode-attention serving-equivalent over the

@@ -83,11 +83,11 @@ def build_run_readiness(
         "metadata": {
             "pto_commit": commit,
             "source_files": [
-                "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
-                "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_runs.json",
-                "docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json",
+                "evaluations/nvidia/benchmark-viewer/data/paper_baselines.json",
+                "evaluations/nvidia/benchmark-viewer/data/paper_baseline_runs.json",
+                "evaluations/nvidia/benchmark-viewer/data/paper_baseline_probes.json",
                 (
-                    "docs/nvidia-backend/benchmark-viewer/data/"
+                    "evaluations/nvidia/benchmark-viewer/data/"
                     "paper_baseline_environment_plans.json"
                 ),
             ],

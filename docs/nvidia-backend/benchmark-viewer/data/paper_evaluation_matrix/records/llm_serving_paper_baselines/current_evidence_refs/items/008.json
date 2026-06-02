@@ -1,8 +1,0 @@
-{
-  "kind": "viewer_result",
-  "benchmark_id": "llm_serving_decode",
-  "method_id": "sglang",
-  "gpu": "H200",
-  "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
-  "serving_coverage": "full_serving"
-}

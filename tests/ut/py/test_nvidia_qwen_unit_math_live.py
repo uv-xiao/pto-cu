@@ -6,14 +6,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 VIEWER_ROOT = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer"
+VIEWER_DATA = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 
 
 def load_viewer_results():
-    path = VIEWER_ROOT / "data" / "results"
+    path = VIEWER_DATA / "results.json"
     return load_viewer_collection(path)["result_records"]
 
 
 def load_viewer_collection(path):
+    if path.is_file():
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if "collection" not in payload:
+            return payload
+        return payload
     if path.suffix == ".json" and path.with_suffix("").is_dir():
         path = path.with_suffix("")
     index = json.loads((path / "index.json").read_text(encoding="utf-8"))
@@ -165,7 +171,7 @@ def test_unit_math_live_graph_uses_normal_lowering():
 
 def test_viewer_matrix_tracks_unit_math_live_evidence():
     matrix = load_viewer_collection(
-        VIEWER_ROOT / "data" / "paper_evaluation_matrix.json"
+        VIEWER_DATA / "paper_evaluation_matrix.json"
     )["paper_evaluation_matrix"]
     claim = next(
         item
@@ -187,9 +193,9 @@ def test_viewer_matrix_tracks_unit_math_live_evidence():
         for item in claim["missing_evidence_details"]
         if item["id"] == "pto_full_serving_qwen3_8b"
     )
-    assert "Policy-length diagnostic MPK/VDCores execution is present" in (
-        pto_gap["action"]
-    )
+    assert "diagnostics" in pto_gap["action"]
+    assert "full Qwen numerical correctness" in pto_gap["action"]
+    assert "full-serving row import" in pto_gap["action"]
     assert "full-serving row import" in pto_gap["action"]
     assert "cuda_live execution of the Qwen unit-math" not in pto_gap["action"]
 

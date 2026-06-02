@@ -1,8 +1,0 @@
-{
-  "kind": "viewer_result",
-  "benchmark_id": "llm_serving_decode",
-  "method_id": "pto_persistent_device",
-  "gpu": "A100",
-  "shape_contains": "Qwen/Qwen3-8B unit math",
-  "serving_coverage": "diagnostic_unit_math"
-}

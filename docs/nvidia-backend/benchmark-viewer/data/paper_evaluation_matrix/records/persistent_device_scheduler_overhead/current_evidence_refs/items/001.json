@@ -1,6 +1,0 @@
-{
-  "kind": "viewer_result",
-  "benchmark_id": "graph_layered_cross",
-  "method_id": "pto_persistent_device",
-  "gpu": "H200"
-}

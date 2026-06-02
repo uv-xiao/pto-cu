@@ -85,10 +85,10 @@ def build_goal_progress(
                 [
                     "docs/nvidia-backend/benchmark-viewer/index.html",
                     "docs/nvidia-backend/benchmark-viewer/viewer.js",
-                    "docs/nvidia-backend/benchmark-viewer/data/benchmarks.json",
-                    "docs/nvidia-backend/benchmark-viewer/data/results.json",
-                    "docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json",
-                    "docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json",
+                    "evaluations/nvidia/benchmark-viewer/data/benchmarks.json",
+                    "evaluations/nvidia/benchmark-viewer/data/results.json",
+                    "evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json",
+                    "evaluations/nvidia/benchmark-viewer/data/paper_readiness_work_queue.json",
                 ],
                 path_exists,
             ),
@@ -96,7 +96,7 @@ def build_goal_progress(
             evidence_refs=[
                 "docs/nvidia-backend/benchmark-viewer/index.html",
                 "docs/nvidia-backend/benchmark-viewer/viewer.js",
-                "docs/nvidia-backend/benchmark-viewer/data/",
+                "evaluations/nvidia/benchmark-viewer/data/",
             ],
             verification=[
                 "validate_benchmark_viewer_data.py",
@@ -200,8 +200,8 @@ def build_goal_progress(
             evidence_refs=[
                 "docs/in_progress/nvidia_backend_paper_ready/evaluation_plan.md",
                 "docs/in_progress/nvidia_backend_paper_ready/baseline_survey.md",
-                "docs/nvidia-backend/benchmark-viewer/data/paper_baselines.json",
-                "docs/nvidia-backend/benchmark-viewer/data/paper_evaluation_matrix.json",
+                "evaluations/nvidia/benchmark-viewer/data/paper_baselines.json",
+                "evaluations/nvidia/benchmark-viewer/data/paper_evaluation_matrix.json",
             ],
             verification=[
                 "validate_benchmark_viewer_data.py",
@@ -216,8 +216,8 @@ def build_goal_progress(
             status="met" if paper_ready else "in_progress",
             summary="Final paper-grade status depends on imported A100/H200 raw artifacts and zero audit blockers.",
             evidence_refs=[
-                "docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json",
-                "docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json",
+                "evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json",
+                "evaluations/nvidia/benchmark-viewer/data/paper_readiness_work_queue.json",
             ],
             verification=[
                 "paper_readiness_audit.py",

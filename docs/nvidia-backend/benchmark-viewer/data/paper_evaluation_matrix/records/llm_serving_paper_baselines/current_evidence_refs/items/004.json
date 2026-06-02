@@ -1,8 +1,0 @@
-{
-  "kind": "viewer_result",
-  "benchmark_id": "llm_serving_decode",
-  "method_id": "pto_persistent_device",
-  "gpu": "H200",
-  "shape_contains": "vdcores_offline_decode attention tile proxy",
-  "serving_coverage": "controlled_attention_tile_proxy"
-}

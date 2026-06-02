@@ -12,7 +12,7 @@ from viewer_data_io import load_json as load_viewer_json
 
 
 ROOT = Path(__file__).resolve().parents[4]
-VIEWER_DATA = ROOT / "docs" / "nvidia-backend" / "benchmark-viewer" / "data"
+VIEWER_DATA = ROOT / "evaluations" / "nvidia" / "benchmark-viewer" / "data"
 DEFAULT_RUNS = VIEWER_DATA / "paper_baseline_runs.json"
 DEFAULT_BENCHMARKS = VIEWER_DATA / "benchmarks.json"
 DEFAULT_METHODS = VIEWER_DATA / "methods.json"

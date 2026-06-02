@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "source_file": "evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json",
+  "overall_status": "not_paper_ready",
+  "ready_claims": 3,
+  "blocked_claims": 1,
+  "summary": {
+    "total_work_items": 4,
+    "work_items_by_source": {
+      "execution_attempt": 1,
+      "matrix_missing_evidence": 3
+    },
+    "work_items_by_claim": {
+      "llm_serving_paper_baselines": 4
+    }
+  },
+  "work_items": [
+    {
+      "id": "paper_readiness_work_item_001",
+      "priority": 1,
+      "claim_id": "llm_serving_paper_baselines",
+      "claim_title": "LLM Serving Paper Baselines",
+      "matrix_status": "partial_current_capture",
+      "ready_for_paper_claim": false,
+      "blocker_count": 3,
+      "missing_evidence_count": 1,
+      "action_index": 1,
+      "source": "matrix_missing_evidence",
+      "owner": "matrix_missing_evidence",
+      "paper_baseline_id": "",
+      "paper_baseline_run_id": "",
+      "execution_attempt_id": "",
+      "missing_evidence_id": "pto_full_serving_qwen3_8b",
+      "method_id": "pto_persistent_device",
+      "serving_workload_ids": [
+        "mpk_offline_decode",
+        "vdcores_offline_decode"
+      ],
+      "serving_command_plan_selectors": [],
+      "shape_contains": "Qwen/Qwen3-8B",
+      "status": "missing",
+      "action": "Implement/import PTO persistent-device Qwen3-8B rows for MPK and VDCores offline decode. Evidence covers diagnostics, Qwen task bodies, RoPE refresh, GQA decode-attention grouping, paged KV-table indexing, tiled softmax passes, policy-length MPK/VDCores diagnostic decode-loop execution, and argmax. Remaining gates: full Qwen numerical correctness, full-serving row import.",
+      "evidence_summary": [
+        "Lifecycle and input artifacts: persistent_qwen_serving_scaffold, qwen_serving_lifecycle_plan, qwen_prompt_accounting, qwen_runtime_input_binding, qwen_cuda_token_buffer_binding, qwen_persistent_decode_args, and qwen_kv_cache_binding.",
+        "Weight artifacts: qwen_weight_inventory, qwen_safetensors_fetch, qwen_safetensors_metadata, qwen_cuda_weight_binding, qwen_persistent_weight_args, qwen_persistent_weight_materialization, qwen_resident_weight_table, local Qwen shard placement, actual safetensors shape/dtype validation for 399 tensors, stable CUDA weight binding slots and file offsets, full CUDA residency for 16.38 GB of weights, and copy-back verification for 16 small tensors.",
+        "Persistent DAG artifacts: qwen_persistent_task_bodies, generated persistent-device Qwen task-body source, shape-field linear projection/logits source, shape-field QK RMSNorm source, shape-field QK RoPE formula source, descriptor-level QK RoPE table slots, descriptor-level KV page-table slot, descriptor-level logits tile-size scalar, launch-packet live RoPE table and KV page-table pointer binding with Qwen-theta first-position table population and bounded per-step refresh, decode-position-aware slot-mapped QKV writeback through runtime kv_page_table, bounded diagnostic GQA decode-attention reduction over paged mutable c/d KV fields with descriptor-bounded tiled softmax passes, descriptor-bounded tiled hidden-by-vocab logits projection source, full-vocab logits argmax source, persistent DAG tensor_args manifest, tensor_arg_dtypes BF16/FP32 ABI, dtype-aware generated CUDA tensor-argument reads, resident_weight_ptrs[slot_id], process-scoped resident weight table owner, padded target-length input_ids, attention_mask, persistent decode token argument binding, preserving tensor_args for weights, and dry-run KV-cache key/value pointer binding.",
+        "Runtime diagnostics: controlled attention-tile proxy, controlled proxy numeric oracle, controlled proxy live CUDA execution, controlled proxy live microdecode DAG execution, resource-backed diagnostic execution, block-wide full-vector RMSNorm reduction diagnostic execution, bounded tiled logits projection reference checking, 1024-step MPK-policy and 64-step VDCores-policy diagnostic decode-loop execution, device-committed sampled-token feedback, full-serving import gates requiring runtime=cuda/persistent_device, serving_coverage=full_serving, zero failed requests, consistent request/token accounting, and correctness coverage for all generated decode tokens, plus matching benchmark-viewer data validation and paper-audit gates for viewer JSON remain diagnostic rather than full serving."
+      ],
+      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics."
+    },
+    {
+      "id": "paper_readiness_work_item_002",
+      "priority": 2,
+      "claim_id": "llm_serving_paper_baselines",
+      "claim_title": "LLM Serving Paper Baselines",
+      "matrix_status": "partial_current_capture",
+      "ready_for_paper_claim": false,
+      "blocker_count": 3,
+      "missing_evidence_count": 1,
+      "action_index": 2,
+      "source": "matrix_missing_evidence",
+      "owner": "vdcores_qwen3_8b_decode_preflight",
+      "paper_baseline_id": "vdcores",
+      "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
+      "execution_attempt_id": "",
+      "missing_evidence_id": "vdcores_full_serving_qwen3_8b",
+      "method_id": "vdcores",
+      "serving_workload_ids": [
+        "vdcores_offline_decode"
+      ],
+      "serving_command_plan_selectors": [
+        "vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode"
+      ],
+      "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
+      "status": "missing",
+      "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after fixing correctness for the global-instruction capacity path or implementing an equivalent segmented schedule under the shared-instruction runtime.",
+      "evidence_summary": [],
+      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics."
+    },
+    {
+      "id": "paper_readiness_work_item_003",
+      "priority": 3,
+      "claim_id": "llm_serving_paper_baselines",
+      "claim_title": "LLM Serving Paper Baselines",
+      "matrix_status": "partial_current_capture",
+      "ready_for_paper_claim": false,
+      "blocker_count": 3,
+      "missing_evidence_count": 1,
+      "action_index": 3,
+      "source": "matrix_missing_evidence",
+      "owner": "thunderkittens_decode_attention_tile",
+      "paper_baseline_id": "thunderkittens",
+      "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
+      "execution_attempt_id": "",
+      "missing_evidence_id": "thunderkittens_full_serving_qwen3_8b",
+      "method_id": "thunderkittens",
+      "serving_workload_ids": [
+        "mpk_offline_decode",
+        "vdcores_offline_decode"
+      ],
+      "serving_command_plan_selectors": [
+        "thunderkittens_decode_attention_tile:vdcores_offline_decode"
+      ],
+      "shape_contains": "Qwen/Qwen3-8B",
+      "status": "missing",
+      "action": "Import ThunderKittens-family full-serving Qwen/Qwen3-8B rows beyond the current attention-tile proxy.",
+      "evidence_summary": [],
+      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics."
+    },
+    {
+      "id": "paper_readiness_work_item_004",
+      "priority": 4,
+      "claim_id": "llm_serving_paper_baselines",
+      "claim_title": "LLM Serving Paper Baselines",
+      "matrix_status": "partial_current_capture",
+      "ready_for_paper_claim": false,
+      "blocker_count": 3,
+      "missing_evidence_count": 1,
+      "action_index": 4,
+      "source": "execution_attempt",
+      "owner": "vdcores_qwen3_8b_decode_preflight",
+      "paper_baseline_id": "vdcores",
+      "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
+      "execution_attempt_id": "vdcores_qwen3_8b_shared_instruction_window_plan_h200",
+      "missing_evidence_id": "",
+      "method_id": "",
+      "serving_workload_ids": [],
+      "serving_command_plan_selectors": [],
+      "shape_contains": "",
+      "status": "partial",
+      "action": "Resolve latest execution attempt vdcores_qwen3_8b_shared_instruction_window_plan_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing.",
+      "evidence_summary": [],
+      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics."
+    }
+  ]
+}

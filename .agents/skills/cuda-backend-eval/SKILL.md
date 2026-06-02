@@ -332,7 +332,7 @@ errors. Device times were `97280 ns` on A100 and `71136 ns` on H200 for
 
 Use `cuda_viewer_export.py` to convert raw combined benchmark captures into
 benchmark-viewer `result_records`. The script reads the committed import
-mapping in `docs/nvidia-backend/benchmark-viewer/data/capture_imports.json`,
+mapping in `evaluations/nvidia/benchmark-viewer/data/capture_imports.json`,
 groups repeated rows by machine, baseline, size, and task count, and emits the
 viewer schema with hardware, inputs, p50 timing aliases, p90/p99/mean/stdev
 latency statistics, sample count, correctness, and raw artifact path:
@@ -369,7 +369,7 @@ Use `paper_baseline_results_update.py` only after checking that a raw baseline
 artifact is measured data worth committing into the viewer. It wraps the
 paper-baseline importer, rejects raw rows that do not satisfy the run's
 `required_metrics`, writes the normalized viewer records when requested,
-updates `docs/nvidia-backend/benchmark-viewer/data/results.json`, marks the
+updates `evaluations/nvidia/benchmark-viewer/data/results.json`, marks the
 referenced `paper_baseline_runs.json` rows as `imported_to_viewer`, and
 regenerates `paper_readiness_audit.json` from the updated data:
 LLM-serving paper-baseline runs must require `model_and_prompt_shape` and
@@ -658,7 +658,7 @@ well as Python entrypoints inside the baseline source tree:
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_baseline_run_readiness.py \
     --output-root tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-$(git rev-parse --short HEAD) \
-    --viewer-output docs/nvidia-backend/benchmark-viewer/data/paper_baseline_run_readiness.json
+    --viewer-output evaluations/nvidia/benchmark-viewer/data/paper_baseline_run_readiness.json
 ```
 
 Build the VDCores `dae.runtime` extension on H200 before refreshing readiness.
@@ -745,7 +745,7 @@ with one row per baseline, policy, and batch size. The output stays under
 `tmp/` and records the intended raw artifact paths that later feed
 `paper_baseline_viewer_export.py`. For human review, also refresh the committed
 viewer copy at
-`docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json` whenever
+`evaluations/nvidia/benchmark-viewer/data/serving_command_plan.json` whenever
 serving workload policies or serving paper-baseline runs change. SGLang rows
 prepend the pinned
 `tmp/baselines/sglang/python` checkout to `PYTHONPATH`, so command plans do not
@@ -763,7 +763,7 @@ PYTHONPATH=$PWD:$PWD/python \
 
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_serving_command_plan.py \
-    --output docs/nvidia-backend/benchmark-viewer/data/serving_command_plan.json
+    --output evaluations/nvidia/benchmark-viewer/data/serving_command_plan.json
 ```
 
 Use `paper_baseline_environment_plan.py` and
@@ -911,7 +911,7 @@ PYTHONPATH=$PWD:$PWD/python \
 Use `paper_baseline_probe.py` before expensive baseline builds to capture
 source-checkout, entrypoint, syntax, module, CUDA toolkit, and GPU readiness.
 The probe configuration is committed in
-`docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json`, while
+`evaluations/nvidia/benchmark-viewer/data/paper_baseline_probes.json`, while
 raw probe output stays under `tmp/`:
 
 ```bash
@@ -946,7 +946,7 @@ raw probe files:
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_probe_status_update.py \
     --paired-artifact-root tmp/cuda-backend/paper-baselines/probes/paired-a100-h200-$(git rev-parse --short HEAD) \
-    --output docs/nvidia-backend/benchmark-viewer/data/paper_baseline_probes.json
+    --output evaluations/nvidia/benchmark-viewer/data/paper_baseline_probes.json
 ```
 
 Use `paper_readiness_audit.py` after changing paper-evaluation matrix rows,
@@ -975,7 +975,7 @@ failure.
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py \
-    --output docs/nvidia-backend/benchmark-viewer/data/paper_readiness_audit.json
+    --output evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json
 ```
 
 After regenerating the audit, use `paper_readiness_work_queue.py` to flatten
@@ -984,7 +984,7 @@ the audit's next actions into the viewer's `Work Queue` tab:
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python .agents/skills/cuda-backend-eval/scripts/paper_readiness_work_queue.py \
-    --output docs/nvidia-backend/benchmark-viewer/data/paper_readiness_work_queue.json
+    --output evaluations/nvidia/benchmark-viewer/data/paper_readiness_work_queue.json
 ```
 
 Use `nvidia_goal_progress.py` after changing the goal contracts, paper audit,
@@ -995,7 +995,7 @@ blockers:
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python .agents/skills/cuda-backend-eval/scripts/nvidia_goal_progress.py \
-    --output docs/nvidia-backend/benchmark-viewer/data/goal_progress.json
+    --output evaluations/nvidia/benchmark-viewer/data/goal_progress.json
 ```
 
 Use `cuda_scheduler_scaling.py` to summarize a scheduler-block sweep after

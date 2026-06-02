@@ -1,6 +1,0 @@
-{
-  "kind": "viewer_result",
-  "benchmark_id": "host_schedule_vector_ops",
-  "method_id": "pto_host_schedule",
-  "gpu": "A100"
-}

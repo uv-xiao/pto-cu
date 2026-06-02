@@ -8,7 +8,7 @@
 - Put old capture narratives under `docs/nvidia-backend/history/captures/`.
 - Put review-facing change summaries under `docs/nvidia-backend/changelog/`.
 - Keep benchmark viewer data in JSON under
-  `docs/nvidia-backend/benchmark-viewer/data/`.
+  `evaluations/nvidia/benchmark-viewer/data/`.
 - Do not commit raw benchmark dumps from `tmp/cuda-backend/`; commit distilled
   review data and preserve the raw artifact path.
 - Do not describe planned runtime behavior as implemented unless the evidence

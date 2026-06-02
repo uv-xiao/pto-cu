@@ -1,0 +1,1130 @@
+{
+  "paper_evaluation_matrix": [
+    {
+      "id": "host_schedule_launch_overhead",
+      "title": "Host-Schedule Launch Overhead",
+      "claim": "PTO CUDA host-schedule should be compared against direct CUDA launches, CUDA Driver graph replay, and CUDA Graph replay on the same vector and tensor launch shapes.",
+      "status": "ready_for_paper_claim",
+      "workload_ids": [
+        "host_schedule_vector_ops",
+        "tensor_core_tile",
+        "host_schedule_stream_concurrency"
+      ],
+      "method_ids": [
+        "pto_host_schedule",
+        "direct_runtime",
+        "direct_driver",
+        "direct_driver_graph",
+        "cublas_sgemm_graph",
+        "pto_stream_serial",
+        "pto_stream_parallel"
+      ],
+      "paper_baseline_ids": [],
+      "hardware_targets": [
+        "A100",
+        "H200"
+      ],
+      "required_metrics": [
+        "correctness",
+        "host_launch_overhead",
+        "device_elapsed_time",
+        "latency_statistics",
+        "throughput",
+        "raw_artifacts"
+      ],
+      "missing_evidence": [],
+      "promotion_gate": "Promote when A100 and H200 captures include PTO host-schedule, direct runtime launch, direct driver launch, CUDA Graph replay, stream-concurrency sweeps, and selected vector/tensor shapes with p50/p90/p99, mean, stdev, throughput, and raw JSON artifacts for each launch family.",
+      "current_evidence_refs": [
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "pto_host_schedule",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "pto_host_schedule",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "direct_driver_graph",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "direct_driver_graph",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "direct_driver",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "direct_driver",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "direct_runtime",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_vector_ops",
+          "method_id": "direct_runtime",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_data",
+          "path": "evaluations/nvidia/benchmark-viewer/data/results.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/host-launch-a100-8b6cdaee/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/host-launch-runtime-a100-e429c07b/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/host-launch-h200-ec8f272e/"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "direct_runtime",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "direct_driver",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "direct_driver_graph",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "direct_runtime",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "direct_driver",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "direct_driver_graph",
+          "gpu": "H200"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/tensor-launch-a100-09462d04/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/tensor-launch-h200-09462d04/"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_stream_concurrency",
+          "method_id": "pto_stream_serial",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_stream_concurrency",
+          "method_id": "pto_stream_parallel",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_stream_concurrency",
+          "method_id": "pto_stream_serial",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "host_schedule_stream_concurrency",
+          "method_id": "pto_stream_parallel",
+          "gpu": "H200"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/combined-stream-pool6-02bca4df/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/graph-replay-sweep-01e30e99/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/direct-launch-sweep-626b8c75/"
+        }
+      ]
+    },
+    {
+      "id": "persistent_device_scheduler_overhead",
+      "title": "Persistent-Device Scheduler Overhead",
+      "claim": "PTO CUDA persistent-device should expose device-side scheduler overhead and task-dispatch behavior because CUDA has no Ascend-style AICPU scheduler.",
+      "status": "ready_for_paper_claim",
+      "workload_ids": [
+        "graph_layered_cross"
+      ],
+      "method_ids": [
+        "pto_persistent_device"
+      ],
+      "paper_baseline_ids": [
+        "mpk",
+        "vdcores"
+      ],
+      "hardware_targets": [
+        "A100",
+        "H200"
+      ],
+      "required_metrics": [
+        "correctness",
+        "device_elapsed_time",
+        "scheduler_overhead",
+        "dispatch_trace",
+        "queue_pressure",
+        "resource_policy",
+        "raw_artifacts"
+      ],
+      "missing_evidence": [],
+      "promotion_gate": "Promote when PTO persistent-device, MPK, and VDCores all have comparable A100 or Hopper-class artifacts with scheduler traces, task counts, resource policy, correctness, latency distributions, and an explicit measurement scope separating diagnostic instrumentation from final baseline timing rows.",
+      "current_evidence_refs": [
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "graph_layered_cross",
+          "method_id": "pto_persistent_device",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "graph_layered_cross",
+          "method_id": "pto_persistent_device",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "graph_layered_cross",
+          "method_id": "mpk",
+          "gpu": "H200"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/mpk/persistent-scheduler-trace.json"
+        },
+        {
+          "kind": "stable_doc",
+          "path": "docs/nvidia-backend/persistent-device.md"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/scheduler-breakdown-6f7a1040/persistent-scheduler-breakdown-6f7a1040/"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "vdcores",
+          "gpu": "H200",
+          "serving_coverage": "diagnostic_microdecode"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-repeat-guard-correctness-712f88e8/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/"
+        }
+      ]
+    },
+    {
+      "id": "tensor_core_tile_baselines",
+      "title": "Tensor-Core Tile Baselines",
+      "claim": "Tensor-core PTO work must be compared against vendor and generated-kernel baselines before making throughput claims.",
+      "status": "ready_for_paper_claim",
+      "workload_ids": [
+        "tensor_core_tile"
+      ],
+      "method_ids": [
+        "pto_persistent_device",
+        "cublas_sgemm_graph",
+        "triton",
+        "cutlass"
+      ],
+      "paper_baseline_ids": [
+        "thunderkittens"
+      ],
+      "hardware_targets": [
+        "A100",
+        "H200"
+      ],
+      "required_metrics": [
+        "correctness",
+        "device_elapsed_time",
+        "throughput",
+        "latency_statistics",
+        "tensor_shape",
+        "raw_artifacts"
+      ],
+      "missing_evidence": [],
+      "promotion_gate": "Promote when PTO, cuBLAS or cuBLASLt, CUTLASS or CuTe, Triton or torch.compile, and ThunderKittens rows use the same tensor shapes, hardware metadata, correctness checks, and raw artifacts.",
+      "evidence_policy_exceptions": [
+        {
+          "id": "thunderkittens_dense_pytorch_12288_oom_policy",
+          "title": "ThunderKittens 12288-token dense PyTorch reference OOM policy",
+          "status": "accepted",
+          "scope": "Only the official ThunderKittens H100 MHA dense PyTorch reference rows at sequence length 12288 on H200.",
+          "decision": "Accept the tensor-core tile claim without those dense PyTorch reference rows because every selected 6144-token dense reference cell passes in fresh processes, FA3 forward/backward comparator rows cover 12288, and the remaining dense reference rows exceed practical H200 memory capacity.",
+          "rationale": "The excluded rows are reference-oracle capacity failures, not missing ThunderKittens, FA3, PTO, cuBLAS/CUTLASS, or Triton measurements. They cannot provide timing evidence and should be reported as infeasible reference cells rather than blocking the tensor-core comparison.",
+          "review_rule": "Paper tables may include the 12288-token dense PyTorch reference cells only as OOM/not-applicable footnotes; do not impute performance or correctness numbers from them.",
+          "evidence_refs": [
+            {
+              "kind": "tmp_artifact",
+              "path": "tmp/cuda-backend/paper-baselines/thunderkittens/pt-reference-isolated-60d797cd/isolated-pt-reference-summary.json"
+            },
+            {
+              "kind": "tmp_artifact",
+              "path": "tmp/cuda-backend/paper-baselines/thunderkittens/upstream-benchmark-fa3-7371626c/upstream-fa3-summary.json"
+            },
+            {
+              "kind": "changelog",
+              "path": "docs/nvidia-backend/changelog/2026-06-01-thunderkittens-isolated-pytorch-reference.md"
+            }
+          ]
+        }
+      ],
+      "current_evidence_refs": [
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "cublas_sgemm_graph",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "cublas_sgemm_graph",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "thunderkittens",
+          "gpu": "H200"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/thunderkittens/non-mha-h200-rotary-ae922a2a/"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "pto_persistent_device",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "pto_persistent_device",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "triton",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "triton",
+          "gpu": "H200"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "cutlass",
+          "gpu": "A100"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "tensor_core_tile",
+          "method_id": "cutlass",
+          "gpu": "H200"
+        }
+      ]
+    },
+    {
+      "id": "llm_serving_paper_baselines",
+      "title": "LLM Serving Paper Baselines",
+      "claim": "Paper-level PTO CUDA claims require a shared serving workload against MPK, VDCores, vLLM, SGLang, and ThunderKittens-family baselines.",
+      "status": "partial_current_capture",
+      "workload_ids": [
+        "llm_serving_decode",
+        "graph_layered_cross",
+        "tensor_core_tile"
+      ],
+      "method_ids": [
+        "pto_host_schedule",
+        "pto_persistent_device"
+      ],
+      "paper_baseline_ids": [
+        "mpk",
+        "vdcores",
+        "vllm",
+        "sglang",
+        "thunderkittens"
+      ],
+      "hardware_targets": [
+        "H200"
+      ],
+      "required_metrics": [
+        "correctness",
+        "end_to_end_latency",
+        "time_to_first_token",
+        "inter_token_latency",
+        "throughput",
+        "batch_or_concurrency_policy",
+        "model_and_prompt_shape",
+        "raw_artifacts"
+      ],
+      "missing_evidence": [
+        "PTO persistent-device full-serving, VDCores Qwen3-8B full serving after the current global-instruction correctness blocker, and ThunderKittens-family full serving rows are not yet imported for the shared Qwen3-8B serving policies."
+      ],
+      "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics.",
+      "current_evidence_refs": [
+        {
+          "kind": "baseline_survey",
+          "path": "docs/in_progress/nvidia_backend_paper_ready/baseline_survey.md"
+        },
+        {
+          "kind": "viewer_data",
+          "path": "evaluations/nvidia/benchmark-viewer/data/paper_baselines.json"
+        },
+        {
+          "kind": "viewer_data",
+          "path": "evaluations/nvidia/benchmark-viewer/data/serving_workloads.json"
+        },
+        {
+          "kind": "viewer_data",
+          "path": "evaluations/nvidia/benchmark-viewer/data/serving_command_plan.json"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "pto_persistent_device",
+          "gpu": "H200",
+          "shape_contains": "vdcores_offline_decode attention tile proxy",
+          "serving_coverage": "controlled_attention_tile_proxy"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "mpk",
+          "gpu": "H200",
+          "shape_contains": "Qwen/Qwen3-0.6B",
+          "serving_coverage": "native_bringup"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "vllm",
+          "gpu": "H200",
+          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
+          "serving_coverage": "full_serving"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "vllm",
+          "gpu": "H200",
+          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
+          "serving_coverage": "full_serving"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "sglang",
+          "gpu": "H200",
+          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
+          "serving_coverage": "full_serving"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "sglang",
+          "gpu": "H200",
+          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
+          "serving_coverage": "full_serving"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/graph-tensor-core-compact-current-working/combined-current-493ce832/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/vllm/h200-qwen3-8b-repeats-eb75a235/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/sglang/h200-mpk-qwen3-8b-repeats-91ddaf86/"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "mpk",
+          "gpu": "H200",
+          "shape_contains": "mpk_offline_decode,Qwen/Qwen3-8B",
+          "serving_coverage": "full_serving_latency_caveat"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/paper-baselines/mpk/qwen3-8b-mpk-policy-072cc513/"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-lifecycle-b95ff321/qwen-serving-lifecycle-plan.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-tokenizer-b95ff321/qwen-prompt-accounting.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-input-binding-2026-06-01/qwen-runtime-input-binding.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-token-buffer-2026-06-01/qwen-cuda-token-buffer-binding.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-decode-args-2026-06-01/qwen-persistent-decode-args.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-token-pointers-2026-06-01/qwen-token-pointer-table.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-kv-cache-2026-06-01/qwen-kv-cache-binding.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-decode-loop-2026-06-01/qwen-decode-loop-runner.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-decode-loop-bridge-2026-06-01/qwen-decode-loop-runner.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-task-bodies-2026-06-01/qwen-persistent-task-bodies.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-task-bodies-qwen-unit-2026-06-01/qwen-persistent-task-bodies.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-unit-math-live-2026-06-01/qwen-unit-math-live.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-decode-loop-unit-math-bridge-2026-06-01/qwen-decode-loop-runner.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-weights-e06636e9/qwen-weight-inventory.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-shards-a16851f6/qwen-safetensors-shards.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-safetensors-a16851f6/qwen-safetensors-metadata.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-weight-residency-1ae913c9/qwen-cuda-weight-residency.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-weight-args-21589e81/qwen-persistent-weight-args.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-weight-materialization-2026-06-01/qwen-persistent-weight-materialization.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resident-weight-table-2026-06-01/qwen-resident-weight-table.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-scaffold-2026-06-01/qwen-serving-scaffold.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-preflight-2026-06-01/pto-serving-preflight.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-proxy-live-2026-06-01/qwen-proxy-live.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-microdecode-live-2026-06-01/qwen-microdecode-live.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-decode-loop-live-2026-06-01/qwen-microdecode-loop.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-decode-loop-token-live-2026-06-01/qwen-decode-loop-runner.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-kv-cache-live-2026-06-02/qwen-kv-cache-binding.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-decode-loop-token-kv-live-2026-06-02/qwen-decode-loop-runner.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-decode-loop-token-kv-resident-live-2026-06-02/qwen-decode-loop-runner.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-decode-loop-submission-descriptors-2026-06-02/qwen-decode-loop-runner.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-decode-loop-submission-smoke-live-2026-06-02/qwen-decode-loop-runner.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-graph-2026-06-02/qwen-decode-loop-runner.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-launch-packet-preflight-2026-06-02/qwen-decode-loop-runner.json"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-activation-workspace-2026-06-02/qwen-decode-loop-runner.json"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "pto_persistent_device",
+          "gpu": "A100",
+          "shape_contains": "Qwen/Qwen3-8B controlled proxy microdecode loop",
+          "serving_coverage": "diagnostic_microdecode"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "pto_persistent_device",
+          "gpu": "A100",
+          "shape_contains": "Qwen/Qwen3-8B unit math",
+          "serving_coverage": "diagnostic_unit_math"
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "pto_persistent_device",
+          "gpu": "A100",
+          "shape_contains": "Qwen/Qwen3-8B diagnostic descriptor smoke",
+          "serving_coverage": "diagnostic_qwen_descriptor_smoke"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-single-context-session-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "single_context_launch_packet_session_ready",
+            "single_context_live_resource_session",
+            "one_cuda_context_for_all_resource_owners",
+            "resource_backed_launch_packet_workspace_bound"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-execution-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "diagnostic_resource_backed_qwen_dag",
+            "completed_count"
+          ]
+        },
+        {
+          "kind": "viewer_result",
+          "benchmark_id": "llm_serving_decode",
+          "method_id": "pto_persistent_device",
+          "gpu": "A100",
+          "shape_contains": "Qwen/Qwen3-8B resource-backed diagnostic",
+          "serving_coverage": "diagnostic_resource_backed_qwen_dag"
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-repeat-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-logits-sampling-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-full-logits-write-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-logits-reference-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-logits-reference-fixed-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-full-logits-check-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-decode-steps-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-token-feedback-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "qwen_diagnostic_decode_token_feedback",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-device-feedback-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "qwen_diagnostic_decode_token_feedback",
+            "qwen_device_decode_token_feedback",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-vdcores-full-decode-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "qwen_diagnostic_decode_token_feedback",
+            "qwen_device_decode_token_feedback",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "final_step_logits_check_policy",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-mpk-full-decode-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "qwen_diagnostic_decode_token_feedback",
+            "qwen_device_decode_token_feedback",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "final_step_logits_check_policy",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-mpk-1024-decode-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "qwen_diagnostic_decode_token_feedback",
+            "qwen_device_decode_token_feedback",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "final_step_logits_check_policy",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-vdcores-unit-numeric-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "qwen_diagnostic_decode_token_feedback",
+            "qwen_device_decode_token_feedback",
+            "qwen_resource_backed_unit_numeric_task_mode",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "final_step_logits_check_policy",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-vdcores-rmsnorm-scale-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "qwen_diagnostic_decode_token_feedback",
+            "qwen_device_decode_token_feedback",
+            "qwen_resource_backed_unit_numeric_task_mode",
+            "qwen_resource_backed_external_rmsnorm_scale",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "final_step_logits_check_policy",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-vdcores-weighted-elementwise-2026-06-02/qwen-decode-loop-runner.json",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "qwen_diagnostic_decode_token_feedback",
+            "qwen_device_decode_token_feedback",
+            "qwen_resource_backed_unit_numeric_task_mode",
+            "qwen_resource_backed_external_rmsnorm_scale",
+            "qwen_resource_backed_weighted_elementwise_branches",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "final_step_logits_check_policy",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-full-rmsnorm-2026-06-02/",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "qwen_diagnostic_decode_token_feedback",
+            "qwen_device_decode_token_feedback",
+            "qwen_resource_backed_unit_numeric_task_mode",
+            "qwen_resource_backed_external_rmsnorm_scale",
+            "qwen_resource_backed_full_rmsnorm_reduction",
+            "qwen_resource_backed_weighted_elementwise_branches",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "final_step_logits_check_policy",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-resource-backed-full-rmsnorm-block-2026-06-02/",
+          "symbols": [
+            "pto_qwen_resource_backed_execution",
+            "qwen_resource_backed_diagnostic_execution",
+            "qwen_resource_backed_decode_step_execution",
+            "qwen_diagnostic_decode_token_feedback",
+            "qwen_device_decode_token_feedback",
+            "qwen_resource_backed_unit_numeric_task_mode",
+            "qwen_resource_backed_external_rmsnorm_scale",
+            "qwen_resource_backed_full_rmsnorm_reduction",
+            "qwen_resource_backed_weighted_elementwise_branches",
+            "diagnostic_resource_backed_qwen_dag",
+            "repeat_runs",
+            "partial_logits_not_full_vocab",
+            "full_logits_buffer_prefix_sampled",
+            "full_logits_buffer_checked",
+            "final_step_logits_check_policy",
+            "diagnostic_qwen_logits_formula",
+            "logits_summary_stable"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-slot-mapped-kv-writeback-2026-06-02/qwen-persistent-task-bodies.json",
+          "symbols": [
+            "pto_qwen_persistent_task_bodies",
+            "generated_qwen_kernel_bodies",
+            "qwen_persistent_task_body_source",
+            "qwen_slot_mapped_kv_cache_writeback_source",
+            "qwen_kernel_kv_field_consumption",
+            "qwen_kernel_source_map"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-logits-tiled-vocab-projection-2026-06-02/qwen-persistent-task-bodies.json",
+          "symbols": [
+            "pto_qwen_persistent_task_bodies",
+            "generated_qwen_kernel_bodies",
+            "qwen_logits_tiled_vocab_projection_source",
+            "qwen_logits_full_vocab_argmax_source",
+            "qwen_logits_device_sampled_token_feedback_source",
+            "qwen_kernel_source_map"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-logits-tile-descriptor-2026-06-02/qwen-persistent-weight-args.json",
+          "symbols": [
+            "qwen_persistent_weight_args",
+            "qwen_weight_descriptor_shapes",
+            "qwen_logits_descriptor_tile_size",
+            "qwen_logits_tiled_vocab_projection_source"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-serving-logits-projection-reference-2026-06-02/logits-projection-reference.json",
+          "symbols": [
+            "diagnostic_qwen_tiled_vocab_projection",
+            "diagnostic_logits_projection_values",
+            "compare_logits_reference"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-full-serving-import-gate-2026-06-02/full-serving-import-gate.json",
+          "symbols": [
+            "pto_qwen_full_serving_viewer_import",
+            "full_serving_import_runtime_gate",
+            "full_serving_import_coverage_gate"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-full-serving-metric-gate-2026-06-02/full-serving-metric-gate.json",
+          "symbols": [
+            "pto_qwen_full_serving_viewer_import",
+            "validate_full_serving_metrics",
+            "test_full_serving_importer_rejects_failed_requests",
+            "test_full_serving_importer_rejects_underchecked_decode_tokens"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-full-serving-audit-metric-gate-2026-06-02/audit-metric-gate.json",
+          "symbols": [
+            "pto_full_serving_accounting_ready",
+            "pto_full_serving_row_ready",
+            "test_paper_readiness_rejects_failed_pto_full_serving_requests",
+            "test_paper_readiness_rejects_underchecked_pto_decode_tokens"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-full-serving-viewer-validator-gate-2026-06-02/viewer-validator-gate.json",
+          "symbols": [
+            "validate_pto_full_serving_result",
+            "validate_pto_full_serving_correctness",
+            "test_viewer_data_validator_rejects_failed_pto_full_serving_row",
+            "test_viewer_data_validator_rejects_underchecked_pto_full_serving_row"
+          ]
+        }
+      ],
+      "missing_evidence_details": [
+        {
+          "id": "pto_full_serving_qwen3_8b",
+          "method_id": "pto_persistent_device",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Implement/import PTO persistent-device Qwen3-8B rows for MPK and VDCores offline decode. Evidence covers diagnostics, Qwen task bodies, RoPE refresh, GQA decode-attention grouping, paged KV-table indexing, tiled softmax passes, policy-length MPK/VDCores diagnostic decode-loop execution, and argmax. Remaining gates: full Qwen numerical correctness, full-serving row import.",
+          "evidence_summary": [
+            "Lifecycle and input artifacts: persistent_qwen_serving_scaffold, qwen_serving_lifecycle_plan, qwen_prompt_accounting, qwen_runtime_input_binding, qwen_cuda_token_buffer_binding, qwen_persistent_decode_args, and qwen_kv_cache_binding.",
+            "Weight artifacts: qwen_weight_inventory, qwen_safetensors_fetch, qwen_safetensors_metadata, qwen_cuda_weight_binding, qwen_persistent_weight_args, qwen_persistent_weight_materialization, qwen_resident_weight_table, local Qwen shard placement, actual safetensors shape/dtype validation for 399 tensors, stable CUDA weight binding slots and file offsets, full CUDA residency for 16.38 GB of weights, and copy-back verification for 16 small tensors.",
+            "Persistent DAG artifacts: qwen_persistent_task_bodies, generated persistent-device Qwen task-body source, shape-field linear projection/logits source, shape-field QK RMSNorm source, shape-field QK RoPE formula source, descriptor-level QK RoPE table slots, descriptor-level KV page-table slot, descriptor-level logits tile-size scalar, launch-packet live RoPE table and KV page-table pointer binding with Qwen-theta first-position table population and bounded per-step refresh, decode-position-aware slot-mapped QKV writeback through runtime kv_page_table, bounded diagnostic GQA decode-attention reduction over paged mutable c/d KV fields with descriptor-bounded tiled softmax passes, descriptor-bounded tiled hidden-by-vocab logits projection source, full-vocab logits argmax source, persistent DAG tensor_args manifest, tensor_arg_dtypes BF16/FP32 ABI, dtype-aware generated CUDA tensor-argument reads, resident_weight_ptrs[slot_id], process-scoped resident weight table owner, padded target-length input_ids, attention_mask, persistent decode token argument binding, preserving tensor_args for weights, and dry-run KV-cache key/value pointer binding.",
+            "Runtime diagnostics: controlled attention-tile proxy, controlled proxy numeric oracle, controlled proxy live CUDA execution, controlled proxy live microdecode DAG execution, resource-backed diagnostic execution, block-wide full-vector RMSNorm reduction diagnostic execution, bounded tiled logits projection reference checking, 1024-step MPK-policy and 64-step VDCores-policy diagnostic decode-loop execution, device-committed sampled-token feedback, full-serving import gates requiring runtime=cuda/persistent_device, serving_coverage=full_serving, zero failed requests, consistent request/token accounting, and correctness coverage for all generated decode tokens, plus matching benchmark-viewer data validation and paper-audit gates for viewer JSON remain diagnostic rather than full serving."
+          ]
+        },
+        {
+          "id": "vdcores_full_serving_qwen3_8b",
+          "paper_baseline_id": "vdcores",
+          "paper_baseline_run_id": "vdcores_qwen3_8b_decode_preflight",
+          "method_id": "vdcores",
+          "serving_workload_ids": [
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after fixing correctness for the global-instruction capacity path or implementing an equivalent segmented schedule under the shared-instruction runtime."
+        },
+        {
+          "id": "thunderkittens_full_serving_qwen3_8b",
+          "paper_baseline_id": "thunderkittens",
+          "paper_baseline_run_id": "thunderkittens_decode_attention_tile",
+          "method_id": "thunderkittens",
+          "serving_workload_ids": [
+            "mpk_offline_decode",
+            "vdcores_offline_decode"
+          ],
+          "shape_contains": "Qwen/Qwen3-8B",
+          "status": "missing",
+          "action": "Import ThunderKittens-family full-serving Qwen/Qwen3-8B rows beyond the current attention-tile proxy."
+        }
+      ]
+    }
+  ]
+}

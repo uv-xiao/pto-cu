@@ -54,7 +54,7 @@ def runtime_stages(artifacts: dict[str, dict[str, Any]], flags: dict[str, Any]) 
             owner="paper_evaluation",
             required_for_full_serving=True,
             status="missing",
-            evidence="docs/nvidia-backend/benchmark-viewer/data/results.json",
+            evidence="evaluations/nvidia/benchmark-viewer/data/results.json",
             next_action=(
                 "Import Qwen/Qwen3-8B PTO rows with serving_coverage="
                 "full_serving or full_serving_latency_caveat."
