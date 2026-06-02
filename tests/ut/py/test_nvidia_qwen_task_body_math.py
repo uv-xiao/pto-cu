@@ -304,6 +304,16 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         full_source
     )
     assert "projected_attention += attention_value * o_weight;" in full_source
+    assert "const unsigned int sequence_capacity =" in full_source
+    assert "const unsigned long long kv_read_base =" in full_source
+    assert (
+        "static_cast<unsigned long long>(row) * sequence_capacity * kv_heads *"
+        in full_source
+    )
+    assert full_source.count("kv_read_base +") == 4
+    assert "qwen_attention_o_batch_local_kv_read_source" in manifest[
+        "implemented_contracts"
+    ]
     assert "qwen_attention_o_bounded_projection_source" in manifest[
         "implemented_contracts"
     ]

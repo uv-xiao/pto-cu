@@ -429,6 +429,11 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
     unsigned int kv_page_size =
         task->scalar0 > 0.0f ? static_cast<unsigned int>(task->scalar0) : kv_window;
     kv_page_size = kv_page_size > 0U ? kv_page_size : kv_window;
+    const unsigned int sequence_capacity =
+        task->b_batch_stride > 0U ? task->b_batch_stride : kv_page_size;
+    const unsigned long long kv_read_base =
+        static_cast<unsigned long long>(row) * sequence_capacity * kv_heads *
+        head_dim;
     unsigned int attention_tile =
         task->scalar1 > 0.0f ? static_cast<unsigned int>(task->scalar1) : 16U;
     attention_tile = attention_tile > 0U ? attention_tile : 16U;
@@ -469,6 +474,7 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                     const unsigned int physical_page = kv_page_table ?
                         kv_page_table[logical_page] : logical_page;
                     const unsigned long long kv_index =
+                        kv_read_base +
                         static_cast<unsigned long long>(physical_page) *
                             kv_page_size * kv_heads * head_dim +
                         static_cast<unsigned long long>(page_offset) *
@@ -494,6 +500,7 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                     const unsigned int physical_page = kv_page_table ?
                         kv_page_table[logical_page] : logical_page;
                     const unsigned long long kv_index =
+                        kv_read_base +
                         static_cast<unsigned long long>(physical_page) *
                             kv_page_size * kv_heads * head_dim +
                         static_cast<unsigned long long>(page_offset) *
@@ -531,6 +538,7 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                 const unsigned int physical_page = kv_page_table ?
                     kv_page_table[logical_page] : logical_page;
                 const unsigned long long kv_index =
+                    kv_read_base +
                     static_cast<unsigned long long>(physical_page) *
                         kv_page_size * kv_heads * head_dim +
                     static_cast<unsigned long long>(page_offset) *
@@ -554,6 +562,7 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                 const unsigned int physical_page = kv_page_table ?
                     kv_page_table[logical_page] : logical_page;
                 const unsigned long long kv_index =
+                    kv_read_base +
                     static_cast<unsigned long long>(physical_page) *
                         kv_page_size * kv_heads * head_dim +
                     static_cast<unsigned long long>(page_offset) *
@@ -839,6 +848,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_shape_field_qk_rope_source",
             "qwen_bounded_decode_attention_reduction_source",
             "qwen_decode_attention_head_dim_scale_source",
+            "qwen_attention_o_batch_local_kv_read_source",
             "qwen_attention_o_bounded_projection_source",
             "qwen_mlp_down_residual_add_source",
             "qwen_gqa_decode_attention_head_grouping_source",
