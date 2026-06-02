@@ -60,6 +60,27 @@ TaskSlotState &Orchestrator::slot_state(TaskSlot s) {
     return *p;
 }
 
+std::vector<OrchestratorSubmitSnapshot> Orchestrator::debug_next_level_submits() {
+    std::vector<OrchestratorSubmitSnapshot> snapshots;
+    int32_t count = allocator_->next_task_id();
+    for (TaskSlot slot = 0; slot < count; ++slot) {
+        TaskSlotState *state = allocator_->slot_state(slot);
+        if (!state || state->worker_type != WorkerType::NEXT_LEVEL) continue;
+
+        OrchestratorSubmitSnapshot snapshot;
+        snapshot.task_slot = slot;
+        snapshot.callable_id = state->callable_id;
+        snapshot.affinities = state->affinities;
+        if (state->is_group()) {
+            snapshot.args_list = state->task_args_list;
+        } else {
+            snapshot.args_list = {state->task_args};
+        }
+        snapshots.push_back(std::move(snapshot));
+    }
+    return snapshots;
+}
+
 // ---------------------------------------------------------------------------
 // alloc(shape, dtype) — user-facing intermediate buffer from the HeapRing
 // ---------------------------------------------------------------------------

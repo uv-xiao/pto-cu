@@ -199,6 +199,56 @@ def test_cuda_pto_graph_recorder_captures_python_orchestration_submits():
     assert lowered.tasks == [("task0", 101, 0, 1, 0), ("task1", 102, 1, 0, 1)]
 
 
+def test_cuda_pto_graph_reads_live_cpp_orchestrator_next_level_slots():
+    from simpler.task_interface import (
+        CallConfig,
+        ContinuousTensor,
+        DataType,
+        TaskArgs,
+        TensorArgType,
+        _Worker,
+    )
+    from simpler_setup.cuda_pto_graph import (
+        cuda_pto_submit_from_orchestrator_snapshot,
+        lower_cuda_pto_task_graph,
+    )
+
+    def tensor(ptr):
+        return ContinuousTensor.make(ptr, (4,), DataType.FLOAT32, False)
+
+    worker = _Worker(3, 0)
+    worker.init()
+    orch = worker.get_orchestrator()
+    try:
+        orch._scope_begin()
+        root_args = TaskArgs()
+        root_args.add_tensor(tensor(10), TensorArgType.INPUT)
+        root_args.add_tensor(tensor(30), TensorArgType.OUTPUT)
+        middle_args = TaskArgs()
+        middle_args.add_tensor(tensor(30), TensorArgType.INPUT)
+        middle_args.add_tensor(tensor(40), TensorArgType.OUTPUT)
+        orch.submit_next_level(201, root_args, CallConfig())
+        orch.submit_next_level(202, middle_args, CallConfig())
+
+        snapshot = orch._debug_next_level_submits()
+    finally:
+        worker.close()
+
+    submits = cuda_pto_submit_from_orchestrator_snapshot(
+        snapshot,
+        tensor_names=(("a", "tmp0"), ("tmp0", "tmp1")),
+    )
+    lowered = lower_cuda_pto_task_graph(
+        submits,
+        lambda node, begin, count, fanin: (node.key, node.func_id, begin, count, fanin),
+    )
+
+    assert [submit.callable_id for submit in submits] == [201, 202]
+    assert lowered.fanin == [0, 1]
+    assert lowered.dependents == [1]
+    assert lowered.tasks == [("slot0", 201, 0, 1, 0), ("slot1", 202, 1, 0, 1)]
+
+
 class CudaHostCallable(ctypes.Structure):
     _fields_ = [
         ("version", ctypes.c_uint32),

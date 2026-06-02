@@ -41,11 +41,12 @@ normal-graph lowering-boundary group, with evidence tied to
 `simpler_setup/cuda_pto_graph.py`, `simpler_setup/cuda_normal_graph.py`, the
 `persistent_dag_normal_graph_f32` scene-test builder in
 `simpler_setup/scene_test.py`, the no-torch persistent smoke, and the Qwen
-unit-math CUDA example. The adapter now records Python orchestration
-`submit_next_level` calls, converts real `TaskArgs` plus `TensorArgType` tags
-into CUDA submit records, and the Qwen example constructs the persistent DAG
-from PTO-style tagged submits. Together these provide concrete builder-side
-evidence outside scene-test graph config.
+unit-math CUDA example. The C++ orchestrator now exposes live NEXT_LEVEL slot
+snapshots before drain/reset, the CUDA adapter converts those snapshots and
+real `TaskArgs` plus `TensorArgType` tags into CUDA submit records, and the
+Qwen example constructs the persistent DAG from PTO-style tagged submits.
+Together these provide concrete builder-side evidence outside scene-test graph
+config.
 
 The verified coverage above is enough for current CUDA backend review claims
 about scheduler mechanics and scene-test normal graph construction. Paired
@@ -53,9 +54,9 @@ A100/H200 smoke now also validates the submit-chain normal graph boundary with
 `graph_lowering=normal_graph`, and the normal graph smoke matrix now covers
 fork-join, chain, multi-fan-in, and layered-cross shape construction with
 paired A100/H200 evidence for each shape. The remaining open work is normal
-PTO graph breadth from the live hierarchical orchestrator into the CUDA
-persistent-device builder, plus malformed normal-graph lowering cases once
-that live input path lands. It is not the scheduler launch, resource,
-lifecycle, error-taxonomy, shape breadth, Python orchestration recording,
+PTO graph breadth for paired GPU evidence from live C++ orchestrator snapshot
+inputs, plus malformed normal-graph lowering cases for that live input path.
+It is not the scheduler launch, resource, lifecycle, error-taxonomy, shape
+breadth, C++ orchestrator snapshot capture, Python orchestration recording,
 `TaskArgs` tag conversion, tagged-submit lowering, or artifact-reporting
 mechanics already captured here.

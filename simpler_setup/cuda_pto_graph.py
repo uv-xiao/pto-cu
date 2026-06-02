@@ -113,6 +113,34 @@ def record_cuda_pto_submits(
     return tuple(recorder.submits)
 
 
+def cuda_pto_submit_from_orchestrator_snapshot(
+    snapshot: Sequence[Mapping[str, Any]],
+    *,
+    tensor_names: Sequence[Sequence[str] | None] | None = None,
+) -> tuple[CudaPtoTaskSubmit, ...]:
+    """Convert live C++ orchestrator submit snapshots into CUDA submits."""
+
+    submits = []
+    tensor_name_rows = tuple(tensor_names or ())
+    for index, entry in enumerate(snapshot):
+        args_list = list(entry.get("args_list", ()))
+        if len(args_list) != 1:
+            raise ValueError("CUDA PTO snapshot conversion supports one TaskArgs per submit")
+        slot = int(entry["task_slot"])
+        submit_names = tensor_name_rows[index] if index < len(tensor_name_rows) else None
+        submits.append(
+            cuda_pto_submit_from_task_args(
+                f"slot{slot}",
+                int(entry["callable_id"]),
+                args_list[0],
+                worker_id=_snapshot_worker_id(entry),
+                tensor_names=submit_names,
+                attrs={"snapshot": entry},
+            )
+        )
+    return tuple(submits)
+
+
 def cuda_pto_submit_from_task_args(
     key: str,
     callable_id: int,
@@ -211,6 +239,13 @@ def _default_tensor_name(tensor: Any, index: int) -> str:
     if int(getattr(tensor, "data", 0)) == 0:
         return ""
     return f"tensor_{index}"
+
+
+def _snapshot_worker_id(entry: Mapping[str, Any]) -> int:
+    affinities = list(entry.get("affinities", ()))
+    if not affinities:
+        return -1
+    return int(affinities[0])
 
 
 def _role_from_tensor_arg_type(tag: Any) -> str:

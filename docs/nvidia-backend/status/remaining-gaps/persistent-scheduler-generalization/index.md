@@ -12,9 +12,8 @@ The remaining backend gap is normal PTO graph breadth, not the core persistent
 scheduler mechanics. Before this gap can be closed, the CUDA backend still
 needs:
 
-- live hierarchical orchestrator submissions captured into the CUDA
-  persistent-device builder;
-- paired A100/H200 evidence for that live normal PTO graph input path.
+- paired A100/H200 evidence for the live C++ orchestrator snapshot path;
+- malformed normal-graph coverage for live C++ snapshot inputs.
 
 The current scheduler-negative taxonomy is covered for the review scope:
 unsupported `func_id`, invalid dependent IDs, dependent range, fan-in
@@ -58,29 +57,29 @@ The remaining shape artifacts complete the paired normal-graph evidence matrix:
 `tmp/cuda-backend/persistent-normal_graph_layered_cross-repeat2-smoke-4c68620e/`.
 Those artifacts validate `graph_lowering=normal_graph`, dispatch sequences,
 fan-in/dependent arrays, and repeat-run completion on both A100 and H200.
-The CUDA PTO graph adapter now converts real `TaskArgs` plus `TensorArgType`
-tags into persistent-device submit records. It can also record Python
-orchestration `submit_next_level` calls into those records, and the Qwen
+The C++ orchestrator now exposes live NEXT_LEVEL task-slot snapshots before
+drain resets the ring state. The CUDA PTO graph adapter converts those
+snapshots, real `TaskArgs` plus `TensorArgType` tags, and Python orchestration
+`submit_next_level` calls into persistent-device submit records. The Qwen
 unit-math live example lowers PTO-style tagged submit records through
 `simpler_setup/cuda_pto_graph.py`. These prove builder-side dependency
-inference outside scene-test graph config. They are still not a live capture
-from the C++ hierarchical orchestrator task slots.
+inference outside scene-test graph config and include live C++ task-slot
+capture.
 
 ## Promotion Gate
 
 Close this gap only after normal PTO task graphs construct full
 persistent-device scheduler inputs from live hierarchical orchestrator
-submissions and the resulting backend-builder path runs through the paired
+snapshot inputs and the resulting backend-builder path runs through the paired
 A100/H200 smoke or benchmark harness. The normal-graph shape evidence above no
-longer relies on descriptor spellings, and the Python orchestration recorder
-plus `TaskArgs`/tagged-submit adapter proves the builder-side dependency rule,
-but neither is a live C++ orchestrator capture.
+longer relies on descriptor spellings, and the C++ snapshot plus
+`TaskArgs`/tagged-submit adapter proves the builder-side dependency rule.
 
 ## Next Actions
 
-- Bridge live C++ hierarchical orchestrator task slots into the CUDA
-  persistent-device builder.
-- Run that live normal PTO graph path through paired A100/H200 evidence before
+- Route the live C++ snapshot input into a paired A100/H200 smoke or benchmark
+  harness.
+- Add malformed normal-graph coverage for snapshot-originated inputs before
   removing this page from `status.md`.
 
 ## Evidence Archive

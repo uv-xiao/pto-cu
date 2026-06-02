@@ -82,11 +82,12 @@
     {
       "id": "normal_graph_lowering_boundary",
       "title": "Normal Graph Lowering Boundary",
-      "status": "covered_for_python_orchestration_recording",
-      "summary": "Shared lowering now builds fan-in, dependents, and task spans for smoke, scene-test, Python orchestration recording, real TaskArgs submits, PTO-style tagged submits, and Qwen example graph inputs.",
+      "status": "covered_for_cpp_orchestrator_snapshot",
+      "summary": "Shared lowering now builds fan-in, dependents, and task spans for smoke, scene-test, live C++ orchestrator snapshots, Python orchestration recording, real TaskArgs submits, PTO-style tagged submits, and Qwen example graph inputs.",
       "covered_cases": [
         "node-key dependency lowering from depends_on edges",
         "explicit dependent-list lowering that preserves dependent order",
+        "live C++ Orchestrator NEXT_LEVEL slot snapshot conversion into CUDA persistent-device submit records",
         "Python orchestration submit_next_level recording into CUDA persistent-device submit records",
         "real TaskArgs plus TensorArgType conversion into CUDA persistent-device submit records",
         "PTO-style tagged submit dependency inference for CUDA persistent-device task graphs",
@@ -99,15 +100,29 @@
         "Qwen unit-math DAG task-array construction"
       ],
       "open_work": [
-        "normal PTO graph breadth from the live hierarchical orchestrator into paired GPU evidence"
+        "paired A100/H200 evidence for live C++ Orchestrator snapshot inputs"
       ],
       "evidence_refs": [
+        {
+          "path": "src/common/hierarchical/orchestrator.h",
+          "symbols": [
+            "OrchestratorSubmitSnapshot",
+            "debug_next_level_submits"
+          ]
+        },
+        {
+          "path": "python/bindings/worker_bind.h",
+          "symbols": [
+            "_debug_next_level_submits"
+          ]
+        },
         {
           "path": "simpler_setup/cuda_pto_graph.py",
           "symbols": [
             "CudaPtoGraphRecorder",
             "CudaPtoTaskArg",
             "CudaPtoTaskSubmit",
+            "cuda_pto_submit_from_orchestrator_snapshot",
             "cuda_pto_submit_from_task_args",
             "record_cuda_pto_submits",
             "lower_cuda_pto_task_graph"

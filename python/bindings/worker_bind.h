@@ -181,6 +181,22 @@ inline void bind_worker(nb::module_ &m) {
         )
         .def(
             "_clear_error", &Orchestrator::clear_error, "Clear any stored dispatch error so the next run can proceed."
+        )
+        .def(
+            "_debug_next_level_submits",
+            [](Orchestrator &self) {
+                nb::list out;
+                for (const auto &snapshot : self.debug_next_level_submits()) {
+                    nb::dict entry;
+                    entry["task_slot"] = snapshot.task_slot;
+                    entry["callable_id"] = snapshot.callable_id;
+                    entry["args_list"] = snapshot.args_list;
+                    entry["affinities"] = snapshot.affinities;
+                    out.append(entry);
+                }
+                return out;
+            },
+            "Return live NEXT_LEVEL submit snapshots before drain resets slot state."
         );
 
     // --- Worker ---

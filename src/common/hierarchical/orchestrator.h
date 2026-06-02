@@ -60,6 +60,13 @@ struct SubmitResult {
     TaskSlot task_slot{INVALID_SLOT};
 };
 
+struct OrchestratorSubmitSnapshot {
+    TaskSlot task_slot{INVALID_SLOT};
+    int32_t callable_id{-1};
+    std::vector<TaskArgs> args_list;
+    std::vector<int8_t> affinities;
+};
+
 // ---------------------------------------------------------------------------
 // Orchestrator
 // ---------------------------------------------------------------------------
@@ -139,6 +146,10 @@ public:
     // Clear any stored dispatch error so the next Worker::run() starts
     // from a clean slate. Called by Worker::run before scope_begin.
     void clear_error();
+
+    // Debug/review snapshot for graph builders. Valid only before drain()
+    // resets the Ring's slot state.
+    std::vector<OrchestratorSubmitSnapshot> debug_next_level_submits();
 
     // Called by Scheduler (via Worker) when a task becomes CONSUMED:
     // erases TensorMap entries, releases the allocator slot (and implicitly
