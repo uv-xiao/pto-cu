@@ -286,6 +286,9 @@ def main() -> None:
         ensure_matrix_ref(
             load_viewer_json(args.matrix),
             raw_artifact=raw_artifact,
+            logits_check_policy=payload["resource_backed_execution"]
+            .get("repeat_policy", {})
+            .get("logits_check_policy", "final_step"),
         ),
     )
     print(f"imported {raw_artifact}")

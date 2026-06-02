@@ -12,20 +12,30 @@ def ensure_matrix_ref(
     matrix: dict[str, Any],
     *,
     raw_artifact: str | None = None,
+    logits_check_policy: str = "final_step",
 ) -> dict[str, Any]:
     updated = dict(matrix)
     records = []
     for record in matrix["paper_evaluation_matrix"]:
         current = dict(record)
         if current["id"] == "llm_serving_paper_baselines":
-            ensure_claim_refs(current, raw_artifact=raw_artifact)
+            ensure_claim_refs(
+                current,
+                raw_artifact=raw_artifact,
+                logits_check_policy=logits_check_policy,
+            )
             update_pto_gap_action(current)
         records.append(current)
     updated["paper_evaluation_matrix"] = records
     return updated
 
 
-def ensure_claim_refs(record: dict[str, Any], *, raw_artifact: str | None) -> None:
+def ensure_claim_refs(
+    record: dict[str, Any],
+    *,
+    raw_artifact: str | None,
+    logits_check_policy: str,
+) -> None:
     refs = record["current_evidence_refs"]
     viewer_ref = {
         "kind": "viewer_result",
@@ -46,10 +56,24 @@ def ensure_claim_refs(record: dict[str, Any], *, raw_artifact: str | None) -> No
                 and item.get("path") == raw_artifact
             )
         ]
-        refs.append(raw_artifact_ref(raw_artifact))
+        refs.append(
+            raw_artifact_ref(
+                raw_artifact,
+                logits_check_policy=logits_check_policy,
+            )
+        )
 
 
-def raw_artifact_ref(raw_artifact: str) -> dict[str, Any]:
+def raw_artifact_ref(
+    raw_artifact: str,
+    *,
+    logits_check_policy: str = "final_step",
+) -> dict[str, Any]:
+    logits_policy_symbol = (
+        "every_step_logits_check_policy"
+        if logits_check_policy == "every_step"
+        else "final_step_logits_check_policy"
+    )
     return {
         "kind": "raw_artifact",
         "path": raw_artifact,
@@ -69,7 +93,7 @@ def raw_artifact_ref(raw_artifact: str) -> dict[str, Any]:
             "partial_logits_not_full_vocab",
             "full_logits_buffer_prefix_sampled",
             "full_logits_buffer_checked",
-            "final_step_logits_check_policy",
+            logits_policy_symbol,
             "diagnostic_qwen_tiled_vocab_projection",
             "logits_summary_stable",
         ],

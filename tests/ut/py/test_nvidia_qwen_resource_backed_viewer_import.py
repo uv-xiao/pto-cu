@@ -386,6 +386,20 @@ def test_resource_backed_importer_adds_matrix_ref():
     assert "final_step_logits_check_policy" in claim[
         "current_evidence_refs"
     ][1]["symbols"]
+    updated_every_step = module.ensure_matrix_ref(
+        matrix,
+        raw_artifact="tmp/cuda-backend/resource-backed-every-step.json",
+        logits_check_policy="every_step",
+    )
+    every_step_symbols = next(
+        item["symbols"]
+        for item in updated_every_step["paper_evaluation_matrix"][0][
+            "current_evidence_refs"
+        ]
+        if item.get("path") == "tmp/cuda-backend/resource-backed-every-step.json"
+    )
+    assert "every_step_logits_check_policy" in every_step_symbols
+    assert "final_step_logits_check_policy" not in every_step_symbols
     assert "qwen_resource_backed_full_rmsnorm_reduction" in claim[
         "current_evidence_refs"
     ][1]["symbols"]

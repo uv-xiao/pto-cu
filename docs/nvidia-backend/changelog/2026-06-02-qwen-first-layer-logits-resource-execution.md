@@ -10,8 +10,13 @@
   layer 0, final RMSNorm, and logits in one persistent-device run.
 - Extended the resource-backed viewer importer to preserve task-selection,
   task func-id sequence, and callable sequence metadata.
+- Made the resource-backed matrix import record the raw execution's logits
+  check policy instead of labeling every resource-backed artifact as
+  final-step-only.
 - Imported the two first-layer/logits diagnostic rows into the benchmark
   viewer, one for `mpk_offline_decode` and one for `vdcores_offline_decode`.
+- Added a four-step first-layer/logits diagnostic run that checks logits and
+  device-committed sampled-token feedback on every executed decode step.
 
 ## Architecture Quality
 
@@ -59,6 +64,32 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
 PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
   .agents/skills/cuda-backend-eval/scripts/paper_readiness_work_queue.py \
   --output evaluations/nvidia/benchmark-viewer/data/paper_readiness_work_queue.json
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  examples/cuda/qwen_decode_loop_runner.py --mode offline \
+  --single-context-live-session --run-resource-backed-smoke \
+  --resource-backed-task-selection first_layer_with_logits \
+  --resource-backed-decode-steps 4 \
+  --resource-backed-workload mpk_offline_decode \
+  --resource-backed-workload vdcores_offline_decode \
+  --resource-backed-logits-check-policy every_step \
+  --resource-backed-numeric-task-mode unit_math_full_rmsnorm \
+  --device 0 --arch compute_80 \
+  --cache-root tmp/cuda-backend/qwen-first-layer-logits-4step/runner-cache \
+  --output-json tmp/cuda-backend/qwen-first-layer-logits-4step/qwen-decode-loop-runner.json
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  .agents/skills/cuda-backend-eval/scripts/pto_qwen_resource_backed_viewer_import.py \
+  tmp/cuda-backend/qwen-first-layer-logits-4step/qwen-decode-loop-runner.json \
+  --artifact-root tmp/cuda-backend/qwen-first-layer-logits-4step/ \
+  --commit c552ae72
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  .agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py \
+  --output evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  .agents/skills/cuda-backend-eval/scripts/paper_readiness_work_queue.py \
+  --output evaluations/nvidia/benchmark-viewer/data/paper_readiness_work_queue.json
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  .agents/skills/cuda-backend-eval/scripts/nvidia_goal_progress.py \
+  --output evaluations/nvidia/benchmark-viewer/data/goal_progress.json
 ```
 
 Result: tests passed; the live resource-backed diagnostic completed with
@@ -74,6 +105,13 @@ The benchmark viewer now contains two compact rows under
 `task_func_id_sequence=[7100, 7101, 7102, 7103, 7104, 7105, 7106, 7107,
 7108, 7109]`, checked logits, zero scheduler errors, and device token
 feedback.
+
+The later four-step run under
+`tmp/cuda-backend/qwen-first-layer-logits-4step/` also passed for both
+workloads. Each compact viewer row records `executed_decode_steps=4`,
+`logits_check_policy=every_step`, `logits_checked_step_count=4`, zero
+scheduler errors, `diagnostic_logits_reference_status=pass`, and
+`decode_feedback_applied_step_count=4` with device-observed token feedback.
 
 ## Remaining Gaps
 
