@@ -163,6 +163,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "const unsigned int decode_position = task->scalar_arg_count > 2U" in (
         full_source
     )
+    assert "static_cast<unsigned int>(task->scalar_args[2]) : 0U;" in full_source
     assert "const unsigned long long qk_norm_kv_write_index =" in full_source
     assert "task->c[qk_norm_kv_write_index] = task->out[j];" in full_source
     assert "const unsigned int *qk_norm_kv_page_table =" in full_source
@@ -175,6 +176,13 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         full_source
     )
     assert "qk_norm_kv_page_table[logical_page] : logical_page" in full_source
+    assert (
+        "const unsigned int row = static_cast<unsigned int>(j / task->cols);"
+        in full_source
+    )
+    assert "qwen_qk_norm_batch_row_index_source" in manifest[
+        "implemented_contracts"
+    ]
     assert "qwen_qk_norm_normalized_k_cache_writeback_source" in manifest[
         "implemented_contracts"
     ]

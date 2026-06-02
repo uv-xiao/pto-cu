@@ -34,7 +34,9 @@ Q/K weights into one vector. The normalized K region is also written back
 through mutable `task->c` key-cache storage using the decode position and
 descriptor page size; QK-norm accepts runtime `tensor_args[4]` as a
 `kv_page_table` and maps logical decode pages before writing normalized K
-cache. The attention-output task now has a shape-gated path that reads mutable
+cache. The QK-norm source derives the batch row from `j / task->cols` before
+reading Q/K regions and before forming the batch-local K-cache write index.
+The attention-output task now has a shape-gated path that reads mutable
 `c`/`d` KV-cache fields and computes a max-stabilized softmax reduction over
 the bounded `inner` decode window with GQA query-head to KV-head grouping from
 descriptor `rows`, `lda`, and `ldb`. It also accepts runtime `tensor_args[1]`

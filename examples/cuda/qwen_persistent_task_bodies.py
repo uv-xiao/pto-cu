@@ -35,6 +35,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_qk_norm_block_rmsnorm_rope_source",
     "qwen_qk_norm_separate_qk_regions_source",
     "qwen_qk_norm_normalized_k_cache_writeback_source",
+    "qwen_qk_norm_batch_row_index_source",
     "qwen_final_norm_full_rmsnorm_source",
     "qwen_shape_field_qk_rope_source",
     "qwen_bounded_decode_attention_reduction_source",

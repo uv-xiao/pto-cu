@@ -243,9 +243,6 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
 if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
     task->tensor_args[0] && task->tensor_args[1]) {
     const unsigned int stride = task->lda > 0U ? task->lda : task->cols;
-    const unsigned int row = 0U;
-    const unsigned long long row_base =
-        static_cast<unsigned long long>(row) * stride;
     const unsigned int head_dim = task->inner;
     const unsigned int query_heads = task->rows > 0U ? task->rows : 1U;
     const unsigned int kv_heads = task->ldb > 0U ? task->ldb : query_heads;
@@ -256,7 +253,7 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
     const unsigned int kv_page_size =
         raw_kv_page_size > 0U ? raw_kv_page_size : 16U;
     const unsigned int decode_position = task->scalar_arg_count > 2U ?
-        static_cast<unsigned int>(task->scalar_args[2]) : row;
+        static_cast<unsigned int>(task->scalar_args[2]) : 0U;
     const unsigned int sequence_capacity =
         task->b_batch_stride > 0U ? task->b_batch_stride : kv_page_size;
     const unsigned int *qk_norm_kv_page_table =
@@ -264,6 +261,9 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
         reinterpret_cast<const unsigned int *>(task->tensor_args[4]) : nullptr;
     if (task->cols >= q_width + kv_width) {
         for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
+            const unsigned int row = static_cast<unsigned int>(j / task->cols);
+            const unsigned long long row_base =
+                static_cast<unsigned long long>(row) * stride;
             const unsigned int col = static_cast<unsigned int>(j % task->cols);
             if (col >= q_width + kv_width) {
                 task->out[j] = 0.0f;
@@ -331,6 +331,9 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
         }
     } else {
         __shared__ float partial[1024];
+        const unsigned int fallback_row = 0U;
+        const unsigned long long row_base =
+            static_cast<unsigned long long>(fallback_row) * stride;
         float mean_square = 0.0f;
         for (unsigned long long k = threadIdx.x; k < task->inner;
              k += blockDim.x) {
@@ -832,6 +835,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_qk_norm_separate_qk_regions_source",
             "qwen_qk_norm_normalized_k_cache_writeback_source",
             "qwen_qk_norm_paged_k_cache_writeback_source",
+            "qwen_qk_norm_batch_row_index_source",
             "qwen_final_norm_full_rmsnorm_source",
             "qwen_shape_field_qk_rope_source",
             "qwen_bounded_decode_attention_reduction_source",
