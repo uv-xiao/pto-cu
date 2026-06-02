@@ -1,6 +1,6 @@
 # 2026-06-02 Python Orchestration Graph Recorder
 
-## What Changed
+## Code And Data Changed
 
 - Added `CudaPtoGraphRecorder` and `record_cuda_pto_submits` to
   `simpler_setup/cuda_pto_graph.py`.
@@ -16,7 +16,7 @@ Python orchestration code without expanding `scene_test.py`. The remaining
 promotion gate is now live C++ hierarchical orchestrator task-slot capture and
 paired A100/H200 evidence for that live path.
 
-## Evaluation
+## Evaluation Run
 
 - Confirmed the new recorder test failed before implementation because
   `record_cuda_pto_submits` did not exist.
@@ -29,3 +29,8 @@ paired A100/H200 evidence for that live path.
 - `simpler_setup/cuda_pto_graph.py`
 - `tests/ut/py/test_cuda_backend.py`
 - `docs/nvidia-backend/benchmark-viewer/data/persistent_scheduler_coverage.json`
+
+## Remaining Gaps
+
+This recorder slice still left live C++ task-slot snapshot capture and paired
+GPU snapshot evidence to later reports.

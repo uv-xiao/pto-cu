@@ -1,6 +1,6 @@
 # 2026-06-02 PTO Submit Graph Builder
 
-## What Changed
+## Code And Data Changed
 
 - Added `simpler_setup/cuda_pto_graph.py` with `CudaPtoTaskArg`,
   `CudaPtoTaskSubmit`, and `lower_cuda_pto_task_graph`.
@@ -16,7 +16,7 @@ The adapter keeps scene-test descriptor parsing separate from builder-side PTO
 submit lowering. Reviewers can now inspect the CUDA dependency rule in a small
 module instead of searching through `scene_test.py`.
 
-## Evaluation
+## Evaluation Run
 
 - Passed `py_compile` for the new adapter and updated Qwen graph module.
 - Added and passed one focused unit test proving that tagged submits lower into
@@ -30,3 +30,8 @@ module instead of searching through `scene_test.py`.
 - `examples/cuda/qwen_unit_math_live_impl/graph.py`
 - `tests/ut/py/test_cuda_backend.py`
 - `docs/nvidia-backend/benchmark-viewer/data/persistent_scheduler_coverage.json`
+
+## Remaining Gaps
+
+This builder slice did not cover live C++ orchestrator snapshots or paired GPU
+snapshot smoke; those were closed by later reports.

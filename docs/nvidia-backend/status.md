@@ -22,7 +22,6 @@ evaluation results are not mistaken for a complete backend.
 
 ## Remaining Gaps
 
-- [Persistent scheduler generalization](status/remaining-gaps/persistent-scheduler-generalization/index.md)
 - [Tuned tensor workloads](status/remaining-gaps/tuned-tensor-workloads.md)
 
 ## Review Policy

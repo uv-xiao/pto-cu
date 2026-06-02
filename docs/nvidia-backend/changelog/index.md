@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-02 C++ snapshot malformed coverage](2026-06-02-cpp-snapshot-malformed-coverage.md)
 - [2026-06-02 C++ orchestrator snapshot smoke](2026-06-02-cpp-orchestrator-snapshot-smoke.md)
 - [2026-06-02 C++ orchestrator snapshot bridge](2026-06-02-cpp-orchestrator-snapshot-bridge.md)
 - [2026-06-02 Python orchestration graph recorder](2026-06-02-python-orchestration-graph-recorder.md)

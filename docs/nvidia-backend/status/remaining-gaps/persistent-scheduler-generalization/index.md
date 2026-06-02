@@ -6,18 +6,19 @@ coverage. See
 [persistent scheduler coverage](../../persistent-scheduler-coverage.md) for
 the implemented-and-verified summary.
 
-## Open Gap
+## Review-Scope Closure
 
-The remaining backend gap is normal PTO graph breadth, not the core persistent
-scheduler mechanics. Before this gap can be closed, the CUDA backend still
-needs malformed normal-graph coverage for live C++ snapshot inputs.
+The previous backend gap was normal PTO graph breadth, not the core persistent
+scheduler mechanics. For the current review scope, this page is closed:
+malformed normal-graph lowering cases for live C++ snapshot inputs now have
+focused coverage.
 
 The current scheduler-negative taxonomy is covered for the review scope:
 unsupported `func_id`, invalid dependent IDs, dependent range, fan-in
-underflow, duplicate dependent, self dependent, initial fan-in, no-root, and
-unreachable-task diagnostics. Future malformed normal-graph cases belong with
-the normal PTO graph lowering work above rather than a separate scheduler
-mechanics blocker.
+underflow, duplicate dependent, self dependent, initial fan-in, no-root,
+unreachable-task diagnostics, and malformed C++ snapshot-input lowering.
+Future malformed normal-graph cases belong with normal PTO graph lowering
+rather than a separate scheduler mechanics blocker.
 
 ## Current Evidence
 
@@ -70,23 +71,31 @@ requires `dag_shape=normal_graph_cpp_orchestrator_chain`,
 `graph_source=cpp_orchestrator_snapshot`, `graph_lowering=normal_graph`,
 dispatch `[1,1,1]`, fan-in `[0,1,1]`, dependents `[1,2]`, repeat completions
 `[3,3]`, and zero scheduler errors.
+Malformed normal-graph lowering cases for that same live C++ snapshot input
+path are covered by
+`tmp/cuda-backend/cpp-orchestrator-snapshot-malformed-326cb61/`
+`snapshot-malformed.json`. The artifact requires expected failures for
+multi-`TaskArgs` snapshot entries, tensor-name arity mismatch, and duplicate
+snapshot slot keys.
 
 ## Promotion Gate
 
-Close this gap only after malformed normal-graph lowering cases for live C++
-snapshot inputs have focused coverage. The normal-graph shape evidence above
-no longer relies on descriptor spellings, and the paired C++ snapshot smoke
-plus `TaskArgs`/tagged-submit adapter proves the builder-side dependency rule.
+This page can stay out of `status.md` remaining gaps while the evidence above
+stays current. Reopen it only if a new normal PTO graph construction path
+outgrows the current live-snapshot malformed coverage. The normal-graph shape
+evidence no longer relies on descriptor spellings, and the paired C++ snapshot
+smoke plus `TaskArgs`/tagged-submit adapter proves the builder-side dependency
+rule.
 
 ## Next Actions
 
-- Add malformed normal-graph coverage for snapshot-originated inputs before
-  removing this page from `status.md`.
+- Keep malformed normal-graph lowering cases with
+  `cuda_snapshot_malformed.py` as new snapshot-input failure modes are added.
 
 ## Evidence Archive
 
 The detailed evidence remains split into reviewable chunks so reviewers can
-audit what is already proven without mistaking it for the open gap.
+audit what was proven while closing the gap.
 
 | File | Lines | Topic |
 | --- | ---: | --- |

@@ -1,6 +1,6 @@
 # 2026-06-02 TaskArgs PTO Submit Bridge
 
-## What Changed
+## Code And Data Changed
 
 - Extended `simpler_setup/cuda_pto_graph.py` with
   `cuda_pto_submit_from_task_args`.
@@ -16,7 +16,7 @@ orchestrator path without expanding `scene_test.py`. The remaining gap is now
 specifically live C++ orchestrator task-slot capture, not Python
 `TaskArgs`/tag conversion.
 
-## Evaluation
+## Evaluation Run
 
 - Passed `py_compile` for `simpler_setup/cuda_pto_graph.py`.
 - Passed focused CUDA backend tests for PTO submit graph lowering and real
@@ -27,3 +27,8 @@ specifically live C++ orchestrator task-slot capture, not Python
 - `simpler_setup/cuda_pto_graph.py`
 - `tests/ut/py/test_cuda_backend.py`
 - `docs/nvidia-backend/benchmark-viewer/data/persistent_scheduler_coverage.json`
+
+## Remaining Gaps
+
+This bridge covered real `TaskArgs` conversion but still left live C++
+orchestrator snapshot capture to later reports.

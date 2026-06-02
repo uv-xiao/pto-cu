@@ -290,6 +290,37 @@ def test_cuda_persistent_smoke_builds_cpp_snapshot_normal_graph_shape():
     ]
 
 
+def test_cuda_cpp_snapshot_malformed_cases_report_expected_failures():
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(".agents/skills/cuda-backend-eval/scripts").resolve()))
+    from cuda_persistent_smoke_impl.snapshot_malformed import run_cpp_snapshot_malformed_cases
+
+    report = run_cpp_snapshot_malformed_cases(n=128)
+
+    assert report["status"] == "pass"
+    assert report["graph_source"] == "cpp_orchestrator_snapshot"
+    assert report["case_count"] == 3
+    assert report["cases"] == [
+        {
+            "case": "multi_task_args_per_submit",
+            "status": "pass",
+            "expected_error": "CUDA PTO snapshot conversion supports one TaskArgs per submit",
+        },
+        {
+            "case": "tensor_name_arity_mismatch",
+            "status": "pass",
+            "expected_error": "CUDA PTO tensor_names length must match TaskArgs tensor_count",
+        },
+        {
+            "case": "duplicate_snapshot_slot_key",
+            "status": "pass",
+            "expected_error": "duplicate CUDA PTO task submit key: slot0",
+        },
+    ]
+
+
 class CudaHostCallable(ctypes.Structure):
     _fields_ = [
         ("version", ctypes.c_uint32),

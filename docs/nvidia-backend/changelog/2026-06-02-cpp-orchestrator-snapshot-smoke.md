@@ -1,6 +1,6 @@
 # 2026-06-02 C++ Orchestrator Snapshot Smoke
 
-## What Changed
+## Code And Data Changed
 
 - Added `normal_graph_cpp_orchestrator_chain` to the CUDA persistent smoke
   shapes.
@@ -18,7 +18,7 @@ module instead of expanding the large smoke runner. The persistent runtime still
 receives the same scheduler arrays, but the source path is now explicit in the
 artifact as `graph_source=cpp_orchestrator_snapshot`.
 
-## Evaluation
+## Evaluation Run
 
 Focused local checks passed:
 
@@ -60,3 +60,8 @@ The paired validator required dispatch `[1,1,1]`, fan-in `[0,1,1]`,
 dependents `[1,2]`, `graph_task_arg_key=cpp_orchestrator_snapshot`,
 `graph_lowering=normal_graph`, repeat completions `[3,3]`, and zero scheduler
 errors on both GPUs.
+
+## Remaining Gaps
+
+The smoke report did not cover malformed snapshot inputs; those are covered by
+the later C++ snapshot malformed coverage report.

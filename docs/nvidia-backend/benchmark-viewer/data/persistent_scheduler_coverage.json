@@ -98,10 +98,11 @@
         "normal graph fork-join, chain, multi-fan-in, and layered-cross smoke shapes",
         "paired A100/H200 normal graph fork-join, chain, multi-fan-in, and layered-cross smokes",
         "paired A100/H200 live C++ Orchestrator snapshot normal_graph smoke",
+        "malformed live C++ Orchestrator snapshot lowering cases",
         "Qwen unit-math DAG task-array construction"
       ],
       "open_work": [
-        "malformed normal-graph lowering cases for live C++ Orchestrator snapshot inputs"
+        "keep malformed live-snapshot coverage current as new normal graph input variants are added"
       ],
       "evidence_refs": [
         {
@@ -166,6 +167,22 @@
           ]
         },
         {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_persistent_smoke_impl/snapshot_malformed.py",
+          "symbols": [
+            "run_cpp_snapshot_malformed_cases",
+            "multi_task_args_per_submit",
+            "tensor_name_arity_mismatch",
+            "duplicate_snapshot_slot_key"
+          ]
+        },
+        {
+          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_snapshot_malformed.py",
+          "symbols": [
+            "run_cpp_snapshot_malformed_cases",
+            "output-json"
+          ]
+        },
+        {
           "path": ".agents/skills/cuda-backend-eval/scripts/cuda_pair_persistent_smoke.py",
           "symbols": [
             "CPP_ORCHESTRATOR_SNAPSHOT_DAG_SHAPE",
@@ -203,7 +220,7 @@
         "self dependent"
       ],
       "open_work": [
-        "more malformed normal-graph lowering cases once normal PTO graph input lands"
+        "future malformed normal-graph cases should live with the normal graph lowering boundary"
       ],
       "evidence_refs": [
         {

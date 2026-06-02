@@ -1,6 +1,6 @@
 # 2026-06-02 C++ Orchestrator Snapshot Bridge
 
-## What Changed
+## Code And Data Changed
 
 - Added `OrchestratorSubmitSnapshot` and `debug_next_level_submits` to the
   C++ hierarchical orchestrator.
@@ -18,7 +18,7 @@ scene-test descriptor logic. It is valid before `drain()` resets the ring, so
 reviewers can audit the exact C++ scheduling inputs that feed CUDA graph
 construction.
 
-## Evaluation
+## Evaluation Run
 
 - Confirmed the new test failed before implementation because the snapshot
   conversion path was missing.
@@ -34,3 +34,9 @@ construction.
 - `python/bindings/worker_bind.h`
 - `simpler_setup/cuda_pto_graph.py`
 - `tests/ut/py/test_cuda_backend.py`
+
+## Remaining Gaps
+
+The bridge alone did not provide paired GPU smoke or malformed snapshot-input
+coverage; those were closed by later snapshot smoke and malformed coverage
+reports.

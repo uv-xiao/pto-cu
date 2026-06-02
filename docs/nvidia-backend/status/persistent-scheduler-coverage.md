@@ -56,9 +56,9 @@ fork-join, chain, multi-fan-in, and layered-cross shape construction with
 paired A100/H200 evidence for each shape. Paired A100/H200 smoke also
 validates `normal_graph_cpp_orchestrator_chain` with
 `graph_source=cpp_orchestrator_snapshot`, dispatch `[1,1,1]`, fan-in
-`[0,1,1]`, dependents `[1,2]`, and repeat-run completion on both GPUs. The
-remaining open work is malformed normal-graph lowering cases for that live
-input path. It is not the scheduler launch, resource, lifecycle,
-error-taxonomy, shape breadth, C++ orchestrator snapshot capture, Python
-orchestration recording, `TaskArgs` tag conversion, tagged-submit lowering,
-paired snapshot smoke, or artifact-reporting mechanics already captured here.
+`[0,1,1]`, dependents `[1,2]`, and repeat-run completion on both GPUs.
+Malformed live-snapshot input coverage now records expected failures for
+multi-`TaskArgs` snapshot entries, tensor-name arity mismatch, and duplicate
+snapshot slot keys. Persistent scheduler generalization is no longer listed as
+a remaining backend gap in `status.md`; tuned tensor workloads remain tracked
+separately.
