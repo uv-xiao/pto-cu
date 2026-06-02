@@ -21,11 +21,11 @@
   "overall_status": "in_progress",
   "summary": {
     "criteria_total": 9,
-    "criteria_met": 8,
-    "criteria_in_progress": 1,
+    "criteria_met": 7,
+    "criteria_in_progress": 2,
     "criteria_by_status": {
-      "in_progress": 1,
-      "met": 8
+      "in_progress": 2,
+      "met": 7
     }
   },
   "acceptance_criteria": [
@@ -126,16 +126,21 @@
     {
       "id": "backend_implementation_closure",
       "title": "Backend implementation gaps are explicit",
-      "status": "met",
-      "summary": "CUDA backend implementation gaps are closed or reclassified; remaining work is tracked by paper-readiness artifacts.",
+      "status": "in_progress",
+      "summary": "The CUDA backend status archive still lists implementation gaps, so goal progress must not imply only paper-result work remains.",
       "evidence_refs": [
-        "docs/nvidia-backend/status.md"
+        "docs/nvidia-backend/status.md",
+        "docs/nvidia-backend/status/remaining-gaps/qwen-full-serving-correctness.md",
+        "docs/nvidia-backend/status/remaining-gaps/tuned-tensor-workloads.md"
       ],
       "verification": [
         "validate_benchmark_viewer_data.py",
         "check_nvidia_review_ready.py"
       ],
-      "gaps": []
+      "gaps": [
+        "Close or reclassify every remaining-gap page linked from docs/nvidia-backend/status.md before claiming backend completion.",
+        "Keep paper/evaluation readiness separate from backend implementation closure until the status archive has no open remaining-gap links."
+      ]
     },
     {
       "id": "paper_grade_results",

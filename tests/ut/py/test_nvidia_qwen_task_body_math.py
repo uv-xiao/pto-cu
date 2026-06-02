@@ -315,11 +315,17 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "const float attention_scale = rsqrtf(static_cast<float>(head_dim));" in (
         full_source
     )
-    assert "const float scaled_query = query * attention_scale;" in full_source
-    assert "const float scaled_projected_query =" in full_source
-    assert "projected_query * attention_scale;" in full_source
-    assert "expf(scaled_query * task->c[kv_index] - max_score)" in full_source
-    assert "expf(scaled_projected_query * task->c[kv_index] -" in full_source
+    assert "const unsigned int query_base = query_head * head_dim;" in full_source
+    assert "const unsigned int projection_query_base =" in full_source
+    assert "for (unsigned int dim = 0U; dim < head_dim; ++dim)" in full_source
+    assert "score += task->a[row_base + query_base + dim] *" in full_source
+    assert "score += task->a[row_base + projection_query_base + dim] *" in (
+        full_source
+    )
+    assert "score *= attention_scale;" in full_source
+    assert "const unsigned long long value_kv_index =" in full_source
+    assert "expf(score - max_score)" in full_source
+    assert "expf(score - projection_max_score)" in full_source
     assert "weighted_value / normalizer" in full_source
     assert "const unsigned int projection_input_count =" in full_source
     assert "pto_cuda_tensor_arg_f32(task, 0U, o_weight_index, 0.0f)" in (
@@ -329,7 +335,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "const unsigned int sequence_capacity =" in full_source
     assert "const unsigned long long kv_read_base =" in full_source
     assert full_source.count("kv_layer_base +") >= 4
-    assert full_source.count("kv_read_base +") == 4
+    assert full_source.count("kv_read_base +") == 6
     assert "qwen_attention_o_batch_local_kv_read_source" in manifest[
         "implemented_contracts"
     ]
@@ -340,6 +346,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         "implemented_contracts"
     ]
     assert "qwen_decode_attention_head_dim_scale_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert "qwen_decode_attention_dot_product_source" in manifest[
         "implemented_contracts"
     ]
     assert "task->out[i] = pto_cuda_silu(gate_value) * up_value;" in full_source
@@ -400,6 +409,9 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_final_norm_full_rmsnorm_source" in manifest["implemented_contracts"]
     assert "qwen_shape_field_qk_rope_source" in manifest["implemented_contracts"]
     assert "qwen_bounded_decode_attention_reduction_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert "qwen_decode_attention_dot_product_source" in manifest[
         "implemented_contracts"
     ]
     assert "qwen_gqa_decode_attention_head_grouping_source" in manifest[
@@ -532,25 +544,26 @@ def test_task_body_manifest_tracks_qwen_decode_attention_oracle():
         "heads_per_kv": 2,
     }
     assert oracle["steps"]["attention_context"] == [
-        5.63496,
-        11.179976,
-        5.769676,
-        10.460647,
-        16.16257,
-        20.921294,
-        16.432501,
-        25.205456,
+        5.659033,
+        11.318066,
+        5.5,
+        11.0,
+        15.689571,
+        20.919428,
+        18.162065,
+        24.216087,
     ]
     assert oracle["steps"]["attention_probability_by_col"] == [
-        [0.485004, 0.514996],
-        [0.490001, 0.509999],
-        [0.470036, 0.529964],
-        [0.529964, 0.470036],
-        [0.512497, 0.487503],
-        [0.529964, 0.470036],
-        [0.5025, 0.4975],
-        [0.41096, 0.58904],
+        [0.48233, 0.51767],
+        [0.48233, 0.51767],
+        [0.5, 0.5],
+        [0.5, 0.5],
+        [0.530016, 0.469984],
+        [0.530016, 0.469984],
+        [0.438442, 0.561558],
+        [0.438442, 0.561558],
     ]
+    assert "dot(query_head, key_cache[step][kv_head])" in oracle["equation"]
     assert "qwen_bounded_decode_attention_reduction_source" in manifest[
         "implemented_contracts"
     ]

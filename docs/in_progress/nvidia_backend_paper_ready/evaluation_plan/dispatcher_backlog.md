@@ -15,8 +15,15 @@
 
 ## Active Backend Gaps
 
-No open backend implementation gaps. The active work below is paper-readiness
-capture, baseline correctness, and result-import work.
+Active remaining-gap pages:
+
+- `status/remaining-gaps/qwen-full-serving-correctness.md`: close full Qwen
+  numerical correctness before importing PTO full-serving rows.
+- `status/remaining-gaps/tuned-tensor-workloads.md`: capture multi-repeat
+  model-shape tensor workload rows for PTO and comparable baselines.
+
+The active work below is paper-readiness capture, baseline correctness, and
+result-import work.
 
 ## Active Paper Work Items
 

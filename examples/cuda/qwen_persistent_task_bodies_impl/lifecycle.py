@@ -439,7 +439,6 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
         task->a_batch_stride > 0U ? task->a_batch_stride : task->cols;
     const unsigned long long row_base =
         static_cast<unsigned long long>(row) * input_stride;
-    const float query = task->a[row_base + col];
     const unsigned int query_heads = task->rows > 0U ? task->rows : 1U;
     unsigned int head_dim = task->lda > 0U ?
         task->lda : (task->cols / query_heads);
@@ -450,7 +449,6 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
     const unsigned int query_head = col / head_dim;
     const unsigned int head_col = col % head_dim;
     const float attention_scale = rsqrtf(static_cast<float>(head_dim));
-    const float scaled_query = query * attention_scale;
     const unsigned int mapped_kv_head = query_head / heads_per_kv;
     const unsigned int kv_head =
         mapped_kv_head < kv_heads ? mapped_kv_head : kv_heads - 1U;
@@ -489,11 +487,10 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
         float projected_attention = 0.0f;
         for (unsigned int projection_col = 0U;
              projection_col < projection_input_count; ++projection_col) {
-            const float projected_query = task->a[row_base + projection_col];
-            const float scaled_projected_query =
-                projected_query * attention_scale;
             const unsigned int projection_query_head = projection_col / head_dim;
             const unsigned int projection_head_col = projection_col % head_dim;
+            const unsigned int projection_query_base =
+                projection_query_head * head_dim;
             const unsigned int projection_mapped_kv_head =
                 projection_query_head / heads_per_kv;
             const unsigned int projection_kv_head =
@@ -510,16 +507,20 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                     const unsigned int page_offset = step % kv_page_size;
                     const unsigned int physical_page = kv_page_table ?
                         kv_page_table[logical_page] : logical_page;
-                    const unsigned long long kv_index =
-                        kv_read_base +
-                        static_cast<unsigned long long>(physical_page) *
-                            kv_page_size * kv_heads * head_dim +
-                        static_cast<unsigned long long>(page_offset) *
-                            kv_heads * head_dim +
-                        static_cast<unsigned long long>(projection_kv_head) *
-                            head_dim + projection_head_col;
-                    const float score =
-                        scaled_projected_query * task->c[kv_index];
+                    float score = 0.0f;
+                    for (unsigned int dim = 0U; dim < head_dim; ++dim) {
+                        const unsigned long long kv_index =
+                            kv_read_base +
+                            static_cast<unsigned long long>(physical_page) *
+                                kv_page_size * kv_heads * head_dim +
+                            static_cast<unsigned long long>(page_offset) *
+                                kv_heads * head_dim +
+                            static_cast<unsigned long long>(projection_kv_head) *
+                                head_dim + dim;
+                        score += task->a[row_base + projection_query_base + dim] *
+                            task->c[kv_index];
+                    }
+                    score *= attention_scale;
                     projection_max_score = score > projection_max_score ?
                         score : projection_max_score;
                 }
@@ -536,7 +537,21 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                     const unsigned int page_offset = step % kv_page_size;
                     const unsigned int physical_page = kv_page_table ?
                         kv_page_table[logical_page] : logical_page;
-                    const unsigned long long kv_index =
+                    float score = 0.0f;
+                    for (unsigned int dim = 0U; dim < head_dim; ++dim) {
+                        const unsigned long long score_kv_index =
+                            kv_read_base +
+                            static_cast<unsigned long long>(physical_page) *
+                                kv_page_size * kv_heads * head_dim +
+                            static_cast<unsigned long long>(page_offset) *
+                                kv_heads * head_dim +
+                            static_cast<unsigned long long>(projection_kv_head) *
+                                head_dim + dim;
+                        score += task->a[row_base + projection_query_base + dim] *
+                            task->c[score_kv_index];
+                    }
+                    score *= attention_scale;
+                    const unsigned long long value_kv_index =
                         kv_read_base +
                         static_cast<unsigned long long>(physical_page) *
                             kv_page_size * kv_heads * head_dim +
@@ -545,9 +560,8 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                         static_cast<unsigned long long>(projection_kv_head) *
                             head_dim + projection_head_col;
                     const float weight =
-                        expf(scaled_projected_query * task->c[kv_index] -
-                             projection_max_score);
-                    projection_weighted_value += weight * task->d[kv_index];
+                        expf(score - projection_max_score);
+                    projection_weighted_value += weight * task->d[value_kv_index];
                     projection_normalizer += weight;
                 }
             }
@@ -563,6 +577,7 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
         }
         task->out[i] = projected_attention;
     } else {
+        const unsigned int query_base = query_head * head_dim;
         float max_score = -3.4028234663852886e+38f;
         for (unsigned int tile_begin = 0U; tile_begin < kv_window;
              tile_begin += attention_tile) {
@@ -574,15 +589,19 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                 const unsigned int page_offset = step % kv_page_size;
                 const unsigned int physical_page = kv_page_table ?
                     kv_page_table[logical_page] : logical_page;
-                const unsigned long long kv_index =
-                    kv_read_base +
-                    static_cast<unsigned long long>(physical_page) *
-                        kv_page_size * kv_heads * head_dim +
-                    static_cast<unsigned long long>(page_offset) *
-                        kv_heads * head_dim +
-                    static_cast<unsigned long long>(kv_head) * head_dim +
-                        head_col;
-                const float score = scaled_query * task->c[kv_index];
+                float score = 0.0f;
+                for (unsigned int dim = 0U; dim < head_dim; ++dim) {
+                    const unsigned long long kv_index =
+                        kv_read_base +
+                        static_cast<unsigned long long>(physical_page) *
+                            kv_page_size * kv_heads * head_dim +
+                        static_cast<unsigned long long>(page_offset) *
+                            kv_heads * head_dim +
+                        static_cast<unsigned long long>(kv_head) * head_dim + dim;
+                    score += task->a[row_base + query_base + dim] *
+                        task->c[kv_index];
+                }
+                score *= attention_scale;
                 max_score = score > max_score ? score : max_score;
             }
         }
@@ -598,7 +617,20 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                 const unsigned int page_offset = step % kv_page_size;
                 const unsigned int physical_page = kv_page_table ?
                     kv_page_table[logical_page] : logical_page;
-                const unsigned long long kv_index =
+                float score = 0.0f;
+                for (unsigned int dim = 0U; dim < head_dim; ++dim) {
+                    const unsigned long long score_kv_index =
+                        kv_read_base +
+                        static_cast<unsigned long long>(physical_page) *
+                            kv_page_size * kv_heads * head_dim +
+                        static_cast<unsigned long long>(page_offset) *
+                            kv_heads * head_dim +
+                        static_cast<unsigned long long>(kv_head) * head_dim + dim;
+                    score += task->a[row_base + query_base + dim] *
+                        task->c[score_kv_index];
+                }
+                score *= attention_scale;
+                const unsigned long long value_kv_index =
                     kv_read_base +
                     static_cast<unsigned long long>(physical_page) *
                         kv_page_size * kv_heads * head_dim +
@@ -607,8 +639,8 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                     static_cast<unsigned long long>(kv_head) * head_dim +
                         head_col;
                 const float weight =
-                    expf(scaled_query * task->c[kv_index] - max_score);
-                weighted_value += weight * task->d[kv_index];
+                    expf(score - max_score);
+                weighted_value += weight * task->d[value_kv_index];
                 normalizer += weight;
             }
         }
@@ -885,6 +917,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_final_norm_full_rmsnorm_source",
             "qwen_shape_field_qk_rope_source",
             "qwen_bounded_decode_attention_reduction_source",
+            "qwen_decode_attention_dot_product_source",
             "qwen_decode_attention_head_dim_scale_source",
             "qwen_attention_o_batch_local_kv_read_source",
             "qwen_attention_o_qk_norm_input_stride_source",

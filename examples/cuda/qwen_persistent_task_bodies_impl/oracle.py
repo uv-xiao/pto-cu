@@ -290,12 +290,17 @@ def build_qwen_decode_attention_oracle() -> dict[str, Any]:
     heads_per_kv = query_heads // kv_heads
     context: list[float] = []
     probabilities: list[list[float]] = []
-    for col, query_value in enumerate(query):
+    for col, _query_value in enumerate(query):
         query_head = col // head_dim
         head_col = col % head_dim
         kv_head = query_head // heads_per_kv
+        query_base = query_head * head_dim
         scores = [
-            query_value * cache_step[kv_head][head_col]
+            sum(
+                query[query_base + dim] * cache_step[kv_head][dim]
+                for dim in range(head_dim)
+            )
+            / math.sqrt(float(head_dim))
             for cache_step in key_cache
         ]
         max_score = max(scores)
@@ -313,8 +318,8 @@ def build_qwen_decode_attention_oracle() -> dict[str, Any]:
         "status": "qwen_decode_attention_oracle_ready",
         "scope": "bounded_two_step_gqa_hidden8_reference",
         "equation": (
-            "softmax(query[col] * key_cache[step][kv_head][head_col]) "
-            "over step"
+            "softmax(dot(query_head, key_cache[step][kv_head]) / "
+            "sqrt(head_dim)) over step"
         ),
         "head_grouping": {
             "query_heads": query_heads,

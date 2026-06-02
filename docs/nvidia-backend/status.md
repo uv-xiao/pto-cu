@@ -22,7 +22,8 @@ evaluation results are not mistaken for a complete backend.
 
 ## Remaining Gaps
 
-No open backend implementation gaps.
+- [Qwen full-serving correctness](status/remaining-gaps/qwen-full-serving-correctness.md)
+- [Tuned tensor workloads](status/remaining-gaps/tuned-tensor-workloads.md)
 
 Paper-readiness work remains tracked by
 `evaluations/nvidia/benchmark-viewer/data/paper_readiness_audit.json` and
