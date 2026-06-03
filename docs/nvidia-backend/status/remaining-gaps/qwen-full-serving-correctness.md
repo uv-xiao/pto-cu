@@ -13,8 +13,10 @@ compute head-level dot-product decode attention, matching Qwen split-half
 `rotate_half` RoPE, and exposing one projection-window policy for QKV,
 attention-output, and MLP projection tasks. The attention-output task now
 caches bounded attention values before applying `o_proj_weight`, which makes
-full first-layer projection execution practical. This is still not enough to
-promote PTO rows to full-serving correctness.
+full first-layer projection execution practical. The MLP down-projection now
+adds the down projection to the full pre-MLP residual stream by combining the
+attention-output residual with the original layer input. This is still not
+enough to promote PTO rows to full-serving correctness.
 
 The generated-token feedback path now uses one prompt-ring contract across
 host feedback, device logits feedback, and embedding lookup. Earlier

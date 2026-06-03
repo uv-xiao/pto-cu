@@ -205,6 +205,7 @@ def layer_descriptors(
             phase="per_layer_decode",
             tensors=[layer_tensor(layer, "mlp.down_proj")],
             bindings=bindings,
+            runtime_tensor_roles=["mlp_residual"],
             layer_index=layer,
             model_shape=model_shape,
         ),

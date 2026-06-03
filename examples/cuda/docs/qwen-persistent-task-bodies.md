@@ -60,9 +60,10 @@ projection width for resource-backed unit runs. Post-attention RMSNorm now
 consumes `task->b` as
 the layer residual source and reduces over `attention_output + residual`
 before applying `post_attention_layernorm.weight`. The MLP down-projection
-task also consumes `task->b` and adds the launch-packet residual source after
-the down projection. This is diagnostic source evidence; full decode-loop
-import remains open.
+task consumes `task->b` as the attention-output side of the residual stream
+and runtime `tensor_args[1]` as the original layer-input residual, then adds
+both after the down projection. This is diagnostic source evidence; full
+decode-loop import remains open.
 The logits shape path now computes descriptor-bounded hidden-by-vocab tiles
 before device-side argmax feedback. It reads the hidden vector through
 `task->a`, reads vocab projection weights through `tensor_args[0]`, bounds the

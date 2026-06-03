@@ -2,10 +2,10 @@
 
 ## Code And Data Changed
 
-- Updated `qwen_mlp_down` generated CUDA source to consume `task->b` as an
-  MLP residual source and add it after the down projection.
+- Updated `qwen_mlp_down` generated CUDA source to consume `task->b` as the
+  launch-packet residual source and add it after the down projection.
 - Added launch-packet binding for `qwen_mlp_down` so `b` points to the
-  matching layer's pre-MLP residual input instead of the token-side placeholder.
+  matching layer-local residual source instead of the token-side placeholder.
 - Added `qwen_mlp_down_residual_add_source` as compact source evidence in the
   task-body and example manifests.
 - Added resource-backed task coverage metadata so the bounded diagnostic
@@ -16,9 +16,10 @@
 ## Architecture Quality
 
 The MLP down task now models the second residual edge in a Qwen decoder block
-through the existing `CudaPersistentDagTask::b` field. This keeps the graph ABI
-stable and avoids spending tensor-argument slots that are reserved for
-resident weights and runtime tables. The residual pointer is derived from the
+through the existing `CudaPersistentDagTask::b` field. A later
+`2026-06-03-qwen-mlp-residual-stream.md` changelog refines this contract so
+`qwen_mlp_down` reconstructs the full pre-MLP residual stream from `task->b`
+and runtime `tensor_args[1]`. The residual pointer is derived from the
 layer-local descriptor order, matching the existing activation workspace
 layout.
 

@@ -13,6 +13,7 @@ from simpler_setup.cuda_callable_compiler import (
 
 from qwen_decode_loop_runner_impl.launch_helpers import (
     attach_decode_feedback_tensors,
+    attach_mlp_down_residual_tensor,
     input_ptr_for_task,
     launch_blockers,
     missing_launch_buffers,
@@ -188,6 +189,14 @@ def host_task_record(
         index=index,
         task_count=task_count,
         descriptor=descriptor,
+        tensor_args=tensor_args,
+        token_fields=token_fields,
+        workspace=workspace,
+    )
+    attach_mlp_down_residual_tensor(
+        index=index,
+        descriptor=descriptor,
+        descriptors=descriptors,
         tensor_args=tensor_args,
         token_fields=token_fields,
         workspace=workspace,

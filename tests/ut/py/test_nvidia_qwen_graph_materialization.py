@@ -933,6 +933,8 @@ def test_launch_packet_binds_mlp_down_residual_source():
     assert packet is not None
     assert packet[6].a == 0xD000
     assert packet[6].b == 0xB000
+    assert packet[6].tensor_args[1] == 0x3000
+    assert packet[6].tensor_arg_count == 2
 
 
 def test_launch_packet_carries_cuda_task_shape_fields():
@@ -1313,6 +1315,13 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "ldb": 8,
         "ldc": 4,
         "scalar1": 1024,
+    }
+    assert descriptors["layer_0_mlp_down"]["tensor_args"][1] == {
+        "arg": "tensor_args[1]",
+        "tensor": "mlp_residual",
+        "role": "mlp_residual",
+        "status": "runtime_generated_tensor",
+        "device_ptr_source": "runtime_buffers.mlp_residual",
     }
     assert descriptors["layer_0_mlp_gate_up"]["task_shape_fields"] == {
         "cols": 8,

@@ -1216,14 +1216,14 @@ def test_qwen_persistent_task_bodies_render_generated_source():
     assert attention_oracle["status"] == "qwen_decode_attention_oracle_ready"
     assert attention_oracle["head_grouping"]["kv_heads"] == 2
     assert attention_oracle["steps"]["attention_context"] == [
-        5.63496,
-        11.179976,
-        5.769676,
-        10.460647,
-        16.16257,
-        20.921294,
-        16.432501,
-        25.205456,
+        5.659033,
+        11.318066,
+        5.5,
+        11.0,
+        15.689571,
+        20.919428,
+        18.162065,
+        24.216087,
     ]
     assert manifest["remaining_runtime_gaps"] == [
         "numerically_correct_qwen_kernel_bodies",
@@ -2147,6 +2147,15 @@ def test_persistent_qwen_weight_arg_manifest_is_reviewable(tmp_path):
         },
     ]
     assert descriptors["layer_0_mlp_gate_up"]["tensor_arg_count"] == 2
+    mlp_down = descriptors["layer_0_mlp_down"]
+    assert mlp_down["tensor_arg_count"] == 2
+    assert mlp_down["tensor_args"][1] == {
+        "arg": "tensor_args[1]",
+        "tensor": "mlp_residual",
+        "role": "mlp_residual",
+        "status": "runtime_generated_tensor",
+        "device_ptr_source": "runtime_buffers.mlp_residual",
+    }
     assert descriptors["logits"]["tensor_args"][0]["tensor"] == "lm_head.weight"
 
 

@@ -84,6 +84,30 @@ def attach_decode_feedback_tensors(
         tensor_args[3] = parse_ptr(token_fields["out"].get("device_ptr_hex"))
 
 
+def attach_mlp_down_residual_tensor(
+    *,
+    index: int,
+    descriptor: dict[str, Any],
+    descriptors: list[dict[str, Any]],
+    tensor_args: list[int],
+    token_fields: dict[str, dict[str, Any]],
+    workspace: dict[str, Any] | None,
+) -> None:
+    if descriptor.get("callable") != "qwen_mlp_down" or len(tensor_args) < 2:
+        return
+    if tensor_args[1]:
+        return
+    input_norm_index = layer_input_norm_index(descriptors=descriptors, index=index)
+    if input_norm_index is None:
+        tensor_args[1] = parse_ptr(token_fields["a"].get("device_ptr_hex"))
+        return
+    tensor_args[1] = input_ptr_for_task(
+        index=input_norm_index,
+        token_fields=token_fields,
+        workspace=workspace,
+    )
+
+
 def tensor_arg_count(tensor_args: list[int]) -> int:
     for index in range(len(tensor_args) - 1, -1, -1):
         if tensor_args[index] != 0:

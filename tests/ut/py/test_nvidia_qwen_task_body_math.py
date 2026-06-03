@@ -263,9 +263,11 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     ]
     assert mlp_down["consumes_fields"] == ["a", "b", "out", "tensor_args"]
     assert "mlp_residual" in mlp_down["consumes_roles"]
-    assert "const float residual_value = task->b ? task->b[i] : 0.0f;" in (
-        full_source
+    assert (
+        "const float residual_attention_value = task->b ? task->b[i] : 0.0f;"
+        in full_source
     )
+    assert "task->tensor_arg_count > 1U && task->tensor_args[1]" in full_source
     assert "task->out[i] = projected_down + residual_value;" in full_source
     assert "qwen_mlp_down_residual_add_source" in manifest["implemented_contracts"]
     assert (
