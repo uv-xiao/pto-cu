@@ -8,6 +8,7 @@ from .common import fail
 
 PTO_FULL_SERVING_WORKLOAD_IDS = {"mpk_offline_decode", "vdcores_offline_decode"}
 PTO_FULL_SERVING_CORRECTNESS_SCOPE = "full_qwen_numerical_correctness"
+PTO_FULL_SERVING_COMPARISON_SCOPE = "model_equivalent_decode"
 PTO_FULL_SERVING_MODEL_ID = "Qwen/Qwen3-8B"
 PTO_FULL_SERVING_MIN_SAMPLE_COUNT = 3
 
@@ -86,6 +87,10 @@ def validate_pto_full_serving_correctness(
         fail(f"{owner} has invalid correctness_details.status")
     if details.get("token_match") is not True:
         fail(f"{owner} has invalid correctness_details.token_match")
+    if details.get("model_equivalent_ready") is not True:
+        fail(f"{owner} has invalid correctness_details.model_equivalent_ready")
+    if details.get("comparison_scope") != PTO_FULL_SERVING_COMPARISON_SCOPE:
+        fail(f"{owner} has invalid correctness_details.comparison_scope")
 
     checked_token_count = require_positive_int_stat(
         details,
@@ -109,6 +114,10 @@ def validate_pto_full_serving_correctness(
 
     if statistic.get("correctness_scope") != PTO_FULL_SERVING_CORRECTNESS_SCOPE:
         fail(f"{owner} has invalid statistic.correctness_scope")
+    if statistic.get("comparison_scope") != PTO_FULL_SERVING_COMPARISON_SCOPE:
+        fail(f"{owner} has invalid statistic.comparison_scope")
+    if statistic.get("model_equivalent_ready") is not True:
+        fail(f"{owner} has invalid statistic.model_equivalent_ready")
     exact_stat(statistic, "checked_token_count", checked_token_count, owner)
     if statistic.get("max_abs_error") != max_abs_error:
         fail(f"{owner} has invalid statistic.max_abs_error")

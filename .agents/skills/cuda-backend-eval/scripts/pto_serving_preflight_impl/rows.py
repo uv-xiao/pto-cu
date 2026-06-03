@@ -9,6 +9,8 @@ from pto_serving_preflight_impl.constants import (
     PAPER_WORKLOAD_IDS,
 )
 
+MODEL_EQUIVALENT_COMPARISON_SCOPE = "model_equivalent_decode"
+
 
 def pto_serving_rows(results: dict[str, Any]) -> list[dict[str, Any]]:
     rows = []
@@ -50,6 +52,20 @@ def full_serving_qwen_row_status(row: dict[str, Any]) -> dict[str, Any]:
         missing.append("statistic.serving_coverage=full_serving")
     if row.get("correctness") != "pass":
         missing.append("correctness=pass")
+    correctness_details = row.get("correctness_details", {})
+    if not isinstance(correctness_details, dict):
+        correctness_details = {}
+    if correctness_details.get("model_equivalent_ready") is not True:
+        missing.append("correctness_details.model_equivalent_ready=true")
+    if (
+        correctness_details.get("comparison_scope")
+        != MODEL_EQUIVALENT_COMPARISON_SCOPE
+    ):
+        missing.append("correctness_details.comparison_scope=model_equivalent_decode")
+    if statistic.get("model_equivalent_ready") is not True:
+        missing.append("statistic.model_equivalent_ready=true")
+    if statistic.get("comparison_scope") != MODEL_EQUIVALENT_COMPARISON_SCOPE:
+        missing.append("statistic.comparison_scope=model_equivalent_decode")
     if workload_id not in PAPER_WORKLOAD_IDS:
         missing.append("workload_id is mpk_offline_decode or vdcores_offline_decode")
     for key in sorted(FULL_SERVING_METRIC_FIELDS):

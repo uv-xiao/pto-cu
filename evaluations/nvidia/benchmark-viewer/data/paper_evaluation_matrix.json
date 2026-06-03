@@ -1192,6 +1192,22 @@
         },
         {
           "kind": "raw_artifact",
+          "path": "tmp/cuda-backend/pto-full-serving-model-equivalence-gate-2026-06-03/model-equivalence-gate.json",
+          "symbols": [
+            "model_equivalent_ready",
+            "comparison_scope=model_equivalent_decode",
+            "test_full_serving_importer_rejects_diagnostic_comparison_scope",
+            "test_viewer_data_validator_rejects_diagnostic_comparison_scope",
+            "test_paper_readiness_rejects_diagnostic_comparison_scope",
+            "test_pto_full_serving_row_gate_rejects_diagnostic_comparison_scope",
+            "pto_qwen_full_serving_viewer_import",
+            "validate_pto_full_serving_correctness",
+            "pto_full_serving_correctness_ready",
+            "full_serving_qwen_row_status"
+          ]
+        },
+        {
+          "kind": "raw_artifact",
           "path": "tmp/cuda-backend/qwen-projection-bounded/qwen-mpk-full-dag-live.json",
           "symbols": [
             "pto_qwen_resource_backed_execution",
@@ -1518,7 +1534,7 @@
             "Lifecycle and input artifacts: persistent_qwen_serving_scaffold, qwen_serving_lifecycle_plan, qwen_prompt_accounting, qwen_runtime_input_binding, qwen_cuda_token_buffer_binding, qwen_persistent_decode_args, and qwen_kv_cache_binding.",
             "Weight artifacts: qwen_weight_inventory, qwen_safetensors_fetch, qwen_safetensors_metadata, qwen_cuda_weight_binding, qwen_persistent_weight_args, qwen_persistent_weight_materialization, qwen_resident_weight_table, local Qwen shard placement, actual safetensors shape/dtype validation for 399 tensors, stable CUDA weight binding slots and file offsets, full CUDA residency for 16.38 GB of weights, and copy-back verification for 16 small tensors.",
             "Persistent DAG artifacts: qwen_persistent_task_bodies, generated persistent-device Qwen task-body source, shape-field linear projection/logits source, shape-field QK RMSNorm source, shape-field QK RoPE formula source, descriptor-level QK RoPE table slots, descriptor-level KV page-table slot, descriptor-level logits tile-size scalar, launch-packet live RoPE table and KV page-table pointer binding with Qwen-theta first-position table population and bounded per-step refresh, decode-position-aware slot-mapped QKV writeback through runtime kv_page_table, bounded diagnostic GQA decode-attention reduction over paged mutable c/d KV fields with descriptor-bounded tiled softmax passes, descriptor-bounded tiled hidden-by-vocab logits projection source, full-vocab logits argmax source, persistent DAG tensor_args manifest, tensor_arg_dtypes BF16/FP32 ABI, dtype-aware generated CUDA tensor-argument reads, resident_weight_ptrs[slot_id], process-scoped resident weight table owner, padded target-length input_ids, attention_mask, persistent decode token argument binding, preserving tensor_args for weights, and dry-run KV-cache key/value pointer binding.",
-            "Runtime diagnostics: controlled attention-tile proxy, controlled proxy numeric oracle, controlled proxy live CUDA execution, controlled proxy live microdecode DAG execution, resource-backed diagnostic execution, block-wide full-vector RMSNorm reduction diagnostic execution, bounded tiled logits projection reference checking, 1024-step MPK-policy and 64-step VDCores-policy diagnostic decode-loop execution, device-committed sampled-token feedback, full-serving import gates requiring runtime=cuda/persistent_device, serving_coverage=full_serving, zero failed requests, consistent request/token accounting, and correctness coverage for all generated decode tokens, plus matching benchmark-viewer data validation and paper-audit gates for viewer JSON remain diagnostic rather than full serving.",
+            "Runtime diagnostics: controlled attention-tile proxy, controlled proxy numeric oracle, controlled proxy live CUDA execution, controlled proxy live microdecode DAG execution, resource-backed diagnostic execution, block-wide full-vector RMSNorm reduction diagnostic execution, bounded tiled logits projection reference checking, 1024-step MPK-policy and 64-step VDCores-policy diagnostic decode-loop execution, device-committed sampled-token feedback, full-serving import gates requiring runtime=cuda/persistent_device, serving_coverage=full_serving, model_equivalent_ready=true, comparison_scope=model_equivalent_decode, zero failed requests, consistent request/token accounting, and correctness coverage for all generated decode tokens, plus matching benchmark-viewer data validation and paper-audit gates for viewer JSON remain diagnostic rather than full serving.",
             "Latest MPK full-prefix evidence closes the old finite-logits blocker: qwen-full-prefix-after-mlp-residual-fix-420s.json reports 255/255 tasks completed, zero scheduler errors, no row-0 non-finite activations, full finite logits, populated top-k, device feedback for token 220, and diagnostic_reference.status=pass.",
             "Latest full-prefix Hugging Face comparison remains diagnostic rather than model-equivalent: qwen-full-prefix-hf-token-comparison.json records comparison_scope=diagnostic_decode_without_prompt_prefill, blocking_reasons=[prompt_prefill_not_executed, token_mismatch], PTO top token 220, and Hugging Face top token 151667 at decode position 17."
           ]

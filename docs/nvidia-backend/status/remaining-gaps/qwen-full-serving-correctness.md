@@ -118,6 +118,8 @@ Close this gap only after PTO rows for both `mpk_offline_decode` and
 - `serving_coverage=full_serving`;
 - `correctness_scope=full_qwen_numerical_correctness`;
 - token/logit agreement against the Hugging Face Qwen/Qwen3-8B reference;
+- `model_equivalent_ready=true` with
+  `comparison_scope=model_equivalent_decode`;
 - positive latency and throughput metrics for policy-length runs.
 
 ## Next Actions

@@ -20,6 +20,7 @@ PTO_FULL_SERVING_METRIC_FIELDS = {
     "time_to_first_token_ns",
 }
 PTO_FULL_SERVING_CORRECTNESS_SCOPE = "full_qwen_numerical_correctness"
+PTO_FULL_SERVING_COMPARISON_SCOPE = "model_equivalent_decode"
 PTO_FULL_SERVING_MODEL_ID = "Qwen/Qwen3-8B"
 PTO_FULL_SERVING_MIN_SAMPLE_COUNT = 3
 
@@ -157,6 +158,10 @@ def pto_full_serving_correctness_ready(
         return False
     if details.get("token_match") is not True:
         return False
+    if details.get("model_equivalent_ready") is not True:
+        return False
+    if details.get("comparison_scope") != PTO_FULL_SERVING_COMPARISON_SCOPE:
+        return False
     checked_token_count = details.get("checked_token_count")
     if (
         isinstance(checked_token_count, bool)
@@ -182,6 +187,10 @@ def pto_full_serving_correctness_ready(
     ):
         return False
     if statistic.get("correctness_scope") != PTO_FULL_SERVING_CORRECTNESS_SCOPE:
+        return False
+    if statistic.get("comparison_scope") != PTO_FULL_SERVING_COMPARISON_SCOPE:
+        return False
+    if statistic.get("model_equivalent_ready") is not True:
         return False
     if statistic.get("checked_token_count") != checked_token_count:
         return False

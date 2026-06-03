@@ -71,6 +71,8 @@ def full_serving_raw_result(workload_id):
             "model_id": "Qwen/Qwen3-8B",
             "status": "pass",
             "token_match": True,
+            "model_equivalent_ready": True,
+            "comparison_scope": "model_equivalent_decode",
             "checked_token_count": 512,
             "max_abs_error": 0.0001,
             "tolerance": 0.001,
@@ -110,6 +112,11 @@ def test_full_serving_importer_builds_audit_acceptable_rows():
         assert record["statistic"]["max_abs_error"] == 0.0001
         assert record["statistic"]["correctness_tolerance"] == 0.001
         assert record["correctness_details"]["token_match"] is True
+        assert record["correctness_details"]["model_equivalent_ready"] is True
+        assert (
+            record["correctness_details"]["comparison_scope"]
+            == "model_equivalent_decode"
+        )
         assert "Qwen/Qwen3-8B" in record["inputs"]["shape"]
         assert record["raw_artifact"].startswith("tmp/")
 
@@ -191,6 +198,31 @@ def test_full_serving_importer_rejects_exceeded_correctness_tolerance():
         assert "exceeds correctness_details.tolerance" in str(exc)
     else:
         raise AssertionError("exceeded correctness tolerance was accepted")
+
+
+def test_full_serving_importer_rejects_diagnostic_comparison_scope():
+    importer = load_importer_module()
+    row = full_serving_raw_result("mpk_offline_decode")
+    row["correctness_details"]["comparison_scope"] = (
+        "diagnostic_decode_without_prompt_prefill"
+    )
+    row["correctness_details"]["model_equivalent_ready"] = False
+
+    try:
+        importer.build_result_records(
+            {
+                "results": [
+                    row,
+                    full_serving_raw_result("vdcores_offline_decode"),
+                ]
+            },
+            raw_artifact="tmp/cuda-backend/pto-full-serving/run.json",
+            commit="abc1234",
+        )
+    except SystemExit as exc:
+        assert "model_equivalent_ready" in str(exc)
+    else:
+        raise AssertionError("diagnostic comparison scope was accepted")
 
 
 def test_full_serving_importer_rejects_diagnostic_resource_backed_rows():
@@ -297,5 +329,5 @@ def test_full_serving_importer_merges_viewer_results(tmp_path):
         importer.merge_results(importer.load_viewer_json(results_json), records),
     )
 
-    updated = importer.load_viewer_json(results_json.with_suffix(""))
+    updated = importer.load_viewer_json(results_json)
     assert len(updated["result_records"]) == 2

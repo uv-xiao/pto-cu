@@ -782,6 +782,49 @@ def test_pto_full_serving_row_gate_rejects_diagnostic_qwen_row():
     assert module.full_serving_qwen_rows([row]) == []
 
 
+def test_pto_full_serving_row_gate_rejects_diagnostic_comparison_scope():
+    module = load_pto_serving_preflight_module()
+    row = {
+        "benchmark_id": "llm_serving_decode",
+        "method_id": "pto_persistent_device",
+        "inputs": {
+            "shape": (
+                "mpk_offline_decode,Qwen/Qwen3-8B,batch=8,"
+                "prompt_tokens=64,decode_tokens=1024"
+            )
+        },
+        "statistic": {
+            "serving_coverage": "full_serving",
+            "workload_id": "mpk_offline_decode",
+            "sample_count": 3,
+            "host_wall_ns": 6_000_000_000,
+            "device_wall_ns": 5_900_000_000,
+            "end_to_end_latency_ns": 6_000_000_000,
+            "inter_token_latency_ns": 5_800_000,
+            "time_to_first_token_ns": 50_000_000,
+            "throughput_tokens_per_s": 1300.0,
+            "batch_size": 8,
+            "decode_tokens": 1024,
+            "comparison_scope": "diagnostic_decode_without_prompt_prefill",
+            "model_equivalent_ready": False,
+        },
+        "correctness_details": {
+            "comparison_scope": "diagnostic_decode_without_prompt_prefill",
+            "model_equivalent_ready": False,
+        },
+        "raw_artifact": "tmp/cuda-backend/full-serving/mpk_offline_decode/",
+        "correctness": "pass",
+    }
+
+    status = module.full_serving_qwen_row_status(row)
+
+    assert status["status"] == "fail"
+    assert "correctness_details.model_equivalent_ready=true" in status[
+        "missing_requirements"
+    ]
+    assert module.full_serving_qwen_rows([row]) == []
+
+
 def test_pto_full_serving_row_gate_accepts_both_policy_rows():
     module = load_pto_serving_preflight_module()
 
@@ -807,6 +850,12 @@ def test_pto_full_serving_row_gate_accepts_both_policy_rows():
                 "throughput_tokens_per_s": 1300.0,
                 "batch_size": 8,
                 "decode_tokens": 1024,
+                "comparison_scope": "model_equivalent_decode",
+                "model_equivalent_ready": True,
+            },
+            "correctness_details": {
+                "comparison_scope": "model_equivalent_decode",
+                "model_equivalent_ready": True,
             },
             "raw_artifact": f"tmp/cuda-backend/full-serving/{workload_id}/",
             "correctness": "pass",

@@ -169,9 +169,10 @@ metrics:
 
 Each raw row must include `correctness_details` with
 `scope=full_qwen_numerical_correctness`, `model_id=Qwen/Qwen3-8B`,
-`status=pass`, `token_match=true`, a positive `checked_token_count`, and
-finite `max_abs_error <= tolerance`. A top-level `correctness=pass` field is
-not enough for paper-readiness import.
+`status=pass`, `token_match=true`, `model_equivalent_ready=true`,
+`comparison_scope=model_equivalent_decode`, a positive `checked_token_count`,
+and finite `max_abs_error <= tolerance`. A top-level `correctness=pass` field
+is not enough for paper-readiness import.
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \

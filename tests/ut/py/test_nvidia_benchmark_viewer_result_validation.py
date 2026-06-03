@@ -55,6 +55,8 @@ def pto_full_serving_record():
             "total_input_tokens": 1024,
             "total_output_tokens": 512,
             "correctness_scope": "full_qwen_numerical_correctness",
+            "comparison_scope": "model_equivalent_decode",
+            "model_equivalent_ready": True,
             "checked_token_count": 512,
             "max_abs_error": 0.0001,
             "correctness_tolerance": 0.001,
@@ -65,6 +67,8 @@ def pto_full_serving_record():
             "model_id": "Qwen/Qwen3-8B",
             "status": "pass",
             "token_match": True,
+            "model_equivalent_ready": True,
+            "comparison_scope": "model_equivalent_decode",
             "checked_token_count": 512,
             "max_abs_error": 0.0001,
             "tolerance": 0.001,
@@ -141,3 +145,18 @@ def test_viewer_data_validator_rejects_underchecked_pto_full_serving_row(tmp_pat
         assert "checked_token_count must cover generated tokens" in str(exc)
     else:
         raise AssertionError("underchecked PTO full-serving row was accepted")
+
+
+def test_viewer_data_validator_rejects_diagnostic_comparison_scope(tmp_path):
+    record = pto_full_serving_record()
+    record["correctness_details"]["comparison_scope"] = (
+        "diagnostic_decode_without_prompt_prefill"
+    )
+    record["correctness_details"]["model_equivalent_ready"] = False
+
+    try:
+        validate_record(record, tmp_path)
+    except SystemExit as exc:
+        assert "model_equivalent_ready" in str(exc)
+    else:
+        raise AssertionError("diagnostic comparison scope was accepted")

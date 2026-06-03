@@ -32,6 +32,7 @@ REQUIRED_METRICS = {
     "throughput_tokens_per_s",
 }
 CORRECTNESS_SCOPE = "full_qwen_numerical_correctness"
+COMPARISON_SCOPE = "model_equivalent_decode"
 MODEL_ID = "Qwen/Qwen3-8B"
 RUNTIME = "cuda/persistent_device"
 SERVING_COVERAGE = "full_serving"
@@ -147,6 +148,10 @@ def correctness_details(raw: dict[str, Any], owner: str) -> dict[str, Any]:
         fail(f"{owner} has invalid correctness_details.status")
     if details.get("token_match") is not True:
         fail(f"{owner} has invalid correctness_details.token_match")
+    if details.get("model_equivalent_ready") is not True:
+        fail(f"{owner} has invalid correctness_details.model_equivalent_ready")
+    if require_string(details, "comparison_scope", owner) != COMPARISON_SCOPE:
+        fail(f"{owner} has invalid correctness_details.comparison_scope")
     checked_token_count = require_positive_int(
         details,
         "checked_token_count",
@@ -161,6 +166,8 @@ def correctness_details(raw: dict[str, Any], owner: str) -> dict[str, Any]:
         "model_id": MODEL_ID,
         "status": "pass",
         "token_match": True,
+        "model_equivalent_ready": True,
+        "comparison_scope": COMPARISON_SCOPE,
         "checked_token_count": checked_token_count,
         "max_abs_error": max_abs_error,
         "tolerance": tolerance,
@@ -289,6 +296,8 @@ def result_record(
         "serving_coverage": "full_serving",
         "workload_id": workload_id,
         "correctness_scope": correctness["scope"],
+        "comparison_scope": correctness["comparison_scope"],
+        "model_equivalent_ready": correctness["model_equivalent_ready"],
         "checked_token_count": correctness["checked_token_count"],
         "max_abs_error": correctness["max_abs_error"],
         "correctness_tolerance": correctness["tolerance"],

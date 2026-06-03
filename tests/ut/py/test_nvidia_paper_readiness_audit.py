@@ -171,6 +171,8 @@ def test_paper_readiness_accepts_complete_pto_full_serving_row():
                         "total_input_tokens": 1024,
                         "total_output_tokens": 512,
                         "correctness_scope": "full_qwen_numerical_correctness",
+                        "comparison_scope": "model_equivalent_decode",
+                        "model_equivalent_ready": True,
                         "checked_token_count": 512,
                         "max_abs_error": 0.0001,
                         "correctness_tolerance": 0.001,
@@ -181,6 +183,8 @@ def test_paper_readiness_accepts_complete_pto_full_serving_row():
                         "model_id": "Qwen/Qwen3-8B",
                         "status": "pass",
                         "token_match": True,
+                        "model_equivalent_ready": True,
+                        "comparison_scope": "model_equivalent_decode",
                         "checked_token_count": 512,
                         "max_abs_error": 0.0001,
                         "tolerance": 0.001,
@@ -206,6 +210,35 @@ def test_paper_readiness_accepts_complete_pto_full_serving_row():
     )
 
     assert missing == []
+
+
+def test_paper_readiness_rejects_diagnostic_comparison_scope():
+    claim_status = load_claim_status_module()
+    row = pto_full_serving_row("mpk_offline_decode")
+    row["correctness_details"]["comparison_scope"] = (
+        "diagnostic_decode_without_prompt_prefill"
+    )
+    row["correctness_details"]["model_equivalent_ready"] = False
+    current_results = claim_status.result_index({"result_records": [row]})
+
+    _counts, missing = claim_status.count_evidence_refs(
+        [
+            {
+                "kind": "viewer_result",
+                "benchmark_id": "llm_serving_decode",
+                "method_id": "pto_persistent_device",
+                "gpu": "A100",
+                "shape_contains": "Qwen/Qwen3-8B",
+                "serving_coverage": "full_serving",
+            }
+        ],
+        current_results,
+    )
+
+    assert missing == [
+        "llm_serving_decode / pto_persistent_device / A100 / "
+        "shape contains Qwen/Qwen3-8B / coverage full_serving"
+    ]
 
 
 def pto_full_serving_row(workload_id):
@@ -237,6 +270,8 @@ def pto_full_serving_row(workload_id):
             "total_input_tokens": 1024,
             "total_output_tokens": 512,
             "correctness_scope": "full_qwen_numerical_correctness",
+            "comparison_scope": "model_equivalent_decode",
+            "model_equivalent_ready": True,
             "checked_token_count": 512,
             "max_abs_error": 0.0001,
             "correctness_tolerance": 0.001,
@@ -247,6 +282,8 @@ def pto_full_serving_row(workload_id):
             "model_id": "Qwen/Qwen3-8B",
             "status": "pass",
             "token_match": True,
+            "model_equivalent_ready": True,
+            "comparison_scope": "model_equivalent_decode",
             "checked_token_count": 512,
             "max_abs_error": 0.0001,
             "tolerance": 0.001,
