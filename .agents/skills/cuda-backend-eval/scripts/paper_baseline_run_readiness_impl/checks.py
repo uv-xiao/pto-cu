@@ -11,6 +11,7 @@ from .paths import ROOT
 REPO_OWNED_ENTRYPOINT_PREFIXES = (
     ".agents/",
     "examples/",
+    "tmp/",
 )
 
 

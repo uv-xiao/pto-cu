@@ -5286,6 +5286,53 @@ def test_pto_paper_baseline_probe_covers_repo_owned_entrypoints():
     } == {"A100": "pass", "H200": "pass"}
 
 
+def test_mpk_run_readiness_accepts_repo_relative_tmp_entrypoint():
+    readiness = json.loads(
+        (VIEWER_DATA / "paper_baseline_run_readiness.json").read_text(
+            encoding="utf-8"
+        )
+    )["paper_baseline_run_readiness"]
+    by_run = {item["paper_baseline_run_id"]: item for item in readiness}
+    mpk_readiness = by_run["mpk_qwen3_native_vs_persistent"]
+    mpk_path_checks = {
+        check["path"]: check["status"]
+        for check in mpk_readiness["checks"]
+        if check["kind"] == "path_exists"
+    }
+
+    assert (
+        mpk_path_checks["tmp/baselines/mirage-mpk/demo/qwen3/demo.py"]
+        == "pass"
+    )
+    assert not any(
+        "tmp/baselines/mirage-mpk/demo/qwen3/demo.py" in gap
+        for gap in mpk_readiness["blocking_gaps"]
+    )
+
+
+def test_thunderkittens_tile_readiness_uses_selected_mha_kernel():
+    readiness = json.loads(
+        (VIEWER_DATA / "paper_baseline_run_readiness.json").read_text(
+            encoding="utf-8"
+        )
+    )["paper_baseline_run_readiness"]
+    by_run = {item["paper_baseline_run_id"]: item for item in readiness}
+    tk_readiness = by_run["thunderkittens_tile_kernel"]
+    tk_path_checks = {
+        check["path"]: check["status"]
+        for check in tk_readiness["checks"]
+        if check["kind"] == "path_exists"
+    }
+
+    assert (
+        tk_path_checks["kernels/attention/mha_h100/test_correctness.py"]
+        == "pass"
+    )
+    assert tk_path_checks["kernels/attention/mha_h100/benchmark.py"] == "pass"
+    assert tk_readiness["latest_status"] == "pass"
+    assert tk_readiness["blocking_gaps"] == []
+
+
 def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     output_path = tmp_path / "goal-progress.json"
     result = subprocess.run(

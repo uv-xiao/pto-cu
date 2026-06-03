@@ -510,12 +510,12 @@
         "batch_or_concurrency": "single-kernel benchmark sweep"
       },
       "setup_commands": [
-        "cd tmp/baselines/thunderkittens/kernels/<selected-kernel> && make"
+        "cd tmp/baselines/thunderkittens/kernels/attention/mha_h100 && make"
       ],
       "run_commands": [
         "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/thunderkittens_mha_capture.py --baseline-dir tmp/baselines/thunderkittens/kernels/attention/mha_h100 --output tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/capture.json --machine <h200-host> --pto-commit 5915346e --cuda-toolkit 12.8 --shape 1,1,768,64 --shape 1,4,1536,64 --warmup 5 --repeats 20 --causal",
-        "cd tmp/baselines/thunderkittens/kernels/<selected-kernel> && python test_correctness.py",
-        "cd tmp/baselines/thunderkittens/kernels/<selected-kernel> && python benchmark.py"
+        "cd tmp/baselines/thunderkittens && python kernels/attention/mha_h100/test_correctness.py",
+        "cd tmp/baselines/thunderkittens && python kernels/attention/mha_h100/benchmark.py"
       ],
       "expected_artifacts": [
         "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/build.log",

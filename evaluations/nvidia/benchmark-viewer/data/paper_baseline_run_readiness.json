@@ -99,7 +99,7 @@
       "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
       "paper_baseline_id": "mpk",
       "title": "MPK Qwen3 Native Versus Persistent Kernel Readiness",
-      "latest_status": "fail",
+      "latest_status": "pass",
       "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-current-working/",
       "checks": [
         {
@@ -116,7 +116,7 @@
         {
           "kind": "path_exists",
           "path": "tmp/baselines/mirage-mpk/demo/qwen3/demo.py",
-          "status": "fail",
+          "status": "pass",
           "why": "Python entrypoint referenced by run_commands."
         },
         {
@@ -247,9 +247,7 @@
           "why": "MPK Qwen3 runs use public Qwen model artifacts; unauthenticated Hugging Face API snapshots are stored under tmp/sources/huggingface/."
         }
       ],
-      "blocking_gaps": [
-        "path_exists check failed for tmp/baselines/mirage-mpk/demo/qwen3/demo.py."
-      ],
+      "blocking_gaps": [],
       "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
     },
     {
@@ -949,7 +947,7 @@
       "paper_baseline_run_id": "thunderkittens_tile_kernel",
       "paper_baseline_id": "thunderkittens",
       "title": "ThunderKittens Tile Kernel Readiness",
-      "latest_status": "fail",
+      "latest_status": "pass",
       "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-current-working/",
       "checks": [
         {
@@ -971,14 +969,14 @@
         },
         {
           "kind": "path_exists",
-          "path": "test_correctness.py",
-          "status": "fail",
+          "path": "kernels/attention/mha_h100/test_correctness.py",
+          "status": "pass",
           "why": "Python entrypoint referenced by run_commands."
         },
         {
           "kind": "path_exists",
-          "path": "benchmark.py",
-          "status": "fail",
+          "path": "kernels/attention/mha_h100/benchmark.py",
+          "status": "pass",
           "why": "Python entrypoint referenced by run_commands."
         },
         {
@@ -1025,10 +1023,7 @@
           "blocking_gaps": []
         }
       ],
-      "blocking_gaps": [
-        "path_exists check failed for test_correctness.py.",
-        "path_exists check failed for benchmark.py."
-      ],
+      "blocking_gaps": [],
       "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
     },
     {
