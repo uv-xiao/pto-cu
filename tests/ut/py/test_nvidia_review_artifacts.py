@@ -5509,6 +5509,23 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         "runnable_handoff_contract_status=required_not_implemented" in item
         for item in vdcores_attempt_item["evidence_summary"]
     )
+    vdcores_item = next(
+        item
+        for item in work_items
+        if item["missing_evidence_id"] == "vdcores_full_serving_qwen3_8b"
+    )
+    assert any(
+        "window_contract_validation=pass" in item
+        for item in vdcores_item["evidence_summary"]
+    )
+    assert any(
+        "runnable_handoff_contract_status=required_not_implemented" in item
+        for item in vdcores_item["evidence_summary"]
+    )
+    assert any(
+        "vdcores_validate_instruction_window_plan.py" in item
+        for item in vdcores_item["evidence_summary"]
+    )
     pto_item = next(
         item
         for item in work_items

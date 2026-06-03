@@ -233,6 +233,11 @@ def fallback_evidence_summary(action: dict[str, Any]) -> list[str]:
             "The serving command plan already has batch-ladder selectors for "
             "vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode; import "
             "requires a correctness-passing segmented or equivalent runtime.",
+            "The latest shared-window plan has validator-backed handoff "
+            "evidence: window_contract_validation=pass, "
+            "runnable_handoff_contract_status=required_not_implemented, and "
+            "vdcores_validate_instruction_window_plan.py guards the "
+            "analysis-only shared-window artifact.",
         ]
     if missing_evidence_id == "thunderkittens_full_serving_qwen3_8b":
         return [
