@@ -134,6 +134,7 @@ def validate_model_shape_targets(
         if status == "local_import_smoke" and not has_import_smoke:
             fail(f"{owner} local_import_smoke status lacks import_smoke")
         import_smoke_count += int(has_import_smoke)
+        validate_throughput_capture(target, owner, methods, root)
         check_evidence_refs(target, owner, root)
     if import_smoke_count < 2:
         fail("tensor workload coverage needs two model-shape import smokes")
@@ -204,6 +205,89 @@ def validate_import_smoke(
         if statistic.get("sample_count") != sample_count:
             fail(f"{owner} import_smoke sample count mismatch")
     return True
+
+
+def validate_throughput_capture(
+    target: dict[str, Any],
+    owner: str,
+    required_methods: set[str],
+    root: Path,
+) -> None:
+    capture = target.get("throughput_capture")
+    if capture is None:
+        return
+    if not isinstance(capture, dict):
+        fail(f"{owner} throughput_capture is not an object")
+    status = require_string(capture, "status", owner)
+    if status not in {"a100_multi_repeat", "a100_h200_multi_repeat"}:
+        fail(f"{owner} throughput_capture has invalid status: {status}")
+    artifact_root = require_string(capture, "artifact_root", owner)
+    require_current_artifact_path(root, artifact_root, owner)
+    hardware = require_dict(capture, "hardware", owner)
+    gpu = require_string(hardware, "gpu", owner)
+    compute_target = require_string(hardware, "compute_target", owner)
+    if gpu not in {"A100", "H200"}:
+        fail(f"{owner} throughput_capture has unsupported gpu: {gpu}")
+    exported_records_path = require_string(
+        capture,
+        "exported_records_path",
+        owner,
+    )
+    if not exported_records_path.startswith(artifact_root):
+        fail(f"{owner} throughput_capture records must live under artifact_root")
+    records_path = root / exported_records_path
+    if not records_path.is_file():
+        fail(
+            f"{owner} throughput_capture records path missing: "
+            f"{exported_records_path}"
+        )
+    try:
+        records = json.loads(records_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"{owner} throughput_capture records JSON is invalid: {exc}")
+    if not isinstance(records, list) or not records:
+        fail(f"{owner} throughput_capture records are empty")
+    methods = set(require_list(capture, "methods", owner))
+    if not methods <= required_methods:
+        fail(f"{owner} throughput_capture methods are not required methods")
+    if "pto_persistent_device" not in methods:
+        fail(f"{owner} throughput_capture must include PTO rows")
+    sample_count = require_positive_int(capture, "sample_count", owner)
+    if sample_count < 3:
+        fail(f"{owner} throughput_capture must have at least three samples")
+    commands = require_list(capture, "commands", owner)
+    check_import_smoke_commands(commands, methods, target, owner)
+    require_string(capture, "remaining_scope", owner)
+
+    shape = (
+        f"{target['tensor_tile']['rows']}x"
+        f"{target['tensor_tile']['cols']}x"
+        f"{target['tensor_tile']['inner']}"
+    )
+    record_methods = {record.get("method_id") for record in records}
+    if not methods <= record_methods:
+        fail(f"{owner} throughput_capture records missing methods: {sorted(methods)}")
+    for record in records:
+        method = record.get("method_id")
+        if method not in methods:
+            continue
+        if record.get("benchmark_id") != "tensor_core_tile":
+            fail(f"{owner} throughput_capture record has wrong benchmark_id")
+        hardware_record = record.get("hardware", {})
+        if (
+            hardware_record.get("gpu") != gpu
+            or hardware_record.get("compute_target") != compute_target
+        ):
+            fail(f"{owner} throughput_capture record has wrong hardware")
+        if shape not in record.get("inputs", {}).get("shape", ""):
+            fail(f"{owner} throughput_capture record has wrong tensor shape")
+        if record.get("raw_artifact") != artifact_root:
+            fail(f"{owner} throughput_capture record has wrong raw_artifact")
+        if record.get("correctness") != "pass":
+            fail(f"{owner} throughput_capture record is not correctness pass")
+        statistic = record.get("statistic", {})
+        if statistic.get("sample_count") != sample_count:
+            fail(f"{owner} throughput_capture sample count mismatch")
 
 
 def check_import_smoke_commands(

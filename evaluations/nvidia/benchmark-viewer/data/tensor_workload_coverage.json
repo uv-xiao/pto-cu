@@ -59,6 +59,26 @@
           "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py tmp/cuda-backend/qwen-attention-tensor-target-bdce5ea4/cuda-benchmark.json --artifact-root tmp/cuda-backend/qwen-attention-tensor-target-bdce5ea4/ --output tmp/cuda-backend/qwen-attention-tensor-target-bdce5ea4/viewer-records.json"
         ],
         "scope": "Local A100 one-repeat import smoke for Qwen attention tile routing; not final paper-grade throughput."
+      },
+      "throughput_capture": {
+        "status": "a100_multi_repeat",
+        "artifact_root": "tmp/cuda-backend/qwen-attention-tensor-target-a100-repeat3-4b281f79/",
+        "exported_records_path": "tmp/cuda-backend/qwen-attention-tensor-target-a100-repeat3-4b281f79/viewer-records.json",
+        "hardware": {
+          "gpu": "A100",
+          "compute_target": "compute_80"
+        },
+        "sample_count": 3,
+        "methods": [
+          "pto_persistent_device",
+          "cublas_sgemm_graph"
+        ],
+        "commands": [
+          "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py --device 0 --sizes 1024 --repeats 1 --arch compute_80 --single-baseline pto_persistent_dag_graph_tensor_core --tensor-rows 16 --tensor-cols 64 --tensor-inner 128",
+          "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py --device 0 --sizes 1024 --repeats 1 --arch compute_80 --single-baseline cublas_sgemm_graph --tensor-rows 16 --tensor-cols 64 --tensor-inner 128",
+          "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py tmp/cuda-backend/qwen-attention-tensor-target-a100-repeat3-4b281f79/cuda-benchmark.json --artifact-root tmp/cuda-backend/qwen-attention-tensor-target-a100-repeat3-4b281f79/ --output tmp/cuda-backend/qwen-attention-tensor-target-a100-repeat3-4b281f79/viewer-records.json"
+        ],
+        "remaining_scope": "H200 capture plus CUTLASS, Triton, and ThunderKittens comparable rows remain required before closing the tuned tensor workload gap."
       }
     },
     {
@@ -114,6 +134,26 @@
           "PYTHONPATH=$PWD:$PWD/python .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py tmp/cuda-backend/qwen-mlp-tensor-target-c1110223/cuda-benchmark.json --artifact-root tmp/cuda-backend/qwen-mlp-tensor-target-c1110223/ --output tmp/cuda-backend/qwen-mlp-tensor-target-c1110223/viewer-records.json"
         ],
         "scope": "Local A100 one-repeat import smoke for Qwen MLP tile routing; not final paper-grade throughput."
+      },
+      "throughput_capture": {
+        "status": "a100_multi_repeat",
+        "artifact_root": "tmp/cuda-backend/qwen-mlp-tensor-target-a100-repeat3-4b281f79/",
+        "exported_records_path": "tmp/cuda-backend/qwen-mlp-tensor-target-a100-repeat3-4b281f79/viewer-records.json",
+        "hardware": {
+          "gpu": "A100",
+          "compute_target": "compute_80"
+        },
+        "sample_count": 3,
+        "methods": [
+          "pto_persistent_device",
+          "cublas_sgemm_graph"
+        ],
+        "commands": [
+          "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py --device 0 --sizes 1024 --repeats 1 --arch compute_80 --single-baseline pto_persistent_dag_graph_tensor_core --tensor-rows 16 --tensor-cols 64 --tensor-inner 256",
+          "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py --device 0 --sizes 1024 --repeats 1 --arch compute_80 --single-baseline cublas_sgemm_graph --tensor-rows 16 --tensor-cols 64 --tensor-inner 256",
+          "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cuda_viewer_export.py tmp/cuda-backend/qwen-mlp-tensor-target-a100-repeat3-4b281f79/cuda-benchmark.json --artifact-root tmp/cuda-backend/qwen-mlp-tensor-target-a100-repeat3-4b281f79/ --output tmp/cuda-backend/qwen-mlp-tensor-target-a100-repeat3-4b281f79/viewer-records.json"
+        ],
+        "remaining_scope": "H200 capture plus CUTLASS, Triton, and ThunderKittens comparable rows remain required before closing the tuned tensor workload gap."
       }
     }
   ],

@@ -32,12 +32,22 @@ diagnostic WMMA task. The remaining gap is paper-readiness throughput capture,
 not backend descriptor-shape, first tensor-core callable plumbing, baseline
 viewer coverage, source-contract definition, or runtime selector wiring.
 
+Current A100 evidence now includes three-repeat PTO persistent-device and
+cuBLAS Graph captures for both Qwen model-shape tiles. This also fixed a
+local capture blocker in `cuda_persistent_smoke.py`: its
+`CudaPersistentDagTask` ctypes layout still used the pre-five-tensor-argument
+ABI and omitted `tensor_arg_dtypes`, which made current graph tensor-core
+launch packets fail with scheduler error code `5(initial_fanin_mismatch)`.
+The smoke runner now matches the compiler/runtime ABI and dispatches Qwen
+tensor function ids `7240` and `7241` for the target tiles.
+
 Needed:
 
 - broader model-kernel shape families once the tensor-core/library path
   exists;
-- multi-repeat throughput rows that compare tuned PTO tensor bodies against
-  cuBLAS Graph, CUTLASS, Triton, and ThunderKittens baselines.
+- H200 multi-repeat throughput rows for the Qwen tensor tiles;
+- generated-kernel comparator rows for CUTLASS, Triton, and ThunderKittens on
+  the same model-shape tiles.
 
 ## Current Evidence
 
@@ -48,6 +58,9 @@ is validated by
 The current one-repeat model-shape import smokes are under
 `tmp/cuda-backend/qwen-attention-tensor-target-bdce5ea4/` and
 `tmp/cuda-backend/qwen-mlp-tensor-target-c1110223/`.
+The current A100 three-repeat tensor-throughput captures are under
+`tmp/cuda-backend/qwen-attention-tensor-target-a100-repeat3-4b281f79/` and
+`tmp/cuda-backend/qwen-mlp-tensor-target-a100-repeat3-4b281f79/`.
 The source-contract evidence is emitted by
 `examples/cuda/qwen_persistent_task_bodies.py` as
 `qwen_tensor_tile_contract`.
@@ -62,6 +75,8 @@ comparable.
 
 ## Next Actions
 
-- Capture multi-repeat A100/H200 PTO and baseline rows for those tiles.
-- Import the raw `tmp/` artifacts into the viewer and update this archived
-  page once the paper-readiness work queue is complete.
+- Capture H200 PTO and cuBLAS Graph rows for both Qwen model-shape tiles.
+- Capture CUTLASS, Triton, and ThunderKittens comparator rows for the same
+  tile shapes.
+- Promote the A100/H200 rows into final viewer result records only after the
+  comparator set is complete.

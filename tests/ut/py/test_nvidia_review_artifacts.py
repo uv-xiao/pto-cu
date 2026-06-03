@@ -1,3 +1,4 @@
+import ctypes
 import json
 import importlib.util
 import struct
@@ -5237,6 +5238,99 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         "resource-backed diagnostic execution" in item
         for item in pto_item["evidence_summary"]
     )
+
+
+def test_tensor_workload_coverage_records_multi_repeat_qwen_capture():
+    coverage = json.loads(
+        (VIEWER_DATA / "tensor_workload_coverage.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    targets = {
+        item["id"]: item for item in coverage["model_shape_targets"]
+    }
+
+    for target_id in (
+        "qwen_attention_projection_tile",
+        "qwen_mlp_projection_tile",
+    ):
+        target = targets[target_id]
+        capture = target["throughput_capture"]
+        assert capture["status"] == "a100_multi_repeat"
+        assert capture["hardware"] == {
+            "gpu": "A100",
+            "compute_target": "compute_80",
+        }
+        assert capture["sample_count"] >= 3
+        assert set(capture["methods"]) == {
+            "pto_persistent_device",
+            "cublas_sgemm_graph",
+        }
+        assert capture["artifact_root"].startswith("tmp/cuda-backend/")
+        assert capture["exported_records_path"].startswith(
+            capture["artifact_root"]
+        )
+        records = json.loads(
+            (ROOT / capture["exported_records_path"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        record_methods = {record["method_id"] for record in records}
+        assert set(capture["methods"]) <= record_methods
+        for record in records:
+            if record["method_id"] not in capture["methods"]:
+                continue
+            assert record["statistic"]["sample_count"] == capture["sample_count"]
+            assert record["correctness"] == "pass"
+            assert record["raw_artifact"] == capture["artifact_root"]
+
+
+def test_cuda_persistent_smoke_dag_task_matches_compiler_abi():
+    smoke_script = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "cuda_persistent_smoke.py"
+    )
+    script_dir = smoke_script.parent
+    if str(script_dir) not in sys.path:
+        sys.path.insert(0, str(script_dir))
+    spec = importlib.util.spec_from_file_location(
+        "cuda_persistent_smoke_for_abi_test",
+        smoke_script,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    from simpler_setup.cuda_callable_compiler import (
+        CudaPersistentDagTask as CompilerDagTask,
+    )
+
+    smoke_task = module.CudaPersistentDagTask
+    smoke_fields = dict(smoke_task._fields_)
+    compiler_fields = dict(CompilerDagTask._fields_)
+    assert struct.calcsize("P") == 8
+    assert smoke_fields["tensor_args"]._length_ == 5
+    assert smoke_fields["tensor_arg_dtypes"]._length_ == 5
+    assert ctypes.sizeof(smoke_fields["tensor_args"]) == ctypes.sizeof(
+        compiler_fields["tensor_args"]
+    )
+    assert ctypes.sizeof(smoke_fields["tensor_arg_dtypes"]) == ctypes.sizeof(
+        compiler_fields["tensor_arg_dtypes"]
+    )
+    assert smoke_task.scalar_args.offset == CompilerDagTask.scalar_args.offset
+    assert smoke_task.tensor_arg_count.offset == (
+        CompilerDagTask.tensor_arg_count.offset
+    )
+    assert smoke_task.scalar_arg_count.offset == (
+        CompilerDagTask.scalar_arg_count.offset
+    )
+    assert ctypes.sizeof(smoke_task) == ctypes.sizeof(CompilerDagTask)
 
 
 def test_pto_run_readiness_uses_repo_owned_entrypoints():
