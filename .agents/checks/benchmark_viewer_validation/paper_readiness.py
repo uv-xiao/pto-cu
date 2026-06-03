@@ -214,6 +214,8 @@ def validate_paper_readiness_work_queue(
             for entry in evidence_summary
         ):
             fail(f"{owner} evidence_summary is invalid")
+        if not evidence_summary:
+            fail(f"{owner} evidence_summary must not be empty")
         if not isinstance(item.get("ready_for_paper_claim"), bool):
             fail(f"{owner} ready_for_paper_claim is not boolean")
         for key in ("blocker_count", "missing_evidence_count", "action_index"):

@@ -5209,6 +5209,7 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     }
     work_items = committed["work_items"]
     assert all(not item["ready_for_paper_claim"] for item in work_items)
+    assert all(item["evidence_summary"] for item in work_items)
     llm_items = [
         item
         for item in work_items

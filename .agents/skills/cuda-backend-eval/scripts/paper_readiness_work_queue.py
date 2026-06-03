@@ -208,12 +208,60 @@ def baseline_run_serving_workloads(
 def evidence_summary(action: dict[str, Any], owner: str) -> list[str]:
     summary = action.get("evidence_summary", [])
     if summary in (None, ""):
-        return []
+        return fallback_evidence_summary(action)
     if not isinstance(summary, list) or not all(
         isinstance(item, str) and item.strip() for item in summary
     ):
         fail(f"{owner} action evidence_summary is invalid")
-    return summary
+    if summary:
+        return summary
+    return fallback_evidence_summary(action)
+
+
+def fallback_evidence_summary(action: dict[str, Any]) -> list[str]:
+    missing_evidence_id = str(action.get("missing_evidence_id", ""))
+    execution_attempt_id = str(action.get("execution_attempt_id", ""))
+    if missing_evidence_id == "vdcores_full_serving_qwen3_8b":
+        return [
+            "VDCores Qwen3-8B is tracked by the planned-not-run "
+            "vdcores_qwen3_8b_decode_preflight row for the "
+            "vdcores_offline_decode policy.",
+            "Current H200 diagnostics show Qwen3-8B correctness and token-1 "
+            "timing after runtime rebuild, but the 64-token paper decode row "
+            "is blocked by shared-instruction capacity and global-instruction "
+            "correctness gaps.",
+            "The serving command plan already has batch-ladder selectors for "
+            "vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode; import "
+            "requires a correctness-passing segmented or equivalent runtime.",
+        ]
+    if missing_evidence_id == "thunderkittens_full_serving_qwen3_8b":
+        return [
+            "ThunderKittens decode-attention tile rows are imported for the "
+            "VDCores offline-decode batch ladder as controlled attention-tile "
+            "proxy evidence.",
+            "Those rows preserve prompt/decode metadata and H200 timing for "
+            "padded MHA shapes, but they are not full Qwen/Qwen3-8B serving "
+            "rows and cannot satisfy model-equivalent correctness.",
+            "The remaining work is to import ThunderKittens-family full-serving "
+            "Qwen/Qwen3-8B rows or keep an explicit non-full-serving policy "
+            "exception in the paper matrix.",
+        ]
+    if execution_attempt_id == "vdcores_qwen3_8b_shared_instruction_window_plan_h200":
+        return [
+            "The latest VDCores shared-instruction attempt generated analysis "
+            "evidence for the Qwen3-8B decode64 instruction footprint.",
+            "The artifact reports a 512-instruction shared-table limit, 2177 "
+            "compute instructions, and 15042 memory instructions per SM, "
+            "requiring segmented shared-instruction windows.",
+            "This is not a runnable baseline yet; builder/runtime support must "
+            "advance instruction windows while preserving resident tensors, "
+            "KV-cache state, dependencies, correctness, and timing.",
+        ]
+    return [
+        "No detailed evidence summary was attached to the source audit action; "
+        "inspect the action, serving command selectors, and promotion gate "
+        "before dispatching this work item."
+    ]
 
 
 def parse_args() -> argparse.Namespace:

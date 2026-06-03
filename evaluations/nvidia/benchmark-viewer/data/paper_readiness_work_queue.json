@@ -79,7 +79,11 @@
       "shape_contains": "vdcores_offline_decode,Qwen/Qwen3-8B",
       "status": "missing",
       "action": "Run and import the VDCores full-serving Qwen/Qwen3-8B offline-decode row after fixing correctness for the global-instruction capacity path or implementing an equivalent segmented schedule under the shared-instruction runtime.",
-      "evidence_summary": [],
+      "evidence_summary": [
+        "VDCores Qwen3-8B is tracked by the planned-not-run vdcores_qwen3_8b_decode_preflight row for the vdcores_offline_decode policy.",
+        "Current H200 diagnostics show Qwen3-8B correctness and token-1 timing after runtime rebuild, but the 64-token paper decode row is blocked by shared-instruction capacity and global-instruction correctness gaps.",
+        "The serving command plan already has batch-ladder selectors for vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode; import requires a correctness-passing segmented or equivalent runtime."
+      ],
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics."
     },
     {
@@ -109,7 +113,11 @@
       "shape_contains": "Qwen/Qwen3-8B",
       "status": "missing",
       "action": "Import ThunderKittens-family full-serving Qwen/Qwen3-8B rows beyond the current attention-tile proxy.",
-      "evidence_summary": [],
+      "evidence_summary": [
+        "ThunderKittens decode-attention tile rows are imported for the VDCores offline-decode batch ladder as controlled attention-tile proxy evidence.",
+        "Those rows preserve prompt/decode metadata and H200 timing for padded MHA shapes, but they are not full Qwen/Qwen3-8B serving rows and cannot satisfy model-equivalent correctness.",
+        "The remaining work is to import ThunderKittens-family full-serving Qwen/Qwen3-8B rows or keep an explicit non-full-serving policy exception in the paper matrix."
+      ],
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics."
     },
     {
@@ -138,7 +146,11 @@
       "shape_contains": "",
       "status": "partial",
       "action": "Resolve latest execution attempt vdcores_qwen3_8b_shared_instruction_window_plan_h200 before importing vdcores_qwen3_8b_decode_preflight. Diagnostic blocker: This is analysis evidence, not a runnable baseline. The VDCores paper row still needs builder/runtime support for a segmented or token-windowed shared-instruction schedule that reloads or advances instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and per-window timing.",
-      "evidence_summary": [],
+      "evidence_summary": [
+        "The latest VDCores shared-instruction attempt generated analysis evidence for the Qwen3-8B decode64 instruction footprint.",
+        "The artifact reports a 512-instruction shared-table limit, 2177 compute instructions, and 15042 memory instructions per SM, requiring segmented shared-instruction windows.",
+        "This is not a runnable baseline yet; builder/runtime support must advance instruction windows while preserving resident tensors, KV-cache state, dependencies, correctness, and timing."
+      ],
       "promotion_gate": "Promote only after all paper baselines run on the same model and decode policy, raw outputs are archived under tmp/, and viewer result records show explicit full-Qwen numerical correctness details plus latency/throughput statistics."
     }
   ]
