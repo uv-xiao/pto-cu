@@ -8,6 +8,7 @@ what evaluation ran, and what evidence proves the claim.
 
 - [2026-06-03 Qwen feedback ring](2026-06-03-qwen-feedback-ring.md)
 - [2026-06-03 Qwen full-prefix finite logits](2026-06-03-qwen-full-prefix-finite-logits.md)
+- [2026-06-03 Paper queue Qwen HF mismatch](2026-06-03-paper-queue-qwen-hf-mismatch.md)
 - [2026-06-03 Qwen layer-8 prefix evidence](2026-06-03-qwen-layer8-prefix-evidence.md)
 - [2026-06-03 Qwen MLP residual binding](2026-06-03-qwen-mlp-residual-binding.md)
 - [2026-06-03 Qwen attention batch rows](2026-06-03-qwen-attention-batch-rows.md)
