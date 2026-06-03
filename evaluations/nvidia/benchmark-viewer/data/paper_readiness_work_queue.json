@@ -26,9 +26,9 @@
       "missing_evidence_count": 1,
       "action_index": 1,
       "source": "matrix_missing_evidence",
-      "owner": "matrix_missing_evidence",
+      "owner": "pto_persistent_device_qwen3_8b_full_serving",
       "paper_baseline_id": "",
-      "paper_baseline_run_id": "",
+      "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
       "execution_attempt_id": "",
       "missing_evidence_id": "pto_full_serving_qwen3_8b",
       "method_id": "pto_persistent_device",
@@ -36,7 +36,10 @@
         "mpk_offline_decode",
         "vdcores_offline_decode"
       ],
-      "serving_command_plan_selectors": [],
+      "serving_command_plan_selectors": [
+        "pto_persistent_device_qwen3_8b_full_serving:mpk_offline_decode",
+        "pto_persistent_device_qwen3_8b_full_serving:vdcores_offline_decode"
+      ],
       "shape_contains": "Qwen/Qwen3-8B",
       "status": "missing",
       "action": "Close PTO persistent-device Qwen3-8B token/logit agreement against the Hugging Face reference, then import MPK and VDCores offline-decode full-serving rows with latency, throughput, and full-Qwen correctness details.",

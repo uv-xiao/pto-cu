@@ -60,6 +60,87 @@ def mpk_commands(
     ]
 
 
+def pto_persistent_device_commands(
+    *,
+    model: str,
+    policy: dict[str, Any],
+    batch_size: int,
+    out_dir: str,
+) -> list[dict[str, str]]:
+    decode_tokens = policy["decode_policy"]["decode_tokens"]
+    prompt_tokens = policy["prompt_policy"]["target_prompt_tokens"]
+    workload_id = policy["id"]
+    runner_json = f"{out_dir}/pto-qwen-runner-batch{batch_size}.json"
+    raw_json = f"{out_dir}/pto-full-serving-raw-batch{batch_size}.json"
+    viewer_json = f"{out_dir}/pto-full-serving-viewer-batch{batch_size}.json"
+    common_python = ["env", "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda"]
+    return [
+        {
+            "kind": "pto_qwen_full_serving",
+            "command": shell_join(
+                [
+                    *common_python,
+                    ".venv/bin/python",
+                    "examples/cuda/qwen_decode_loop_runner.py",
+                    "--mode",
+                    "offline",
+                    "--run-resource-backed-smoke",
+                    "--resource-backed-prefill-prompt",
+                    "--resource-backed-workload",
+                    workload_id,
+                    "--resource-backed-decode-steps",
+                    str(decode_tokens),
+                    "--resource-backed-repeat-runs",
+                    "3",
+                    "--resource-backed-task-selection",
+                    "layer_prefix_with_logits",
+                    "--resource-backed-layer-count",
+                    "36",
+                    "--resource-backed-logits-check-policy",
+                    "final_step",
+                    "--resource-backed-logits-active-cols",
+                    "full",
+                    "--resource-backed-projection-active-cols",
+                    "full",
+                    "--output-json",
+                    runner_json,
+                ]
+            ),
+            "raw_artifact": runner_json,
+            "note": (
+                f"PTO target row for {model}, batch={batch_size}, "
+                f"prompt_tokens={prompt_tokens}, decode_tokens={decode_tokens}. "
+                "The runner artifact remains diagnostic until converted into "
+                "a full-serving raw JSON with model_equivalent_ready=true and "
+                "comparison_scope=model_equivalent_decode."
+            ),
+        },
+        {
+            "kind": "pto_viewer_import",
+            "command": shell_join(
+                [
+                    *common_python,
+                    ".venv/bin/python",
+                    ".agents/skills/cuda-backend-eval/scripts/"
+                    "pto_qwen_full_serving_viewer_import.py",
+                    raw_json,
+                    "--artifact-root",
+                    f"{out_dir}/",
+                    "--viewer-output",
+                    viewer_json,
+                ]
+            ),
+            "raw_artifact": raw_json,
+            "note": (
+                "Run only after the full-serving raw JSON records both MPK "
+                "and VDCores workload rows with token/logit agreement, "
+                "latency/throughput metrics, and model-equivalent comparison "
+                "scope."
+            ),
+        },
+    ]
+
+
 def vdcores_commands(
     *,
     model: str,

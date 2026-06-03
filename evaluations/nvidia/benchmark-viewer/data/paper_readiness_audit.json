@@ -276,6 +276,7 @@
       "missing_evidence_details": [
         {
           "id": "pto_full_serving_qwen3_8b",
+          "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
           "method_id": "pto_persistent_device",
           "serving_workload_ids": [
             "mpk_offline_decode",
@@ -592,7 +593,7 @@
           "source": "matrix_missing_evidence",
           "missing_evidence_id": "pto_full_serving_qwen3_8b",
           "paper_baseline_id": "",
-          "paper_baseline_run_id": "",
+          "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
           "method_id": "pto_persistent_device",
           "serving_workload_ids": [
             "mpk_offline_decode",

@@ -5220,6 +5220,10 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         for item in work_items
         if item["missing_evidence_id"] == "pto_full_serving_qwen3_8b"
     )
+    assert pto_item["serving_command_plan_selectors"] == [
+        "pto_persistent_device_qwen3_8b_full_serving:mpk_offline_decode",
+        "pto_persistent_device_qwen3_8b_full_serving:vdcores_offline_decode",
+    ]
     assert len(pto_item["action"]) < 400
     assert pto_item["evidence_summary"]
     assert any(
@@ -5357,8 +5361,31 @@ def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
     records = payload["serving_command_plans"]
 
     assert payload["metadata"]["model_tier"] == "primary"
-    assert len(records) == 36
+    assert len(records) == 46
     by_id = {record["id"]: record for record in records}
+    pto_mpk = by_id[
+        "pto_persistent_device_qwen3_8b_full_serving:"
+        "mpk_offline_decode:batch8"
+    ]
+    assert pto_mpk["paper_baseline_id"] == "pto_persistent_device"
+    assert pto_mpk["model"] == "Qwen/Qwen3-8B"
+    assert pto_mpk["prompt_tokens"] == 64
+    assert pto_mpk["decode_tokens"] == 1024
+    assert pto_mpk["batch_size"] == 8
+    assert any(
+        command["kind"] == "pto_qwen_full_serving"
+        and "qwen_decode_loop_runner.py" in command["command"]
+        and "--run-resource-backed-smoke" in command["command"]
+        and "--resource-backed-prefill-prompt" in command["command"]
+        and "--resource-backed-workload mpk_offline_decode" in command["command"]
+        and "--resource-backed-decode-steps 1024" in command["command"]
+        for command in pto_mpk["commands"]
+    )
+    assert any(
+        command["kind"] == "pto_viewer_import"
+        and "pto_qwen_full_serving_viewer_import.py" in command["command"]
+        for command in pto_mpk["commands"]
+    )
     vllm_mpk = by_id[
         "vllm_serving_and_throughput:mpk_offline_decode:batch16"
     ]
@@ -6178,11 +6205,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert (ROOT / path).is_file()
     command_plan_records = serving_command_plan["serving_command_plans"]
     assert serving_command_plan["metadata"]["model_tier"] == "primary"
-    assert len(command_plan_records) == 36
+    assert len(command_plan_records) == 46
     command_plan_run_ids = {
         item["paper_baseline_run_id"] for item in command_plan_records
     }
     assert {
+        "pto_persistent_device_qwen3_8b_full_serving",
         "mpk_qwen3_native_vs_persistent",
         "mpk_qwen3_native_token_bringup",
         "vdcores_qwen3_8b_decode_preflight",
@@ -6194,6 +6222,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         item["paper_baseline_id"] for item in command_plan_records
     }
     assert {
+        "pto_persistent_device",
         "mpk",
         "vdcores",
         "vllm",

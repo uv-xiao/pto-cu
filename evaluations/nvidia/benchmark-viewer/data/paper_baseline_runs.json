@@ -1,6 +1,67 @@
 {
   "paper_baseline_runs": [
     {
+      "id": "pto_persistent_device_qwen3_8b_full_serving",
+      "paper_baseline_id": "pto_persistent_device",
+      "paper_evaluation_id": "llm_serving_paper_baselines",
+      "title": "PTO Persistent-Device Qwen3-8B Full-Serving Target",
+      "status": "planned_not_run",
+      "hardware_targets": [
+        "A100",
+        "H200"
+      ],
+      "serving_workload_ids": [
+        "mpk_offline_decode",
+        "vdcores_offline_decode"
+      ],
+      "workload": {
+        "model": "Qwen/Qwen3-8B through examples/cuda/qwen_decode_loop_runner.py",
+        "input_policy": "Use each serving workload prompt policy and record actual tokenizer count in the raw artifact.",
+        "output_policy": "Deterministic greedy decode with model-equivalent prompt prefill, KV-cache state, and Hugging Face token/logit agreement before import.",
+        "batch_or_concurrency": "Offline batch ladder from the MPK and VDCores serving workload policies; current runner commands are handoff commands until the full-serving raw JSON records batch accounting."
+      },
+      "model_access": {
+        "requires_hf_token": false,
+        "public_models": [
+          "Qwen/Qwen3-8B"
+        ],
+        "why": "Qwen/Qwen3-8B is public; use cached safetensors and Hugging Face reference artifacts under tmp/ for repeatable comparison."
+      },
+      "setup_commands": [
+        "python3 -m venv --system-site-packages .venv",
+        "source .venv/bin/activate",
+        "pip install --no-build-isolation ."
+      ],
+      "run_commands": [
+        "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode offline --run-resource-backed-smoke --resource-backed-prefill-prompt --resource-backed-workload <serving-workload-id> --resource-backed-decode-steps <decode-tokens> --resource-backed-task-selection layer_prefix_with_logits --resource-backed-layer-count 36 --resource-backed-logits-check-policy final_step --resource-backed-logits-active-cols full --resource-backed-projection-active-cols full --output-json tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/<serving-workload-id>/pto-qwen-runner-batch<batch>.json",
+        "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/<serving-workload-id>/pto-full-serving-raw-batch<batch>.json --artifact-root tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/<serving-workload-id>/ --viewer-output tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/<serving-workload-id>/pto-full-serving-viewer-batch<batch>.json"
+      ],
+      "expected_artifacts": [
+        "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-qwen-runner-batch1.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-qwen-runner-batch1.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-raw-batch1.json",
+        "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-raw-batch1.json"
+      ],
+      "required_metrics": [
+        "correctness",
+        "token_match",
+        "model_equivalent_ready",
+        "comparison_scope",
+        "end_to_end_latency",
+        "time_to_first_token",
+        "inter_token_latency",
+        "throughput",
+        "model_and_prompt_shape",
+        "batch_or_concurrency_policy",
+        "raw_artifacts"
+      ],
+      "import_target": {
+        "viewer_file": "evaluations/nvidia/benchmark-viewer/data/results.json",
+        "result_kind": "pto_qwen_full_serving_capture",
+        "notes": "Do not import until both MPK and VDCores workload rows pass the strict PTO full-serving importer, including model_equivalent_ready=true and comparison_scope=model_equivalent_decode."
+      }
+    },
+    {
       "id": "mpk_qwen3_native_vs_persistent",
       "paper_baseline_id": "mpk",
       "paper_evaluation_id": "llm_serving_paper_baselines",

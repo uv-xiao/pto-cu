@@ -31,6 +31,9 @@ The generated paper-readiness queue currently has `4` active paper work items:
 
 - `paper_readiness_work_item_001`: implement and import full-serving PTO
   persistent-device Qwen/Qwen3-8B rows for MPK and VDCores policies.
+  Command-plan selectors:
+  `pto_persistent_device_qwen3_8b_full_serving:mpk_offline_decode`,
+  `pto_persistent_device_qwen3_8b_full_serving:vdcores_offline_decode`.
 - `paper_readiness_work_item_002`: run and import the VDCores full-serving
   Qwen/Qwen3-8B row after correctness is fixed for the shared-instruction path.
   Command-plan selector:

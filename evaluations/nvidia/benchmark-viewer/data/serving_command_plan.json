@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at_utc": "2026-06-02T03:06:41.217582+00:00",
-    "pto_commit": "c0262a0a",
+    "generated_at_utc": "2026-06-03T02:55:54.888873+00:00",
+    "pto_commit": "5bfc45a4",
     "artifact_root": "tmp/cuda-backend/paper-baselines/serving-runs",
     "model_tier": "primary",
     "source_files": [
@@ -10,6 +10,266 @@
     ]
   },
   "serving_command_plans": [
+    {
+      "id": "pto_persistent_device_qwen3_8b_full_serving:mpk_offline_decode:batch1",
+      "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
+      "paper_baseline_id": "pto_persistent_device",
+      "serving_workload_id": "mpk_offline_decode",
+      "model_tier": "primary",
+      "model": "Qwen/Qwen3-8B",
+      "batch_size": 1,
+      "prompt_tokens": 64,
+      "decode_tokens": 1024,
+      "traffic_mode": "offline batched inference without request-arrival variability",
+      "commands": [
+        {
+          "kind": "pto_qwen_full_serving",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode offline --run-resource-backed-smoke --resource-backed-prefill-prompt --resource-backed-workload mpk_offline_decode --resource-backed-decode-steps 1024 --resource-backed-repeat-runs 3 --resource-backed-task-selection layer_prefix_with_logits --resource-backed-layer-count 36 --resource-backed-logits-check-policy final_step --resource-backed-logits-active-cols full --resource-backed-projection-active-cols full --output-json tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-qwen-runner-batch1.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-qwen-runner-batch1.json",
+          "note": "PTO target row for Qwen/Qwen3-8B, batch=1, prompt_tokens=64, decode_tokens=1024. The runner artifact remains diagnostic until converted into a full-serving raw JSON with model_equivalent_ready=true and comparison_scope=model_equivalent_decode."
+        },
+        {
+          "kind": "pto_viewer_import",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-raw-batch1.json --artifact-root tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/ --viewer-output tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-viewer-batch1.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-raw-batch1.json",
+          "note": "Run only after the full-serving raw JSON records both MPK and VDCores workload rows with token/logit agreement, latency/throughput metrics, and model-equivalent comparison scope."
+        }
+      ]
+    },
+    {
+      "id": "pto_persistent_device_qwen3_8b_full_serving:mpk_offline_decode:batch2",
+      "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
+      "paper_baseline_id": "pto_persistent_device",
+      "serving_workload_id": "mpk_offline_decode",
+      "model_tier": "primary",
+      "model": "Qwen/Qwen3-8B",
+      "batch_size": 2,
+      "prompt_tokens": 64,
+      "decode_tokens": 1024,
+      "traffic_mode": "offline batched inference without request-arrival variability",
+      "commands": [
+        {
+          "kind": "pto_qwen_full_serving",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode offline --run-resource-backed-smoke --resource-backed-prefill-prompt --resource-backed-workload mpk_offline_decode --resource-backed-decode-steps 1024 --resource-backed-repeat-runs 3 --resource-backed-task-selection layer_prefix_with_logits --resource-backed-layer-count 36 --resource-backed-logits-check-policy final_step --resource-backed-logits-active-cols full --resource-backed-projection-active-cols full --output-json tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-qwen-runner-batch2.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-qwen-runner-batch2.json",
+          "note": "PTO target row for Qwen/Qwen3-8B, batch=2, prompt_tokens=64, decode_tokens=1024. The runner artifact remains diagnostic until converted into a full-serving raw JSON with model_equivalent_ready=true and comparison_scope=model_equivalent_decode."
+        },
+        {
+          "kind": "pto_viewer_import",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-raw-batch2.json --artifact-root tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/ --viewer-output tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-viewer-batch2.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-raw-batch2.json",
+          "note": "Run only after the full-serving raw JSON records both MPK and VDCores workload rows with token/logit agreement, latency/throughput metrics, and model-equivalent comparison scope."
+        }
+      ]
+    },
+    {
+      "id": "pto_persistent_device_qwen3_8b_full_serving:mpk_offline_decode:batch4",
+      "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
+      "paper_baseline_id": "pto_persistent_device",
+      "serving_workload_id": "mpk_offline_decode",
+      "model_tier": "primary",
+      "model": "Qwen/Qwen3-8B",
+      "batch_size": 4,
+      "prompt_tokens": 64,
+      "decode_tokens": 1024,
+      "traffic_mode": "offline batched inference without request-arrival variability",
+      "commands": [
+        {
+          "kind": "pto_qwen_full_serving",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode offline --run-resource-backed-smoke --resource-backed-prefill-prompt --resource-backed-workload mpk_offline_decode --resource-backed-decode-steps 1024 --resource-backed-repeat-runs 3 --resource-backed-task-selection layer_prefix_with_logits --resource-backed-layer-count 36 --resource-backed-logits-check-policy final_step --resource-backed-logits-active-cols full --resource-backed-projection-active-cols full --output-json tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-qwen-runner-batch4.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-qwen-runner-batch4.json",
+          "note": "PTO target row for Qwen/Qwen3-8B, batch=4, prompt_tokens=64, decode_tokens=1024. The runner artifact remains diagnostic until converted into a full-serving raw JSON with model_equivalent_ready=true and comparison_scope=model_equivalent_decode."
+        },
+        {
+          "kind": "pto_viewer_import",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-raw-batch4.json --artifact-root tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/ --viewer-output tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-viewer-batch4.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-raw-batch4.json",
+          "note": "Run only after the full-serving raw JSON records both MPK and VDCores workload rows with token/logit agreement, latency/throughput metrics, and model-equivalent comparison scope."
+        }
+      ]
+    },
+    {
+      "id": "pto_persistent_device_qwen3_8b_full_serving:mpk_offline_decode:batch8",
+      "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
+      "paper_baseline_id": "pto_persistent_device",
+      "serving_workload_id": "mpk_offline_decode",
+      "model_tier": "primary",
+      "model": "Qwen/Qwen3-8B",
+      "batch_size": 8,
+      "prompt_tokens": 64,
+      "decode_tokens": 1024,
+      "traffic_mode": "offline batched inference without request-arrival variability",
+      "commands": [
+        {
+          "kind": "pto_qwen_full_serving",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode offline --run-resource-backed-smoke --resource-backed-prefill-prompt --resource-backed-workload mpk_offline_decode --resource-backed-decode-steps 1024 --resource-backed-repeat-runs 3 --resource-backed-task-selection layer_prefix_with_logits --resource-backed-layer-count 36 --resource-backed-logits-check-policy final_step --resource-backed-logits-active-cols full --resource-backed-projection-active-cols full --output-json tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-qwen-runner-batch8.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-qwen-runner-batch8.json",
+          "note": "PTO target row for Qwen/Qwen3-8B, batch=8, prompt_tokens=64, decode_tokens=1024. The runner artifact remains diagnostic until converted into a full-serving raw JSON with model_equivalent_ready=true and comparison_scope=model_equivalent_decode."
+        },
+        {
+          "kind": "pto_viewer_import",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-raw-batch8.json --artifact-root tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/ --viewer-output tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-viewer-batch8.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-raw-batch8.json",
+          "note": "Run only after the full-serving raw JSON records both MPK and VDCores workload rows with token/logit agreement, latency/throughput metrics, and model-equivalent comparison scope."
+        }
+      ]
+    },
+    {
+      "id": "pto_persistent_device_qwen3_8b_full_serving:mpk_offline_decode:batch16",
+      "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
+      "paper_baseline_id": "pto_persistent_device",
+      "serving_workload_id": "mpk_offline_decode",
+      "model_tier": "primary",
+      "model": "Qwen/Qwen3-8B",
+      "batch_size": 16,
+      "prompt_tokens": 64,
+      "decode_tokens": 1024,
+      "traffic_mode": "offline batched inference without request-arrival variability",
+      "commands": [
+        {
+          "kind": "pto_qwen_full_serving",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode offline --run-resource-backed-smoke --resource-backed-prefill-prompt --resource-backed-workload mpk_offline_decode --resource-backed-decode-steps 1024 --resource-backed-repeat-runs 3 --resource-backed-task-selection layer_prefix_with_logits --resource-backed-layer-count 36 --resource-backed-logits-check-policy final_step --resource-backed-logits-active-cols full --resource-backed-projection-active-cols full --output-json tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-qwen-runner-batch16.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-qwen-runner-batch16.json",
+          "note": "PTO target row for Qwen/Qwen3-8B, batch=16, prompt_tokens=64, decode_tokens=1024. The runner artifact remains diagnostic until converted into a full-serving raw JSON with model_equivalent_ready=true and comparison_scope=model_equivalent_decode."
+        },
+        {
+          "kind": "pto_viewer_import",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-raw-batch16.json --artifact-root tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/ --viewer-output tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-viewer-batch16.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-raw-batch16.json",
+          "note": "Run only after the full-serving raw JSON records both MPK and VDCores workload rows with token/logit agreement, latency/throughput metrics, and model-equivalent comparison scope."
+        }
+      ]
+    },
+    {
+      "id": "pto_persistent_device_qwen3_8b_full_serving:vdcores_offline_decode:batch1",
+      "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
+      "paper_baseline_id": "pto_persistent_device",
+      "serving_workload_id": "vdcores_offline_decode",
+      "model_tier": "primary",
+      "model": "Qwen/Qwen3-8B",
+      "batch_size": 1,
+      "prompt_tokens": 128,
+      "decode_tokens": 64,
+      "traffic_mode": "offline fixed batch",
+      "commands": [
+        {
+          "kind": "pto_qwen_full_serving",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode offline --run-resource-backed-smoke --resource-backed-prefill-prompt --resource-backed-workload vdcores_offline_decode --resource-backed-decode-steps 64 --resource-backed-repeat-runs 3 --resource-backed-task-selection layer_prefix_with_logits --resource-backed-layer-count 36 --resource-backed-logits-check-policy final_step --resource-backed-logits-active-cols full --resource-backed-projection-active-cols full --output-json tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-qwen-runner-batch1.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-qwen-runner-batch1.json",
+          "note": "PTO target row for Qwen/Qwen3-8B, batch=1, prompt_tokens=128, decode_tokens=64. The runner artifact remains diagnostic until converted into a full-serving raw JSON with model_equivalent_ready=true and comparison_scope=model_equivalent_decode."
+        },
+        {
+          "kind": "pto_viewer_import",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-raw-batch1.json --artifact-root tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/ --viewer-output tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-viewer-batch1.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-raw-batch1.json",
+          "note": "Run only after the full-serving raw JSON records both MPK and VDCores workload rows with token/logit agreement, latency/throughput metrics, and model-equivalent comparison scope."
+        }
+      ]
+    },
+    {
+      "id": "pto_persistent_device_qwen3_8b_full_serving:vdcores_offline_decode:batch2",
+      "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
+      "paper_baseline_id": "pto_persistent_device",
+      "serving_workload_id": "vdcores_offline_decode",
+      "model_tier": "primary",
+      "model": "Qwen/Qwen3-8B",
+      "batch_size": 2,
+      "prompt_tokens": 128,
+      "decode_tokens": 64,
+      "traffic_mode": "offline fixed batch",
+      "commands": [
+        {
+          "kind": "pto_qwen_full_serving",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode offline --run-resource-backed-smoke --resource-backed-prefill-prompt --resource-backed-workload vdcores_offline_decode --resource-backed-decode-steps 64 --resource-backed-repeat-runs 3 --resource-backed-task-selection layer_prefix_with_logits --resource-backed-layer-count 36 --resource-backed-logits-check-policy final_step --resource-backed-logits-active-cols full --resource-backed-projection-active-cols full --output-json tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-qwen-runner-batch2.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-qwen-runner-batch2.json",
+          "note": "PTO target row for Qwen/Qwen3-8B, batch=2, prompt_tokens=128, decode_tokens=64. The runner artifact remains diagnostic until converted into a full-serving raw JSON with model_equivalent_ready=true and comparison_scope=model_equivalent_decode."
+        },
+        {
+          "kind": "pto_viewer_import",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-raw-batch2.json --artifact-root tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/ --viewer-output tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-viewer-batch2.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-raw-batch2.json",
+          "note": "Run only after the full-serving raw JSON records both MPK and VDCores workload rows with token/logit agreement, latency/throughput metrics, and model-equivalent comparison scope."
+        }
+      ]
+    },
+    {
+      "id": "pto_persistent_device_qwen3_8b_full_serving:vdcores_offline_decode:batch4",
+      "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
+      "paper_baseline_id": "pto_persistent_device",
+      "serving_workload_id": "vdcores_offline_decode",
+      "model_tier": "primary",
+      "model": "Qwen/Qwen3-8B",
+      "batch_size": 4,
+      "prompt_tokens": 128,
+      "decode_tokens": 64,
+      "traffic_mode": "offline fixed batch",
+      "commands": [
+        {
+          "kind": "pto_qwen_full_serving",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode offline --run-resource-backed-smoke --resource-backed-prefill-prompt --resource-backed-workload vdcores_offline_decode --resource-backed-decode-steps 64 --resource-backed-repeat-runs 3 --resource-backed-task-selection layer_prefix_with_logits --resource-backed-layer-count 36 --resource-backed-logits-check-policy final_step --resource-backed-logits-active-cols full --resource-backed-projection-active-cols full --output-json tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-qwen-runner-batch4.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-qwen-runner-batch4.json",
+          "note": "PTO target row for Qwen/Qwen3-8B, batch=4, prompt_tokens=128, decode_tokens=64. The runner artifact remains diagnostic until converted into a full-serving raw JSON with model_equivalent_ready=true and comparison_scope=model_equivalent_decode."
+        },
+        {
+          "kind": "pto_viewer_import",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-raw-batch4.json --artifact-root tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/ --viewer-output tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-viewer-batch4.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-raw-batch4.json",
+          "note": "Run only after the full-serving raw JSON records both MPK and VDCores workload rows with token/logit agreement, latency/throughput metrics, and model-equivalent comparison scope."
+        }
+      ]
+    },
+    {
+      "id": "pto_persistent_device_qwen3_8b_full_serving:vdcores_offline_decode:batch8",
+      "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
+      "paper_baseline_id": "pto_persistent_device",
+      "serving_workload_id": "vdcores_offline_decode",
+      "model_tier": "primary",
+      "model": "Qwen/Qwen3-8B",
+      "batch_size": 8,
+      "prompt_tokens": 128,
+      "decode_tokens": 64,
+      "traffic_mode": "offline fixed batch",
+      "commands": [
+        {
+          "kind": "pto_qwen_full_serving",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode offline --run-resource-backed-smoke --resource-backed-prefill-prompt --resource-backed-workload vdcores_offline_decode --resource-backed-decode-steps 64 --resource-backed-repeat-runs 3 --resource-backed-task-selection layer_prefix_with_logits --resource-backed-layer-count 36 --resource-backed-logits-check-policy final_step --resource-backed-logits-active-cols full --resource-backed-projection-active-cols full --output-json tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-qwen-runner-batch8.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-qwen-runner-batch8.json",
+          "note": "PTO target row for Qwen/Qwen3-8B, batch=8, prompt_tokens=128, decode_tokens=64. The runner artifact remains diagnostic until converted into a full-serving raw JSON with model_equivalent_ready=true and comparison_scope=model_equivalent_decode."
+        },
+        {
+          "kind": "pto_viewer_import",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-raw-batch8.json --artifact-root tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/ --viewer-output tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-viewer-batch8.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-raw-batch8.json",
+          "note": "Run only after the full-serving raw JSON records both MPK and VDCores workload rows with token/logit agreement, latency/throughput metrics, and model-equivalent comparison scope."
+        }
+      ]
+    },
+    {
+      "id": "pto_persistent_device_qwen3_8b_full_serving:vdcores_offline_decode:batch16",
+      "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
+      "paper_baseline_id": "pto_persistent_device",
+      "serving_workload_id": "vdcores_offline_decode",
+      "model_tier": "primary",
+      "model": "Qwen/Qwen3-8B",
+      "batch_size": 16,
+      "prompt_tokens": 128,
+      "decode_tokens": 64,
+      "traffic_mode": "offline fixed batch",
+      "commands": [
+        {
+          "kind": "pto_qwen_full_serving",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python examples/cuda/qwen_decode_loop_runner.py --mode offline --run-resource-backed-smoke --resource-backed-prefill-prompt --resource-backed-workload vdcores_offline_decode --resource-backed-decode-steps 64 --resource-backed-repeat-runs 3 --resource-backed-task-selection layer_prefix_with_logits --resource-backed-layer-count 36 --resource-backed-logits-check-policy final_step --resource-backed-logits-active-cols full --resource-backed-projection-active-cols full --output-json tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-qwen-runner-batch16.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-qwen-runner-batch16.json",
+          "note": "PTO target row for Qwen/Qwen3-8B, batch=16, prompt_tokens=128, decode_tokens=64. The runner artifact remains diagnostic until converted into a full-serving raw JSON with model_equivalent_ready=true and comparison_scope=model_equivalent_decode."
+        },
+        {
+          "kind": "pto_viewer_import",
+          "command": "env PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-raw-batch16.json --artifact-root tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/ --viewer-output tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-viewer-batch16.json",
+          "raw_artifact": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-raw-batch16.json",
+          "note": "Run only after the full-serving raw JSON records both MPK and VDCores workload rows with token/logit agreement, latency/throughput metrics, and model-equivalent comparison scope."
+        }
+      ]
+    },
     {
       "id": "mpk_qwen3_native_vs_persistent:mpk_offline_decode:batch1",
       "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",

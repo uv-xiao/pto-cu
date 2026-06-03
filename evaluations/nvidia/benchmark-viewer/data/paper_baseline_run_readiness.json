@@ -11,6 +11,95 @@
   },
   "paper_baseline_run_readiness": [
     {
+      "id": "pto_persistent_device_qwen3_8b_full_serving_readiness",
+      "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
+      "paper_baseline_id": "pto_persistent_device",
+      "title": "PTO Persistent-Device Qwen3-8B Full-Serving Target Readiness",
+      "latest_status": "fail",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-current-working/",
+      "checks": [
+        {
+          "kind": "source_path",
+          "path": "tmp/cuda-backend/pto-cu-source-reference",
+          "status": "pass",
+          "why": "Baseline source checkout used by run_commands."
+        },
+        {
+          "kind": "run_command_contract",
+          "status": "pass",
+          "why": "Run readiness must be tied to explicit reproduction commands."
+        },
+        {
+          "kind": "path_exists",
+          "path": "examples/cuda/qwen_decode_loop_runner.py",
+          "status": "fail",
+          "why": "Python entrypoint referenced by run_commands."
+        },
+        {
+          "kind": "path_exists",
+          "path": ".agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py",
+          "status": "pass",
+          "why": "Python entrypoint referenced by run_commands."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-qwen-runner-batch1.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-qwen-runner-batch1.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/mpk_offline_decode/pto-full-serving-raw-batch1.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "expected_artifact_path",
+          "path": "tmp/cuda-backend/paper-baselines/serving-runs/pto_persistent_device/vdcores_offline_decode/pto-full-serving-raw-batch1.json",
+          "status": "pass",
+          "why": "Expected artifacts must remain under tmp/."
+        },
+        {
+          "kind": "required_metric",
+          "metric": "correctness",
+          "status": "pass",
+          "why": "Paper-baseline imports must include correctness and raw artifact evidence."
+        },
+        {
+          "kind": "required_metric",
+          "metric": "raw_artifacts",
+          "status": "pass",
+          "why": "Paper-baseline imports must include correctness and raw artifact evidence."
+        },
+        {
+          "kind": "baseline_probe",
+          "name": "pto_persistent_device",
+          "status": "partial",
+          "why": "Each long paper-baseline run should reference a source and dependency readiness probe.",
+          "blocking_gaps": [
+            "No paper-baseline readiness probe exists for pto_persistent_device."
+          ]
+        },
+        {
+          "kind": "environment",
+          "name": "public_model_access",
+          "status": "pass",
+          "why": "Qwen/Qwen3-8B is public; use cached safetensors and Hugging Face reference artifacts under tmp/ for repeatable comparison."
+        }
+      ],
+      "blocking_gaps": [
+        "path_exists check failed for examples/cuda/qwen_decode_loop_runner.py.",
+        "Readiness probe pto_persistent_device is partial: No paper-baseline readiness probe exists for pto_persistent_device.."
+      ],
+      "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
+    },
+    {
       "id": "mpk_qwen3_native_vs_persistent_readiness",
       "paper_baseline_run_id": "mpk_qwen3_native_vs_persistent",
       "paper_baseline_id": "mpk",

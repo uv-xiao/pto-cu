@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from paper_serving_command_plan_impl.commands_kernel import mpk_commands
+from paper_serving_command_plan_impl.commands_kernel import pto_persistent_device_commands
 from paper_serving_command_plan_impl.commands_kernel import thunderkittens_commands
 from paper_serving_command_plan_impl.commands_kernel import vdcores_commands
 from paper_serving_command_plan_impl.commands_serving import sglang_commands
@@ -21,6 +22,7 @@ from paper_serving_command_plan_impl.vcs import git_commit
 
 
 COMMAND_BUILDERS = {
+    "pto_persistent_device": pto_persistent_device_commands,
     "mpk": mpk_commands,
     "vdcores": vdcores_commands,
     "vllm": vllm_commands,

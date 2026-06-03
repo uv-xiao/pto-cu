@@ -167,6 +167,13 @@ Import real PTO Qwen full-serving raw rows only after both MPK-policy and
 VDCores-policy serving runs pass correctness and include latency/throughput
 metrics:
 
+The serving command plan includes a PTO target-method run,
+`pto_persistent_device_qwen3_8b_full_serving`, with MPK-policy and
+VDCores-policy selectors. Those commands run the resource-backed
+`qwen_decode_loop_runner.py` diagnostic first, then run
+`pto_qwen_full_serving_viewer_import.py` only after a full-serving raw JSON
+captures model-equivalent decode correctness and latency/throughput metrics.
+
 Each raw row must include `correctness_details` with
 `scope=full_qwen_numerical_correctness`, `model_id=Qwen/Qwen3-8B`,
 `status=pass`, `token_match=true`, `model_equivalent_ready=true`,

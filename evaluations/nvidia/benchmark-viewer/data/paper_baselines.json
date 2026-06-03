@@ -1,6 +1,22 @@
 {
   "paper_baselines": [
     {
+      "id": "pto_persistent_device",
+      "name": "PTO persistent_device",
+      "paper_role": "Standalone pto-cu target method for the Qwen full-serving MPK and VDCores policy rows.",
+      "status": "source_cloned_for_survey",
+      "source": {
+        "upstream_url": "standalone pto-cu repository",
+        "local_tmp_path": "tmp/cuda-backend/pto-cu-source-reference",
+        "commit": "faa512eacc9904d58771380b1f5e814cf889ee14"
+      },
+      "paper_baselines_to_reproduce": [
+        "MPK-policy Qwen/Qwen3-8B persistent-device serving row",
+        "VDCores-policy Qwen/Qwen3-8B persistent-device serving row"
+      ],
+      "next_action": "Close model-equivalent Qwen prompt-prefill and Hugging Face token/logit agreement, then import strict full-serving PTO rows for both serving policies."
+    },
+    {
       "id": "mpk",
       "name": "Mirage Persistent Kernel",
       "paper_role": "Required mega-kernel baseline and comparison system for the persistent-device runtime.",
