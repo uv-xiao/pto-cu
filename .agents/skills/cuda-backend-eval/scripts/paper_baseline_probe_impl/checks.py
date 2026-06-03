@@ -9,11 +9,24 @@ from typing import Any
 
 from .commands import run_command
 from .errors import fail
+from .paths import ROOT
+
+
+REPO_OWNED_CHECK_PATH_PREFIXES = (
+    ".agents/",
+    "examples/",
+)
+
+
+def check_path(source_root: Path, relpath: str) -> Path:
+    if relpath.startswith(REPO_OWNED_CHECK_PATH_PREFIXES):
+        return ROOT / relpath
+    return source_root / relpath
 
 
 def check_path_exists(source_root: Path, check: dict[str, Any]) -> dict[str, Any]:
     relpath = str(check["path"])
-    path = source_root / relpath
+    path = check_path(source_root, relpath)
     return {
         "kind": "path_exists",
         "path": relpath,
@@ -24,7 +37,7 @@ def check_path_exists(source_root: Path, check: dict[str, Any]) -> dict[str, Any
 
 def check_py_compile(source_root: Path, check: dict[str, Any]) -> dict[str, Any]:
     relpath = str(check["path"])
-    path = source_root / relpath
+    path = check_path(source_root, relpath)
     if not path.is_file():
         return {
             "kind": "py_compile",

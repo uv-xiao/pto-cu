@@ -5232,6 +5232,60 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     )
 
 
+def test_pto_run_readiness_uses_repo_owned_entrypoints():
+    readiness = json.loads(
+        (VIEWER_DATA / "paper_baseline_run_readiness.json").read_text(
+            encoding="utf-8"
+        )
+    )["paper_baseline_run_readiness"]
+    by_run = {item["paper_baseline_run_id"]: item for item in readiness}
+    pto_readiness = by_run["pto_persistent_device_qwen3_8b_full_serving"]
+    pto_path_checks = {
+        check["path"]: check["status"]
+        for check in pto_readiness["checks"]
+        if check["kind"] == "path_exists"
+    }
+
+    assert pto_path_checks["examples/cuda/qwen_decode_loop_runner.py"] == "pass"
+    assert (
+        pto_path_checks[
+            ".agents/skills/cuda-backend-eval/scripts/"
+            "pto_qwen_full_serving_viewer_import.py"
+        ]
+        == "pass"
+    )
+    assert not any(
+        "examples/cuda/qwen_decode_loop_runner.py" in gap
+        for gap in pto_readiness["blocking_gaps"]
+    )
+
+
+def test_pto_paper_baseline_probe_covers_repo_owned_entrypoints():
+    probes = json.loads(
+        (VIEWER_DATA / "paper_baseline_probes.json").read_text(
+            encoding="utf-8"
+        )
+    )["paper_baseline_probes"]
+    by_baseline = {item["paper_baseline_id"]: item for item in probes}
+    pto_probe = by_baseline["pto_persistent_device"]
+    pto_paths = {
+        check["path"]
+        for check in pto_probe["checks"]
+        if check["kind"] in {"path_exists", "py_compile"}
+    }
+
+    assert pto_probe["latest_status"] == "pass"
+    assert {
+        "examples/cuda/qwen_decode_loop_runner.py",
+        ".agents/skills/cuda-backend-eval/scripts/"
+        "pto_qwen_full_serving_viewer_import.py",
+    } <= pto_paths
+    assert {
+        status["gpu"]: status["status"]
+        for status in pto_probe["latest_machine_status"]
+    } == {"A100": "pass", "H200": "pass"}
+
+
 def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     output_path = tmp_path / "goal-progress.json"
     result = subprocess.run(
@@ -5884,6 +5938,7 @@ def test_benchmark_viewer_has_json_backed_review_data():
         for item in paper_baseline_runs["paper_baseline_runs"]
     }
     assert {
+        "pto_persistent_device",
         "mpk",
         "vdcores",
         "vllm",
@@ -6045,6 +6100,10 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert probe_root.is_dir()
         assert any(path.suffix == ".json" for path in probe_root.iterdir())
         expected_probe_roots = {
+            "pto_persistent_device": (
+                "tmp/cuda-backend/paper-baselines/probes/"
+                "pto-persistent-device-a100-h200-3755feab/"
+            ),
             "vllm": (
                 "tmp/cuda-backend/paper-baselines/probes/"
                 "vllm-a100-h200-env-27fa5aa3/"
@@ -6299,6 +6358,26 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "latest_status"
     ] == "pass"
     assert readiness_by_run["sglang_serving_and_offline"]["blocking_gaps"] == []
+    pto_readiness = readiness_by_run[
+        "pto_persistent_device_qwen3_8b_full_serving"
+    ]
+    pto_path_checks = {
+        check["path"]: check["status"]
+        for check in pto_readiness["checks"]
+        if check["kind"] == "path_exists"
+    }
+    assert pto_path_checks["examples/cuda/qwen_decode_loop_runner.py"] == "pass"
+    assert (
+        pto_path_checks[
+            ".agents/skills/cuda-backend-eval/scripts/"
+            "pto_qwen_full_serving_viewer_import.py"
+        ]
+        == "pass"
+    )
+    assert not any(
+        "examples/cuda/qwen_decode_loop_runner.py" in gap
+        for gap in pto_readiness["blocking_gaps"]
+    )
 
     matrix_ids = {
         item["id"] for item in paper_evaluation["paper_evaluation_matrix"]

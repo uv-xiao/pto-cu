@@ -15,7 +15,7 @@
       "paper_baseline_run_id": "pto_persistent_device_qwen3_8b_full_serving",
       "paper_baseline_id": "pto_persistent_device",
       "title": "PTO Persistent-Device Qwen3-8B Full-Serving Target Readiness",
-      "latest_status": "fail",
+      "latest_status": "pass",
       "latest_artifact_root": "tmp/cuda-backend/paper-baselines/run-readiness/run-readiness-current-working/",
       "checks": [
         {
@@ -32,7 +32,7 @@
         {
           "kind": "path_exists",
           "path": "examples/cuda/qwen_decode_loop_runner.py",
-          "status": "fail",
+          "status": "pass",
           "why": "Python entrypoint referenced by run_commands."
         },
         {
@@ -79,12 +79,10 @@
         },
         {
           "kind": "baseline_probe",
-          "name": "pto_persistent_device",
-          "status": "partial",
-          "why": "Each long paper-baseline run should reference a source and dependency readiness probe.",
-          "blocking_gaps": [
-            "No paper-baseline readiness probe exists for pto_persistent_device."
-          ]
+          "name": "pto_persistent_device_source_entrypoints",
+          "status": "pass",
+          "why": "Latest committed source/dependency probe status for this baseline.",
+          "blocking_gaps": []
         },
         {
           "kind": "environment",
@@ -93,10 +91,7 @@
           "why": "Qwen/Qwen3-8B is public; use cached safetensors and Hugging Face reference artifacts under tmp/ for repeatable comparison."
         }
       ],
-      "blocking_gaps": [
-        "path_exists check failed for examples/cuda/qwen_decode_loop_runner.py.",
-        "Readiness probe pto_persistent_device is partial: No paper-baseline readiness probe exists for pto_persistent_device.."
-      ],
+      "blocking_gaps": [],
       "next_action": "Resolve blocking gaps, execute the run_commands, then import measured raw JSON through paper_baseline_results_update.py."
     },
     {

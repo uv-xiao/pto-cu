@@ -1,6 +1,50 @@
 {
   "paper_baseline_probes": [
     {
+      "id": "pto_persistent_device_source_entrypoints",
+      "paper_baseline_id": "pto_persistent_device",
+      "title": "PTO Persistent-Device Source Entrypoints",
+      "latest_status": "pass",
+      "latest_artifact_root": "tmp/cuda-backend/paper-baselines/probes/pto-persistent-device-a100-h200-3755feab/",
+      "checks": [
+        {
+          "kind": "path_exists",
+          "path": "examples/cuda/qwen_decode_loop_runner.py",
+          "why": "Repo-owned PTO Qwen diagnostic and full-serving handoff runner."
+        },
+        {
+          "kind": "py_compile",
+          "path": "examples/cuda/qwen_decode_loop_runner.py",
+          "why": "The PTO Qwen runner must parse before A100/H200 full-serving captures."
+        },
+        {
+          "kind": "path_exists",
+          "path": ".agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py",
+          "why": "Strict importer for model-equivalent PTO full-serving raw rows."
+        },
+        {
+          "kind": "py_compile",
+          "path": ".agents/skills/cuda-backend-eval/scripts/pto_qwen_full_serving_viewer_import.py",
+          "why": "The PTO full-serving importer must parse before paper-row promotion."
+        }
+      ],
+      "next_action": "Close Qwen model-equivalent correctness, run the generated PTO serving command selectors, then import measured rows.",
+      "latest_machine_status": [
+        {
+          "gpu": "A100",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/pto-persistent-device-a100-h200-3755feab/a100-probe.json",
+          "blocking_gaps": []
+        },
+        {
+          "gpu": "H200",
+          "status": "pass",
+          "artifact": "tmp/cuda-backend/paper-baselines/probes/pto-persistent-device-a100-h200-3755feab/h200-probe.json",
+          "blocking_gaps": []
+        }
+      ]
+    },
+    {
       "id": "mpk_source_entrypoints",
       "paper_baseline_id": "mpk",
       "title": "MPK Source Entrypoints",

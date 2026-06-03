@@ -8,6 +8,12 @@ from typing import Any
 from .paths import ROOT
 
 
+REPO_OWNED_ENTRYPOINT_PREFIXES = (
+    ".agents/",
+    "examples/",
+)
+
+
 def python_entrypoints(command: str) -> list[str]:
     try:
         tokens = shlex.split(command)
@@ -35,11 +41,9 @@ def check_entrypoints(run: dict[str, Any], source_root: Path) -> list[dict[str, 
             if entrypoint in seen:
                 continue
             seen.add(entrypoint)
-            path = (
-                ROOT / entrypoint
-                if entrypoint.startswith(".agents/")
-                else source_root / entrypoint
-            )
+            path = source_root / entrypoint
+            if entrypoint.startswith(REPO_OWNED_ENTRYPOINT_PREFIXES):
+                path = ROOT / entrypoint
             checks.append(
                 {
                     "kind": "path_exists",

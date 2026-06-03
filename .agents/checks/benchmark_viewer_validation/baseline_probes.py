@@ -116,9 +116,15 @@ def validate_paper_baseline_probes(
                 fail(f"{owner} missing ThunderKittens modules: {missing}")
         if baseline_id in {"mpk", "vdcores"} and "transformers" not in modules:
             fail(f"{owner} missing Transformers module probe")
-    required_baselines = {"mpk", "vdcores", "vllm", "sglang", "thunderkittens"}
+    required_baselines = {
+        "pto_persistent_device",
+        "mpk",
+        "vdcores",
+        "vllm",
+        "sglang",
+        "thunderkittens",
+    }
     if not required_baselines <= covered_baselines:
         missing = sorted(required_baselines - covered_baselines)
         fail(f"paper baseline probes missing baseline coverage: {missing}")
-
 
