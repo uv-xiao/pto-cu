@@ -32,6 +32,11 @@ that made the down-projection residual read integer token storage as floats.
 The fixed launch packet binds the embedding activation for layer 0, and the
 post-fix one-layer A100 artifact reports no row-0 non-finite activations, full
 finite logits, populated top-k, and a passing diagnostic logits reference.
+The same resource-backed MPK path now scales through eight decoder layers with
+full projection and logits windows: 59 tasks complete with zero scheduler
+errors, no row-0 non-finite activations, full finite logits, populated top-k,
+and a passing diagnostic logits reference. This extends kernel/launch fidelity
+evidence but remains prefix evidence, not full-serving correctness.
 
 The generated-token feedback path now uses one prompt-ring contract across
 host feedback, device logits feedback, and embedding lookup. Earlier
@@ -81,6 +86,12 @@ Recent raw A100 evidence stays under `tmp/`:
   artifact `qwen-layer1-after-mlp-residual-fix.json` has no row-0 non-finite
   activations, full finite logits, row-0 top-k, and a passing diagnostic
   logits reference.
+  The same directory now includes `qwen-layer2-after-mlp-residual-fix.json`,
+  `qwen-layer4-after-mlp-residual-fix.json`, and
+  `qwen-layer8-after-mlp-residual-fix.json`; the eight-layer artifact reports
+  59/59 completed tasks, zero scheduler errors, no row-0 non-finite
+  activations, full finite logits, populated top-k, and
+  `diagnostic_reference.status=pass`.
 - `tmp/cuda-backend/qwen-prefill-readout-full-projection-mpk-2026-06-03/`
   records no JSON artifact; the local A100 full 36-layer prompt-prefill
   attempt with full projection and logits columns was stopped after saturating
@@ -100,8 +111,9 @@ Close this gap only after PTO rows for both `mpk_offline_decode` and
 
 - Continue replacing diagnostic scalar task-body math with model-correct Qwen
   kernels.
-- Re-run full-prefix MPK-policy execution after the MLP residual binding fix
-  to verify whether later layers now remain finite through final norm/logits.
+- Make full-prefix MPK-policy execution practical after the MLP residual
+  binding fix. The current eight-layer prefix passes, while the 36-layer
+  bounded local attempt still exceeded the 180-second window.
 - Extend cached attention-output projection evidence from first-layer smoke to
   all selected layers and full logits when runtime is practical.
 - Re-run the Hugging Face comparison after each kernel-fidelity fix.
