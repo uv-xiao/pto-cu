@@ -25,6 +25,7 @@ from .paper_readiness import (
     validate_paper_readiness_audit,
     validate_paper_readiness_work_queue,
 )
+from .plan_history import validate_plan_history
 from .persistent_scheduler_coverage import (
     validate_persistent_scheduler_coverage,
 )
@@ -69,6 +70,7 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         root, "paper_readiness_work_queue.json"
     )
     goal_progress = load_json(root, "goal_progress.json")
+    plan_history = load_json(root, "plan_history.json")
     capture_imports = load_json(root, "capture_imports.json")
     results = load_json(root, "results.json")
     benchmark_ids = validate_benchmarks(benchmarks, root)
@@ -174,6 +176,7 @@ def validate_viewer_data(root: Path = ROOT) -> None:
         matrix=paper_evaluation_matrix,
         baselines=paper_baselines,
     )
+    validate_plan_history(plan_history)
     validate_serving_workload_run_refs(
         serving_workloads,
         {

@@ -1,4 +1,4 @@
-import { metric, table } from "./dom.js";
+import { fieldList, metric, table, text } from "./dom.js";
 
 export function renderSnapshot(state) {
   const snapshot = state.results.snapshot;
@@ -10,6 +10,33 @@ export function renderSnapshot(state) {
     metric("Tensor tile", snapshot.tensor_tile),
     metric("GPU targets", snapshot.gpu_targets.join(", ")),
   );
+}
+
+export function renderPlanHistory(state) {
+  const root = document.getElementById("plan-history");
+  const history = state.planHistory;
+  const recentFocus = history.work_focus[0];
+  const section = document.createElement("section");
+  section.className = "item";
+  const title = document.createElement("h3");
+  title.append(text("Recent Work Focus"));
+  section.append(
+    title,
+    fieldList([
+      ["Current focus", history.summary.current_focus],
+      ["Recent pattern", history.summary.recent_pattern],
+      ["Reflection", history.summary.reflection],
+      ["Test strategy", history.summary.test_strategy],
+      [
+        "Latest 12 commits",
+        `${recentFocus.feature_or_runtime} feature/runtime, `
+          + `${recentFocus.tests_or_guardrails} tests/guardrails, `
+          + `${recentFocus.viewer_or_docs} viewer/docs`,
+      ],
+      ["Next check", history.next_reflection_check.question],
+    ]),
+  );
+  root.replaceChildren(section);
 }
 
 export function renderHeadlineResults(state) {

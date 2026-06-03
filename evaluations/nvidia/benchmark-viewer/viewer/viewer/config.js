@@ -17,5 +17,6 @@ export const DATA_FILES = {
   paperReadinessAudit: "../data/paper_readiness_audit.json",
   paperReadinessWorkQueue: "../data/paper_readiness_work_queue.json",
   goalProgress: "../data/goal_progress.json",
+  planHistory: "../data/plan_history.json",
   results: { manifest: "../data/results/index.json" },
 };

@@ -50,6 +50,9 @@ def check_viewer_data() -> None:
         "Promotion Gate",
         "goalProgress",
         "goal_progress",
+        "planHistory",
+        "plan_history",
+        "Recent Work Focus",
         "paper_baseline_run_readiness_statuses",
         "ready_for_paper_claim",
         "result_records",
@@ -80,6 +83,7 @@ def check_viewer_data() -> None:
         VIEWER_DATA_ROOT / "paper_readiness_audit.json"
     )
     goal_progress = load_json(VIEWER_DATA_ROOT / "goal_progress.json")
+    plan_history = load_json(VIEWER_DATA_ROOT / "plan_history.json")
     results = load_json(VIEWER_DATA_ROOT / "results.json")
 
     benchmark_ids = {item["id"] for item in benchmarks.get("benchmarks", [])}
@@ -260,3 +264,8 @@ def check_viewer_data() -> None:
         fail("viewer full capture sample count must be 1350")
     if snapshot.get("compact_capture", {}).get("samples") != 108:
         fail("viewer compact capture sample count must be 108")
+    latest_focus = plan_history.get("work_focus", [{}])[0]
+    if latest_focus.get("tests_or_guardrails", 0) <= latest_focus.get(
+        "feature_or_runtime", 0
+    ):
+        fail("plan history must report the current test-heavy work pattern")

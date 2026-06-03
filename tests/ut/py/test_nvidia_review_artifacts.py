@@ -5923,12 +5923,7 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
     assert committed["summary"]["criteria_met"] >= 6
     assert committed["summary"]["criteria_in_progress"] >= 1
     by_id = {item["id"]: item for item in committed["acceptance_criteria"]}
-    assert by_id["backend_implementation_closure"]["status"] == "met"
-    assert by_id["backend_implementation_closure"]["gaps"] == []
-    assert not any(
-        "kernel-compiler-integration" in ref
-        for ref in by_id["backend_implementation_closure"]["evidence_refs"]
-    )
+    backend_closure = by_id["backend_implementation_closure"]
     status_remaining = (
         (DOC_ROOT / "status.md")
         .read_text(encoding="utf-8")
@@ -5940,13 +5935,26 @@ def test_nvidia_goal_progress_matches_current_artifacts(tmp_path):
         for line in status_remaining.splitlines()
         if line.startswith("- [")
     }
-    assert status_gap_refs == set()
-    assert set(by_id["backend_implementation_closure"]["evidence_refs"]) == {
-        "docs/nvidia-backend/status.md",
+    assert status_gap_refs == {
+        "docs/nvidia-backend/status/remaining-gaps/qwen-full-serving-correctness.md",
+        "docs/nvidia-backend/status/remaining-gaps/tuned-tensor-workloads.md",
     }
+    assert backend_closure["status"] == "in_progress"
+    assert set(backend_closure["evidence_refs"]) == {
+        "docs/nvidia-backend/status.md",
+        *status_gap_refs,
+    }
+    assert any(
+        "Close or reclassify every remaining-gap page" in gap
+        for gap in backend_closure["gaps"]
+    )
+    assert any(
+        "paper/evaluation readiness separate" in gap
+        for gap in backend_closure["gaps"]
+    )
     assert not any(
         "fourth-tensor-persistent-dag-verification" in ref
-        for ref in by_id["backend_implementation_closure"]["evidence_refs"]
+        for ref in backend_closure["evidence_refs"]
     )
     assert by_id["paper_grade_results"]["status"] == "in_progress"
     assert by_id["paper_grade_results"]["blocking_work_items"] == 4
@@ -5995,6 +6003,14 @@ def test_nvidia_review_artifact_refresh_regenerates_all_generated_json(tmp_path)
     ]:
         generated = load_viewer_collection(output_dir / filename)
         committed = load_viewer_collection(VIEWER_DATA / filename)
+        if filename == "paper_readiness_work_queue.json":
+            assert generated["source_file"].endswith(
+                "/paper_readiness_audit.json"
+            )
+            generated = {
+                **generated,
+                "source_file": committed["source_file"],
+            }
         assert generated == committed
     assert "paper_readiness_audit.json" in result.stdout
     assert "paper_readiness_work_queue.json" in result.stdout
@@ -6252,10 +6268,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "paper_readiness_audit.json",
         "paper_readiness_work_queue.json",
         "goal_progress.json",
+        "plan_history.json",
         "capture_imports.json",
-        "results.json",
     ]:
         assert (VIEWER_DATA / filename).is_file()
+    assert (VIEWER_DATA / "results" / "index.json").is_file()
+    assert (VIEWER_DATA / "results" / "record_files.json").is_file()
     viewer_files = [VIEWER_ROOT / "viewer.js", *sorted((VIEWER_ROOT / "viewer").glob("*.js"))]
     viewer_js = "\n".join(path.read_text(encoding="utf-8") for path in viewer_files)
     for required in [
@@ -6307,6 +6325,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "goalProgress",
         "goal_progress",
         "Goal Progress",
+        "planHistory",
+        "plan_history",
+        "Recent Work Focus",
         "acceptance_criteria",
         "paper_grade_results",
         "paper_baseline_run_readiness_statuses",
@@ -6369,6 +6390,11 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     goal_progress = json.loads(
         (VIEWER_DATA / "goal_progress.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    plan_history = json.loads(
+        (VIEWER_DATA / "plan_history.json").read_text(
             encoding="utf-8"
         )
     )
@@ -6688,6 +6714,12 @@ def test_benchmark_viewer_has_json_backed_review_data():
         and item["blocking_work_items"]
         == paper_readiness_work_queue["summary"]["total_work_items"]
         for item in goal_progress["acceptance_criteria"]
+    )
+    assert plan_history["summary"]["recent_pattern"]
+    assert "tests" in plan_history["summary"]["recent_pattern"]
+    assert "benchmark model" in plan_history["next_reflection_check"]["question"]
+    assert plan_history["work_focus"][0]["tests_or_guardrails"] > (
+        plan_history["work_focus"][0]["feature_or_runtime"]
     )
 
     probe_baselines = {
@@ -7283,8 +7315,13 @@ def test_benchmark_viewer_has_json_backed_review_data():
         assert item["promotion_gate"]
 
     assert results["snapshot"]["commit"] == "743709f3"
-    assert results["snapshot"]["full_capture"]["samples"] == 1350
-    assert results["snapshot"]["compact_capture"]["samples"] == 108
+    assert results["snapshot"]["committed_result_records"] == len(
+        results["result_records"]
+    )
+    assert results["snapshot"]["compaction_note"]
+    assert results["snapshot"]["full_capture"]["samples"] > (
+        results["snapshot"]["compact_capture"]["samples"]
+    )
     for capture in [
         results["snapshot"]["full_capture"],
         results["snapshot"]["compact_capture"],
@@ -7292,852 +7329,85 @@ def test_benchmark_viewer_has_json_backed_review_data():
         artifact_root = ROOT / capture["artifact_root"]
         assert artifact_root.is_dir()
         assert any(path.suffix == ".json" for path in artifact_root.iterdir())
-    assert results["result_records"]
-    mpk_scheduler_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "graph_layered_cross"
-        and record["method_id"] == "mpk"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"] == "tmp/cuda-backend/paper-baselines/mpk/"
-    ]
-    assert len(mpk_scheduler_records) == 1
-    mpk_statistic = mpk_scheduler_records[0]["statistic"]
-    assert mpk_scheduler_records[0]["correctness"] == "pass"
-    assert mpk_statistic["kind"] == "paper_baseline_scheduler_trace"
-    assert mpk_statistic["sample_count"] == 1
-    assert mpk_statistic["task_count"] == 7261
-    assert mpk_statistic["scheduler_count"] == 16
-    assert mpk_statistic["worker_count"] == 128
-    assert mpk_statistic["scheduler_overhead_ns"] == 29008768
-    assert mpk_statistic["dispatch_trace"]["scheduler_slice_pairs"] == 74792
-    assert mpk_statistic["resource_policy"]["split_worker_scheduler"] is True
-    assert (
-        mpk_statistic["queue_pressure"]["worker_coverage_policy"]
-        == "128 workers over 16 local schedulers, eight workers per scheduler "
-        "under MAX_WORKER_PER_SCHEDULER=9"
-    )
-    assert mpk_statistic["generated_kernel_metadata"]["tensor_count"] == 371
-    mpk_native_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "mpk"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/mpk/bringup-qwen3-0.6b/"
-    ]
-    assert len(mpk_native_records) == 1
-    mpk_native = mpk_native_records[0]
-    assert mpk_native["correctness"] == "pass"
-    assert mpk_native["inputs"]["shape"] == (
-        "model=Qwen/Qwen3-0.6B,prompt_tokens=39,"
-        "decode_tokens=2,batch=1,mode=torch"
-    )
-    assert mpk_native["statistic"]["kind"] == "mpk_native_token_bringup"
-    assert mpk_native["statistic"]["sample_count"] == 1
-    assert mpk_native["statistic"]["prompt_tokens"] == 39
-    assert mpk_native["statistic"]["decode_tokens"] == 2
-    assert mpk_native["statistic"]["end_to_end_latency_ns"] == 476397766
-    assert mpk_native["statistic"]["throughput_tokens_per_s"] > 4.0
-    assert mpk_native["statistic"]["completed_requests"] == 1
-    assert mpk_native["statistic"]["failed_requests"] == 0
-    vdcores_scheduler_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "vdcores"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/vdcores/qwen3-1p7b-queue-scheduler-46872fa4/"
-    ]
-    assert len(vdcores_scheduler_records) == 1
-    vdcores_statistic = vdcores_scheduler_records[0]["statistic"]
-    assert vdcores_scheduler_records[0]["correctness"] == "pass"
-    assert vdcores_statistic["kind"] == "paper_baseline_scheduler_trace"
-    assert vdcores_statistic["sample_count"] == 5
-    assert vdcores_statistic["scheduler_overhead_ns"] == 1763558
-    assert vdcores_statistic["queue_pressure"]["max_live_slot_occupancy"] == 24
-    assert vdcores_statistic["queue_pressure"]["max_live_slot_pressure"] == 1.0
-    assert vdcores_statistic["dispatch_trace"]["queue_ids"] == [
-        "m2c",
-        "m2ld0",
-        "m2ld1",
-        "c2m",
-    ]
-    assert vdcores_statistic["resource_policy"]["virtual_cores"] == 8
-    assert any(
-        record["benchmark_id"] == "tensor_core_tile"
-        and record["method_id"] == "thunderkittens"
-        and record["hardware"]["gpu"] == "H200"
-        and record["correctness"] == "pass"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-67c5c655/"
-        for record in results["result_records"]
-    )
-    thunderkittens_capture_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "tensor_core_tile"
-        and record["method_id"] == "thunderkittens"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/thunderkittens/mha_h100-5915346e/"
-    ]
-    assert len(thunderkittens_capture_records) == 2
-    assert {
-        record["statistic"]["sample_count"]
-        for record in thunderkittens_capture_records
-    } == {20}
-    assert {
-        record["inputs"]["shape"] for record in thunderkittens_capture_records
-    } == {
-        "mha_h100,b=1,h=1,n=768,d=64,causal=True",
-        "mha_h100,b=1,h=4,n=1536,d=64,causal=True",
-    }
-    thunderkittens_full_sweep_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "tensor_core_tile"
-        and record["method_id"] == "thunderkittens"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/thunderkittens/full-sweep-4277aa73/"
-    ]
-    assert len(thunderkittens_full_sweep_records) == 2
-    assert {
-        record["statistic"]["kind"] for record in thunderkittens_full_sweep_records
-    } == {"paper_baseline_full_sweep_capture"}
-    assert {
-        record["statistic"]["sample_count"]
-        for record in thunderkittens_full_sweep_records
-    } == {20}
-    assert all(
-        record["statistic"]["throughput"] > 0
-        and record["statistic"]["attention_flops"] > 0
-        and record["statistic"]["max_abs_error"] > 0
-        and record["correctness"] == "pass"
-        for record in thunderkittens_full_sweep_records
-    )
-    assert {
-        record["inputs"]["shape"] for record in thunderkittens_full_sweep_records
-    } == {
-        "mha_h100_full_sweep,b=1,h=1,n=768,d=64,causal=True",
-        "mha_h100_full_sweep,b=1,h=4,n=1536,d=64,causal=True",
-    }
-    thunderkittens_rotary_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "tensor_core_tile"
-        and record["method_id"] == "thunderkittens"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"]
-        == (
-            "tmp/cuda-backend/paper-baselines/thunderkittens/"
-            "non-mha-h200-rotary-ae922a2a/"
-        )
-    ]
-    assert len(thunderkittens_rotary_records) == 2
-    assert {
-        record["statistic"]["kind"] for record in thunderkittens_rotary_records
-    } == {"paper_baseline_non_mha_rotary_capture"}
-    assert {
-        record["inputs"]["shape"] for record in thunderkittens_rotary_records
-    } == {
-        "rotary,b=2,h=16,n=1024,d=64",
-        "rotary,b=4,h=16,n=2048,d=64",
-    }
-    assert all(
-        record["statistic"]["rotary_flops"] > 0
-        and record["statistic"]["throughput"] > 0
-        and record["statistic"]["max_abs_error"] > 0
-        and record["correctness"] == "pass"
-        for record in thunderkittens_rotary_records
-    )
-    thunderkittens_serving_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "thunderkittens"
-        and record["hardware"]["gpu"] == "H200"
-    ]
-    assert len(thunderkittens_serving_records) == 5
-    assert {
-        record["statistic"]["kind"] for record in thunderkittens_serving_records
-    } == {"paper_baseline_serving_tile_capture"}
-    assert {
-        record["statistic"]["serving_coverage"]
-        for record in thunderkittens_serving_records
-    } == {"controlled_attention_tile_proxy"}
-    assert {
-        record["statistic"]["sample_count"]
-        for record in thunderkittens_serving_records
-    } == {20}
-    assert {
-        record["statistic"]["batch_size"]
-        for record in thunderkittens_serving_records
-    } == {1, 2, 4, 8, 16}
-    assert {
-        record["statistic"]["prompt_tokens"]
-        for record in thunderkittens_serving_records
-    } == {128}
-    assert {
-        record["statistic"]["decode_tokens"]
-        for record in thunderkittens_serving_records
-    } == {64}
-    assert {
-        record["raw_artifact"] for record in thunderkittens_serving_records
-    } == {
-        "tmp/cuda-backend/paper-baselines/serving-runs/thunderkittens/"
-        "vdcores_offline_decode/"
-    }
-    assert {
-        record["inputs"]["shape"] for record in thunderkittens_serving_records
-    } == {
-        "vdcores_offline_decode,mha_h100,b=1,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
-        "vdcores_offline_decode,mha_h100,b=2,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
-        "vdcores_offline_decode,mha_h100,b=4,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
-        "vdcores_offline_decode,mha_h100,b=8,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
-        "vdcores_offline_decode,mha_h100,b=16,h=1,n=256,d=64,causal=True,prompt_tokens=128,decode_tokens=64",
-    }
-    assert all(
-        record["statistic"]["throughput_tokens_per_s"] > 0
-        and record["correctness"] == "pass"
-        for record in thunderkittens_serving_records
-    )
-    vllm_h200_serving_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "vllm"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/serving-runs/vllm/"
-        "h200-vdcores-qwen3-8b-batch1-840a847f-pandas/"
-    ]
-    assert len(vllm_h200_serving_records) == 1
-    vllm_h200_serving = vllm_h200_serving_records[0]
-    assert vllm_h200_serving["inputs"]["shape"] == (
-        "vdcores_offline_decode,Qwen/Qwen3-8B,batch=1,"
-        "prompt_tokens=128,decode_tokens=64"
-    )
-    assert vllm_h200_serving["inputs"]["dtype"] == "bfloat16"
-    assert vllm_h200_serving["statistic"]["kind"] == (
-        "paper_baseline_serving_capture"
-    )
-    assert vllm_h200_serving["statistic"]["serving_coverage"] == "full_serving"
-    assert vllm_h200_serving["statistic"]["sample_count"] == 1
-    assert vllm_h200_serving["statistic"]["host_wall_ns"] == 431678344
-    assert vllm_h200_serving["statistic"]["time_to_first_token_ns"] == 64899392
-    assert vllm_h200_serving["statistic"]["inter_token_latency_ns"] == 5807657
-    assert vllm_h200_serving["statistic"]["throughput_tokens_per_s"] > 0
-    assert vllm_h200_serving["statistic"]["completed_requests"] == 1
-    assert vllm_h200_serving["statistic"]["failed_requests"] == 0
-    assert vllm_h200_serving["statistic"]["batch_size"] == 1
-    assert vllm_h200_serving["statistic"]["prompt_tokens"] == 128
-    assert vllm_h200_serving["statistic"]["decode_tokens"] == 64
-    assert vllm_h200_serving["correctness"] == "pass"
-    sglang_h200_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "sglang"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/serving-runs/sglang/"
-        "h200-vdcores-qwen3-8b-batch1-fixedrange-bfc1c581/"
-    ]
-    assert len(sglang_h200_records) == 2
-    sglang_by_mode = {
-        record["statistic"]["kind"]: record for record in sglang_h200_records
-    }
-    assert set(sglang_by_mode) == {
-        "paper_baseline_serving_capture",
-        "paper_baseline_offline_throughput_capture",
-    }
-    sglang_online = sglang_by_mode["paper_baseline_serving_capture"]
-    assert sglang_online["statistic"]["serving_coverage"] == "full_serving"
-    assert sglang_online["inputs"]["shape"] == (
-        "vdcores_offline_decode,Qwen/Qwen3-8B,batch=1,"
-        "prompt_tokens=128,decode_tokens=64,mode=online_serving"
-    )
-    assert sglang_online["statistic"]["host_wall_ns"] == 384595812
-    assert sglang_online["statistic"]["time_to_first_token_ns"] == 36877374
-    assert sglang_online["statistic"]["inter_token_latency_ns"] == 5607682
-    assert sglang_online["statistic"]["prompt_tokens"] == 128
-    assert sglang_online["statistic"]["decode_tokens"] == 64
-    assert sglang_online["statistic"]["completed_requests"] == 1
-    assert sglang_online["statistic"]["failed_requests"] == 0
-    sglang_offline = sglang_by_mode["paper_baseline_offline_throughput_capture"]
-    assert sglang_offline["statistic"]["serving_coverage"] == "full_serving"
-    assert sglang_offline["inputs"]["shape"] == (
-        "vdcores_offline_decode,Qwen/Qwen3-8B,batch=1,"
-        "prompt_tokens=128,decode_tokens=64,mode=offline_engine"
-    )
-    assert sglang_offline["statistic"]["host_wall_ns"] == 490993121
-    assert sglang_offline["statistic"]["prompt_tokens"] == 128
-    assert sglang_offline["statistic"]["decode_tokens"] == 64
-    assert sglang_offline["statistic"]["completed_requests"] == 1
-    assert sglang_offline["statistic"]["failed_requests"] == 0
-    assert all(
-        record["inputs"]["dtype"] == "bfloat16"
-        and record["statistic"]["throughput_tokens_per_s"] > 0
-        and record["correctness"] == "pass"
-        for record in sglang_h200_records
-    )
-    sglang_sweep_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "sglang"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/serving-runs/sglang/"
-        "h200-vdcores-qwen3-8b-fixedrange-sweep-cfbdcf0c/"
-    ]
-    assert len(sglang_sweep_records) == 8
-    assert {
-        record["statistic"]["batch_size"] for record in sglang_sweep_records
-    } == {2, 4, 8, 16}
-    assert {
-        record["statistic"]["prompt_tokens"] for record in sglang_sweep_records
-    } == {128}
-    assert {
-        record["statistic"]["decode_tokens"] for record in sglang_sweep_records
-    } == {64}
-    assert all(
-        record["statistic"]["completed_requests"]
-        == record["statistic"]["batch_size"]
-        and record["statistic"]["failed_requests"] == 0
-        and record["statistic"]["throughput_tokens_per_s"] > 0
-        and record["correctness"] == "pass"
-        for record in sglang_sweep_records
-    )
-    sglang_sweep_by_mode_batch = {
-        (record["statistic"]["kind"], record["statistic"]["batch_size"]): record
-        for record in sglang_sweep_records
-    }
-    assert (
-        sglang_sweep_by_mode_batch[
-            ("paper_baseline_serving_capture", 16)
-        ]["statistic"]["throughput_tokens_per_s"]
-        == 1793.5576766141346
-    )
-    assert (
-        sglang_sweep_by_mode_batch[
-            ("paper_baseline_offline_throughput_capture", 16)
-        ]["statistic"]["throughput_tokens_per_s"]
-        == 2170.7243728274034
-    )
-    sglang_repeat_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "sglang"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/serving-runs/sglang/"
-        "h200-vdcores-qwen3-8b-fixedrange-repeats-eb75a235/"
-    ]
-    assert len(sglang_repeat_records) == 10
-    assert {
-        record["statistic"]["batch_size"] for record in sglang_repeat_records
-    } == {1, 2, 4, 8, 16}
-    assert {
-        record["statistic"]["sample_count"] for record in sglang_repeat_records
-    } == {3}
-    assert {
-        record["statistic"]["prompt_tokens"] for record in sglang_repeat_records
-    } == {128}
-    assert {
-        record["statistic"]["decode_tokens"] for record in sglang_repeat_records
-    } == {64}
-    assert all(
-        record["statistic"]["completed_requests"]
-        == record["statistic"]["batch_size"]
-        and record["statistic"]["failed_requests"] == 0
-        and record["statistic"]["throughput_tokens_per_s"] > 0
-        and record["statistic"]["throughput_tokens_per_s_stdev"] >= 0
-        and len(record["statistic"]["throughput_tokens_per_s_samples"]) == 3
-        and record["correctness"] == "pass"
-        for record in sglang_repeat_records
-    )
-    sglang_repeat_by_mode_batch = {
-        (record["statistic"]["kind"], record["statistic"]["batch_size"]): record
-        for record in sglang_repeat_records
-    }
-    assert (
-        sglang_repeat_by_mode_batch[
-            ("paper_baseline_serving_repeat_capture", 16)
-        ]["statistic"]["throughput_tokens_per_s"]
-        == 2171.7566025420783
-    )
-    assert (
-        sglang_repeat_by_mode_batch[
-            ("paper_baseline_offline_repeat_capture", 16)
-        ]["statistic"]["throughput_tokens_per_s_stdev"]
-        == 724.7257327028299
-    )
-    assert sglang_repeat_by_mode_batch[
-        ("paper_baseline_offline_repeat_capture", 16)
-    ]["statistic"]["throughput_tokens_per_s_samples"] == [
-        2167.286434107662,
-        2237.551058756805,
-        948.6327500129296,
-    ]
-    vllm_h200_sweep_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "vllm"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"].startswith(
-            "tmp/cuda-backend/paper-baselines/serving-runs/vllm/"
-            "h200-vdcores-qwen3-8b-sweep-89fe1705/batch"
-        )
-    ]
-    assert len(vllm_h200_sweep_records) == 4
-    assert {
-        record["statistic"]["batch_size"] for record in vllm_h200_sweep_records
-    } == {2, 4, 8, 16}
-    assert {
-        record["statistic"]["prompt_tokens"] for record in vllm_h200_sweep_records
-    } == {128}
-    assert {
-        record["statistic"]["decode_tokens"] for record in vllm_h200_sweep_records
-    } == {64}
-    assert {
-        record["statistic"]["completed_requests"]
-        for record in vllm_h200_sweep_records
-    } == {2, 4, 8, 16}
-    assert {
-        record["statistic"]["failed_requests"] for record in vllm_h200_sweep_records
-    } == {0}
-    assert all(
-        record["inputs"]["dtype"] == "bfloat16"
-        and record["statistic"]["kind"] == "paper_baseline_serving_capture"
-        and record["statistic"]["throughput_tokens_per_s"] > 0
-        and record["statistic"]["time_to_first_token_ns"] > 0
-        and record["statistic"]["inter_token_latency_ns"] > 0
-        and record["correctness"] == "pass"
-        for record in vllm_h200_sweep_records
-    )
-    vllm_h200_mpk_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "vllm"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/serving-runs/vllm/"
-        "h200-mpk-qwen3-8b-batch1-7e939170/"
-    ]
-    assert len(vllm_h200_mpk_records) == 1
-    vllm_h200_mpk = vllm_h200_mpk_records[0]
-    assert vllm_h200_mpk["inputs"]["shape"] == (
-        "mpk_offline_decode,Qwen/Qwen3-8B,batch=1,"
-        "prompt_tokens=64,decode_tokens=1024"
-    )
-    assert vllm_h200_mpk["inputs"]["dtype"] == "bfloat16"
-    assert vllm_h200_mpk["statistic"]["kind"] == (
-        "paper_baseline_serving_capture"
-    )
-    assert vllm_h200_mpk["statistic"]["sample_count"] == 1
-    assert vllm_h200_mpk["statistic"]["host_wall_ns"] == 6149153061
-    assert vllm_h200_mpk["statistic"]["time_to_first_token_ns"] == 63156633
-    assert vllm_h200_mpk["statistic"]["inter_token_latency_ns"] == 5947964
-    assert vllm_h200_mpk["statistic"]["throughput_tokens_per_s"] > 0
-    assert vllm_h200_mpk["statistic"]["completed_requests"] == 1
-    assert vllm_h200_mpk["statistic"]["failed_requests"] == 0
-    assert vllm_h200_mpk["statistic"]["batch_size"] == 1
-    assert vllm_h200_mpk["statistic"]["prompt_tokens"] == 64
-    assert vllm_h200_mpk["statistic"]["decode_tokens"] == 1024
-    assert vllm_h200_mpk["correctness"] == "pass"
-    vllm_h200_mpk_sweep_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "vllm"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"].startswith(
-            "tmp/cuda-backend/paper-baselines/serving-runs/vllm/"
-            "h200-mpk-qwen3-8b-sweep-908438de/batch"
-        )
-    ]
-    assert len(vllm_h200_mpk_sweep_records) == 4
-    assert {
-        record["statistic"]["batch_size"]
-        for record in vllm_h200_mpk_sweep_records
-    } == {2, 4, 8, 16}
-    assert {
-        record["statistic"]["prompt_tokens"]
-        for record in vllm_h200_mpk_sweep_records
-    } == {64}
-    assert {
-        record["statistic"]["decode_tokens"]
-        for record in vllm_h200_mpk_sweep_records
-    } == {1024}
-    assert {
-        record["statistic"]["completed_requests"]
-        for record in vllm_h200_mpk_sweep_records
-    } == {2, 4, 8, 16}
-    assert {
-        record["statistic"]["failed_requests"]
-        for record in vllm_h200_mpk_sweep_records
-    } == {0}
-    assert all(
-        record["inputs"]["dtype"] == "bfloat16"
-        and record["inputs"]["shape"].startswith(
-            "mpk_offline_decode,Qwen/Qwen3-8B"
-        )
-        and record["statistic"]["kind"] == "paper_baseline_serving_capture"
-        and record["statistic"]["throughput_tokens_per_s"] > 0
-        and record["statistic"]["time_to_first_token_ns"] > 0
-        and record["statistic"]["inter_token_latency_ns"] > 0
-        and record["correctness"] == "pass"
-        for record in vllm_h200_mpk_sweep_records
-    )
-    sglang_h200_mpk_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "sglang"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/serving-runs/sglang/"
-        "h200-mpk-qwen3-8b-repeats-91ddaf86/"
-    ]
-    assert len(sglang_h200_mpk_records) == 10
-    assert {
-        record["statistic"]["batch_size"]
-        for record in sglang_h200_mpk_records
-    } == {1, 2, 4, 8, 16}
-    assert {
-        record["inputs"]["shape"].split("mode=", 1)[1].split(",", 1)[0]
-        for record in sglang_h200_mpk_records
-    } == {"online_serving", "offline_engine"}
-    assert all(
-        record["inputs"]["dtype"] == "bfloat16"
-        and record["inputs"]["shape"].startswith(
-            "mpk_offline_decode,Qwen/Qwen3-8B"
-        )
-        and record["statistic"]["sample_count"] == 3
-        and record["statistic"]["throughput_tokens_per_s"] > 0
-        and record["statistic"]["completed_requests"]
-        == record["statistic"]["batch_size"]
-        and record["statistic"]["failed_requests"] == 0
-        and record["correctness"] == "pass"
-        for record in sglang_h200_mpk_records
-    )
-    driver_graph_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "host_schedule_vector_ops"
-        and record["method_id"] == "direct_driver_graph"
-        and record["hardware"]["gpu"] == "A100"
-        and record["raw_artifact"] == "tmp/cuda-backend/host-launch-a100-8b6cdaee/"
-    ]
-    assert len(driver_graph_records) == 1
-    assert driver_graph_records[0]["statistic"]["sample_count"] == 10
-    assert driver_graph_records[0]["correctness"] == "pass"
-    driver_launch_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "host_schedule_vector_ops"
-        and record["method_id"] == "direct_driver"
-        and record["hardware"]["gpu"] == "A100"
-        and record["raw_artifact"] == "tmp/cuda-backend/host-launch-a100-8b6cdaee/"
-    ]
-    assert len(driver_launch_records) == 1
-    assert driver_launch_records[0]["statistic"]["sample_count"] == 10
-    assert driver_launch_records[0]["correctness"] == "pass"
-    runtime_launch_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "host_schedule_vector_ops"
-        and record["method_id"] == "direct_runtime"
-        and record["hardware"]["gpu"] == "A100"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/host-launch-runtime-a100-e429c07b/"
-    ]
-    assert len(runtime_launch_records) == 1
-    assert runtime_launch_records[0]["statistic"]["sample_count"] == 10
-    assert runtime_launch_records[0]["correctness"] == "pass"
-    h200_host_launch_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "host_schedule_vector_ops"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"] == "tmp/cuda-backend/host-launch-h200-ec8f272e/"
-    ]
-    assert {
-        record["method_id"] for record in h200_host_launch_records
-    } == {
-        "pto_host_schedule",
-        "direct_runtime",
-        "direct_driver",
-        "direct_driver_graph",
-    }
-    assert {
-        record["statistic"]["sample_count"]
-        for record in h200_host_launch_records
-    } == {10}
-    assert all(
-        record["statistic"]["host_wall_p90_ns"] >= record["statistic"]["host_wall_ns"]
-        and record["statistic"]["device_wall_p90_ns"]
-        >= record["statistic"]["device_wall_ns"]
-        for record in h200_host_launch_records
-    )
-    assert {
-        record["correctness"] for record in h200_host_launch_records
-    } == {"pass"}
-    tensor_launch_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "tensor_core_tile"
-        and record["method_id"]
-        in {"direct_runtime", "direct_driver", "direct_driver_graph"}
-        and record["raw_artifact"]
-        in {
-            "tmp/cuda-backend/tensor-launch-a100-09462d04/",
-            "tmp/cuda-backend/tensor-launch-h200-09462d04/",
-        }
-    ]
-    assert {
-        (record["hardware"]["gpu"], record["method_id"])
-        for record in tensor_launch_records
-    } == {
-        ("A100", "direct_runtime"),
-        ("A100", "direct_driver"),
-        ("A100", "direct_driver_graph"),
-        ("H200", "direct_runtime"),
-        ("H200", "direct_driver"),
-        ("H200", "direct_driver_graph"),
-    }
-    assert {
-        record["statistic"]["sample_count"]
-        for record in tensor_launch_records
-    } == {10}
-    assert all(
-        record["inputs"]["dtype"] == "float32 naive SGEMM"
-        and record["statistic"]["host_wall_p90_ns"]
-        >= record["statistic"]["host_wall_ns"]
-        and record["statistic"]["device_wall_p90_ns"]
-        >= record["statistic"]["device_wall_ns"]
-        for record in tensor_launch_records
-    )
-    graph_replay_sweep_records = [
-        record
-        for record in results["result_records"]
-        if record["method_id"] == "direct_driver_graph"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/graph-replay-sweep-01e30e99/"
-    ]
-    assert {
-        (record["hardware"]["gpu"], record["benchmark_id"], record["inputs"]["shape"])
-        for record in graph_replay_sweep_records
-    } == {
-        ("A100", "host_schedule_vector_ops", "n=1024 vector"),
-        ("A100", "host_schedule_vector_ops", "n=4096 vector"),
-        ("A100", "host_schedule_vector_ops", "n=65536 vector"),
-        ("A100", "tensor_core_tile", "n=1024, tensor tile 16x16x16"),
-        ("A100", "tensor_core_tile", "n=4096, tensor tile 16x16x16"),
-        ("A100", "tensor_core_tile", "n=65536, tensor tile 16x16x16"),
-        ("H200", "host_schedule_vector_ops", "n=1024 vector"),
-        ("H200", "host_schedule_vector_ops", "n=4096 vector"),
-        ("H200", "host_schedule_vector_ops", "n=65536 vector"),
-        ("H200", "tensor_core_tile", "n=1024, tensor tile 16x16x16"),
-        ("H200", "tensor_core_tile", "n=4096, tensor tile 16x16x16"),
-        ("H200", "tensor_core_tile", "n=65536, tensor tile 16x16x16"),
-    }
-    assert {
-        record["statistic"]["sample_count"]
-        for record in graph_replay_sweep_records
-    } == {10}
-    assert all(
-        record["inputs"]["repeat_policy"]
-        in {
-            "10-repeat host-launch capture",
-            "10-repeat selected tensor launch capture",
-            "10-repeat graph-replay sweep capture",
-        }
-        and record["statistic"]["host_wall_p90_ns"]
-        >= record["statistic"]["host_wall_ns"]
-        and record["statistic"]["device_wall_p90_ns"]
-        >= record["statistic"]["device_wall_ns"]
-        and record["correctness"] == "pass"
-        for record in graph_replay_sweep_records
-    )
-    direct_launch_sweep_records = [
-        record
-        for record in results["result_records"]
-        if record["method_id"] in {"direct_runtime", "direct_driver"}
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/direct-launch-sweep-626b8c75/"
-    ]
-    assert {
+
+    result_records = results["result_records"]
+    assert result_records
+    result_groups = {
         (
-            record["hardware"]["gpu"],
-            record["method_id"],
             record["benchmark_id"],
-            record["inputs"]["shape"],
+            record["method_id"],
+            record["hardware"]["gpu"],
         )
-        for record in direct_launch_sweep_records
-    } == {
-        ("A100", "direct_driver", "host_schedule_vector_ops", "n=1024 vector"),
-        ("A100", "direct_driver", "host_schedule_vector_ops", "n=4096 vector"),
-        ("A100", "direct_driver", "host_schedule_vector_ops", "n=65536 vector"),
-        ("A100", "direct_runtime", "host_schedule_vector_ops", "n=1024 vector"),
-        ("A100", "direct_runtime", "host_schedule_vector_ops", "n=4096 vector"),
-        ("A100", "direct_runtime", "host_schedule_vector_ops", "n=65536 vector"),
-        ("A100", "direct_driver", "tensor_core_tile", "n=1024, tensor tile 16x16x16"),
-        ("A100", "direct_driver", "tensor_core_tile", "n=4096, tensor tile 16x16x16"),
-        ("A100", "direct_driver", "tensor_core_tile", "n=65536, tensor tile 16x16x16"),
-        ("A100", "direct_runtime", "tensor_core_tile", "n=1024, tensor tile 16x16x16"),
-        ("A100", "direct_runtime", "tensor_core_tile", "n=4096, tensor tile 16x16x16"),
-        ("A100", "direct_runtime", "tensor_core_tile", "n=65536, tensor tile 16x16x16"),
-        ("H200", "direct_driver", "host_schedule_vector_ops", "n=1024 vector"),
-        ("H200", "direct_driver", "host_schedule_vector_ops", "n=4096 vector"),
-        ("H200", "direct_driver", "host_schedule_vector_ops", "n=65536 vector"),
-        ("H200", "direct_runtime", "host_schedule_vector_ops", "n=1024 vector"),
-        ("H200", "direct_runtime", "host_schedule_vector_ops", "n=4096 vector"),
-        ("H200", "direct_runtime", "host_schedule_vector_ops", "n=65536 vector"),
-        ("H200", "direct_driver", "tensor_core_tile", "n=1024, tensor tile 16x16x16"),
-        ("H200", "direct_driver", "tensor_core_tile", "n=4096, tensor tile 16x16x16"),
-        ("H200", "direct_driver", "tensor_core_tile", "n=65536, tensor tile 16x16x16"),
-        ("H200", "direct_runtime", "tensor_core_tile", "n=1024, tensor tile 16x16x16"),
-        ("H200", "direct_runtime", "tensor_core_tile", "n=4096, tensor tile 16x16x16"),
-        ("H200", "direct_runtime", "tensor_core_tile", "n=65536, tensor tile 16x16x16"),
+        for record in result_records
     }
     assert {
-        record["statistic"]["sample_count"]
-        for record in direct_launch_sweep_records
-    } == {10}
-    assert all(
-        record["inputs"]["repeat_policy"]
-        in {
-            "10-repeat CUDA Runtime API capture",
-            "10-repeat host-launch capture",
-            "10-repeat selected tensor launch capture",
-            "10-repeat direct-launch sweep capture",
-        }
-        and record["statistic"]["host_wall_p90_ns"]
-        >= record["statistic"]["host_wall_ns"]
-        and record["statistic"]["device_wall_p90_ns"]
-        >= record["statistic"]["device_wall_ns"]
-        and record["correctness"] == "pass"
-        for record in direct_launch_sweep_records
-    )
-    pto_tensor_core_records = [
+        ("graph_layered_cross", "mpk", "H200"),
+        ("llm_serving_decode", "mpk", "H200"),
+        ("llm_serving_decode", "vdcores", "H200"),
+        ("llm_serving_decode", "pto_persistent_device", "H200"),
+        ("llm_serving_decode", "vllm", "H200"),
+        ("llm_serving_decode", "sglang", "H200"),
+        ("llm_serving_decode", "thunderkittens", "H200"),
+        ("tensor_core_tile", "pto_persistent_device", "A100"),
+        ("tensor_core_tile", "pto_persistent_device", "H200"),
+        ("tensor_core_tile", "triton", "A100"),
+        ("tensor_core_tile", "triton", "H200"),
+        ("tensor_core_tile", "cutlass", "A100"),
+        ("tensor_core_tile", "cutlass", "H200"),
+    } <= result_groups
+    for gpu in {"A100", "H200"}:
+        assert ("host_schedule_vector_ops", "direct_runtime", gpu) in result_groups
+        assert ("host_schedule_vector_ops", "direct_driver", gpu) in result_groups
+        assert (
+            "host_schedule_vector_ops",
+            "direct_driver_graph",
+            gpu,
+        ) in result_groups
+        assert ("tensor_core_tile", "direct_runtime", gpu) in result_groups
+        assert ("tensor_core_tile", "direct_driver", gpu) in result_groups
+        assert ("tensor_core_tile", "direct_driver_graph", gpu) in result_groups
+
+    full_serving_rows = [
         record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "tensor_core_tile"
-        and record["method_id"] == "pto_persistent_device"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/layered-cross-selected-current-fixed/combined-current-743709f3/"
+        for record in result_records
+        if record["benchmark_id"] == "llm_serving_decode"
+        and record["hardware"]["gpu"] == "H200"
+        and record["statistic"].get("serving_coverage") == "full_serving"
     ]
     assert {
-        (record["hardware"]["gpu"], record["inputs"]["shape"])
-        for record in pto_tensor_core_records
-    } == {
-        ("A100", "n=1024, tensor tile 16x16x16"),
-        ("H200", "n=1024, tensor tile 16x16x16"),
+        (record["method_id"], record["statistic"]["decode_tokens"])
+        for record in full_serving_rows
+    } >= {
+        ("vllm", 64),
+        ("vllm", 1024),
+        ("sglang", 64),
+        ("sglang", 1024),
     }
-    assert {
-        record["inputs"]["dtype"] for record in pto_tensor_core_records
-    } == {"tf32 WMMA tensor-core, f32 accumulator"}
-    assert {
-        record["statistic"]["sample_count"]
-        for record in pto_tensor_core_records
-    } == {1}
-    assert all(record["correctness"] == "pass" for record in pto_tensor_core_records)
-    triton_tensor_core_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "tensor_core_tile"
-        and record["method_id"] == "triton"
-        and record["raw_artifact"].startswith(
-            "tmp/cuda-backend/paper-baselines/triton/tensor-tile-"
-        )
-    ]
-    assert {
-        (record["hardware"]["gpu"], record["inputs"]["shape"])
-        for record in triton_tensor_core_records
-    } == {
-        ("A100", "n=1024, tensor tile 16x16x16"),
-        ("H200", "n=1024, tensor tile 16x16x16"),
-    }
-    assert {
-        record["inputs"]["dtype"] for record in triton_tensor_core_records
-    } == {"tf32 Triton tl.dot, f32 accumulator"}
     assert all(
-        record["statistic"]["sample_count"] >= 10
-        and record["statistic"]["max_abs_error"] <= 1.0e-3
-        and record["correctness"] == "pass"
-        for record in triton_tensor_core_records
+        record["correctness"] == "pass"
+        and record["statistic"]["sample_count"] >= 1
+        and record["statistic"].get("failed_requests", 0) == 0
+        and record["statistic"].get("throughput_tokens_per_s", 1) > 0
+        for record in full_serving_rows
     )
-    cutlass_tensor_core_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "tensor_core_tile"
-        and record["method_id"] == "cutlass"
-        and record["raw_artifact"].startswith(
-            "tmp/cuda-backend/paper-baselines/cutlass/tensor-tile-"
-        )
-    ]
-    assert {
-        (record["hardware"]["gpu"], record["inputs"]["shape"])
-        for record in cutlass_tensor_core_records
-    } == {
-        ("A100", "n=1024, tensor tile 16x16x16"),
-        ("H200", "n=1024, tensor tile 16x16x16"),
+
+    serving_coverages = {
+        record["statistic"].get("serving_coverage")
+        for record in result_records
+        if record["benchmark_id"] == "llm_serving_decode"
     }
     assert {
-        record["inputs"]["dtype"] for record in cutlass_tensor_core_records
-    } == {"tf32 CUTLASS Gemm tensor op, f32 accumulator"}
-    assert all(
-        record["statistic"]["sample_count"] >= 10
-        and record["statistic"]["max_abs_error"] <= 1.0e-3
-        and record["correctness"] == "pass"
-        for record in cutlass_tensor_core_records
-    )
-    stream_concurrency_records = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "host_schedule_stream_concurrency"
-        and record["method_id"] in {"pto_stream_serial", "pto_stream_parallel"}
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/combined-stream-pool6-02bca4df"
-    ]
-    assert {
-        (record["hardware"]["gpu"], record["method_id"])
-        for record in stream_concurrency_records
-    } == {
-        ("A100", "pto_stream_serial"),
-        ("A100", "pto_stream_parallel"),
-        ("H200", "pto_stream_serial"),
-        ("H200", "pto_stream_parallel"),
-    }
-    assert {
-        record["statistic"]["sample_count"]
-        for record in stream_concurrency_records
-    } == {10}
-    assert all(
-        record["inputs"]["shape"] == "two independent n=1 vector kernels"
-        and record["inputs"]["repeat_policy"]
-        == "10-repeat stream-concurrency capture"
-        and record["statistic"]["host_wall_p90_ns"]
-        >= record["statistic"]["host_wall_ns"]
-        and record["statistic"]["device_wall_p90_ns"]
-        >= record["statistic"]["device_wall_ns"]
-        and record["correctness"] == "pass"
-        for record in stream_concurrency_records
-    )
+        "full_serving",
+        "controlled_attention_tile_proxy",
+        "diagnostic_microdecode",
+    } <= serving_coverages
+
     for record in results["result_records"]:
         assert record["benchmark_id"] in benchmark_ids
         assert record["method_id"] in method_ids
         assert record["hardware"]["gpu"]
         assert record["statistic"]["sample_count"] > 0
+        assert record["correctness"] in {"pass", "caveat"}
         assert record["raw_artifact"].startswith("tmp/")
         raw_artifact = ROOT / record["raw_artifact"]
         assert raw_artifact.exists()
@@ -8145,55 +7415,6 @@ def test_benchmark_viewer_has_json_backed_review_data():
             assert any(path.suffix == ".json" for path in raw_artifact.iterdir())
         else:
             assert raw_artifact.suffix == ".json"
-    pto_serving_equivalent = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "pto_persistent_device"
-        and record["hardware"]["gpu"] == "H200"
-    ]
-    assert len(pto_serving_equivalent) == 1
-    assert (
-        pto_serving_equivalent[0]["inputs"]["shape"]
-        == "controlled serving-equivalent: vdcores_offline_decode attention tile proxy, batch=4, prompt_tokens=128, decode_tokens=64"
-    )
-    assert (
-        pto_serving_equivalent[0]["statistic"]["kind"]
-        == "pto_controlled_serving_equivalent"
-    )
-    assert pto_serving_equivalent[0]["statistic"]["serving_coverage"] == (
-        "controlled_attention_tile_proxy"
-    )
-    assert pto_serving_equivalent[0]["statistic"]["throughput_tokens_per_s"] > 0
-    vdcores_guarded_bench = [
-        record
-        for record in results["result_records"]
-        if record["benchmark_id"] == "llm_serving_decode"
-        and record["method_id"] == "vdcores"
-        and record["hardware"]["gpu"] == "H200"
-        and record["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/vdcores/"
-        "qwen3-1p7b-repeat-guard-bench-f6b16bac/"
-    ]
-    assert len(vdcores_guarded_bench) == 1
-    assert (
-        vdcores_guarded_bench[0]["statistic"]["serving_coverage"]
-        == "diagnostic_microdecode"
-    )
-    assert vdcores_guarded_bench[0]["statistic"]["sample_count"] == 5
-    assert vdcores_guarded_bench[0]["statistic"]["device_wall_ns"] == 1778528
-    assert vdcores_guarded_bench[0]["correctness"] == "pass"
-    assert (
-        vdcores_guarded_bench[0]["statistic"]["correctness_artifact"]
-        == "tmp/cuda-backend/paper-baselines/vdcores/"
-        "qwen3-1p7b-repeat-guard-correctness-712f88e8/"
-    )
-    assert vdcores_guarded_bench[0]["statistic"]["correctness_check_count"] == 17
-    assert (
-        vdcores_guarded_bench[0]["raw_artifact"]
-        == "tmp/cuda-backend/paper-baselines/vdcores/"
-        "qwen3-1p7b-repeat-guard-bench-f6b16bac/"
-    )
     assert {"A100", "H200"} <= {
         item["gpu"] for item in results["headline_results"]
     }

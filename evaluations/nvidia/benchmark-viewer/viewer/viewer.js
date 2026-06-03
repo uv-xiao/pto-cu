@@ -17,6 +17,7 @@ import {
 } from "./viewer/render-paper.js";
 import {
   renderHeadlineResults,
+  renderPlanHistory,
   renderResults,
   renderSnapshot,
 } from "./viewer/render-summary.js";
@@ -28,6 +29,7 @@ async function main() {
     const state = await loadViewerData();
     const lookup = createLookup(state);
     renderSnapshot(state);
+    renderPlanHistory(state);
     renderHeadlineResults(state);
     renderBenchmarks(state);
     renderMethods(state);

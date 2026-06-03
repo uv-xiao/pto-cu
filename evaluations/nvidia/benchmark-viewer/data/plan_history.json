@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-03",
+  "summary": {
+    "current_focus": "Evaluation structure, viewer evidence, and guardrail contraction",
+    "recent_pattern": "Recent commits mostly tightened tests, benchmark-viewer data, and evidence-policy guardrails instead of advancing model benchmark execution.",
+    "reflection": "This is useful only while it prevents false paper-readiness claims. Future work should spend more slices on running or fixing benchmark model paths and less on pinning individual JSON rows.",
+    "test_strategy": "Keep one broad viewer contract check plus focused generator and policy tests. Avoid sparse row-by-row tests for every imported artifact unless the exact row is part of a public contract."
+  },
+  "work_focus": [
+    {
+      "window": "latest 12 commits",
+      "feature_or_runtime": 1,
+      "tests_or_guardrails": 9,
+      "viewer_or_docs": 2,
+      "notes": "The last visible slice is dominated by tests and guardrails. Only one recent commit directly changed CUDA execution behavior."
+    }
+  ],
+  "recent_slices": [
+    {
+      "commit": "7312dbe1",
+      "title": "test: guard ThunderKittens LLM policy exception",
+      "focus": "tests_or_guardrails",
+      "reflection": "Useful policy protection, but not feature progress."
+    },
+    {
+      "commit": "56212767",
+      "title": "test: carry vdcores window contract in work queue",
+      "focus": "tests_or_guardrails",
+      "reflection": "Useful handoff protection, but still planning/test surface."
+    },
+    {
+      "commit": "7893bd9d",
+      "title": "test: guard vdcores window handoff evidence",
+      "focus": "tests_or_guardrails",
+      "reflection": "Evidence guard; does not run the benchmark model."
+    },
+    {
+      "commit": "787023ff",
+      "title": "test: guard thunderkittens gemm compatibility evidence",
+      "focus": "tests_or_guardrails",
+      "reflection": "Evidence guard; should not grow into row-by-row history."
+    },
+    {
+      "commit": "88da0949",
+      "title": "docs: surface work queue evidence in backlog",
+      "focus": "viewer_or_docs",
+      "reflection": "Improves reviewer visibility."
+    },
+    {
+      "commit": "c743cb84",
+      "title": "fix: align cuda smoke dag task abi",
+      "focus": "feature_or_runtime",
+      "reflection": "Direct runtime-facing progress; future slices should look more like this."
+    }
+  ],
+  "next_reflection_check": {
+    "cadence": "Before adding another NVIDIA artifact test or changelog-only slice",
+    "question": "Does this change make a benchmark model run farther, or only make reporting stricter?",
+    "preferred_action_if_reporting_only": "Keep the assertion broad, record the limitation in plan history, then return to Qwen full-serving correctness or tuned tensor workloads."
+  }
+}

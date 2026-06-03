@@ -80,6 +80,7 @@ export async function loadViewerData() {
     paperReadinessAudit,
     paperReadinessWorkQueue,
     goalProgress,
+    planHistory,
     results,
   ] = await Promise.all([
     loadJson(DATA_FILES.benchmarks),
@@ -100,6 +101,7 @@ export async function loadViewerData() {
     loadDataFile(DATA_FILES.paperReadinessAudit),
     loadJson(DATA_FILES.paperReadinessWorkQueue),
     loadJson(DATA_FILES.goalProgress),
+    loadJson(DATA_FILES.planHistory),
     loadDataFile(DATA_FILES.results),
   ]);
   return {
@@ -121,6 +123,7 @@ export async function loadViewerData() {
     paperReadinessAudit,
     paperReadinessWorkQueue,
     goalProgress,
+    planHistory,
     results,
   };
 }
