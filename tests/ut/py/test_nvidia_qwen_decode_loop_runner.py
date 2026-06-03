@@ -421,3 +421,64 @@ def test_preflight_does_not_promote_diagnostic_qwen_rows_to_full_serving():
 
     assert len(full_serving) == 1
     assert full_serving[0]["statistic"]["serving_coverage"] == "full_serving"
+
+
+def test_hf_token_comparison_marks_decode_without_prefill_non_equivalent():
+    from qwen_decode_loop_runner_impl.hf_comparison import (
+        build_hf_token_comparison,
+    )
+
+    pto_payload = {
+        "resource_backed_execution": {
+            "status": "pass",
+            "workloads": [
+                {
+                    "workload_id": "mpk_offline_decode",
+                    "status": "pass",
+                    "graph_task_count": 255,
+                    "prompt_prefill": {"status": "not_requested"},
+                    "scheduler_counters": {
+                        "completed_count": 255,
+                        "error_count": 0,
+                    },
+                    "repeat_results": [
+                        {
+                            "decode_position": 17,
+                            "logits_summary": {
+                                "topk": [{"token_id": 220, "logit": 6.285215}],
+                                "diagnostic_reference": {
+                                    "status": "pass",
+                                    "max_abs_error": 6.04e-06,
+                                },
+                            },
+                        }
+                    ],
+                }
+            ],
+        }
+    }
+    hf_payload = {
+        "status": "pass",
+        "logits_position": "last_active_prompt_token",
+        "top_token_id": 151667,
+        "top_logit": 36.0,
+    }
+
+    comparison = build_hf_token_comparison(
+        pto_payload,
+        hf_payload,
+        pto_artifact="tmp/pto.json",
+        hf_reference="tmp/hf.json",
+    )
+
+    assert comparison["status"] == "fail"
+    assert comparison["comparison_scope"] == (
+        "diagnostic_decode_without_prompt_prefill"
+    )
+    assert comparison["model_equivalent_ready"] is False
+    assert comparison["blocking_reasons"] == [
+        "prompt_prefill_not_executed",
+        "token_mismatch",
+    ]
+    assert comparison["pto_top_token_id"] == 220
+    assert comparison["hf_top_token_id"] == 151667

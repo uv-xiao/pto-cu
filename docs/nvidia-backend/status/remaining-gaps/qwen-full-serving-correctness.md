@@ -34,8 +34,10 @@ decoder prefix with full projection and logits windows: 255 tasks complete
 with zero scheduler errors, no row-0 non-finite activations, full finite
 logits, populated top-k, device feedback for the sampled token, and a passing
 diagnostic logits reference. This closes the old full-prefix finite-logits
-blocker, but not full-serving correctness: the PTO top token is `220`, while
-the Hugging Face reference top token is `151667`.
+blocker, but not full-serving correctness. The current comparison is still
+diagnostic rather than model-equivalent because prompt prefill was not
+executed before the decode-position 17 readout; it records PTO top token
+`220`, while the Hugging Face reference top token is `151667`.
 
 The generated-token feedback path now uses one prompt-ring contract across
 host feedback, device logits feedback, and embedding lookup. Earlier
@@ -98,8 +100,11 @@ Recent raw A100 evidence stays under `tmp/`:
   `diagnostic_reference.status=pass`, and device feedback for sampled token
   `220`. The generated comparison record
   `qwen-full-prefix-hf-token-comparison.json` still fails the Hugging Face
-  agreement gate because PTO selects token `220` while the Hugging Face
-  reference selects token `151667`.
+  agreement gate with
+  `comparison_scope=diagnostic_decode_without_prompt_prefill` and
+  `blocking_reasons=[prompt_prefill_not_executed, token_mismatch]`: PTO
+  selects token `220` while the Hugging Face reference selects token
+  `151667`.
 - `tmp/cuda-backend/qwen-prefill-readout-full-projection-mpk-2026-06-03/`
   records no JSON artifact; the local A100 full 36-layer prompt-prefill
   attempt with full projection and logits columns was stopped after saturating
@@ -117,9 +122,9 @@ Close this gap only after PTO rows for both `mpk_offline_decode` and
 
 ## Next Actions
 
-- Close the full-prefix Hugging Face token/logit mismatch. Prioritize
-  model-correct prefill, KV-cache state, attention, and decode semantics over
-  additional diagnostic-only scalar task-body evidence.
+- Close model-equivalent prompt-prefill and Hugging Face token/logit
+  agreement. Prioritize model-correct prefill, KV-cache state, attention, and
+  decode semantics over additional diagnostic-only scalar task-body evidence.
 - Re-run the Hugging Face comparison after each kernel-fidelity fix.
 - Capture policy-length MPK and VDCores serving rows only after correctness
   passes.

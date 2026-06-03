@@ -23,10 +23,11 @@ status docs.
 
 ## Evaluation Run
 
-The generated queue now states that PTO selected token `220` while the
-Hugging Face reference selected token `151667` at decode position 17. It also
-records the finite full-prefix evidence: 255/255 tasks completed, zero
-scheduler errors, no row-0 non-finite activations, full finite logits,
+The generated queue now states that the comparison is diagnostic rather than
+model-equivalent: prompt prefill was not executed, PTO selected token `220`,
+and the Hugging Face reference selected token `151667` at decode position 17.
+It also records the finite full-prefix evidence: 255/255 tasks completed,
+zero scheduler errors, no row-0 non-finite activations, full finite logits,
 populated top-k, device feedback for token `220`, and a passing diagnostic
 reference.
 
