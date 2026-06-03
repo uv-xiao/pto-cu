@@ -3121,6 +3121,32 @@ def test_generated_tensor_capture_scripts_label_model_shape_tiles():
     )
 
 
+def test_cutlass_tensor_capture_gencode_matches_requested_arch():
+    script_dir = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+    )
+    cutlass_spec = importlib.util.spec_from_file_location(
+        "cutlass_tensor_tile_capture_for_gencode_test",
+        script_dir / "cutlass_tensor_tile_capture.py",
+    )
+    assert cutlass_spec is not None
+    assert cutlass_spec.loader is not None
+    cutlass_module = importlib.util.module_from_spec(cutlass_spec)
+    sys.modules[cutlass_spec.name] = cutlass_module
+    cutlass_spec.loader.exec_module(cutlass_module)
+
+    assert cutlass_module.nvcc_gencode("compute_80") == (
+        "-gencode=arch=compute_80,code=compute_80"
+    )
+    assert cutlass_module.nvcc_gencode("compute_90") == (
+        "-gencode=arch=compute_90,code=compute_90"
+    )
+
+
 def test_paper_baseline_viewer_export_generates_contract_records(tmp_path):
     raw = {
         "metadata": {
@@ -5329,25 +5355,38 @@ def test_tensor_workload_coverage_records_multi_repeat_qwen_capture():
                 assert record["correctness"] == "pass"
                 assert record["raw_artifact"] == hardware_capture["artifact_root"]
         generated = target["generated_kernel_capture"]
-        assert generated["status"] == "a100_multi_repeat"
-        assert generated["hardware"] == {
-            "gpu": "A100",
-            "compute_target": "compute_80",
+        assert generated["status"] == "a100_h200_multi_repeat"
+        generated_captures = generated["captures"]
+        generated_by_gpu = {
+            item["hardware"]["gpu"]: item for item in generated_captures
         }
+        assert set(generated_by_gpu) == {"A100", "H200"}
+        assert (
+            generated_by_gpu["A100"]["hardware"]["compute_target"]
+            == "compute_80"
+        )
+        assert (
+            generated_by_gpu["H200"]["hardware"]["compute_target"]
+            == "compute_90"
+        )
         assert generated["sample_count"] >= 3
         assert set(generated["methods"]) == {"triton", "cutlass"}
-        for exported_records_path in generated["exported_records_paths"]:
-            records = json.loads(
-                (ROOT / exported_records_path).read_text(encoding="utf-8")
-            )
-            assert records
-            for record in records:
-                assert record["method_id"] in generated["methods"]
-                assert record["statistic"]["sample_count"] == (
-                    generated["sample_count"]
+        for hardware_capture in generated_captures:
+            assert set(hardware_capture["methods"]) == {"triton", "cutlass"}
+            for exported_records_path in hardware_capture["exported_records_paths"]:
+                records = json.loads(
+                    (ROOT / exported_records_path).read_text(encoding="utf-8")
                 )
-                assert record["correctness"] == "pass"
-                assert exported_records_path.startswith(record["raw_artifact"])
+                assert records
+                for record in records:
+                    assert record["method_id"] in hardware_capture["methods"]
+                    assert record["statistic"]["sample_count"] == (
+                        generated["sample_count"]
+                    )
+                    assert record["correctness"] == "pass"
+                    assert exported_records_path.startswith(
+                        record["raw_artifact"]
+                    )
 
 
 def test_cuda_persistent_smoke_dag_task_matches_compiler_abi():

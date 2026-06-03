@@ -346,17 +346,6 @@ def validate_generated_kernel_capture(
     status = require_string(capture, "status", owner)
     if status not in {"a100_multi_repeat", "a100_h200_multi_repeat"}:
         fail(f"{owner} generated_kernel_capture has invalid status: {status}")
-    artifact_roots = require_list(capture, "artifact_roots", owner)
-    exported_paths = require_list(capture, "exported_records_paths", owner)
-    if len(artifact_roots) != len(exported_paths):
-        fail(f"{owner} generated_kernel_capture path counts mismatch")
-    for artifact_root in artifact_roots:
-        if not isinstance(artifact_root, str):
-            fail(f"{owner} generated_kernel_capture artifact root is not a string")
-        require_current_artifact_path(root, artifact_root, owner)
-    hardware = require_dict(capture, "hardware", owner)
-    gpu = require_string(hardware, "gpu", owner)
-    compute_target = require_string(hardware, "compute_target", owner)
     methods = set(require_list(capture, "methods", owner))
     if methods != {"triton", "cutlass"}:
         fail(f"{owner} generated_kernel_capture methods mismatch: {sorted(methods)}")
@@ -381,6 +370,67 @@ def validate_generated_kernel_capture(
         f"{target['tensor_tile']['cols']}x"
         f"{target['tensor_tile']['inner']}"
     )
+    captures = capture.get("captures")
+    if captures is None:
+        captures = [
+            {
+                "artifact_roots": require_list(capture, "artifact_roots", owner),
+                "exported_records_paths": require_list(
+                    capture,
+                    "exported_records_paths",
+                    owner,
+                ),
+                "hardware": require_dict(capture, "hardware", owner),
+                "methods": list(methods),
+            }
+        ]
+    if not isinstance(captures, list) or not captures:
+        fail(f"{owner} generated_kernel_capture captures must be a list")
+    seen_gpus: set[str] = set()
+    for hardware_capture in captures:
+        if not isinstance(hardware_capture, dict):
+            fail(f"{owner} generated_kernel_capture capture is not an object")
+        gpu = validate_generated_kernel_hardware_capture(
+            hardware_capture,
+            owner,
+            methods,
+            sample_count,
+            shape,
+            root,
+        )
+        seen_gpus.add(gpu)
+    if status == "a100_h200_multi_repeat" and seen_gpus != {"A100", "H200"}:
+        fail(
+            f"{owner} generated_kernel_capture must include A100 and H200 captures"
+        )
+
+
+def validate_generated_kernel_hardware_capture(
+    hardware_capture: dict[str, Any],
+    owner: str,
+    required_methods: set[str],
+    sample_count: int,
+    shape: str,
+    root: Path,
+) -> str:
+    artifact_roots = require_list(hardware_capture, "artifact_roots", owner)
+    exported_paths = require_list(
+        hardware_capture,
+        "exported_records_paths",
+        owner,
+    )
+    if len(artifact_roots) != len(exported_paths):
+        fail(f"{owner} generated_kernel_capture path counts mismatch")
+    for artifact_root in artifact_roots:
+        if not isinstance(artifact_root, str):
+            fail(f"{owner} generated_kernel_capture artifact root is not a string")
+        require_current_artifact_path(root, artifact_root, owner)
+    hardware = require_dict(hardware_capture, "hardware", owner)
+    gpu = require_string(hardware, "gpu", owner)
+    compute_target = require_string(hardware, "compute_target", owner)
+    methods = set(require_list(hardware_capture, "methods", owner))
+    if methods != required_methods:
+        fail(f"{owner} generated_kernel_capture hardware methods mismatch")
     seen_methods: set[str] = set()
     for exported_path in exported_paths:
         if not isinstance(exported_path, str):
@@ -424,6 +474,7 @@ def validate_generated_kernel_capture(
     if seen_methods != methods:
         missing = sorted(methods - seen_methods)
         fail(f"{owner} generated_kernel_capture missing methods: {missing}")
+    return gpu
 
 
 def check_import_smoke_commands(

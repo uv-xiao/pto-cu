@@ -102,7 +102,7 @@
         "remaining_scope": "ThunderKittens comparable rows remain required before closing the tuned tensor workload gap."
       },
       "generated_kernel_capture": {
-        "status": "a100_multi_repeat",
+        "status": "a100_h200_multi_repeat",
         "artifact_roots": [
           "tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/triton/",
           "tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/cutlass/"
@@ -122,9 +122,49 @@
         ],
         "commands": [
           "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/triton_tensor_tile_capture.py --device 0 --rows 16 --cols 64 --inner 128 --tile-count 1 --warmup 3 --repeats 3 --output tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/triton/capture.json --artifact-root tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/triton/ --viewer-output tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/triton/viewer-records.json",
-          "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cutlass_tensor_tile_capture.py --device 0 --rows 16 --cols 64 --inner 128 --tile-count 1 --warmup 3 --repeats 3 --arch compute_80 --output tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/cutlass/capture.json --artifact-root tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/cutlass/ --viewer-output tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/cutlass/viewer-records.json"
+          "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cutlass_tensor_tile_capture.py --device 0 --rows 16 --cols 64 --inner 128 --tile-count 1 --warmup 3 --repeats 3 --arch compute_80 --output tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/cutlass/capture.json --artifact-root tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/cutlass/ --viewer-output tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/cutlass/viewer-records.json",
+          "ssh <h200-host> 'cd <remote-pto-cu> && CUDA_HOME=/usr/local/cuda-12.8 PATH=/usr/local/cuda-12.8/bin:$PATH PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/triton_tensor_tile_capture.py --device 0 --rows 16 --cols 64 --inner 128 --tile-count 1 --warmup 3 --repeats 3 --output tmp/cuda-backend/qwen-attention-generated-tensor-target-h200-repeat3-e1ab002b/triton/capture.json --artifact-root tmp/cuda-backend/qwen-attention-generated-tensor-target-h200-repeat3-e1ab002b/triton/ --viewer-output tmp/cuda-backend/qwen-attention-generated-tensor-target-h200-repeat3-e1ab002b/triton/viewer-records.json'",
+          "ssh <h200-host> 'cd <remote-pto-cu> && CUDA_HOME=/usr/local/cuda-12.8 PATH=/usr/local/cuda-12.8/bin:$PATH PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cutlass_tensor_tile_capture.py --device 0 --rows 16 --cols 64 --inner 128 --tile-count 1 --warmup 3 --repeats 3 --arch compute_90 --output tmp/cuda-backend/qwen-attention-generated-tensor-target-h200-repeat3-e1ab002b/cutlass/capture.json --artifact-root tmp/cuda-backend/qwen-attention-generated-tensor-target-h200-repeat3-e1ab002b/cutlass/ --viewer-output tmp/cuda-backend/qwen-attention-generated-tensor-target-h200-repeat3-e1ab002b/cutlass/viewer-records.json'"
         ],
-        "remaining_scope": "H200 capture and ThunderKittens comparator rows remain required before closing the tuned tensor workload gap."
+        "remaining_scope": "ThunderKittens comparator rows remain required before closing the tuned tensor workload gap.",
+        "captures": [
+          {
+            "artifact_roots": [
+              "tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/triton/",
+              "tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/cutlass/"
+            ],
+            "exported_records_paths": [
+              "tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/triton/viewer-records.json",
+              "tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/cutlass/viewer-records.json"
+            ],
+            "hardware": {
+              "gpu": "A100",
+              "compute_target": "compute_80"
+            },
+            "methods": [
+              "triton",
+              "cutlass"
+            ]
+          },
+          {
+            "artifact_roots": [
+              "tmp/cuda-backend/qwen-attention-generated-tensor-target-h200-repeat3-e1ab002b/triton/",
+              "tmp/cuda-backend/qwen-attention-generated-tensor-target-h200-repeat3-e1ab002b/cutlass/"
+            ],
+            "exported_records_paths": [
+              "tmp/cuda-backend/qwen-attention-generated-tensor-target-h200-repeat3-e1ab002b/triton/viewer-records.json",
+              "tmp/cuda-backend/qwen-attention-generated-tensor-target-h200-repeat3-e1ab002b/cutlass/viewer-records.json"
+            ],
+            "hardware": {
+              "gpu": "H200",
+              "compute_target": "compute_90"
+            },
+            "methods": [
+              "triton",
+              "cutlass"
+            ]
+          }
+        ]
       }
     },
     {
@@ -223,7 +263,7 @@
         "remaining_scope": "ThunderKittens comparable rows remain required before closing the tuned tensor workload gap."
       },
       "generated_kernel_capture": {
-        "status": "a100_multi_repeat",
+        "status": "a100_h200_multi_repeat",
         "artifact_roots": [
           "tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/triton/",
           "tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/cutlass/"
@@ -243,9 +283,49 @@
         ],
         "commands": [
           "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/triton_tensor_tile_capture.py --device 0 --rows 16 --cols 64 --inner 256 --tile-count 1 --warmup 3 --repeats 3 --output tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/triton/capture.json --artifact-root tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/triton/ --viewer-output tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/triton/viewer-records.json",
-          "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cutlass_tensor_tile_capture.py --device 0 --rows 16 --cols 64 --inner 256 --tile-count 1 --warmup 3 --repeats 3 --arch compute_80 --output tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/cutlass/capture.json --artifact-root tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/cutlass/ --viewer-output tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/cutlass/viewer-records.json"
+          "PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cutlass_tensor_tile_capture.py --device 0 --rows 16 --cols 64 --inner 256 --tile-count 1 --warmup 3 --repeats 3 --arch compute_80 --output tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/cutlass/capture.json --artifact-root tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/cutlass/ --viewer-output tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/cutlass/viewer-records.json",
+          "ssh <h200-host> 'cd <remote-pto-cu> && CUDA_HOME=/usr/local/cuda-12.8 PATH=/usr/local/cuda-12.8/bin:$PATH PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/triton_tensor_tile_capture.py --device 0 --rows 16 --cols 64 --inner 256 --tile-count 1 --warmup 3 --repeats 3 --output tmp/cuda-backend/qwen-mlp-generated-tensor-target-h200-repeat3-e1ab002b/triton/capture.json --artifact-root tmp/cuda-backend/qwen-mlp-generated-tensor-target-h200-repeat3-e1ab002b/triton/ --viewer-output tmp/cuda-backend/qwen-mlp-generated-tensor-target-h200-repeat3-e1ab002b/triton/viewer-records.json'",
+          "ssh <h200-host> 'cd <remote-pto-cu> && CUDA_HOME=/usr/local/cuda-12.8 PATH=/usr/local/cuda-12.8/bin:$PATH PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda .venv/bin/python .agents/skills/cuda-backend-eval/scripts/cutlass_tensor_tile_capture.py --device 0 --rows 16 --cols 64 --inner 256 --tile-count 1 --warmup 3 --repeats 3 --arch compute_90 --output tmp/cuda-backend/qwen-mlp-generated-tensor-target-h200-repeat3-e1ab002b/cutlass/capture.json --artifact-root tmp/cuda-backend/qwen-mlp-generated-tensor-target-h200-repeat3-e1ab002b/cutlass/ --viewer-output tmp/cuda-backend/qwen-mlp-generated-tensor-target-h200-repeat3-e1ab002b/cutlass/viewer-records.json'"
         ],
-        "remaining_scope": "H200 capture and ThunderKittens comparator rows remain required before closing the tuned tensor workload gap."
+        "remaining_scope": "ThunderKittens comparator rows remain required before closing the tuned tensor workload gap.",
+        "captures": [
+          {
+            "artifact_roots": [
+              "tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/triton/",
+              "tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/cutlass/"
+            ],
+            "exported_records_paths": [
+              "tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/triton/viewer-records.json",
+              "tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/cutlass/viewer-records.json"
+            ],
+            "hardware": {
+              "gpu": "A100",
+              "compute_target": "compute_80"
+            },
+            "methods": [
+              "triton",
+              "cutlass"
+            ]
+          },
+          {
+            "artifact_roots": [
+              "tmp/cuda-backend/qwen-mlp-generated-tensor-target-h200-repeat3-e1ab002b/triton/",
+              "tmp/cuda-backend/qwen-mlp-generated-tensor-target-h200-repeat3-e1ab002b/cutlass/"
+            ],
+            "exported_records_paths": [
+              "tmp/cuda-backend/qwen-mlp-generated-tensor-target-h200-repeat3-e1ab002b/triton/viewer-records.json",
+              "tmp/cuda-backend/qwen-mlp-generated-tensor-target-h200-repeat3-e1ab002b/cutlass/viewer-records.json"
+            ],
+            "hardware": {
+              "gpu": "H200",
+              "compute_target": "compute_90"
+            },
+            "methods": [
+              "triton",
+              "cutlass"
+            ]
+          }
+        ]
       }
     }
   ],
@@ -386,7 +466,6 @@
         "throughput SVG/report generation"
       ],
       "open_work": [
-        "publish H200 multi-repeat generated CUTLASS and Triton rows",
         "add ThunderKittens comparator rows for the Qwen tensor target shapes"
       ],
       "result_refs": [],

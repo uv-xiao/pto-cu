@@ -24,6 +24,10 @@ def tensor_tile_shape(rows: int, cols: int, inner: int) -> str:
     return f"n=1024, tensor tile {rows}x{cols}x{inner}"
 
 
+def nvcc_gencode(arch: str) -> str:
+    return f"-gencode=arch={arch},code={arch}"
+
+
 def fail(message: str) -> None:
     raise SystemExit(f"cutlass tensor tile capture failed: {message}")
 
@@ -491,7 +495,7 @@ def compile_capture_binary(args: argparse.Namespace, artifact_dir: Path, nvcc: s
         "-O3",
         f"-I{CUTLASS_ROOT / 'include'}",
         f"-I{CUTLASS_ROOT / 'tools' / 'util' / 'include'}",
-        f"-gencode=arch={args.arch},code=compute_80",
+        nvcc_gencode(args.arch),
         str(source),
         "-o",
         str(binary),

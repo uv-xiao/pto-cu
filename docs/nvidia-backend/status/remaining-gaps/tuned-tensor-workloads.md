@@ -40,9 +40,9 @@ ABI and omitted `tensor_arg_dtypes`, which made current graph tensor-core
 launch packets fail with scheduler error code `5(initial_fanin_mismatch)`.
 The smoke runner now matches the compiler/runtime ABI and dispatches Qwen
 tensor function ids `7240` and `7241` for the target tiles.
-Current generated-kernel evidence also includes A100 three-repeat Triton and
-CUTLASS comparator captures for the same Qwen attention and MLP tensor tiles.
-The comparator capture scripts now label records with the concrete
+Current generated-kernel evidence also includes A100 and H200 three-repeat
+Triton and CUTLASS comparator captures for the same Qwen attention and MLP
+tensor tiles. The comparator capture scripts now label records with the concrete
 model-shape tile, so viewer rows for generated kernels can be checked against
 the Qwen target shape instead of the generic diagnostic tensor shape.
 
@@ -50,8 +50,6 @@ Needed:
 
 - broader model-kernel shape families once the tensor-core/library path
   exists;
-- H200 multi-repeat generated CUTLASS and Triton rows for the Qwen tensor
-  tiles;
 - ThunderKittens comparator rows for the same model-shape tiles.
 
 ## Current Evidence
@@ -73,6 +71,10 @@ The current A100 Triton/CUTLASS comparator captures are under
 `tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/`
 and
 `tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/`.
+The current H200 Triton/CUTLASS comparator captures are under
+`tmp/cuda-backend/qwen-attention-generated-tensor-target-h200-repeat3-e1ab002b/`
+and
+`tmp/cuda-backend/qwen-mlp-generated-tensor-target-h200-repeat3-e1ab002b/`.
 The source-contract evidence is emitted by
 `examples/cuda/qwen_persistent_task_bodies.py` as
 `qwen_tensor_tile_contract`.
@@ -87,8 +89,6 @@ comparable on the required hardware.
 
 ## Next Actions
 
-- Capture H200 generated CUTLASS and Triton rows for both Qwen model-shape
-  tiles.
 - Capture ThunderKittens comparator rows for the same tile shapes.
 - Promote the A100/H200 rows into final viewer result records only after the
   comparator set is complete.
