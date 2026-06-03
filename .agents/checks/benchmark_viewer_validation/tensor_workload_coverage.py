@@ -222,32 +222,6 @@ def validate_throughput_capture(
     status = require_string(capture, "status", owner)
     if status not in {"a100_multi_repeat", "a100_h200_multi_repeat"}:
         fail(f"{owner} throughput_capture has invalid status: {status}")
-    artifact_root = require_string(capture, "artifact_root", owner)
-    require_current_artifact_path(root, artifact_root, owner)
-    hardware = require_dict(capture, "hardware", owner)
-    gpu = require_string(hardware, "gpu", owner)
-    compute_target = require_string(hardware, "compute_target", owner)
-    if gpu not in {"A100", "H200"}:
-        fail(f"{owner} throughput_capture has unsupported gpu: {gpu}")
-    exported_records_path = require_string(
-        capture,
-        "exported_records_path",
-        owner,
-    )
-    if not exported_records_path.startswith(artifact_root):
-        fail(f"{owner} throughput_capture records must live under artifact_root")
-    records_path = root / exported_records_path
-    if not records_path.is_file():
-        fail(
-            f"{owner} throughput_capture records path missing: "
-            f"{exported_records_path}"
-        )
-    try:
-        records = json.loads(records_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        fail(f"{owner} throughput_capture records JSON is invalid: {exc}")
-    if not isinstance(records, list) or not records:
-        fail(f"{owner} throughput_capture records are empty")
     methods = set(require_list(capture, "methods", owner))
     if not methods <= required_methods:
         fail(f"{owner} throughput_capture methods are not required methods")
@@ -265,6 +239,72 @@ def validate_throughput_capture(
         f"{target['tensor_tile']['cols']}x"
         f"{target['tensor_tile']['inner']}"
     )
+    captures = capture.get("captures")
+    if captures is None:
+        captures = [
+            {
+                "artifact_root": require_string(capture, "artifact_root", owner),
+                "exported_records_path": require_string(
+                    capture,
+                    "exported_records_path",
+                    owner,
+                ),
+                "hardware": require_dict(capture, "hardware", owner),
+            }
+        ]
+    if not isinstance(captures, list) or not captures:
+        fail(f"{owner} throughput_capture captures must be a non-empty list")
+    seen_gpus: set[str] = set()
+    for hardware_capture in captures:
+        if not isinstance(hardware_capture, dict):
+            fail(f"{owner} throughput_capture capture is not an object")
+        gpu = validate_throughput_hardware_capture(
+            hardware_capture,
+            owner,
+            methods,
+            sample_count,
+            shape,
+            root,
+        )
+        seen_gpus.add(gpu)
+    if status == "a100_h200_multi_repeat" and seen_gpus != {"A100", "H200"}:
+        fail(f"{owner} throughput_capture must include A100 and H200 captures")
+
+
+def validate_throughput_hardware_capture(
+    hardware_capture: dict[str, Any],
+    owner: str,
+    methods: set[str],
+    sample_count: int,
+    shape: str,
+    root: Path,
+) -> str:
+    artifact_root = require_string(hardware_capture, "artifact_root", owner)
+    require_current_artifact_path(root, artifact_root, owner)
+    hardware = require_dict(hardware_capture, "hardware", owner)
+    gpu = require_string(hardware, "gpu", owner)
+    compute_target = require_string(hardware, "compute_target", owner)
+    if gpu not in {"A100", "H200"}:
+        fail(f"{owner} throughput_capture has unsupported gpu: {gpu}")
+    exported_records_path = require_string(
+        hardware_capture,
+        "exported_records_path",
+        owner,
+    )
+    if not exported_records_path.startswith(artifact_root):
+        fail(f"{owner} throughput_capture records must live under artifact_root")
+    records_path = root / exported_records_path
+    if not records_path.is_file():
+        fail(
+            f"{owner} throughput_capture records path missing: "
+            f"{exported_records_path}"
+        )
+    try:
+        records = json.loads(records_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"{owner} throughput_capture records JSON is invalid: {exc}")
+    if not isinstance(records, list) or not records:
+        fail(f"{owner} throughput_capture records are empty")
     record_methods = {record.get("method_id") for record in records}
     if not methods <= record_methods:
         fail(f"{owner} throughput_capture records missing methods: {sorted(methods)}")
@@ -289,6 +329,7 @@ def validate_throughput_capture(
         statistic = record.get("statistic", {})
         if statistic.get("sample_count") != sample_count:
             fail(f"{owner} throughput_capture sample count mismatch")
+    return gpu
 
 
 def validate_generated_kernel_capture(

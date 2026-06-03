@@ -5295,33 +5295,39 @@ def test_tensor_workload_coverage_records_multi_repeat_qwen_capture():
     ):
         target = targets[target_id]
         capture = target["throughput_capture"]
-        assert capture["status"] == "a100_multi_repeat"
-        assert capture["hardware"] == {
-            "gpu": "A100",
-            "compute_target": "compute_80",
-        }
+        assert capture["status"] == "a100_h200_multi_repeat"
+        captures = capture["captures"]
+        by_gpu = {item["hardware"]["gpu"]: item for item in captures}
+        assert set(by_gpu) == {"A100", "H200"}
+        assert by_gpu["A100"]["hardware"]["compute_target"] == "compute_80"
+        assert by_gpu["H200"]["hardware"]["compute_target"] == "compute_90"
         assert capture["sample_count"] >= 3
         assert set(capture["methods"]) == {
             "pto_persistent_device",
             "cublas_sgemm_graph",
         }
-        assert capture["artifact_root"].startswith("tmp/cuda-backend/")
-        assert capture["exported_records_path"].startswith(
-            capture["artifact_root"]
-        )
-        records = json.loads(
-            (ROOT / capture["exported_records_path"]).read_text(
-                encoding="utf-8"
+        for hardware_capture in captures:
+            assert hardware_capture["artifact_root"].startswith(
+                "tmp/cuda-backend/"
             )
-        )
-        record_methods = {record["method_id"] for record in records}
-        assert set(capture["methods"]) <= record_methods
-        for record in records:
-            if record["method_id"] not in capture["methods"]:
-                continue
-            assert record["statistic"]["sample_count"] == capture["sample_count"]
-            assert record["correctness"] == "pass"
-            assert record["raw_artifact"] == capture["artifact_root"]
+            assert hardware_capture["exported_records_path"].startswith(
+                hardware_capture["artifact_root"]
+            )
+            records = json.loads(
+                (ROOT / hardware_capture["exported_records_path"]).read_text(
+                    encoding="utf-8"
+                )
+            )
+            record_methods = {record["method_id"] for record in records}
+            assert set(capture["methods"]) <= record_methods
+            for record in records:
+                if record["method_id"] not in capture["methods"]:
+                    continue
+                assert record["statistic"]["sample_count"] == (
+                    capture["sample_count"]
+                )
+                assert record["correctness"] == "pass"
+                assert record["raw_artifact"] == hardware_capture["artifact_root"]
         generated = target["generated_kernel_capture"]
         assert generated["status"] == "a100_multi_repeat"
         assert generated["hardware"] == {
