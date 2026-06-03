@@ -30,6 +30,31 @@ def active_logits_written_elements(final_task: Any, workspace: dict[str, Any]) -
     return min(buffer_elements, rows * active_cols)
 
 
+def active_logits_sample_extent(final_task: Any, workspace: dict[str, Any]) -> int:
+    buffer_elements = logits_written_elements(workspace)
+    cols = int(getattr(final_task, "cols", 0))
+    task_elements = int(getattr(final_task, "n", 0))
+    if buffer_elements <= 0 or cols <= 0 or task_elements <= 0:
+        return buffer_elements
+    requested_active_cols = int(float(getattr(final_task, "scalar1", 0.0)))
+    active_cols = requested_active_cols if requested_active_cols > 0 else cols
+    active_cols = min(active_cols, cols)
+    rows = task_elements // cols
+    if rows <= 0 or active_cols <= 0:
+        return 0
+    extent = (rows - 1) * cols + active_cols
+    return min(buffer_elements, extent)
+
+
+def active_logits_cols(final_task: Any) -> int:
+    cols = int(getattr(final_task, "cols", 0))
+    if cols <= 0:
+        return 0
+    requested_active_cols = int(float(getattr(final_task, "scalar1", 0.0)))
+    active_cols = requested_active_cols if requested_active_cols > 0 else cols
+    return min(active_cols, cols)
+
+
 def summarize_logits_values(
     values: list[float],
     *,
@@ -155,6 +180,7 @@ def diagnostic_logits_reference_indices(
     *,
     value_count: int,
     cols: int,
+    active_cols: int | None = None,
     hidden_width: int,
     weight_stride: int,
     max_weight_elements: int,
@@ -168,7 +194,12 @@ def diagnostic_logits_reference_indices(
         + 1
     )
     row_count = max(1, math.ceil(int(value_count) / int(cols)))
-    column_budget = min(int(cols), max_weight_backed_cols)
+    active_column_budget = (
+        int(active_cols)
+        if active_cols is not None and int(active_cols) > 0
+        else int(cols)
+    )
+    column_budget = min(int(cols), active_column_budget, max_weight_backed_cols)
     checked = min(int(value_count), int(max_checked_elements))
     if checked <= 0 or column_budget <= 0:
         return []

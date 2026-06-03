@@ -8,6 +8,9 @@
   tokens to `(decode_position + 1) % prompt_stride`.
 - Updated host-side `feedback_input_index()` to use the same modulo policy
   when observing device-committed feedback.
+- Updated bounded-logits result reading so active columns are sampled through
+  the row-strided logits extent while diagnostic reference checks stay inside
+  the active window.
 - Added source-contract regression coverage so the host feedback ring policy
   and device task bodies stay aligned.
 
@@ -19,6 +22,12 @@ change, the device logits body skipped writes beyond the runtime prompt stride,
 embedding clamped reads to the last prompt slot, and host observation collapsed
 all wrapped positions to slot 0. Long decode diagnostics could therefore report
 completed scheduler work without proving generated-token chaining.
+
+Bounded logits windows are still written at `row * vocab_cols + col`, not as a
+dense `rows * active_cols` prefix. The resource-backed reader now copies
+through the last active row-strided element and limits diagnostic reference
+indices to active columns, so bounded diagnostic checks no longer compare
+inactive row gaps against projected logits.
 
 ## Evaluation Run
 
@@ -35,16 +44,29 @@ PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda \
 
 Result after the fix: `2 passed, 10 deselected`.
 
-Adjacent Qwen task-body and decode-feedback regression suite passed:
+Focused bounded-logits reader regressions passed:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda \
   .venv/bin/python -m pytest \
+  tests/ut/py/test_nvidia_qwen_single_context_session.py \
+  -q -k 'active_logits_sample_extent or diagnostic_logits_reference_indices_stay_inside_active_window'
+```
+
+Result: `2 passed, 14 deselected`.
+
+Adjacent Qwen resource-graph, task-body, and decode-feedback regression suite
+passed:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python:$PWD/examples/cuda \
+  .venv/bin/python -m pytest \
+  tests/ut/py/test_nvidia_qwen_single_context_session.py \
   tests/ut/py/test_nvidia_qwen_decode_feedback.py \
   tests/ut/py/test_nvidia_qwen_task_body_math.py -q
 ```
 
-Result: `12 passed`.
+Result: `28 passed`.
 
 A100 first-layer MPK-policy feedback-ring smoke passed scheduler and device
 feedback checks:
@@ -76,6 +98,20 @@ ring boundary is visible: decode position 63 writes `next_input_index = 0`,
 and decode position 64 writes `next_input_index = 1`. The final diagnostic
 logits reference fails after the long bounded loop, so this artifact is
 token-feedback-ring evidence only, not logits-correctness evidence.
+
+A corrected A100 first-layer MPK-policy bounded-logits smoke passed scheduler,
+device feedback, and diagnostic logits reference checks:
+
+```text
+tmp/cuda-backend/qwen-feedback-ring-bounded-logits-mpk-2026-06-03/
+```
+
+The artifact records 49 executed decode steps, 490 task completions, zero
+scheduler errors, and `device_token_feedback_observed` for every step. The
+final step at decode position 64 writes `next_input_index = 1`. Its bounded
+diagnostic logits reference checks 2,048 active-window logits across 16 rows,
+passes with `max_abs_error = 2.44e-06`, and reports 2,048 written logits over
+a row-strided sample extent of 2,279,168 floats.
 
 An A100 full 36-layer prompt-prefill/readout attempt with full projection and
 full logits columns was started under

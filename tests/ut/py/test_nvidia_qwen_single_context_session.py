@@ -445,6 +445,26 @@ def test_active_logits_written_elements_uses_diagnostic_window():
     assert written == 4
 
 
+def test_active_logits_sample_extent_preserves_row_strided_window():
+    module = load_resource_graph_module()
+
+    class FinalTask:
+        n = 32
+        cols = 16
+        scalar1 = 4.0
+
+    extent = module.active_logits_sample_extent(
+        FinalTask(),
+        {"logits_buffer": {"element_count": 32}},
+    )
+
+    assert module.active_logits_written_elements(
+        FinalTask(),
+        {"logits_buffer": {"element_count": 32}},
+    ) == 8
+    assert extent == 20
+
+
 def test_resource_backed_logits_summary_marks_full_buffer_written_prefix_sampled():
     module = load_resource_graph_module()
 
@@ -546,6 +566,22 @@ def test_diagnostic_logits_reference_samples_large_vocab_rows():
         checked_indices=indices,
         cols=151_936,
     ) == 16
+
+
+def test_diagnostic_logits_reference_indices_stay_inside_active_window():
+    module = load_resource_graph_module()
+
+    indices = module.diagnostic_logits_reference_indices(
+        value_count=20,
+        cols=16,
+        active_cols=4,
+        hidden_width=2,
+        weight_stride=2,
+        max_weight_elements=32,
+        max_checked_elements=32,
+    )
+
+    assert indices == [0, 16, 1, 17, 2, 18, 3, 19]
 
 
 def test_diagnostic_logits_reference_decodes_bfloat16_weights():

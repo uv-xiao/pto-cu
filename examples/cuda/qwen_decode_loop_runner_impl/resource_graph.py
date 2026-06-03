@@ -12,6 +12,8 @@ from qwen_decode_loop_runner_impl.resource_logits_reference import (
     MAX_LOGITS_REFERENCE_CHECKED_ELEMENTS,
     MAX_LOGITS_REFERENCE_WEIGHT_ELEMENTS,
     PTO_CUDA_DTYPE_BFLOAT16,
+    active_logits_cols,
+    active_logits_sample_extent,
     active_logits_written_elements,
     compare_logits_reference,
     diagnostic_logits_fallback_values,
@@ -153,8 +155,8 @@ class MaterializedGraph:
     def read_logits_summary(self, workspace: dict[str, Any]) -> dict[str, Any]:
         final_task = self.packet[self.task_count - 1]
         written_elements = active_logits_written_elements(final_task, workspace)
-        checked_elements = written_elements
-        if checked_elements <= 0:
+        sampled_elements = active_logits_sample_extent(final_task, workspace)
+        if sampled_elements <= 0:
             return {
                 "status": "not_sampled",
                 "reason": "no_written_logits",
@@ -164,7 +166,7 @@ class MaterializedGraph:
                 "written_element_count": written_elements,
                 "sampled_element_count": 0,
             }
-        host = (ctypes.c_float * checked_elements)(*([0.0] * checked_elements))
+        host = (ctypes.c_float * sampled_elements)(*([0.0] * sampled_elements))
         ptr = int(workspace["logits_buffer"]["device_ptr_hex"], 0)
         self.copy_from_device(host, ptr, "logits_written_buffer")
         values = [float(value) for value in host]
@@ -204,6 +206,7 @@ class MaterializedGraph:
         checked_indices = diagnostic_logits_reference_indices(
             value_count=len(values),
             cols=cols,
+            active_cols=active_logits_cols(final_task),
             hidden_width=hidden_width,
             weight_stride=weight_stride,
             max_weight_elements=MAX_LOGITS_REFERENCE_WEIGHT_ELEMENTS,
