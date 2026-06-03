@@ -133,7 +133,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             "clock_policy": "not recorded",
         },
         "inputs": {
-            "shape": DEFAULT_SHAPE,
+            "shape": f"n=1024, tensor tile {rows}x{cols}x{inner}",
             "dtype": DEFAULT_DTYPE,
             "repeat_policy": f"{args.repeats}-repeat Triton tensor tile capture",
         },

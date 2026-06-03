@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-03 Qwen generated tensor comparators](2026-06-03-qwen-generated-tensor-comparators.md)
 - [2026-06-03 Qwen feedback ring](2026-06-03-qwen-feedback-ring.md)
 - [2026-06-03 Qwen tensor repeat capture](2026-06-03-qwen-tensor-repeat-capture.md)
 - [2026-06-03 Work queue execution selectors](2026-06-03-work-queue-execution-selectors.md)

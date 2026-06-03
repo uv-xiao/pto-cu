@@ -135,6 +135,7 @@ def validate_model_shape_targets(
             fail(f"{owner} local_import_smoke status lacks import_smoke")
         import_smoke_count += int(has_import_smoke)
         validate_throughput_capture(target, owner, methods, root)
+        validate_generated_kernel_capture(target, owner, methods, root)
         check_evidence_refs(target, owner, root)
     if import_smoke_count < 2:
         fail("tensor workload coverage needs two model-shape import smokes")
@@ -290,35 +291,141 @@ def validate_throughput_capture(
             fail(f"{owner} throughput_capture sample count mismatch")
 
 
+def validate_generated_kernel_capture(
+    target: dict[str, Any],
+    owner: str,
+    required_methods: set[str],
+    root: Path,
+) -> None:
+    capture = target.get("generated_kernel_capture")
+    if capture is None:
+        return
+    if not isinstance(capture, dict):
+        fail(f"{owner} generated_kernel_capture is not an object")
+    status = require_string(capture, "status", owner)
+    if status not in {"a100_multi_repeat", "a100_h200_multi_repeat"}:
+        fail(f"{owner} generated_kernel_capture has invalid status: {status}")
+    artifact_roots = require_list(capture, "artifact_roots", owner)
+    exported_paths = require_list(capture, "exported_records_paths", owner)
+    if len(artifact_roots) != len(exported_paths):
+        fail(f"{owner} generated_kernel_capture path counts mismatch")
+    for artifact_root in artifact_roots:
+        if not isinstance(artifact_root, str):
+            fail(f"{owner} generated_kernel_capture artifact root is not a string")
+        require_current_artifact_path(root, artifact_root, owner)
+    hardware = require_dict(capture, "hardware", owner)
+    gpu = require_string(hardware, "gpu", owner)
+    compute_target = require_string(hardware, "compute_target", owner)
+    methods = set(require_list(capture, "methods", owner))
+    if methods != {"triton", "cutlass"}:
+        fail(f"{owner} generated_kernel_capture methods mismatch: {sorted(methods)}")
+    if not methods <= required_methods:
+        fail(f"{owner} generated_kernel_capture methods are not required methods")
+    sample_count = require_positive_int(capture, "sample_count", owner)
+    if sample_count < 3:
+        fail(f"{owner} generated_kernel_capture must have at least three samples")
+    commands = require_list(capture, "commands", owner)
+    check_import_smoke_commands(
+        commands,
+        methods,
+        target,
+        owner,
+        require_cuda_viewer_export=False,
+        command_owner="generated_kernel_capture",
+    )
+    require_string(capture, "remaining_scope", owner)
+
+    shape = (
+        f"{target['tensor_tile']['rows']}x"
+        f"{target['tensor_tile']['cols']}x"
+        f"{target['tensor_tile']['inner']}"
+    )
+    seen_methods: set[str] = set()
+    for exported_path in exported_paths:
+        if not isinstance(exported_path, str):
+            fail(f"{owner} generated_kernel_capture records path is not a string")
+        if not any(exported_path.startswith(path) for path in artifact_roots):
+            fail(f"{owner} generated_kernel_capture records path is outside roots")
+        records_path = root / exported_path
+        if not records_path.is_file():
+            fail(
+                f"{owner} generated_kernel_capture records path missing: "
+                f"{exported_path}"
+            )
+        try:
+            records = json.loads(records_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            fail(f"{owner} generated_kernel_capture records JSON is invalid: {exc}")
+        if not isinstance(records, list) or not records:
+            fail(f"{owner} generated_kernel_capture records are empty")
+        for record in records:
+            method = record.get("method_id")
+            if method not in methods:
+                fail(f"{owner} generated_kernel_capture record method mismatch")
+            seen_methods.add(method)
+            if record.get("benchmark_id") != "tensor_core_tile":
+                fail(f"{owner} generated_kernel_capture record has wrong benchmark_id")
+            hardware_record = record.get("hardware", {})
+            if (
+                hardware_record.get("gpu") != gpu
+                or hardware_record.get("compute_target") != compute_target
+            ):
+                fail(f"{owner} generated_kernel_capture record has wrong hardware")
+            if shape not in record.get("inputs", {}).get("shape", ""):
+                fail(f"{owner} generated_kernel_capture record has wrong tensor shape")
+            if not exported_path.startswith(str(record.get("raw_artifact", ""))):
+                fail(f"{owner} generated_kernel_capture raw_artifact mismatch")
+            if record.get("correctness") != "pass":
+                fail(f"{owner} generated_kernel_capture record is not correctness pass")
+            statistic = record.get("statistic", {})
+            if statistic.get("sample_count") != sample_count:
+                fail(f"{owner} generated_kernel_capture sample count mismatch")
+    if seen_methods != methods:
+        missing = sorted(methods - seen_methods)
+        fail(f"{owner} generated_kernel_capture missing methods: {missing}")
+
+
 def check_import_smoke_commands(
     commands: list[Any],
     methods: set[str],
     target: dict[str, Any],
     owner: str,
+    require_cuda_viewer_export: bool = True,
+    command_owner: str = "import_smoke",
 ) -> None:
     command_text = "\n".join(
         command for command in commands if isinstance(command, str)
     )
     if len(command_text.splitlines()) != len(commands):
-        fail(f"{owner} import_smoke commands must be strings")
+        fail(f"{owner} {command_owner} commands must be strings")
     required_baselines = {
         "pto_persistent_device": "pto_persistent_dag_graph_tensor_core",
         "cublas_sgemm_graph": "cublas_sgemm_graph",
+        "triton": "triton_tensor_tile_capture.py",
+        "cutlass": "cutlass_tensor_tile_capture.py",
     }
     for method in methods:
         baseline = required_baselines.get(method)
-        if baseline and f"--single-baseline {baseline}" not in command_text:
-            fail(f"{owner} import_smoke command missing baseline {baseline}")
+        if baseline is None:
+            continue
+        if method in {"triton", "cutlass"}:
+            marker = baseline
+        else:
+            marker = f"--single-baseline {baseline}"
+        if marker not in command_text:
+            fail(f"{owner} {command_owner} command missing {baseline}")
     tile = target["tensor_tile"]
-    for flag, key in (
-        ("--tensor-rows", "rows"),
-        ("--tensor-cols", "cols"),
-        ("--tensor-inner", "inner"),
+    for flags, key in (
+        (("--tensor-rows", "--rows"), "rows"),
+        (("--tensor-cols", "--cols"), "cols"),
+        (("--tensor-inner", "--inner"), "inner"),
     ):
-        if f"{flag} {tile[key]}" not in command_text:
-            fail(f"{owner} import_smoke command missing {flag} {tile[key]}")
-    if "cuda_viewer_export.py" not in command_text:
-        fail(f"{owner} import_smoke command missing viewer export")
+        if not any(f"{flag} {tile[key]}" in command_text for flag in flags):
+            fail(f"{owner} {command_owner} command missing {flags[0]} {tile[key]}")
+    if require_cuda_viewer_export and "cuda_viewer_export.py" not in command_text:
+        fail(f"{owner} {command_owner} command missing viewer export")
+    if not require_cuda_viewer_export and "--viewer-output" not in command_text:
+        fail(f"{owner} {command_owner} command missing direct viewer output")
 
 
 def require_positive_int(record: dict[str, Any], key: str, owner: str) -> int:

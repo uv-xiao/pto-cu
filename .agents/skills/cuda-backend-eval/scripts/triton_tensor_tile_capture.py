@@ -31,6 +31,10 @@ from triton_tensor_tile_capture_impl.stats import latency_summary  # noqa: E402
 from triton_tensor_tile_capture_impl.stats import percentile_int  # noqa: E402
 
 
+def tensor_tile_shape(rows: int, cols: int, inner: int) -> str:
+    return f"n=1024, tensor tile {rows}x{cols}x{inner}"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-json", type=Path, help="Convert an existing raw capture.")

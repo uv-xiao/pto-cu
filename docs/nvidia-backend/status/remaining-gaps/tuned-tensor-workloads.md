@@ -40,14 +40,18 @@ ABI and omitted `tensor_arg_dtypes`, which made current graph tensor-core
 launch packets fail with scheduler error code `5(initial_fanin_mismatch)`.
 The smoke runner now matches the compiler/runtime ABI and dispatches Qwen
 tensor function ids `7240` and `7241` for the target tiles.
+Current generated-kernel evidence also includes A100 three-repeat Triton and
+CUTLASS comparator captures for the same Qwen attention and MLP tensor tiles.
+The comparator capture scripts now label records with the concrete
+model-shape tile, so viewer rows for generated kernels can be checked against
+the Qwen target shape instead of the generic diagnostic tensor shape.
 
 Needed:
 
 - broader model-kernel shape families once the tensor-core/library path
   exists;
 - H200 multi-repeat throughput rows for the Qwen tensor tiles;
-- generated-kernel comparator rows for CUTLASS, Triton, and ThunderKittens on
-  the same model-shape tiles.
+- ThunderKittens comparator rows for the same model-shape tiles.
 
 ## Current Evidence
 
@@ -61,6 +65,10 @@ The current one-repeat model-shape import smokes are under
 The current A100 three-repeat tensor-throughput captures are under
 `tmp/cuda-backend/qwen-attention-tensor-target-a100-repeat3-4b281f79/` and
 `tmp/cuda-backend/qwen-mlp-tensor-target-a100-repeat3-4b281f79/`.
+The current A100 Triton/CUTLASS comparator captures are under
+`tmp/cuda-backend/qwen-attention-generated-tensor-target-a100-repeat3-c743cb84/`
+and
+`tmp/cuda-backend/qwen-mlp-generated-tensor-target-a100-repeat3-c743cb84/`.
 The source-contract evidence is emitted by
 `examples/cuda/qwen_persistent_task_bodies.py` as
 `qwen_tensor_tile_contract`.
@@ -76,7 +84,6 @@ comparable.
 ## Next Actions
 
 - Capture H200 PTO and cuBLAS Graph rows for both Qwen model-shape tiles.
-- Capture CUTLASS, Triton, and ThunderKittens comparator rows for the same
-  tile shapes.
+- Capture ThunderKittens comparator rows for the same tile shapes.
 - Promote the A100/H200 rows into final viewer result records only after the
   comparator set is complete.

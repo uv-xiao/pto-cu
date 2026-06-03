@@ -20,6 +20,10 @@ DEFAULT_DTYPE = "tf32 CUTLASS Gemm tensor op, f32 accumulator"
 DEFAULT_TOLERANCE = 1.0e-3
 
 
+def tensor_tile_shape(rows: int, cols: int, inner: int) -> str:
+    return f"n=1024, tensor tile {rows}x{cols}x{inner}"
+
+
 def fail(message: str) -> None:
     raise SystemExit(f"cutlass tensor tile capture failed: {message}")
 
@@ -547,7 +551,7 @@ def run_capture(args: argparse.Namespace) -> dict[str, Any]:
             "clock_policy": "not recorded",
         },
         "inputs": {
-            "shape": DEFAULT_SHAPE,
+            "shape": tensor_tile_shape(args.rows, args.cols, args.inner),
             "dtype": DEFAULT_DTYPE,
             "repeat_policy": f"{args.repeats}-repeat CUTLASS tensor tile capture",
         },
