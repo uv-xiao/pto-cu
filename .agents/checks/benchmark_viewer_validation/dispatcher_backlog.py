@@ -5,6 +5,10 @@ from typing import Any
 from .common import *  # noqa: F403
 
 
+def _normalize_text(text: str) -> str:
+    return " ".join(text.split())
+
+
 def _status_gap_refs() -> set[str]:
     status = ROOT / "docs" / "nvidia-backend" / "status.md"
     text = status.read_text(encoding="utf-8")
@@ -31,6 +35,7 @@ def validate_dispatcher_backlog(work_queue: dict[str, Any]) -> None:
     if not path.is_file():
         fail(f"missing {path.relative_to(ROOT)}")
     text = path.read_text(encoding="utf-8")
+    normalized_text = _normalize_text(text)
     for heading in (
         "## Completed First Pass",
         "## Active Backend Gaps",
@@ -72,3 +77,13 @@ def validate_dispatcher_backlog(work_queue: dict[str, Any]) -> None:
                     "dispatcher backlog missing serving command selector "
                     f"for {item_id}: {selector}"
                 )
+        evidence_summary = require_list(item, "evidence_summary", item_id)
+        if not evidence_summary:
+            fail(f"{item_id} has no evidence summary")
+        first_summary = require_string(
+            {"summary": evidence_summary[0]},
+            "summary",
+            item_id,
+        )
+        if _normalize_text(first_summary) not in normalized_text:
+            fail(f"dispatcher backlog missing evidence summary for {item_id}")

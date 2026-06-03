@@ -31,19 +31,31 @@ The generated paper-readiness queue currently has `4` active paper work items:
 
 - `paper_readiness_work_item_001`: implement and import full-serving PTO
   persistent-device Qwen/Qwen3-8B rows for MPK and VDCores policies.
+  Evidence context: Lifecycle and input artifacts:
+  persistent_qwen_serving_scaffold, qwen_serving_lifecycle_plan,
+  qwen_prompt_accounting, qwen_runtime_input_binding,
+  qwen_cuda_token_buffer_binding, qwen_persistent_decode_args, and
+  qwen_kv_cache_binding.
   Command-plan selectors:
   `pto_persistent_device_qwen3_8b_full_serving:mpk_offline_decode`,
   `pto_persistent_device_qwen3_8b_full_serving:vdcores_offline_decode`.
 - `paper_readiness_work_item_002`: run and import the VDCores full-serving
   Qwen/Qwen3-8B row after correctness is fixed for the shared-instruction path.
+  Evidence context: VDCores Qwen3-8B is tracked by the planned-not-run
+  vdcores_qwen3_8b_decode_preflight row for the vdcores_offline_decode policy.
   Command-plan selector:
   `vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode`.
 - `paper_readiness_work_item_003`: import ThunderKittens-family full-serving
   Qwen/Qwen3-8B rows beyond the current attention-tile proxy.
+  Evidence context: ThunderKittens decode-attention tile rows are imported for
+  the VDCores offline-decode batch ladder as controlled attention-tile proxy
+  evidence.
   Command-plan selector:
   `thunderkittens_decode_attention_tile:vdcores_offline_decode`.
 - `paper_readiness_work_item_004`: resolve the VDCores shared-instruction
   window plan into a runnable baseline before importing the preflight row.
+  Evidence context: The latest VDCores shared-instruction attempt generated
+  analysis evidence for the Qwen3-8B decode64 instruction footprint.
   Command-plan selector:
   `vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode`.
 
