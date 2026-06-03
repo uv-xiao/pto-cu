@@ -49,6 +49,10 @@ Recent raw A100 evidence stays under `tmp/`:
   windows and zero scheduler errors.
 - `tmp/cuda-backend/qwen-prefill-two-step-first-layer-2026-06-03/`
   records prompt-prefill to readout-only to full-DAG decode feedback.
+- `tmp/cuda-backend/qwen-feedback-ring-first-layer-mpk-2026-06-03/`
+  records a 49-step first-layer MPK-policy diagnostic where device feedback
+  observes wrapped input slots at decode positions 63 and 64. Its final
+  diagnostic logits reference fails, so it is token-feedback evidence only.
 - `tmp/cuda-backend/qwen-prefill-readout-full-projection-mpk-2026-06-03/`
   records no JSON artifact; the local A100 full 36-layer prompt-prefill
   attempt with full projection and logits columns was stopped after saturating

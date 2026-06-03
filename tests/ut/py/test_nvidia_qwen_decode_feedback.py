@@ -141,8 +141,9 @@ def test_decode_feedback_observes_unchecked_device_committed_token():
     assert summary["applied_step_count"] == 1
 
 
-def test_decode_feedback_falls_back_when_position_exceeds_prompt_stride():
+def test_decode_feedback_wraps_when_position_exceeds_prompt_stride():
     module = load_decode_feedback_module()
 
     assert module.feedback_input_index(63, prompt_stride=64) == 0
-    assert module.feedback_input_index(128, prompt_stride=64) == 0
+    assert module.feedback_input_index(64, prompt_stride=64) == 1
+    assert module.feedback_input_index(128, prompt_stride=64) == 1

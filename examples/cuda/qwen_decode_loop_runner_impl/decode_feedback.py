@@ -107,8 +107,8 @@ def feedback_input_index(
     if decode_position is None:
         return 0
     next_index = max(int(decode_position) + 1, 0)
-    if prompt_stride is not None and next_index >= int(prompt_stride):
-        return 0
+    if prompt_stride is not None and int(prompt_stride) > 0:
+        return next_index % int(prompt_stride)
     return next_index
 
 
