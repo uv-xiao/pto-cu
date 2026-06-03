@@ -45,6 +45,15 @@ policy-length diagnostic rows that predate the feedback-ring fix prove
 scheduler progress and logits execution, but should not be treated as evidence
 that long decode steps consumed the previous sampled token.
 
+The bounded prompt-prefill readout path now also avoids a diagnostic RMSNorm
+scale bug where attaching decode-position metadata made `scalar_args[1]`
+present but zero, causing fallback RMSNorm paths to zero the hidden state.
+Offset-aware activation sampling now reports the actual readout activation
+buffer instead of a stale local-index buffer. The eight-layer MPK bounded
+prefill path reaches nonzero readout logits and a second full selected DAG
+decode after device feedback, but it remains diagnostic because it uses
+bounded active projection/logit columns and only eight layers.
+
 ## Current Evidence
 
 Structured paper-readiness evidence is tracked in
@@ -70,6 +79,20 @@ Recent raw A100 evidence stays under `tmp/`:
   passing readout-only first decode packet. This proves the generated command
   shape reaches live CUDA execution, but it is still diagnostic rather than
   model-equivalent full-serving correctness evidence.
+- `tmp/cuda-backend/qwen-prefill-layer8-mpk-2026-06-03-rmsnorm-scale-fix/qwen-runner.json`
+  records the bounded eight-layer MPK prompt-prefill readout after the
+  diagnostic RMSNorm scale fix. It reports `prompt_prefill_executed`, 18
+  prompt positions, zero scheduler errors, offset-aware readout
+  `final_norm.max_abs_finite=3.182983`,
+  `logits_summary.nonzero_count=32768`,
+  `diagnostic_reference.status=pass`, and device feedback for sampled token
+  `341`.
+- `tmp/cuda-backend/qwen-prefill-layer8-mpk-2step-2026-06-03-rmsnorm-scale-fix/qwen-runner.json`
+  records the follow-up bounded two-step MPK run. The first decode step reuses
+  the prefilled hidden state for readout and samples token `341`; the second
+  step runs the full eight-layer selected DAG at decode position 18, completes
+  59/59 tasks with zero scheduler errors, reports nonzero bounded logits,
+  passes the diagnostic logits reference, and samples token `82`.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

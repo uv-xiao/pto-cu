@@ -532,6 +532,7 @@ def run_packet_once(
         "activation_finiteness": graph.read_activation_finiteness_summary(
             workspace,
             descriptors,
+            packet_index_offset=packet_index_offset,
         ),
         "logits_summary": logits_summary,
         "decode_feedback": decode_feedback,

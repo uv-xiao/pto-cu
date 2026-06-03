@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-03 Qwen RMSNorm decode-position scale](2026-06-03-qwen-rmsnorm-decode-position-scale.md)
 - [2026-06-03 PTO Qwen live-session command](2026-06-03-pto-qwen-live-session-command.md)
 - [2026-06-03 Plan history reflection viewer](2026-06-03-plan-history-reflection-viewer.md)
 - [2026-06-03 ThunderKittens LLM policy exception guard](2026-06-03-thunderkittens-llm-policy-exception-guard.md)

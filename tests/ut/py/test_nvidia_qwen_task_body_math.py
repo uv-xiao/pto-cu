@@ -112,6 +112,18 @@ def test_generated_qwen_decode_feedback_wraps_prompt_ring_source():
     assert "input_ids[feedback_input_index] = logits_best_tokens[0];" in full_source
 
 
+def test_rmsnorm_diagnostic_fallback_keeps_decode_position_scale_neutral():
+    sys.path.insert(0, str(ROOT / "examples" / "cuda"))
+    from qwen_persistent_task_bodies_impl.lifecycle import task_functions
+    from simpler_setup.cuda_callable_compiler import render_persistent_dag_source
+
+    full_source = render_persistent_dag_source(task_functions())
+
+    assert "task->scalar_args[1] != 0.0f ? task->scalar_args[1] : 1.0f" in (
+        full_source
+    )
+
+
 def test_generated_source_contains_qwen_unit_math_kernels():
     module = load_task_bodies_module()
     sys.path.insert(0, str(ROOT / "examples" / "cuda"))
@@ -277,9 +289,11 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         in manifest["implemented_contracts"]
     )
     assert "task->out[j] = task->a[j] * external_scale" in full_source
-    assert "task->out[i] = task->a[i] * external_scale" not in full_source
+    assert "task->out[i] = task->a[i] * external_scale * norm_weight;" in (
+        full_source
+    )
     assert "for (unsigned long long j = threadIdx.x;" in source
-    assert "task->scalar_args[1] * norm_weight" in source
+    assert "external_scale * norm_weight" in source
     assert "pto_cuda_linear_arg_f32" in full_source
     assert "task->cols > 0U && task->inner > 0U" in full_source
     assert "const unsigned int kv_page_size =" in full_source

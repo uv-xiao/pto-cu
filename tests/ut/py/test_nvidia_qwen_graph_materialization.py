@@ -38,7 +38,10 @@ from qwen_decode_loop_runner_impl.resource_backed_execution import (  # noqa: E4
     prompt_readout_descriptors,
     select_task_descriptors,
 )
-from qwen_decode_loop_runner_impl.resource_graph import MaterializedGraph  # noqa: E402
+from qwen_decode_loop_runner_impl.resource_graph import (  # noqa: E402
+    MaterializedGraph,
+    activation_buffer_index_for_packet_task,
+)
 from qwen_decode_loop_runner_impl.graph_materialization import task_summary  # noqa: E402
 from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
     numeric_task_mode_summary,
@@ -1722,6 +1725,17 @@ def test_readout_packet_uses_offset_activation_as_first_input():
     assert packet[0].out == 0x7000
     assert packet[1].a == 0x7000
     assert packet[1].out == 0x8000
+
+
+def test_readout_activation_sampling_uses_packet_offset():
+    assert activation_buffer_index_for_packet_task(
+        task_index=0,
+        packet_index_offset=57,
+    ) == 57
+    assert activation_buffer_index_for_packet_task(
+        task_index=1,
+        packet_index_offset=57,
+    ) == 58
 
 
 def test_prefill_packet_keeps_last_non_logits_output_in_activation_chain():

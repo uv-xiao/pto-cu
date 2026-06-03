@@ -26,6 +26,14 @@ from qwen_decode_loop_runner_impl.resource_logits_reference import (
 )
 
 
+def activation_buffer_index_for_packet_task(
+    *,
+    task_index: int,
+    packet_index_offset: int = 0,
+) -> int:
+    return max(int(packet_index_offset), 0) + int(task_index)
+
+
 class MaterializedGraph:
     def __init__(
         self,
@@ -189,10 +197,17 @@ class MaterializedGraph:
         *,
         row_index: int = 0,
         max_columns: int = 12288,
+        packet_index_offset: int = 0,
     ) -> dict[str, Any]:
         summaries = []
         activation_buffers = workspace.get("activation_buffers", [])
-        for task_index in range(min(self.task_count - 1, len(activation_buffers))):
+        for task_index in range(self.task_count - 1):
+            buffer_index = activation_buffer_index_for_packet_task(
+                task_index=task_index,
+                packet_index_offset=packet_index_offset,
+            )
+            if buffer_index >= len(activation_buffers):
+                continue
             task = self.packet[task_index]
             cols = int(getattr(task, "cols", 0))
             n = int(getattr(task, "n", 0))
@@ -203,7 +218,7 @@ class MaterializedGraph:
                 continue
             sample_count = min(cols, n - row_begin, max(1, int(max_columns)))
             host = (ctypes.c_float * sample_count)(*([0.0] * sample_count))
-            ptr = int(activation_buffers[task_index]["device_ptr_hex"], 0)
+            ptr = int(activation_buffers[buffer_index]["device_ptr_hex"], 0)
             self.copy_from_device(
                 host,
                 ptr + row_begin * ctypes.sizeof(ctypes.c_float),
@@ -218,6 +233,7 @@ class MaterializedGraph:
             row_summary.update(
                 {
                     "task_index": task_index,
+                    "activation_buffer_index": buffer_index,
                     "descriptor_id": descriptor.get("id"),
                     "callable": descriptor.get("callable"),
                     "output_element_count": n,

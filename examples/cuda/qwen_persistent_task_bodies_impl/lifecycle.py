@@ -111,12 +111,14 @@ if (task->scalar_arg_count > 1 && task->scalar_args[0] == 1.0f &&
         task->out[i] = task->a[i] * scale;
     }
 } else if (task->scalar_arg_count > 1) {
+    const float external_scale =
+        task->scalar_args[1] != 0.0f ? task->scalar_args[1] : 1.0f;
     for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
         const unsigned int col = static_cast<unsigned int>(
             task->cols > 0U ? i % task->cols : i);
         const float norm_weight =
             pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
-        task->out[i] = task->a[i] * task->scalar_args[1] * norm_weight;
+        task->out[i] = task->a[i] * external_scale * norm_weight;
     }
 }
 """,
@@ -747,7 +749,8 @@ if (task->scalar_arg_count > 1 && task->scalar_args[0] == 1.0f &&
     }
 } else {
     const float external_scale =
-        task->scalar_arg_count > 1 ? task->scalar_args[1] : 1.0f;
+        task->scalar_arg_count > 1 && task->scalar_args[1] != 0.0f ?
+        task->scalar_args[1] : 1.0f;
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
         const unsigned int col = static_cast<unsigned int>(
             task->cols > 0U ? j % task->cols : j);
@@ -853,7 +856,8 @@ if (task->scalar_arg_count > 1 && task->scalar_args[0] == 1.0f &&
     }
 } else {
     const float external_scale =
-        task->scalar_arg_count > 1 ? task->scalar_args[1] : 1.0f;
+        task->scalar_arg_count > 1 && task->scalar_args[1] != 0.0f ?
+        task->scalar_args[1] : 1.0f;
     for (unsigned long long j = threadIdx.x; j < task->n; j += blockDim.x) {
         const unsigned int col = static_cast<unsigned int>(
             task->cols > 0U ? j % task->cols : j);
