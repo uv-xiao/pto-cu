@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-03 Qwen feedback ring](2026-06-03-qwen-feedback-ring.md)
 - [2026-06-03 Qwen layer-prefix selection](2026-06-03-qwen-layer-prefix-selection.md)
 - [2026-06-03 Viewer PTO debug row prune](2026-06-03-viewer-pto-debug-row-prune.md)
 - [2026-06-03 Qwen attention-O cached projection](2026-06-03-qwen-attention-o-cached-projection.md)

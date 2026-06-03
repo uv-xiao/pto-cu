@@ -93,6 +93,25 @@ def test_logits_task_body_declares_single_sequence_feedback_scope():
     ]
 
 
+def test_generated_qwen_decode_feedback_wraps_prompt_ring_source():
+    module = load_task_bodies_module()
+    sys.path.insert(0, str(ROOT / "examples" / "cuda"))
+    from qwen_persistent_task_bodies_impl.lifecycle import task_functions
+    from simpler_setup.cuda_callable_compiler import render_persistent_dag_source
+
+    manifest = module.build_task_body_manifest(num_hidden_layers=1)
+    full_source = render_persistent_dag_source(task_functions())
+
+    assert "qwen_decode_feedback_prompt_ring_source" in manifest[
+        "implemented_contracts"
+    ]
+    assert "const unsigned int token_position = prompt_stride > 0U ?" in full_source
+    assert "requested_token_position % prompt_stride : 0U;" in full_source
+    assert "const unsigned long long feedback_input_index =" in full_source
+    assert "next_input_index % prompt_stride : 0ULL;" in full_source
+    assert "input_ids[feedback_input_index] = logits_best_tokens[0];" in full_source
+
+
 def test_generated_source_contains_qwen_unit_math_kernels():
     module = load_task_bodies_module()
     sys.path.insert(0, str(ROOT / "examples" / "cuda"))
@@ -412,8 +431,8 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "static_cast<unsigned long long>(task->scalar_args[2]) + 1ULL;" in (
         full_source
     )
-    assert "input_ids[next_input_index] = logits_best_tokens[0];" in full_source
-    assert "input_ids[next_input_index] = best_token;" in full_source
+    assert "input_ids[feedback_input_index] = logits_best_tokens[0];" in full_source
+    assert "input_ids[feedback_input_index] = best_token;" in full_source
     assert "input_ids[0] = best_token;" not in full_source
     assert "qwen_unit_math_source_coverage" in manifest["implemented_contracts"]
     assert "qwen_shape_field_linear_projection_source" in manifest[

@@ -16,6 +16,12 @@ caches bounded attention values before applying `o_proj_weight`, which makes
 full first-layer projection execution practical. This is still not enough to
 promote PTO rows to full-serving correctness.
 
+The generated-token feedback path now uses one prompt-ring contract across
+host feedback, device logits feedback, and embedding lookup. Earlier
+policy-length diagnostic rows that predate the feedback-ring fix prove
+scheduler progress and logits execution, but should not be treated as evidence
+that long decode steps consumed the previous sampled token.
+
 ## Current Evidence
 
 Structured paper-readiness evidence is tracked in
@@ -43,6 +49,10 @@ Recent raw A100 evidence stays under `tmp/`:
   windows and zero scheduler errors.
 - `tmp/cuda-backend/qwen-prefill-two-step-first-layer-2026-06-03/`
   records prompt-prefill to readout-only to full-DAG decode feedback.
+- `tmp/cuda-backend/qwen-prefill-readout-full-projection-mpk-2026-06-03/`
+  records no JSON artifact; the local A100 full 36-layer prompt-prefill
+  attempt with full projection and logits columns was stopped after saturating
+  GPU 0 at about 27 GiB.
 
 ## Promotion Gate
 

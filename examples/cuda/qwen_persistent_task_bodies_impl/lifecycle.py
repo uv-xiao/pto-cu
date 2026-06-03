@@ -58,9 +58,8 @@ if (task->cols > 0U && task->tensor_arg_count > 0U && task->tensor_args[0]) {
     const unsigned int requested_token_position =
         task->scalar_arg_count > 2U ?
         static_cast<unsigned int>(task->scalar_args[2]) : 0U;
-    const unsigned int token_position =
-        requested_token_position < prompt_stride ?
-        requested_token_position : prompt_stride - 1U;
+    const unsigned int token_position = prompt_stride > 0U ?
+        requested_token_position % prompt_stride : 0U;
     const unsigned int embedding_stride =
         task->ldb > 0U ? task->ldb : task->cols;
     const unsigned int token_id =
@@ -988,6 +987,7 @@ def build_task_body_manifest(num_hidden_layers: int = 36) -> dict[str, Any]:
             "qwen_kernel_kv_cache_writeback_field_contract",
             "qwen_kernel_weight_tensor_arg_consumption",
             "qwen_logits_device_sampled_token_feedback_source",
+            "qwen_decode_feedback_prompt_ring_source",
         ],
         "remaining_runtime_gaps": [
             "numerically_correct_qwen_kernel_bodies",
