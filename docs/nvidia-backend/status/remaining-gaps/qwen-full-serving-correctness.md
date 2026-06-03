@@ -25,6 +25,14 @@ refreshed full-prefix MPK-policy artifact still has non-finite row-0 logits,
 so this narrows task-shape fidelity but leaves hidden-row numerical
 correctness open.
 
+The first non-finite layer-prefix row has been localized and fixed for the
+one-layer MPK path. `qwen_mlp_down` was binding `tensor_args[1]` to token IDs
+when `_mlp_down` descriptors failed to resolve their layer input norm prefix;
+that made the down-projection residual read integer token storage as floats.
+The fixed launch packet binds the embedding activation for layer 0, and the
+post-fix one-layer A100 artifact reports no row-0 non-finite activations, full
+finite logits, populated top-k, and a passing diagnostic logits reference.
+
 The generated-token feedback path now uses one prompt-ring contract across
 host feedback, device logits feedback, and embedding lookup. Earlier
 policy-length diagnostic rows that predate the feedback-ring fix prove
@@ -67,6 +75,12 @@ Recent raw A100 evidence stays under `tmp/`:
   and zero scheduler errors after the attention batch-row shape fix. It still
   reports empty row-0 top-k and a diagnostic logits reference failure, so it is
   not full-Qwen correctness evidence.
+- `tmp/cuda-backend/qwen-activation-finiteness-mpk-2026-06-03/`
+  records the activation-row localization run. The pre-fix one-layer artifact
+  found row-0 NaNs first at `layer_0_mlp_down` column 2048; the post-fix
+  artifact `qwen-layer1-after-mlp-residual-fix.json` has no row-0 non-finite
+  activations, full finite logits, row-0 top-k, and a passing diagnostic
+  logits reference.
 - `tmp/cuda-backend/qwen-prefill-readout-full-projection-mpk-2026-06-03/`
   records no JSON artifact; the local A100 full 36-layer prompt-prefill
   attempt with full projection and logits columns was stopped after saturating
@@ -86,8 +100,8 @@ Close this gap only after PTO rows for both `mpk_offline_decode` and
 
 - Continue replacing diagnostic scalar task-body math with model-correct Qwen
   kernels.
-- Localize the first upstream hidden row that becomes non-finite before final
-  norm/logits in the full-prefix MPK-policy run.
+- Re-run full-prefix MPK-policy execution after the MLP residual binding fix
+  to verify whether later layers now remain finite through final norm/logits.
 - Extend cached attention-output projection evidence from first-layer smoke to
   all selected layers and full logits when runtime is practical.
 - Re-run the Hugging Face comparison after each kernel-fidelity fix.

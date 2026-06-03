@@ -351,6 +351,7 @@ def run_workload(
                 run_packet_once(
                     session=session,
                     packet=prefill_packet,
+                    descriptors=prefill_items,
                     workspace=workspace,
                     final_callable=prefill_final_callable,
                     logits_check_policy=logits_check_policy,
@@ -384,6 +385,9 @@ def run_workload(
             run_packet_once(
                 session=session,
                 packet=decode_packet,
+                descriptors=readout_items
+                if decode_packet is readout_packet
+                else descriptors,
                 workspace=workspace,
                 final_callable=decode_final_callable,
                 logits_check_policy=logits_check_policy,
@@ -419,6 +423,7 @@ def run_packet_once(
     *,
     session: Any,
     packet: Any,
+    descriptors: list[dict[str, Any]],
     workspace: dict[str, Any],
     final_callable: str | None,
     logits_check_policy: str,
@@ -524,6 +529,10 @@ def run_packet_once(
         "rope_table_refresh": rope_table_refresh,
         "scheduler_counters": counters,
         "output_sample": graph.read_output_sample(workspace),
+        "activation_finiteness": graph.read_activation_finiteness_summary(
+            workspace,
+            descriptors,
+        ),
         "logits_summary": logits_summary,
         "decode_feedback": decode_feedback,
         "timing_ns": {

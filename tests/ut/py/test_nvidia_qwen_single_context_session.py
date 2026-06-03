@@ -505,6 +505,30 @@ def test_resource_backed_logits_summary_reports_row0_token_ids():
     ]
 
 
+def test_activation_finiteness_summary_reports_row_local_nonfinite_column():
+    module = load_resource_graph_module()
+
+    summary = module.summarize_activation_row_values(
+        [1.0, 2.0, float("nan"), 4.0],
+        row_index=1,
+        row_width=4,
+    )
+
+    assert summary == {
+        "row_index": 1,
+        "row_width": 4,
+        "sampled_element_count": 4,
+        "finite_count": 3,
+        "nan_count": 1,
+        "posinf_count": 0,
+        "neginf_count": 0,
+        "nonfinite_count": 1,
+        "first_nonfinite_column": 2,
+        "first_nonfinite_index": 6,
+        "max_abs_finite": 4.0,
+    }
+
+
 def test_diagnostic_logits_reference_compares_tiled_vocab_projection():
     module = load_resource_graph_module()
 

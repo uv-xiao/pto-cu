@@ -863,6 +863,11 @@ def test_launch_packet_binds_post_attention_residual_source():
 def test_launch_packet_binds_mlp_down_residual_source():
     descriptors = [
         {
+            "id": "embedding_lookup",
+            "callable": "qwen_embedding_lookup",
+            "tensor_args": [],
+        },
+        {
             "id": "layer_0_input_norm",
             "callable": "qwen_rmsnorm_input",
             "tensor_args": [],
@@ -915,9 +920,10 @@ def test_launch_packet_binds_mlp_down_residual_source():
             {"device_ptr_hex": "0xc000", "element_count": 8},
             {"device_ptr_hex": "0xd000", "element_count": 16},
             {"device_ptr_hex": "0xe000", "element_count": 8},
+            {"device_ptr_hex": "0xf000", "element_count": 8},
         ],
-        "logits_buffer": {"device_ptr_hex": "0xf000", "element_count": 32},
-        "total_byte_count": 336,
+        "logits_buffer": {"device_ptr_hex": "0x10000", "element_count": 32},
+        "total_byte_count": 368,
     }
 
     packet = build_host_task_packet(
@@ -931,10 +937,10 @@ def test_launch_packet_binds_mlp_down_residual_source():
     )
 
     assert packet is not None
-    assert packet[6].a == 0xD000
-    assert packet[6].b == 0xB000
-    assert packet[6].tensor_args[1] == 0x3000
-    assert packet[6].tensor_arg_count == 2
+    assert packet[7].a == 0xE000
+    assert packet[7].b == 0xC000
+    assert packet[7].tensor_args[1] == 0x8000
+    assert packet[7].tensor_arg_count == 2
 
 
 def test_launch_packet_carries_cuda_task_shape_fields():
@@ -1757,6 +1763,7 @@ def test_launch_packet_can_select_full_rmsnorm_reduction_branch():
     descriptors = [
         {"callable": "qwen_rmsnorm_input", "tensor_args": []},
         {"callable": "qwen_attention_qkv", "tensor_args": []},
+        {"callable": "qwen_final_norm", "tensor_args": []},
         {"callable": "qwen_logits", "tensor_args": []},
     ]
     token_fields = keyed_fields(
@@ -1778,10 +1785,12 @@ def test_launch_packet_can_select_full_rmsnorm_reduction_branch():
     )
 
     assert packet is not None
-    assert packet[0].scalar_arg_count == 1
+    assert packet[0].scalar_arg_count == 2
     assert list(packet[0].scalar_args)[:2] == [1.0, 0.0]
     assert packet[1].scalar_arg_count == 1
     assert packet[1].scalar_args[0] == 1.0
+    assert packet[2].scalar_arg_count == 2
+    assert list(packet[2].scalar_args)[:2] == [1.0, 0.0]
     set_decode_step_state(packet, step_index=0, decode_position=128)
     assert packet[0].scalar_arg_count == 3
     assert list(packet[0].scalar_args)[:3] == [1.0, 0.0, 128.0]
@@ -1791,19 +1800,19 @@ def test_launch_packet_can_select_full_rmsnorm_reduction_branch():
     assert summary["full_reduction_contracts"] == [
         {
             "callable": "qwen_rmsnorm_input",
-            "scalar_arg_count": 1,
+            "scalar_arg_count": 2,
             "scope": "resource_backed_full_rmsnorm_reduction",
             "threading": "block",
         },
         {
             "callable": "qwen_rmsnorm_post_attention",
-            "scalar_arg_count": 1,
+            "scalar_arg_count": 2,
             "scope": "resource_backed_full_rmsnorm_reduction",
             "threading": "block",
         },
         {
             "callable": "qwen_final_norm",
-            "scalar_arg_count": 1,
+            "scalar_arg_count": 2,
             "scope": "resource_backed_full_rmsnorm_reduction",
             "threading": "block",
         },

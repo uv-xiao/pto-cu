@@ -16,6 +16,7 @@ from qwen_decode_loop_runner_impl.launch_helpers import (
     attach_mlp_down_residual_tensor,
     input_ptr_for_task,
     launch_blockers,
+    minimum_scalar_arg_count,
     missing_launch_buffers,
     next_power_of_two,
     normalize_numeric_task_mode,
@@ -254,7 +255,13 @@ def host_task_record(
         tensor_arg_dtypes=tensor_arg_dtypes_t(*tensor_arg_dtypes),
         scalar_args=scalar_args_t(*scalar_args),
         tensor_arg_count=tensor_arg_count(tensor_args),
-        scalar_arg_count=task_scalar_arg_count(scalar_args),
+        scalar_arg_count=max(
+            task_scalar_arg_count(scalar_args),
+            minimum_scalar_arg_count(
+                descriptor=descriptor,
+                numeric_task_mode=numeric_task_mode,
+            ),
+        ),
     )
 
 

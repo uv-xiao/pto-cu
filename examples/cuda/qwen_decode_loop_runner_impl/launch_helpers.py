@@ -29,6 +29,11 @@ UNIT_NUMERIC_WEIGHTED_ELEMENTWISE_CALLABLES = {
     "qwen_mlp_down",
     "qwen_final_norm",
 }
+FULL_RMSNORM_CALLABLES = {
+    "qwen_rmsnorm_input",
+    "qwen_rmsnorm_post_attention",
+    "qwen_final_norm",
+}
 TASK_SHAPE_FIELDS = (
     "scalar0",
     "scalar1",
@@ -196,7 +201,11 @@ def layer_input_norm_index(
     index: int,
 ) -> int | None:
     descriptor_id = str(descriptors[index].get("id", ""))
-    layer_prefix = descriptor_id.rsplit("_post_attention_norm", 1)[0]
+    layer_prefix = descriptor_id
+    for suffix in ("_post_attention_norm", "_mlp_down"):
+        if descriptor_id.endswith(suffix):
+            layer_prefix = descriptor_id.rsplit(suffix, 1)[0]
+            break
     for candidate_index in range(index - 1, -1, -1):
         candidate = descriptors[candidate_index]
         if candidate.get("callable") != "qwen_rmsnorm_input":
@@ -322,6 +331,19 @@ def task_scalar_arg_count(scalar_args: list[float]) -> int:
     return 0
 
 
+def minimum_scalar_arg_count(
+    *,
+    descriptor: dict[str, Any],
+    numeric_task_mode: str,
+) -> int:
+    if (
+        numeric_task_mode == "unit_math_full_rmsnorm"
+        and descriptor.get("callable") in FULL_RMSNORM_CALLABLES
+    ):
+        return 2
+    return 0
+
+
 def task_shape_fields(
     *,
     descriptor: dict[str, Any],
@@ -375,19 +397,19 @@ def numeric_task_mode_summary(mode: str) -> dict[str, Any]:
         "full_reduction_contracts": [
             {
                 "callable": "qwen_rmsnorm_input",
-                "scalar_arg_count": 1,
+                "scalar_arg_count": 2,
                 "scope": "resource_backed_full_rmsnorm_reduction",
                 "threading": "block",
             },
             {
                 "callable": "qwen_rmsnorm_post_attention",
-                "scalar_arg_count": 1,
+                "scalar_arg_count": 2,
                 "scope": "resource_backed_full_rmsnorm_reduction",
                 "threading": "block",
             },
             {
                 "callable": "qwen_final_norm",
-                "scalar_arg_count": 1,
+                "scalar_arg_count": 2,
                 "scope": "resource_backed_full_rmsnorm_reduction",
                 "threading": "block",
             },

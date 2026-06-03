@@ -20,6 +20,7 @@ from qwen_decode_loop_runner_impl.resource_logits_reference import (
     diagnostic_logits_projection_values,
     diagnostic_logits_reference_row_count,
     diagnostic_logits_reference_indices,
+    summarize_activation_row_values,
     summarize_logits_values,
     tensor_arg_values_to_f32,
 )
@@ -180,6 +181,65 @@ class MaterializedGraph:
                 values=values,
             ),
         )
+
+    def read_activation_finiteness_summary(
+        self,
+        workspace: dict[str, Any],
+        descriptors: list[dict[str, Any]],
+        *,
+        row_index: int = 0,
+        max_columns: int = 12288,
+    ) -> dict[str, Any]:
+        summaries = []
+        activation_buffers = workspace.get("activation_buffers", [])
+        for task_index in range(min(self.task_count - 1, len(activation_buffers))):
+            task = self.packet[task_index]
+            cols = int(getattr(task, "cols", 0))
+            n = int(getattr(task, "n", 0))
+            if cols <= 0 or n <= 0:
+                continue
+            row_begin = max(0, int(row_index)) * cols
+            if row_begin >= n:
+                continue
+            sample_count = min(cols, n - row_begin, max(1, int(max_columns)))
+            host = (ctypes.c_float * sample_count)(*([0.0] * sample_count))
+            ptr = int(activation_buffers[task_index]["device_ptr_hex"], 0)
+            self.copy_from_device(
+                host,
+                ptr + row_begin * ctypes.sizeof(ctypes.c_float),
+                f"activation_row_{task_index}",
+            )
+            descriptor = descriptors[task_index] if task_index < len(descriptors) else {}
+            row_summary = summarize_activation_row_values(
+                [float(value) for value in host],
+                row_index=row_index,
+                row_width=cols,
+            )
+            row_summary.update(
+                {
+                    "task_index": task_index,
+                    "descriptor_id": descriptor.get("id"),
+                    "callable": descriptor.get("callable"),
+                    "output_element_count": n,
+                    "output_rows": n // cols,
+                    "sampled_column_count": sample_count,
+                    "column_sample_policy": (
+                        "full_row" if sample_count == cols else "row_prefix"
+                    ),
+                },
+            )
+            summaries.append(row_summary)
+        first_nonfinite = next(
+            (item for item in summaries if item["nonfinite_count"] > 0),
+            None,
+        )
+        return {
+            "status": "sampled" if summaries else "not_sampled",
+            "row_index": int(row_index),
+            "sampled_task_count": len(summaries),
+            "first_nonfinite_task": first_nonfinite,
+            "tasks": summaries,
+        }
 
     def diagnostic_logits_reference(
         self,

@@ -113,6 +113,46 @@ def finite_indexed_values(values: list[float]) -> list[tuple[int, float]]:
     ]
 
 
+def summarize_activation_row_values(
+    values: list[float],
+    *,
+    row_index: int,
+    row_width: int,
+) -> dict[str, Any]:
+    first_nonfinite_column = None
+    for column, value in enumerate(values):
+        if not math.isfinite(value):
+            first_nonfinite_column = column
+            break
+    finite_values = [value for value in values if math.isfinite(value)]
+    finite_count = len(finite_values)
+    nan_count = sum(1 for value in values if math.isnan(value))
+    posinf_count = sum(1 for value in values if value == math.inf)
+    neginf_count = sum(1 for value in values if value == -math.inf)
+    first_nonfinite_index = (
+        None
+        if first_nonfinite_column is None
+        else max(0, int(row_index)) * max(0, int(row_width)) + first_nonfinite_column
+    )
+    return {
+        "row_index": int(row_index),
+        "row_width": int(row_width),
+        "sampled_element_count": len(values),
+        "finite_count": finite_count,
+        "nan_count": nan_count,
+        "posinf_count": posinf_count,
+        "neginf_count": neginf_count,
+        "nonfinite_count": len(values) - finite_count,
+        "first_nonfinite_column": first_nonfinite_column,
+        "first_nonfinite_index": first_nonfinite_index,
+        "max_abs_finite": (
+            round(float(max(abs(value) for value in finite_values)), 6)
+            if finite_values
+            else None
+        ),
+    }
+
+
 def topk_candidates(
     values: list[float],
     *,
