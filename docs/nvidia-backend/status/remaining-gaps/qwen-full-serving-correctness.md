@@ -20,23 +20,22 @@ enough to promote PTO rows to full-serving correctness.
 
 The QK-norm and attention-output task descriptors now keep launch-packet
 `rows` as workload batch rows instead of overloading it with query-head count;
-the generated kernels derive query-head count from width/head metadata. The
-refreshed full-prefix MPK-policy artifact still has non-finite row-0 logits,
-so this narrows task-shape fidelity but leaves hidden-row numerical
-correctness open.
+the generated kernels derive query-head count from width/head metadata.
 
 The first non-finite layer-prefix row has been localized and fixed for the
 one-layer MPK path. `qwen_mlp_down` was binding `tensor_args[1]` to token IDs
 when `_mlp_down` descriptors failed to resolve their layer input norm prefix;
 that made the down-projection residual read integer token storage as floats.
-The fixed launch packet binds the embedding activation for layer 0, and the
+The fixed launch packet binds the embedding activation for layer 0. The
 post-fix one-layer A100 artifact reports no row-0 non-finite activations, full
 finite logits, populated top-k, and a passing diagnostic logits reference.
-The same resource-backed MPK path now scales through eight decoder layers with
-full projection and logits windows: 59 tasks complete with zero scheduler
-errors, no row-0 non-finite activations, full finite logits, populated top-k,
-and a passing diagnostic logits reference. This extends kernel/launch fidelity
-evidence but remains prefix evidence, not full-serving correctness.
+The same resource-backed MPK path now scales through the full 36-layer
+decoder prefix with full projection and logits windows: 255 tasks complete
+with zero scheduler errors, no row-0 non-finite activations, full finite
+logits, populated top-k, device feedback for the sampled token, and a passing
+diagnostic logits reference. This closes the old full-prefix finite-logits
+blocker, but not full-serving correctness: the PTO top token is `220`, while
+the Hugging Face reference top token is `151667`.
 
 The generated-token feedback path now uses one prompt-ring contract across
 host feedback, device logits feedback, and embedding lookup. Earlier
@@ -92,6 +91,15 @@ Recent raw A100 evidence stays under `tmp/`:
   59/59 completed tasks, zero scheduler errors, no row-0 non-finite
   activations, full finite logits, populated top-k, and
   `diagnostic_reference.status=pass`.
+  It also includes
+  `qwen-full-prefix-after-mlp-residual-fix-420s.json`, where the full
+  36-layer prefix reports 255/255 completed tasks, zero scheduler errors, no
+  row-0 non-finite activations, full finite logits, populated top-k,
+  `diagnostic_reference.status=pass`, and device feedback for sampled token
+  `220`. The generated comparison record
+  `qwen-full-prefix-hf-token-comparison.json` still fails the Hugging Face
+  agreement gate because PTO selects token `220` while the Hugging Face
+  reference selects token `151667`.
 - `tmp/cuda-backend/qwen-prefill-readout-full-projection-mpk-2026-06-03/`
   records no JSON artifact; the local A100 full 36-layer prompt-prefill
   attempt with full projection and logits columns was stopped after saturating
@@ -109,13 +117,9 @@ Close this gap only after PTO rows for both `mpk_offline_decode` and
 
 ## Next Actions
 
-- Continue replacing diagnostic scalar task-body math with model-correct Qwen
-  kernels.
-- Make full-prefix MPK-policy execution practical after the MLP residual
-  binding fix. The current eight-layer prefix passes, while the 36-layer
-  bounded local attempt still exceeded the 180-second window.
-- Extend cached attention-output projection evidence from first-layer smoke to
-  all selected layers and full logits when runtime is practical.
+- Close the full-prefix Hugging Face token/logit mismatch. Prioritize
+  model-correct prefill, KV-cache state, attention, and decode semantics over
+  additional diagnostic-only scalar task-body evidence.
 - Re-run the Hugging Face comparison after each kernel-fidelity fix.
 - Capture policy-length MPK and VDCores serving rows only after correctness
   passes.
