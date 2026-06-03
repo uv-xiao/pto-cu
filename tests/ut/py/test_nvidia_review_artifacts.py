@@ -3612,6 +3612,138 @@ def test_thunderkittens_gemm_compatibility_probe_marks_qwen_tiles_incompatible()
     )
 
 
+def test_vdcores_instruction_window_plan_validator_guards_handoff_contract():
+    script = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "vdcores_validate_instruction_window_plan.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "vdcores_validate_instruction_window_plan",
+        script,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    plan = {
+        "schema_version": 1,
+        "mode": "vdcores_qwen3_8b_shared_instruction_window_plan",
+        "status": "analysis_only",
+        "model": "Qwen/Qwen3-8B",
+        "serving_workload_id": "vdcores_offline_decode",
+        "shared_instruction_capacity": {
+            "instructions_per_sm": 512,
+            "num_sms": 132,
+        },
+        "observed_instruction_pressure": {
+            "max_cinsts_per_sm": 2177,
+            "max_minsts_per_sm": 15042,
+            "overflow_cinst_sm_count": 132,
+            "overflow_minst_sm_count": 132,
+        },
+        "minimum_window_lower_bound": {
+            "compute_instruction_windows": 5,
+            "memory_instruction_windows": 30,
+            "worst_case_windows_per_sm": 30,
+        },
+        "segmented_window_manifest": {
+            "manifest_kind": "per_sm_uniform_lower_bound",
+            "compute_instruction_windows": [
+                {
+                    "index": 0,
+                    "instruction_start": 0,
+                    "instruction_end": 512,
+                    "instruction_count": 512,
+                    "capacity_ok": True,
+                },
+                {
+                    "index": 1,
+                    "instruction_start": 512,
+                    "instruction_end": 1024,
+                    "instruction_count": 512,
+                    "capacity_ok": True,
+                },
+                {
+                    "index": 2,
+                    "instruction_start": 1024,
+                    "instruction_end": 1536,
+                    "instruction_count": 512,
+                    "capacity_ok": True,
+                },
+                {
+                    "index": 3,
+                    "instruction_start": 1536,
+                    "instruction_end": 2048,
+                    "instruction_count": 512,
+                    "capacity_ok": True,
+                },
+                {
+                    "index": 4,
+                    "instruction_start": 2048,
+                    "instruction_end": 2177,
+                    "instruction_count": 129,
+                    "capacity_ok": True,
+                },
+            ],
+            "memory_instruction_windows": [
+                {
+                    "index": index,
+                    "instruction_start": index * 512,
+                    "instruction_end": min((index + 1) * 512, 15042),
+                    "instruction_count": min((index + 1) * 512, 15042)
+                    - index * 512,
+                    "capacity_ok": True,
+                }
+                for index in range(30)
+            ],
+            "max_compute_window_instruction_count": 512,
+            "max_memory_window_instruction_count": 512,
+        },
+        "required_runtime_change": {
+            "preferred_path": "segmented_token_windowed_shared_instruction_schedule",
+            "builder_requirements": [
+                "split the Qwen3-8B decode64 schedule into instruction windows",
+                "emit per-window instruction tables no larger than max_insts",
+                "preserve token, KV-cache, and stage dependency order",
+                "record window metadata in the raw benchmark artifact",
+            ],
+            "runtime_requirements": [
+                "reload or advance shared instruction windows without a new model load",
+                "keep resident tensors and scheduler state live across windows",
+                "report correctness and per-window timing before viewer import",
+            ],
+            "pre_import_checks": [
+                "every emitted compute and memory window is <= max_insts",
+                "all windows execute under one model residency and KV-cache owner",
+                "window dependency handoff preserves ready queues and token state",
+                "raw artifact records per-window timing and correctness status",
+            ],
+        },
+    }
+
+    assert module.validate_instruction_window_plan(plan) == []
+
+    bad_plan = json.loads(json.dumps(plan))
+    bad_plan["segmented_window_manifest"]["memory_instruction_windows"][0][
+        "instruction_count"
+    ] = 513
+    assert (
+        "memory window 0 exceeds shared capacity 512"
+        in module.validate_instruction_window_plan(bad_plan)
+    )
+
+    importable_plan = json.loads(json.dumps(plan))
+    importable_plan["status"] = "pass"
+    assert (
+        "window plan must remain analysis_only until a runnable baseline exists"
+        in module.validate_instruction_window_plan(importable_plan)
+    )
+
+
 def test_mpk_native_token_capture_builds_importable_record():
     import importlib.util
 
@@ -5369,6 +5501,14 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
     assert vdcores_attempt_item["serving_command_plan_selectors"] == [
         "vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode"
     ]
+    assert any(
+        "window_contract_validation=pass" in item
+        for item in vdcores_attempt_item["evidence_summary"]
+    )
+    assert any(
+        "runnable_handoff_contract_status=required_not_implemented" in item
+        for item in vdcores_attempt_item["evidence_summary"]
+    )
     pto_item = next(
         item
         for item in work_items
@@ -6652,6 +6792,22 @@ def test_benchmark_viewer_has_json_backed_review_data():
         for path in attempt["artifacts"]:
             assert path.startswith("tmp/")
             assert (ROOT / path).is_file()
+    vdcores_window_attempt = attempts_by_id[
+        "vdcores_qwen3_8b_shared_instruction_window_plan_h200"
+    ]
+    assert (
+        ".agents/skills/cuda-backend-eval/scripts/"
+        "vdcores_validate_instruction_window_plan.py"
+        in vdcores_window_attempt["validation_scripts"]
+    )
+    vdcores_window_summary = vdcores_window_attempt["summary"]
+    assert vdcores_window_summary["window_contract_validation"] == "pass"
+    assert (
+        vdcores_window_summary["runnable_handoff_contract_status"]
+        == "required_not_implemented"
+    )
+    assert vdcores_window_summary["paper_row_importable"] is False
+    assert vdcores_window_summary["minimum_worst_case_windows_per_sm"] == 30
     command_plan_records = serving_command_plan["serving_command_plans"]
     assert serving_command_plan["metadata"]["model_tier"] == "primary"
     assert len(command_plan_records) == 46

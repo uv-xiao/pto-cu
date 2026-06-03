@@ -7,6 +7,13 @@ from .common import *  # noqa: F403
 from .evidence import *  # noqa: F403
 
 
+def require_positive_int_field(record: dict[str, Any], key: str, owner: str) -> int:
+    value = record.get(key)
+    if not isinstance(value, int) or value <= 0:
+        fail(f"{owner} has invalid positive integer field: {key}")
+    return value
+
+
 def validate_paper_baseline_runs(
     data: dict[str, Any],
     baseline_ids: set[str],
@@ -248,5 +255,71 @@ def validate_paper_baseline_execution_attempts(
                 if not (root / patch_path).is_file():
                     fail(f"{owner} reproducibility patch missing: {patch_path}")
         require_dict(record, "summary", owner)
+        if record["id"] == "vdcores_qwen3_8b_shared_instruction_window_plan_h200":
+            validate_vdcores_shared_instruction_window_attempt(record, root, owner)
 
 
+def validate_vdcores_shared_instruction_window_attempt(
+    record: dict[str, Any],
+    root: Path,
+    owner: str,
+) -> None:
+    scripts = require_list(record, "validation_scripts", owner)
+    expected_script = (
+        ".agents/skills/cuda-backend-eval/scripts/"
+        "vdcores_validate_instruction_window_plan.py"
+    )
+    if expected_script not in scripts:
+        fail(f"{owner} missing VDCores window-plan validator script")
+    artifact_path = (
+        "tmp/cuda-backend/paper-baselines/vdcores/"
+        "qwen3-8b-shared-window-plan-0a0392d2/shared-window-plan.json"
+    )
+    if artifact_path not in record["artifacts"]:
+        fail(f"{owner} missing shared-window-plan artifact")
+    plan = load_current_json_artifact(root, artifact_path, owner)
+    if plan.get("status") != "analysis_only":
+        fail(f"{owner} window plan must remain analysis_only")
+    capacity = require_dict(plan, "shared_instruction_capacity", owner)
+    instructions_per_sm = require_positive_int_field(
+        capacity,
+        "instructions_per_sm",
+        owner,
+    )
+    manifest = require_dict(plan, "segmented_window_manifest", owner)
+    compute_windows = require_list(manifest, "compute_instruction_windows", owner)
+    memory_windows = require_list(manifest, "memory_instruction_windows", owner)
+    for label, windows in (
+        ("compute", compute_windows),
+        ("memory", memory_windows),
+    ):
+        for index, window in enumerate(windows):
+            if not isinstance(window, dict):
+                fail(f"{owner} {label} window is not an object")
+            if window.get("index") != index:
+                fail(f"{owner} {label} window index mismatch")
+            count = window.get("instruction_count")
+            if not isinstance(count, int) or count <= 0:
+                fail(f"{owner} {label} window has invalid instruction_count")
+            if count > instructions_per_sm:
+                fail(f"{owner} {label} window exceeds shared capacity")
+            if window.get("capacity_ok") is not True:
+                fail(f"{owner} {label} window is not capacity_ok")
+    runtime_change = require_dict(plan, "required_runtime_change", owner)
+    if (
+        require_string(runtime_change, "preferred_path", owner)
+        != "segmented_token_windowed_shared_instruction_schedule"
+    ):
+        fail(f"{owner} VDCores preferred path mismatch")
+    summary = require_dict(record, "summary", owner)
+    if summary.get("window_contract_validation") != "pass":
+        fail(f"{owner} summary must record window_contract_validation=pass")
+    if summary.get("paper_row_importable") is not False:
+        fail(f"{owner} summary must keep paper_row_importable=false")
+    if (
+        summary.get("runnable_handoff_contract_status")
+        != "required_not_implemented"
+    ):
+        fail(f"{owner} summary must keep runnable handoff non-implemented")
+    if summary.get("minimum_worst_case_windows_per_sm") != len(memory_windows):
+        fail(f"{owner} summary worst-case window count mismatch")

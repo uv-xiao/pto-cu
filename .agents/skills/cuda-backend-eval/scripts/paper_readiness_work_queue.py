@@ -253,6 +253,9 @@ def fallback_evidence_summary(action: dict[str, Any]) -> list[str]:
             "The artifact reports a 512-instruction shared-table limit, 2177 "
             "compute instructions, and 15042 memory instructions per SM, "
             "requiring segmented shared-instruction windows.",
+            "The handoff contract is validator-backed: "
+            "window_contract_validation=pass and "
+            "runnable_handoff_contract_status=required_not_implemented.",
             "This is not a runnable baseline yet; builder/runtime support must "
             "advance instruction windows while preserving resident tensors, "
             "KV-cache state, dependencies, correctness, and timing.",

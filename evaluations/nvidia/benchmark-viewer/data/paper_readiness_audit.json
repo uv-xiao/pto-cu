@@ -478,6 +478,7 @@
           "summary": {
             "model": "Qwen/Qwen3-8B",
             "analysis_status": "pass",
+            "window_contract_validation": "pass",
             "shared_instruction_limit": 512,
             "num_sms": 132,
             "max_cinsts_per_sm_required": 2177,
@@ -491,6 +492,7 @@
             "max_memory_window_instruction_count": 512,
             "pre_import_check_count": 4,
             "preferred_path": "segmented_token_windowed_shared_instruction_schedule",
+            "runnable_handoff_contract_status": "required_not_implemented",
             "paper_row_importable": false,
             "failure_kind": "shared_instruction_windowing_not_implemented"
           }

@@ -52,6 +52,11 @@ Structured paper-readiness evidence is tracked in
 `evaluations/nvidia/benchmark-viewer/data/paper_readiness_work_queue.json`.
 The review guards are under `.agents/checks/`, including the changelog,
 benchmark-viewer data, and NVIDIA review-readiness checks.
+The VDCores shared-instruction window plan is now guarded by
+`.agents/skills/cuda-backend-eval/scripts/vdcores_validate_instruction_window_plan.py`;
+the current audit records `window_contract_validation=pass` while preserving
+`runnable_handoff_contract_status=required_not_implemented`, so the VDCores
+paper row remains non-importable until runtime/builder support exists.
 
 Recent raw A100 evidence stays under `tmp/`:
 
