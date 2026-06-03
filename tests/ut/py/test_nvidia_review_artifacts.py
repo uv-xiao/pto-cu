@@ -5386,6 +5386,24 @@ def test_paper_readiness_audit_matches_current_viewer_data(tmp_path):
         "thunderkittens_full_sweep is planned_not_run" in blocker
         for blocker in tensor_claim["blockers"]
     )
+    llm_claim = by_id["llm_serving_paper_baselines"]
+    llm_policies = {
+        policy["id"]: policy
+        for policy in llm_claim["evidence_policy_exceptions"]
+    }
+    tk_policy = llm_policies[
+        "thunderkittens_llm_non_full_serving_policy_pending"
+    ]
+    assert tk_policy["status"] == "pending"
+    assert tk_policy["missing_evidence_id"] == (
+        "thunderkittens_full_serving_qwen3_8b"
+    )
+    assert "controlled attention-tile proxy" in tk_policy["decision"]
+    assert "must remain non-paper-ready" in tk_policy["review_rule"]
+    assert any(
+        ref["path"].endswith("thunderkittens-gemm-compatibility-probe.md")
+        for ref in tk_policy["evidence_refs"]
+    )
 
 
 def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
@@ -5541,6 +5559,48 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         "resource-backed diagnostic execution" in item
         for item in pto_item["evidence_summary"]
     )
+
+
+def test_paper_readiness_audit_rejects_malformed_policy_exception(tmp_path):
+    matrix = json.loads(
+        (VIEWER_DATA / "paper_evaluation_matrix.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    llm_claim = next(
+        item
+        for item in matrix["paper_evaluation_matrix"]
+        if item["id"] == "llm_serving_paper_baselines"
+    )
+    llm_claim["evidence_policy_exceptions"] = [
+        {
+            "id": "bad_policy",
+            "status": "pending",
+        }
+    ]
+    matrix_path = tmp_path / "paper_evaluation_matrix.json"
+    output_path = tmp_path / "paper_readiness_audit.json"
+    matrix_path.write_text(json.dumps(matrix), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            ".agents/skills/cuda-backend-eval/scripts/paper_readiness_audit.py",
+            "--matrix",
+            str(matrix_path),
+            "--output",
+            str(output_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "evidence_policy_exceptions" in result.stdout
+    assert "review_rule" in result.stdout
 
 
 def test_tensor_workload_coverage_records_multi_repeat_qwen_capture():
@@ -7045,6 +7105,25 @@ def test_benchmark_viewer_has_json_backed_review_data():
                 for ref in policy["evidence_refs"]
             )
         if item["id"] == "llm_serving_paper_baselines":
+            policies = {
+                policy["id"]: policy
+                for policy in item["evidence_policy_exceptions"]
+            }
+            tk_policy = policies[
+                "thunderkittens_llm_non_full_serving_policy_pending"
+            ]
+            assert tk_policy["status"] == "pending"
+            assert tk_policy["missing_evidence_id"] == (
+                "thunderkittens_full_serving_qwen3_8b"
+            )
+            assert "must remain non-paper-ready" in tk_policy["review_rule"]
+            assert any(
+                ref["kind"] == "changelog"
+                and ref["path"].endswith(
+                    "2026-06-03-thunderkittens-gemm-compatibility-probe.md"
+                )
+                for ref in tk_policy["evidence_refs"]
+            )
             assert not any(
                 "Selected shared model" in gap
                 for gap in item["missing_evidence"]

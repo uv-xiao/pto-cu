@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-03 ThunderKittens LLM policy exception guard](2026-06-03-thunderkittens-llm-policy-exception-guard.md)
 - [2026-06-03 VDCores work queue window contract](2026-06-03-vdcores-work-queue-window-contract.md)
 - [2026-06-03 VDCores window plan validation](2026-06-03-vdcores-window-plan-validation.md)
 - [2026-06-03 ThunderKittens GEMM compatibility probe](2026-06-03-thunderkittens-gemm-compatibility-probe.md)

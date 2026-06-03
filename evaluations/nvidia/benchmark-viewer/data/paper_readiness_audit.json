@@ -320,7 +320,32 @@
           "action": "Import ThunderKittens-family full-serving Qwen/Qwen3-8B rows beyond the current attention-tile proxy."
         }
       ],
-      "evidence_policy_exceptions": [],
+      "evidence_policy_exceptions": [
+        {
+          "id": "thunderkittens_llm_non_full_serving_policy_pending",
+          "title": "ThunderKittens LLM non-full-serving policy pending",
+          "status": "pending",
+          "missing_evidence_id": "thunderkittens_full_serving_qwen3_8b",
+          "scope": "Only the ThunderKittens contribution to the LLM-serving Qwen3-8B claim while the imported thunderkittens_decode_attention_tile rows remain controlled attention-tile proxy evidence for vdcores_offline_decode.",
+          "decision": "Do not promote the LLM-serving claim on the controlled attention-tile proxy. Either import ThunderKittens-family full-serving Qwen/Qwen3-8B rows or explicitly accept a non-full-serving paper-table exception that reports the proxy separately from full-serving baselines.",
+          "rationale": "The imported ThunderKittens rows preserve VDCores offline-decode batch, prompt/decode, correctness, and timing metadata for padded MHA shapes, but they do not execute the full Qwen/Qwen3-8B serving stack and cannot establish model-equivalent correctness.",
+          "review_rule": "Until this policy is accepted or replaced by full-serving rows, the ThunderKittens LLM baseline must remain non-paper-ready and must be rendered as controlled attention-tile proxy evidence, not as a full-serving Qwen/Qwen3-8B result.",
+          "evidence_refs": [
+            {
+              "kind": "viewer_data",
+              "path": "evaluations/nvidia/benchmark-viewer/data/paper_baseline_runs.json"
+            },
+            {
+              "kind": "viewer_data",
+              "path": "evaluations/nvidia/benchmark-viewer/data/results.json"
+            },
+            {
+              "kind": "changelog",
+              "path": "docs/nvidia-backend/changelog/2026-06-03-thunderkittens-gemm-compatibility-probe.md"
+            }
+          ]
+        }
+      ],
       "missing_viewer_results": [],
       "paper_baseline_run_statuses": [
         {

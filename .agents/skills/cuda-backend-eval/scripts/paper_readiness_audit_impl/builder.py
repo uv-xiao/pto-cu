@@ -64,6 +64,80 @@ def validate_missing_evidence_details(
             )
 
 
+def validate_evidence_policy_exceptions(
+    claim: dict[str, Any],
+    evidence_policy_exceptions: list[Any],
+) -> None:
+    if not isinstance(evidence_policy_exceptions, list):
+        fail(
+            f"{claim.get('id', '<unknown>')} "
+            "evidence_policy_exceptions is invalid"
+        )
+    required_string_fields = (
+        "id",
+        "title",
+        "status",
+        "scope",
+        "decision",
+        "rationale",
+        "review_rule",
+    )
+    valid_statuses = {"accepted", "pending", "rejected"}
+    for policy in evidence_policy_exceptions:
+        if not isinstance(policy, dict):
+            fail(
+                f"{claim.get('id', '<unknown>')} "
+                "evidence_policy_exceptions contains a non-object"
+            )
+        missing = [
+            key
+            for key in required_string_fields
+            if not isinstance(policy.get(key), str) or not policy.get(key, "").strip()
+        ]
+        if missing:
+            fail(
+                f"{claim.get('id', '<unknown>')} "
+                "evidence_policy_exceptions "
+                f"{policy.get('id', '<unknown>')} missing required fields: "
+                f"{', '.join(missing)}"
+            )
+        if policy["status"] not in valid_statuses:
+            fail(
+                f"{claim.get('id', '<unknown>')} "
+                "evidence_policy_exceptions "
+                f"{policy['id']} has invalid status"
+            )
+        missing_evidence_id = policy.get("missing_evidence_id", "")
+        if missing_evidence_id and not isinstance(missing_evidence_id, str):
+            fail(
+                f"{claim.get('id', '<unknown>')} "
+                "evidence_policy_exceptions "
+                f"{policy['id']} has invalid missing_evidence_id"
+            )
+        evidence_refs = policy.get("evidence_refs", [])
+        if not isinstance(evidence_refs, list) or not evidence_refs:
+            fail(
+                f"{claim.get('id', '<unknown>')} "
+                "evidence_policy_exceptions "
+                f"{policy['id']} has invalid evidence_refs"
+            )
+        for ref in evidence_refs:
+            if not isinstance(ref, dict):
+                fail(
+                    f"{claim.get('id', '<unknown>')} "
+                    "evidence_policy_exceptions "
+                    f"{policy['id']} evidence_refs contains a non-object"
+                )
+            for key in ("kind", "path"):
+                value = ref.get(key)
+                if not isinstance(value, str) or not value.strip():
+                    fail(
+                        f"{claim.get('id', '<unknown>')} "
+                        "evidence_policy_exceptions "
+                        f"{policy['id']} evidence_refs has invalid {key}"
+                    )
+
+
 def build_readiness_audit(
     *,
     matrix: dict[str, Any],
@@ -124,11 +198,7 @@ def build_readiness_audit(
         missing_evidence_details = claim.get("missing_evidence_details", [])
         validate_missing_evidence_details(claim, missing_evidence_details)
         evidence_policy_exceptions = claim.get("evidence_policy_exceptions", [])
-        if not isinstance(evidence_policy_exceptions, list):
-            fail(
-                f"{claim.get('id', '<unknown>')} "
-                "evidence_policy_exceptions is invalid"
-            )
+        validate_evidence_policy_exceptions(claim, evidence_policy_exceptions)
         paper_baseline_ids = claim.get("paper_baseline_ids", [])
         if not isinstance(paper_baseline_ids, list) or not all(
             isinstance(item, str) for item in paper_baseline_ids
