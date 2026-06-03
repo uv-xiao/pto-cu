@@ -268,14 +268,21 @@
       "name": "ThunderKittens",
       "category": "paper_baseline",
       "launch_model": "kernel-programming paper baseline",
-      "runtime_flow": "ThunderKittens builds and runs a selected attention or GEMM tile kernel that maps to the tensor-core tile baseline claim.",
-      "lifecycle": "Baseline source, setup commands, run commands, raw artifacts, and import target are tracked by paper_baseline_runs.json.",
+      "runtime_flow": "ThunderKittens currently contributes imported attention-family proxy rows plus source-inspected GEMM compatibility evidence; same-GEMM-tile Qwen comparator rows remain open.",
+      "lifecycle": "Baseline source, setup commands, run commands, raw artifacts, source compatibility probes, and import targets are tracked by paper_baseline_runs.json and tensor_workload_coverage.json.",
       "evidence_refs": [
         {
           "path": "evaluations/nvidia/benchmark-viewer/data/paper_baselines.json",
           "symbols": [
             "\"id\": \"thunderkittens\"",
             "ThunderKittens"
+          ]
+        },
+        {
+          "path": "evaluations/nvidia/benchmark-viewer/data/tensor_workload_coverage.json",
+          "symbols": [
+            "thunderkittens_gemm_compatibility_probe",
+            "exact_qwen_tile_not_supported_by_current_gemm_entrypoints"
           ]
         }
       ]

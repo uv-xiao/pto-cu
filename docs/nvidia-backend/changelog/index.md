@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-03 ThunderKittens GEMM compatibility probe](2026-06-03-thunderkittens-gemm-compatibility-probe.md)
 - [2026-06-03 Qwen H200 generated comparators](2026-06-03-qwen-h200-generated-comparators.md)
 - [2026-06-03 Qwen H200 tensor throughput](2026-06-03-qwen-h200-tensor-throughput.md)
 - [2026-06-03 Qwen generated tensor comparators](2026-06-03-qwen-generated-tensor-comparators.md)

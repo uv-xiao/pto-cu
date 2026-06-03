@@ -50,6 +50,12 @@ rows for the existing MHA/rotary captures. Those rows are recorded under each
 Qwen tensor target as proxy evidence only; they do not close the same-GEMM-tile
 ThunderKittens comparator requirement for the 16x64x128 and 16x64x256 Qwen
 projection tiles.
+Current ThunderKittens GEMM source-probe evidence also records why the gap
+remains open: the checked BF16 H100 GEMM entrypoint uses a 64x64 base tile with
+default 128x256 output blocks, while the Qwen projection targets are 16x64x128
+and 16x64x256. The checked INT8 H100 GEMM entrypoint is not comparable to the
+current float/tensor-core Qwen tensor claim. The probe is source-inspection
+evidence only; it does not close the same-GEMM-tile comparator requirement.
 
 Needed:
 
@@ -83,6 +89,8 @@ and
 The current H200 ThunderKittens proxy rows are imported in viewer records
 `073-llm-serving-decode-thunderkittens-h200-fa316a408b.json` and
 `122-tensor-core-tile-thunderkittens-h200-f9ec20b0d7.json`.
+The current ThunderKittens GEMM compatibility source-probe artifact is
+`tmp/cuda-backend/paper-baselines/thunderkittens/qwen-gemm-compatibility-88da0949/compatibility.json`.
 The source-contract evidence is emitted by
 `examples/cuda/qwen_persistent_task_bodies.py` as
 `qwen_tensor_tile_contract`.
@@ -97,6 +105,10 @@ comparable on the required hardware.
 
 ## Next Actions
 
-- Capture true ThunderKittens comparator rows for the same Qwen tile shapes.
+- Capture source-compatible ThunderKittens BF16 GEMM comparator rows and label
+  them as scaled comparator evidence, or add a reviewed local wrapper
+  experiment outside the upstream checkout for exact Qwen tiles.
+- Record a policy exception before closing the same-GEMM-tile ThunderKittens
+  comparator gap if neither source-compatible capture path is acceptable.
 - Promote the A100/H200 rows into final viewer result records only after the
   comparator set is complete.

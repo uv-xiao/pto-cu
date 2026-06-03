@@ -3532,6 +3532,86 @@ def test_thunderkittens_rotary_capture_builds_importable_record():
     assert result["correctness"] == "pass"
 
 
+def test_thunderkittens_gemm_compatibility_probe_marks_qwen_tiles_incompatible():
+    script = (
+        ROOT
+        / ".agents"
+        / "skills"
+        / "cuda-backend-eval"
+        / "scripts"
+        / "thunderkittens_gemm_compatibility_probe.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "thunderkittens_gemm_compatibility_probe",
+        script,
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    bf16_source = """
+    using base_tile = st_bf<64, 64>;
+    template<int _M_BLOCK=2, int _N_BLOCK=4, int _SUPER_M=12>
+    struct matmul_template;
+    """
+    int8_source = """
+    static_assert(_Mb == 128);
+    static_assert(_Nb >= 16 && _Nb <= 256 && _Nb % 16 == 0);
+    static_assert(_Kb >= 32 && _Kb % 32 == 0);
+    """
+    report = module.build_compatibility_report(
+        baseline_dir="tmp/baselines/thunderkittens",
+        bf16_source=bf16_source,
+        int8_source=int8_source,
+        targets=[
+            module.TensorTileTarget(
+                id="qwen_attention_projection_tile",
+                rows=16,
+                cols=64,
+                inner=128,
+            ),
+            module.TensorTileTarget(
+                id="qwen_mlp_projection_tile",
+                rows=16,
+                cols=64,
+                inner=256,
+            ),
+        ],
+    )
+
+    assert report["status"] == (
+        "exact_qwen_tile_not_supported_by_current_gemm_entrypoints"
+    )
+    by_name = {
+        entry["entrypoint_id"]: entry for entry in report["entrypoints"]
+    }
+    bf16 = by_name["bf16_h100_gemm"]
+    assert bf16["base_tile"] == {"rows": 64, "cols": 64}
+    assert bf16["default_output_block"] == {"rows": 128, "cols": 256}
+    assert {item["target_id"] for item in bf16["target_compatibility"]} == {
+        "qwen_attention_projection_tile",
+        "qwen_mlp_projection_tile",
+    }
+    assert all(
+        item["exact_target_compatible"] is False
+        for item in bf16["target_compatibility"]
+    )
+    assert all(
+        "target rows 16 are smaller than BF16 base tile rows 64"
+        in item["reason"]
+        for item in bf16["target_compatibility"]
+    )
+    int8 = by_name["int8_h100_gemm"]
+    assert int8["dtype"] == "int8"
+    assert int8["comparability_scope"] == (
+        "dtype_mismatch_for_current_qwen_float_tensor_claim"
+    )
+    assert all(
+        item["exact_target_compatible"] is False
+        for item in int8["target_compatibility"]
+    )
+
+
 def test_mpk_native_token_capture_builds_importable_record():
     import importlib.util
 
@@ -5400,6 +5480,29 @@ def test_tensor_workload_coverage_records_multi_repeat_qwen_capture():
             "attention_family_proxy_not_same_gemm_tile"
         )
         assert "does not close" in thunderkittens["remaining_scope"]
+        compatibility = target["thunderkittens_gemm_compatibility_probe"]
+        assert compatibility["status"] == (
+            "exact_qwen_tile_not_supported_by_current_gemm_entrypoints"
+        )
+        assert compatibility["methods"] == ["thunderkittens"]
+        assert compatibility["comparison_scope"] == (
+            "source_entrypoint_probe_not_same_tile_result"
+        )
+        assert compatibility["artifact_path"].startswith(
+            "tmp/cuda-backend/paper-baselines/thunderkittens/"
+        )
+        assert "compatibility.json" in compatibility["artifact_path"]
+        report = json.loads(
+            (ROOT / compatibility["artifact_path"]).read_text(encoding="utf-8")
+        )
+        assert report["baseline"] == "thunderkittens"
+        assert report["status"] == compatibility["status"]
+        report_targets = {item["id"]: item for item in report["targets"]}
+        assert report_targets[target_id]["tensor_tile"] == target["tensor_tile"]
+        assert {
+            entry["entrypoint_id"] for entry in report["entrypoints"]
+        } >= {"bf16_h100_gemm", "int8_h100_gemm"}
+        assert "does not close" in compatibility["remaining_scope"]
         result_records = [
             json.loads(path.read_text(encoding="utf-8"))
             for path in (

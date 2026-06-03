@@ -143,6 +143,12 @@ def validate_model_shape_targets(
             methods,
             result_index,
         )
+        validate_thunderkittens_gemm_compatibility_probe(
+            target,
+            owner,
+            methods,
+            root,
+        )
         check_evidence_refs(target, owner, root)
     if import_smoke_count < 2:
         fail("tensor workload coverage needs two model-shape import smokes")
@@ -450,6 +456,86 @@ def validate_thunderkittens_proxy_capture(
     if len(result_refs) < 2:
         fail(f"{owner} thunderkittens_proxy_capture needs multiple result refs")
     _check_result_refs(result_refs, owner, result_index)
+
+
+def validate_thunderkittens_gemm_compatibility_probe(
+    target: dict[str, Any],
+    owner: str,
+    required_methods: set[str],
+    root: Path,
+) -> None:
+    probe = target.get("thunderkittens_gemm_compatibility_probe")
+    if probe is None:
+        return
+    if not isinstance(probe, dict):
+        fail(f"{owner} thunderkittens_gemm_compatibility_probe is not an object")
+    status = require_string(probe, "status", owner)
+    if status != "exact_qwen_tile_not_supported_by_current_gemm_entrypoints":
+        fail(
+            f"{owner} thunderkittens_gemm_compatibility_probe has invalid "
+            f"status: {status}"
+        )
+    methods = require_list(probe, "methods", owner)
+    if methods != ["thunderkittens"]:
+        fail(
+            f"{owner} thunderkittens_gemm_compatibility_probe methods "
+            f"mismatch: {methods}"
+        )
+    if "thunderkittens" not in required_methods:
+        fail(f"{owner} thunderkittens_gemm_compatibility_probe is not required")
+    scope = require_string(probe, "comparison_scope", owner)
+    if scope != "source_entrypoint_probe_not_same_tile_result":
+        fail(f"{owner} thunderkittens_gemm_compatibility_probe scope is unclear")
+    remaining_scope = require_string(probe, "remaining_scope", owner)
+    if "does not close" not in remaining_scope:
+        fail(f"{owner} thunderkittens_gemm_compatibility_probe must keep gap open")
+    artifact_path = require_string(probe, "artifact_path", owner)
+    report = load_current_json_artifact(root, artifact_path, owner)
+    if report.get("baseline") != "thunderkittens":
+        fail(f"{owner} thunderkittens_gemm_compatibility_probe baseline mismatch")
+    if report.get("status") != status:
+        fail(f"{owner} thunderkittens_gemm_compatibility_probe status mismatch")
+    target_id = require_string(target, "id", owner)
+    report_targets = {
+        item.get("id"): item
+        for item in require_list(report, "targets", owner)
+        if isinstance(item, dict)
+    }
+    if target_id not in report_targets:
+        fail(f"{owner} thunderkittens_gemm_compatibility_probe target missing")
+    if report_targets[target_id].get("tensor_tile") != target["tensor_tile"]:
+        fail(f"{owner} thunderkittens_gemm_compatibility_probe tile mismatch")
+    entrypoints = require_list(report, "entrypoints", owner)
+    entrypoint_ids = {
+        entry.get("entrypoint_id")
+        for entry in entrypoints
+        if isinstance(entry, dict)
+    }
+    required_entrypoints = {"bf16_h100_gemm", "int8_h100_gemm"}
+    if not required_entrypoints <= entrypoint_ids:
+        fail(
+            f"{owner} thunderkittens_gemm_compatibility_probe missing "
+            f"entrypoints: {sorted(required_entrypoints - entrypoint_ids)}"
+        )
+    for entrypoint in entrypoints:
+        if not isinstance(entrypoint, dict):
+            fail(f"{owner} thunderkittens_gemm_compatibility_probe bad entrypoint")
+        compatibility = require_list(entrypoint, "target_compatibility", owner)
+        target_rows = [
+            item
+            for item in compatibility
+            if isinstance(item, dict) and item.get("target_id") == target_id
+        ]
+        if not target_rows:
+            fail(
+                f"{owner} thunderkittens_gemm_compatibility_probe lacks "
+                f"compatibility for {target_id}"
+            )
+        if any(item.get("exact_target_compatible") for item in target_rows):
+            fail(
+                f"{owner} thunderkittens_gemm_compatibility_probe cannot mark "
+                f"{target_id} exact-compatible while status keeps the gap open"
+            )
 
 
 def validate_generated_kernel_hardware_capture(

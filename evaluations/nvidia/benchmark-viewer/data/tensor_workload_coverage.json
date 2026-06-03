@@ -192,6 +192,15 @@
           }
         ],
         "remaining_scope": "This imported H200 ThunderKittens MHA/rotary proxy evidence does not close the same-GEMM-tile Qwen tensor comparator gap."
+      },
+      "thunderkittens_gemm_compatibility_probe": {
+        "status": "exact_qwen_tile_not_supported_by_current_gemm_entrypoints",
+        "methods": [
+          "thunderkittens"
+        ],
+        "comparison_scope": "source_entrypoint_probe_not_same_tile_result",
+        "artifact_path": "tmp/cuda-backend/paper-baselines/thunderkittens/qwen-gemm-compatibility-88da0949/compatibility.json",
+        "remaining_scope": "The source-inspection probe explains why current ThunderKittens GEMM entrypoint coverage does not close the same-GEMM-tile Qwen tensor comparator gap."
       }
     },
     {
@@ -380,6 +389,15 @@
           }
         ],
         "remaining_scope": "This imported H200 ThunderKittens MHA/rotary proxy evidence does not close the same-GEMM-tile Qwen tensor comparator gap."
+      },
+      "thunderkittens_gemm_compatibility_probe": {
+        "status": "exact_qwen_tile_not_supported_by_current_gemm_entrypoints",
+        "methods": [
+          "thunderkittens"
+        ],
+        "comparison_scope": "source_entrypoint_probe_not_same_tile_result",
+        "artifact_path": "tmp/cuda-backend/paper-baselines/thunderkittens/qwen-gemm-compatibility-88da0949/compatibility.json",
+        "remaining_scope": "The source-inspection probe explains why current ThunderKittens GEMM entrypoint coverage does not close the same-GEMM-tile Qwen tensor comparator gap."
       }
     }
   ],
@@ -520,7 +538,7 @@
         "throughput SVG/report generation"
       ],
       "open_work": [
-        "add ThunderKittens comparator rows for the Qwen tensor target shapes"
+        "add source-compatible ThunderKittens BF16 GEMM comparator rows or a reviewed exact-Qwen-tile policy exception"
       ],
       "result_refs": [],
       "evidence_refs": [
