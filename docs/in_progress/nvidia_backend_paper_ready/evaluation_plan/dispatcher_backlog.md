@@ -44,6 +44,8 @@ The generated paper-readiness queue currently has `4` active paper work items:
   `thunderkittens_decode_attention_tile:vdcores_offline_decode`.
 - `paper_readiness_work_item_004`: resolve the VDCores shared-instruction
   window plan into a runnable baseline before importing the preflight row.
+  Command-plan selector:
+  `vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode`.
 
 ## Promotion Rules
 

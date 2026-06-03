@@ -7,6 +7,7 @@ what evaluation ran, and what evidence proves the claim.
 ## Reports
 
 - [2026-06-03 Qwen feedback ring](2026-06-03-qwen-feedback-ring.md)
+- [2026-06-03 Work queue execution selectors](2026-06-03-work-queue-execution-selectors.md)
 - [2026-06-03 Baseline readiness paths](2026-06-03-baseline-readiness-paths.md)
 - [2026-06-03 PTO readiness probe](2026-06-03-pto-readiness-probe.md)
 - [2026-06-03 PTO serving command plan](2026-06-03-pto-serving-command-plan.md)

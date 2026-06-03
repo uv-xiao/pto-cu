@@ -94,6 +94,10 @@ def build_work_queue(
                 isinstance(item, str) for item in serving_workload_ids
             ):
                 fail(f"{claim_id} next action has invalid serving_workload_ids")
+            if not serving_workload_ids and paper_baseline_run_id:
+                serving_workload_ids = run_serving_workloads.get(
+                    paper_baseline_run_id, []
+                )
             command_selectors = serving_command_plan_selectors(
                 paper_baseline_run_id,
                 serving_workload_ids,

@@ -5207,14 +5207,21 @@ def test_paper_readiness_work_queue_matches_current_audit(tmp_path):
         and item["paper_baseline_run_id"] == "sglang_serving_and_offline"
         for item in work_items
     )
-    assert any(
-        item["claim_id"] == "llm_serving_paper_baselines"
+    vdcores_attempt_item = next(
+        item
+        for item in work_items
+        if item["claim_id"] == "llm_serving_paper_baselines"
         and item["source"] == "execution_attempt"
         and item["paper_baseline_run_id"] == "vdcores_qwen3_8b_decode_preflight"
         and item["execution_attempt_id"]
         == "vdcores_qwen3_8b_shared_instruction_window_plan_h200"
-        for item in work_items
     )
+    assert vdcores_attempt_item["serving_workload_ids"] == [
+        "vdcores_offline_decode"
+    ]
+    assert vdcores_attempt_item["serving_command_plan_selectors"] == [
+        "vdcores_qwen3_8b_decode_preflight:vdcores_offline_decode"
+    ]
     pto_item = next(
         item
         for item in work_items
