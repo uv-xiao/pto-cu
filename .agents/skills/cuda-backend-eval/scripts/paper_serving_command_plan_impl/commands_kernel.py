@@ -84,6 +84,7 @@ def pto_persistent_device_commands(
                     "examples/cuda/qwen_decode_loop_runner.py",
                     "--mode",
                     "offline",
+                    "--single-context-live-session",
                     "--run-resource-backed-smoke",
                     "--resource-backed-prefill-prompt",
                     "--resource-backed-workload",

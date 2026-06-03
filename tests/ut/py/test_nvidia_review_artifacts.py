@@ -6052,6 +6052,7 @@ def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
     assert any(
         command["kind"] == "pto_qwen_full_serving"
         and "qwen_decode_loop_runner.py" in command["command"]
+        and "--single-context-live-session" in command["command"]
         and "--run-resource-backed-smoke" in command["command"]
         and "--resource-backed-prefill-prompt" in command["command"]
         and "--resource-backed-workload mpk_offline_decode" in command["command"]

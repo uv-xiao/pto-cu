@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-03 PTO Qwen live-session command](2026-06-03-pto-qwen-live-session-command.md)
 - [2026-06-03 Plan history reflection viewer](2026-06-03-plan-history-reflection-viewer.md)
 - [2026-06-03 ThunderKittens LLM policy exception guard](2026-06-03-thunderkittens-llm-policy-exception-guard.md)
 - [2026-06-03 VDCores work queue window contract](2026-06-03-vdcores-work-queue-window-contract.md)

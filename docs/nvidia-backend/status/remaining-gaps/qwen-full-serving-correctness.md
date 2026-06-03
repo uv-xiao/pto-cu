@@ -60,6 +60,16 @@ paper row remains non-importable until runtime/builder support exists.
 
 Recent raw A100 evidence stays under `tmp/`:
 
+- `tmp/cuda-backend/repro-no-single-context/qwen-runner.json` records the
+  pre-fix handoff failure for generated PTO full-serving commands:
+  resource-backed execution returned
+  `reason=single_context_live_session_required`.
+- `tmp/cuda-backend/repro-single-context-prefill/qwen-runner.json` records the
+  post-fix one-layer MPK handoff smoke with `prompt_prefill_executed`, 18
+  executed prompt positions, zero prompt-prefill scheduler errors, and a
+  passing readout-only first decode packet. This proves the generated command
+  shape reaches live CUDA execution, but it is still diagnostic rather than
+  model-equivalent full-serving correctness evidence.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`
