@@ -190,6 +190,8 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "const unsigned int col = static_cast<unsigned int>(j % task->cols);" in (
         full_source
     )
+    assert "const unsigned int raw_q_width =" in full_source
+    assert "raw_q_width >= head_dim ? raw_q_width / head_dim : 1U;" in full_source
     assert "const unsigned int q_width = query_heads * head_dim;" in full_source
     assert "const unsigned int kv_width = kv_heads * head_dim;" in full_source
     assert "const unsigned int qk_norm_input_stride =" in full_source

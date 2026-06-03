@@ -261,10 +261,13 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
     const unsigned int qk_norm_input_stride =
         task->a_batch_stride > 0U ? task->a_batch_stride : task->cols;
     const unsigned int head_dim = task->inner;
-    const unsigned int query_heads = task->rows > 0U ? task->rows : 1U;
-    const unsigned int kv_heads = task->ldb > 0U ? task->ldb : query_heads;
-    const unsigned int q_width = query_heads * head_dim;
+    const unsigned int kv_heads = task->ldb > 0U ? task->ldb : 1U;
     const unsigned int kv_width = kv_heads * head_dim;
+    const unsigned int raw_q_width =
+        task->cols > kv_width ? task->cols - kv_width : head_dim;
+    const unsigned int query_heads =
+        raw_q_width >= head_dim ? raw_q_width / head_dim : 1U;
+    const unsigned int q_width = query_heads * head_dim;
     const unsigned int raw_kv_page_size =
         task->scalar0 > 0.0f ? static_cast<unsigned int>(task->scalar0) : 16U;
     const unsigned int kv_page_size =
@@ -444,10 +447,11 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
     __shared__ float attention_values[4096];
     const unsigned int row_count =
         static_cast<unsigned int>(task->n / task->cols);
-    const unsigned int query_heads = task->rows > 0U ? task->rows : 1U;
     unsigned int head_dim = task->lda > 0U ?
-        task->lda : (task->cols / query_heads);
+        task->lda : task->inner;
     head_dim = head_dim > 0U ? head_dim : 1U;
+    const unsigned int query_heads =
+        task->cols >= head_dim ? task->cols / head_dim : 1U;
     const unsigned int kv_heads = task->ldb > 0U ? task->ldb : query_heads;
     const unsigned int heads_per_kv =
         query_heads > kv_heads ? query_heads / kv_heads : 1U;

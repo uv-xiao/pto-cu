@@ -14,11 +14,14 @@
 
 ## Architecture Quality
 
-This keeps the persistent DAG ABI unchanged. The task body now uses fields
-already carried by launch packets: `rows` for query heads, `lda` for head
-dimension, `ldb` for KV heads, and `inner` for the bounded diagnostic window.
-The implementation clamps uneven query-to-KV mapping rather than relying on
-undefined indexing when descriptor fields are malformed.
+This keeps the persistent DAG ABI unchanged. The task body uses fields already
+carried by launch packets: `lda` for head dimension, `ldb` for KV heads, and
+`inner` for the bounded diagnostic window. A later
+`2026-06-03-qwen-attention-batch-rows.md` changelog refines the contract so
+`rows` stays reserved for workload batch rows and query heads are derived from
+descriptor width and head dimension. The implementation clamps uneven
+query-to-KV mapping rather than relying on undefined indexing when descriptor
+fields are malformed.
 
 ## Evaluation Run
 

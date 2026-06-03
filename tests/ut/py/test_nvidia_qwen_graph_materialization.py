@@ -1274,7 +1274,6 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
     assert qkv_metadata["shape"] == [4, 4]
     assert qkv_metadata["size_bytes"] == 32
     assert descriptors["layer_0_attention_qk_norm"]["task_shape_fields"] == {
-        "rows": 2,
         "cols": 6,
         "inner": 2,
         "lda": 2,
@@ -1291,7 +1290,6 @@ def test_qwen_weight_descriptors_emit_callable_shape_fields():
         "device_ptr_source": "runtime_buffers.kv_page_table",
     }
     assert descriptors["layer_0_attention_o"]["task_shape_fields"] == {
-        "rows": 2,
         "cols": 4,
         "inner": 2,
         "lda": 2,

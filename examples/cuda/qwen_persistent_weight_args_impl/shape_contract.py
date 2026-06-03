@@ -85,7 +85,6 @@ def task_shape_fields(callable_name: str, shape: QwenTaskShape) -> dict[str, Any
     if callable_name == "qwen_attention_qk_norm":
         qkv_stride = shape.q_width + 2 * shape.kv_width
         return {
-            "rows": shape.num_attention_heads,
             "cols": shape.q_width + shape.kv_width,
             "inner": shape.head_dim,
             "lda": shape.head_dim,
@@ -122,7 +121,6 @@ def attention_fields(
 ) -> dict[str, Any]:
     qk_norm_stride = (query_heads + kv_heads) * head_dim
     return {
-        "rows": query_heads,
         "cols": cols,
         "inner": head_dim,
         "lda": head_dim,

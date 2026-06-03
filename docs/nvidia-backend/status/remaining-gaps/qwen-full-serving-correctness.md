@@ -18,6 +18,13 @@ adds the down projection to the full pre-MLP residual stream by combining the
 attention-output residual with the original layer input. This is still not
 enough to promote PTO rows to full-serving correctness.
 
+The QK-norm and attention-output task descriptors now keep launch-packet
+`rows` as workload batch rows instead of overloading it with query-head count;
+the generated kernels derive query-head count from width/head metadata. The
+refreshed full-prefix MPK-policy artifact still has non-finite row-0 logits,
+so this narrows task-shape fidelity but leaves hidden-row numerical
+correctness open.
+
 The generated-token feedback path now uses one prompt-ring contract across
 host feedback, device logits feedback, and embedding lookup. Earlier
 policy-length diagnostic rows that predate the feedback-ring fix prove
@@ -55,6 +62,11 @@ Recent raw A100 evidence stays under `tmp/`:
   records a 49-step first-layer MPK-policy diagnostic where device feedback
   observes wrapped input slots at decode positions 63 and 64, and the bounded
   diagnostic logits reference passes over 2,048 active-window logits.
+- `tmp/cuda-backend/qwen-attention-batch-rows-active-prompt-mpk-2026-06-03/`
+  records a full-prefix, full-logits MPK-policy run with 255 completed tasks
+  and zero scheduler errors after the attention batch-row shape fix. It still
+  reports empty row-0 top-k and a diagnostic logits reference failure, so it is
+  not full-Qwen correctness evidence.
 - `tmp/cuda-backend/qwen-prefill-readout-full-projection-mpk-2026-06-03/`
   records no JSON artifact; the local A100 full 36-layer prompt-prefill
   attempt with full projection and logits columns was stopped after saturating
@@ -74,6 +86,8 @@ Close this gap only after PTO rows for both `mpk_offline_decode` and
 
 - Continue replacing diagnostic scalar task-body math with model-correct Qwen
   kernels.
+- Localize the first upstream hidden row that becomes non-finite before final
+  norm/logits in the full-prefix MPK-policy run.
 - Extend cached attention-output projection evidence from first-layer smoke to
   all selected layers and full logits when runtime is practical.
 - Re-run the Hugging Face comparison after each kernel-fidelity fix.
