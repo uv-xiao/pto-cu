@@ -45,6 +45,11 @@ Triton and CUTLASS comparator captures for the same Qwen attention and MLP
 tensor tiles. The comparator capture scripts now label records with the concrete
 model-shape tile, so viewer rows for generated kernels can be checked against
 the Qwen target shape instead of the generic diagnostic tensor shape.
+Current ThunderKittens evidence includes imported H200 attention-family proxy
+rows for the existing MHA/rotary captures. Those rows are recorded under each
+Qwen tensor target as proxy evidence only; they do not close the same-GEMM-tile
+ThunderKittens comparator requirement for the 16x64x128 and 16x64x256 Qwen
+projection tiles.
 
 Needed:
 
@@ -75,6 +80,9 @@ The current H200 Triton/CUTLASS comparator captures are under
 `tmp/cuda-backend/qwen-attention-generated-tensor-target-h200-repeat3-e1ab002b/`
 and
 `tmp/cuda-backend/qwen-mlp-generated-tensor-target-h200-repeat3-e1ab002b/`.
+The current H200 ThunderKittens proxy rows are imported in viewer records
+`073-llm-serving-decode-thunderkittens-h200-fa316a408b.json` and
+`122-tensor-core-tile-thunderkittens-h200-f9ec20b0d7.json`.
 The source-contract evidence is emitted by
 `examples/cuda/qwen_persistent_task_bodies.py` as
 `qwen_tensor_tile_contract`.
@@ -89,6 +97,6 @@ comparable on the required hardware.
 
 ## Next Actions
 
-- Capture ThunderKittens comparator rows for the same tile shapes.
+- Capture true ThunderKittens comparator rows for the same Qwen tile shapes.
 - Promote the A100/H200 rows into final viewer result records only after the
   comparator set is complete.

@@ -60,8 +60,8 @@ def validate_tensor_workload_coverage(
     missing = required - group_ids
     if missing:
         fail(f"tensor workload coverage missing groups: {sorted(missing)}")
-    validate_model_shape_targets(data, method_ids, root)
     results_seen = _result_index(results)
+    validate_model_shape_targets(data, method_ids, results_seen, root)
     for group in groups:
         owner = f"tensor workload coverage group {group['id']}"
         for key in ("title", "status", "summary"):
@@ -82,6 +82,7 @@ def validate_tensor_workload_coverage(
 def validate_model_shape_targets(
     data: dict[str, Any],
     method_ids: set[str],
+    result_index: set[tuple[str, str, str, str]],
     root: Path,
 ) -> None:
     targets = require_list(
@@ -136,6 +137,12 @@ def validate_model_shape_targets(
         import_smoke_count += int(has_import_smoke)
         validate_throughput_capture(target, owner, methods, root)
         validate_generated_kernel_capture(target, owner, methods, root)
+        validate_thunderkittens_proxy_capture(
+            target,
+            owner,
+            methods,
+            result_index,
+        )
         check_evidence_refs(target, owner, root)
     if import_smoke_count < 2:
         fail("tensor workload coverage needs two model-shape import smokes")
@@ -403,6 +410,46 @@ def validate_generated_kernel_capture(
         fail(
             f"{owner} generated_kernel_capture must include A100 and H200 captures"
         )
+
+
+def validate_thunderkittens_proxy_capture(
+    target: dict[str, Any],
+    owner: str,
+    required_methods: set[str],
+    result_index: set[tuple[str, str, str, str]],
+) -> None:
+    capture = target.get("thunderkittens_proxy_capture")
+    if capture is None:
+        return
+    if not isinstance(capture, dict):
+        fail(f"{owner} thunderkittens_proxy_capture is not an object")
+    status = require_string(capture, "status", owner)
+    if status != "h200_attention_proxy_imported":
+        fail(f"{owner} thunderkittens_proxy_capture has invalid status: {status}")
+    methods = require_list(capture, "methods", owner)
+    if methods != ["thunderkittens"]:
+        fail(f"{owner} thunderkittens_proxy_capture methods mismatch: {methods}")
+    if "thunderkittens" not in required_methods:
+        fail(f"{owner} thunderkittens_proxy_capture is not a required method")
+    hardware = require_dict(capture, "hardware", owner)
+    if (
+        require_string(hardware, "gpu", owner) != "H200"
+        or require_string(hardware, "compute_target", owner) != "compute_90"
+    ):
+        fail(f"{owner} thunderkittens_proxy_capture must be H200 compute_90")
+    sample_count = require_positive_int(capture, "sample_count", owner)
+    if sample_count < 20:
+        fail(f"{owner} thunderkittens_proxy_capture must have 20 samples")
+    scope = require_string(capture, "comparison_scope", owner)
+    if scope != "attention_family_proxy_not_same_gemm_tile":
+        fail(f"{owner} thunderkittens_proxy_capture scope is not explicit")
+    remaining_scope = require_string(capture, "remaining_scope", owner)
+    if "does not close" not in remaining_scope:
+        fail(f"{owner} thunderkittens_proxy_capture must keep the gap open")
+    result_refs = require_list(capture, "result_refs", owner)
+    if len(result_refs) < 2:
+        fail(f"{owner} thunderkittens_proxy_capture needs multiple result refs")
+    _check_result_refs(result_refs, owner, result_index)
 
 
 def validate_generated_kernel_hardware_capture(

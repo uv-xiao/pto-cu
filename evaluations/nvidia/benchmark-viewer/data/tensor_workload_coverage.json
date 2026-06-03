@@ -165,6 +165,33 @@
             ]
           }
         ]
+      },
+      "thunderkittens_proxy_capture": {
+        "status": "h200_attention_proxy_imported",
+        "hardware": {
+          "gpu": "H200",
+          "compute_target": "compute_90"
+        },
+        "sample_count": 20,
+        "methods": [
+          "thunderkittens"
+        ],
+        "comparison_scope": "attention_family_proxy_not_same_gemm_tile",
+        "result_refs": [
+          {
+            "benchmark_id": "llm_serving_decode",
+            "method_id": "thunderkittens",
+            "gpu": "H200",
+            "shape_contains": "mha_h100,b=4,h=1,n=256,d=64"
+          },
+          {
+            "benchmark_id": "tensor_core_tile",
+            "method_id": "thunderkittens",
+            "gpu": "H200",
+            "shape_contains": "rotary,b=4,h=16,n=2048,d=64"
+          }
+        ],
+        "remaining_scope": "This imported H200 ThunderKittens MHA/rotary proxy evidence does not close the same-GEMM-tile Qwen tensor comparator gap."
       }
     },
     {
@@ -326,6 +353,33 @@
             ]
           }
         ]
+      },
+      "thunderkittens_proxy_capture": {
+        "status": "h200_attention_proxy_imported",
+        "hardware": {
+          "gpu": "H200",
+          "compute_target": "compute_90"
+        },
+        "sample_count": 20,
+        "methods": [
+          "thunderkittens"
+        ],
+        "comparison_scope": "attention_family_proxy_not_same_gemm_tile",
+        "result_refs": [
+          {
+            "benchmark_id": "llm_serving_decode",
+            "method_id": "thunderkittens",
+            "gpu": "H200",
+            "shape_contains": "mha_h100,b=4,h=1,n=256,d=64"
+          },
+          {
+            "benchmark_id": "tensor_core_tile",
+            "method_id": "thunderkittens",
+            "gpu": "H200",
+            "shape_contains": "rotary,b=4,h=16,n=2048,d=64"
+          }
+        ],
+        "remaining_scope": "This imported H200 ThunderKittens MHA/rotary proxy evidence does not close the same-GEMM-tile Qwen tensor comparator gap."
       }
     }
   ],

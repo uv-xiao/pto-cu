@@ -5387,6 +5387,40 @@ def test_tensor_workload_coverage_records_multi_repeat_qwen_capture():
                     assert exported_records_path.startswith(
                         record["raw_artifact"]
                     )
+        thunderkittens = target["thunderkittens_proxy_capture"]
+        assert thunderkittens["status"] == "h200_attention_proxy_imported"
+        assert thunderkittens["sample_count"] >= 20
+        assert thunderkittens["methods"] == ["thunderkittens"]
+        assert thunderkittens["hardware"] == {
+            "gpu": "H200",
+            "compute_target": "compute_90",
+        }
+        assert thunderkittens["comparison_scope"] == (
+            "attention_family_proxy_not_same_gemm_tile"
+        )
+        assert "does not close" in thunderkittens["remaining_scope"]
+        result_records = [
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in (
+                VIEWER_DATA / "results" / "records"
+            ).glob("*thunderkittens-h200*.json")
+        ]
+        for result_ref in thunderkittens["result_refs"]:
+            matches = [
+                record
+                for record in result_records
+                if record["benchmark_id"] == result_ref["benchmark_id"]
+                and record["method_id"] == "thunderkittens"
+                and record["hardware"]["gpu"] == "H200"
+                and result_ref["shape_contains"] in record["inputs"]["shape"]
+            ]
+            assert matches
+            assert all(record["correctness"] == "pass" for record in matches)
+            assert all(
+                record["statistic"]["sample_count"]
+                == thunderkittens["sample_count"]
+                for record in matches
+            )
 
 
 def test_cuda_persistent_smoke_dag_task_matches_compiler_abi():
