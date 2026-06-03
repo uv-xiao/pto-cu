@@ -124,10 +124,31 @@ field overrides, full-vocab logits coverage with 2,430,976 written and checked
 elements, diagnostic logits reference `status = pass`, 3,904 checked elements
 across 16 rows, and max absolute error `1.543e-05`.
 
+The full 36-layer MPK-policy diagnostic was then attempted at policy length
+with `--resource-backed-decode-steps 1024` and bounded 512-column projection
+and logits diagnostics. The local A100 run used output directory
+`tmp/cuda-backend/qwen-policy-length-thirtysix-mpk-2026-06-03/`. Result: timed
+out after one hour with no JSON artifact, while device 0 stayed at 100% GPU
+utilization and about 27 GiB resident memory. This is not correctness evidence,
+but it shows the current unoptimized 1024-step full-DAG MPK policy-length path
+is too slow for the local one-hour diagnostic budget.
+
+The same bounded 36-layer policy-length diagnostic was then run for the
+VDCores-policy workload with `--resource-backed-decode-steps 64`. The artifact
+is
+`tmp/cuda-backend/qwen-policy-length-thirtysix-vdcores-2026-06-03/qwen-decode-loop-runner.json`.
+Result: passed for `vdcores_offline_decode` with
+`decode_step_execution.status = policy_length_decode_steps_executed`. It
+records 64 planned and executed decode steps, `task_count = 255`, 16,320 total
+task completions, `total_error_count = 0`, stable final-step logits, diagnostic
+logits reference `status = pass`, 244 checked elements, and max absolute error
+`4.83e-06`.
+
 ## Remaining Gaps
 
 The selector is implemented and live-smoked for the full 36-layer descriptor
 set on both serving policies. Full-column one-step diagnostics are proven for
-both MPK and VDCores policy workloads, but full Qwen numerical correctness
-still requires policy-length MPK and VDCores decode plus token/logit agreement
-against the model reference, not only one diagnostic decode step.
+both MPK and VDCores policy workloads, and bounded-column VDCores policy-length
+execution now passes for the full descriptor set. Full Qwen numerical
+correctness still requires a tractable MPK policy-length path plus token/logit
+agreement against the model reference, not only diagnostic logits checks.
