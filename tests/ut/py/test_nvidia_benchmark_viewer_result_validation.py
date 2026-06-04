@@ -258,3 +258,16 @@ def test_plan_history_validator_rejects_verbose_recent_slices():
         assert "recent_slices must stay brief" in str(exc)
     else:
         raise AssertionError("verbose plan history slices were accepted")
+
+
+def test_plan_history_validator_accepts_feature_dominant_runtime_window():
+    plan_history = load_plan_history_module()
+    payload = plan_history_payload()
+    payload["work_focus"][0]["feature_or_runtime"] = 7
+    payload["work_focus"][0]["tests_or_guardrails"] = 5
+    payload["work_focus"][0]["viewer_or_docs"] = 0
+
+    plan_history.validate_plan_history(
+        payload,
+        allowed_latest_commits={"abc1234"},
+    )

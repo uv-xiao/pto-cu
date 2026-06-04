@@ -3,20 +3,26 @@
   "generated_at": "2026-06-04",
   "summary": {
     "current_focus": "Qwen full-serving correctness and benchmark-model progress",
-    "recent_pattern": "The latest committed slice was test/plan-history maintenance, while this turn moved back to Qwen benchmark-model evidence.",
-    "reflection": "The archive guard prevented plan history from going stale. The next slices should keep prioritizing benchmark model execution and use docs only to record new evidence.",
+    "recent_pattern": "Recent slices moved back toward Qwen runtime evidence after one compact plan-history guardrail commit.",
+    "reflection": "The latest evidence narrows benchmark model Qwen drift without adding viewer or test contracts. Keep the next slice focused on full-row numeric localization or a root-cause fix.",
     "test_strategy": "Keep one broad viewer contract check plus focused generator and policy tests. Avoid sparse row-by-row tests for every imported artifact; prefer large integrated tests that exercise benchmark-model execution, viewer import, and report validation together."
   },
   "work_focus": [
     {
-      "window": "latest 12 commits through 2dd50657",
-      "feature_or_runtime": 6,
-      "tests_or_guardrails": 6,
+      "window": "latest 12 commits through a5105a57",
+      "feature_or_runtime": 7,
+      "tests_or_guardrails": 5,
       "viewer_or_docs": 0,
-      "notes": "The current parent commit is test/guardrail work, but the active slice returned to Qwen runtime evidence."
+      "notes": "Runtime evidence is again the dominant recent focus, with the plan-history guard keeping reporting work bounded."
     }
   ],
   "recent_slices": [
+    {
+      "commit": "a5105a57",
+      "title": "docs: record qwen layer boundary evidence",
+      "focus": "feature_or_runtime",
+      "reflection": "Runtime evidence moved the matching boundary to layer 2 and localized first drift to deeper top-k ranking."
+    },
     {
       "commit": "2dd50657",
       "title": "test: keep nvidia plan history compact",
@@ -58,12 +64,6 @@
       "title": "fix: preserve qwen readout rmsnorm scale",
       "focus": "feature_or_runtime",
       "reflection": "Runtime fix that moved Qwen execution closer to model-equivalent output."
-    },
-    {
-      "commit": "dbc23f6d",
-      "title": "test: add nvidia plan history reflection",
-      "focus": "tests_or_guardrails",
-      "reflection": "The archive is useful for review, but should stay compact and avoid row-level testing."
     }
   ],
   "reflection_log": [
@@ -79,5 +79,5 @@
     "question": "Does this change make a benchmark model run farther, or only make reporting stricter?",
     "preferred_action_if_reporting_only": "Keep the assertion broad, record the limitation in plan history, and return to Qwen full-serving correctness or tuned tensor workloads."
   },
-  "latest_reviewed_commit": "2dd50657"
+  "latest_reviewed_commit": "a5105a57"
 }

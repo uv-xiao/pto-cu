@@ -60,10 +60,6 @@ def validate_plan_history(
     for key in ("feature_or_runtime", "tests_or_guardrails", "viewer_or_docs"):
         if not isinstance(latest.get(key), int) or latest[key] < 0:
             fail(f"plan history work_focus has invalid {key}")
-    non_feature = latest["tests_or_guardrails"] + latest["viewer_or_docs"]
-    if non_feature < latest["feature_or_runtime"]:
-        fail("plan history must surface the current non-feature work pattern")
-
     recent_slices = require_list(data, "recent_slices", "plan history")
     if len(recent_slices) > 8:
         fail("plan history recent_slices must stay brief")

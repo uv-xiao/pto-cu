@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-04 Qwen layer 2-3 stage samples](2026-06-04-qwen-layer2-3-stage-samples.md)
 - [2026-06-04 Qwen layer 2-4 model-equivalent boundary](2026-06-04-qwen-layer2-4-model-equivalent-boundary.md)
 - [2026-06-04 Plan history compact currentness](2026-06-04-plan-history-compact-currentness.md)
 - [2026-06-04 Qwen layer-1 model-equivalent samples](2026-06-04-qwen-layer1-model-equivalent-samples.md)

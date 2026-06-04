@@ -94,6 +94,13 @@ tokens and differs at the fifth rank, while the four-layer probe matches the
 top three tokens and differs at rank four. The remaining gap is therefore a
 small but accumulating deeper-layer numeric/ranking divergence, not a
 layer-0/1 handoff, RMSNorm-scale, or logits-projection failure.
+The layer-2/3 stage-sample comparison does not reveal a wrong substage in the
+sampled columns. PTO and Hugging Face match closely at layer-2 input norm, raw
+QKV, RoPE-applied Q/K, attention output, post-attention norm, MLP activation
+product, and layer output; the largest sampled value error across comparable
+layer-2/3 stages is `0.018348`. The first visible mismatch remains a
+close-logit ranking drift: after layer 3, Hugging Face scores token `229` at
+`5.5` and PTO's rank-5 token `58` at `5.46875`.
 
 ## Current Evidence
 
@@ -214,6 +221,16 @@ Recent raw A100 evidence stays under `tmp/`:
   reports `status=partial_match`, `matching_topk_prefix=3`, PTO top tokens
   `[411, 10, 368, 483, 473]`, and Hugging Face top tokens
   `[411, 10, 368, 167, 473]`.
+- `tmp/cuda-backend/qwen-prefill-layer3-mpk-1step-2026-06-04-model-equivalent-samples/`
+  also contains `hf-layer2-3-stage-samples.json`,
+  `hf-layer2-3-rope-qk-samples.json`,
+  `pto-hf-layer2-3-stage-comparison.json`, and
+  `hf-layer3-selected-logits.json`. These record matching Hugging Face
+  intermediate samples for layer-2 and layer-3 stages at prompt position 17.
+  The stage comparison reports `largest_sample_error=0.018348` across
+  comparable stage samples, including RoPE-applied Q/K samples. The selected
+  logit probe records the layer-3 top-k boundary: token `229` is `5.5`, while
+  token `58` is `5.46875`.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`
