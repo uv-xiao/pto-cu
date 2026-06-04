@@ -56,8 +56,11 @@ bounded active projection/logit columns and only eight layers.
 The same corrected path now scales to all 36 layers with bounded projection
 and logits windows, including prompt prefill and a second full selected DAG
 decode after device feedback. Full-vocabulary readout also writes finite,
-nonzero logits, but it currently fails the checked diagnostic logits reference,
-so full Qwen correctness remains open.
+nonzero logits and passes the checked diagnostic logits reference after the
+host-side diagnostic reference was changed to accumulate like the generated
+float32 CUDA logits kernel. Full Qwen correctness remains open because the
+current full-vocabulary pass is still diagnostic rather than Hugging Face
+model-equivalent token/logit agreement.
 
 ## Current Evidence
 
@@ -112,6 +115,18 @@ Recent raw A100 evidence stays under `tmp/`:
   logits reference fails with `mismatch_count=80` and
   `max_abs_error=2.793e-05`; the artifact now correctly reports
   `resource_backed_execution.status=fail`.
+- `tmp/cuda-backend/qwen-prefill-layer36-mpk-full-logits-1step-2026-06-04-mismatch-diagnostics/qwen-runner.json`
+  records the same full-vocabulary path with mismatch-index diagnostics before
+  the reference-precision fix. It localizes the first checked mismatch to
+  logits index `80` and the max-error mismatch to logits index `234`, both at
+  ordinary finite logit magnitudes, which points to host reference precision
+  rather than scheduler, buffer, or tile-index failure.
+- `tmp/cuda-backend/qwen-prefill-layer36-mpk-full-logits-1step-2026-06-04-float32-reference/qwen-runner.json`
+  records the post-fix full-vocabulary 36-layer MPK prompt-prefill readout. It
+  reports `resource_backed_execution.status=pass`, one passing workload, full
+  logits-buffer coverage, 2,430,976 finite/nonzero logits, top token `71590`,
+  and checked diagnostic reference `status=pass`, `mismatch_count=0`,
+  `max_abs_error=0` over 3,904 checked full-vocabulary elements.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`
@@ -181,9 +196,9 @@ Close this gap only after PTO rows for both `mpk_offline_decode` and
 
 ## Next Actions
 
-- Close model-equivalent prompt-prefill and Hugging Face token/logit
-  agreement. Prioritize model-correct prefill, KV-cache state, attention, and
-  decode semantics over additional diagnostic-only scalar task-body evidence.
+- Close Hugging Face model-equivalent token/logit agreement. Prioritize
+  model-correct prefill, KV-cache state, attention, and decode semantics over
+  additional diagnostic-only scalar task-body evidence.
 - Re-run the Hugging Face comparison after each kernel-fidelity fix.
 - Capture policy-length MPK and VDCores serving rows only after correctness
   passes.

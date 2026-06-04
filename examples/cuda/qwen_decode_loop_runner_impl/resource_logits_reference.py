@@ -13,6 +13,10 @@ MAX_LOGITS_REFERENCE_CHECKED_ELEMENTS = 65_536
 PTO_CUDA_DTYPE_BFLOAT16 = 6
 
 
+def _float32(value: float) -> float:
+    return struct.unpack("f", struct.pack("f", float(value)))[0]
+
+
 def logits_written_elements(workspace: dict[str, Any]) -> int:
     return int(workspace["logits_buffer"].get("element_count", 0))
 
@@ -197,7 +201,7 @@ def diagnostic_logits_projection_values(
             weight_index = col * weight_stride + k
             if a_index >= len(hidden) or weight_index >= len(lm_head):
                 break
-            acc += hidden[a_index] * lm_head[weight_index]
+            acc = _float32(acc + hidden[a_index] * lm_head[weight_index])
         values.append(acc)
     return values
 
@@ -288,23 +292,61 @@ def compare_logits_reference(
     tolerance: float = 2e-5,
 ) -> dict[str, Any]:
     max_abs_error = 0.0
+    max_error_index: int | None = None
+    max_error_value = 0.0
+    max_error_expected = 0.0
+    max_error_allowed_error = 0.0
     mismatch_count = 0
     selected_values = (
         [values[index] for index in checked_indices]
         if checked_indices is not None
         else values
     )
-    for value, expected in zip(selected_values, reference, strict=True):
+    selected_indices = (
+        checked_indices
+        if checked_indices is not None
+        else list(range(len(selected_values)))
+    )
+    first_mismatch: dict[str, Any] = {}
+    for original_index, value, expected in zip(
+        selected_indices,
+        selected_values,
+        reference,
+        strict=True,
+    ):
         error = abs(value - expected)
-        max_abs_error = max(max_abs_error, error)
-        if error > tolerance:
+        allowed_error = float(tolerance)
+        if error > max_abs_error:
+            max_abs_error = error
+            max_error_index = int(original_index)
+            max_error_value = value
+            max_error_expected = expected
+            max_error_allowed_error = allowed_error
+        if error > allowed_error:
             mismatch_count += 1
-    return {
+            if not first_mismatch:
+                first_mismatch = {
+                    "first_mismatch_index": int(original_index),
+                    "first_mismatch_error": round(float(error), 8),
+                    "first_mismatch_value": round(float(value), 8),
+                    "first_mismatch_expected": round(float(expected), 8),
+                    "first_mismatch_allowed_error": round(
+                        float(allowed_error),
+                        8,
+                    ),
+                }
+    result = {
         "status": "pass" if mismatch_count == 0 else "fail",
         "scope": "diagnostic_qwen_tiled_vocab_projection",
         "formula": formula,
         "checked_element_count": len(selected_values),
         "tolerance": tolerance,
         "max_abs_error": round(float(max_abs_error), 8),
+        "max_error_index": max_error_index,
+        "max_error_value": round(float(max_error_value), 8),
+        "max_error_expected": round(float(max_error_expected), 8),
+        "max_error_allowed_error": round(float(max_error_allowed_error), 8),
         "mismatch_count": mismatch_count,
     }
+    result.update(first_mismatch)
+    return result

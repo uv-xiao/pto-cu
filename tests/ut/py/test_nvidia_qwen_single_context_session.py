@@ -573,6 +573,46 @@ def test_diagnostic_logits_projection_checks_batch_rows():
     assert comparison["checked_element_count"] == 4
 
 
+def test_diagnostic_logits_projection_accumulates_like_float32_kernel():
+    module = load_resource_graph_module()
+
+    reference = module.diagnostic_logits_projection_values(
+        hidden=[16777216.0, 1.0],
+        lm_head=[1.0, 1.0],
+        count=1,
+        cols=1,
+        hidden_width=2,
+        hidden_stride=2,
+        weight_stride=2,
+    )
+
+    assert reference == [16777216.0]
+
+
+def test_diagnostic_logits_reference_reports_mismatch_indices():
+    module = load_resource_graph_module()
+    values = [0.0] * 301
+    values[100] = 10.0
+    values[200] = 1.25
+    values[300] = -3.0
+
+    comparison = module.compare_logits_reference(
+        values,
+        [10.0, 1.0, -3.125],
+        checked_indices=[100, 200, 300],
+        tolerance=0.01,
+    )
+
+    assert comparison["status"] == "fail"
+    assert comparison["mismatch_count"] == 2
+    assert comparison["first_mismatch_index"] == 200
+    assert comparison["first_mismatch_error"] == 0.25
+    assert comparison["first_mismatch_value"] == 1.25
+    assert comparison["first_mismatch_expected"] == 1.0
+    assert comparison["max_error_index"] == 200
+    assert comparison["max_error_allowed_error"] == 0.01
+
+
 def test_diagnostic_logits_reference_samples_large_vocab_rows():
     module = load_resource_graph_module()
 
