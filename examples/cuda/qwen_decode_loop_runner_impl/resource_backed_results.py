@@ -152,11 +152,14 @@ def build_workload_result(
 ) -> dict[str, Any]:
     prefill_results = prefill_results or []
     last = repeat_results[-1]
+    passed = (
+        all_success(prefill_results)
+        and all_success(repeat_results)
+        and checked_logits_references_pass(repeat_results)
+    )
     return {
         "workload_id": plan["workload_id"],
-        "status": "pass"
-        if all_success(prefill_results) and all_success(repeat_results)
-        else "fail",
+        "status": "pass" if passed else "fail",
         "run_prepared_status": int(last["run_prepared_status"]),
         "repeat_runs": len(repeat_results),
         "planned_decode_steps": int(plan["decode_steps"]),
@@ -199,6 +202,17 @@ def all_success(repeat_results: list[dict[str, Any]]) -> bool:
     if not repeat_results:
         return True
     return all(item["status"] == "pass" for item in repeat_results)
+
+
+def checked_logits_references_pass(repeat_results: list[dict[str, Any]]) -> bool:
+    for item in repeat_results:
+        logits_summary = item.get("logits_summary", {})
+        if logits_summary.get("coverage") == "not_checked":
+            continue
+        diagnostic_reference = logits_summary.get("diagnostic_reference", {})
+        if diagnostic_reference.get("status") == "fail":
+            return False
+    return True
 
 
 def prompt_prefill_summary(

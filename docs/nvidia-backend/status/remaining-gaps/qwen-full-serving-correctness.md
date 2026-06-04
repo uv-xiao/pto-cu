@@ -53,6 +53,11 @@ buffer instead of a stale local-index buffer. The eight-layer MPK bounded
 prefill path reaches nonzero readout logits and a second full selected DAG
 decode after device feedback, but it remains diagnostic because it uses
 bounded active projection/logit columns and only eight layers.
+The same corrected path now scales to all 36 layers with bounded projection
+and logits windows, including prompt prefill and a second full selected DAG
+decode after device feedback. Full-vocabulary readout also writes finite,
+nonzero logits, but it currently fails the checked diagnostic logits reference,
+so full Qwen correctness remains open.
 
 ## Current Evidence
 
@@ -93,6 +98,20 @@ Recent raw A100 evidence stays under `tmp/`:
   step runs the full eight-layer selected DAG at decode position 18, completes
   59/59 tasks with zero scheduler errors, reports nonzero bounded logits,
   passes the diagnostic logits reference, and samples token `82`.
+- `tmp/cuda-backend/qwen-prefill-layer36-mpk-2step-2026-06-04-rmsnorm-scale-fix/qwen-runner.json`
+  records the corrected full 36-layer bounded MPK prompt-prefill path. It
+  reports `prompt_prefill_executed`, 18 prompt positions, 4,554 prefill task
+  completions, zero prefill scheduler errors, two decode steps, a second full
+  selected DAG at decode position 18 with 255/255 completed tasks and zero
+  scheduler errors, nonzero bounded logits, diagnostic logits reference pass,
+  and device feedback tokens `[1647, 839]`.
+- `tmp/cuda-backend/qwen-prefill-layer36-mpk-full-logits-1step-2026-06-04-status-gated/qwen-runner.json`
+  records the full-vocabulary readout attempt after the artifact status gate
+  was fixed. It reports full logits-buffer coverage, all finite/nonzero logits,
+  top token `71590`, and clean scheduler counters, but the checked diagnostic
+  logits reference fails with `mismatch_count=80` and
+  `max_abs_error=2.793e-05`; the artifact now correctly reports
+  `resource_backed_execution.status=fail`.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

@@ -26,6 +26,7 @@ from qwen_decode_loop_runner_impl.workspace_pointers import (  # noqa: E402
 )
 from qwen_decode_loop_runner_impl.resource_backed_results import (  # noqa: E402
     build_execution_result,
+    build_workload_result,
     dynamic_rope_refresh_ready,
     prompt_prefill_summary,
 )
@@ -1526,6 +1527,41 @@ def test_resource_backed_execution_reports_task_coverage():
     assert result["repeat_policy"]["projection_active_cols_policy"] == {
         "mode": "descriptor_default",
     }
+
+
+def test_workload_result_fails_failed_checked_logits_reference():
+    result = build_workload_result(
+        plan={"workload_id": "mpk_offline_decode", "decode_steps": 1},
+        packet_len=2,
+        repeat_results=[
+            {
+                "repeat_index": 0,
+                "status": "pass",
+                "run_prepared_status": 0,
+                "scheduler_counters": {
+                    "completed_count": 2,
+                    "error_count": 0,
+                },
+                "output_sample": [0.0],
+                "logits_summary": {
+                    "coverage": "full_logits_buffer_checked",
+                    "diagnostic_reference": {"status": "fail"},
+                },
+                "decode_feedback": {
+                    "status": "device_feedback_observed",
+                    "sampled_token_id": 0,
+                    "policy": "device_commits_diagnostic_sampled_token_for_next_step",
+                    "scope": "single_sequence_row0_greedy_argmax",
+                },
+                "timing_ns": {"host_wall": 1, "device_wall": 1},
+            },
+        ],
+        decode_step_limit=1,
+        logits_check_policy="final_step",
+        numeric_task_mode="diagnostic",
+    )
+
+    assert result["status"] == "fail"
 
 
 def test_prompt_prefill_summary_reports_executed_prompt_positions():
