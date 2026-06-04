@@ -314,6 +314,19 @@ Recent raw A100 evidence stays under `tmp/`:
   `layer_2_attention_qk_norm.mean_abs_delta=0.004423`, but the first-512
   top-k remains `[10, 167, 376, 475, 58]` versus Hugging Face
   `[10, 167, 376, 475, 229]`.
+- `tmp/cuda-backend/qwen-prefill-layer3-mpk-1step-2026-06-04-residual-bf16-boundary-slim/`
+  records the next runtime slice after matching attention-O output,
+  post-attention residual input, and MLP residual output to Hugging Face bf16
+  tensor boundaries. The layer-0 full-row artifact at
+  `tmp/cuda-backend/qwen-prefill-layer1-mpk-1step-2026-06-04-residual-bf16-boundary/`
+  improves `layer_0_attention_o.mean_abs_delta` to `0.000089`,
+  `layer_0_post_attention_norm.mean_abs_delta` to `0.000158`, and
+  `layer_0_mlp_down.mean_abs_delta` to `0.000204`. The slim layer-3 artifact
+  improves `layer_2_attention_qkv.mean_abs_delta` to `0.000194` and
+  `layer_2_attention_qk_norm.mean_abs_delta` to `0.004318`, with QK/RoPE p99
+  improving to `0.023438`; the first-512 top-k remains
+  `[10, 167, 376, 475, 58]` versus Hugging Face
+  `[10, 167, 376, 475, 229]`.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

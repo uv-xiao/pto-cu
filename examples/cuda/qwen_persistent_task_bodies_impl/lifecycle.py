@@ -611,9 +611,10 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                     projected_attention +=
                         attention_values[projection_col] * o_weight;
                 }
-                task->out[
-                    static_cast<unsigned long long>(row) * task->cols + col] =
-                    projected_attention;
+                const unsigned long long output_index =
+                    static_cast<unsigned long long>(row) * task->cols + col;
+                task->out[output_index] =
+                    pto_cuda_round_to_bf16_f32(projected_attention);
             }
             __syncthreads();
         }
@@ -745,13 +746,15 @@ if (task->scalar_arg_count > 1 && task->scalar_args[0] == 1.0f &&
         for (unsigned int k = 0U; k < task->cols; ++k) {
             const float residual_value =
                 task->b ? task->b[row_base + k] : 0.0f;
-            const float value = task->a[row_base + k] + residual_value;
+            const float value = pto_cuda_round_to_bf16_f32(
+                task->a[row_base + k] + residual_value);
             mean_square += value * value;
         }
         const float scale =
             rsqrtf(mean_square / static_cast<float>(task->cols) + 0.000001f);
         const float residual_value = task->b ? task->b[row_base + col] : 0.0f;
-        const float value = task->a[row_base + col] + residual_value;
+        const float value = pto_cuda_round_to_bf16_f32(
+            task->a[row_base + col] + residual_value);
         const float weight = pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
         task->out[j] = pto_cuda_round_to_bf16_f32(value * scale * weight);
     }
@@ -828,7 +831,7 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count > 0U &&
         residual_attention_value + residual_input_value;
     const float projected_down = col < active_projection_cols ?
         pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f) : 0.0f;
-    task->out[i] = projected_down + residual_value;
+    task->out[i] = pto_cuda_round_to_bf16_f32(projected_down + residual_value);
 } else {
     const float down = pto_cuda_tensor_arg_f32(task, 0U, i & 3U, 0.0f);
     const float residual_value = task->b ? task->b[i] : task->a[i];

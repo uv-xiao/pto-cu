@@ -195,6 +195,28 @@ def test_qwen_rmsnorm_outputs_match_hf_bf16_boundary():
     ) in compact_source
 
 
+def test_qwen_residual_stream_matches_hf_bf16_boundaries():
+    sys.path.insert(0, str(ROOT / "examples" / "cuda"))
+    from qwen_persistent_task_bodies_impl.lifecycle import task_functions
+    from simpler_setup.cuda_callable_compiler import render_persistent_dag_source
+
+    full_source = render_persistent_dag_source(task_functions())
+
+    compact_source = " ".join(full_source.split())
+    assert (
+        "task->out[output_index] = "
+        "pto_cuda_round_to_bf16_f32(projected_attention);"
+    ) in compact_source
+    assert (
+        "const float value = pto_cuda_round_to_bf16_f32( "
+        "task->a[row_base + col] + residual_value);"
+    ) in compact_source
+    assert (
+        "task->out[i] = pto_cuda_round_to_bf16_f32("
+        "projected_down + residual_value);"
+    ) in compact_source
+
+
 def test_generated_source_contains_qwen_unit_math_kernels():
     module = load_task_bodies_module()
     sys.path.insert(0, str(ROOT / "examples" / "cuda"))
@@ -353,7 +375,10 @@ def test_generated_source_contains_qwen_unit_math_kernels():
         in full_source
     )
     assert "task->tensor_arg_count > 1U && task->tensor_args[1]" in full_source
-    assert "task->out[i] = projected_down + residual_value;" in full_source
+    assert (
+        "task->out[i] = pto_cuda_round_to_bf16_f32("
+        "projected_down + residual_value);"
+    ) in full_source
     assert "qwen_mlp_down_residual_add_source" in manifest["implemented_contracts"]
     assert (
         "qwen_post_attention_norm_full_rmsnorm_source"
