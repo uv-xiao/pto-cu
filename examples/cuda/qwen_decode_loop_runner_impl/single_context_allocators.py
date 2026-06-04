@@ -44,6 +44,30 @@ class GroupedAllocationList:
         self.target.append((self.group, int(ptr)))
 
 
+def selected_workload_ids(workload_ids: list[str] | None) -> set[str] | None:
+    if not workload_ids:
+        return None
+    return {str(item) for item in workload_ids}
+
+
+def filter_workload_records(
+    payload: dict[str, Any],
+    *,
+    workload_ids: list[str] | None,
+) -> dict[str, Any]:
+    selected = selected_workload_ids(workload_ids)
+    if selected is None:
+        return payload
+    return {
+        **payload,
+        "workload_records": [
+            item
+            for item in payload.get("workload_records", [])
+            if item.get("workload_id") in selected
+        ],
+    }
+
+
 def open_token_table(
     *,
     runtime: Any,
@@ -53,11 +77,18 @@ def open_token_table(
     host_runtime: Path,
     device: int,
     allocations: list[tuple[str, int]],
+    workload_ids: list[str] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
-    token_binding = build_token_binding(mode=mode, cache_dir=cache_dir)
-    runtime_binding = token_buffers.load_runtime_input_binding(
-        mode=mode,
-        cache_dir=cache_dir,
+    token_binding = filter_workload_records(
+        build_token_binding(mode=mode, cache_dir=cache_dir),
+        workload_ids=workload_ids,
+    )
+    runtime_binding = filter_workload_records(
+        token_buffers.load_runtime_input_binding(
+            mode=mode,
+            cache_dir=cache_dir,
+        ),
+        workload_ids=workload_ids,
     )
     records = {
         item["workload_id"]: item for item in token_binding.get("workload_records", [])
@@ -97,12 +128,21 @@ def open_kv_table(
     host_runtime: Path,
     device: int,
     allocations: list[tuple[str, int]],
+    workload_ids: list[str] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     kv_bindings, pointers = kv_binding_records(
         lifecycle_plan=load_lifecycle_plan(),
         pointer_base=0,
         pointer_stride=0,
     )
+    selected = selected_workload_ids(workload_ids)
+    if selected is not None:
+        kv_bindings = [
+            item for item in kv_bindings if item.get("workload_id") in selected
+        ]
+        pointers = [
+            item for item in pointers if item.get("workload_id") in selected
+        ]
     for pointer in pointers:
         ptr = runtime.device_malloc_ctx(ctx, int(pointer["byte_count"]))
         if not ptr:

@@ -106,6 +106,7 @@ def build_decode_loop_runner(
             cache_dir=cache_dir,
             device=device,
             host_runtime=host_runtime,
+            workload_ids=resource_backed_workloads,
         )
         token_lifecycle = session.token_lifecycle()
         kv_lifecycle = session.kv_lifecycle()

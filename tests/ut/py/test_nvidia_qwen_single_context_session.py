@@ -214,11 +214,16 @@ def test_resource_backed_smoke_runs_before_single_context_close(monkeypatch):
     module = load_decode_loop_runner_module()
     session = FakeSingleContextSession()
     execution_seen_before_close = {"value": False}
+    opened_workload_ids = {}
+
+    def fake_open_single_context_live_session(**kwargs):
+        opened_workload_ids["value"] = kwargs.get("workload_ids")
+        return session
 
     monkeypatch.setitem(
         module.build_decode_loop_runner.__globals__,
         "open_single_context_live_session",
-        lambda **_kwargs: session,
+        fake_open_single_context_live_session,
     )
     monkeypatch.setitem(
         module.build_decode_loop_runner.__globals__,
@@ -268,12 +273,14 @@ def test_resource_backed_smoke_runs_before_single_context_close(monkeypatch):
         mode="mock",
         single_context_live_session=True,
         run_resource_backed_smoke=True,
+        resource_backed_workloads=["mpk_offline_decode"],
         resource_backed_repeat_runs=4,
         resource_backed_max_tasks=8,
         resource_backed_worker_blocks=4,
     )
 
     assert session.closed
+    assert opened_workload_ids["value"] == ["mpk_offline_decode"]
     assert execution_seen_before_close["value"]
     assert runner["resource_backed_execution"]["status"] == "pass"
     assert "qwen_resource_backed_diagnostic_execution" in runner[
