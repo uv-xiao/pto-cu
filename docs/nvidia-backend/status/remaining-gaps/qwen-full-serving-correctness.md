@@ -140,6 +140,10 @@ bf16 tensor boundary before `down_proj`. That moves PTO token `58` from `5.5`
 to the Hugging Face value `5.46875`, while preserving a passing diagnostic
 logits reference. Full layer-3 top-k still remains open because PTO does not
 yet surface Hugging Face token `229` in the first-512 top five.
+The attention-context follow-up rounds the softmax-weighted value vector to
+bf16 before `o_proj`. That improves common top-logit agreement for tokens
+`10`, `167`, and `376`, while token `58` moves back to `5.5` and token `229`
+still remains missing from PTO's first-512 top five.
 
 ## Current Evidence
 
@@ -360,6 +364,17 @@ Recent raw A100 evidence stays under `tmp/`:
   for token `58`. Hugging Face top-k remains
   `[10, 167, 376, 475, 229]`, so the next blocker is token `229` or another
   upstream rank-boundary drift.
+- `tmp/cuda-backend/qwen-prefill-layer3-mpk-1step-2026-06-04-attention-context-bf16-boundary/`
+  records the next runtime slice after rounding the softmax-weighted attention
+  value vector to bf16 before output projection. The runner reports
+  `resource_backed_execution.status=pass`, zero scheduler errors, and
+  diagnostic logits reference `status=pass` with `max_abs_error=0.0`.
+  Compared with the MLP-gate boundary artifact, common top-logit errors
+  improve for token `10` (`6.8125` to `6.84375`, matching HF), token `167`
+  (`5.96875` to `6.0`, HF `6.03125`), and token `376` (`5.65625` to
+  `5.625`, HF `5.59375`). Token `58` regresses from its selected HF value
+  `5.46875` back to `5.5`, and Hugging Face token `229` still does not appear
+  in PTO's first-512 top five.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

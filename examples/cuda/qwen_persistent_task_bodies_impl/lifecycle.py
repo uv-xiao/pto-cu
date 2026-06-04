@@ -591,9 +591,9 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                         projection_normalizer += weight;
                     }
                 }
-                attention_values[projection_col] =
+                attention_values[projection_col] = pto_cuda_round_to_bf16_f32(
                     projection_normalizer > 0.0f ?
-                    projection_weighted_value / projection_normalizer : 0.0f;
+                    projection_weighted_value / projection_normalizer : 0.0f);
             }
             __syncthreads();
             for (unsigned int col = threadIdx.x; col < task->cols;
@@ -703,8 +703,8 @@ if (task->cols > 0U && task->inner > 0U && task->c && task->d) {
                     normalizer += weight;
                 }
             }
-            task->out[j] =
-                normalizer > 0.0f ? weighted_value / normalizer : 0.0f;
+            task->out[j] = pto_cuda_round_to_bf16_f32(
+                normalizer > 0.0f ? weighted_value / normalizer : 0.0f);
         }
     }
 } else if (task->cols > 0U && task->inner > 0U &&

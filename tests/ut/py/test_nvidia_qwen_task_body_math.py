@@ -478,14 +478,22 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "score += task->a[row_base + query_base + dim] *" in full_source
     assert "row_base + projection_query_base + dim" in full_source
     assert "__shared__ float attention_values[4096];" in full_source
-    assert "attention_values[projection_col] =" in full_source
+    compact_source = " ".join(full_source.split())
+    assert (
+        "attention_values[projection_col] = pto_cuda_round_to_bf16_f32( "
+        "projection_normalizer > 0.0f ? projection_weighted_value / "
+        "projection_normalizer : 0.0f);"
+    ) in compact_source
     assert "projected_attention +=" in full_source
     assert "attention_values[projection_col] * o_weight;" in full_source
     assert "score *= attention_scale;" in full_source
     assert "const unsigned long long value_kv_index =" in full_source
     assert "expf(score - max_score)" in full_source
     assert "expf(score - projection_max_score)" in full_source
-    assert "weighted_value / normalizer" in full_source
+    assert (
+        "task->out[j] = pto_cuda_round_to_bf16_f32( "
+        "normalizer > 0.0f ? weighted_value / normalizer : 0.0f);"
+    ) in compact_source
     assert "const unsigned int projection_input_count =" in full_source
     assert "pto_cuda_tensor_arg_f32(" in full_source
     assert "task, 0U, o_weight_index, 0.0f" in full_source
@@ -511,7 +519,6 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_decode_attention_dot_product_source" in manifest[
         "implemented_contracts"
     ]
-    compact_source = " ".join(full_source.split())
     assert (
         "task->out[i] = pto_cuda_round_to_bf16_f32( "
         "pto_cuda_silu(gate_value) * up_value);"
