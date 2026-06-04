@@ -641,6 +641,22 @@ def test_diagnostic_logits_projection_accumulates_like_float32_kernel():
     assert reference == [16777216.0]
 
 
+def test_diagnostic_logits_projection_matches_bf16_output_boundary():
+    module = load_resource_graph_module()
+
+    reference = module.diagnostic_logits_projection_values(
+        hidden=[1.0, 0.00390625],
+        lm_head=[1.0, 1.0],
+        count=1,
+        cols=1,
+        hidden_width=2,
+        hidden_stride=2,
+        weight_stride=2,
+    )
+
+    assert reference == [1.0]
+
+
 def test_diagnostic_logits_reference_reports_mismatch_indices():
     module = load_resource_graph_module()
     values = [0.0] * 301

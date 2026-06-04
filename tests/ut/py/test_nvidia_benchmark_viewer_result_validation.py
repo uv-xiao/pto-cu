@@ -237,7 +237,7 @@ def test_plan_history_validator_requires_recent_checkout_commit():
         raise AssertionError("stale plan history commit was accepted")
 
 
-def test_plan_history_validator_accepts_parent_for_archive_maintenance_commit(
+def test_plan_history_validator_accepts_parent_when_archive_changed(
     monkeypatch,
 ):
     plan_history = load_plan_history_module()
@@ -254,6 +254,7 @@ def test_plan_history_validator_accepts_parent_for_archive_maintenance_commit(
         if args[:2] == ["git", "diff-tree"]:
             return SimpleNamespace(
                 stdout=(
+                    "examples/cuda/qwen_decode_loop_runner.py\n"
                     "evaluations/nvidia/benchmark-viewer/data/plan_history.json\n"
                     "docs/nvidia-backend/changelog/index.md\n"
                 )

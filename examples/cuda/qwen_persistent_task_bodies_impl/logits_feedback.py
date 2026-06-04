@@ -62,7 +62,7 @@ if (task->cols > 0U && task->inner > 0U && has_lm_head) {
                     pto_cuda_tensor_arg_f32(task, 0U, weight_index, 0.0f);
             }
         }
-        task->out[output_index] = acc;
+        task->out[output_index] = pto_cuda_round_to_bf16_f32(acc);
     }
     __syncthreads();
     if (task->scalar_arg_count > 3 && task->tensor_args[2] &&

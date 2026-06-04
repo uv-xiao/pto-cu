@@ -126,6 +126,15 @@ attention-O remains close (`mean_abs_delta=0.000497`, `p99=0.001711`).
 The next root-cause target is therefore precision/rounding accumulation across
 QK/RoPE and final normalization, not descriptor ordering or an omitted MLP
 output.
+The logits boundary follow-up now also writes generated Qwen logits at the
+same bf16 output boundary used by the Hugging Face replay. This removes the
+host/device diagnostic reference mismatch for the fresh layer-3 full-stage
+probe, but it does not close model-equivalent top-k agreement: PTO still
+returns `[10, 167, 376, 475, 58]`, while Hugging Face returns
+`[10, 167, 376, 475, 229]`. After bf16 rounding, PTO token `58` and Hugging
+Face token `229` both sit at `5.5`, so the remaining blocker is a close
+ranking/tie boundary or upstream hidden drift rather than a raw logits-output
+dtype mismatch.
 
 ## Current Evidence
 
@@ -327,6 +336,15 @@ Recent raw A100 evidence stays under `tmp/`:
   improving to `0.023438`; the first-512 top-k remains
   `[10, 167, 376, 475, 58]` versus Hugging Face
   `[10, 167, 376, 475, 229]`.
+- `tmp/cuda-backend/qwen-prefill-layer3-mpk-1step-2026-06-04-logits-bf16-boundary/`
+  records the next runtime slice after writing generated logits through the
+  bf16 output boundary and matching the host diagnostic reference to that
+  boundary. The runner reports `resource_backed_execution.status=pass`, zero
+  scheduler errors, and diagnostic logits reference `status=pass` with
+  `max_abs_error=0.0`. First-512 top-k remains
+  `[10, 167, 376, 475, 58]`; the Hugging Face replay remains
+  `[10, 167, 376, 475, 229]`, with PTO token `58` and Hugging Face token
+  `229` tied at `5.5` after bf16 rounding.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

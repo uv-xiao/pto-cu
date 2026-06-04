@@ -3,20 +3,26 @@
   "generated_at": "2026-06-04",
   "summary": {
     "current_focus": "Qwen full-serving correctness and benchmark-model progress",
-    "recent_pattern": "Recent slices returned from viewer/reporting work to Qwen runtime evidence, with compact guardrails used only where they keep evidence reviewable.",
-    "reflection": "Current benchmark model evidence improves Qwen dtype-boundary and residual-stream drift but does not flip the layer-3 top-k boundary, so the next target remains numeric root-cause work rather than viewer/reporting work.",
+    "recent_pattern": "Recent slices stayed mostly on Qwen runtime evidence after a short viewer/reporting and archive-guardrail detour.",
+    "reflection": "Current benchmark model evidence improves Qwen dtype-boundary and residual/logits drift but does not flip the layer-3 top-k boundary, so the next target remains numeric root-cause work rather than viewer/reporting work.",
     "test_strategy": "Keep one broad viewer contract check plus focused generator and policy tests. Avoid sparse row-by-row tests for every imported artifact; prefer large integrated tests that exercise benchmark-model execution, viewer import, and report validation together."
   },
   "work_focus": [
     {
-      "window": "latest 12 commits through e7a08c16",
-      "feature_or_runtime": 9,
-      "tests_or_guardrails": 2,
+      "window": "latest 12 commits through aeb94958",
+      "feature_or_runtime": 8,
+      "tests_or_guardrails": 3,
       "viewer_or_docs": 1,
-      "notes": "Runtime evidence remains the dominant recent focus. The viewer/docs slice made non-feature work easier to spot, and follow-up slices stayed on Qwen numeric drift."
+      "notes": "Runtime evidence remains the dominant recent focus. The guardrail slice made stale archive updates visible, but the next slice should stay on Qwen numeric drift."
     }
   ],
   "recent_slices": [
+    {
+      "commit": "aeb94958",
+      "title": "fix: bound plan history currentness",
+      "focus": "tests_or_guardrails",
+      "reflection": "Guardrail work made stale archive updates visible; follow-up should return to benchmark-model correctness."
+    },
     {
       "commit": "e7a08c16",
       "title": "fix: align qwen residual bf16 boundary",
@@ -58,12 +64,6 @@
       "title": "fix: dump qwen full activation rows",
       "focus": "feature_or_runtime",
       "reflection": "Benchmark-model evidence showed row-wide numeric drift is enough to flip the close layer-3 top-k boundary."
-    },
-    {
-      "commit": "d92941c8",
-      "title": "fix: sample qwen selected hidden columns",
-      "focus": "feature_or_runtime",
-      "reflection": "Benchmark-model diagnostics showed selected high-impact hidden columns are close, so the next target should be full-row accumulated drift."
     }
   ],
   "reflection_log": [
@@ -79,5 +79,5 @@
     "question": "Does this change make a benchmark model run farther, or only make reporting stricter?",
     "preferred_action_if_reporting_only": "Keep the assertion broad, record the limitation in plan history, and return to Qwen full-serving correctness or tuned tensor workloads."
   },
-  "latest_reviewed_commit": "e7a08c16"
+  "latest_reviewed_commit": "aeb94958"
 }

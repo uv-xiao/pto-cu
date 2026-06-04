@@ -17,6 +17,13 @@ def _float32(value: float) -> float:
     return struct.unpack("f", struct.pack("f", float(value)))[0]
 
 
+def round_to_bf16_f32(value: float) -> float:
+    bits = struct.unpack("I", struct.pack("f", float(value)))[0]
+    lsb = (bits >> 16) & 1
+    rounded = bits + 0x7FFF + lsb
+    return struct.unpack("f", struct.pack("I", rounded & 0xFFFF0000))[0]
+
+
 def logits_written_elements(workspace: dict[str, Any]) -> int:
     return int(workspace["logits_buffer"].get("element_count", 0))
 
@@ -251,7 +258,7 @@ def diagnostic_logits_projection_values(
             if a_index >= len(hidden) or weight_index >= len(lm_head):
                 break
             acc = _float32(acc + hidden[a_index] * lm_head[weight_index])
-        values.append(acc)
+        values.append(round_to_bf16_f32(acc))
     return values
 
 

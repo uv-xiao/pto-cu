@@ -217,6 +217,19 @@ def test_qwen_residual_stream_matches_hf_bf16_boundaries():
     ) in compact_source
 
 
+def test_qwen_logits_match_hf_bf16_output_boundary():
+    sys.path.insert(0, str(ROOT / "examples" / "cuda"))
+    from qwen_persistent_task_bodies_impl.lifecycle import task_functions
+    from simpler_setup.cuda_callable_compiler import render_persistent_dag_source
+
+    full_source = render_persistent_dag_source(task_functions())
+
+    compact_source = " ".join(full_source.split())
+    assert (
+        "task->out[output_index] = pto_cuda_round_to_bf16_f32(acc);"
+    ) in compact_source
+
+
 def test_generated_source_contains_qwen_unit_math_kernels():
     module = load_task_bodies_module()
     sys.path.insert(0, str(ROOT / "examples" / "cuda"))

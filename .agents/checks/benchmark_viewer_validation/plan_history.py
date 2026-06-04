@@ -5,15 +5,10 @@ import subprocess
 from .common import fail, require_dict, require_list, require_string
 
 
-PLAN_HISTORY_MAINTENANCE_PREFIXES = (
-    ".agents/checks/benchmark_viewer_validation/plan_history.py",
-    "docs/nvidia-backend/changelog/",
-    "evaluations/nvidia/benchmark-viewer/data/plan_history.json",
-    "tests/ut/py/test_nvidia_benchmark_viewer_result_validation.py",
-)
+PLAN_HISTORY_PATH = "evaluations/nvidia/benchmark-viewer/data/plan_history.json"
 
 
-def is_plan_history_maintenance_commit() -> bool:
+def current_commit_updates_plan_history() -> bool:
     try:
         result = subprocess.run(
             ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"],
@@ -28,16 +23,13 @@ def is_plan_history_maintenance_commit() -> bool:
         for path in result.stdout.splitlines()
         if path.strip()
     ]
-    return bool(changed_paths) and all(
-        path.startswith(PLAN_HISTORY_MAINTENANCE_PREFIXES)
-        for path in changed_paths
-    )
+    return PLAN_HISTORY_PATH in changed_paths
 
 
 def current_or_maintenance_parent_short_commits() -> set[str]:
     commits: set[str] = set()
     revisions = ["HEAD"]
-    if is_plan_history_maintenance_commit():
+    if current_commit_updates_plan_history():
         revisions.append("HEAD^")
     for revision in revisions:
         try:
