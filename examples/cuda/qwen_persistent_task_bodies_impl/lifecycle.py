@@ -316,8 +316,9 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
             const unsigned int head_col = source_col % head_dim;
             const float norm_weight =
                 pto_cuda_tensor_arg_f32(task, norm_slot, head_col, 1.0f);
-            const float normalized =
-                task->a[row_base + source_col] * scale * norm_weight;
+            const float normalized = pto_cuda_round_to_bf16_f32(
+                pto_cuda_round_to_bf16_f32(
+                    task->a[row_base + source_col] * scale) * norm_weight);
             const unsigned int half_head_dim = head_dim >> 1U;
             if (half_head_dim > 0U) {
                 const bool first_half = head_col < half_head_dim;
@@ -326,9 +327,10 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
                 const unsigned int pair_source_col = head_base + pair_head_col;
                 const float pair_norm_weight =
                     pto_cuda_tensor_arg_f32(task, norm_slot, pair_head_col, 1.0f);
-                const float paired =
-                    task->a[row_base + pair_source_col] * scale *
-                    pair_norm_weight;
+                const float paired = pto_cuda_round_to_bf16_f32(
+                    pto_cuda_round_to_bf16_f32(
+                        task->a[row_base + pair_source_col] * scale) *
+                    pair_norm_weight);
                 const unsigned int rope_index = first_half ?
                     head_col : head_col - half_head_dim;
                 float cos_value = task->scalar_arg_count > 0U ?
@@ -342,9 +344,11 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
                     sin_value =
                         pto_cuda_tensor_arg_f32(task, 3U, rope_index, sin_value);
                 }
-                task->out[j] = first_half ?
+                cos_value = pto_cuda_round_to_bf16_f32(cos_value);
+                sin_value = pto_cuda_round_to_bf16_f32(sin_value);
+                task->out[j] = pto_cuda_round_to_bf16_f32(first_half ?
                     normalized * cos_value - paired * sin_value :
-                    normalized * cos_value + paired * sin_value;
+                    normalized * cos_value + paired * sin_value);
             } else {
                 task->out[j] = normalized;
             }

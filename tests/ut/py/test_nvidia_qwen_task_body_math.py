@@ -124,6 +124,31 @@ def test_rmsnorm_diagnostic_fallback_keeps_decode_position_scale_neutral():
     )
 
 
+def test_qk_rmsnorm_matches_hf_bf16_output_boundary():
+    sys.path.insert(0, str(ROOT / "examples" / "cuda"))
+    from qwen_persistent_task_bodies_impl.lifecycle import task_functions
+    from simpler_setup.cuda_callable_compiler import render_persistent_dag_source
+
+    full_source = render_persistent_dag_source(task_functions())
+
+    assert "__device__ float pto_cuda_round_to_bf16_f32(float value)" in full_source
+    compact_source = " ".join(full_source.split())
+    assert (
+        "const float normalized = pto_cuda_round_to_bf16_f32( "
+        "pto_cuda_round_to_bf16_f32( "
+        "task->a[row_base + source_col] * scale) * norm_weight);"
+    ) in compact_source
+    assert (
+        "const float paired = pto_cuda_round_to_bf16_f32( "
+        "pto_cuda_round_to_bf16_f32( "
+        "task->a[row_base + pair_source_col] * scale) * "
+        "pair_norm_weight);"
+    ) in compact_source
+    assert "cos_value = pto_cuda_round_to_bf16_f32(cos_value);" in full_source
+    assert "sin_value = pto_cuda_round_to_bf16_f32(sin_value);" in full_source
+    assert "task->out[j] = pto_cuda_round_to_bf16_f32(first_half ?" in full_source
+
+
 def test_generated_source_contains_qwen_unit_math_kernels():
     module = load_task_bodies_module()
     sys.path.insert(0, str(ROOT / "examples" / "cuda"))

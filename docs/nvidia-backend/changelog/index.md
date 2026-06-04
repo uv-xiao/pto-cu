@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-04 Qwen QK BF16 boundary](2026-06-04-qwen-qk-bf16-boundary.md)
 - [2026-06-04 Plan archive viewer tab](2026-06-04-plan-archive-viewer-tab.md)
 - [2026-06-04 Qwen layer-2 full-row stages](2026-06-04-qwen-layer2-full-row-stages.md)
 - [2026-06-04 Qwen full-row hidden drift](2026-06-04-qwen-full-row-hidden-drift.md)

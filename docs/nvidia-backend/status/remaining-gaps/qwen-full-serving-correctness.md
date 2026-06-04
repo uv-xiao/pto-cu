@@ -280,6 +280,14 @@ Recent raw A100 evidence stays under `tmp/`:
   `layer_2_mlp_down`. The comparison artifact reports `status=pass`;
   `layer_2_mlp_down.mean_abs_delta=0.000989`, `p99=0.003402`; and
   `layer_2_attention_qk_norm.mean_abs_delta=0.005142`, `p99=0.024234`.
+- `tmp/cuda-backend/qwen-prefill-layer3-mpk-1step-2026-06-04-qk-bf16-boundary/`
+  records the same layer-3 boundary after matching the Q/K RMSNorm and RoPE
+  output boundary to Hugging Face bf16 tensor semantics. The first-512 top-k
+  remains `[10, 167, 376, 475, 58]`, but distributed stage drift improves:
+  `layer_2_attention_qk_norm.mean_abs_delta=0.004693`,
+  `layer_2_attention_o.mean_abs_delta=0.000414`,
+  `layer_2_post_attention_norm.mean_abs_delta=0.001792`, and
+  `layer_2_mlp_down.mean_abs_delta=0.000847`.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

@@ -660,6 +660,16 @@ __device__ float pto_cuda_bf16_to_f32(unsigned short raw) {{
     return __uint_as_float(static_cast<unsigned int>(raw) << 16U);
 }}
 
+__device__ float pto_cuda_round_to_bf16_f32(float value) {{
+    const unsigned int bits = __float_as_uint(value);
+    if ((bits & 0x7F800000U) == 0x7F800000U) {{
+        return value;
+    }}
+    const unsigned int lsb = (bits >> 16U) & 1U;
+    const unsigned int rounded = (bits + 0x7FFFU + lsb) & 0xFFFF0000U;
+    return __uint_as_float(rounded);
+}}
+
 __device__ float pto_cuda_tensor_arg_f32(
     const PtoCudaPersistentDagTask *task,
     unsigned int slot,
