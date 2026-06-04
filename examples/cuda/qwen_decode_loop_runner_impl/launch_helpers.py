@@ -9,6 +9,7 @@ NUMERIC_TASK_MODES = (
     "diagnostic",
     "unit_math",
     "unit_math_full_rmsnorm",
+    "model_equivalent",
 )
 UNIT_NUMERIC_CALLABLES = {
     "qwen_rmsnorm_input",
@@ -66,6 +67,13 @@ def normalize_numeric_task_mode(mode: str) -> str:
 
 def is_unit_numeric_mode(mode: str) -> bool:
     return normalize_numeric_task_mode(mode) != "diagnostic"
+
+
+def uses_full_rmsnorm_reduction(mode: str) -> bool:
+    return normalize_numeric_task_mode(mode) in {
+        "unit_math_full_rmsnorm",
+        "model_equivalent",
+    }
 
 
 def attach_decode_feedback_tensors(
@@ -303,15 +311,15 @@ def task_scalar_args(
             and descriptor.get("callable") in UNIT_NUMERIC_CALLABLES
         ):
             if descriptor.get("callable") == "qwen_rmsnorm_input":
-                if numeric_task_mode == "unit_math_full_rmsnorm":
+                if uses_full_rmsnorm_reduction(numeric_task_mode):
                     return [1.0, 0.0, 0.0, layer_index]
                 return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, layer_index]
             if descriptor.get("callable") == "qwen_rmsnorm_post_attention":
-                if numeric_task_mode == "unit_math_full_rmsnorm":
+                if uses_full_rmsnorm_reduction(numeric_task_mode):
                     return [1.0, 0.0, 0.0, layer_index]
                 return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, layer_index]
             if descriptor.get("callable") == "qwen_final_norm":
-                if numeric_task_mode == "unit_math_full_rmsnorm":
+                if uses_full_rmsnorm_reduction(numeric_task_mode):
                     return [1.0, 0.0, 0.0, 0.0]
                 return [1.0, UNIT_NUMERIC_RMSNORM_SCALE, 0.0, 0.0]
             return [1.0, 0.0, 0.0, layer_index]
@@ -342,7 +350,7 @@ def minimum_scalar_arg_count(
     numeric_task_mode: str,
 ) -> int:
     if (
-        numeric_task_mode == "unit_math_full_rmsnorm"
+        uses_full_rmsnorm_reduction(numeric_task_mode)
         and descriptor.get("callable") in FULL_RMSNORM_CALLABLES
     ):
         return 2
@@ -372,7 +380,9 @@ def task_shape_fields(
 
 def numeric_task_mode_summary(mode: str) -> dict[str, Any]:
     mode = normalize_numeric_task_mode(mode)
-    if mode == "unit_math_full_rmsnorm":
+    if mode == "model_equivalent":
+        scope = "resource_backed_model_equivalent_numeric_path"
+    elif mode == "unit_math_full_rmsnorm":
         scope = "resource_backed_unit_math_full_rmsnorm_reduction"
     elif mode == "unit_math":
         scope = "resource_backed_unit_math_weighted_elementwise_branches"
@@ -419,7 +429,7 @@ def numeric_task_mode_summary(mode: str) -> dict[str, Any]:
                 "threading": "block",
             },
         ]
-        if mode == "unit_math_full_rmsnorm"
+        if uses_full_rmsnorm_reduction(mode)
         else [],
         "weighted_elementwise_callables": sorted(
             UNIT_NUMERIC_WEIGHTED_ELEMENTWISE_CALLABLES,

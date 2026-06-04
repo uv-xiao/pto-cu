@@ -1888,6 +1888,41 @@ def test_launch_packet_can_select_full_rmsnorm_reduction_branch():
     ]
 
 
+def test_model_equivalent_mode_selects_full_rmsnorm_reduction_branch():
+    descriptors = [
+        {"callable": "qwen_rmsnorm_input", "tensor_args": []},
+        {"callable": "qwen_attention_qkv", "tensor_args": []},
+        {"callable": "qwen_final_norm", "tensor_args": []},
+        {"callable": "qwen_logits", "tensor_args": []},
+    ]
+    token_fields = keyed_fields(
+        [
+            {"field": "a", "device_ptr_hex": "0x3000"},
+            {"field": "b", "device_ptr_hex": "0x4000"},
+            {"field": "out", "device_ptr_hex": "0x5000"},
+        ],
+    )
+
+    packet = build_host_task_packet(
+        descriptors=descriptors,
+        token_fields=token_fields,
+        kv_fields={
+            "c": {"device_ptr_hex": "0x6000"},
+            "d": {"device_ptr_hex": "0x7000"},
+        },
+        numeric_task_mode="model_equivalent",
+    )
+
+    assert packet is not None
+    assert packet[0].scalar_arg_count == 2
+    assert list(packet[0].scalar_args)[:2] == [1.0, 0.0]
+    assert packet[2].scalar_arg_count == 2
+    assert list(packet[2].scalar_args)[:2] == [1.0, 0.0]
+    summary = numeric_task_mode_summary("model_equivalent")
+    assert summary["scope"] == "resource_backed_model_equivalent_numeric_path"
+    assert summary["full_reduction_contracts"]
+
+
 def test_full_rmsnorm_mode_uses_full_hidden_vector_extent():
     descriptors = [
         {"callable": "qwen_rmsnorm_input", "tensor_args": []},

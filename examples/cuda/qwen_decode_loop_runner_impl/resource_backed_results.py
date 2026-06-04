@@ -301,12 +301,18 @@ def execution_contracts(
             decode_step_execution.get("policy_length_complete"),
         ),
     )
-    if numeric_task_mode in {"unit_math", "unit_math_full_rmsnorm"}:
+    if numeric_task_mode in {
+        "unit_math",
+        "unit_math_full_rmsnorm",
+        "model_equivalent",
+    }:
         contracts.append("qwen_resource_backed_unit_numeric_task_mode")
         if numeric_task_mode == "unit_math":
             contracts.append("qwen_resource_backed_external_rmsnorm_scale")
-        if numeric_task_mode == "unit_math_full_rmsnorm":
+        if numeric_task_mode in {"unit_math_full_rmsnorm", "model_equivalent"}:
             contracts.append("qwen_resource_backed_full_rmsnorm_reduction")
+        if numeric_task_mode == "model_equivalent":
+            contracts.append("qwen_resource_backed_model_equivalent_numeric_path")
         contracts.append("qwen_resource_backed_weighted_elementwise_branches")
     if dynamic_rope_refresh_ready(workload_results):
         contracts.append("qwen_dynamic_rope_table_refresh")

@@ -48,6 +48,7 @@ EVIDENCE_SYMBOLS = [
     "qwen_resource_backed_unit_numeric_task_mode",
     "qwen_resource_backed_external_rmsnorm_scale",
     "qwen_resource_backed_full_rmsnorm_reduction",
+    "qwen_resource_backed_model_equivalent_numeric_path",
     "qwen_resource_backed_weighted_elementwise_branches",
     "qwen_dynamic_rope_table_refresh",
     "qwen_resource_backed_projection_active_cols_override",
@@ -110,7 +111,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--resource-backed-numeric-task-mode",
-        choices=["diagnostic", "unit_math", "unit_math_full_rmsnorm"],
+        choices=[
+            "diagnostic",
+            "unit_math",
+            "unit_math_full_rmsnorm",
+            "model_equivalent",
+        ],
         default="diagnostic",
     )
     parser.add_argument(

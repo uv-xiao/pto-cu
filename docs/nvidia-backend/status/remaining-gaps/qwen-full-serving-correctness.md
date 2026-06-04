@@ -74,6 +74,13 @@ columns. That scalar binding is now fixed, but bounded QKV projection windows
 can still prune K/V writes because K starts after the 4,096-column Q region.
 Model-equivalent Qwen checks therefore need full QKV projection coverage, not
 only full logits.
+They also need the model-equivalent numeric task mode. A one-layer full-QKV
+run with the old default diagnostic mode reached final-norm
+`max_abs_finite=3.213728`, while the same one-layer full-QKV run with full
+RMSNorm reached `max_abs_finite=43.317745`, matching the Hugging Face
+layer-1 final-norm scale `43.34375`. The serving command plan now passes
+`--resource-backed-numeric-task-mode model_equivalent` so paper-target PTO
+runs do not silently use the external-scale diagnostic RMSNorm path.
 
 ## Current Evidence
 
@@ -158,6 +165,17 @@ Recent raw A100 evidence stays under `tmp/`:
   nonzero `layer_0_attention_qkv.max_abs_finite=0.02274`, nonzero
   `layer_0_attention_o.max_abs_finite=0.062311`, and a passing diagnostic
   logits reference.
+- `tmp/cuda-backend/qwen-prefill-layer1-mpk-1step-2026-06-04-full-qkv-attention-o/hf-layer1-norm-probe.json`
+  compares the old default-mode one-layer PTO final-norm sample with Hugging
+  Face `model.norm(hidden_states[1])`, showing that the layer-0 path already
+  diverges before later decoder layers.
+- `tmp/cuda-backend/qwen-prefill-layer1-mpk-1step-2026-06-04-full-qkv-full-rmsnorm/qwen-runner.json`
+  records the same one-layer full-QKV path with full RMSNorm enabled. It
+  reports `layer_0_input_norm.max_abs_finite=0.286054`,
+  `layer_0_attention_o.max_abs_finite=2.704043`, final-norm
+  `max_abs_finite=43.317745`, and a passing diagnostic logits reference. This
+  fixes the RMSNorm scale mode for model-equivalent attempts, but token/logit
+  agreement still remains open.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

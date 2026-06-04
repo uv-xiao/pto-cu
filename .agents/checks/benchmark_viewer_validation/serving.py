@@ -211,6 +211,18 @@ def validate_serving_command_plan(
                 fail(f"{owner} raw_artifact must be under {expected_prefix}")
             if not command_mentions_artifact(command["command"], raw_artifact):
                 fail(f"{owner} command does not mention raw_artifact")
+            if (
+                baseline_id == "pto_persistent_device"
+                and command.get("kind") == "pto_qwen_full_serving"
+            ):
+                if (
+                    "--resource-backed-numeric-task-mode model_equivalent"
+                    not in command["command"]
+                ):
+                    fail(
+                        f"{owner} PTO command must use model_equivalent "
+                        "numeric task mode"
+                    )
             raw_artifact_count += 1
         if raw_artifact_count == 0:
             fail(f"{owner} has no raw_artifact-producing command")
