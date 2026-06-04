@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-04 Qwen RMSNorm BF16 boundary](2026-06-04-qwen-rmsnorm-bf16-boundary.md)
 - [2026-06-04 Qwen QKV BF16 boundary](2026-06-04-qwen-qkv-bf16-boundary.md)
 - [2026-06-04 Qwen QK BF16 boundary](2026-06-04-qwen-qk-bf16-boundary.md)
 - [2026-06-04 Plan archive viewer tab](2026-06-04-plan-archive-viewer-tab.md)

@@ -103,7 +103,8 @@ if (task->scalar_arg_count > 1 && task->scalar_args[0] == 1.0f &&
             rsqrtf(mean_square / static_cast<float>(task->cols) + 0.000001f);
         const float norm_weight =
             pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
-        task->out[j] = task->a[row_base + col] * scale * norm_weight;
+        task->out[j] = pto_cuda_round_to_bf16_f32(
+            task->a[row_base + col] * scale * norm_weight);
     }
 } else if (task->scalar_arg_count == 0) {
     for (unsigned long long i = threadIdx.x; i < task->n; i += blockDim.x) {
@@ -752,7 +753,7 @@ if (task->scalar_arg_count > 1 && task->scalar_args[0] == 1.0f &&
         const float residual_value = task->b ? task->b[row_base + col] : 0.0f;
         const float value = task->a[row_base + col] + residual_value;
         const float weight = pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
-        task->out[j] = value * scale * weight;
+        task->out[j] = pto_cuda_round_to_bf16_f32(value * scale * weight);
     }
 } else {
     const float external_scale =
@@ -859,7 +860,8 @@ if (task->scalar_arg_count > 1 && task->scalar_args[0] == 1.0f &&
         const float scale =
             rsqrtf(mean_square / static_cast<float>(task->cols) + 0.000001f);
         const float weight = pto_cuda_tensor_arg_f32(task, 0U, col, 1.0f);
-        task->out[j] = task->a[row_base + col] * scale * weight;
+        task->out[j] = pto_cuda_round_to_bf16_f32(
+            task->a[row_base + col] * scale * weight);
     }
 } else {
     const float external_scale =
