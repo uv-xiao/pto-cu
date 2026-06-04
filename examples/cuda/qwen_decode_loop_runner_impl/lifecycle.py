@@ -345,6 +345,12 @@ def build_decode_loop_runner(
         for item in workspace_plans
     ):
         implemented_contracts.append("qwen_position_rope_table_population")
+    remaining_runtime_gaps = [
+        "numerically_correct_qwen_kernel_bodies",
+        "viewer_result_import",
+    ]
+    if "qwen_resource_backed_policy_length_decode_execution" not in implemented_contracts:
+        remaining_runtime_gaps.insert(1, "full_cuda_live_decode_loop_execution")
     return {
         "schema_version": 1,
         "kind": "pto_qwen_decode_loop_runner",
@@ -372,9 +378,5 @@ def build_decode_loop_runner(
         "dag_submission_plans": plans,
         "total_decode_iterations": sum(item["decode_steps"] for item in plans),
         "implemented_contracts": implemented_contracts,
-        "remaining_runtime_gaps": [
-            "numerically_correct_qwen_kernel_bodies",
-            "full_cuda_live_decode_loop_execution",
-            "viewer_result_import",
-        ],
+        "remaining_runtime_gaps": remaining_runtime_gaps,
     }

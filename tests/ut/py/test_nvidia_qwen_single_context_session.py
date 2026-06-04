@@ -357,6 +357,9 @@ def test_resource_backed_decode_step_limit_runs_before_close(monkeypatch):
     assert "qwen_resource_backed_policy_length_decode_execution" in runner[
         "implemented_contracts"
     ]
+    assert "full_cuda_live_decode_loop_execution" not in runner[
+        "remaining_runtime_gaps"
+    ]
 
 
 def test_policy_length_decode_execution_is_explicit():
