@@ -560,6 +560,27 @@ def test_activation_finiteness_summary_can_dump_row_values():
     assert summary["row_values"] == [1.25, "nan", "inf", -2.5]
 
 
+def test_activation_summary_indices_include_trailing_activation_task():
+    module = load_resource_graph_module()
+
+    assert module.activation_summary_task_indices(
+        3,
+        [
+            {"id": "input_norm", "callable": "qwen_input_norm"},
+            {"id": "mlp_down", "callable": "qwen_mlp_down"},
+            {"id": "logits", "callable": "qwen_logits"},
+        ],
+    ) == [0, 1]
+
+    assert module.activation_summary_task_indices(
+        2,
+        [
+            {"id": "input_norm", "callable": "qwen_input_norm"},
+            {"id": "mlp_down", "callable": "qwen_mlp_down"},
+        ],
+    ) == [0, 1]
+
+
 def test_diagnostic_logits_reference_compares_tiled_vocab_projection():
     module = load_resource_graph_module()
 

@@ -116,6 +116,16 @@ token-229-minus-token-58 boundary is `-0.041158`: PTO scores the boundary at
 `-0.010063`, while Hugging Face scores it at `0.031095`. The blocker is now a
 row-wide accumulated numeric drift, not a missing final-norm row, logits
 projection failure, or one isolated high-impact hidden column.
+The full-row layer-2 stage comparison also rules out a gross last-layer MLP
+handoff failure. After fixing the activation-summary diagnostic to include a
+trailing non-logits task, the layer-2 `mlp_down` row is available and remains
+close to Hugging Face (`mean_abs_delta=0.000989`, `p99=0.003402`,
+`max_abs_delta=0.081783`). The largest row-wide substage delta is
+RoPE-applied Q/K (`mean_abs_delta=0.005142`, `p99=0.024234`), while
+attention-O remains close (`mean_abs_delta=0.000497`, `p99=0.001711`).
+The next root-cause target is therefore precision/rounding accumulation across
+QK/RoPE and final normalization, not descriptor ordering or an omitted MLP
+output.
 
 ## Current Evidence
 
@@ -261,6 +271,15 @@ Recent raw A100 evidence stays under `tmp/`:
   `mean_abs_hidden_delta=0.007585`, `p99=0.028655`,
   `max_abs_hidden_delta=0.331558`, and
   `token_229_minus_58.hidden_delta_contribution_sum=-0.041158`.
+- `tmp/cuda-backend/qwen-prefill-layer3-mpk-1step-2026-06-04-model-equivalent-stage-full-rows-v2/`
+  records the layer-2 full-row stage comparison after activation summaries
+  started including trailing non-logits tasks. The runner artifact includes
+  full rows for `layer_2_input_norm`, `layer_2_attention_qkv`,
+  `layer_2_attention_qk_norm`, `layer_2_attention_o`,
+  `layer_2_post_attention_norm`, `layer_2_mlp_gate_up`, and
+  `layer_2_mlp_down`. The comparison artifact reports `status=pass`;
+  `layer_2_mlp_down.mean_abs_delta=0.000989`, `p99=0.003402`; and
+  `layer_2_attention_qk_norm.mean_abs_delta=0.005142`, `p99=0.024234`.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

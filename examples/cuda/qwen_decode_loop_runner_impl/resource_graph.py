@@ -34,6 +34,19 @@ def activation_buffer_index_for_packet_task(
     return max(int(packet_index_offset), 0) + int(task_index)
 
 
+def activation_summary_task_indices(
+    task_count: int,
+    descriptors: list[dict[str, Any]],
+) -> list[int]:
+    indices = []
+    for task_index in range(max(0, int(task_count))):
+        descriptor = descriptors[task_index] if task_index < len(descriptors) else {}
+        if descriptor.get("callable") == "qwen_logits":
+            continue
+        indices.append(task_index)
+    return indices
+
+
 class MaterializedGraph:
     def __init__(
         self,
@@ -203,7 +216,10 @@ class MaterializedGraph:
     ) -> dict[str, Any]:
         summaries = []
         activation_buffers = workspace.get("activation_buffers", [])
-        for task_index in range(self.task_count - 1):
+        for task_index in activation_summary_task_indices(
+            self.task_count,
+            descriptors,
+        ):
             buffer_index = activation_buffer_index_for_packet_task(
                 task_index=task_index,
                 packet_index_offset=packet_index_offset,
