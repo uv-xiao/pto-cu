@@ -87,6 +87,13 @@ top-k: PTO and HF both select tokens `[200, 68, 475, 10, 58]` over that bounded
 vocab window. The remaining model-equivalence gap is therefore beyond the
 sampled one-layer/first-512 window: deeper layers, full-vocabulary ranking, or
 policy-length decode still need proof.
+The deeper full-QKV prefix probes narrow that boundary further. The two-layer
+model-equivalent MPK probe matches the Hugging Face first-512 top-5 tokens
+exactly: `[10, 200, 58, 219, 368]`. The three-layer probe matches the top four
+tokens and differs at the fifth rank, while the four-layer probe matches the
+top three tokens and differs at rank four. The remaining gap is therefore a
+small but accumulating deeper-layer numeric/ranking divergence, not a
+layer-0/1 handoff, RMSNorm-scale, or logits-projection failure.
 
 ## Current Evidence
 
@@ -191,6 +198,22 @@ Recent raw A100 evidence stays under `tmp/`:
   compares PTO and Hugging Face over the first 512 logits after one layer.
   Both select top tokens `[200, 68, 475, 10, 58]`, with logits within about
   `0.003` absolute error.
+- `tmp/cuda-backend/qwen-prefill-layer2-mpk-1step-2026-06-04-model-equivalent-samples/`
+  records the two-layer full-QKV model-equivalent MPK probe and Hugging Face
+  comparison. The generated comparison artifact reports
+  `status=pass`, matching first-512 top tokens `[10, 200, 58, 219, 368]`, and
+  final-norm sample absolute errors `[0.00445, 0.002582, 0.010898,
+  0.000518]`.
+- `tmp/cuda-backend/qwen-prefill-layer3-mpk-1step-2026-06-04-model-equivalent-samples/`
+  records the three-layer full-QKV model-equivalent MPK probe. The comparison
+  reports `status=partial_match`, `matching_topk_prefix=4`, PTO top tokens
+  `[10, 167, 376, 475, 58]`, and Hugging Face top tokens
+  `[10, 167, 376, 475, 229]`.
+- `tmp/cuda-backend/qwen-prefill-layer4-mpk-1step-2026-06-04-model-equivalent-samples/`
+  records the four-layer full-QKV model-equivalent MPK probe. The comparison
+  reports `status=partial_match`, `matching_topk_prefix=3`, PTO top tokens
+  `[411, 10, 368, 483, 473]`, and Hugging Face top tokens
+  `[411, 10, 368, 167, 473]`.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

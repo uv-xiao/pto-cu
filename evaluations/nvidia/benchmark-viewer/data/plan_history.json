@@ -3,20 +3,26 @@
   "generated_at": "2026-06-04",
   "summary": {
     "current_focus": "Qwen full-serving correctness and benchmark-model progress",
-    "recent_pattern": "The latest visible slices moved back toward Qwen runtime correctness, but the preceding window was still dominated by tests, benchmark-viewer data, and evidence-policy guardrails.",
-    "reflection": "Recent runtime fixes improved model-equivalent evidence, but the work has still spent too much time on non-feature surfaces. The next slice should run the benchmark model farther before adding more reporting contracts.",
+    "recent_pattern": "The latest committed slice was test/plan-history maintenance, while this turn moved back to Qwen benchmark-model evidence.",
+    "reflection": "The archive guard prevented plan history from going stale. The next slices should keep prioritizing benchmark model execution and use docs only to record new evidence.",
     "test_strategy": "Keep one broad viewer contract check plus focused generator and policy tests. Avoid sparse row-by-row tests for every imported artifact; prefer large integrated tests that exercise benchmark-model execution, viewer import, and report validation together."
   },
   "work_focus": [
     {
-      "window": "latest 12 commits through e91842e1",
+      "window": "latest 12 commits through 2dd50657",
       "feature_or_runtime": 6,
-      "tests_or_guardrails": 5,
-      "viewer_or_docs": 1,
-      "notes": "The latest two commits are Qwen runtime/evidence progress, but the archive still flags the nearby test-heavy pattern."
+      "tests_or_guardrails": 6,
+      "viewer_or_docs": 0,
+      "notes": "The current parent commit is test/guardrail work, but the active slice returned to Qwen runtime evidence."
     }
   ],
   "recent_slices": [
+    {
+      "commit": "2dd50657",
+      "title": "test: keep nvidia plan history compact",
+      "focus": "tests_or_guardrails",
+      "reflection": "Useful archive guard, but not benchmark-model progress; follow-up work should run Qwen farther."
+    },
     {
       "commit": "e91842e1",
       "title": "fix: sample qwen activation rows",
@@ -58,12 +64,6 @@
       "title": "test: add nvidia plan history reflection",
       "focus": "tests_or_guardrails",
       "reflection": "The archive is useful for review, but should stay compact and avoid row-level testing."
-    },
-    {
-      "commit": "7312dbe1",
-      "title": "test: guard ThunderKittens LLM policy exception",
-      "focus": "tests_or_guardrails",
-      "reflection": "Useful policy protection, but not benchmark-model progress."
     }
   ],
   "reflection_log": [
@@ -79,5 +79,5 @@
     "question": "Does this change make a benchmark model run farther, or only make reporting stricter?",
     "preferred_action_if_reporting_only": "Keep the assertion broad, record the limitation in plan history, and return to Qwen full-serving correctness or tuned tensor workloads."
   },
-  "latest_reviewed_commit": "e91842e1"
+  "latest_reviewed_commit": "2dd50657"
 }
