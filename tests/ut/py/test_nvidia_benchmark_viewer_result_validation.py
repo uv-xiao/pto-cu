@@ -1,6 +1,7 @@
 import importlib
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -234,6 +235,60 @@ def test_plan_history_validator_requires_recent_checkout_commit():
         assert "latest_reviewed_commit" in str(exc)
     else:
         raise AssertionError("stale plan history commit was accepted")
+
+
+def test_plan_history_validator_accepts_parent_for_archive_maintenance_commit(
+    monkeypatch,
+):
+    plan_history = load_plan_history_module()
+    payload = plan_history_payload()
+    payload["latest_reviewed_commit"] = "parent12"
+
+    def fake_run(args, **_kwargs):
+        if args[:3] == ["git", "rev-parse", "--short=8"]:
+            revision = args[-1]
+            if revision == "HEAD":
+                return SimpleNamespace(stdout="head1234\n")
+            if revision == "HEAD^":
+                return SimpleNamespace(stdout="parent12\n")
+        if args[:2] == ["git", "diff-tree"]:
+            return SimpleNamespace(
+                stdout=(
+                    "evaluations/nvidia/benchmark-viewer/data/plan_history.json\n"
+                    "docs/nvidia-backend/changelog/index.md\n"
+                )
+            )
+        raise AssertionError(f"unexpected git command {args}")
+
+    monkeypatch.setattr(plan_history.subprocess, "run", fake_run)
+
+    plan_history.validate_plan_history(payload)
+
+
+def test_plan_history_validator_rejects_parent_for_runtime_commit(monkeypatch):
+    plan_history = load_plan_history_module()
+    payload = plan_history_payload()
+    payload["latest_reviewed_commit"] = "parent12"
+
+    def fake_run(args, **_kwargs):
+        if args[:3] == ["git", "rev-parse", "--short=8"]:
+            revision = args[-1]
+            if revision == "HEAD":
+                return SimpleNamespace(stdout="head1234\n")
+            if revision == "HEAD^":
+                return SimpleNamespace(stdout="parent12\n")
+        if args[:2] == ["git", "diff-tree"]:
+            return SimpleNamespace(stdout="examples/cuda/qwen_decode_loop_runner.py\n")
+        raise AssertionError(f"unexpected git command {args}")
+
+    monkeypatch.setattr(plan_history.subprocess, "run", fake_run)
+
+    try:
+        plan_history.validate_plan_history(payload)
+    except SystemExit as exc:
+        assert "current checkout" in str(exc)
+    else:
+        raise AssertionError("parent plan history commit was accepted")
 
 
 def test_plan_history_validator_rejects_verbose_recent_slices():

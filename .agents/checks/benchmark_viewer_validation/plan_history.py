@@ -5,9 +5,41 @@ import subprocess
 from .common import fail, require_dict, require_list, require_string
 
 
-def current_or_parent_short_commits() -> set[str]:
+PLAN_HISTORY_MAINTENANCE_PREFIXES = (
+    ".agents/checks/benchmark_viewer_validation/plan_history.py",
+    "docs/nvidia-backend/changelog/",
+    "evaluations/nvidia/benchmark-viewer/data/plan_history.json",
+    "tests/ut/py/test_nvidia_benchmark_viewer_result_validation.py",
+)
+
+
+def is_plan_history_maintenance_commit() -> bool:
+    try:
+        result = subprocess.run(
+            ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return False
+    changed_paths = [
+        path.strip()
+        for path in result.stdout.splitlines()
+        if path.strip()
+    ]
+    return bool(changed_paths) and all(
+        path.startswith(PLAN_HISTORY_MAINTENANCE_PREFIXES)
+        for path in changed_paths
+    )
+
+
+def current_or_maintenance_parent_short_commits() -> set[str]:
     commits: set[str] = set()
-    for revision in ("HEAD", "HEAD^"):
+    revisions = ["HEAD"]
+    if is_plan_history_maintenance_commit():
+        revisions.append("HEAD^")
+    for revision in revisions:
         try:
             result = subprocess.run(
                 ["git", "rev-parse", "--short=8", revision],
@@ -33,11 +65,11 @@ def validate_plan_history(
     )
     allowed = allowed_latest_commits
     if allowed is None:
-        allowed = current_or_parent_short_commits()
+        allowed = current_or_maintenance_parent_short_commits()
     if allowed and latest_reviewed_commit not in allowed:
         fail(
             "plan history latest_reviewed_commit must match the current "
-            "checkout or its parent"
+            "checkout or a plan-history maintenance parent"
         )
 
     summary = require_dict(data, "summary", "plan history")
