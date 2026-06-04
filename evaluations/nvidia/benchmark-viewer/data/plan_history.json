@@ -9,14 +9,20 @@
   },
   "work_focus": [
     {
-      "window": "latest 12 commits through 3782b0e6",
-      "feature_or_runtime": 9,
+      "window": "latest 12 commits through 1e5c1f2a",
+      "feature_or_runtime": 10,
       "tests_or_guardrails": 4,
       "viewer_or_docs": 2,
       "notes": "Runtime evidence remains the largest share, but diagnostic/test/guardrail slices are still visible. Next work should favor actual Qwen paper-row execution over new artifact-specific assertions."
     }
   ],
   "recent_slices": [
+    {
+      "commit": "1e5c1f2a",
+      "title": "fix: materialize qwen resource batches",
+      "focus": "feature_or_runtime",
+      "reflection": "Resource-backed Qwen paper commands now materialize the requested workload and batch instead of silently using broader allocation."
+    },
     {
       "commit": "3782b0e6",
       "title": "fix: filter qwen single-context workloads",
@@ -58,12 +64,6 @@
       "title": "fix: align qwen residual bf16 boundary",
       "focus": "feature_or_runtime",
       "reflection": "Benchmark-model evidence improved residual-stream dtype-boundary drift, but layer-3 top-k still mismatched; follow-up should stay on numeric root cause."
-    },
-    {
-      "commit": "66458091",
-      "title": "fix: align qwen qkv bf16 boundary",
-      "focus": "feature_or_runtime",
-      "reflection": "Benchmark-model evidence improved QKV and downstream QK drift, but the layer-3 top-k mismatch remained; follow-up stayed on model-equivalent dtype boundaries."
     }
   ],
   "reflection_log": [
@@ -86,5 +86,5 @@
     "preferred_action_if_reporting_only": "Keep the assertion broad, record the limitation in plan history, and return to Qwen full-serving correctness or tuned tensor workloads.",
     "next_benchmark_model_action": "Run the Qwen resource-backed paper rows with explicit workload and batch selection, then use failures to drive runtime fixes."
   },
-  "latest_reviewed_commit": "3782b0e6"
+  "latest_reviewed_commit": "1e5c1f2a"
 }
