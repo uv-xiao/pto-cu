@@ -20,6 +20,8 @@ def validate_plan_history(data: dict) -> None:
         fail("plan history reflection must call out benchmark-model progress")
     if "row-by-row" not in summary["test_strategy"]:
         fail("plan history test strategy must discourage row-by-row tests")
+    if "large" not in summary["test_strategy"]:
+        fail("plan history test strategy must prefer large integrated tests")
 
     focus_windows = require_list(data, "work_focus", "plan history")
     latest = focus_windows[0]
@@ -34,6 +36,13 @@ def validate_plan_history(data: dict) -> None:
         require_string(record, "title", "plan history recent slice")
         require_string(record, "focus", "plan history recent slice")
         require_string(record, "reflection", "plan history recent slice")
+
+    for record in require_list(data, "reflection_log", "plan history"):
+        require_string(record, "date", "plan history reflection log")
+        finding = require_string(record, "finding", "plan history reflection log")
+        require_string(record, "decision", "plan history reflection log")
+        if "too much time" not in finding:
+            fail("plan history reflection log must call out excessive non-feature work")
 
     next_check = require_dict(
         data, "next_reflection_check", "plan history"

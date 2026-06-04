@@ -144,6 +144,34 @@ details {
   margin: 0;
 }
 
+.focus-bar {
+  display: flex;
+  width: 100%;
+  height: 18px;
+  margin: 12px 0 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f3f5f0;
+}
+
+.focus-segment {
+  display: block;
+  min-width: 4px;
+}
+
+.focus-segment.feature {
+  background: #0f766e;
+}
+
+.focus-segment.tests {
+  background: #9f580a;
+}
+
+.focus-segment.docs {
+  background: #5b6f8f;
+}
+
 summary {
   cursor: pointer;
   font-weight: 700;

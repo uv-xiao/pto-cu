@@ -1,22 +1,52 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-03",
+  "generated_at": "2026-06-04",
   "summary": {
-    "current_focus": "Evaluation structure, viewer evidence, and guardrail contraction",
-    "recent_pattern": "Recent commits mostly tightened tests, benchmark-viewer data, and evidence-policy guardrails instead of advancing model benchmark execution.",
-    "reflection": "This is useful only while it prevents false paper-readiness claims. Future work should spend more slices on running or fixing benchmark model paths and less on pinning individual JSON rows.",
-    "test_strategy": "Keep one broad viewer contract check plus focused generator and policy tests. Avoid sparse row-by-row tests for every imported artifact unless the exact row is part of a public contract."
+    "current_focus": "Qwen full-serving correctness and benchmark-model progress",
+    "recent_pattern": "The latest commits include more Qwen runtime fixes, but the window is still dominated by tests, benchmark-viewer data, and evidence-policy guardrails.",
+    "reflection": "The guardrails prevented false paper-readiness claims, but the work has spent too much time on non-feature surfaces. The next slices should fix benchmark model execution paths before adding more reporting contracts.",
+    "test_strategy": "Keep one broad viewer contract check plus focused generator and policy tests. Avoid sparse row-by-row tests for every imported artifact; prefer large integrated tests that exercise benchmark-model execution, viewer import, and report validation together."
   },
   "work_focus": [
     {
       "window": "latest 12 commits",
-      "feature_or_runtime": 1,
-      "tests_or_guardrails": 9,
-      "viewer_or_docs": 2,
-      "notes": "The last visible slice is dominated by tests and guardrails. Only one recent commit directly changed CUDA execution behavior."
+      "feature_or_runtime": 4,
+      "tests_or_guardrails": 7,
+      "viewer_or_docs": 1,
+      "notes": "Runtime-facing Qwen fixes improved the ratio, but tests and guardrails still consume most slices."
     }
   ],
   "recent_slices": [
+    {
+      "commit": "0ae5255e",
+      "title": "fix: align qwen logits diagnostic reference",
+      "focus": "feature_or_runtime",
+      "reflection": "Direct model-correctness progress, but still diagnostic rather than model-equivalent token agreement."
+    },
+    {
+      "commit": "69bb119f",
+      "title": "fix: fail qwen runs on logits reference mismatch",
+      "focus": "feature_or_runtime",
+      "reflection": "Useful correctness gate tied to live benchmark output."
+    },
+    {
+      "commit": "201bbbb2",
+      "title": "fix: preserve qwen readout rmsnorm scale",
+      "focus": "feature_or_runtime",
+      "reflection": "Runtime fix that moved Qwen execution closer to model-equivalent output."
+    },
+    {
+      "commit": "4d3b4e30",
+      "title": "fix: run pto qwen commands with live session",
+      "focus": "feature_or_runtime",
+      "reflection": "Execution-path progress because commands run the model path instead of only validating metadata."
+    },
+    {
+      "commit": "dbc23f6d",
+      "title": "test: add nvidia plan history reflection",
+      "focus": "tests_or_guardrails",
+      "reflection": "This archive is useful for review, but should stay brief and avoid growing into row-level testing."
+    },
     {
       "commit": "7312dbe1",
       "title": "test: guard ThunderKittens LLM policy exception",
@@ -46,17 +76,19 @@
       "title": "docs: surface work queue evidence in backlog",
       "focus": "viewer_or_docs",
       "reflection": "Improves reviewer visibility."
-    },
+    }
+  ],
+  "reflection_log": [
     {
-      "commit": "c743cb84",
-      "title": "fix: align cuda smoke dag task abi",
-      "focus": "feature_or_runtime",
-      "reflection": "Direct runtime-facing progress; future slices should look more like this."
+      "date": "2026-06-04",
+      "trigger": "before adding another artifact-specific test or viewer-only report",
+      "finding": "The latest 12-commit window still spends too much time on tests, guardrails, and viewer/docs compared with benchmark-model execution fixes.",
+      "decision": "Keep plan-history and viewer checks broad, contract test detail through the validator, and return to Qwen full-serving correctness evidence."
     }
   ],
   "next_reflection_check": {
-    "cadence": "Before adding another NVIDIA artifact test or changelog-only slice",
+    "cadence": "Before adding another artifact-specific pytest, changelog-only slice, or viewer-field contract",
     "question": "Does this change make a benchmark model run farther, or only make reporting stricter?",
-    "preferred_action_if_reporting_only": "Keep the assertion broad, record the limitation in plan history, then return to Qwen full-serving correctness or tuned tensor workloads."
+    "preferred_action_if_reporting_only": "Keep the assertion broad, record the limitation in plan history, and return to Qwen full-serving correctness or tuned tensor workloads."
   }
 }

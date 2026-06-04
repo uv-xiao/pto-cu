@@ -16,6 +16,27 @@ export function renderPlanHistory(state) {
   const root = document.getElementById("plan-history");
   const history = state.planHistory;
   const recentFocus = history.work_focus[0];
+  const focusTotal = Math.max(
+    1,
+    recentFocus.feature_or_runtime
+      + recentFocus.tests_or_guardrails
+      + recentFocus.viewer_or_docs,
+  );
+  const focusBar = document.createElement("div");
+  focusBar.className = "focus-bar";
+  [
+    ["feature", "Feature/runtime", recentFocus.feature_or_runtime],
+    ["tests", "Tests/guardrails", recentFocus.tests_or_guardrails],
+    ["docs", "Viewer/docs", recentFocus.viewer_or_docs],
+  ].forEach(([kind, label, value]) => {
+    const segment = document.createElement("span");
+    segment.className = `focus-segment ${kind}`;
+    segment.style.width = `${(value / focusTotal) * 100}%`;
+    segment.title = `${label}: ${value}`;
+    segment.setAttribute("aria-label", `${label}: ${value}`);
+    focusBar.append(segment);
+  });
+
   const section = document.createElement("section");
   section.className = "item";
   const title = document.createElement("h3");
@@ -35,6 +56,24 @@ export function renderPlanHistory(state) {
       ],
       ["Next check", history.next_reflection_check.question],
     ]),
+    focusBar,
+    table(
+      ["Commit", "Focus", "Slice", "Reflection"],
+      history.recent_slices.map((slice) => [
+        slice.commit,
+        slice.focus,
+        slice.title,
+        slice.reflection,
+      ]),
+    ),
+    table(
+      ["Date", "Finding", "Decision"],
+      history.reflection_log.map((entry) => [
+        entry.date,
+        entry.finding,
+        entry.decision,
+      ]),
+    ),
   );
   root.replaceChildren(section);
 }

@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-04 Plan history balance and attention-O scalar](2026-06-04-plan-history-balance-and-attention-o.md)
 - [2026-06-04 Qwen full-layer prefill vocab status](2026-06-04-qwen-full-layer-prefill-vocab-status.md)
 - [2026-06-03 Qwen RMSNorm decode-position scale](2026-06-03-qwen-rmsnorm-decode-position-scale.md)
 - [2026-06-03 PTO Qwen live-session command](2026-06-03-pto-qwen-live-session-command.md)

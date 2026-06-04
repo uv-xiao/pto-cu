@@ -61,6 +61,19 @@ host-side diagnostic reference was changed to accumulate like the generated
 float32 CUDA logits kernel. Full Qwen correctness remains open because the
 current full-vocabulary pass is still diagnostic rather than Hugging Face
 model-equivalent token/logit agreement.
+The latest model-equivalent comparison reaches prompt-prefill execution and
+full-vocabulary diagnostic agreement, but still selects PTO token `71590`
+while Hugging Face selects `151667`. A hidden-state probe shows the mismatch is
+upstream of logits: PTO final norm begins `[-4.339333, 0.982281, -10.556374,
+4.683925]`, while the Hugging Face final hidden begins `[-0.181641,
+-0.644531, 0.6875, -2.0625]`.
+The next localized blocker was attention-output execution. Diagnostic-mode
+`qwen_attention_o` launch packets were dropping
+`attention_o_projection_input_count`, which made the kernel project zero
+columns. That scalar binding is now fixed, but bounded QKV projection windows
+can still prune K/V writes because K starts after the 4,096-column Q region.
+Model-equivalent Qwen checks therefore need full QKV projection coverage, not
+only full logits.
 
 ## Current Evidence
 
@@ -127,6 +140,24 @@ Recent raw A100 evidence stays under `tmp/`:
   logits-buffer coverage, 2,430,976 finite/nonzero logits, top token `71590`,
   and checked diagnostic reference `status=pass`, `mismatch_count=0`,
   `max_abs_error=0` over 3,904 checked full-vocabulary elements.
+- `tmp/cuda-backend/qwen-prefill-layer36-mpk-full-logits-1step-2026-06-04-float32-reference/hf-comparison.json`
+  records the current model-equivalent Hugging Face comparison failure:
+  `model_equivalent_ready=true`, `comparison_scope=model_equivalent_decode`,
+  `blocking_reasons=[token_mismatch]`, PTO token `71590`, and Hugging Face
+  token `151667`.
+- `tmp/cuda-backend/qwen-prefill-layer36-mpk-full-logits-1step-2026-06-04-float32-reference/hf-hidden-probe.json`
+  records the local Hugging Face hidden-state probe that shows the mismatch is
+  before the logits projection.
+- `tmp/cuda-backend/qwen-prefill-layer1-mpk-1step-2026-06-04-attention-o-scalar/qwen-runner.json`
+  records the one-layer bounded projection rerun after the attention-O scalar
+  binding fix. It still reports zero attention-O output because
+  `--resource-backed-projection-active-cols 512` computes only Q columns and
+  prunes K/V cache writes.
+- `tmp/cuda-backend/qwen-prefill-layer1-mpk-1step-2026-06-04-full-qkv-attention-o/qwen-runner.json`
+  records the one-layer full-QKV rerun after the scalar fix. It reports
+  nonzero `layer_0_attention_qkv.max_abs_finite=0.02274`, nonzero
+  `layer_0_attention_o.max_abs_finite=0.062311`, and a passing diagnostic
+  logits reference.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

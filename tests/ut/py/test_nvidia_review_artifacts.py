@@ -6329,6 +6329,9 @@ def test_benchmark_viewer_has_json_backed_review_data():
         "planHistory",
         "plan_history",
         "Recent Work Focus",
+        "recent_slices",
+        "reflection_log",
+        "focus-segment",
         "acceptance_criteria",
         "paper_grade_results",
         "paper_baseline_run_readiness_statuses",
@@ -6391,11 +6394,6 @@ def test_benchmark_viewer_has_json_backed_review_data():
     )
     goal_progress = json.loads(
         (VIEWER_DATA / "goal_progress.json").read_text(
-            encoding="utf-8"
-        )
-    )
-    plan_history = json.loads(
-        (VIEWER_DATA / "plan_history.json").read_text(
             encoding="utf-8"
         )
     )
@@ -6716,13 +6714,6 @@ def test_benchmark_viewer_has_json_backed_review_data():
         == paper_readiness_work_queue["summary"]["total_work_items"]
         for item in goal_progress["acceptance_criteria"]
     )
-    assert plan_history["summary"]["recent_pattern"]
-    assert "tests" in plan_history["summary"]["recent_pattern"]
-    assert "benchmark model" in plan_history["next_reflection_check"]["question"]
-    assert plan_history["work_focus"][0]["tests_or_guardrails"] > (
-        plan_history["work_focus"][0]["feature_or_runtime"]
-    )
-
     probe_baselines = {
         item["paper_baseline_id"]
         for item in paper_baseline_probes["paper_baseline_probes"]

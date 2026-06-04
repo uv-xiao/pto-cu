@@ -47,6 +47,7 @@ from qwen_decode_loop_runner_impl.graph_materialization import task_summary  # n
 from qwen_decode_loop_runner_impl.launch_helpers import (  # noqa: E402
     numeric_task_mode_summary,
     required_activation_buffer_count,
+    task_scalar_args,
 )
 from qwen_kv_cache_binding_impl.zeroing import (  # noqa: E402
     zero_device_allocation,
@@ -1220,6 +1221,24 @@ def test_projection_active_cols_override_targets_only_projection_callables():
     assert updated[2]["task_shape_fields"]["scalar1"] == 12288
     assert updated[3]["task_shape_fields"]["scalar1"] == 4096
     assert updated[4] is descriptors[4]
+
+
+def test_attention_o_scalar_args_keep_projection_input_count_in_diagnostic_mode():
+    scalar_args = task_scalar_args(
+        index=0,
+        absolute_index=0,
+        task_count=1,
+        descriptor={
+            "id": "layer_0_attention_o",
+            "callable": "qwen_attention_o",
+            "layer_index": 0,
+            "attention_o_projection_input_count": 4096,
+        },
+        workspace=None,
+        numeric_task_mode="diagnostic",
+    )
+
+    assert scalar_args[1] == 4096.0
 
 
 def test_qwen_weight_descriptors_emit_callable_shape_fields():
