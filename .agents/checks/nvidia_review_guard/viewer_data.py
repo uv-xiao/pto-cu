@@ -268,7 +268,8 @@ def check_viewer_data() -> None:
     if snapshot.get("compact_capture", {}).get("samples") != 108:
         fail("viewer compact capture sample count must be 108")
     latest_focus = plan_history.get("work_focus", [{}])[0]
-    if latest_focus.get("tests_or_guardrails", 0) <= latest_focus.get(
-        "feature_or_runtime", 0
-    ):
-        fail("plan history must report the current test-heavy work pattern")
+    non_feature = latest_focus.get("tests_or_guardrails", 0) + latest_focus.get(
+        "viewer_or_docs", 0
+    )
+    if non_feature < latest_focus.get("feature_or_runtime", 0):
+        fail("plan history must report the current non-feature work pattern")

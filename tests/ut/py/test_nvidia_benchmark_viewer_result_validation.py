@@ -16,6 +16,65 @@ def load_results_module():
         sys.path.remove(str(CHECKS_DIR))
 
 
+def load_plan_history_module():
+    sys.path.insert(0, str(CHECKS_DIR))
+    try:
+        return importlib.import_module("benchmark_viewer_validation.plan_history")
+    finally:
+        sys.modules.pop("benchmark_viewer_validation.plan_history", None)
+        sys.path.remove(str(CHECKS_DIR))
+
+
+def plan_history_payload():
+    return {
+        "schema_version": 1,
+        "generated_at": "2026-06-04",
+        "latest_reviewed_commit": "abc1234",
+        "summary": {
+            "current_focus": "Qwen full-serving correctness",
+            "recent_pattern": "Recent work is test-heavy.",
+            "reflection": (
+                "Too much time went to guardrails; next work must run a "
+                "benchmark model farther."
+            ),
+            "test_strategy": (
+                "Avoid sparse row-by-row tests and prefer large integrated "
+                "tests for benchmark-model execution."
+            ),
+        },
+        "work_focus": [
+            {
+                "window": "latest 12 commits",
+                "feature_or_runtime": 2,
+                "tests_or_guardrails": 3,
+                "viewer_or_docs": 1,
+                "notes": "Test-heavy window.",
+            }
+        ],
+        "recent_slices": [
+            {
+                "commit": "abc1234",
+                "title": "fix: run qwen benchmark farther",
+                "focus": "feature_or_runtime",
+                "reflection": "Benchmark model progress.",
+            }
+        ],
+        "reflection_log": [
+            {
+                "date": "2026-06-04",
+                "trigger": "before another reporting-only test",
+                "finding": "Spent too much time on non-feature work.",
+                "decision": "Return to benchmark-model execution.",
+            }
+        ],
+        "next_reflection_check": {
+            "cadence": "Before another artifact-specific pytest",
+            "question": "Does this change make a benchmark model run farther?",
+            "preferred_action_if_reporting_only": "Keep the assertion broad.",
+        },
+    }
+
+
 def pto_full_serving_record():
     return {
         "benchmark_id": "llm_serving_decode",
@@ -160,3 +219,42 @@ def test_viewer_data_validator_rejects_diagnostic_comparison_scope(tmp_path):
         assert "model_equivalent_ready" in str(exc)
     else:
         raise AssertionError("diagnostic comparison scope was accepted")
+
+
+def test_plan_history_validator_requires_recent_checkout_commit():
+    plan_history = load_plan_history_module()
+    payload = plan_history_payload()
+
+    try:
+        plan_history.validate_plan_history(
+            payload,
+            allowed_latest_commits={"def5678"},
+        )
+    except SystemExit as exc:
+        assert "latest_reviewed_commit" in str(exc)
+    else:
+        raise AssertionError("stale plan history commit was accepted")
+
+
+def test_plan_history_validator_rejects_verbose_recent_slices():
+    plan_history = load_plan_history_module()
+    payload = plan_history_payload()
+    payload["recent_slices"] = [
+        {
+            "commit": f"abc123{i}",
+            "title": f"test: sparse detail {i}",
+            "focus": "tests_or_guardrails",
+            "reflection": "Reporting-only detail.",
+        }
+        for i in range(9)
+    ]
+
+    try:
+        plan_history.validate_plan_history(
+            payload,
+            allowed_latest_commits={"abc1234"},
+        )
+    except SystemExit as exc:
+        assert "recent_slices must stay brief" in str(exc)
+    else:
+        raise AssertionError("verbose plan history slices were accepted")

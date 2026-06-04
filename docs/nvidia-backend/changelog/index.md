@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-04 Plan history compact currentness](2026-06-04-plan-history-compact-currentness.md)
 - [2026-06-04 Qwen layer-1 model-equivalent samples](2026-06-04-qwen-layer1-model-equivalent-samples.md)
 - [2026-06-04 Qwen model-equivalent RMSNorm mode](2026-06-04-qwen-model-equivalent-rmsnorm-mode.md)
 - [2026-06-04 Plan history balance and attention-O scalar](2026-06-04-plan-history-balance-and-attention-o.md)

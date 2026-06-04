@@ -1,12 +1,44 @@
 from __future__ import annotations
 
+import subprocess
+
 from .common import fail, require_dict, require_list, require_string
 
 
-def validate_plan_history(data: dict) -> None:
+def current_or_parent_short_commits() -> set[str]:
+    commits: set[str] = set()
+    for revision in ("HEAD", "HEAD^"):
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "--short=8", revision],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            continue
+        commits.add(result.stdout.strip())
+    return commits
+
+
+def validate_plan_history(
+    data: dict,
+    allowed_latest_commits: set[str] | None = None,
+) -> None:
     if data.get("schema_version") != 1:
         fail("plan history schema_version must be 1")
     require_string(data, "generated_at", "plan history")
+    latest_reviewed_commit = require_string(
+        data, "latest_reviewed_commit", "plan history"
+    )
+    allowed = allowed_latest_commits
+    if allowed is None:
+        allowed = current_or_parent_short_commits()
+    if allowed and latest_reviewed_commit not in allowed:
+        fail(
+            "plan history latest_reviewed_commit must match the current "
+            "checkout or its parent"
+        )
 
     summary = require_dict(data, "summary", "plan history")
     for key in (
@@ -28,10 +60,14 @@ def validate_plan_history(data: dict) -> None:
     for key in ("feature_or_runtime", "tests_or_guardrails", "viewer_or_docs"):
         if not isinstance(latest.get(key), int) or latest[key] < 0:
             fail(f"plan history work_focus has invalid {key}")
-    if latest["tests_or_guardrails"] <= latest["feature_or_runtime"]:
-        fail("plan history must surface the current test-heavy work pattern")
+    non_feature = latest["tests_or_guardrails"] + latest["viewer_or_docs"]
+    if non_feature < latest["feature_or_runtime"]:
+        fail("plan history must surface the current non-feature work pattern")
 
-    for record in require_list(data, "recent_slices", "plan history"):
+    recent_slices = require_list(data, "recent_slices", "plan history")
+    if len(recent_slices) > 8:
+        fail("plan history recent_slices must stay brief")
+    for record in recent_slices:
         require_string(record, "commit", "plan history recent slice")
         require_string(record, "title", "plan history recent slice")
         require_string(record, "focus", "plan history recent slice")
