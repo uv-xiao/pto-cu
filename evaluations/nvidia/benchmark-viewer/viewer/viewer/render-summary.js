@@ -13,15 +13,31 @@ export function renderSnapshot(state) {
 }
 
 export function renderPlanHistory(state) {
-  const root = document.getElementById("plan-history");
+  renderPlanHistoryInto(document.getElementById("plan-history"), state, {
+    compact: true,
+  });
+  renderPlanHistoryInto(document.getElementById("plan-archive-history"), state, {
+    compact: false,
+  });
+}
+
+function renderPlanHistoryInto(root, state, { compact }) {
+  if (!root) {
+    return;
+  }
   const history = state.planHistory;
   const recentFocus = history.work_focus[0];
+  const nonFeatureTotal =
+    recentFocus.tests_or_guardrails + recentFocus.viewer_or_docs;
   const focusTotal = Math.max(
     1,
     recentFocus.feature_or_runtime
-      + recentFocus.tests_or_guardrails
-      + recentFocus.viewer_or_docs,
+      + nonFeatureTotal,
   );
+  const nonFeatureRatio = Math.round((nonFeatureTotal / focusTotal) * 100);
+  const reflectionStatus = nonFeatureRatio > 35
+    ? "Reflection needed"
+    : "Runtime-focused";
   const focusBar = document.createElement("div");
   focusBar.className = "focus-bar";
   [
@@ -37,12 +53,22 @@ export function renderPlanHistory(state) {
     focusBar.append(segment);
   });
 
+  const metrics = document.createElement("div");
+  metrics.className = "metric-grid";
+  metrics.append(
+    metric("Runtime slices", recentFocus.feature_or_runtime),
+    metric("Non-feature slices", nonFeatureTotal),
+    metric("Non-feature share", `${nonFeatureRatio}%`),
+    metric("Reflection status", reflectionStatus),
+  );
+
   const section = document.createElement("section");
   section.className = "item";
   const title = document.createElement("h3");
   title.append(text("Recent Work Focus"));
   section.append(
     title,
+    metrics,
     fieldList([
       ["Current focus", history.summary.current_focus],
       ["Recent pattern", history.summary.recent_pattern],
@@ -57,25 +83,59 @@ export function renderPlanHistory(state) {
       ["Next check", history.next_reflection_check.question],
     ]),
     focusBar,
-    table(
+  );
+  if (compact) {
+    section.append(table(
       ["Commit", "Focus", "Slice", "Reflection"],
-      history.recent_slices.map((slice) => [
+      history.recent_slices.slice(0, 4).map((slice) => [
         slice.commit,
         slice.focus,
         slice.title,
         slice.reflection,
       ]),
-    ),
-    table(
-      ["Date", "Finding", "Decision"],
-      history.reflection_log.map((entry) => [
-        entry.date,
-        entry.finding,
-        entry.decision,
+    ));
+  } else {
+    section.append(
+      planTimeline(history.recent_slices),
+      table(
+        ["Date", "Trigger", "Finding", "Decision"],
+        history.reflection_log.map((entry) => [
+          entry.date,
+          entry.trigger,
+          entry.finding,
+          entry.decision,
+        ]),
+      ),
+      fieldList([
+        ["Cadence", history.next_reflection_check.cadence],
+        [
+          "Reporting-only action",
+          history.next_reflection_check.preferred_action_if_reporting_only,
+        ],
+        ["Latest reviewed commit", history.latest_reviewed_commit],
       ]),
-    ),
-  );
+    );
+  }
   root.replaceChildren(section);
+}
+
+function planTimeline(slices) {
+  const list = document.createElement("ol");
+  list.className = "plan-timeline";
+  slices.forEach((slice) => {
+    const item = document.createElement("li");
+    item.className = `plan-slice ${slice.focus}`;
+    const heading = document.createElement("strong");
+    heading.append(text(`${slice.commit} · ${slice.title}`));
+    const focus = document.createElement("span");
+    focus.className = "pill";
+    focus.append(text(slice.focus));
+    const reflection = document.createElement("p");
+    reflection.append(text(slice.reflection));
+    item.append(heading, focus, reflection);
+    list.append(item);
+  });
+  return list;
 }
 
 export function renderHeadlineResults(state) {

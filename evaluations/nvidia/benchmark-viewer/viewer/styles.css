@@ -172,6 +172,38 @@ details {
   background: #5b6f8f;
 }
 
+.plan-timeline {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-slice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 8px 12px;
+  border-left: 4px solid #0f766e;
+  border-radius: 6px;
+  background: #f8fbf7;
+  padding: 10px 12px;
+}
+
+.plan-slice.tests_or_guardrails {
+  border-left-color: #9f580a;
+}
+
+.plan-slice.viewer_or_docs {
+  border-left-color: #5b6f8f;
+}
+
+.plan-slice p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+}
+
 summary {
   cursor: pointer;
   font-weight: 700;
