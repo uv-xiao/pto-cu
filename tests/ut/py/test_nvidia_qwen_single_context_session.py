@@ -530,6 +530,23 @@ def test_activation_finiteness_summary_reports_row_local_nonfinite_column():
     }
 
 
+def test_activation_finiteness_summary_reports_selected_columns():
+    module = load_resource_graph_module()
+
+    summary = module.summarize_activation_row_values(
+        [10.0, 20.0, 30.0, 40.0],
+        row_index=2,
+        row_width=4,
+        selected_columns=[3, 1, 9],
+    )
+
+    assert summary["selected_columns"] == [
+        {"column": 3, "index": 11, "value": 40.0},
+        {"column": 1, "index": 9, "value": 20.0},
+        {"column": 9, "index": 17, "value": "out_of_sample"},
+    ]
+
+
 def test_diagnostic_logits_reference_compares_tiled_vocab_projection():
     module = load_resource_graph_module()
 

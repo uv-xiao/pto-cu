@@ -101,6 +101,13 @@ product, and layer output; the largest sampled value error across comparable
 layer-2/3 stages is `0.018348`. The first visible mismatch remains a
 close-logit ranking drift: after layer 3, Hugging Face scores token `229` at
 `5.5` and PTO's rank-5 token `58` at `5.46875`.
+The selected-column follow-up samples the eight hidden dimensions with the
+largest Hugging Face contribution to the token-229-minus-token-58 logit
+difference. PTO and Hugging Face remain close on those dimensions:
+`max_abs_hidden_delta=0.266905` and `max_abs_contribution_delta=0.008797`.
+That makes a single bad high-contribution hidden column unlikely; the next
+target is full-row accumulated numeric drift, especially reductions that are
+not covered by sparse samples.
 
 ## Current Evidence
 
@@ -231,6 +238,13 @@ Recent raw A100 evidence stays under `tmp/`:
   comparable stage samples, including RoPE-applied Q/K samples. The selected
   logit probe records the layer-3 top-k boundary: token `229` is `5.5`, while
   token `58` is `5.46875`.
+- `tmp/cuda-backend/qwen-prefill-layer3-mpk-1step-2026-06-04-model-equivalent-selected-columns/`
+  records the selected-column layer-3 follow-up. The runner artifact includes
+  `final_norm.selected_columns` for the eight HF top-contribution hidden
+  columns, and `pto-hf-layer3-selected-column-comparison.json` reports
+  `status=pass`, `max_abs_hidden_delta=0.266905`,
+  `max_abs_contribution_delta=0.008797`, and matching prior PTO first-512
+  top-k `[10, 167, 376, 475, 58]`.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

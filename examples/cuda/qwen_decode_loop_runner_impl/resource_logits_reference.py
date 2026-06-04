@@ -140,6 +140,7 @@ def summarize_activation_row_values(
     *,
     row_index: int,
     row_width: int,
+    selected_columns: list[int] | None = None,
 ) -> dict[str, Any]:
     first_nonfinite_column = None
     for column, value in enumerate(values):
@@ -156,7 +157,7 @@ def summarize_activation_row_values(
         if first_nonfinite_column is None
         else max(0, int(row_index)) * max(0, int(row_width)) + first_nonfinite_column
     )
-    return {
+    summary = {
         "row_index": int(row_index),
         "row_width": int(row_width),
         "sampled_element_count": len(values),
@@ -174,6 +175,32 @@ def summarize_activation_row_values(
         ),
         "value_sample": sample_activation_values(values),
     }
+    if selected_columns:
+        selected = []
+        row_offset = max(0, int(row_index)) * max(0, int(row_width))
+        for column in selected_columns:
+            column = int(column)
+            if 0 <= column < len(values):
+                value = values[column]
+                if math.isnan(value):
+                    formatted_value: float | str = "nan"
+                elif value == math.inf:
+                    formatted_value = "inf"
+                elif value == -math.inf:
+                    formatted_value = "-inf"
+                else:
+                    formatted_value = round(float(value), 6)
+            else:
+                formatted_value = "out_of_sample"
+            selected.append(
+                {
+                    "column": column,
+                    "index": row_offset + column,
+                    "value": formatted_value,
+                }
+            )
+        summary["selected_columns"] = selected
+    return summary
 
 
 def topk_candidates(

@@ -198,6 +198,7 @@ class MaterializedGraph:
         row_index: int = 0,
         max_columns: int = 12288,
         packet_index_offset: int = 0,
+        selected_columns: list[int] | None = None,
     ) -> dict[str, Any]:
         summaries = []
         activation_buffers = workspace.get("activation_buffers", [])
@@ -229,6 +230,7 @@ class MaterializedGraph:
                 [float(value) for value in host],
                 row_index=row_index,
                 row_width=cols,
+                selected_columns=selected_columns,
             )
             row_summary.update(
                 {

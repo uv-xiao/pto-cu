@@ -9,14 +9,20 @@
   },
   "work_focus": [
     {
-      "window": "latest 12 commits through a5105a57",
-      "feature_or_runtime": 7,
-      "tests_or_guardrails": 5,
+      "window": "latest 12 commits through 434cd1de",
+      "feature_or_runtime": 9,
+      "tests_or_guardrails": 3,
       "viewer_or_docs": 0,
-      "notes": "Runtime evidence is again the dominant recent focus, with the plan-history guard keeping reporting work bounded."
+      "notes": "Runtime evidence is again the dominant recent focus, with stage-sample evidence narrowing the Qwen layer-3 ranking drift."
     }
   ],
   "recent_slices": [
+    {
+      "commit": "434cd1de",
+      "title": "docs: record qwen stage sample evidence",
+      "focus": "feature_or_runtime",
+      "reflection": "Runtime evidence showed sampled layer-2/3 stages are close and shifted the next target to full-row numeric drift."
+    },
     {
       "commit": "a5105a57",
       "title": "docs: record qwen layer boundary evidence",
@@ -58,12 +64,6 @@
       "title": "fix: fail qwen runs on logits reference mismatch",
       "focus": "feature_or_runtime",
       "reflection": "Useful correctness gate tied to live benchmark output."
-    },
-    {
-      "commit": "201bbbb2",
-      "title": "fix: preserve qwen readout rmsnorm scale",
-      "focus": "feature_or_runtime",
-      "reflection": "Runtime fix that moved Qwen execution closer to model-equivalent output."
     }
   ],
   "reflection_log": [
@@ -79,5 +79,5 @@
     "question": "Does this change make a benchmark model run farther, or only make reporting stricter?",
     "preferred_action_if_reporting_only": "Keep the assertion broad, record the limitation in plan history, and return to Qwen full-serving correctness or tuned tensor workloads."
   },
-  "latest_reviewed_commit": "a5105a57"
+  "latest_reviewed_commit": "434cd1de"
 }

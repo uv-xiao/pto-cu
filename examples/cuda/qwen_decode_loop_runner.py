@@ -110,6 +110,13 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--resource-backed-activation-sample-columns",
+        help=(
+            "Comma-separated activation row columns to include in activation "
+            "finiteness summaries for targeted numeric diagnostics."
+        ),
+    )
+    parser.add_argument(
         "--resource-backed-numeric-task-mode",
         choices=[
             "diagnostic",
@@ -191,6 +198,9 @@ def main() -> None:
         resource_backed_logits_active_cols=args.resource_backed_logits_active_cols,
         resource_backed_projection_active_cols=(
             args.resource_backed_projection_active_cols
+        ),
+        resource_backed_activation_sample_columns=(
+            args.resource_backed_activation_sample_columns
         ),
         resource_backed_numeric_task_mode=args.resource_backed_numeric_task_mode,
         resource_backed_prefill_prompt=args.resource_backed_prefill_prompt,
