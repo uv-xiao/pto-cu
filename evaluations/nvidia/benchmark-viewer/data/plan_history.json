@@ -1,22 +1,40 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-04",
+  "generated_at": "2026-06-05",
   "summary": {
     "current_focus": "Qwen full-serving correctness and benchmark-model progress",
-    "recent_pattern": "Recent slices stayed mostly on Qwen numeric/runtime fixes, with one plan-history refresh and one workload-allocation fix after the previous archive point.",
-    "reflection": "Current benchmark model evidence has moved from Qwen numeric-boundary fixes to making the resource-backed runner materialize the requested workload and batch. The next target is running the paper batch rows, not adding more artifact-specific reporting.",
+    "recent_pattern": "Recent slices stayed mostly on Qwen numeric/runtime fixes, but three of the latest twelve commits still went to reporting or guardrail details.",
+    "reflection": "Current benchmark model evidence moved from Qwen numeric-boundary fixes into resource-backed runner execution: workload filtering, batch materialization, worker sizing, MPK bounded execution, and decode-step evidence. The next target is full paper-row execution, not another artifact-specific reporting pass.",
     "test_strategy": "Keep one broad viewer contract check plus focused generator and policy tests. Avoid sparse row-by-row tests for every imported artifact; prefer large integrated tests that exercise benchmark-model execution, viewer import, and report validation together."
   },
   "work_focus": [
     {
-      "window": "latest 12 commits through 1e5c1f2a",
-      "feature_or_runtime": 10,
-      "tests_or_guardrails": 4,
-      "viewer_or_docs": 2,
-      "notes": "Runtime evidence remains the largest share, but diagnostic/test/guardrail slices are still visible. Next work should favor actual Qwen paper-row execution over new artifact-specific assertions."
+      "window": "latest 12 commits through dde8f199",
+      "feature_or_runtime": 8,
+      "tests_or_guardrails": 3,
+      "viewer_or_docs": 1,
+      "notes": "Runtime evidence remains the largest share, but reporting and guardrail slices are still close enough to require discipline. Next work should favor actual Qwen paper-row execution over new artifact-specific assertions."
     }
   ],
   "recent_slices": [
+    {
+      "commit": "dde8f199",
+      "title": "fix: clear qwen policy decode gap",
+      "focus": "tests_or_guardrails",
+      "reflection": "Evidence reporting now stops claiming a full-decode gap after policy-length resource execution, but this was still reporting work and should not displace benchmark-model execution."
+    },
+    {
+      "commit": "f918a446",
+      "title": "fix: report qwen decode step counts",
+      "focus": "tests_or_guardrails",
+      "reflection": "Decode-step evidence now separates repeat policy from executed step count; useful for review, but follow-up should use the clearer fields to run paper rows."
+    },
+    {
+      "commit": "4eff9e86",
+      "title": "fix: set qwen paper runner workers",
+      "focus": "feature_or_runtime",
+      "reflection": "Generated Qwen paper commands now request the worker-block shape used by the resource-backed runner, reducing configuration drift before long runs."
+    },
     {
       "commit": "1e5c1f2a",
       "title": "fix: materialize qwen resource batches",
@@ -36,37 +54,25 @@
       "reflection": "Benchmark-model numeric work fixed the MLP residual bf16 rounding boundary and kept the focus on model-equivalent execution."
     },
     {
+      "commit": "08fe6574",
+      "title": "fix: refresh plan history reflection",
+      "focus": "viewer_or_docs",
+      "reflection": "The archive called out excessive non-feature work; this kind of reflection should stay brief and redirect work back to Qwen execution."
+    },
+    {
       "commit": "5cb3caa8",
       "title": "fix: align qwen attention context bf16 boundary",
       "focus": "feature_or_runtime",
       "reflection": "Benchmark-model evidence improved common top-logit agreement and showed token 229 reaches 5.5 in a bounded window; token 58 remains the next numeric drift target."
-    },
-    {
-      "commit": "203bce42",
-      "title": "fix: align qwen mlp gate bf16 boundary",
-      "focus": "feature_or_runtime",
-      "reflection": "Benchmark-model evidence moved PTO token 58 to the Hugging Face selected-logit value, but token 229 remained missing from the first-512 top five."
-    },
-    {
-      "commit": "41c7c329",
-      "title": "fix: align qwen logits bf16 boundary",
-      "focus": "feature_or_runtime",
-      "reflection": "Benchmark-model evidence fixed the raw logits output boundary and exposed that layer-3 top-k still depends on upstream numeric drift, not viewer ordering."
-    },
-    {
-      "commit": "aeb94958",
-      "title": "fix: bound plan history currentness",
-      "focus": "tests_or_guardrails",
-      "reflection": "Guardrail work made stale archive updates visible; follow-up should return to benchmark-model correctness."
-    },
-    {
-      "commit": "e7a08c16",
-      "title": "fix: align qwen residual bf16 boundary",
-      "focus": "feature_or_runtime",
-      "reflection": "Benchmark-model evidence improved residual-stream dtype-boundary drift, but layer-3 top-k still mismatched; follow-up should stay on numeric root cause."
     }
   ],
   "reflection_log": [
+    {
+      "date": "2026-06-05",
+      "trigger": "after MPK bounded execution and two evidence-reporting fixes",
+      "finding": "Recent work produced real benchmark-model progress, but too much time still went to evidence counters, stale gap labels, and archive maintenance instead of completing MPK and VDCores paper rows.",
+      "decision": "Treat the existing viewer and plan-history validators as the reporting budget, avoid new sparse artifact tests, and spend the next execution slice on Qwen paper-row runtime failures."
+    },
     {
       "date": "2026-06-04",
       "trigger": "after updating the token-229 bounded-window evidence",
@@ -86,5 +92,5 @@
     "preferred_action_if_reporting_only": "Keep the assertion broad, record the limitation in plan history, and return to Qwen full-serving correctness or tuned tensor workloads.",
     "next_benchmark_model_action": "Run the Qwen resource-backed paper rows with explicit workload and batch selection, then use failures to drive runtime fixes."
   },
-  "latest_reviewed_commit": "1e5c1f2a"
+  "latest_reviewed_commit": "dde8f199"
 }

@@ -262,8 +262,9 @@ def test_committed_plan_history_archives_latest_runtime_focus():
 
     plan_history.validate_plan_history(payload)
 
-    assert payload["latest_reviewed_commit"] == "1e5c1f2a"
-    assert payload["recent_slices"][0]["commit"] == "1e5c1f2a"
-    assert payload["recent_slices"][0]["focus"] == "feature_or_runtime"
+    assert payload["recent_slices"][0]["commit"] == payload["latest_reviewed_commit"]
+    assert len(payload["recent_slices"]) <= 8
     assert "resource-backed runner" in payload["summary"]["reflection"]
-    assert "requested workload and batch" in payload["summary"]["reflection"]
+    assert "full paper-row execution" in payload["summary"]["reflection"]
+    assert "Avoid sparse row-by-row tests" in payload["summary"]["test_strategy"]
+    assert "too much time" in payload["reflection_log"][0]["finding"]
