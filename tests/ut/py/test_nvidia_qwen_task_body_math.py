@@ -239,6 +239,7 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     manifest = module.build_task_body_manifest(num_hidden_layers=1)
     source = manifest["rendered_source"]["preview"]
     full_source = render_persistent_dag_source(task_functions())
+    compact_source = " ".join(full_source.split())
     source_map = manifest["qwen_kernel_source_map"]
     rmsnorm = next(
         item
@@ -389,6 +390,10 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     )
     assert "task->tensor_arg_count > 1U && task->tensor_args[1]" in full_source
     assert (
+        "const float residual_value = pto_cuda_round_to_bf16_f32( "
+        "residual_attention_value + residual_input_value);"
+    ) in compact_source
+    assert (
         "task->out[i] = pto_cuda_round_to_bf16_f32("
         "projected_down + residual_value);"
     ) in full_source
@@ -478,7 +483,6 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "score += task->a[row_base + query_base + dim] *" in full_source
     assert "row_base + projection_query_base + dim" in full_source
     assert "__shared__ float attention_values[4096];" in full_source
-    compact_source = " ".join(full_source.split())
     assert (
         "attention_values[projection_col] = pto_cuda_round_to_bf16_f32( "
         "projection_normalizer > 0.0f ? projection_weighted_value / "

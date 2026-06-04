@@ -829,8 +829,8 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count > 0U &&
     const float residual_input_value =
         task->tensor_arg_count > 1U && task->tensor_args[1] ?
         task->tensor_args[1][i] : 0.0f;
-    const float residual_value =
-        residual_attention_value + residual_input_value;
+    const float residual_value = pto_cuda_round_to_bf16_f32(
+        residual_attention_value + residual_input_value);
     const float projected_down = col < active_projection_cols ?
         pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f) : 0.0f;
     task->out[i] = pto_cuda_round_to_bf16_f32(projected_down + residual_value);
