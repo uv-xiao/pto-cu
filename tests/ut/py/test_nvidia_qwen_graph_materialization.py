@@ -1576,11 +1576,49 @@ def test_workload_result_fails_failed_checked_logits_reference():
             },
         ],
         decode_step_limit=1,
+        requested_repeat_runs=1,
         logits_check_policy="final_step",
         numeric_task_mode="diagnostic",
     )
 
     assert result["status"] == "fail"
+
+
+def test_workload_result_keeps_repeat_runs_distinct_from_decode_steps():
+    repeat_result = {
+        "repeat_index": 0,
+        "status": "pass",
+        "run_prepared_status": 0,
+        "scheduler_counters": {
+            "completed_count": 2,
+            "error_count": 0,
+        },
+        "output_sample": [0.0],
+        "logits_summary": {
+            "coverage": "not_checked",
+            "diagnostic_reference": {"status": "not_checked"},
+        },
+        "decode_feedback": {
+            "status": "device_feedback_observed_unchecked",
+            "sampled_token_id": 0,
+            "policy": "device_commits_diagnostic_sampled_token_for_next_step",
+            "scope": "single_sequence_row0_greedy_argmax",
+        },
+        "timing_ns": {"host_wall": 1, "device_wall": 1},
+    }
+    result = build_workload_result(
+        plan={"workload_id": "vdcores_offline_decode", "decode_steps": 64},
+        packet_len=255,
+        repeat_results=[repeat_result, {**repeat_result, "repeat_index": 1}],
+        decode_step_limit=2,
+        requested_repeat_runs=3,
+        logits_check_policy="final_step",
+        numeric_task_mode="model_equivalent",
+    )
+
+    assert result["repeat_runs"] == 3
+    assert result["executed_decode_steps"] == 2
+    assert result["decode_step_result_count"] == 2
 
 
 def test_prompt_prefill_summary_reports_executed_prompt_positions():

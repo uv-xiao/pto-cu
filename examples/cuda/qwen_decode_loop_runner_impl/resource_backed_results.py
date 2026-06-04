@@ -144,6 +144,7 @@ def build_workload_result(
     packet_len: int,
     repeat_results: list[dict[str, Any]],
     decode_step_limit: int | None,
+    requested_repeat_runs: int,
     logits_check_policy: str,
     numeric_task_mode: str,
     prefill_packet_len: int = 0,
@@ -161,11 +162,12 @@ def build_workload_result(
         "workload_id": plan["workload_id"],
         "status": "pass" if passed else "fail",
         "run_prepared_status": int(last["run_prepared_status"]),
-        "repeat_runs": len(repeat_results),
+        "repeat_runs": max(1, int(requested_repeat_runs)),
         "planned_decode_steps": int(plan["decode_steps"]),
         "executed_decode_steps": (
             len(repeat_results) if decode_step_limit is not None else 0
         ),
+        "decode_step_result_count": len(repeat_results),
         "decode_step_limit": decode_step_limit,
         "prompt_prefill": prompt_prefill_summary(
             plan=plan,

@@ -454,6 +454,7 @@ def run_workload(
         packet_len=len(packet),
         repeat_results=repeat_results,
         decode_step_limit=decode_step_limit,
+        requested_repeat_runs=repeat_runs,
         logits_check_policy=logits_check_policy,
         numeric_task_mode=numeric_task_mode,
         prefill_packet_len=prefill_packet_len,
