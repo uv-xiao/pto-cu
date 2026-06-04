@@ -3,20 +3,26 @@
   "generated_at": "2026-06-04",
   "summary": {
     "current_focus": "Qwen full-serving correctness and benchmark-model progress",
-    "recent_pattern": "Recent slices stayed mostly on Qwen runtime evidence after a short viewer/reporting and archive-guardrail detour.",
-    "reflection": "Current benchmark model evidence improves Qwen dtype-boundary, residual, logits, MLP activation, and attention-context drift but does not flip the layer-3 top-k boundary, so the next target remains numeric root-cause work rather than viewer/reporting work.",
+    "recent_pattern": "Recent slices stayed mostly on Qwen numeric runtime fixes, but diagnostics, guardrails, and viewer/archive work still take a visible share of the window.",
+    "reflection": "Current benchmark model evidence shows token 229 now reaches the Hugging Face 5.5 logit in the bounded window, while token 58 is still inflated or tie-ordered ahead of it in the first-512 view. The next target is numeric root-cause work on that token-58 drift, not stricter reporting.",
     "test_strategy": "Keep one broad viewer contract check plus focused generator and policy tests. Avoid sparse row-by-row tests for every imported artifact; prefer large integrated tests that exercise benchmark-model execution, viewer import, and report validation together."
   },
   "work_focus": [
     {
-      "window": "latest 12 commits through 203bce42",
-      "feature_or_runtime": 8,
-      "tests_or_guardrails": 2,
-      "viewer_or_docs": 2,
-      "notes": "Runtime evidence remains the dominant recent focus. Guardrail and viewer/doc slices remain visible, and recent follow-up work stayed on Qwen numeric drift."
+      "window": "latest 12 commits through 5cb3caa8",
+      "feature_or_runtime": 7,
+      "tests_or_guardrails": 4,
+      "viewer_or_docs": 1,
+      "notes": "Runtime evidence remains the largest share, but diagnostic/test/guardrail slices are above the reflection threshold. Next work should favor benchmark-model progress over new artifact-specific assertions."
     }
   ],
   "recent_slices": [
+    {
+      "commit": "5cb3caa8",
+      "title": "fix: align qwen attention context bf16 boundary",
+      "focus": "feature_or_runtime",
+      "reflection": "Benchmark-model evidence improved common top-logit agreement and showed token 229 reaches 5.5 in a bounded window; token 58 remains the next numeric drift target."
+    },
     {
       "commit": "203bce42",
       "title": "fix: align qwen mlp gate bf16 boundary",
@@ -58,15 +64,15 @@
       "title": "fix: align qwen qk bf16 boundary",
       "focus": "feature_or_runtime",
       "reflection": "Benchmark-model evidence improved QK/RoPE dtype-boundary drift, but the layer-3 top-k mismatch remained; follow-up should stay on numeric root cause."
-    },
-    {
-      "commit": "9867f328",
-      "title": "feat: add benchmark plan archive view",
-      "focus": "viewer_or_docs",
-      "reflection": "Reviewability improved, but this was reporting work; the next slice needed to return to benchmark-model correctness."
     }
   ],
   "reflection_log": [
+    {
+      "date": "2026-06-04",
+      "trigger": "after updating the token-229 bounded-window evidence",
+      "finding": "Recent work made real benchmark-model progress, but too much time still went to diagnostic dumps, guardrails, and viewer/archive maintenance compared with fixing model execution.",
+      "decision": "Keep the archive brief, collapse sparse plan-history tests into an integrated contract, and return to the Qwen token-58 numeric drift."
+    },
     {
       "date": "2026-06-04",
       "trigger": "before adding another artifact-specific test or viewer-only report",
@@ -77,7 +83,8 @@
   "next_reflection_check": {
     "cadence": "Before adding another artifact-specific pytest, changelog-only slice, or viewer-field contract",
     "question": "Does this change make a benchmark model run farther, or only make reporting stricter?",
-    "preferred_action_if_reporting_only": "Keep the assertion broad, record the limitation in plan history, and return to Qwen full-serving correctness or tuned tensor workloads."
+    "preferred_action_if_reporting_only": "Keep the assertion broad, record the limitation in plan history, and return to Qwen full-serving correctness or tuned tensor workloads.",
+    "next_benchmark_model_action": "Localize and fix the Qwen layer-3 token-58 logit inflation that hides token 229 in the first-512 top-k view."
   },
-  "latest_reviewed_commit": "203bce42"
+  "latest_reviewed_commit": "5cb3caa8"
 }

@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-04 Plan history token-229 reflection](2026-06-04-plan-history-token229-reflection.md)
 - [2026-06-04 Qwen Attention Context BF16 boundary](2026-06-04-qwen-attention-context-bf16-boundary.md)
 - [2026-06-04 Qwen MLP Gate BF16 boundary](2026-06-04-qwen-mlp-gate-bf16-boundary.md)
 - [2026-06-04 Qwen Logits BF16 boundary](2026-06-04-qwen-logits-bf16-boundary.md)

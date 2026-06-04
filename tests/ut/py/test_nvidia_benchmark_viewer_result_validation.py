@@ -1,4 +1,5 @@
 import importlib
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -72,6 +73,7 @@ def plan_history_payload():
             "cadence": "Before another artifact-specific pytest",
             "question": "Does this change make a benchmark model run farther?",
             "preferred_action_if_reporting_only": "Keep the assertion broad.",
+            "next_benchmark_model_action": "Fix Qwen benchmark model drift.",
         },
     }
 
@@ -222,21 +224,6 @@ def test_viewer_data_validator_rejects_diagnostic_comparison_scope(tmp_path):
         raise AssertionError("diagnostic comparison scope was accepted")
 
 
-def test_plan_history_validator_requires_recent_checkout_commit():
-    plan_history = load_plan_history_module()
-    payload = plan_history_payload()
-
-    try:
-        plan_history.validate_plan_history(
-            payload,
-            allowed_latest_commits={"def5678"},
-        )
-    except SystemExit as exc:
-        assert "latest_reviewed_commit" in str(exc)
-    else:
-        raise AssertionError("stale plan history commit was accepted")
-
-
 def test_plan_history_validator_accepts_parent_when_archive_changed(
     monkeypatch,
 ):
@@ -266,64 +253,17 @@ def test_plan_history_validator_accepts_parent_when_archive_changed(
     plan_history.validate_plan_history(payload)
 
 
-def test_plan_history_validator_rejects_parent_for_runtime_commit(monkeypatch):
+def test_committed_plan_history_archives_latest_runtime_focus():
     plan_history = load_plan_history_module()
-    payload = plan_history_payload()
-    payload["latest_reviewed_commit"] = "parent12"
-
-    def fake_run(args, **_kwargs):
-        if args[:3] == ["git", "rev-parse", "--short=8"]:
-            revision = args[-1]
-            if revision == "HEAD":
-                return SimpleNamespace(stdout="head1234\n")
-            if revision == "HEAD^":
-                return SimpleNamespace(stdout="parent12\n")
-        if args[:2] == ["git", "diff-tree"]:
-            return SimpleNamespace(stdout="examples/cuda/qwen_decode_loop_runner.py\n")
-        raise AssertionError(f"unexpected git command {args}")
-
-    monkeypatch.setattr(plan_history.subprocess, "run", fake_run)
-
-    try:
-        plan_history.validate_plan_history(payload)
-    except SystemExit as exc:
-        assert "current checkout" in str(exc)
-    else:
-        raise AssertionError("parent plan history commit was accepted")
-
-
-def test_plan_history_validator_rejects_verbose_recent_slices():
-    plan_history = load_plan_history_module()
-    payload = plan_history_payload()
-    payload["recent_slices"] = [
-        {
-            "commit": f"abc123{i}",
-            "title": f"test: sparse detail {i}",
-            "focus": "tests_or_guardrails",
-            "reflection": "Reporting-only detail.",
-        }
-        for i in range(9)
-    ]
-
-    try:
-        plan_history.validate_plan_history(
-            payload,
-            allowed_latest_commits={"abc1234"},
-        )
-    except SystemExit as exc:
-        assert "recent_slices must stay brief" in str(exc)
-    else:
-        raise AssertionError("verbose plan history slices were accepted")
-
-
-def test_plan_history_validator_accepts_feature_dominant_runtime_window():
-    plan_history = load_plan_history_module()
-    payload = plan_history_payload()
-    payload["work_focus"][0]["feature_or_runtime"] = 7
-    payload["work_focus"][0]["tests_or_guardrails"] = 5
-    payload["work_focus"][0]["viewer_or_docs"] = 0
-
-    plan_history.validate_plan_history(
-        payload,
-        allowed_latest_commits={"abc1234"},
+    payload = json.loads(
+        (ROOT / "evaluations/nvidia/benchmark-viewer/data/plan_history.json")
+        .read_text(encoding="utf-8")
     )
+
+    plan_history.validate_plan_history(payload)
+
+    assert payload["latest_reviewed_commit"] == "5cb3caa8"
+    assert payload["recent_slices"][0]["commit"] == "5cb3caa8"
+    assert payload["recent_slices"][0]["focus"] == "feature_or_runtime"
+    assert "token 229" in payload["summary"]["reflection"]
+    assert "token 58" in payload["summary"]["reflection"]

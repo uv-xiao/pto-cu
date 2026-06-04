@@ -112,3 +112,10 @@ def validate_plan_history(
         "preferred_action_if_reporting_only",
         "plan history next check",
     )
+    action = require_string(
+        next_check,
+        "next_benchmark_model_action",
+        "plan history next check",
+    )
+    if "Qwen" not in action and "benchmark" not in action:
+        fail("plan history next action must name benchmark-model work")

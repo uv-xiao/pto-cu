@@ -81,6 +81,10 @@ function renderPlanHistoryInto(root, state, { compact }) {
           + `${recentFocus.viewer_or_docs} viewer/docs`,
       ],
       ["Next check", history.next_reflection_check.question],
+      [
+        "Next benchmark-model action",
+        history.next_reflection_check.next_benchmark_model_action,
+      ],
     ]),
     focusBar,
   );
@@ -111,6 +115,10 @@ function renderPlanHistoryInto(root, state, { compact }) {
         [
           "Reporting-only action",
           history.next_reflection_check.preferred_action_if_reporting_only,
+        ],
+        [
+          "Next benchmark-model action",
+          history.next_reflection_check.next_benchmark_model_action,
         ],
         ["Latest reviewed commit", history.latest_reviewed_commit],
       ]),
