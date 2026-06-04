@@ -81,6 +81,12 @@ RMSNorm reached `max_abs_finite=43.317745`, matching the Hugging Face
 layer-1 final-norm scale `43.34375`. The serving command plan now passes
 `--resource-backed-numeric-task-mode model_equivalent` so paper-target PTO
 runs do not silently use the external-scale diagnostic RMSNorm path.
+With activation value samples enabled, the one-layer model-equivalent run now
+matches the Hugging Face layer-1 sampled final norm and first-512 logits
+top-k: PTO and HF both select tokens `[200, 68, 475, 10, 58]` over that bounded
+vocab window. The remaining model-equivalence gap is therefore beyond the
+sampled one-layer/first-512 window: deeper layers, full-vocabulary ranking, or
+policy-length decode still need proof.
 
 ## Current Evidence
 
@@ -176,6 +182,15 @@ Recent raw A100 evidence stays under `tmp/`:
   `max_abs_finite=43.317745`, and a passing diagnostic logits reference. This
   fixes the RMSNorm scale mode for model-equivalent attempts, but token/logit
   agreement still remains open.
+- `tmp/cuda-backend/qwen-prefill-layer1-mpk-1step-2026-06-04-model-equivalent-samples/qwen-runner.json`
+  records the one-layer model-equivalent rerun with per-task activation value
+  samples. The final-norm sample begins `[0.232644, -0.81544, -0.02089,
+  -0.415388]`, matching the Hugging Face layer-1 final-norm sample within the
+  expected dtype/rounding range.
+- `tmp/cuda-backend/qwen-prefill-layer1-mpk-1step-2026-06-04-model-equivalent-samples/hf-layer1-first512-logits-probe.json`
+  compares PTO and Hugging Face over the first 512 logits after one layer.
+  Both select top tokens `[200, 68, 475, 10, 58]`, with logits within about
+  `0.003` absolute error.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

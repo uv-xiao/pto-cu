@@ -526,6 +526,7 @@ def test_activation_finiteness_summary_reports_row_local_nonfinite_column():
         "first_nonfinite_column": 2,
         "first_nonfinite_index": 6,
         "max_abs_finite": 4.0,
+        "value_sample": [1.0, 2.0, "nan", 4.0],
     }
 
 

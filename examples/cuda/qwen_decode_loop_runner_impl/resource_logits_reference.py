@@ -117,6 +117,24 @@ def finite_indexed_values(values: list[float]) -> list[tuple[int, float]]:
     ]
 
 
+def sample_activation_values(
+    values: list[float],
+    *,
+    limit: int = 4,
+) -> list[float | str]:
+    sample: list[float | str] = []
+    for value in values[: max(0, int(limit))]:
+        if math.isnan(value):
+            sample.append("nan")
+        elif value == math.inf:
+            sample.append("inf")
+        elif value == -math.inf:
+            sample.append("-inf")
+        else:
+            sample.append(round(float(value), 6))
+    return sample
+
+
 def summarize_activation_row_values(
     values: list[float],
     *,
@@ -154,6 +172,7 @@ def summarize_activation_row_values(
             if finite_values
             else None
         ),
+        "value_sample": sample_activation_values(values),
     }
 
 
