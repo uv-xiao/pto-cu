@@ -3,20 +3,26 @@
   "generated_at": "2026-06-04",
   "summary": {
     "current_focus": "Qwen full-serving correctness and benchmark-model progress",
-    "recent_pattern": "Recent slices are dominated by Qwen runtime evidence, with compact guardrails used only where they keep evidence reviewable.",
+    "recent_pattern": "Recent slices returned from viewer/reporting work to Qwen runtime evidence, with compact guardrails used only where they keep evidence reviewable.",
     "reflection": "Current benchmark model evidence improves QK/RoPE dtype-boundary drift but does not flip the layer-3 top-k boundary, so the next target remains Qwen numeric root-cause work rather than viewer/reporting work.",
     "test_strategy": "Keep one broad viewer contract check plus focused generator and policy tests. Avoid sparse row-by-row tests for every imported artifact; prefer large integrated tests that exercise benchmark-model execution, viewer import, and report validation together."
   },
   "work_focus": [
     {
-      "window": "latest 12 commits through 9867f328",
-      "feature_or_runtime": 9,
+      "window": "latest 12 commits through fba2aeb4",
+      "feature_or_runtime": 10,
       "tests_or_guardrails": 2,
       "viewer_or_docs": 1,
-      "notes": "Runtime evidence remains the dominant recent focus. The latest viewer/docs slice made non-feature work easier to spot instead of expanding the test surface."
+      "notes": "Runtime evidence remains the dominant recent focus. The viewer/docs slice made non-feature work easier to spot, and the next reviewed slice returned to Qwen numeric drift."
     }
   ],
   "recent_slices": [
+    {
+      "commit": "fba2aeb4",
+      "title": "fix: align qwen qk bf16 boundary",
+      "focus": "feature_or_runtime",
+      "reflection": "Benchmark-model evidence improved QK/RoPE dtype-boundary drift, but the layer-3 top-k mismatch remained; follow-up should stay on numeric root cause."
+    },
     {
       "commit": "9867f328",
       "title": "feat: add benchmark plan archive view",
@@ -58,12 +64,6 @@
       "title": "test: keep nvidia plan history compact",
       "focus": "tests_or_guardrails",
       "reflection": "Useful archive guard, but not benchmark-model progress; follow-up work should run Qwen farther."
-    },
-    {
-      "commit": "e91842e1",
-      "title": "fix: sample qwen activation rows",
-      "focus": "feature_or_runtime",
-      "reflection": "Useful benchmark-model debugging evidence: PTO and HF final-norm samples matched for the one-layer first-512 probe."
     }
   ],
   "reflection_log": [
@@ -79,5 +79,5 @@
     "question": "Does this change make a benchmark model run farther, or only make reporting stricter?",
     "preferred_action_if_reporting_only": "Keep the assertion broad, record the limitation in plan history, and return to Qwen full-serving correctness or tuned tensor workloads."
   },
-  "latest_reviewed_commit": "9867f328"
+  "latest_reviewed_commit": "fba2aeb4"
 }

@@ -174,11 +174,13 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
     if (col >= active_projection_cols) {
         task->out[i] = 0.0f;
     } else if (col < q_width) {
-        projected = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
+        projected = pto_cuda_round_to_bf16_f32(
+            pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f));
         task->out[i] = projected;
     } else if (col < q_width + kv_width) {
         const unsigned int kv_col = col - q_width;
-        projected = pto_cuda_linear_arg_f32(task, 1U, row, kv_col, 0.0f);
+        projected = pto_cuda_round_to_bf16_f32(
+            pto_cuda_linear_arg_f32(task, 1U, row, kv_col, 0.0f));
         const unsigned int logical_page = decode_position / kv_page_size;
         const unsigned int page_offset = decode_position % kv_page_size;
         const unsigned int physical_page = kv_page_table ?
@@ -196,7 +198,8 @@ if (task->cols > 0U && task->inner > 0U && has_projection_weights) {
         task->out[i] = projected;
     } else {
         const unsigned int kv_col = col - q_width - kv_width;
-        projected = pto_cuda_linear_arg_f32(task, 2U, row, kv_col, 0.0f);
+        projected = pto_cuda_round_to_bf16_f32(
+            pto_cuda_linear_arg_f32(task, 2U, row, kv_col, 0.0f));
         const unsigned int logical_page = decode_position / kv_page_size;
         const unsigned int page_offset = decode_position % kv_page_size;
         const unsigned int physical_page = kv_page_table ?
