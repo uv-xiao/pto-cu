@@ -199,6 +199,7 @@ class MaterializedGraph:
         max_columns: int = 12288,
         packet_index_offset: int = 0,
         selected_columns: list[int] | None = None,
+        row_dump_descriptor_ids: set[str] | None = None,
     ) -> dict[str, Any]:
         summaries = []
         activation_buffers = workspace.get("activation_buffers", [])
@@ -226,17 +227,22 @@ class MaterializedGraph:
                 f"activation_row_{task_index}",
             )
             descriptor = descriptors[task_index] if task_index < len(descriptors) else {}
+            descriptor_id = descriptor.get("id")
             row_summary = summarize_activation_row_values(
                 [float(value) for value in host],
                 row_index=row_index,
                 row_width=cols,
                 selected_columns=selected_columns,
+                include_values=(
+                    row_dump_descriptor_ids is not None
+                    and str(descriptor_id) in row_dump_descriptor_ids
+                ),
             )
             row_summary.update(
                 {
                     "task_index": task_index,
                     "activation_buffer_index": buffer_index,
-                    "descriptor_id": descriptor.get("id"),
+                    "descriptor_id": descriptor_id,
                     "callable": descriptor.get("callable"),
                     "output_element_count": n,
                     "output_rows": n // cols,

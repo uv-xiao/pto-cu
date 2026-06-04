@@ -117,6 +117,13 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--resource-backed-activation-row-dump-descriptor-ids",
+        help=(
+            "Comma-separated descriptor IDs whose activation rows should be "
+            "dumped into activation finiteness summaries."
+        ),
+    )
+    parser.add_argument(
         "--resource-backed-numeric-task-mode",
         choices=[
             "diagnostic",
@@ -201,6 +208,9 @@ def main() -> None:
         ),
         resource_backed_activation_sample_columns=(
             args.resource_backed_activation_sample_columns
+        ),
+        resource_backed_activation_row_dump_descriptor_ids=(
+            args.resource_backed_activation_row_dump_descriptor_ids
         ),
         resource_backed_numeric_task_mode=args.resource_backed_numeric_task_mode,
         resource_backed_prefill_prompt=args.resource_backed_prefill_prompt,

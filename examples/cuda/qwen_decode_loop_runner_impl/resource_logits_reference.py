@@ -141,6 +141,7 @@ def summarize_activation_row_values(
     row_index: int,
     row_width: int,
     selected_columns: list[int] | None = None,
+    include_values: bool = False,
 ) -> dict[str, Any]:
     first_nonfinite_column = None
     for column, value in enumerate(values):
@@ -200,6 +201,8 @@ def summarize_activation_row_values(
                 }
             )
         summary["selected_columns"] = selected
+    if include_values:
+        summary["row_values"] = sample_activation_values(values, limit=len(values))
     return summary
 
 

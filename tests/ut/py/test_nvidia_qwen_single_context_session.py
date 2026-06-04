@@ -547,6 +547,19 @@ def test_activation_finiteness_summary_reports_selected_columns():
     ]
 
 
+def test_activation_finiteness_summary_can_dump_row_values():
+    module = load_resource_graph_module()
+
+    summary = module.summarize_activation_row_values(
+        [1.25, float("nan"), float("inf"), -2.5],
+        row_index=0,
+        row_width=4,
+        include_values=True,
+    )
+
+    assert summary["row_values"] == [1.25, "nan", "inf", -2.5]
+
+
 def test_diagnostic_logits_reference_compares_tiled_vocab_projection():
     module = load_resource_graph_module()
 

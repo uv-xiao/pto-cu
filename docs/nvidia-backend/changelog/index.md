@@ -6,6 +6,7 @@ what evaluation ran, and what evidence proves the claim.
 
 ## Reports
 
+- [2026-06-04 Qwen full-row hidden drift](2026-06-04-qwen-full-row-hidden-drift.md)
 - [2026-06-04 Qwen selected hidden columns](2026-06-04-qwen-selected-hidden-columns.md)
 - [2026-06-04 Qwen layer 2-3 stage samples](2026-06-04-qwen-layer2-3-stage-samples.md)
 - [2026-06-04 Qwen layer 2-4 model-equivalent boundary](2026-06-04-qwen-layer2-4-model-equivalent-boundary.md)

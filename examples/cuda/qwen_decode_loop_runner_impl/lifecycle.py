@@ -93,6 +93,7 @@ def build_decode_loop_runner(
     resource_backed_logits_active_cols: str | int | None = None,
     resource_backed_projection_active_cols: str | int | None = None,
     resource_backed_activation_sample_columns: str | None = None,
+    resource_backed_activation_row_dump_descriptor_ids: str | None = None,
     resource_backed_numeric_task_mode: str = "diagnostic",
     resource_backed_prefill_prompt: bool = False,
     arch: str = "compute_80",
@@ -203,6 +204,9 @@ def build_decode_loop_runner(
                 projection_active_cols=resource_backed_projection_active_cols,
                 activation_sample_columns=(
                     resource_backed_activation_sample_columns
+                ),
+                activation_row_dump_descriptor_ids=(
+                    resource_backed_activation_row_dump_descriptor_ids
                 ),
                 numeric_task_mode=resource_backed_numeric_task_mode,
                 prefill_prompt=resource_backed_prefill_prompt,

@@ -108,6 +108,14 @@ difference. PTO and Hugging Face remain close on those dimensions:
 That makes a single bad high-contribution hidden column unlikely; the next
 target is full-row accumulated numeric drift, especially reductions that are
 not covered by sparse samples.
+The full-row layer-3 follow-up confirms that direction. The dumped
+4,096-column PTO final-norm row has small distributed drift versus Hugging
+Face (`mean_abs_hidden_delta=0.007585`, `p99=0.028655`,
+`max_abs_hidden_delta=0.331558`), but the aggregate effect on the close
+token-229-minus-token-58 boundary is `-0.041158`: PTO scores the boundary at
+`-0.010063`, while Hugging Face scores it at `0.031095`. The blocker is now a
+row-wide accumulated numeric drift, not a missing final-norm row, logits
+projection failure, or one isolated high-impact hidden column.
 
 ## Current Evidence
 
@@ -245,6 +253,14 @@ Recent raw A100 evidence stays under `tmp/`:
   `status=pass`, `max_abs_hidden_delta=0.266905`,
   `max_abs_contribution_delta=0.008797`, and matching prior PTO first-512
   top-k `[10, 167, 376, 475, 58]`.
+- `tmp/cuda-backend/qwen-prefill-layer3-mpk-1step-2026-06-04-model-equivalent-full-row/`
+  records the opt-in full-row layer-3 final-norm dump and Hugging Face
+  comparison. The PTO runner reports `final_norm.row_values` with 4,096
+  columns and unchanged first-512 top-k `[10, 167, 376, 475, 58]`.
+  `pto-hf-layer3-full-row-comparison.json` reports `status=pass`,
+  `mean_abs_hidden_delta=0.007585`, `p99=0.028655`,
+  `max_abs_hidden_delta=0.331558`, and
+  `token_229_minus_58.hidden_delta_contribution_sum=-0.041158`.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

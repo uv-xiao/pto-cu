@@ -82,6 +82,7 @@ def run_resource_backed_execution(
     logits_active_cols: str | int | None = None,
     projection_active_cols: str | int | None = None,
     activation_sample_columns: str | None = None,
+    activation_row_dump_descriptor_ids: str | None = None,
     numeric_task_mode: str = "diagnostic",
     prefill_prompt: bool = False,
 ) -> dict[str, Any]:
@@ -123,6 +124,9 @@ def run_resource_backed_execution(
     selected_activation_columns = parse_activation_sample_columns(
         activation_sample_columns,
     )
+    activation_row_dump_ids = parse_activation_row_dump_descriptor_ids(
+        activation_row_dump_descriptor_ids,
+    )
     selected_plans = select_workload_plans(plans, workload_ids)
     if not selected_plans:
         return {
@@ -158,6 +162,7 @@ def run_resource_backed_execution(
                 logits_check_policy=logits_check_policy,
                 numeric_task_mode=numeric_task_mode,
                 activation_sample_columns=selected_activation_columns,
+                activation_row_dump_descriptor_ids=activation_row_dump_ids,
                 prefill_prompt=prefill_prompt,
                 scheduler_blocks=scheduler_blocks,
                 block_dim=64,
@@ -227,6 +232,17 @@ def parse_activation_sample_columns(value: str | None) -> list[int] | None:
             continue
         columns.append(max(0, int(item)))
     return columns or None
+
+
+def parse_activation_row_dump_descriptor_ids(value: str | None) -> set[str] | None:
+    if value is None:
+        return None
+    descriptor_ids = {
+        item.strip()
+        for item in str(value).split(",")
+        if item.strip()
+    }
+    return descriptor_ids or None
 
 
 def first_layer_with_logits_descriptors(
@@ -302,6 +318,7 @@ def run_workload(
     logits_check_policy: str,
     numeric_task_mode: str,
     activation_sample_columns: list[int] | None = None,
+    activation_row_dump_descriptor_ids: set[str] | None = None,
     prefill_prompt: bool = False,
     scheduler_blocks: int = 1,
     block_dim: int = 64,
@@ -381,6 +398,9 @@ def run_workload(
                     prompt_stride=plan.get("runtime_prompt_tokens"),
                     token_fields=token_fields,
                     activation_sample_columns=activation_sample_columns,
+                    activation_row_dump_descriptor_ids=(
+                        activation_row_dump_descriptor_ids
+                    ),
                 )
             )
 
@@ -424,6 +444,9 @@ def run_workload(
                 if decode_packet is readout_packet
                 else 0,
                 activation_sample_columns=activation_sample_columns,
+                activation_row_dump_descriptor_ids=(
+                    activation_row_dump_descriptor_ids
+                ),
             )
         )
     return build_workload_result(
@@ -459,6 +482,7 @@ def run_packet_once(
     task_policy: str = "full_selected_dag",
     packet_index_offset: int = 0,
     activation_sample_columns: list[int] | None = None,
+    activation_row_dump_descriptor_ids: set[str] | None = None,
 ) -> dict[str, Any]:
     rope_table_refresh = refresh_rope_tables_for_decode_position(
         session.runtime,
@@ -555,6 +579,7 @@ def run_packet_once(
             descriptors,
             packet_index_offset=packet_index_offset,
             selected_columns=activation_sample_columns,
+            row_dump_descriptor_ids=activation_row_dump_descriptor_ids,
         ),
         "logits_summary": logits_summary,
         "decode_feedback": decode_feedback,
