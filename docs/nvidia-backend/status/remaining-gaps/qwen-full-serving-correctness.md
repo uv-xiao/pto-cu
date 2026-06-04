@@ -135,6 +135,11 @@ returns `[10, 167, 376, 475, 58]`, while Hugging Face returns
 Face token `229` both sit at `5.5`, so the remaining blocker is a close
 ranking/tie boundary or upstream hidden drift rather than a raw logits-output
 dtype mismatch.
+The MLP activation follow-up then rounds `silu(gate_proj) * up_proj` to the
+bf16 tensor boundary before `down_proj`. That moves PTO token `58` from `5.5`
+to the Hugging Face value `5.46875`, while preserving a passing diagnostic
+logits reference. Full layer-3 top-k still remains open because PTO does not
+yet surface Hugging Face token `229` in the first-512 top five.
 
 ## Current Evidence
 
@@ -345,6 +350,16 @@ Recent raw A100 evidence stays under `tmp/`:
   `[10, 167, 376, 475, 58]`; the Hugging Face replay remains
   `[10, 167, 376, 475, 229]`, with PTO token `58` and Hugging Face token
   `229` tied at `5.5` after bf16 rounding.
+- `tmp/cuda-backend/qwen-prefill-layer3-mpk-1step-2026-06-04-mlp-gate-bf16-boundary/`
+  records the next runtime slice after rounding the MLP gate/up activation
+  product to the bf16 tensor boundary before the down projection. The runner
+  reports `resource_backed_execution.status=pass`, zero scheduler errors, and
+  diagnostic logits reference `status=pass` with `max_abs_error=0.0`. First-512
+  top-k remains `[10, 167, 376, 475, 58]`, but PTO token `58` moves from
+  `5.5` to `5.46875`, matching the prior Hugging Face selected-logit probe
+  for token `58`. Hugging Face top-k remains
+  `[10, 167, 376, 475, 229]`, so the next blocker is token `229` or another
+  upstream rank-boundary drift.
 - `tmp/cuda-backend/qwen-full-model-reference-mpk-1step-2026-06-03/`
   records the current Hugging Face comparison failure.
 - `tmp/cuda-backend/qwen-attention-dot-product-first-layer-2026-06-03/`

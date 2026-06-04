@@ -794,7 +794,8 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
             pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f);
         const float up_value =
             pto_cuda_linear_arg_f32(task, 1U, row, col, 0.0f);
-        task->out[i] = pto_cuda_silu(gate_value) * up_value;
+        task->out[i] = pto_cuda_round_to_bf16_f32(
+            pto_cuda_silu(gate_value) * up_value);
     } else {
         task->out[i] = 0.0f;
     }
@@ -803,7 +804,8 @@ if (task->cols > 0U && task->inner > 0U && task->tensor_arg_count >= 2U &&
         pto_cuda_tensor_arg_f32(task, 0U, i & 3U, task->a[i]);
     const float up_value =
         pto_cuda_tensor_arg_f32(task, 1U, i & 3U, task->a[i]);
-    task->out[i] = pto_cuda_silu(gate_value) * up_value;
+    task->out[i] = pto_cuda_round_to_bf16_f32(
+        pto_cuda_silu(gate_value) * up_value);
 }
 """,
         },

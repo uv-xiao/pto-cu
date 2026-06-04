@@ -511,7 +511,11 @@ def test_generated_source_contains_qwen_unit_math_kernels():
     assert "qwen_decode_attention_dot_product_source" in manifest[
         "implemented_contracts"
     ]
-    assert "task->out[i] = pto_cuda_silu(gate_value) * up_value;" in full_source
+    compact_source = " ".join(full_source.split())
+    assert (
+        "task->out[i] = pto_cuda_round_to_bf16_f32( "
+        "pto_cuda_silu(gate_value) * up_value);"
+    ) in compact_source
     assert "task->out[j] = pto_cuda_linear_arg_f32(task, 0U, row, col, 0.0f)" in (
         full_source
     )
