@@ -89,6 +89,8 @@ def pto_persistent_device_commands(
                     "--resource-backed-prefill-prompt",
                     "--resource-backed-workload",
                     workload_id,
+                    "--resource-backed-batch-size",
+                    str(batch_size),
                     "--resource-backed-decode-steps",
                     str(decode_tokens),
                     "--resource-backed-repeat-runs",

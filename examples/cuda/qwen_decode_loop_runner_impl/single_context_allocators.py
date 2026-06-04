@@ -50,21 +50,93 @@ def selected_workload_ids(workload_ids: list[str] | None) -> set[str] | None:
     return {str(item) for item in workload_ids}
 
 
+def selected_batch_size(batch_size: int | None) -> int | None:
+    if batch_size is None:
+        return None
+    selected = int(batch_size)
+    if selected <= 0:
+        raise ValueError("batch_size must be positive")
+    return selected
+
+
+def resized_buffer_descriptor(
+    descriptor: dict[str, Any],
+    *,
+    batch_size: int,
+) -> dict[str, Any]:
+    shape = [int(item) for item in descriptor.get("shape", [])]
+    if not shape:
+        return descriptor
+    resized_shape = [batch_size, *shape[1:]]
+    element_count = 1
+    for dim in resized_shape:
+        element_count *= dim
+    return {
+        **descriptor,
+        "shape": resized_shape,
+        "element_count": element_count,
+        "byte_count": element_count * 4,
+    }
+
+
+def resized_workload_record(
+    record: dict[str, Any],
+    *,
+    batch_size: int,
+) -> dict[str, Any]:
+    batch_sizes = record.get("batch_sizes")
+    if (
+        isinstance(batch_sizes, list)
+        and batch_size not in [int(item) for item in batch_sizes]
+    ):
+        raise ValueError(
+            f"batch_size {batch_size} is not in workload "
+            f"{record.get('workload_id')} batch_sizes"
+        )
+    resized = {
+        **record,
+        "batch_sizes": [batch_size],
+        "scalar_bindings": {
+            **record.get("scalar_bindings", {}),
+            "max_batch_size": batch_size,
+        },
+    }
+    for name in ("input_ids", "attention_mask", "output_ids"):
+        for suffix in ("_buffer", "_device_buffer"):
+            key = f"{name}{suffix}"
+            if key in resized:
+                resized[key] = resized_buffer_descriptor(
+                    resized[key],
+                    batch_size=batch_size,
+                )
+    return resized
+
+
 def filter_workload_records(
     payload: dict[str, Any],
     *,
     workload_ids: list[str] | None,
+    batch_size: int | None = None,
 ) -> dict[str, Any]:
     selected = selected_workload_ids(workload_ids)
-    if selected is None:
+    batch = selected_batch_size(batch_size)
+    if selected is None and batch is None:
         return payload
+    records = payload.get("workload_records", [])
+    if selected is not None:
+        records = [
+            item
+            for item in records
+            if item.get("workload_id") in selected
+        ]
+    if batch is not None:
+        records = [
+            resized_workload_record(item, batch_size=batch)
+            for item in records
+        ]
     return {
         **payload,
-        "workload_records": [
-            item
-            for item in payload.get("workload_records", [])
-            if item.get("workload_id") in selected
-        ],
+        "workload_records": records,
     }
 
 
@@ -78,10 +150,12 @@ def open_token_table(
     device: int,
     allocations: list[tuple[str, int]],
     workload_ids: list[str] | None = None,
+    batch_size: int | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     token_binding = filter_workload_records(
         build_token_binding(mode=mode, cache_dir=cache_dir),
         workload_ids=workload_ids,
+        batch_size=batch_size,
     )
     runtime_binding = filter_workload_records(
         token_buffers.load_runtime_input_binding(
@@ -89,6 +163,7 @@ def open_token_table(
             cache_dir=cache_dir,
         ),
         workload_ids=workload_ids,
+        batch_size=batch_size,
     )
     records = {
         item["workload_id"]: item for item in token_binding.get("workload_records", [])
@@ -129,6 +204,7 @@ def open_kv_table(
     device: int,
     allocations: list[tuple[str, int]],
     workload_ids: list[str] | None = None,
+    batch_size: int | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     kv_bindings, pointers = kv_binding_records(
         lifecycle_plan=load_lifecycle_plan(),
@@ -136,12 +212,20 @@ def open_kv_table(
         pointer_stride=0,
     )
     selected = selected_workload_ids(workload_ids)
+    batch = selected_batch_size(batch_size)
     if selected is not None:
         kv_bindings = [
             item for item in kv_bindings if item.get("workload_id") in selected
         ]
         pointers = [
             item for item in pointers if item.get("workload_id") in selected
+        ]
+    if batch is not None:
+        kv_bindings = [
+            item for item in kv_bindings if int(item.get("batch_size", 0)) == batch
+        ]
+        pointers = [
+            item for item in pointers if int(item.get("batch_size", 0)) == batch
         ]
     for pointer in pointers:
         ptr = runtime.device_malloc_ctx(ctx, int(pointer["byte_count"]))

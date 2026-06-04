@@ -262,8 +262,8 @@ def test_committed_plan_history_archives_latest_runtime_focus():
 
     plan_history.validate_plan_history(payload)
 
-    assert payload["latest_reviewed_commit"] == "5cb3caa8"
-    assert payload["recent_slices"][0]["commit"] == "5cb3caa8"
+    assert payload["latest_reviewed_commit"] == "3782b0e6"
+    assert payload["recent_slices"][0]["commit"] == "3782b0e6"
     assert payload["recent_slices"][0]["focus"] == "feature_or_runtime"
-    assert "token 229" in payload["summary"]["reflection"]
-    assert "token 58" in payload["summary"]["reflection"]
+    assert "resource-backed runner" in payload["summary"]["reflection"]
+    assert "requested workload and batch" in payload["summary"]["reflection"]

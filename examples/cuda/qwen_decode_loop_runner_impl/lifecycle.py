@@ -85,6 +85,7 @@ def build_decode_loop_runner(
     resource_backed_repeat_runs: int = 1,
     resource_backed_decode_steps: int | None = None,
     resource_backed_workloads: list[str] | None = None,
+    resource_backed_batch_size: int | None = None,
     resource_backed_max_tasks: int | None = None,
     resource_backed_task_selection: str = "prefix",
     resource_backed_layer_count: int | None = None,
@@ -107,6 +108,7 @@ def build_decode_loop_runner(
             device=device,
             host_runtime=host_runtime,
             workload_ids=resource_backed_workloads,
+            batch_size=resource_backed_batch_size,
         )
         token_lifecycle = session.token_lifecycle()
         kv_lifecycle = session.kv_lifecycle()

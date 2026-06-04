@@ -6056,6 +6056,7 @@ def test_paper_serving_command_plan_generates_policy_commands(tmp_path):
         and "--run-resource-backed-smoke" in command["command"]
         and "--resource-backed-prefill-prompt" in command["command"]
         and "--resource-backed-workload mpk_offline_decode" in command["command"]
+        and "--resource-backed-batch-size 8" in command["command"]
         and "--resource-backed-decode-steps 1024" in command["command"]
         for command in pto_mpk["commands"]
     )

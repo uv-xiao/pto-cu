@@ -75,6 +75,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resource-backed-repeat-runs", type=int, default=1)
     parser.add_argument("--resource-backed-decode-steps", type=int)
     parser.add_argument("--resource-backed-workload", action="append")
+    parser.add_argument("--resource-backed-batch-size", type=int)
     parser.add_argument("--resource-backed-max-tasks", type=int)
     parser.add_argument(
         "--resource-backed-task-selection",
@@ -195,6 +196,7 @@ def main() -> None:
         resource_backed_repeat_runs=args.resource_backed_repeat_runs,
         resource_backed_decode_steps=args.resource_backed_decode_steps,
         resource_backed_workloads=args.resource_backed_workload,
+        resource_backed_batch_size=args.resource_backed_batch_size,
         resource_backed_max_tasks=args.resource_backed_max_tasks,
         resource_backed_task_selection=args.resource_backed_task_selection,
         resource_backed_layer_count=args.resource_backed_layer_count,

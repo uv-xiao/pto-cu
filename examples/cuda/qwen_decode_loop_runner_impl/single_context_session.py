@@ -30,12 +30,14 @@ class SingleContextLiveSession:
         device: int,
         host_runtime: Path | None,
         workload_ids: list[str] | None = None,
+        batch_size: int | None = None,
     ) -> None:
         self.mode = mode
         self.cache_dir = cache_dir
         self.device = device
         self.host_runtime = host_runtime or DEFAULT_HOST_RUNTIME
         self.workload_ids = workload_ids
+        self.batch_size = batch_size
         self.runtime: Any | None = None
         self.ctx: Any | None = None
         self.allocations: list[tuple[str, int]] = []
@@ -77,6 +79,7 @@ class SingleContextLiveSession:
             device=self.device,
             allocations=self.allocations,
             workload_ids=self.workload_ids,
+            batch_size=self.batch_size,
         )
         self.kv_bindings, self.kv_table = open_kv_table(
             runtime=self.runtime,
@@ -85,6 +88,7 @@ class SingleContextLiveSession:
             device=self.device,
             allocations=self.allocations,
             workload_ids=self.workload_ids,
+            batch_size=self.batch_size,
         )
         (
             self.binding_source,
@@ -196,6 +200,7 @@ def open_single_context_live_session(
     device: int,
     host_runtime: Path | None,
     workload_ids: list[str] | None = None,
+    batch_size: int | None = None,
 ) -> SingleContextLiveSession:
     session = SingleContextLiveSession(
         mode=mode,
@@ -203,6 +208,7 @@ def open_single_context_live_session(
         device=device,
         host_runtime=host_runtime,
         workload_ids=workload_ids,
+        batch_size=batch_size,
     )
     session.open()
     return session
