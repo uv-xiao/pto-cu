@@ -356,6 +356,13 @@ def run_workload(
     readout_packet = None
     readout_final_callable = None
     readout_index_offset = 0
+    stop_reason = None
+    start_time = monotonic()
+    execution_count = resource_backed_execution_count(
+        plan=plan,
+        repeat_runs=repeat_runs,
+        decode_step_limit=decode_step_limit,
+    )
     if prefill_prompt:
         prefill_task_policy = "omit_final_norm_and_logits_readout"
         prefill_items = prompt_prefill_descriptors(descriptors)
@@ -418,16 +425,23 @@ def run_workload(
                 executed_decode_steps=0,
                 executed_prompt_positions=len(prefill_results),
             )
+            if time_budget_seconds is not None:
+                elapsed = monotonic() - start_time
+                if elapsed >= float(time_budget_seconds):
+                    stop_reason = {
+                        "status": "time_budget_exhausted",
+                        "phase": "prompt_prefill",
+                        "time_budget_seconds": float(time_budget_seconds),
+                        "elapsed_seconds": elapsed,
+                        "executed_prompt_positions": len(prefill_results),
+                        "executed_decode_steps": 0,
+                        "planned_execution_count": execution_count,
+                    }
+                    break
 
-    execution_count = resource_backed_execution_count(
-        plan=plan,
-        repeat_runs=repeat_runs,
-        decode_step_limit=decode_step_limit,
-    )
     repeat_results = []
-    stop_reason = None
-    start_time = monotonic()
-    for repeat_index in range(execution_count):
+    decode_range = range(0 if stop_reason is not None else execution_count)
+    for repeat_index in decode_range:
         step_index = repeat_index if decode_step_limit is not None else None
         decode_position = int(plan["first_decode_position"]) + int(step_index or 0)
         decode_packet = packet
@@ -477,8 +491,10 @@ def run_workload(
             if elapsed >= float(time_budget_seconds):
                 stop_reason = {
                     "status": "time_budget_exhausted",
+                    "phase": "decode",
                     "time_budget_seconds": float(time_budget_seconds),
                     "elapsed_seconds": elapsed,
+                    "executed_prompt_positions": len(prefill_results),
                     "executed_decode_steps": len(repeat_results),
                     "planned_execution_count": execution_count,
                 }

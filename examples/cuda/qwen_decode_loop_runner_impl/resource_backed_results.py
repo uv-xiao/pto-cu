@@ -155,7 +155,7 @@ def build_workload_result(
     stop_reason: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     prefill_results = prefill_results or []
-    last = repeat_results[-1]
+    last = repeat_results[-1] if repeat_results else prefill_results[-1]
     passed = (
         all_success(prefill_results)
         and all_success(repeat_results)
