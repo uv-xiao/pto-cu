@@ -34,6 +34,12 @@ resource session, runner-owned token, KV-cache, resident-weight, and
 activation-workspace owners, Qwen submission descriptors, graph materialization,
 launch-packet preflight, bridge contracts, descriptor smoke execution, and a
 bounded resource-backed run covering task function ids 7100 through 7109.
+When `--run-resource-backed-smoke` and `--output-json path/to/run.json` are
+used together, the runner also refreshes `path/to/run.progress.json` after
+each resource-backed prompt-prefill or decode packet. The sidecar records the
+latest workload id, phase, executed decode-step count, scheduler counters, and
+packet timing so long paper-policy runs leave progress evidence before the
+final JSON is written.
 
 The artifact composes token pointer, KV-cache, resident-weight, and activation
 workspace owners into a decode-loop submission plan. It records owner

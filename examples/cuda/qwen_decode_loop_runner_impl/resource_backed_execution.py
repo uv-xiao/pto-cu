@@ -85,6 +85,7 @@ def run_resource_backed_execution(
     activation_row_dump_descriptor_ids: str | None = None,
     numeric_task_mode: str = "diagnostic",
     prefill_prompt: bool = False,
+    progress_callback: Any | None = None,
 ) -> dict[str, Any]:
     runtime = session.runtime
     ctx = session.ctx
@@ -166,6 +167,7 @@ def run_resource_backed_execution(
                 prefill_prompt=prefill_prompt,
                 scheduler_blocks=scheduler_blocks,
                 block_dim=64,
+                progress_callback=progress_callback,
             )
             for plan in selected_plans
         ]
@@ -322,6 +324,7 @@ def run_workload(
     prefill_prompt: bool = False,
     scheduler_blocks: int = 1,
     block_dim: int = 64,
+    progress_callback: Any | None = None,
 ) -> dict[str, Any]:
     workspace = workspace_for_workload(
         activation_workspace=activation_workspace,
@@ -382,26 +385,33 @@ def run_workload(
             readout_final_callable = readout_items[-1].get("callable")
         prefill_count = max(int(plan.get("active_prompt_tokens", 0)), 0)
         for prefill_position in range(prefill_count):
-            prefill_results.append(
-                run_packet_once(
-                    session=session,
-                    packet=prefill_packet,
-                    descriptors=prefill_items,
-                    workspace=workspace,
-                    final_callable=prefill_final_callable,
-                    logits_check_policy=logits_check_policy,
-                    scheduler_blocks=scheduler_blocks,
-                    block_dim=block_dim,
-                    decode_position=prefill_position,
-                    decode_step_index=None,
-                    phase="prompt_prefill",
-                    prompt_stride=plan.get("runtime_prompt_tokens"),
-                    token_fields=token_fields,
-                    activation_sample_columns=activation_sample_columns,
-                    activation_row_dump_descriptor_ids=(
-                        activation_row_dump_descriptor_ids
-                    ),
-                )
+            prefill_result = run_packet_once(
+                session=session,
+                packet=prefill_packet,
+                descriptors=prefill_items,
+                workspace=workspace,
+                final_callable=prefill_final_callable,
+                logits_check_policy=logits_check_policy,
+                scheduler_blocks=scheduler_blocks,
+                block_dim=block_dim,
+                decode_position=prefill_position,
+                decode_step_index=None,
+                phase="prompt_prefill",
+                prompt_stride=plan.get("runtime_prompt_tokens"),
+                token_fields=token_fields,
+                activation_sample_columns=activation_sample_columns,
+                activation_row_dump_descriptor_ids=(
+                    activation_row_dump_descriptor_ids
+                ),
+            )
+            prefill_results.append(prefill_result)
+            emit_progress(
+                progress_callback,
+                plan=plan,
+                result=prefill_result,
+                execution_count=prefill_count,
+                executed_decode_steps=0,
+                executed_prompt_positions=len(prefill_results),
             )
 
     execution_count = resource_backed_execution_count(
@@ -420,34 +430,40 @@ def run_workload(
             decode_packet = readout_packet
             decode_final_callable = readout_final_callable
             decode_task_policy = "prefill_reused_hidden_readout_only"
-        repeat_results.append(
-            run_packet_once(
-                session=session,
-                packet=decode_packet,
-                descriptors=readout_items
-                if decode_packet is readout_packet
-                else descriptors,
-                workspace=workspace,
-                final_callable=decode_final_callable,
-                logits_check_policy=logits_check_policy,
-                scheduler_blocks=scheduler_blocks,
-                block_dim=block_dim,
-                decode_position=decode_position,
-                decode_step_index=step_index,
-                phase="decode",
-                prompt_stride=plan.get("runtime_prompt_tokens"),
-                token_fields=token_fields,
-                repeat_index=repeat_index,
-                execution_count=execution_count,
-                task_policy=decode_task_policy,
-                packet_index_offset=readout_index_offset
-                if decode_packet is readout_packet
-                else 0,
-                activation_sample_columns=activation_sample_columns,
-                activation_row_dump_descriptor_ids=(
-                    activation_row_dump_descriptor_ids
-                ),
-            )
+        repeat_result = run_packet_once(
+            session=session,
+            packet=decode_packet,
+            descriptors=readout_items
+            if decode_packet is readout_packet
+            else descriptors,
+            workspace=workspace,
+            final_callable=decode_final_callable,
+            logits_check_policy=logits_check_policy,
+            scheduler_blocks=scheduler_blocks,
+            block_dim=block_dim,
+            decode_position=decode_position,
+            decode_step_index=step_index,
+            phase="decode",
+            prompt_stride=plan.get("runtime_prompt_tokens"),
+            token_fields=token_fields,
+            repeat_index=repeat_index,
+            execution_count=execution_count,
+            task_policy=decode_task_policy,
+            packet_index_offset=readout_index_offset
+            if decode_packet is readout_packet
+            else 0,
+            activation_sample_columns=activation_sample_columns,
+            activation_row_dump_descriptor_ids=(
+                activation_row_dump_descriptor_ids
+            ),
+        )
+        repeat_results.append(repeat_result)
+        emit_progress(
+            progress_callback,
+            plan=plan,
+            result=repeat_result,
+            execution_count=execution_count,
+            executed_decode_steps=len(repeat_results),
         )
     return build_workload_result(
         plan=plan,
@@ -461,6 +477,38 @@ def run_workload(
         prefill_task_policy=prefill_task_policy,
         prefill_results=prefill_results,
     )
+
+
+def emit_progress(
+    progress_callback: Any | None,
+    *,
+    plan: dict[str, Any],
+    result: dict[str, Any],
+    execution_count: int,
+    executed_decode_steps: int,
+    executed_prompt_positions: int | None = None,
+) -> None:
+    if progress_callback is None:
+        return
+    event = {
+        "schema_version": 1,
+        "kind": "pto_qwen_resource_backed_progress",
+        "status": "running",
+        "workload_id": plan["workload_id"],
+        "phase": result["phase"],
+        "planned_decode_steps": int(plan["decode_steps"]),
+        "execution_count": int(execution_count),
+        "executed_decode_steps": int(executed_decode_steps),
+        "repeat_index": result["repeat_index"],
+        "decode_step_index": result["decode_step_index"],
+        "decode_position": result["decode_position"],
+        "last_step_status": result["status"],
+        "scheduler_counters": result["scheduler_counters"],
+        "timing_ns": result["timing_ns"],
+    }
+    if executed_prompt_positions is not None:
+        event["executed_prompt_positions"] = int(executed_prompt_positions)
+    progress_callback(event)
 
 
 def run_packet_once(

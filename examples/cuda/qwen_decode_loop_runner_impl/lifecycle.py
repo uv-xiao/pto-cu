@@ -97,6 +97,7 @@ def build_decode_loop_runner(
     resource_backed_activation_row_dump_descriptor_ids: str | None = None,
     resource_backed_numeric_task_mode: str = "diagnostic",
     resource_backed_prefill_prompt: bool = False,
+    resource_backed_progress_callback: Any | None = None,
     arch: str = "compute_80",
 ) -> dict[str, Any]:
     session_payload: dict[str, Any] | None = None
@@ -213,6 +214,7 @@ def build_decode_loop_runner(
                 ),
                 numeric_task_mode=resource_backed_numeric_task_mode,
                 prefill_prompt=resource_backed_prefill_prompt,
+                progress_callback=resource_backed_progress_callback,
             )
             if session is not None
             else {

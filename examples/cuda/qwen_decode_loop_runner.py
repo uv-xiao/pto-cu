@@ -178,6 +178,23 @@ def load_submission_smoke_payload(args: argparse.Namespace) -> dict | None:
     )
 
 
+def progress_sidecar_path(path: Path) -> Path:
+    if path.suffix == ".json":
+        return path.with_name(f"{path.stem}.progress.json")
+    return path.with_suffix(f"{path.suffix}.progress.json")
+
+
+def make_progress_writer(args: argparse.Namespace):
+    if not args.output_json or not args.run_resource_backed_smoke:
+        return None
+    progress_path = progress_sidecar_path(args.output_json)
+
+    def write_progress(event: dict) -> None:
+        write_json(progress_path, event)
+
+    return write_progress
+
+
 def main() -> None:
     args = parse_args()
     payload = build_decode_loop_runner(
@@ -216,6 +233,7 @@ def main() -> None:
         ),
         resource_backed_numeric_task_mode=args.resource_backed_numeric_task_mode,
         resource_backed_prefill_prompt=args.resource_backed_prefill_prompt,
+        resource_backed_progress_callback=make_progress_writer(args),
         arch=args.arch,
     )
     if args.output_json:
