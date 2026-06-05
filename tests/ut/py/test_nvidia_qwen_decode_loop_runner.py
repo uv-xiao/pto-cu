@@ -568,3 +568,79 @@ def test_resource_backed_workload_reports_decode_progress(monkeypatch):
         "scheduler_counters": {"completed_count": 1, "error_count": 0},
         "timing_ns": {"host_wall": 10, "device_wall": 9},
     }
+
+
+def test_resource_backed_workload_stops_on_time_budget(monkeypatch):
+    load_decode_loop_runner_module()
+    from qwen_decode_loop_runner_impl import resource_backed_execution
+
+    now_values = iter([100.0, 101.5])
+
+    monkeypatch.setattr(
+        resource_backed_execution,
+        "monotonic",
+        lambda: next(now_values),
+    )
+    monkeypatch.setattr(
+        resource_backed_execution,
+        "workspace_for_workload",
+        lambda **_kwargs: {"status": "ready"},
+    )
+    monkeypatch.setattr(
+        resource_backed_execution,
+        "keyed_fields",
+        lambda fields: {item["name"]: item for item in fields},
+    )
+    monkeypatch.setattr(
+        resource_backed_execution,
+        "build_host_task_packet",
+        lambda **_kwargs: ["task"],
+    )
+    monkeypatch.setattr(
+        resource_backed_execution,
+        "run_packet_once",
+        lambda **kwargs: {
+            "repeat_index": kwargs["repeat_index"],
+            "decode_step_index": kwargs["decode_step_index"],
+            "decode_position": kwargs["decode_position"],
+            "phase": kwargs["phase"],
+            "status": "pass",
+            "run_prepared_status": 0,
+            "scheduler_counters": {"completed_count": 1, "error_count": 0},
+            "output_sample": [],
+            "logits_summary": {
+                "coverage": "not_checked",
+                "diagnostic_reference": {"status": "not_checked"},
+            },
+            "decode_feedback": {"status": "not_requested"},
+            "timing_ns": {"host_wall": 20, "device_wall": 19},
+        },
+    )
+
+    result = resource_backed_execution.run_workload(
+        session=object(),
+        plan={
+            "workload_id": "mpk_offline_decode",
+            "decode_steps": 1024,
+            "first_decode_position": 17,
+            "token_pointer_fields": [],
+            "kv_pointer_fields": {},
+        },
+        descriptors=[{"id": "logits", "callable": "qwen_logits"}],
+        activation_workspace={},
+        repeat_runs=3,
+        decode_step_limit=4,
+        logits_check_policy="final_step",
+        numeric_task_mode="model_equivalent",
+        time_budget_seconds=1.0,
+    )
+
+    assert result["status"] == "partial"
+    assert result["executed_decode_steps"] == 1
+    assert result["stop_reason"] == {
+        "status": "time_budget_exhausted",
+        "time_budget_seconds": 1.0,
+        "elapsed_seconds": 1.5,
+        "executed_decode_steps": 1,
+        "planned_execution_count": 4,
+    }

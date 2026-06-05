@@ -74,6 +74,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-resource-backed-smoke", action="store_true")
     parser.add_argument("--resource-backed-repeat-runs", type=int, default=1)
     parser.add_argument("--resource-backed-decode-steps", type=int)
+    parser.add_argument("--resource-backed-time-budget-seconds", type=float)
     parser.add_argument("--resource-backed-workload", action="append")
     parser.add_argument("--resource-backed-batch-size", type=int)
     parser.add_argument("--resource-backed-max-tasks", type=int)
@@ -212,6 +213,9 @@ def main() -> None:
         run_resource_backed_smoke=args.run_resource_backed_smoke,
         resource_backed_repeat_runs=args.resource_backed_repeat_runs,
         resource_backed_decode_steps=args.resource_backed_decode_steps,
+        resource_backed_time_budget_seconds=(
+            args.resource_backed_time_budget_seconds
+        ),
         resource_backed_workloads=args.resource_backed_workload,
         resource_backed_batch_size=args.resource_backed_batch_size,
         resource_backed_max_tasks=args.resource_backed_max_tasks,

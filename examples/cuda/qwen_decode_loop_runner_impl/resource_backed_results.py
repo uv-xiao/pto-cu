@@ -55,11 +55,12 @@ def build_execution_result(
     projection_active_cols_policy: dict[str, Any],
     numeric_task_mode: str,
     prefill_prompt: bool,
+    time_budget_seconds: float | None,
     repo_relative,
 ) -> dict[str, Any]:
-    passed = workload_results and all(
-        item["status"] == "pass" for item in workload_results
-    )
+    statuses = {item.get("status") for item in workload_results}
+    passed = bool(workload_results) and statuses == {"pass"}
+    partial = bool(workload_results) and "partial" in statuses
     decode_step_execution = decode_step_execution_summary(
         workload_results,
         decode_step_limit=decode_step_limit,
@@ -67,7 +68,7 @@ def build_execution_result(
     return {
         "schema_version": 1,
         "kind": "pto_qwen_resource_backed_execution",
-        "status": "pass" if passed else "fail",
+        "status": "pass" if passed else "partial" if partial else "fail",
         "runtime": "cuda/persistent_device",
         "serving_coverage": "diagnostic_resource_backed_qwen_dag",
         "device": {
@@ -81,6 +82,7 @@ def build_execution_result(
             "prepared_callable_reuse": "single_prepare_multiple_run_prepared",
             "repeat_runs_per_workload": max(1, int(repeat_runs)),
             "decode_step_limit": decode_step_limit,
+            "time_budget_seconds": time_budget_seconds,
             "workload_filter": workload_ids or "all",
             "max_task_count": max_task_count,
             "task_selection": task_selection,
@@ -150,6 +152,7 @@ def build_workload_result(
     prefill_packet_len: int = 0,
     prefill_task_policy: str = "not_requested",
     prefill_results: list[dict[str, Any]] | None = None,
+    stop_reason: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     prefill_results = prefill_results or []
     last = repeat_results[-1]
@@ -160,7 +163,9 @@ def build_workload_result(
     )
     return {
         "workload_id": plan["workload_id"],
-        "status": "pass" if passed else "fail",
+        "status": (
+            "partial" if stop_reason is not None else "pass" if passed else "fail"
+        ),
         "run_prepared_status": int(last["run_prepared_status"]),
         "repeat_runs": max(1, int(requested_repeat_runs)),
         "planned_decode_steps": int(plan["decode_steps"]),
@@ -197,6 +202,7 @@ def build_workload_result(
         ),
         "decode_feedback": feedback_summary(repeat_results),
         "timing_ns": total_timing(repeat_results),
+        "stop_reason": stop_reason or {"status": "not_requested"},
     }
 
 

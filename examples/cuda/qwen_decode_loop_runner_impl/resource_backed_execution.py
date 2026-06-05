@@ -5,6 +5,7 @@ from __future__ import annotations
 import ctypes
 from pathlib import Path
 import re
+from time import monotonic
 from typing import Any
 
 from simpler_setup.cuda_callable_compiler import (
@@ -73,6 +74,7 @@ def run_resource_backed_execution(
     cache_root: Path | None,
     repeat_runs: int = 1,
     decode_step_limit: int | None = None,
+    time_budget_seconds: float | None = None,
     workload_ids: list[str] | None = None,
     max_task_count: int | None = None,
     task_selection: str = "prefix",
@@ -160,6 +162,7 @@ def run_resource_backed_execution(
                 activation_workspace=activation_workspace,
                 repeat_runs=repeat_runs,
                 decode_step_limit=decode_step_limit,
+                time_budget_seconds=time_budget_seconds,
                 logits_check_policy=logits_check_policy,
                 numeric_task_mode=numeric_task_mode,
                 activation_sample_columns=selected_activation_columns,
@@ -185,6 +188,7 @@ def run_resource_backed_execution(
         workload_results=workload_results,
         repeat_runs=repeat_runs,
         decode_step_limit=decode_step_limit,
+        time_budget_seconds=time_budget_seconds,
         workload_ids=workload_ids,
         max_task_count=max_task_count,
         task_selection=task_selection,
@@ -317,6 +321,7 @@ def run_workload(
     activation_workspace: dict[str, Any],
     repeat_runs: int,
     decode_step_limit: int | None,
+    time_budget_seconds: float | None = None,
     logits_check_policy: str,
     numeric_task_mode: str,
     activation_sample_columns: list[int] | None = None,
@@ -420,6 +425,8 @@ def run_workload(
         decode_step_limit=decode_step_limit,
     )
     repeat_results = []
+    stop_reason = None
+    start_time = monotonic()
     for repeat_index in range(execution_count):
         step_index = repeat_index if decode_step_limit is not None else None
         decode_position = int(plan["first_decode_position"]) + int(step_index or 0)
@@ -465,6 +472,17 @@ def run_workload(
             execution_count=execution_count,
             executed_decode_steps=len(repeat_results),
         )
+        if time_budget_seconds is not None:
+            elapsed = monotonic() - start_time
+            if elapsed >= float(time_budget_seconds):
+                stop_reason = {
+                    "status": "time_budget_exhausted",
+                    "time_budget_seconds": float(time_budget_seconds),
+                    "elapsed_seconds": elapsed,
+                    "executed_decode_steps": len(repeat_results),
+                    "planned_execution_count": execution_count,
+                }
+                break
     return build_workload_result(
         plan=plan,
         packet_len=len(packet),
@@ -476,6 +494,7 @@ def run_workload(
         prefill_packet_len=prefill_packet_len,
         prefill_task_policy=prefill_task_policy,
         prefill_results=prefill_results,
+        stop_reason=stop_reason,
     )
 
 

@@ -72,6 +72,9 @@ Use `--resource-backed-workload` to narrow the diagnostic to a single serving
 policy, and `--resource-backed-logits-check-policy final_step` to defer the
 logits-buffer readback until the last bounded decode step. This check policy
 does not change how many vocabulary columns the `qwen_logits` task computes.
+Use `--resource-backed-time-budget-seconds` for long paper-policy attempts
+that should stop after a completed packet and still write a final partial JSON
+artifact instead of relying on an outer shell timeout.
 By default, `qwen_logits.task_shape_fields.scalar1` controls the active
 diagnostic vocabulary window. Use `--resource-backed-logits-active-cols full`
 to request the descriptor's full `cols` extent for focused evaluation runs, or
