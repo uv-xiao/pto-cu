@@ -941,6 +941,58 @@ slice:
 Detailed 192K long-prompt response-contract evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_192k_long_prompt_response_contract_probe.md`.
 
+Fresh remote H200 256K long-prompt response-contract evidence from this
+slice:
+
+- The existing repo-owned long-prompt response-contract probe was reused
+  without a script change to raise the synthetic prompt budget to 256000
+  prompt tokens while preserving the same local-only server lifecycle and
+  review-safe response/accounting contract.
+- The remote source tree was refreshed with `--sync` during preflight from
+  local source commit `46e58b45b705501b0bab720ff6a59033093c5044`,
+  preserving the complete ignored artifact directory and `.venv-vllm-probe`.
+  Remote git metadata was not used as evidence after the sync.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`. The fresh pre-run selected-GPU memory snapshot
+  showed 141773 MiB free on GPU 1 and 116670 MiB free on GPU 7.
+- The fixed loopback port `28142` was checked as available before the run.
+- The passing boundary used `max_model_len=262144`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 120-minute outer timeout, a
+  2700-second readiness timeout, and an 1800-second request timeout.
+- The synthetic prompt targeted 256000 prompt tokens. Local tokenizer
+  accounting measured 256004 prompt tokens before sending the request.
+- The request contained 1675637 prompt characters and used `max_tokens=4`,
+  `temperature=0.0`, `top_p=1.0`, `seed=0`, `stream=false`, `echo=false`,
+  and `logprobs=false`.
+- The server started on `http://127.0.0.1:28142`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` with
+  `max_model_len=262144` from `/v1/models`, and accepted one
+  `/v1/completions` request.
+- The completion request returned HTTP 200 with exactly one response choice,
+  `finish_reason=length`, generated text length recorded as 23 characters,
+  and usage counts: `prompt_tokens=256004`, `completion_tokens=4`, and
+  `total_tokens=256008`.
+- vLLM 0.23.0 ran with Torch 2.11.0+cu130 and CUDA 13.0.
+- The probe recorded generated text length only. It did not record raw prompt
+  text, raw generated text, token identity, logprob values, or stop-token
+  behavior.
+- The probe cleanup passed and reported no remaining process-group PIDs. The
+  immediate post-run selected-GPU memory snapshot matched the pre-run baseline
+  for GPU 1 and GPU 7. Follow-up diagnostics found no listener, no owning
+  process for port 28142, `/health` connection refusal, no vLLM-like process,
+  and one loopback `TIME-WAIT` socket; binding with `SO_REUSEADDR` succeeded.
+- The run establishes local-only 256K long-prompt response-contract evidence
+  only; it is not generated-text correctness, tokenizer semantic correctness,
+  prompt semantic correctness, token identity, logprob, stop-token, latency,
+  throughput, production-readiness, broad determinism, or simpler-nv/vLLM
+  integration evidence.
+
+Detailed 256K long-prompt response-contract evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_256k_long_prompt_response_contract_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
@@ -954,7 +1006,8 @@ long-prompt response-contract probe, and one bounded 16K long-prompt
 same-shape warmup/follow-up probe, plus one bounded 32K long-prompt
 response-contract probe, plus one bounded 64K long-prompt response-contract
 probe, plus one bounded 128K long-prompt response-contract probe, plus one
-bounded 192K long-prompt response-contract probe:
+bounded 192K long-prompt response-contract probe, plus one bounded 256K
+long-prompt response-contract probe:
 
 ```text
 remote_h200_reachable: yes
@@ -982,6 +1035,8 @@ local_only_vllm_128k_long_prompt_response_contract: passed under recorded
   262144-token boundary
 local_only_vllm_192k_long_prompt_response_contract: passed under recorded
   262144-token boundary
+local_only_vllm_256k_long_prompt_response_contract: passed under recorded
+  262144-token boundary
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -999,6 +1054,7 @@ serving_readiness: bounded local-only response contract and warmup-shape
   probe, plus one bounded 32K long-prompt response-contract probe, plus one
   bounded 64K long-prompt response-contract probe, plus one bounded 128K
   long-prompt response-contract probe, plus one bounded 192K long-prompt
+  response-contract probe, plus one bounded 256K long-prompt
   response-contract probe; no correctness claims
 ```
 
@@ -1055,13 +1111,19 @@ near a 192K prompt-token budget under the recorded 262144-token vLLM server
 boundary, recording response structure and usage accounting without recording
 raw prompt or generated text.
 
+It has now also passed one local-only long-prompt response-contract request
+near a 256K prompt-token budget under the recorded 262144-token vLLM server
+boundary, recording response structure and usage accounting without recording
+raw prompt or generated text.
+
 ## Next Gate
 
 The next PR-sized gate can stay under the same local-only vLLM boundary and
-choose a near-boundary follow-up beyond the bounded 192K response-contract
-request only after preserving the request-plus-completion budget under
-`max_model_len=262144`, still without recording raw prompt text, recording
-generated text contents, or judging generated text.
+choose a follow-up for failure-mode characterization or repeated near-boundary
+response-contract confirmation only after preserving the
+request-plus-completion budget under `max_model_len=262144`, still without
+recording raw prompt text, recording generated text contents, or judging
+generated text.
 
 ## Non-Claims
 

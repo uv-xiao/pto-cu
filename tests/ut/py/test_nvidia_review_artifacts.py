@@ -165,6 +165,9 @@ def test_review_policy_changelog_and_examples_exist():
         in_progress_root / "vllm_remote_192k_long_prompt_response_contract_probe.md"
     ).is_file()
     assert (
+        in_progress_root / "vllm_remote_256k_long_prompt_response_contract_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
@@ -311,6 +314,45 @@ def test_192k_long_prompt_response_contract_evidence_is_review_safe():
     assert "remaining_process_group_pids: []" in evidence
     assert "local_only_vllm_192k_long_prompt_response_contract" in readiness
     assert "vllm_remote_192k_long_prompt_response_contract_probe.md" in readiness
+    assert "text_sha256" not in evidence
+
+
+def test_256k_long_prompt_response_contract_evidence_is_review_safe():
+    evidence = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "vllm_remote_256k_long_prompt_response_contract_probe.md"
+    ).read_text(encoding="utf-8")
+    readiness = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "deepseek_v4_flash_serving_readiness.md"
+    ).read_text(encoding="utf-8")
+
+    assert "status: passed" in evidence
+    assert "vllm: 0.23.0" in evidence
+    assert "torch: 2.11.0+cu130" in evidence
+    assert "torch CUDA: 13.0" in evidence
+    assert "CUDA_VISIBLE_DEVICES=1,7" in evidence
+    assert "server_port: 28142" in evidence
+    assert "max_model_len=262144" in evidence
+    assert "tensor_parallel_size=2" in evidence
+    assert "target_prompt_tokens=256000" in evidence
+    assert "actual_prompt_tokens=256004" in evidence
+    assert "prompt_chars: 1675637" in evidence
+    assert "usage.prompt_tokens: 256004" in evidence
+    assert "usage.completion_tokens: 4" in evidence
+    assert "usage.total_tokens: 256008" in evidence
+    assert "raw prompt text is not recorded" in evidence
+    assert "raw generated text is not recorded" in evidence
+    assert "remaining_process_group_pids: []" in evidence
+    assert "TIME-WAIT" in evidence
+    assert "local_only_vllm_256k_long_prompt_response_contract" in readiness
+    assert "vllm_remote_256k_long_prompt_response_contract_probe.md" in readiness
     assert "text_sha256" not in evidence
 
 
