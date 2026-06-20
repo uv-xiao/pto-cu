@@ -74,6 +74,10 @@ command. It does not attempt model load, start a server, or run inference.
 The remote H200 readiness slice is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_install_probe.md` and
 `docs/in_progress/nvidia_backend/deepseek_v4_flash_serving_readiness.md`. It
-records remote H200 reachability plus the current missing remote vLLM
-environment and missing repo-relative artifact directory. It is not
+records remote H200 reachability and the current serving-readiness boundary.
+The follow-up environment/artifact gate is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_env_artifact_probe.md`: the
+remote vLLM import/config probes pass in `.venv-vllm-probe`, while the
+artifact gates fail because the repo-relative artifact path contains
+metadata/tokenizer files but not the indexed weight shards. It is not
 model-load or serving evidence.
