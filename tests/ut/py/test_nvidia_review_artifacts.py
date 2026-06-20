@@ -106,6 +106,12 @@ def test_review_policy_changelog_and_examples_exist():
         DOC_ROOT / "changelog" / "2026-05-31-review-readiness.md"
     ).is_file()
 
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    assert (in_progress_root / "vllm_remote_install_probe.md").is_file()
+    assert (
+        in_progress_root / "deepseek_v4_flash_serving_readiness.md"
+    ).is_file()
+
     example_root = ROOT / "examples" / "cuda"
     assert (example_root / "README.md").is_file()
     assert (example_root / "host_schedule_vector_ops.py").is_file()

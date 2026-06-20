@@ -70,3 +70,10 @@ weight-free vLLM DeepSeek V4 import and synthetic config probes. Missing local
 artifacts or missing vLLM report structured skips by default; use
 `--require-artifacts` or `--require-vllm` to make either condition fail the
 command. It does not attempt model load, start a server, or run inference.
+
+The remote H200 readiness slice is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_install_probe.md` and
+`docs/in_progress/nvidia_backend/deepseek_v4_flash_serving_readiness.md`. It
+records remote H200 reachability plus the current missing remote vLLM
+environment and missing repo-relative artifact directory. It is not
+model-load or serving evidence.
