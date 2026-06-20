@@ -122,6 +122,17 @@ task->out[i] = task->scalar_args[0] * task->a[i] +
     ]
 
 
+def gluon_expert_bridge_metadata(task_specs: list[TaskBodySpec]) -> dict:
+    expert_spec = next(spec for spec in task_specs if spec.func_id == 12)
+    return {
+        "func_id": expert_spec.func_id,
+        "kernel_name": "moe_expert_affine_f32",
+        "task_name": expert_spec.task_name,
+        "source_kind": expert_spec.source_kind,
+        "source_sha256": expert_spec.source_sha256,
+    }
+
+
 def graph_descriptor(task_specs: list[TaskBodySpec] | None = None) -> dict:
     specs = build_task_body_specs() if task_specs is None else task_specs
     by_func_id = {spec.func_id: spec for spec in specs}
@@ -275,6 +286,7 @@ def run_moe_dispatch_combine(
             "source_kind": "generated-dispatch",
             "source_sha256": sha256(dispatch_source.encode("utf-8")).hexdigest(),
         },
+        "gluon_expert_bridge": gluon_expert_bridge_metadata(task_specs),
         "task_bodies": [
             {
                 "func_id": spec.func_id,

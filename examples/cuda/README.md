@@ -38,8 +38,11 @@ PYTHONPATH=$PWD:$PWD/python \
 
 This emits structured JSON for `graph_descriptor_moe_dispatch_combine`: four
 expert transform tasks, one weighted combine task, and device-side fan-in
-before the combine. Without CUDA tooling or a visible NVIDIA GPU it reports a
-skip; with `--require-cuda`, the same skip returns a non-zero exit status.
+before the combine. Expert 0 uses the `gluon_gen` persistent task-body bridge
+for `moe_expert_affine_f32` as func id `12`; the JSON includes
+`gluon_expert_bridge` and a matching `task_bodies` entry for review. Without
+CUDA tooling or a visible NVIDIA GPU it reports a skip; with `--require-cuda`,
+the same skip returns a non-zero exit status.
 
 ## Gluon MoE Expert Affine
 
