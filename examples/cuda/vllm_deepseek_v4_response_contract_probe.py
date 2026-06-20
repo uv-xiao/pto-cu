@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import time
@@ -125,6 +126,24 @@ def _response_shape(payload: Any) -> dict[str, Any]:
         if isinstance(first_choice, dict)
         else [],
         "usage_keys": sorted(usage.keys()) if isinstance(usage, dict) else [],
+    }
+
+
+def _completion_observation(payload: dict[str, Any]) -> dict[str, Any]:
+    choice = payload["choices"][0]
+    text = choice["text"]
+    usage = payload["usage"]
+    return {
+        "model": payload["model"],
+        "finish_reason": choice.get("finish_reason"),
+        "stop_reason": choice.get("stop_reason"),
+        "text_length_chars": len(text),
+        "text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        "usage": {
+            "prompt_tokens": usage["prompt_tokens"],
+            "completion_tokens": usage["completion_tokens"],
+            "total_tokens": usage["total_tokens"],
+        },
     }
 
 
@@ -307,6 +326,8 @@ def send_contract_request(
     result["status"] = contract["status"]
     if contract["status"] != "passed":
         result["failure"] = contract["failure"]
+    else:
+        result["observation"] = _completion_observation(payload)
     return result
 
 
