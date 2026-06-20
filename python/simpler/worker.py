@@ -162,10 +162,23 @@ _CTRL_RELEASE_DOMAIN = 8
 # rootinfo_path) and caches the handle on the ChipWorker so subsequent
 # CTRL_ALLOC_DOMAIN calls can find it.
 _CTRL_COMM_INIT = 9
+# Baseline communicator operation dispatch. Request shm carries
+# _COMM_OP_HEADER and the chip child invokes the cached base communicator.
+_CTRL_COMM_OP = 10
 
 # Layout of the CTRL_COMM_INIT request shm.
 _COMM_INIT_HEADER = struct.Struct("<II")  # rank (u32), nranks (u32)
 assert _COMM_INIT_HEADER.size == 8
+
+# Layout of the CTRL_COMM_OP request shm:
+# op_code (u32), dst_rank (i32), src_rank (i32), send ptr (u64),
+# recv ptr (u64), element count (u64).  The rank fields are used only by
+# send/recv; collective ops carry -1 placeholders.
+_COMM_OP_HEADER = struct.Struct("<IiiQQQ")
+_COMM_OP_ALL_REDUCE_F32 = 0
+_COMM_OP_REDUCE_SCATTER_F32 = 1
+_COMM_OP_ALL_GATHER_F32 = 2
+_COMM_OP_SEND_RECV_F32 = 3
 
 # Reserved 32-byte region at the start of OFF_ARGS used by _CTRL_REGISTER to
 # carry the NUL-terminated POSIX shm name. POSIX shm names on Linux are
@@ -417,6 +430,30 @@ def _handle_ctrl_comm_init(cw: "ChipWorker", buf: memoryview) -> None:
     cw._comm_base_handle_cached = int(handle)
 
 
+def _handle_ctrl_comm_op(cw: "ChipWorker", buf: memoryview) -> None:
+    """CTRL_COMM_OP handler — dispatch one baseline float32 comm operation."""
+    request_shm_name = _read_shm_name(buf, _OFF_ARGS)
+    req_shm = SharedMemory(name=request_shm_name)
+    try:
+        req_buf = req_shm.buf
+        assert req_buf is not None
+        op_code, dst_rank, src_rank, send, recv, count = _COMM_OP_HEADER.unpack_from(req_buf, 0)
+    finally:
+        req_shm.close()
+
+    handle = _comm_base_handle(cw)
+    if op_code == _COMM_OP_ALL_REDUCE_F32:
+        cw.comm_all_reduce_f32(handle, int(send), int(recv), int(count))
+    elif op_code == _COMM_OP_REDUCE_SCATTER_F32:
+        cw.comm_reduce_scatter_f32(handle, int(send), int(recv), int(count))
+    elif op_code == _COMM_OP_ALL_GATHER_F32:
+        cw.comm_all_gather_f32(handle, int(send), int(recv), int(count))
+    elif op_code == _COMM_OP_SEND_RECV_F32:
+        cw.comm_send_recv_f32(handle, int(send), int(recv), int(count), int(dst_rank), int(src_rank))
+    else:
+        raise ValueError(f"CTRL_COMM_OP: unknown op_code {op_code}")
+
+
 def _handle_ctrl_release_domain(cw: "ChipWorker", buf: memoryview) -> None:
     """CTRL_RELEASE_DOMAIN handler — collective free for one allocation."""
     request_shm_name = _read_shm_name(buf, _OFF_ARGS)
@@ -591,6 +628,8 @@ def _run_chip_main_loop(  # noqa: PLR0912 -- TASK_READY + 6 control sub-commands
                     _handle_ctrl_release_domain(cw, buf)
                 elif sub_cmd == _CTRL_COMM_INIT:
                     _handle_ctrl_comm_init(cw, buf)
+                elif sub_cmd == _CTRL_COMM_OP:
+                    _handle_ctrl_comm_op(cw, buf)
             except Exception as e:  # noqa: BLE001
                 code = 1
                 if sub_cmd in (_CTRL_REGISTER, _CTRL_UNREGISTER):
@@ -617,6 +656,7 @@ def _chip_process_loop(
     registry: dict,
     log_level: int = 1,
     log_info_v: int = 5,
+    cuda_launch_plan=None,
 ) -> None:
     """Runs in forked child process. Loads host_runtime.so in own address space.
 
@@ -632,6 +672,10 @@ def _chip_process_loop(
     try:
         cw = ChipWorker()
         cw.init(device_id, bins, log_level=log_level, log_info_v=log_info_v)
+        cw._cuda_comm_launch_plan = cuda_launch_plan
+        cw._cuda_comm_descriptor = None if cuda_launch_plan is None else cuda_launch_plan.device_descriptor()
+        if cw._cuda_comm_descriptor is not None:
+            cw.configure_cuda_comm_descriptor(cw._cuda_comm_descriptor.to_bytes())
     except Exception as e:
         _tb.print_exc()
         # Write the message so any parent reader that *does* inspect this
@@ -769,6 +813,7 @@ class Worker:
         self._config = config
         self._callable_registry: dict[int, Any] = {}
         self._initialized = False
+        self._cuda_comm_plan = self._build_cuda_comm_host_plan()
 
         # Narrow lock around `_callable_registry` mutation so concurrent
         # register / unregister calls don't trip CPython's non-atomic
@@ -821,6 +866,25 @@ class Worker:
         """
         tag = f"pto_multi_comm_{os.getpid()}_{id(self):x}.bin"
         return os.path.join("/tmp", tag)
+
+    def _build_cuda_comm_host_plan(self):
+        if self._config.get("platform") != "cuda":
+            return None
+        device_ids = self._config.get("device_ids", [])
+        if not device_ids:
+            return None
+
+        from simpler_setup.cuda_comm import create_cuda_comm_host_plan  # noqa: PLC0415
+
+        return create_cuda_comm_host_plan(backend="nccl", device_ids=device_ids)
+
+    def _cuda_comm_host_plan(self):
+        return self._cuda_comm_plan
+
+    def _cuda_comm_launch_plan_for_worker(self, worker_index: int):
+        if self._cuda_comm_plan is None:
+            return None
+        return self._cuda_comm_plan.launch_plan_for_worker(worker_index)
 
     # ------------------------------------------------------------------
     # Callable registration (before init)
@@ -1127,6 +1191,7 @@ class Worker:
         chip_log_level, chip_log_info_v = _simpler_log.get_current_config()
         if device_ids:
             for idx, dev_id in enumerate(device_ids):
+                cuda_launch_plan = self._cuda_comm_launch_plan_for_worker(idx)
                 pid = os.fork()
                 if pid == 0:
                     buf = self._chip_shms[idx].buf
@@ -1138,6 +1203,7 @@ class Worker:
                         registry,
                         chip_log_level,
                         chip_log_info_v,
+                        cuda_launch_plan,
                     )
                     os._exit(0)
                 else:
@@ -1587,6 +1653,73 @@ class Worker:
                 f"{op}_domain(allocation_id={allocation_id}) failed on "
                 f"{len(errors)}/{len(workers)} chips; first error chip={first[0]}: {first[1]}"
             )
+
+    def _dispatch_control_comm_op(  # noqa: PLR0913 -- mirrors the wire payload; keeping fields explicit prevents rank/pointer mixups
+        self,
+        *,
+        workers: tuple[int, ...],
+        op_code: int,
+        send_ptrs: dict[int, int],
+        recv_ptrs: dict[int, int],
+        counts: dict[int, int] | int,
+        dst_ranks: Optional[dict[int, int]] = None,
+        src_ranks: Optional[dict[int, int]] = None,
+        op_name: str = "comm_op",
+    ) -> None:
+        """Fan out CTRL_COMM_OP to participating chips through process mailboxes."""
+        if self._worker is None:
+            raise RuntimeError(f"{op_name}: Worker is not initialized")
+        self._ensure_comm_base()
+        count_by_worker = {w: int(counts) for w in workers} if isinstance(counts, int) else counts
+        dst_by_worker = dst_ranks or {}
+        src_by_worker = src_ranks or {}
+
+        request_shms: dict[int, SharedMemory] = {}
+        try:
+            for chip_idx in workers:
+                req = SharedMemory(create=True, size=_COMM_OP_HEADER.size)
+                req_buf = req.buf
+                assert req_buf is not None
+                _COMM_OP_HEADER.pack_into(
+                    req_buf,
+                    0,
+                    int(op_code),
+                    int(dst_by_worker.get(chip_idx, -1)),
+                    int(src_by_worker.get(chip_idx, -1)),
+                    int(send_ptrs[chip_idx]),
+                    int(recv_ptrs[chip_idx]),
+                    int(count_by_worker[chip_idx]),
+                )
+                request_shms[chip_idx] = req
+
+            dw = self._worker
+            errors: dict[int, BaseException] = {}
+
+            def dispatch(chip_idx: int) -> None:
+                try:
+                    dw.control_comm_op(chip_idx, request_shms[chip_idx].name)
+                except BaseException as e:  # noqa: BLE001
+                    errors[chip_idx] = e
+
+            threads = [threading.Thread(target=dispatch, args=(w,), name=f"{op_name}_chip_{w}") for w in workers]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+
+            if errors:
+                first = next(iter(errors.items()))
+                raise RuntimeError(
+                    f"{op_name} failed on {len(errors)}/{len(workers)} chips; "
+                    f"first error chip={first[0]}: {first[1]}"
+                )
+        finally:
+            for shm in request_shms.values():
+                try:
+                    shm.close()
+                    shm.unlink()
+                except Exception:  # noqa: BLE001
+                    pass
 
     def _release_all_live_domains(self) -> None:
         """Best-effort release of every still-live domain handle (LIFO).

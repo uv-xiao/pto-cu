@@ -792,6 +792,17 @@ NB_MODULE(_task_interface, m) {
             "of the device orch SO buffer (kernel binaries stay resident until "
             "finalize)."
         )
+        .def(
+            "configure_cuda_comm_descriptor",
+            [](ChipWorker &self, nb::bytes descriptor) {
+                self.configure_cuda_comm_descriptor(
+                    reinterpret_cast<const uint8_t *>(descriptor.c_str()), descriptor.size()
+                );
+            },
+            nb::arg("descriptor"),
+            "Configure the optional CUDA communication descriptor on runtimes "
+            "that export configure_cuda_comm_descriptor."
+        )
         .def_prop_ro("device_id", &ChipWorker::device_id)
         .def_prop_ro("initialized", &ChipWorker::initialized)
         .def_prop_ro(
@@ -853,6 +864,25 @@ NB_MODULE(_task_interface, m) {
             "Pair to comm_alloc_domain_windows: collectively release the per-rank pool."
         )
         .def("comm_barrier", &ChipWorker::comm_barrier, nb::arg("comm_handle"), "Synchronize all ranks.")
+        .def(
+            "comm_all_reduce_f32", &ChipWorker::comm_all_reduce_f32, nb::arg("comm_handle"), nb::arg("send"),
+            nb::arg("recv"), nb::arg("count"), "All-reduce float32 device buffers through the backend communicator."
+        )
+        .def(
+            "comm_reduce_scatter_f32", &ChipWorker::comm_reduce_scatter_f32, nb::arg("comm_handle"), nb::arg("send"),
+            nb::arg("recv"), nb::arg("recv_count"),
+            "Reduce-scatter float32 device buffers through the backend communicator."
+        )
+        .def(
+            "comm_all_gather_f32", &ChipWorker::comm_all_gather_f32, nb::arg("comm_handle"), nb::arg("send"),
+            nb::arg("recv"), nb::arg("send_count"),
+            "All-gather float32 device buffers through the backend communicator."
+        )
+        .def(
+            "comm_send_recv_f32", &ChipWorker::comm_send_recv_f32, nb::arg("comm_handle"), nb::arg("send"),
+            nb::arg("recv"), nb::arg("count"), nb::arg("dst_rank"), nb::arg("src_rank"),
+            "Grouped send/receive float32 device buffers through the backend communicator."
+        )
         .def(
             "comm_destroy", &ChipWorker::comm_destroy, nb::arg("comm_handle"),
             "Destroy the communicator and release its resources."

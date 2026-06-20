@@ -105,6 +105,10 @@ public:
     void control_comm_init(int worker_id, const std::string &request_shm_name) {
         manager_.control_comm_init(worker_id, request_shm_name.c_str());
     }
+    // Drive one CTRL_COMM_OP request staged by the Python facade.
+    void control_comm_op(int worker_id, const std::string &request_shm_name) {
+        manager_.control_comm_op(worker_id, request_shm_name.c_str());
+    }
 
     // Broadcast CTRL_REGISTER / CTRL_UNREGISTER for a ChipCallable cid to
     // every NEXT_LEVEL child in parallel. `blob_ptr`/`blob_size` describe

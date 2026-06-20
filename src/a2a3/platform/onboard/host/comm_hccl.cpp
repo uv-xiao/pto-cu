@@ -11,8 +11,7 @@
 /**
  * HCCL backend for the comm_* distributed communication API.
  *
- * Implements the five functions declared in host/comm.h using Ascend
- * HCCL (bundled with CANN) for the bootstrap / barrier / teardown plane
+ * Implements the HCCL-backed comm.h bootstrap / barrier / teardown plane
  * and the public ACL IPC primitives (aclrtIpcMem* + EnablePeerAccess)
  * for the per-rank symmetric window pool (Path D).
  *
@@ -914,6 +913,41 @@ extern "C" int comm_barrier(CommHandle h) {
         return static_cast<int>(hret);
     }
     return 0;
+}
+
+extern "C" int comm_all_reduce_f32(CommHandle h, const float *send, float *recv, size_t count) {
+    (void)h;
+    (void)send;
+    (void)recv;
+    (void)count;
+    return -1;
+}
+
+extern "C" int comm_reduce_scatter_f32(CommHandle h, const float *send, float *recv, size_t recv_count) {
+    (void)h;
+    (void)send;
+    (void)recv;
+    (void)recv_count;
+    return -1;
+}
+
+extern "C" int comm_all_gather_f32(CommHandle h, const float *send, float *recv, size_t send_count) {
+    (void)h;
+    (void)send;
+    (void)recv;
+    (void)send_count;
+    return -1;
+}
+
+extern "C" int
+comm_send_recv_f32(CommHandle h, const float *send, float *recv, size_t count, int dst_rank, int src_rank) {
+    (void)h;
+    (void)send;
+    (void)recv;
+    (void)count;
+    (void)dst_rank;
+    (void)src_rank;
+    return -1;
 }
 
 extern "C" int comm_alloc_domain_windows(

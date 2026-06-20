@@ -29,10 +29,15 @@
  *   - ACL/stream:   ensure_acl_ready_ctx, create_comm_stream_ctx,
  *                   destroy_comm_stream_ctx
  *   - comm:         comm_init, comm_alloc_windows, comm_get_local_window_base,
- *                   comm_get_window_size, comm_barrier, comm_destroy
+ *                   comm_get_window_size, comm_derive_context,
+ *                   comm_alloc_domain_windows, comm_release_domain_windows,
+ *                   comm_barrier, comm_all_reduce_f32,
+ *                   comm_reduce_scatter_f32, comm_all_gather_f32,
+ *                   comm_send_recv_f32, comm_destroy
  *
- * Optional extension:
+ * Optional extensions:
  *   - role init:    simpler_init_roles
+ *   - CUDA comm:    configure_cuda_comm_descriptor
  *
  * Memory management: caller allocates a buffer of get_runtime_size() bytes
  * and passes it to run_prepared(). Error codes: 0 = success, negative = error.
@@ -164,6 +169,16 @@ int simpler_init(
  * only auxiliary target roles. Returns 0 on success, negative on failure.
  */
 int simpler_init_roles(DeviceContextHandle ctx, int device_id, const PtoRuntimeBinaryMap *binaries);
+
+/**
+ * Optional CUDA communication descriptor hook. ChipWorker probes this symbol
+ * when a CUDA chip child has private rank/device descriptor bytes. Runtimes
+ * that omit it continue to run without communication metadata.
+ *
+ * The descriptor byte layout is defined by the CUDA platform host ABI, not by
+ * public TaskArgs or CallConfig.
+ */
+int configure_cuda_comm_descriptor(DeviceContextHandle ctx, const void *descriptor_bytes, size_t descriptor_size);
 
 /**
  * Release all device resources held by the context.

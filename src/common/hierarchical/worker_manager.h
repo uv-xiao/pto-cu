@@ -121,6 +121,10 @@ static constexpr uint64_t CTRL_RELEASE_DOMAIN = 8;
 // Caches the comm handle on the chip's ChipWorker so subsequent
 // CTRL_ALLOC_DOMAIN calls can find it.
 static constexpr uint64_t CTRL_COMM_INIT = 9;
+// Drive one baseline communicator operation through the chip-child process.
+// Payload is a single NUL-terminated shm name at MAILBOX_OFF_ARGS pointing to
+// the Python-owned operation request header.
+static constexpr uint64_t CTRL_COMM_OP = 10;
 
 // Control args reuse the task mailbox region (mutually exclusive with task dispatch):
 //   offset 16: uint64 arg0 (size for malloc; ptr for free; dst for copy; cid for register)
@@ -226,6 +230,7 @@ public:
     // Lazy comm_init driver — payload shm carries (rank, nranks, rootinfo_path).
     // Caller dispatches in parallel to every chip; child runs cw.comm_init.
     void control_comm_init(const char *request_shm_name);
+    void control_comm_op(const char *request_shm_name);
 
 private:
     Ring *ring_{nullptr};
@@ -298,6 +303,7 @@ public:
     void control_alloc_domain(int worker_id, const char *request_shm_name, const char *reply_shm_name);
     void control_release_domain(int worker_id, const char *request_shm_name);
     void control_comm_init(int worker_id, const char *request_shm_name);
+    void control_comm_op(int worker_id, const char *request_shm_name);
 
     // Broadcast CTRL_REGISTER for `cid` to every NEXT_LEVEL worker in
     // parallel. Stages `blob_size` bytes from `blob_ptr` into a per-call

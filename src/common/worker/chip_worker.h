@@ -69,6 +69,7 @@ public:
     // in [0, MAX_REGISTERED_CALLABLE_IDS) (cap 64).
     void prepare_callable(int32_t callable_id, const void *callable);
     void unregister_callable(int32_t callable_id);
+    void configure_cuda_comm_descriptor(const uint8_t *descriptor_bytes, size_t descriptor_size);
 
     /// Number of distinct callable_ids the AICPU has been asked to dlopen for
     /// on the bound device. Returns 0 when not initialized or the runtime
@@ -126,6 +127,11 @@ public:
     void
     comm_release_domain_windows(uint64_t comm_handle, uint64_t allocation_id, size_t rank_count, uint32_t domain_rank);
     void comm_barrier(uint64_t comm_handle);
+    void comm_all_reduce_f32(uint64_t comm_handle, uint64_t send, uint64_t recv, size_t count);
+    void comm_reduce_scatter_f32(uint64_t comm_handle, uint64_t send, uint64_t recv, size_t recv_count);
+    void comm_all_gather_f32(uint64_t comm_handle, uint64_t send, uint64_t recv, size_t send_count);
+    void
+    comm_send_recv_f32(uint64_t comm_handle, uint64_t send, uint64_t recv, size_t count, int dst_rank, int src_rank);
     void comm_destroy(uint64_t comm_handle);
     void comm_destroy_all();
 
@@ -149,12 +155,14 @@ private:
     using RunPreparedFn =
         int (*)(void *, void *, int32_t, const void *, int, int, int, int, int, int, const char *, PtoRunTiming *);
     using UnregisterCallableFn = int (*)(void *, int32_t);
+    using ConfigureCudaCommDescriptorFn = int (*)(void *, const void *, size_t);
     using GetAicpuDlopenCountFn = size_t (*)(void *);
     using FinalizeDeviceFn = int (*)(void *);
     using EnsureAclReadyFn = int (*)(void *, int);
     using CreateCommStreamFn = void *(*)(void *);
     using DestroyCommStreamFn = int (*)(void *, void *);
     using CommInitFn = void *(*)(int, int, void *, const char *);
+    using CommLastErrorFn = const char *(*)();
     using CommAllocWindowsFn = int (*)(void *, size_t, uint64_t *);
     using CommGetLocalWindowBaseFn = int (*)(void *, uint64_t *);
     using CommGetWindowSizeFn = int (*)(void *, size_t *);
@@ -163,6 +171,10 @@ private:
         int (*)(void *, uint64_t, const uint32_t *, size_t, uint32_t, size_t, uint64_t *, uint64_t *);
     using CommReleaseDomainWindowsFn = int (*)(void *, uint64_t, size_t, uint32_t);
     using CommBarrierFn = int (*)(void *);
+    using CommAllReduceF32Fn = int (*)(void *, const float *, float *, size_t);
+    using CommReduceScatterF32Fn = int (*)(void *, const float *, float *, size_t);
+    using CommAllGatherF32Fn = int (*)(void *, const float *, float *, size_t);
+    using CommSendRecvF32Fn = int (*)(void *, const float *, float *, size_t, int, int);
     using CommDestroyFn = int (*)(void *);
 
     struct CommSession {
@@ -199,6 +211,7 @@ private:
     PrepareCallableFn prepare_callable_fn_ = nullptr;
     RunPreparedFn run_prepared_fn_ = nullptr;
     UnregisterCallableFn unregister_callable_fn_ = nullptr;
+    ConfigureCudaCommDescriptorFn configure_cuda_comm_descriptor_fn_ = nullptr;
     GetAicpuDlopenCountFn get_aicpu_dlopen_count_fn_ = nullptr;
     GetAicpuDlopenCountFn get_host_dlopen_count_fn_ = nullptr;
     FinalizeDeviceFn finalize_device_fn_ = nullptr;
@@ -206,6 +219,7 @@ private:
     CreateCommStreamFn create_comm_stream_fn_ = nullptr;
     DestroyCommStreamFn destroy_comm_stream_fn_ = nullptr;
     CommInitFn comm_init_fn_ = nullptr;
+    CommLastErrorFn comm_last_error_fn_ = nullptr;
     CommAllocWindowsFn comm_alloc_windows_fn_ = nullptr;
     CommGetLocalWindowBaseFn comm_get_local_window_base_fn_ = nullptr;
     CommGetWindowSizeFn comm_get_window_size_fn_ = nullptr;
@@ -213,6 +227,10 @@ private:
     CommAllocDomainWindowsFn comm_alloc_domain_windows_fn_ = nullptr;
     CommReleaseDomainWindowsFn comm_release_domain_windows_fn_ = nullptr;
     CommBarrierFn comm_barrier_fn_ = nullptr;
+    CommAllReduceF32Fn comm_all_reduce_f32_fn_ = nullptr;
+    CommReduceScatterF32Fn comm_reduce_scatter_f32_fn_ = nullptr;
+    CommAllGatherF32Fn comm_all_gather_f32_fn_ = nullptr;
+    CommSendRecvF32Fn comm_send_recv_f32_fn_ = nullptr;
     CommDestroyFn comm_destroy_fn_ = nullptr;
     void *device_ctx_ = nullptr;
     std::vector<CommSession> comm_sessions_;

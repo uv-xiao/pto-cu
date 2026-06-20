@@ -146,6 +146,8 @@ void ChipWorker::init_with_role_paths(
         prepare_callable_fn_ = load_symbol<PrepareCallableFn>(handle, "prepare_callable");
         run_prepared_fn_ = load_symbol<RunPreparedFn>(handle, "run_prepared");
         unregister_callable_fn_ = load_symbol<UnregisterCallableFn>(handle, "unregister_callable");
+        configure_cuda_comm_descriptor_fn_ =
+            load_optional_symbol<ConfigureCudaCommDescriptorFn>(handle, "configure_cuda_comm_descriptor");
         get_aicpu_dlopen_count_fn_ = load_symbol<GetAicpuDlopenCountFn>(handle, "get_aicpu_dlopen_count");
         get_host_dlopen_count_fn_ = load_symbol<GetAicpuDlopenCountFn>(handle, "get_host_dlopen_count");
         finalize_device_fn_ = load_symbol<FinalizeDeviceFn>(handle, "finalize_device");
@@ -158,6 +160,7 @@ void ChipWorker::init_with_role_paths(
         create_comm_stream_fn_ = load_symbol<CreateCommStreamFn>(handle, "create_comm_stream_ctx");
         destroy_comm_stream_fn_ = load_symbol<DestroyCommStreamFn>(handle, "destroy_comm_stream_ctx");
         comm_init_fn_ = load_symbol<CommInitFn>(handle, "comm_init");
+        comm_last_error_fn_ = load_optional_symbol<CommLastErrorFn>(handle, "comm_last_error");
         comm_alloc_windows_fn_ = load_symbol<CommAllocWindowsFn>(handle, "comm_alloc_windows");
         comm_get_local_window_base_fn_ = load_symbol<CommGetLocalWindowBaseFn>(handle, "comm_get_local_window_base");
         comm_get_window_size_fn_ = load_symbol<CommGetWindowSizeFn>(handle, "comm_get_window_size");
@@ -166,6 +169,10 @@ void ChipWorker::init_with_role_paths(
         comm_release_domain_windows_fn_ =
             load_symbol<CommReleaseDomainWindowsFn>(handle, "comm_release_domain_windows");
         comm_barrier_fn_ = load_symbol<CommBarrierFn>(handle, "comm_barrier");
+        comm_all_reduce_f32_fn_ = load_symbol<CommAllReduceF32Fn>(handle, "comm_all_reduce_f32");
+        comm_reduce_scatter_f32_fn_ = load_symbol<CommReduceScatterF32Fn>(handle, "comm_reduce_scatter_f32");
+        comm_all_gather_f32_fn_ = load_symbol<CommAllGatherF32Fn>(handle, "comm_all_gather_f32");
+        comm_send_recv_f32_fn_ = load_symbol<CommSendRecvF32Fn>(handle, "comm_send_recv_f32");
         comm_destroy_fn_ = load_symbol<CommDestroyFn>(handle, "comm_destroy");
     } catch (...) {
         dlclose(handle);
@@ -246,6 +253,7 @@ void ChipWorker::init_with_role_paths(
         prepare_callable_fn_ = nullptr;
         run_prepared_fn_ = nullptr;
         unregister_callable_fn_ = nullptr;
+        configure_cuda_comm_descriptor_fn_ = nullptr;
         get_aicpu_dlopen_count_fn_ = nullptr;
         get_host_dlopen_count_fn_ = nullptr;
         finalize_device_fn_ = nullptr;
@@ -253,6 +261,7 @@ void ChipWorker::init_with_role_paths(
         create_comm_stream_fn_ = nullptr;
         destroy_comm_stream_fn_ = nullptr;
         comm_init_fn_ = nullptr;
+        comm_last_error_fn_ = nullptr;
         comm_alloc_windows_fn_ = nullptr;
         comm_get_local_window_base_fn_ = nullptr;
         comm_get_window_size_fn_ = nullptr;
@@ -260,6 +269,10 @@ void ChipWorker::init_with_role_paths(
         comm_alloc_domain_windows_fn_ = nullptr;
         comm_release_domain_windows_fn_ = nullptr;
         comm_barrier_fn_ = nullptr;
+        comm_all_reduce_f32_fn_ = nullptr;
+        comm_reduce_scatter_f32_fn_ = nullptr;
+        comm_all_gather_f32_fn_ = nullptr;
+        comm_send_recv_f32_fn_ = nullptr;
         comm_destroy_fn_ = nullptr;
         runtime_buf_.clear();
         throw;
@@ -286,6 +299,7 @@ void ChipWorker::init_with_role_paths(
         prepare_callable_fn_ = nullptr;
         run_prepared_fn_ = nullptr;
         unregister_callable_fn_ = nullptr;
+        configure_cuda_comm_descriptor_fn_ = nullptr;
         get_aicpu_dlopen_count_fn_ = nullptr;
         get_host_dlopen_count_fn_ = nullptr;
         finalize_device_fn_ = nullptr;
@@ -293,6 +307,7 @@ void ChipWorker::init_with_role_paths(
         create_comm_stream_fn_ = nullptr;
         destroy_comm_stream_fn_ = nullptr;
         comm_init_fn_ = nullptr;
+        comm_last_error_fn_ = nullptr;
         comm_alloc_windows_fn_ = nullptr;
         comm_get_local_window_base_fn_ = nullptr;
         comm_get_window_size_fn_ = nullptr;
@@ -300,6 +315,10 @@ void ChipWorker::init_with_role_paths(
         comm_alloc_domain_windows_fn_ = nullptr;
         comm_release_domain_windows_fn_ = nullptr;
         comm_barrier_fn_ = nullptr;
+        comm_all_reduce_f32_fn_ = nullptr;
+        comm_reduce_scatter_f32_fn_ = nullptr;
+        comm_all_gather_f32_fn_ = nullptr;
+        comm_send_recv_f32_fn_ = nullptr;
         comm_destroy_fn_ = nullptr;
         runtime_buf_.clear();
         throw std::runtime_error(std::string(init_entry_name) + " failed with code " + std::to_string(init_rc));
@@ -337,6 +356,7 @@ void ChipWorker::finalize() {
     prepare_callable_fn_ = nullptr;
     run_prepared_fn_ = nullptr;
     unregister_callable_fn_ = nullptr;
+    configure_cuda_comm_descriptor_fn_ = nullptr;
     get_aicpu_dlopen_count_fn_ = nullptr;
     get_host_dlopen_count_fn_ = nullptr;
     finalize_device_fn_ = nullptr;
@@ -344,6 +364,7 @@ void ChipWorker::finalize() {
     create_comm_stream_fn_ = nullptr;
     destroy_comm_stream_fn_ = nullptr;
     comm_init_fn_ = nullptr;
+    comm_last_error_fn_ = nullptr;
     comm_alloc_windows_fn_ = nullptr;
     comm_get_local_window_base_fn_ = nullptr;
     comm_get_window_size_fn_ = nullptr;
@@ -351,6 +372,10 @@ void ChipWorker::finalize() {
     comm_alloc_domain_windows_fn_ = nullptr;
     comm_release_domain_windows_fn_ = nullptr;
     comm_barrier_fn_ = nullptr;
+    comm_all_reduce_f32_fn_ = nullptr;
+    comm_reduce_scatter_f32_fn_ = nullptr;
+    comm_all_gather_f32_fn_ = nullptr;
+    comm_send_recv_f32_fn_ = nullptr;
     comm_destroy_fn_ = nullptr;
     runtime_buf_.clear();
     initialized_ = false;
@@ -409,6 +434,22 @@ void ChipWorker::unregister_callable(int32_t callable_id) {
     int rc = unregister_callable_fn_(device_ctx_, callable_id);
     if (rc != 0) {
         throw std::runtime_error("unregister_callable failed with code " + std::to_string(rc));
+    }
+}
+
+void ChipWorker::configure_cuda_comm_descriptor(const uint8_t *descriptor_bytes, size_t descriptor_size) {
+    if (!initialized_) {
+        throw std::runtime_error("ChipWorker not initialized; call init() first");
+    }
+    if (descriptor_bytes == nullptr) {
+        throw std::runtime_error("configure_cuda_comm_descriptor: descriptor must not be null");
+    }
+    if (configure_cuda_comm_descriptor_fn_ == nullptr) {
+        throw std::runtime_error("configure_cuda_comm_descriptor is not supported by this runtime");
+    }
+    int rc = configure_cuda_comm_descriptor_fn_(device_ctx_, descriptor_bytes, descriptor_size);
+    if (rc != 0) {
+        throw std::runtime_error("configure_cuda_comm_descriptor failed with code " + std::to_string(rc));
     }
 }
 
@@ -499,9 +540,16 @@ uint64_t ChipWorker::create_base_comm(int rank, int nranks, const std::string &r
     void *stream = create_comm_stream_checked("comm_init");
     void *handle = comm_init_fn_(rank, nranks, stream, rootinfo_path.c_str());
     if (handle == nullptr) {
+        std::string detail;
+        if (comm_last_error_fn_ != nullptr) {
+            const char *raw = comm_last_error_fn_();
+            if (raw != nullptr && raw[0] != '\0') {
+                detail = raw;
+            }
+        }
         int rc = 0;
         destroy_comm_stream_best_effort(stream, &rc);
-        throw std::runtime_error("comm_init failed");
+        throw std::runtime_error(detail.empty() ? "comm_init failed" : "comm_init failed: " + detail);
     }
     CommSession *session = create_comm_session(handle, stream, true);
     if (session == nullptr) {
@@ -687,6 +735,72 @@ void ChipWorker::comm_barrier(uint64_t comm_handle) {
     int rc = comm_barrier_fn_(reinterpret_cast<void *>(comm_handle));
     if (rc != 0) {
         throw std::runtime_error("comm_barrier failed with code " + std::to_string(rc));
+    }
+}
+
+void ChipWorker::comm_all_reduce_f32(uint64_t comm_handle, uint64_t send, uint64_t recv, size_t count) {
+    if (!initialized_) {
+        throw std::runtime_error("ChipWorker not initialized; call init() first");
+    }
+    if (send == 0 || recv == 0 || count == 0) {
+        throw std::runtime_error("comm_all_reduce_f32: send, recv, and count must be non-zero");
+    }
+    int rc = comm_all_reduce_f32_fn_(
+        reinterpret_cast<void *>(comm_handle), reinterpret_cast<const float *>(send), reinterpret_cast<float *>(recv),
+        count
+    );
+    if (rc != 0) {
+        throw std::runtime_error("comm_all_reduce_f32 failed with code " + std::to_string(rc));
+    }
+}
+
+void ChipWorker::comm_reduce_scatter_f32(uint64_t comm_handle, uint64_t send, uint64_t recv, size_t recv_count) {
+    if (!initialized_) {
+        throw std::runtime_error("ChipWorker not initialized; call init() first");
+    }
+    if (send == 0 || recv == 0 || recv_count == 0) {
+        throw std::runtime_error("comm_reduce_scatter_f32: send, recv, and recv_count must be non-zero");
+    }
+    int rc = comm_reduce_scatter_f32_fn_(
+        reinterpret_cast<void *>(comm_handle), reinterpret_cast<const float *>(send), reinterpret_cast<float *>(recv),
+        recv_count
+    );
+    if (rc != 0) {
+        throw std::runtime_error("comm_reduce_scatter_f32 failed with code " + std::to_string(rc));
+    }
+}
+
+void ChipWorker::comm_all_gather_f32(uint64_t comm_handle, uint64_t send, uint64_t recv, size_t send_count) {
+    if (!initialized_) {
+        throw std::runtime_error("ChipWorker not initialized; call init() first");
+    }
+    if (send == 0 || recv == 0 || send_count == 0) {
+        throw std::runtime_error("comm_all_gather_f32: send, recv, and send_count must be non-zero");
+    }
+    int rc = comm_all_gather_f32_fn_(
+        reinterpret_cast<void *>(comm_handle), reinterpret_cast<const float *>(send), reinterpret_cast<float *>(recv),
+        send_count
+    );
+    if (rc != 0) {
+        throw std::runtime_error("comm_all_gather_f32 failed with code " + std::to_string(rc));
+    }
+}
+
+void ChipWorker::comm_send_recv_f32(
+    uint64_t comm_handle, uint64_t send, uint64_t recv, size_t count, int dst_rank, int src_rank
+) {
+    if (!initialized_) {
+        throw std::runtime_error("ChipWorker not initialized; call init() first");
+    }
+    if (send == 0 || recv == 0 || count == 0) {
+        throw std::runtime_error("comm_send_recv_f32: send, recv, and count must be non-zero");
+    }
+    int rc = comm_send_recv_f32_fn_(
+        reinterpret_cast<void *>(comm_handle), reinterpret_cast<const float *>(send), reinterpret_cast<float *>(recv),
+        count, dst_rank, src_rank
+    );
+    if (rc != 0) {
+        throw std::runtime_error("comm_send_recv_f32 failed with code " + std::to_string(rc));
     }
 }
 

@@ -11,21 +11,28 @@
 
 #include "pto_runtime_c_api.h"
 
+#include "host/pto_cuda_comm_descriptor_abi.h"
 #include "host/pto_cuda_host_schedule_abi.h"
 #include "host/pto_cuda_persistent_device_abi.h"
 #include "platform_comm/comm.h"
 
 #include <cuda.h>
 #include <cuda_runtime_api.h>
+#include <dlfcn.h>
 
 #include <chrono>
 #include <cstdlib>
 #include <cstdint>
 #include <cstring>
+#include <exception>
+#include <fstream>
 #include <memory>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
+
+struct CommHandle_ {};
 
 namespace {
 
@@ -54,8 +61,88 @@ struct PreparedCallable {
     size_t shared_mem_bytes = 0;
 };
 
+using ncclResult_t = int;
+using ncclComm_t = void *;
+
+struct CudaNcclUniqueId {
+    char internal[128];
+};
+
+struct CudaNcclApi {
+    using NcclGetUniqueIdFn = ncclResult_t (*)(CudaNcclUniqueId *);
+    using NcclGetErrorStringFn = const char *(*)(ncclResult_t);
+    using NcclCommInitRankFn = ncclResult_t (*)(ncclComm_t *, int, CudaNcclUniqueId, int);
+    using NcclAllReduceFn = ncclResult_t (*)(const void *, void *, size_t, int, int, ncclComm_t, cudaStream_t);
+    using NcclReduceScatterFn = ncclResult_t (*)(const void *, void *, size_t, int, int, ncclComm_t, cudaStream_t);
+    using NcclAllGatherFn = ncclResult_t (*)(const void *, void *, size_t, int, ncclComm_t, cudaStream_t);
+    using NcclSendFn = ncclResult_t (*)(const void *, size_t, int, int, ncclComm_t, cudaStream_t);
+    using NcclRecvFn = ncclResult_t (*)(void *, size_t, int, int, ncclComm_t, cudaStream_t);
+    using NcclGroupStartFn = ncclResult_t (*)();
+    using NcclGroupEndFn = ncclResult_t (*)();
+    using NcclCommDestroyFn = ncclResult_t (*)(ncclComm_t);
+
+    void *library = nullptr;
+    NcclGetUniqueIdFn ncclGetUniqueId = nullptr;
+    NcclGetErrorStringFn ncclGetErrorString = nullptr;
+    NcclCommInitRankFn ncclCommInitRank = nullptr;
+    NcclAllReduceFn ncclAllReduce = nullptr;
+    NcclReduceScatterFn ncclReduceScatter = nullptr;
+    NcclAllGatherFn ncclAllGather = nullptr;
+    NcclSendFn ncclSend = nullptr;
+    NcclRecvFn ncclRecv = nullptr;
+    NcclGroupStartFn ncclGroupStart = nullptr;
+    NcclGroupEndFn ncclGroupEnd = nullptr;
+    NcclCommDestroyFn ncclCommDestroy = nullptr;
+};
+
+struct CudaCommStream {
+    cudaStream_t stream = nullptr;
+    PtoCudaCommDeviceDescriptor descriptor = {};
+    bool has_descriptor = false;
+};
+
+struct CudaCommHandle : CommHandle_ {
+    PtoCudaCommDeviceDescriptor descriptor = {};
+    cudaStream_t stream = nullptr;
+    std::string rootinfo_path;
+    const CudaNcclApi *nccl_api = nullptr;
+    ncclComm_t nccl_comm = nullptr;
+};
+
 constexpr uint32_t kDefaultStreamPoolSize = 4;
 constexpr uint32_t kMaxStreamPoolSize = 64;
+constexpr int kNcclRootinfoWaitMs = 30000;
+constexpr int kNcclRootinfoPollMs = 10;
+constexpr int PTO_CUDA_NCCL_FLOAT32 = 7;
+constexpr int PTO_CUDA_NCCL_SUM = 0;
+
+thread_local std::string g_comm_last_error;
+std::string g_nccl_load_error;
+
+void clear_comm_error() { g_comm_last_error.clear(); }
+
+void set_comm_error(const std::string &msg) { g_comm_last_error = msg; }
+
+std::string cuda_error_message(const char *op, cudaError_t rc) {
+    std::string msg = op;
+    msg += " failed: ";
+    msg += cudaGetErrorString(rc);
+    return msg;
+}
+
+std::string nccl_error_message(const CudaNcclApi *api, const char *op, ncclResult_t rc) {
+    std::string msg = op;
+    msg += " failed with code ";
+    msg += std::to_string(static_cast<int>(rc));
+    if (api != nullptr && api->ncclGetErrorString != nullptr) {
+        const char *detail = api->ncclGetErrorString(rc);
+        if (detail != nullptr && detail[0] != '\0') {
+            msg += ": ";
+            msg += detail;
+        }
+    }
+    return msg;
+}
 
 uint32_t configured_stream_pool_size() {
     const char *value = std::getenv("PTO_CUDA_STREAM_POOL_SIZE");
@@ -68,6 +155,100 @@ uint32_t configured_stream_pool_size() {
         return kDefaultStreamPoolSize;
     }
     return static_cast<uint32_t>(parsed);
+}
+
+template <typename T>
+T load_nccl_symbol(void *library, const char *name) {
+    return reinterpret_cast<T>(dlsym(library, name));
+}
+
+const CudaNcclApi *load_nccl_api() {
+    static CudaNcclApi api = []() {
+        CudaNcclApi loaded;
+        const char *override_path = std::getenv("PTO_CUDA_NCCL_LIBRARY");
+        if (override_path != nullptr && override_path[0] != '\0') {
+            loaded.library = dlopen(override_path, RTLD_NOW | RTLD_LOCAL);
+            if (loaded.library == nullptr) {
+                const char *error = dlerror();
+                g_nccl_load_error =
+                    std::string("PTO_CUDA_NCCL_LIBRARY=") + override_path +
+                    (error != nullptr ? std::string(": ") + error : "");
+            }
+        }
+        if (loaded.library == nullptr) {
+            loaded.library = dlopen("libnccl.so.2", RTLD_NOW | RTLD_LOCAL);
+        }
+        if (loaded.library == nullptr) {
+            loaded.library = dlopen("libnccl.so", RTLD_NOW | RTLD_LOCAL);
+        }
+        if (loaded.library == nullptr) {
+            if (g_nccl_load_error.empty()) {
+                const char *error = dlerror();
+                g_nccl_load_error =
+                    std::string("libnccl.so.2/libnccl.so") +
+                    (error != nullptr ? std::string(": ") + error : " not found");
+            }
+            return loaded;
+        }
+
+        loaded.ncclGetUniqueId = load_nccl_symbol<CudaNcclApi::NcclGetUniqueIdFn>(loaded.library, "ncclGetUniqueId");
+        loaded.ncclGetErrorString =
+            load_nccl_symbol<CudaNcclApi::NcclGetErrorStringFn>(loaded.library, "ncclGetErrorString");
+        loaded.ncclCommInitRank = load_nccl_symbol<CudaNcclApi::NcclCommInitRankFn>(loaded.library, "ncclCommInitRank");
+        loaded.ncclAllReduce = load_nccl_symbol<CudaNcclApi::NcclAllReduceFn>(loaded.library, "ncclAllReduce");
+        loaded.ncclReduceScatter =
+            load_nccl_symbol<CudaNcclApi::NcclReduceScatterFn>(loaded.library, "ncclReduceScatter");
+        loaded.ncclAllGather = load_nccl_symbol<CudaNcclApi::NcclAllGatherFn>(loaded.library, "ncclAllGather");
+        loaded.ncclSend = load_nccl_symbol<CudaNcclApi::NcclSendFn>(loaded.library, "ncclSend");
+        loaded.ncclRecv = load_nccl_symbol<CudaNcclApi::NcclRecvFn>(loaded.library, "ncclRecv");
+        loaded.ncclGroupStart = load_nccl_symbol<CudaNcclApi::NcclGroupStartFn>(loaded.library, "ncclGroupStart");
+        loaded.ncclGroupEnd = load_nccl_symbol<CudaNcclApi::NcclGroupEndFn>(loaded.library, "ncclGroupEnd");
+        loaded.ncclCommDestroy = load_nccl_symbol<CudaNcclApi::NcclCommDestroyFn>(loaded.library, "ncclCommDestroy");
+        if (loaded.ncclGetUniqueId == nullptr || loaded.ncclGetErrorString == nullptr ||
+            loaded.ncclCommInitRank == nullptr ||
+            loaded.ncclAllReduce == nullptr || loaded.ncclReduceScatter == nullptr || loaded.ncclAllGather == nullptr ||
+            loaded.ncclSend == nullptr || loaded.ncclRecv == nullptr || loaded.ncclGroupStart == nullptr ||
+            loaded.ncclGroupEnd == nullptr || loaded.ncclCommDestroy == nullptr) {
+            g_nccl_load_error = "NCCL library is missing required symbols";
+            dlclose(loaded.library);
+            loaded = {};
+        }
+        return loaded;
+    }();
+
+    if (api.library == nullptr) {
+        return nullptr;
+    }
+    return &api;
+}
+
+bool write_nccl_unique_id(const char *rootinfo_path, const CudaNcclUniqueId &unique_id) {
+    if (rootinfo_path == nullptr || rootinfo_path[0] == '\0') {
+        return false;
+    }
+    std::ofstream output(rootinfo_path, std::ios::binary | std::ios::trunc);
+    if (!output) {
+        return false;
+    }
+    output.write(unique_id.internal, sizeof(unique_id.internal));
+    return output.good();
+}
+
+bool read_nccl_unique_id(const char *rootinfo_path, CudaNcclUniqueId *unique_id) {
+    if (rootinfo_path == nullptr || rootinfo_path[0] == '\0' || unique_id == nullptr) {
+        return false;
+    }
+    for (int waited_ms = 0; waited_ms <= kNcclRootinfoWaitMs; waited_ms += kNcclRootinfoPollMs) {
+        std::ifstream input(rootinfo_path, std::ios::binary);
+        if (input) {
+            input.read(unique_id->internal, sizeof(unique_id->internal));
+            if (input.gcount() == static_cast<std::streamsize>(sizeof(unique_id->internal))) {
+                return true;
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(kNcclRootinfoPollMs));
+    }
+    return false;
 }
 
 class CudaDeviceRunner {
@@ -239,6 +420,20 @@ public:
             cuModuleUnload(it->second.module);
         }
         prepared_.erase(it);
+        return 0;
+    }
+
+    int set_comm_descriptor(const void *descriptor_bytes, size_t descriptor_size) {
+        PtoCudaCommDeviceDescriptor parsed = {};
+        int rc = pto_cuda_comm_descriptor_from_bytes(descriptor_bytes, descriptor_size, &parsed);
+        if (rc != 0) {
+            return rc;
+        }
+        if (parsed.device_id != static_cast<uint32_t>(device_id_)) {
+            return -1;
+        }
+        comm_descriptor_ = parsed;
+        has_comm_descriptor_ = true;
         return 0;
     }
 
@@ -556,6 +751,42 @@ public:
         return 0;
     }
 
+    const PtoCudaCommDeviceDescriptor *comm_descriptor_or_null() const {
+        return has_comm_descriptor_ ? &comm_descriptor_ : nullptr;
+    }
+
+    CudaCommStream *create_comm_stream() {
+        const PtoCudaCommDeviceDescriptor *descriptor = comm_descriptor_or_null();
+        if (descriptor == nullptr) {
+            return nullptr;
+        }
+        if (cudaSetDevice(device_id_) != cudaSuccess) {
+            return nullptr;
+        }
+
+        auto *comm_stream = new CudaCommStream();
+        comm_stream->descriptor = *descriptor;
+        comm_stream->has_descriptor = true;
+        cudaError_t rc = cudaStreamCreateWithFlags(&comm_stream->stream, cudaStreamNonBlocking);
+        if (rc != cudaSuccess) {
+            delete comm_stream;
+            return nullptr;
+        }
+        return comm_stream;
+    }
+
+    int destroy_comm_stream(CudaCommStream *comm_stream) {
+        if (comm_stream == nullptr) {
+            return 0;
+        }
+        int rc = 0;
+        if (comm_stream->stream != nullptr) {
+            rc = cudaStreamDestroy(comm_stream->stream) == cudaSuccess ? 0 : -1;
+        }
+        delete comm_stream;
+        return rc;
+    }
+
 private:
     cudaStream_t stream_for(uint32_t stream_id) {
         if (stream_id >= streams_.size()) {
@@ -569,9 +800,105 @@ private:
     int device_id_ = 0;
     std::vector<cudaStream_t> streams_;
     std::unordered_map<int32_t, PreparedCallable> prepared_;
+    PtoCudaCommDeviceDescriptor comm_descriptor_ = {};
+    bool has_comm_descriptor_ = false;
 };
 
 CudaDeviceRunner *runner(DeviceContextHandle ctx) { return static_cast<CudaDeviceRunner *>(ctx); }
+
+CommHandle init_nccl_comm_from_descriptor(
+    const PtoCudaCommDeviceDescriptor &descriptor, cudaStream_t stream, const char *rootinfo_path
+);
+
+CommHandle init_comm_from_descriptor(int rank, int nranks, CudaCommStream *comm_stream, const char *rootinfo_path) {
+    if (comm_stream == nullptr || !comm_stream->has_descriptor || comm_stream->stream == nullptr) {
+        set_comm_error("comm stream has no CUDA communication descriptor");
+        return nullptr;
+    }
+    const PtoCudaCommDeviceDescriptor &descriptor = comm_stream->descriptor;
+    if (rank < 0 || nranks <= 0 || descriptor.rank != static_cast<uint32_t>(rank) ||
+        descriptor.world_size != static_cast<uint32_t>(nranks)) {
+        set_comm_error(
+            "descriptor rank/world_size mismatch: descriptor rank=" + std::to_string(descriptor.rank) +
+            " world_size=" + std::to_string(descriptor.world_size) + " request rank=" + std::to_string(rank) +
+            " nranks=" + std::to_string(nranks)
+        );
+        return nullptr;
+    }
+    if (descriptor.backend_code == PTO_CUDA_COMM_BACKEND_NCCL) {
+        return init_nccl_comm_from_descriptor(descriptor, comm_stream->stream, rootinfo_path);
+    }
+    if (descriptor.backend_code != PTO_CUDA_COMM_BACKEND_MOCK) {
+        set_comm_error("unsupported CUDA communication backend code " + std::to_string(descriptor.backend_code));
+        return nullptr;
+    }
+
+    auto *handle = new CudaCommHandle();
+    handle->descriptor = descriptor;
+    handle->stream = comm_stream->stream;
+    if (rootinfo_path != nullptr) {
+        handle->rootinfo_path = rootinfo_path;
+    }
+    return static_cast<CommHandle>(handle);
+}
+
+CommHandle init_nccl_comm_from_descriptor(
+    const PtoCudaCommDeviceDescriptor &descriptor, cudaStream_t stream, const char *rootinfo_path
+) {
+    const CudaNcclApi *api = load_nccl_api();
+    if (api == nullptr) {
+        set_comm_error(
+            "NCCL API unavailable: could not load libnccl with required symbols" +
+            (g_nccl_load_error.empty() ? std::string() : std::string(" (") + g_nccl_load_error + ")")
+        );
+        return nullptr;
+    }
+    if (rootinfo_path == nullptr || rootinfo_path[0] == '\0') {
+        set_comm_error("NCCL rootinfo path is empty");
+        return nullptr;
+    }
+    cudaError_t set_device_rc = cudaSetDevice(static_cast<int>(descriptor.device_id));
+    if (set_device_rc != cudaSuccess) {
+        set_comm_error(cuda_error_message("cudaSetDevice", set_device_rc));
+        return nullptr;
+    }
+
+    CudaNcclUniqueId unique_id = {};
+    if (descriptor.rank == 0) {
+        ncclResult_t unique_id_rc = api->ncclGetUniqueId(&unique_id);
+        if (unique_id_rc != 0) {
+            set_comm_error(nccl_error_message(api, "ncclGetUniqueId", unique_id_rc));
+            return nullptr;
+        }
+        if (!write_nccl_unique_id(rootinfo_path, unique_id)) {
+            set_comm_error(std::string("failed to write NCCL unique id to ") + rootinfo_path);
+            return nullptr;
+        }
+    } else if (!read_nccl_unique_id(rootinfo_path, &unique_id)) {
+        set_comm_error(std::string("failed to read NCCL unique id from ") + rootinfo_path);
+        return nullptr;
+    }
+
+    ncclComm_t nccl_comm = nullptr;
+    ncclResult_t init_rc = api->ncclCommInitRank(
+        &nccl_comm, static_cast<int>(descriptor.world_size), unique_id, static_cast<int>(descriptor.rank)
+    );
+    if (init_rc != 0 || nccl_comm == nullptr) {
+        set_comm_error(
+            init_rc != 0 ? nccl_error_message(api, "ncclCommInitRank", init_rc)
+                         : "ncclCommInitRank returned a null communicator"
+        );
+        return nullptr;
+    }
+
+    auto *handle = new CudaCommHandle();
+    handle->descriptor = descriptor;
+    handle->stream = stream;
+    handle->rootinfo_path = rootinfo_path;
+    handle->nccl_api = api;
+    handle->nccl_comm = nccl_comm;
+    return static_cast<CommHandle>(handle);
+}
 
 }  // namespace
 
@@ -708,6 +1035,15 @@ int unregister_callable(DeviceContextHandle ctx, int32_t callable_id) {
     }
 }
 
+int configure_cuda_comm_descriptor(DeviceContextHandle ctx, const void *descriptor_bytes, size_t descriptor_size) {
+    if (ctx == nullptr) return -1;
+    try {
+        return runner(ctx)->set_comm_descriptor(descriptor_bytes, descriptor_size);
+    } catch (...) {
+        return -1;
+    }
+}
+
 size_t get_aicpu_dlopen_count(DeviceContextHandle ctx) {
     (void)ctx;
     return 0;
@@ -725,23 +1061,37 @@ int ensure_acl_ready_ctx(DeviceContextHandle ctx, int device_id) {
 }
 
 void *create_comm_stream_ctx(DeviceContextHandle ctx) {
-    (void)ctx;
-    return nullptr;
+    if (ctx == nullptr) return nullptr;
+    try {
+        return runner(ctx)->create_comm_stream();
+    } catch (...) {
+        return nullptr;
+    }
 }
 
 int destroy_comm_stream_ctx(DeviceContextHandle ctx, void *stream) {
-    (void)ctx;
-    (void)stream;
-    return 0;
+    if (ctx == nullptr) return -1;
+    try {
+        return runner(ctx)->destroy_comm_stream(static_cast<CudaCommStream *>(stream));
+    } catch (...) {
+        return -1;
+    }
 }
 
 CommHandle comm_init(int rank, int nranks, void *stream, const char *rootinfo_path) {
-    (void)rank;
-    (void)nranks;
-    (void)stream;
-    (void)rootinfo_path;
-    return nullptr;
+    try {
+        clear_comm_error();
+        return init_comm_from_descriptor(rank, nranks, static_cast<CudaCommStream *>(stream), rootinfo_path);
+    } catch (const std::exception &e) {
+        set_comm_error(std::string("comm_init exception: ") + e.what());
+        return nullptr;
+    } catch (...) {
+        set_comm_error("comm_init exception: unknown");
+        return nullptr;
+    }
 }
+
+const char *comm_last_error(void) { return g_comm_last_error.c_str(); }
 
 int comm_alloc_windows(CommHandle h, size_t win_size, uint64_t *device_ctx_out) {
     (void)h;
@@ -800,13 +1150,94 @@ int comm_release_domain_windows(CommHandle h, uint64_t allocation_id, size_t ran
 }
 
 int comm_barrier(CommHandle h) {
-    (void)h;
-    return -1;
+    if (h == nullptr) return -1;
+    auto *handle = static_cast<CudaCommHandle *>(h);
+    return handle->descriptor.backend_code == PTO_CUDA_COMM_BACKEND_MOCK ? 0 : -1;
+}
+
+static CudaCommHandle *cuda_nccl_handle_or_null(CommHandle h, const float *send, float *recv, size_t count) {
+    if (h == nullptr || send == nullptr || recv == nullptr || count == 0) return nullptr;
+    auto *handle = static_cast<CudaCommHandle *>(h);
+    if (handle->descriptor.backend_code != PTO_CUDA_COMM_BACKEND_NCCL || handle->nccl_api == nullptr ||
+        handle->nccl_comm == nullptr || handle->stream == nullptr) {
+        return nullptr;
+    }
+    if (cudaSetDevice(static_cast<int>(handle->descriptor.device_id)) != cudaSuccess) {
+        return nullptr;
+    }
+    return handle;
+}
+
+static int finish_nccl_stream(cudaStream_t stream, ncclResult_t rc) {
+    if (rc != 0) {
+        return -1;
+    }
+    return cudaStreamSynchronize(stream) == cudaSuccess ? 0 : -1;
+}
+
+int comm_all_reduce_f32(CommHandle h, const float *send, float *recv, size_t count) {
+    CudaCommHandle *handle = cuda_nccl_handle_or_null(h, send, recv, count);
+    if (handle == nullptr) return -1;
+    return finish_nccl_stream(
+        handle->stream,
+        handle->nccl_api->ncclAllReduce(
+            send, recv, count, PTO_CUDA_NCCL_FLOAT32, PTO_CUDA_NCCL_SUM, handle->nccl_comm, handle->stream
+        )
+    );
+}
+
+int comm_reduce_scatter_f32(CommHandle h, const float *send, float *recv, size_t recv_count) {
+    CudaCommHandle *handle = cuda_nccl_handle_or_null(h, send, recv, recv_count);
+    if (handle == nullptr) return -1;
+    return finish_nccl_stream(
+        handle->stream,
+        handle->nccl_api->ncclReduceScatter(
+            send, recv, recv_count, PTO_CUDA_NCCL_FLOAT32, PTO_CUDA_NCCL_SUM, handle->nccl_comm, handle->stream
+        )
+    );
+}
+
+int comm_all_gather_f32(CommHandle h, const float *send, float *recv, size_t send_count) {
+    CudaCommHandle *handle = cuda_nccl_handle_or_null(h, send, recv, send_count);
+    if (handle == nullptr) return -1;
+    return finish_nccl_stream(
+        handle->stream, handle->nccl_api->ncclAllGather(
+                            send, recv, send_count, PTO_CUDA_NCCL_FLOAT32, handle->nccl_comm, handle->stream
+                        )
+    );
+}
+
+int comm_send_recv_f32(CommHandle h, const float *send, float *recv, size_t count, int dst_rank, int src_rank) {
+    CudaCommHandle *handle = cuda_nccl_handle_or_null(h, send, recv, count);
+    if (handle == nullptr) return -1;
+    int world_size = static_cast<int>(handle->descriptor.world_size);
+    if (dst_rank < 0 || src_rank < 0 || dst_rank >= world_size || src_rank >= world_size) return -1;
+
+    ncclResult_t rc = handle->nccl_api->ncclGroupStart();
+    if (rc == 0) {
+        rc =
+            handle->nccl_api->ncclSend(send, count, PTO_CUDA_NCCL_FLOAT32, dst_rank, handle->nccl_comm, handle->stream);
+    }
+    ncclResult_t recv_rc = rc == 0 ? handle->nccl_api->ncclRecv(
+                                         recv, count, PTO_CUDA_NCCL_FLOAT32, src_rank, handle->nccl_comm, handle->stream
+                                     ) :
+                                     rc;
+    ncclResult_t end_rc = handle->nccl_api->ncclGroupEnd();
+    if (rc != 0 || recv_rc != 0 || end_rc != 0) {
+        return -1;
+    }
+    return cudaStreamSynchronize(handle->stream) == cudaSuccess ? 0 : -1;
 }
 
 int comm_destroy(CommHandle h) {
-    (void)h;
-    return 0;
+    auto *handle = static_cast<CudaCommHandle *>(h);
+    int rc = 0;
+    if (handle != nullptr && handle->nccl_comm != nullptr && handle->nccl_api != nullptr) {
+        rc = handle->nccl_api->ncclCommDestroy(handle->nccl_comm) == 0 ? 0 : -1;
+        handle->nccl_comm = nullptr;
+    }
+    delete handle;
+    return rc;
 }
 
 }  // extern "C"
