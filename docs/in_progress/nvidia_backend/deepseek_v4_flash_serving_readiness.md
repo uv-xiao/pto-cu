@@ -81,10 +81,41 @@ Fresh remote H200 model-load evidence from this slice:
 Detailed model-load evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_model_load_probe.md`.
 
+Fresh remote H200 server health evidence from this slice:
+
+- A repo-owned server-health probe script now launches `vllm serve`, binds
+  only to `127.0.0.1`, polls readiness endpoints, captures structured JSON,
+  terminates the server, and checks for remaining process-group PIDs.
+- The installed remote vLLM 0.23.0 server CLI was inspected before choosing
+  flags. The probe uses `.venv-vllm-probe/bin/vllm serve [model_tag]` with
+  inspected OpenAI server and model-load flags.
+- The remote source tree was refreshed with `--sync`, preserving the complete
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`. They still had enough free memory for the 0.78
+  utilization boundary before the run.
+- The passing boundary used `max_model_len=4096`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 50-minute outer timeout, and a
+  2700-second readiness timeout.
+- The server started on `http://127.0.0.1:28123`, returned HTTP 200 from
+  `/health`, and returned `deepseek-ai/DeepSeek-V4-Flash` from `/v1/models`.
+- The probe exited 0 after 114.348 seconds with `generation_attempted=false`.
+- The probe sent `SIGTERM`, vLLM logged API server and engine shutdown, and
+  the probe reported no remaining process-group PIDs. The immediate post-run
+  snapshot showed the selected GPUs back at their pre-run memory baseline.
+- The run established local-only server startup and health/model-list
+  readiness only; it did not run generation.
+
+Detailed server-health evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_server_health_probe.md`.
+
 ## Serving Readiness State
 
-The current remote state is complete through bounded two-H200 vLLM model load
-and engine initialization:
+The current remote state is complete through bounded two-H200 vLLM server
+startup and health/model-list readiness:
 
 ```text
 remote_h200_reachable: yes
@@ -94,26 +125,28 @@ weight_free_require_vllm_probes: passed
 artifact_require_probe: passed
 weight_manifest_gate: complete
 two_h200_vllm_model_load: passed under recorded 4096-token boundary
-serving_readiness: not established
+local_only_vllm_server_health: passed under recorded 4096-token boundary
+serving_readiness: health/model-list only; no generation
 ```
 
-This means the next reviewable step is an explicit server startup and health
-probe with its own resource boundary. It is still too early to claim server
-readiness, generated text correctness, long-context behavior, latency,
-throughput, or production readiness.
+This means the remote H200 environment has passed a local-only vLLM server
+startup and health/model-list probe under the recorded two-H200 boundary. It
+is still too early to claim generated text correctness, long-context behavior,
+latency, throughput, production readiness, or simpler-nv/vLLM kernel
+integration.
 
 ## Next Gate
 
-The next PR-sized gate should run an explicit vLLM server startup and health
-probe on the remote H200 checkout, or a separately justified one-token smoke if
-server readiness requires generation. That later gate needs its own command,
-resource plan, expected failure mode, and non-claims before it should make any
-serving statement.
+The next PR-sized gate can run an explicitly bounded one-token inference smoke
+against the local-only server if serving semantics are needed. That later gate
+needs its own command, resource plan, expected failure mode, and non-claims,
+and it should be described as inference-smoke evidence rather than correctness.
 
 ## Non-Claims
 
-- This is not vLLM server health evidence.
 - This is not prompt, tokenizer semantic, correct-text, long-context,
   throughput, latency, or production readiness evidence.
+- This is not generated-text correctness evidence.
+- This is not simpler-nv or vLLM kernel integration evidence.
 - This did not commit raw model artifacts, venvs, command dumps, or `tmp/`
   symlinks.

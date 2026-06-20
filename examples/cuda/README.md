@@ -110,3 +110,34 @@ all 46 shards and initialized an `LLMEngine` on two H200 GPUs at
 `max_model_len=4096`. This is model-load and engine-initialization evidence,
 not server health, inference correctness, 256K context, throughput, latency, or
 production-readiness evidence.
+
+## DeepSeek V4 Flash vLLM Server Health Probe
+
+```bash
+CUDA_VISIBLE_DEVICES=<two ids> VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 50m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_server_health_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28123 \
+  --server-log tmp/vllm-server-health-probe/server-28123.log \
+  --max-model-len 4096 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --terminate-timeout-seconds 60
+```
+
+This starts a local-only OpenAI-compatible vLLM server bound to `127.0.0.1`,
+checks `/health` and `/v1/models`, emits structured JSON, and terminates the
+server process group. The remote H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_server_health_probe.md`: the
+server started for `deepseek-ai/DeepSeek-V4-Flash`, returned HTTP 200 from
+both checked endpoints, and shut down with no remaining process-group PIDs
+reported by the probe. This is server startup and health/model-list evidence,
+not generated-text correctness, tokenizer semantics, 256K context,
+throughput, latency, production readiness, or simpler-nv/vLLM integration
+evidence.
