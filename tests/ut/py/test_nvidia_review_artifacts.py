@@ -147,6 +147,9 @@ def test_review_policy_changelog_and_examples_exist():
         in_progress_root / "vllm_remote_long_prompt_admission_probe.md"
     ).is_file()
     assert (
+        in_progress_root / "vllm_remote_long_prompt_response_contract_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
@@ -173,6 +176,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         example_root / "vllm_deepseek_v4_long_prompt_admission_probe.py"
+    ).is_file()
+    assert (
+        example_root / "vllm_deepseek_v4_long_prompt_response_contract_probe.py"
     ).is_file()
 
 
@@ -224,6 +230,69 @@ def test_long_prompt_admission_probe_dry_run_contract():
         "HTTP 200 from one non-streaming /v1/completions request",
         "exactly one response choice when HTTP 200 returns",
         "usage fields recorded when returned",
+        "raw prompt text is not recorded",
+        "raw generated text is not recorded",
+        "server process group cleanup leaves no remaining PIDs",
+    ]
+
+
+def test_long_prompt_response_contract_probe_dry_run_contract():
+    script = (
+        ROOT
+        / "examples"
+        / "cuda"
+        / "vllm_deepseek_v4_long_prompt_response_contract_probe.py"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--dry-run",
+            "--port",
+            "28136",
+            "--target-prompt-tokens",
+            "16000",
+            "--max-model-len",
+            "262144",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+
+    assert payload["status"] == "planned"
+    assert payload["server_host"] == "127.0.0.1"
+    assert payload["server_port"] == 28136
+    assert payload["request"]["endpoint"] == "/v1/completions"
+    assert payload["request"]["limits"]["target_prompt_tokens"] == 16000
+    assert payload["request"]["limits"]["max_tokens"] == 4
+    assert payload["request"]["limits"]["stream"] is False
+    assert payload["request"]["limits"]["echo"] is False
+    assert payload["request"]["limits"]["logprobs"] is False
+    assert payload["generation_attempted"] is False
+    assert payload["prompt_sent"] is False
+    assert "prompt" not in payload["request"]
+    assert "payload" not in payload["request"]
+    assert "text_sha256" not in result.stdout
+    assert not any("generated text" in claim for claim in payload["non_claims"])
+    assert payload["contract_checks"] == [
+        "HTTP 200 from /health",
+        "HTTP 200 from /v1/models",
+        "model list includes served model and max_model_len=262144",
+        "HTTP 200 from one non-streaming /v1/completions request",
+        "top-level completion response is a JSON object",
+        "response model field matches served model when returned",
+        "exactly one response choice object",
+        "first choice exposes text and finish_reason fields",
+        "generated text length is recorded without generated text contents",
+        "usage prompt/completion/total token fields are internally consistent when returned",
+        "usage.prompt_tokens matches measured prompt tokens when available",
+        "usage.completion_tokens within request max_tokens",
+        "usage.total_tokens >= usage.prompt_tokens + usage.completion_tokens",
         "raw prompt text is not recorded",
         "raw generated text is not recorded",
         "server process group cleanup leaves no remaining PIDs",
