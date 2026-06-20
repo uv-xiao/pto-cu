@@ -196,6 +196,9 @@ def test_review_policy_changelog_and_examples_exist():
         in_progress_root / "vllm_remote_chat_exact_truncated_failure_probe.md"
     ).is_file()
     assert (
+        in_progress_root / "vllm_remote_chat_256k_needle_exact_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
@@ -234,6 +237,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         example_root / "vllm_deepseek_v4_chat_exact_canary_probe.py"
+    ).is_file()
+    assert (
+        example_root / "vllm_deepseek_v4_chat_256k_needle_exact_probe.py"
     ).is_file()
 
 
@@ -813,6 +819,74 @@ def test_chat_exact_truncated_failure_evidence_is_review_safe():
     assert "/" + "home/" not in evidence
 
 
+def test_chat_256k_needle_exact_evidence_is_review_safe():
+    evidence = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "vllm_remote_chat_256k_needle_exact_probe.md"
+    ).read_text(encoding="utf-8")
+    readiness = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "deepseek_v4_flash_serving_readiness.md"
+    ).read_text(encoding="utf-8")
+
+    assert "CUDA_VISIBLE_DEVICES=1,7" in evidence
+    assert "server_port: 28151" in evidence
+    assert "endpoint: /v1/chat/completions" in evidence
+    assert "max_model_len=262144" in evidence
+    assert "tensor_parallel_size=2" in evidence
+    assert "target_prompt_tokens=255800" in evidence
+    assert "max_tokens=64" in evidence
+    assert "temperature=0.0" in evidence
+    assert "top_p=1.0" in evidence
+    assert "seed=0" in evidence
+    assert "message_count: 2" in evidence
+    assert "message_roles: system,user" in evidence
+    assert "expected_answer: PTO_CHAT_NEEDLE_256K_CONTEXT_OK_28151" in evidence
+    assert "match_mode: exact" in evidence
+    assert "stop_sequence: \\n```" in evidence
+    assert "needle_occurrences: 1" in evidence
+    assert "HTTP status: 200" in evidence
+    assert "remaining_process_group_pids: []" in evidence
+    assert "raw prompt text is not recorded" in evidence
+    assert "raw request payload is not recorded" in evidence
+    assert "raw generated text is not recorded" in evidence
+    assert "token ID arrays are not recorded" in evidence
+    assert "logprob values are not recorded" in evidence
+    assert "generated-text digests are not recorded" in evidence
+    assert "vllm_remote_chat_256k_needle_exact_probe.md" in readiness
+
+    if "status: passed" in evidence:
+        assert "PROBE_EXIT_STATUS=0" in evidence
+        assert "finish_reason: stop" in evidence
+        assert "normalized_output_equals_expected: true" in evidence
+        assert "expected_answer_exact: passed" in evidence
+        assert "local_only_vllm_chat_256k_needle_exact: passed" in readiness
+    else:
+        assert "status: failed" in evidence
+        assert "PROBE_EXIT_STATUS=2" in evidence
+        assert "failure_category: chat_needle_expected_answer_not_exact" in evidence
+        assert "normalized_output_equals_expected: false" in evidence
+        assert "expected_answer_exact: failed" in evidence
+        assert "strict exact-comparator failure" in evidence
+        assert "local_only_vllm_chat_256k_needle_exact: failed" in readiness
+
+    assert "messages" not in evidence
+    assert "NEEDLE_ANSWER" not in evidence
+    assert "Synthetic filler" not in evidence
+    assert "generated_text" not in evidence
+    assert "normalized_generated_text" not in evidence
+    assert "text_" + "sha256" not in evidence
+    assert "token_ids" not in evidence
+    assert "logprobs" not in evidence
+    assert "/" + "home/" not in evidence
+
+
 def test_long_prompt_admission_probe_dry_run_contract():
     script = (
         ROOT
@@ -1081,6 +1155,99 @@ def test_needle_correctness_probe_dry_run_contract():
         "raw request payload is not recorded",
         "token ID arrays are not recorded",
         "logprob values are not recorded",
+        "server process group cleanup leaves no remaining PIDs",
+    ]
+
+
+def test_chat_256k_needle_exact_probe_dry_run_contract():
+    script = (
+        ROOT
+        / "examples"
+        / "cuda"
+        / "vllm_deepseek_v4_chat_256k_needle_exact_probe.py"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--dry-run",
+            "--port",
+            "28151",
+            "--target-prompt-tokens",
+            "255800",
+            "--max-model-len",
+            "262144",
+            "--max-tokens",
+            "64",
+            "--temperature",
+            "0.0",
+            "--top-p",
+            "1.0",
+            "--seed",
+            "0",
+            "--expected-answer",
+            "PTO_CHAT_NEEDLE_256K_CONTEXT_OK_28151",
+            "--stop-sequence",
+            "\n```",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+
+    assert payload["status"] == "planned"
+    assert payload["server_host"] == "127.0.0.1"
+    assert payload["server_port"] == 28151
+    assert payload["request"]["endpoint"] == "/v1/chat/completions"
+    assert payload["request"]["limits"]["target_prompt_tokens"] == 255800
+    assert payload["request"]["limits"]["max_tokens"] == 64
+    assert payload["request"]["limits"]["temperature"] == 0.0
+    assert payload["request"]["limits"]["top_p"] == 1.0
+    assert payload["request"]["limits"]["seed"] == 0
+    assert payload["request"]["limits"]["expected_answer"] == (
+        "PTO_CHAT_NEEDLE_256K_CONTEXT_OK_28151"
+    )
+    assert payload["request"]["limits"]["match_mode"] == "exact"
+    assert payload["request"]["limits"]["stop"] == ["\n```"]
+    assert payload["request"]["limits"]["needle_occurrences"] == 1
+    assert payload["request"]["limits"]["message_count"] == 2
+    assert payload["request"]["limits"]["message_roles"] == ["system", "user"]
+    assert payload["generation_attempted"] is False
+    assert payload["prompt_sent"] is False
+    assert payload["request"]["prompt_text_recorded"] is False
+    assert payload["request"]["payload_recorded"] is False
+    assert "messages" not in payload["request"]
+    assert "payload" not in payload["request"]
+    assert "prompt" not in payload["request"]
+    assert "generated_text" not in result.stdout
+    assert "generated_text_digest" not in result.stdout
+    assert "text_" + "sha256" not in result.stdout
+    assert "token_ids" not in result.stdout
+    assert "logprobs" not in result.stdout
+    assert payload["contract_checks"] == [
+        "HTTP 200 from /health",
+        "HTTP 200 from /v1/models",
+        "model list includes served model and max_model_len=262144",
+        "HTTP 200 from one non-streaming /v1/chat/completions request",
+        "top-level chat completion response is a JSON object",
+        "response model field matches served model when returned",
+        "exactly one response choice object",
+        "first choice exposes assistant message content and finish_reason fields",
+        "normalized assistant content equals the expected 256K needle answer",
+        "usage prompt/completion/total token fields are internally consistent when returned",
+        "usage.prompt_tokens matches measured chat prompt tokens when available",
+        "usage.completion_tokens within request max_tokens",
+        "usage.total_tokens >= usage.prompt_tokens + usage.completion_tokens",
+        "raw prompt text is not recorded",
+        "raw request payload is not recorded",
+        "raw generated text is not recorded",
+        "token ID arrays are not recorded",
+        "logprob values are not recorded",
+        "generated-text digests are not recorded",
         "server process group cleanup leaves no remaining PIDs",
     ]
 

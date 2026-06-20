@@ -1326,7 +1326,9 @@ stop-controlled synthetic exact-output repeat pass gate, plus one bounded
 near-256K stop-controlled synthetic exact-output truncated-generation
 failure-mode gate, plus one three-position near-256K stop-controlled
 synthetic exact-output sweep pass gate, plus one bounded OpenAI-compatible
-chat-completions exact-output canary pass gate:
+chat-completions exact-output canary pass gate, plus one bounded
+OpenAI-compatible near-256K chat-completions synthetic needle exact-output
+pass gate:
 
 ```text
 remote_h200_reachable: yes
@@ -1372,6 +1374,8 @@ local_only_vllm_chat_exact_canary: passed under recorded 262144-token
   boundary and one server lifecycle
 local_only_vllm_chat_exact_truncated_failure: failed under recorded
   262144-token boundary with max_tokens=1 as expected
+local_only_vllm_chat_256k_needle_exact: passed under recorded 262144-token
+  boundary and one server lifecycle
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -1400,7 +1404,9 @@ serving_readiness: bounded local-only response contract and warmup-shape
   exact-output sweep pass gate, plus one bounded OpenAI-compatible
   chat-completions exact-output canary pass gate, plus one bounded
   OpenAI-compatible chat-completions exact-output truncated-generation
-  failure-mode gate; no general correctness claims
+  failure-mode gate, plus one bounded OpenAI-compatible near-256K
+  chat-completions synthetic needle exact-output pass gate; no general
+  correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -1524,6 +1530,25 @@ correctness evidence.
 Detailed chat-completions exact truncated-generation failure evidence is
 recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_chat_exact_truncated_failure_probe.md`.
+
+It has now also passed one local-only OpenAI-compatible near-256K
+`/v1/chat/completions` synthetic needle exact-output request under the same
+recorded 262144-token vLLM server boundary. The request targeted a
+255800-token prompt budget, used `max_tokens=64`, `temperature=0.0`,
+`top_p=1.0`, `seed=0`, expected answer
+`PTO_CHAT_NEEDLE_256K_CONTEXT_OK_28151`, strict exact match mode, and stop
+sequence `"\n```"`. The serving path returned HTTP 200 with one response
+choice, `finish_reason=stop`, usage reported `prompt_tokens=255795`,
+`completion_tokens=18`, and `total_tokens=255813`, and the narrowly
+normalized assistant content exactly matched the expected answer. The probe
+recorded only review-safe request limits, response shape, usage, exact-match
+status, and cleanup state; it did not record raw prompt text, raw request
+payload, raw generated text, token ID arrays, logprob values, generated-text
+digests, model artifact contents, or private absolute paths.
+
+Detailed chat-completions near-256K needle exact-output evidence is recorded
+in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_exact_probe.md`.
 
 ## Next Gate
 
