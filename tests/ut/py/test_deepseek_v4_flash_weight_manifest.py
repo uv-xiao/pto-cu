@@ -102,6 +102,97 @@ def test_manifest_require_complete_fails_when_shards_are_missing(tmp_path):
     assert json.loads(result.stdout)["status"] == "incomplete"
 
 
+def test_manifest_preflight_reports_missing_bytes_and_storage_capacity(tmp_path):
+    artifact_dir = tmp_path / "model"
+    artifact_dir.mkdir()
+    (artifact_dir / "model-00001-of-00002.safetensors").write_bytes(b"12345")
+    (artifact_dir / "model.safetensors.index.json").write_text(
+        json.dumps(
+            {
+                "metadata": {"total_size": 12},
+                "weight_map": {
+                    "layer.0.weight": "model-00001-of-00002.safetensors",
+                    "layer.1.weight": "model-00002-of-00002.safetensors",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--artifact-dir",
+            str(artifact_dir),
+            "--storage-dir",
+            str(tmp_path),
+            "--storage-free-bytes",
+            "7",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["required_missing_bytes"] == 7
+    assert payload["storage_dir"].endswith(str(tmp_path))
+    assert payload["storage_free_bytes"] == 7
+    assert payload["storage_required_bytes"] == 7
+    assert payload["storage_has_capacity"] is True
+    assert payload["preflight_status"] == "needs_shard_acquisition"
+    assert payload["next_gate"] == "acquire_missing_shards"
+    assert "vllm_deepseek_v4_model_load_probe.py" in payload["next_command"]
+
+
+def test_manifest_require_preflight_fails_when_storage_lacks_capacity(tmp_path):
+    artifact_dir = tmp_path / "model"
+    artifact_dir.mkdir()
+    (artifact_dir / "model-00001-of-00002.safetensors").write_bytes(b"12345")
+    (artifact_dir / "model.safetensors.index.json").write_text(
+        json.dumps(
+            {
+                "metadata": {"total_size": 12},
+                "weight_map": {
+                    "layer.0.weight": "model-00001-of-00002.safetensors",
+                    "layer.1.weight": "model-00002-of-00002.safetensors",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--artifact-dir",
+            str(artifact_dir),
+            "--storage-dir",
+            str(tmp_path),
+            "--storage-free-bytes",
+            "6",
+            "--require-preflight",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode == 3, result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["required_missing_bytes"] == 7
+    assert payload["storage_has_capacity"] is False
+    assert payload["preflight_status"] == "blocked_storage_capacity"
+    assert payload["next_gate"] == "select_larger_artifact_storage"
+
+
 def test_manifest_require_complete_fails_when_artifact_dir_is_missing(tmp_path):
     artifact_dir = tmp_path / "missing-model"
 
@@ -127,6 +218,9 @@ def test_manifest_require_complete_fails_when_artifact_dir_is_missing(tmp_path):
     assert payload["indexed_shards"] == 0
     assert payload["present_shards"] == 0
     assert payload["missing_shards"] == 0
+    assert payload["required_missing_bytes"] is None
+    assert payload["preflight_status"] == "blocked_missing_artifact_dir"
+    assert payload["next_gate"] == "create_artifact_directory"
 
 
 def test_manifest_reports_complete_weight_shards_without_serving_claim(tmp_path):
@@ -156,6 +250,7 @@ def test_manifest_reports_complete_weight_shards_without_serving_claim(tmp_path)
             "--metadata",
             str(tmp_path / "missing-metadata.json"),
             "--require-complete",
+            "--require-preflight",
         ],
         cwd=ROOT,
         text=True,
@@ -176,6 +271,11 @@ def test_manifest_reports_complete_weight_shards_without_serving_claim(tmp_path)
     assert payload["metadata_used_storage"] is None
     assert payload["metadata_safetensors_total"] is None
     assert payload["non_claim"] == "not serving evidence"
+    assert payload["required_missing_bytes"] == 0
+    assert payload["storage_required_bytes"] == 0
+    assert payload["storage_has_capacity"] is True
+    assert payload["preflight_status"] == "ready_for_model_load"
+    assert payload["next_gate"] == "run_model_load_probe"
     assert "can_serve" not in payload
 
 

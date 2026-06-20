@@ -204,6 +204,9 @@ def test_review_policy_changelog_and_examples_exist():
     assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
+    assert (
+        in_progress_root / "deepseek_v4_flash_weight_manifest_preflight.md"
+    ).is_file()
 
     assert (ROOT / "tools" / "check_nvidia_review_ready.py").is_file()
 
@@ -300,6 +303,18 @@ def test_chat_256k_needle_stream_evidence_is_review_safe():
     assert "text_" + "sha256" not in evidence
     assert "token_ids" not in evidence
     assert "/" + "home/" not in evidence
+
+
+def test_deepseek_v4_weight_manifest_preflight_omits_local_free_bytes():
+    evidence = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "deepseek_v4_flash_weight_manifest_preflight.md"
+    ).read_text(encoding="utf-8")
+
+    assert not re.search(r"storage_free_bytes: [0-9]+", evidence)
 
 
 def test_64k_long_prompt_response_contract_evidence_is_review_safe():

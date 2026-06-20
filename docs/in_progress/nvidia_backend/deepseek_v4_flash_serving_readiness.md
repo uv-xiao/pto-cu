@@ -11,6 +11,9 @@ Already merged inputs:
 - The vLLM DeepSeek V4 import/config probes exist and are weight-free.
 - The local DeepSeek-V4-Flash weight manifest gate found all 46 indexed shards
   present in a gitignored artifact directory.
+- The weight manifest tool now exposes a local acquisition preflight surface:
+  missing shard bytes, selected storage free bytes, storage capacity result,
+  exact `preflight_status`, `next_gate`, and the later model-load command.
 - The local artifact readiness probe can compose artifact inspection with the
   existing vLLM import/config probes.
 
@@ -34,6 +37,25 @@ Merged remote H200 environment evidence:
 
 Detailed follow-up evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_env_artifact_probe.md`.
+
+Fresh local weight-acquisition preflight evidence from this slice:
+
+- The current worktree has no local DeepSeek-V4-Flash artifact subset at
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash`.
+- The manifest preflight command against that path reports
+  `status: missing`, `reason: artifact directory is missing`,
+  `required_missing_bytes: null`, `storage_dir: tmp`,
+  `storage_has_capacity: null`,
+  `preflight_status: blocked_missing_artifact_dir`, and
+  `next_gate: create_artifact_directory`.
+- Because the local index is absent, the preflight cannot compute remaining
+  shard bytes in this checkout. Once the index is present, the same command
+  derives the missing-byte total from index metadata and present shard bytes.
+- This local preflight did not download shards, load the model, start vLLM, run
+  inference, validate output text, or exercise simpler-nv integration.
+
+Detailed local preflight evidence is recorded in the
+`deepseek_v4_flash_weight_manifest_preflight.md` note.
 
 Fresh remote H200 artifact evidence from this slice:
 
