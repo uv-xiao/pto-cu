@@ -458,6 +458,10 @@ class ChipWorker:
         """Drop prepared state for ``callable_id`` and release its orch SO share."""
         self._impl.unregister_callable(int(callable_id))
 
+    def configure_cuda_comm_descriptor(self, descriptor):
+        """Pass compact CUDA communication descriptor bytes to the host runtime."""
+        self._impl.configure_cuda_comm_descriptor(bytes(descriptor))
+
     @property
     def aicpu_dlopen_count(self):
         """Number of distinct callable_ids the AICPU has dlopened for."""
@@ -536,6 +540,24 @@ class ChipWorker:
     def comm_barrier(self, comm_handle: int) -> None:
         """Synchronize all ranks."""
         self._impl.comm_barrier(int(comm_handle))
+
+    def comm_all_reduce_f32(self, comm_handle: int, send: int, recv: int, count: int) -> None:
+        """All-reduce float32 device buffers through the backend communicator."""
+        self._impl.comm_all_reduce_f32(int(comm_handle), int(send), int(recv), int(count))
+
+    def comm_reduce_scatter_f32(self, comm_handle: int, send: int, recv: int, recv_count: int) -> None:
+        """Reduce-scatter float32 device buffers through the backend communicator."""
+        self._impl.comm_reduce_scatter_f32(int(comm_handle), int(send), int(recv), int(recv_count))
+
+    def comm_all_gather_f32(self, comm_handle: int, send: int, recv: int, send_count: int) -> None:
+        """All-gather float32 device buffers through the backend communicator."""
+        self._impl.comm_all_gather_f32(int(comm_handle), int(send), int(recv), int(send_count))
+
+    def comm_send_recv_f32(
+        self, comm_handle: int, send: int, recv: int, count: int, dst_rank: int, src_rank: int
+    ) -> None:
+        """Grouped send/receive float32 device buffers through the backend communicator."""
+        self._impl.comm_send_recv_f32(int(comm_handle), int(send), int(recv), int(count), int(dst_rank), int(src_rank))
 
     def comm_destroy(self, comm_handle: int) -> None:
         """Destroy the communicator and release its resources."""

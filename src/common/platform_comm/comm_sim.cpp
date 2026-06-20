@@ -455,6 +455,41 @@ extern "C" int comm_barrier(CommHandle h) {
     return 0;
 }
 
+extern "C" int comm_all_reduce_f32(CommHandle h, const float *send, float *recv, size_t count) {
+    (void)h;
+    (void)send;
+    (void)recv;
+    (void)count;
+    return -1;
+}
+
+extern "C" int comm_reduce_scatter_f32(CommHandle h, const float *send, float *recv, size_t recv_count) {
+    (void)h;
+    (void)send;
+    (void)recv;
+    (void)recv_count;
+    return -1;
+}
+
+extern "C" int comm_all_gather_f32(CommHandle h, const float *send, float *recv, size_t send_count) {
+    (void)h;
+    (void)send;
+    (void)recv;
+    (void)send_count;
+    return -1;
+}
+
+extern "C" int
+comm_send_recv_f32(CommHandle h, const float *send, float *recv, size_t count, int dst_rank, int src_rank) {
+    (void)h;
+    (void)send;
+    (void)recv;
+    (void)count;
+    (void)dst_rank;
+    (void)src_rank;
+    return -1;
+}
+
 extern "C" int comm_alloc_domain_windows(
     CommHandle h, uint64_t allocation_id, const uint32_t *rank_ids, size_t rank_count, uint32_t domain_rank,
     size_t window_size, uint64_t *device_ctx_out, uint64_t *local_window_base_out

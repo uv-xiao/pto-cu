@@ -17,6 +17,33 @@ Use `--op` to select the evaluated host-schedule ABI shape:
 `add`, `mul`, `scale`, `square`, `axpy`, `affine`, `triad`, `quad`,
 `generic_args`, or `generic_args4`.
 
+## NCCL Two-GPU Baseline
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/nccl_two_gpu_baseline.py \
+  --device-ids 0,1 --tensor-numel 1024 --require-cuda
+```
+
+This skip-safe probe establishes the NCCL compatibility floor for
+`all_reduce`, `reduce_scatter`, `all_gather`, and `send_recv` through the
+internal `simpler_setup.cuda_comm.CudaCommRuntimeRegistry` boundary. H200
+evidence is recorded in
+`docs/in_progress/nvidia_backend/nccl_two_h200_baseline.md`.
+
+## NCCL Worker-Control Ops
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/nccl_worker_control_ops.py \
+  --device-ids 6,7 --tensor-numel 1024 --build --require-cuda
+```
+
+This drives the same four float32 operations through descriptor-backed CUDA
+host-runtime NCCL handles and the private `CTRL_COMM_OP` worker transport.
+H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/nccl_worker_control_h200.md`.
+
 ## Persistent Layered-Cross Graph
 
 ```bash

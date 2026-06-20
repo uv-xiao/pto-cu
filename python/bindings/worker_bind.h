@@ -263,6 +263,11 @@ inline void bind_worker(nb::module_ &m) {
             "control_comm_init", &Worker::control_comm_init, nb::arg("worker_id"), nb::arg("request_shm_name"),
             nb::call_guard<nb::gil_scoped_release>(),
             "Drive one NEXT_LEVEL chip child through CTRL_COMM_INIT (lazy base comm init)."
+        )
+        .def(
+            "control_comm_op", &Worker::control_comm_op, nb::arg("worker_id"), nb::arg("request_shm_name"),
+            nb::call_guard<nb::gil_scoped_release>(),
+            "Drive one NEXT_LEVEL chip child through CTRL_COMM_OP (baseline communicator operation)."
         );
 
     m.attr("DEFAULT_HEAP_RING_SIZE") = static_cast<uint64_t>(DEFAULT_HEAP_RING_SIZE);

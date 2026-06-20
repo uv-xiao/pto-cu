@@ -18,10 +18,12 @@
  * Implementations:
  *   onboard/host/comm_hccl.cpp — HCCL backend (links CANN hccl/hccl_fwk)
  *   sim/host/comm_sim.cpp      — malloc-based simulation
+ *   cuda/onboard/host          — descriptor-backed mock lifecycle and NCCL
+ *                                setup plus baseline operations
  *
  * All functions are compiled into libhost_runtime.so. The linker selects
- * the implementation at build time (onboard vs sim), with no runtime
- * dispatch or virtual functions.
+ * the implementation at build time, with no runtime dispatch or virtual
+ * functions.
  */
 
 #pragma once
@@ -200,6 +202,64 @@ int comm_release_domain_windows(CommHandle h, uint64_t allocation_id, size_t ran
  * @return 0 on success, non-zero on failure.
  */
 int comm_barrier(CommHandle h);
+
+/**
+ * All-reduce a float32 device buffer with sum reduction.
+ *
+ * This operation is optional per platform backend. CUDA implements it for NCCL
+ * communicator handles; backends without a matching transport return non-zero.
+ *
+ * @param h      Handle from comm_init().
+ * @param send   Device pointer to this rank's input buffer.
+ * @param recv   Device pointer to this rank's output buffer.
+ * @param count  Number of float32 elements.
+ * @return 0 on success, non-zero on failure or unsupported backend.
+ */
+int comm_all_reduce_f32(CommHandle h, const float *send, float *recv, size_t count);
+
+/**
+ * Reduce-scatter a float32 device buffer with sum reduction.
+ *
+ * CUDA implements this for NCCL communicator handles. `send` must contain
+ * `recv_count * nranks` float32 elements laid out in rank order.
+ *
+ * @param h           Handle from comm_init().
+ * @param send        Device pointer to this rank's input buffer.
+ * @param recv        Device pointer to this rank's output buffer.
+ * @param recv_count  Number of float32 elements received by this rank.
+ * @return 0 on success, non-zero on failure or unsupported backend.
+ */
+int comm_reduce_scatter_f32(CommHandle h, const float *send, float *recv, size_t recv_count);
+
+/**
+ * All-gather a float32 device buffer from every rank.
+ *
+ * CUDA implements this for NCCL communicator handles. `recv` must contain
+ * `send_count * nranks` float32 elements laid out in rank order.
+ *
+ * @param h           Handle from comm_init().
+ * @param send        Device pointer to this rank's input buffer.
+ * @param recv        Device pointer to this rank's output buffer.
+ * @param send_count  Number of float32 elements contributed by this rank.
+ * @return 0 on success, non-zero on failure or unsupported backend.
+ */
+int comm_all_gather_f32(CommHandle h, const float *send, float *recv, size_t send_count);
+
+/**
+ * Exchange float32 device buffers with peer ranks.
+ *
+ * CUDA implements this for NCCL communicator handles with a grouped send and
+ * receive on the handle stream.
+ *
+ * @param h         Handle from comm_init().
+ * @param send      Device pointer to this rank's send buffer.
+ * @param recv      Device pointer to this rank's receive buffer.
+ * @param count     Number of float32 elements to send and receive.
+ * @param dst_rank  Destination rank for the send.
+ * @param src_rank  Source rank for the receive.
+ * @return 0 on success, non-zero on failure or unsupported backend.
+ */
+int comm_send_recv_f32(CommHandle h, const float *send, float *recv, size_t count, int dst_rank, int src_rank);
 
 /**
  * Destroy the communicator and release all resources.

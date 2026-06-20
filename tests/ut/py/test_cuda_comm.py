@@ -1,0 +1,549 @@
+"""Tests for internal CUDA communication capability descriptors."""
+
+from __future__ import annotations
+
+import importlib.util
+import struct
+import zlib
+from pathlib import Path
+
+import pytest
+import simpler
+from simpler import worker as worker_mod
+
+from simpler_setup.cuda_comm import (
+    CudaCommDeviceDescriptor,
+    CudaCommHostPlan,
+    CudaCommLaunchPlan,
+    CudaCommOp,
+    CudaCommRuntimeRegistry,
+    MockCudaCommRuntime,
+    TorchNcclCudaCommRuntime,
+    create_cuda_comm_capability,
+    create_cuda_comm_host_plan,
+    create_cuda_comm_launch_plan,
+    create_mock_cuda_comm_capability,
+)
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def _load_nccl_worker_control_example():
+    example = ROOT / "examples" / "cuda" / "nccl_worker_control_ops.py"
+    assert example.is_file(), f"missing {example.relative_to(ROOT)}"
+    spec = importlib.util.spec_from_file_location("nccl_worker_control_ops_example", example)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_cuda_comm_capability_is_internal_and_opaque():
+    capability = create_mock_cuda_comm_capability(device_ids=(2, 5))
+
+    assert capability.backend == "mock"
+    assert capability.world_size == 2
+    assert capability.rank_to_device() == {0: 2, 1: 5}
+    assert capability.supports(CudaCommOp.ALL_REDUCE)
+    assert capability.supports("reduce_scatter")
+    assert capability.capability_id.startswith("mock:")
+    assert "nccl" not in capability.capability_id.lower()
+    assert not hasattr(simpler, "CudaCommCapability")
+
+
+def test_cuda_comm_capability_supports_nccl_without_transport_objects():
+    capability = create_cuda_comm_capability(backend="nccl", device_ids=(0, 1))
+
+    assert capability.backend == "nccl"
+    assert capability.world_size == 2
+    assert capability.rank_to_device() == {0: 0, 1: 1}
+    assert capability.supports(CudaCommOp.REDUCE_SCATTER)
+    assert capability.as_dict() == {
+        "backend": "nccl",
+        "capability_id": "nccl:rank0->cuda0,rank1->cuda1",
+        "world_size": 2,
+        "rank_to_device": {"0": 0, "1": 1},
+        "operations": ["all_reduce", "reduce_scatter", "all_gather", "send_recv"],
+    }
+    assert not hasattr(simpler, "TorchNcclCudaCommRuntime")
+
+
+def test_cuda_comm_launch_plan_resolves_local_rank_without_transport_objects():
+    capability = create_cuda_comm_capability(backend="nccl", device_ids=(2, 7))
+    plan = create_cuda_comm_launch_plan(capability, rank=1)
+
+    assert isinstance(plan, CudaCommLaunchPlan)
+    assert plan.capability is capability
+    assert plan.backend == "nccl"
+    assert plan.rank == 1
+    assert plan.device_id == 7
+    assert plan.world_size == 2
+    assert plan.runtime_id == "nccl:rank0->cuda2,rank1->cuda7/local_rank1"
+    assert plan.as_dict() == {
+        "backend": "nccl",
+        "capability_id": "nccl:rank0->cuda2,rank1->cuda7",
+        "runtime_id": "nccl:rank0->cuda2,rank1->cuda7/local_rank1",
+        "rank": 1,
+        "device_id": 7,
+        "world_size": 2,
+    }
+    assert not hasattr(simpler, "CudaCommLaunchPlan")
+
+
+def test_cuda_comm_launch_plan_rejects_unknown_rank():
+    capability = create_cuda_comm_capability(backend="nccl", device_ids=(0, 1))
+
+    with pytest.raises(ValueError, match="unknown rank"):
+        create_cuda_comm_launch_plan(capability, rank=2)
+
+
+def test_cuda_comm_launch_plan_exports_compact_device_descriptor():
+    capability = create_cuda_comm_capability(backend="nccl", device_ids=(2, 7))
+    plan = create_cuda_comm_launch_plan(capability, rank=1)
+
+    descriptor = plan.device_descriptor()
+    expected_crc = zlib.crc32(capability.capability_id.encode("utf-8"))
+
+    assert isinstance(descriptor, CudaCommDeviceDescriptor)
+    assert descriptor.as_dict() == {
+        "backend": "nccl",
+        "backend_code": 1,
+        "rank": 1,
+        "device_id": 7,
+        "world_size": 2,
+        "capability_crc32": expected_crc,
+    }
+    assert descriptor.to_bytes() == struct.pack("<IIIII", 1, 1, 7, 2, expected_crc)
+    assert len(descriptor.to_bytes()) == 20
+    assert not hasattr(simpler, "CudaCommDeviceDescriptor")
+
+
+def test_cuda_comm_host_plan_maps_worker_indices_to_launch_plans():
+    host_plan = create_cuda_comm_host_plan(backend="nccl", device_ids=(2, 7))
+
+    assert isinstance(host_plan, CudaCommHostPlan)
+    assert host_plan.backend == "nccl"
+    assert host_plan.world_size == 2
+    assert host_plan.device_ids == (2, 7)
+    assert host_plan.capability.capability_id == "nccl:rank0->cuda2,rank1->cuda7"
+    assert host_plan.runtime_ids() == (
+        "nccl:rank0->cuda2,rank1->cuda7/local_rank0",
+        "nccl:rank0->cuda2,rank1->cuda7/local_rank1",
+    )
+    assert host_plan.launch_plan_for_worker(0).rank == 0
+    assert host_plan.launch_plan_for_worker(0).device_id == 2
+    assert host_plan.launch_plan_for_worker(1).rank == 1
+    assert host_plan.launch_plan_for_worker(1).device_id == 7
+    assert host_plan.as_dict() == {
+        "backend": "nccl",
+        "world_size": 2,
+        "device_ids": [2, 7],
+        "capability": {
+            "backend": "nccl",
+            "capability_id": "nccl:rank0->cuda2,rank1->cuda7",
+            "world_size": 2,
+            "rank_to_device": {"0": 2, "1": 7},
+            "operations": ["all_reduce", "reduce_scatter", "all_gather", "send_recv"],
+        },
+        "launch_plans": [
+            {
+                "backend": "nccl",
+                "capability_id": "nccl:rank0->cuda2,rank1->cuda7",
+                "runtime_id": "nccl:rank0->cuda2,rank1->cuda7/local_rank0",
+                "rank": 0,
+                "device_id": 2,
+                "world_size": 2,
+            },
+            {
+                "backend": "nccl",
+                "capability_id": "nccl:rank0->cuda2,rank1->cuda7",
+                "runtime_id": "nccl:rank0->cuda2,rank1->cuda7/local_rank1",
+                "rank": 1,
+                "device_id": 7,
+                "world_size": 2,
+            },
+        ],
+    }
+    assert not hasattr(simpler, "CudaCommHostPlan")
+
+
+def test_cuda_comm_host_plan_rejects_unknown_worker_index():
+    host_plan = create_cuda_comm_host_plan(backend="nccl", device_ids=(0, 1))
+
+    with pytest.raises(ValueError, match="worker index"):
+        host_plan.launch_plan_for_worker(2)
+
+
+def test_cuda_comm_capability_rejects_ambiguous_rank_mapping():
+    with pytest.raises(ValueError, match="unique"):
+        create_mock_cuda_comm_capability(device_ids=(0, 0))
+
+    with pytest.raises(ValueError, match="at least one"):
+        create_mock_cuda_comm_capability(device_ids=())
+
+    with pytest.raises(ValueError, match="unsupported"):
+        create_cuda_comm_capability(backend="uccl", device_ids=(0, 1))
+
+
+def test_nccl_worker_control_ops_example_is_skip_safe():
+    module = _load_nccl_worker_control_example()
+
+    result = module.run_worker_control_ops(
+        device_ids=(0, 1),
+        tensor_numel=4,
+        skip_reason=lambda _min_gpus: "no test GPU",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "no test GPU"
+    assert result["transport"] == "worker_control"
+    assert result["operations"] == ["all_reduce", "reduce_scatter", "all_gather", "send_recv"]
+
+
+def test_nccl_worker_control_ops_example_discovers_bundled_nccl(monkeypatch, tmp_path):
+    module = _load_nccl_worker_control_example()
+    nccl_lib = tmp_path / "nvidia" / "nccl" / "lib" / "libnccl.so.2"
+    nccl_lib.parent.mkdir(parents=True)
+    nccl_lib.write_bytes(b"fake nccl")
+    monkeypatch.delenv(module._NCCL_LIBRARY_ENV, raising=False)
+
+    configured = module.configure_nccl_library_env(search_paths=[tmp_path])
+
+    assert configured == str(nccl_lib)
+    assert module.os.environ[module._NCCL_LIBRARY_ENV] == str(nccl_lib)
+
+
+def test_nccl_worker_control_ops_example_respects_explicit_nccl_library(monkeypatch, tmp_path):
+    module = _load_nccl_worker_control_example()
+    explicit = tmp_path / "explicit-libnccl.so.2"
+    monkeypatch.setenv(module._NCCL_LIBRARY_ENV, str(explicit))
+
+    assert module.configure_nccl_library_env(search_paths=[]) == str(explicit)
+
+
+def test_nccl_worker_control_ops_example_drives_ctrl_comm_op_with_worker_memory():
+    module = _load_nccl_worker_control_example()
+    created_workers = []
+
+    class FakeOrchestrator:
+        def __init__(self):
+            self.device_memory = {}
+            self.next_ptr = 0x1000
+
+        def malloc(self, worker_id: int, size: int) -> int:
+            ptr = self.next_ptr + worker_id * 0x100000
+            self.next_ptr += 0x1000
+            self.device_memory[ptr] = [0.0] * (size // 4)
+            return ptr
+
+        def copy_to(self, worker_id: int, dst: int, src: int, size: int) -> None:
+            self.device_memory[dst] = module._HostFloatBuffer.from_address(src).read(size // 4)
+
+        def copy_from(self, worker_id: int, dst: int, src: int, size: int) -> None:
+            module._HostFloatBuffer.from_address(dst).write(self.device_memory[src][: size // 4])
+
+        def free(self, worker_id: int, ptr: int) -> None:
+            self.device_memory.pop(ptr, None)
+
+    class FakeWorker:
+        def __init__(self, **config):
+            self.config = config
+            self.orch = FakeOrchestrator()
+            self.dispatches = []
+            created_workers.append(self)
+
+        def init(self) -> None:
+            self.initialized = True
+
+        def run(self, fn, args=None, config=None) -> None:
+            fn(self.orch, args, config)
+
+        def close(self) -> None:
+            self.closed = True
+
+        def _dispatch_control_comm_op(self, **kwargs) -> None:
+            self.dispatches.append(kwargs)
+            workers = tuple(kwargs["workers"])
+            op_code = kwargs["op_code"]
+            send_ptrs = kwargs["send_ptrs"]
+            recv_ptrs = kwargs["recv_ptrs"]
+            counts = kwargs["counts"]
+            count_for = counts if isinstance(counts, dict) else {worker: counts for worker in workers}
+
+            if op_code == worker_mod._COMM_OP_ALL_REDUCE_F32:
+                count = count_for[workers[0]]
+                reduced = [sum(self.orch.device_memory[send_ptrs[worker]][idx] for worker in workers) for idx in range(count)]
+                for worker in workers:
+                    self.orch.device_memory[recv_ptrs[worker]][:count] = reduced
+            elif op_code == worker_mod._COMM_OP_REDUCE_SCATTER_F32:
+                count = count_for[workers[0]]
+                for worker in workers:
+                    offset = worker * count
+                    self.orch.device_memory[recv_ptrs[worker]][:count] = [
+                        sum(self.orch.device_memory[send_ptrs[src]][offset + idx] for src in workers)
+                        for idx in range(count)
+                    ]
+            elif op_code == worker_mod._COMM_OP_ALL_GATHER_F32:
+                count = count_for[workers[0]]
+                gathered = []
+                for worker in workers:
+                    gathered.extend(self.orch.device_memory[send_ptrs[worker]][:count])
+                for worker in workers:
+                    self.orch.device_memory[recv_ptrs[worker]][: len(gathered)] = gathered
+            elif op_code == worker_mod._COMM_OP_SEND_RECV_F32:
+                dst_ranks = kwargs["dst_ranks"]
+                src_ranks = kwargs["src_ranks"]
+                for worker in workers:
+                    count = count_for[worker]
+                    assert dst_ranks[src_ranks[worker]] == worker
+                    self.orch.device_memory[recv_ptrs[worker]][:count] = self.orch.device_memory[
+                        send_ptrs[src_ranks[worker]]
+                    ][:count]
+            else:  # pragma: no cover - defensive branch for future op additions
+                raise AssertionError(f"unexpected op_code {op_code}")
+
+    result = module.run_worker_control_ops(
+        device_ids=(0, 1),
+        tensor_numel=4,
+        skip_reason=lambda _min_gpus: None,
+        worker_factory=FakeWorker,
+    )
+
+    assert result["status"] == "passed"
+    assert result["transport"] == "worker_control"
+    assert result["all_reduce"]["passed"] is True
+    assert result["reduce_scatter"]["passed"] is True
+    assert result["all_gather"]["passed"] is True
+    assert result["send_recv"]["passed"] is True
+    assert [item["op_code"] for item in created_workers[0].dispatches] == [
+        worker_mod._COMM_OP_ALL_REDUCE_F32,
+        worker_mod._COMM_OP_REDUCE_SCATTER_F32,
+        worker_mod._COMM_OP_ALL_GATHER_F32,
+        worker_mod._COMM_OP_SEND_RECV_F32,
+    ]
+    assert created_workers[0].config["device_ids"] == [0, 1]
+
+
+def test_nccl_worker_control_expected_values_track_float32_storage():
+    module = _load_nccl_worker_control_example()
+
+    assert module._expected_all_reduce_f32(16777217) == 33554432.0
+    assert module._expected_reduce_scatter_f32(dst_rank=0, idx=16777217) == 33554432.0
+    assert module._expected_reduce_scatter_f32(dst_rank=1, idx=16777217) == 33554456.0
+    assert module._expected_all_gather_f32(src_rank=0, idx=29360127) == 7340032.0
+    assert module._expected_all_gather_f32(src_rank=1, idx=29360127) == 7340033.0
+
+
+def test_mock_cuda_comm_runtime_matches_baseline_collective_shapes():
+    runtime = MockCudaCommRuntime(create_mock_cuda_comm_capability(device_ids=(0, 1)))
+
+    all_reduce = runtime.all_reduce(([1.0, 2.0], [10.0, 20.0]))
+    assert all_reduce == ((11.0, 22.0), (11.0, 22.0))
+
+    reduce_scatter = runtime.reduce_scatter(([1.0, 2.0, 3.0, 4.0], [10.0, 20.0, 30.0, 40.0]))
+    assert reduce_scatter == ((11.0, 22.0), (33.0, 44.0))
+
+    all_gather = runtime.all_gather(([0.0], [1.0]))
+    assert all_gather == ((0.0, 1.0), (0.0, 1.0))
+
+    send_recv = runtime.send_recv({(0, 1): [23.0], (1, 0): [17.0]})
+    assert send_recv == {0: (17.0,), 1: (23.0,)}
+
+
+def test_mock_cuda_comm_runtime_validates_world_size_and_shapes():
+    runtime = MockCudaCommRuntime(create_mock_cuda_comm_capability(device_ids=(0, 1)))
+
+    with pytest.raises(ValueError, match="world_size"):
+        runtime.all_reduce(([1.0],))
+
+    with pytest.raises(ValueError, match="same length"):
+        runtime.all_reduce(([1.0], [2.0, 3.0]))
+
+    with pytest.raises(ValueError, match="divisible"):
+        runtime.reduce_scatter(([1.0, 2.0, 3.0], [10.0, 20.0, 30.0]))
+
+    with pytest.raises(ValueError, match="destination rank"):
+        runtime.send_recv({(0, 2): [1.0]})
+
+
+def test_cuda_comm_runtime_registry_owns_mock_lifecycle():
+    registry = CudaCommRuntimeRegistry()
+    capability = create_mock_cuda_comm_capability(device_ids=(0, 1))
+
+    first = registry.acquire(capability)
+    second = registry.acquire(capability)
+
+    assert first is second
+    assert registry.active_ids() == (capability.capability_id,)
+    assert first.all_gather(([2.0], [5.0])) == ((2.0, 5.0), (2.0, 5.0))
+
+    registry.release(capability.capability_id)
+    assert registry.active_ids() == ()
+    with pytest.raises(KeyError, match=capability.capability_id):
+        registry.get(capability.capability_id)
+
+
+def test_cuda_comm_runtime_registry_acquires_nccl_runtime_with_rank_lifecycle():
+    registry = CudaCommRuntimeRegistry()
+    capability = create_cuda_comm_capability(backend="nccl", device_ids=(0, 1))
+    fake_torch = _FakeTorch()
+    fake_dist = _FakeDist()
+
+    runtime = registry.acquire(
+        capability,
+        rank=1,
+        init_method="tcp://127.0.0.1:12345",
+        torch_module=fake_torch,
+        dist_module=fake_dist,
+    )
+
+    assert isinstance(runtime, TorchNcclCudaCommRuntime)
+    assert runtime.rank == 1
+    assert runtime.device_id == 1
+    assert fake_torch.cuda.device_ids == [1]
+    assert fake_dist.init_calls == [
+        {
+            "backend": "nccl",
+            "init_method": "tcp://127.0.0.1:12345",
+            "rank": 1,
+            "world_size": 2,
+        }
+    ]
+    assert (
+        registry.acquire(
+            capability,
+            rank=1,
+            init_method="tcp://127.0.0.1:12345",
+            torch_module=fake_torch,
+            dist_module=fake_dist,
+        )
+        is runtime
+    )
+    assert registry.active_ids() == ("nccl:rank0->cuda0,rank1->cuda1/local_rank1",)
+
+    registry.release(runtime.runtime_id)
+
+    assert fake_dist.destroy_calls == 1
+    assert registry.active_ids() == ()
+
+
+def test_cuda_comm_launch_plan_acquires_registry_runtime():
+    registry = CudaCommRuntimeRegistry()
+    capability = create_cuda_comm_capability(backend="nccl", device_ids=(0, 1))
+    plan = create_cuda_comm_launch_plan(capability, rank=0)
+    fake_torch = _FakeTorch()
+    fake_dist = _FakeDist()
+
+    runtime = plan.acquire_runtime(
+        registry,
+        init_method="tcp://127.0.0.1:12345",
+        torch_module=fake_torch,
+        dist_module=fake_dist,
+    )
+
+    assert isinstance(runtime, TorchNcclCudaCommRuntime)
+    assert runtime.rank == plan.rank
+    assert runtime.device_id == plan.device_id
+    assert runtime.runtime_id == plan.runtime_id
+    assert registry.active_ids() == (plan.runtime_id,)
+
+    registry.release(plan.runtime_id)
+
+
+def test_nccl_runtime_forwards_collective_operations():
+    capability = create_cuda_comm_capability(backend="nccl", device_ids=(0, 1))
+    fake_dist = _FakeDist()
+    runtime = TorchNcclCudaCommRuntime(
+        capability,
+        rank=0,
+        init_method="tcp://127.0.0.1:12345",
+        torch_module=_FakeTorch(),
+        dist_module=fake_dist,
+    )
+
+    tensor = _FakeTensor("input")
+    output = _FakeTensor("output")
+
+    assert runtime.all_reduce(tensor) is tensor
+    assert runtime.reduce_scatter(output, tensor) is output
+    gathered = runtime.all_gather(tensor)
+    runtime.send(tensor, dst=1)
+    runtime.recv(output, src=1)
+
+    assert len(gathered) == 2
+    assert fake_dist.calls == [
+        ("all_reduce", tensor, "sum"),
+        ("reduce_scatter_tensor", output, tensor, "sum"),
+        ("all_gather", tuple(gathered), tensor),
+        ("send", tensor, 1),
+        ("recv", output, 1),
+    ]
+
+
+class _FakeCuda:
+    def __init__(self) -> None:
+        self.device_ids: list[int] = []
+
+    def set_device(self, device_id: int) -> None:
+        self.device_ids.append(device_id)
+
+
+class _FakeTorch:
+    def __init__(self) -> None:
+        self.cuda = _FakeCuda()
+
+    def empty_like(self, tensor):
+        return _FakeTensor(f"empty_like:{tensor.name}")
+
+
+class _FakeDist:
+    class ReduceOp:
+        SUM = "sum"
+
+    def __init__(self) -> None:
+        self.init_calls: list[dict] = []
+        self.destroy_calls = 0
+        self.calls: list[tuple] = []
+        self._initialized = False
+
+    def init_process_group(self, *, backend: str, init_method: str, rank: int, world_size: int) -> None:
+        self.init_calls.append(
+            {
+                "backend": backend,
+                "init_method": init_method,
+                "rank": rank,
+                "world_size": world_size,
+            }
+        )
+        self._initialized = True
+
+    def is_available(self) -> bool:
+        return True
+
+    def is_initialized(self) -> bool:
+        return self._initialized
+
+    def destroy_process_group(self) -> None:
+        self.destroy_calls += 1
+        self._initialized = False
+
+    def all_reduce(self, tensor, *, op) -> None:
+        self.calls.append(("all_reduce", tensor, op))
+
+    def reduce_scatter_tensor(self, output, tensor, *, op) -> None:
+        self.calls.append(("reduce_scatter_tensor", output, tensor, op))
+
+    def all_gather(self, gathered, tensor) -> None:
+        self.calls.append(("all_gather", tuple(gathered), tensor))
+
+    def send(self, tensor, *, dst: int) -> None:
+        self.calls.append(("send", tensor, dst))
+
+    def recv(self, tensor, *, src: int) -> None:
+        self.calls.append(("recv", tensor, src))
+
+
+class _FakeTensor:
+    def __init__(self, name: str) -> None:
+        self.name = name

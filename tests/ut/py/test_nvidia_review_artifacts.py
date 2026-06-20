@@ -1564,3 +1564,57 @@ def test_nvidia_branch_ci_avoids_ascend_jobs():
     assert "runs-on: [self-hosted, a5]" not in workflow
     assert "--platform a2a3" not in workflow
     assert "--platform a5" not in workflow
+
+
+def test_cuda_comm_descriptor_and_nccl_worker_control_artifacts_are_recorded():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    boundary = in_progress_root / "communication_runtime_boundary.md"
+    selection = in_progress_root / "communication_selection.md"
+    baseline = in_progress_root / "nccl_two_h200_baseline.md"
+    worker_control = in_progress_root / "nccl_worker_control_h200.md"
+    readme = ROOT / "examples" / "cuda" / "README.md"
+
+    for path in (
+        boundary,
+        selection,
+        baseline,
+        worker_control,
+        ROOT / "simpler_setup" / "cuda_comm.py",
+        ROOT / "src" / "cuda" / "platform" / "include" / "host" / "pto_cuda_comm_descriptor_abi.h",
+        ROOT / "examples" / "cuda" / "nccl_two_gpu_baseline.py",
+        ROOT / "examples" / "cuda" / "nccl_worker_control_ops.py",
+        ROOT / "tests" / "ut" / "py" / "test_cuda_comm.py",
+    ):
+        assert path.is_file(), path
+
+    boundary_text = boundary.read_text(encoding="utf-8")
+    assert "CudaCommDeviceDescriptor" in boundary_text
+    assert "configure_cuda_comm_descriptor" in boundary_text
+    assert "CTRL_COMM_OP" in boundary_text
+    assert "TaskArgs" in boundary_text
+    assert "CallConfig" in boundary_text
+    assert "does not claim UCCL host-runtime dispatch" in boundary_text
+    assert "DeepSeek model correctness" in boundary_text
+
+    selection_text = selection.read_text(encoding="utf-8")
+    assert "NCCL" in selection_text
+    assert "UCCL adapter execution" in selection_text
+    assert "multi-node evidence" in selection_text
+
+    baseline_text = baseline.read_text(encoding="utf-8")
+    assert "examples/cuda/nccl_two_gpu_baseline.py" in baseline_text
+    assert "all_reduce" in baseline_text
+    assert "reduce_scatter" in baseline_text
+    assert "all_gather" in baseline_text
+    assert "send_recv" in baseline_text
+
+    worker_control_text = worker_control.read_text(encoding="utf-8")
+    assert "examples/cuda/nccl_worker_control_ops.py" in worker_control_text
+    assert "--device-ids 6,7" in worker_control_text
+    assert "--tensor-numel 1024" in worker_control_text
+    assert "max_abs_error: 0.0" in worker_control_text
+    assert "CTRL_COMM_OP" in worker_control_text
+
+    readme_text = readme.read_text(encoding="utf-8")
+    assert "nccl_two_gpu_baseline.py" in readme_text
+    assert "nccl_worker_control_ops.py" in readme_text

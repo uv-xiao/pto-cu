@@ -460,6 +460,17 @@ void WorkerThread::control_comm_init(const char *request_shm_name) {
     run_control_command("control_comm_init");
 }
 
+void WorkerThread::control_comm_op(const char *request_shm_name) {
+    if (!request_shm_name || !*request_shm_name) {
+        throw std::runtime_error("control_comm_op: request shm name must be non-empty");
+    }
+    std::lock_guard<std::mutex> lk(mailbox_mu_);
+    uint64_t sub_cmd = CTRL_COMM_OP;
+    std::memcpy(mbox() + MAILBOX_OFF_CALLABLE, &sub_cmd, sizeof(uint64_t));
+    write_shm_name_pair(mbox(), request_shm_name, "");
+    run_control_command("control_comm_op");
+}
+
 bool WorkerManager::any_busy() const {
     for (auto &wt : next_level_threads_)
         if (!wt->idle()) return true;
@@ -590,6 +601,14 @@ void WorkerManager::control_comm_init(int worker_id, const char *request_shm_nam
         throw std::runtime_error("control_comm_init: invalid worker_id " + std::to_string(worker_id));
     }
     wt->control_comm_init(request_shm_name);
+}
+
+void WorkerManager::control_comm_op(int worker_id, const char *request_shm_name) {
+    auto *wt = get_worker(WorkerType::NEXT_LEVEL, worker_id);
+    if (wt == nullptr) {
+        throw std::runtime_error("control_comm_op: invalid worker_id " + std::to_string(worker_id));
+    }
+    wt->control_comm_op(request_shm_name);
 }
 
 void WorkerManager::broadcast_register_all(int32_t cid, const void *blob_ptr, size_t blob_size) {
