@@ -56,3 +56,17 @@ This checks local gitignored shard presence against
 recorded in
 `docs/in_progress/nvidia_backend/deepseek_v4_flash_weight_manifest_complete.md`.
 It is not model-load or serving evidence.
+
+## DeepSeek V4 Flash Artifact Probe
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/vllm_deepseek_v4_artifact_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash
+```
+
+This combines local config/tokenizer/index/shard readiness with the existing
+weight-free vLLM DeepSeek V4 import and synthetic config probes. Missing local
+artifacts or missing vLLM report structured skips by default; use
+`--require-artifacts` or `--require-vllm` to make either condition fail the
+command. It does not attempt model load, start a server, or run inference.
