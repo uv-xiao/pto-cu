@@ -122,14 +122,15 @@ created a remote-local `.venv-vllm-probe`, installed vLLM only into that venv,
 and got the weight-free DeepSeek V4 import and config probes passing on the
 remote H200.
 
-The remaining blocker is artifact-path readiness: after sync, the remote
-checkout still does not expose
-`tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash`. The artifact probe and
-weight manifest gate now fail explicitly on that missing repo-relative path.
-The next gate is to expose a complete artifact directory, including all
-indexed safetensors shards, at that path and rerun the same probes. That gate
-should still stop before model load, server startup, or inference unless a
-later PR explicitly owns those steps.
+The remaining blocker is artifact completeness: after sync, the remote
+checkout exposes
+`tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash` with metadata/tokenizer
+files, but not the indexed safetensors shards. The artifact probe and weight
+manifest gate now fail because the indexed shards are missing. The next gate
+is to expose a complete artifact directory, including all indexed safetensors
+shards, at that path and rerun the same probes. That gate should still stop
+before model load, server startup, or inference unless a later PR explicitly
+owns those steps.
 
 ## Non-Claims
 
