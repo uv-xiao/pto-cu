@@ -64,7 +64,7 @@ present_bytes: 0
 index_total_size: null
 required_missing_bytes: null
 storage_dir: tmp
-storage_free_bytes: 32927020843008
+storage_free_bytes: available (exact local value omitted from committed docs)
 storage_required_bytes: null
 storage_has_capacity: null
 preflight_status: blocked_missing_artifact_dir
