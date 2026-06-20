@@ -595,6 +595,52 @@ Fresh remote H200 256K context health evidence from this slice:
 Detailed 256K context health evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_256k_context_health_probe.md`.
 
+Fresh remote H200 long-prompt admission evidence from this slice:
+
+- A repo-owned long-prompt admission probe script now reuses the server-health
+  lifecycle, checks `/health` and `/v1/models`, sends one bounded
+  non-streaming `/v1/completions` request, records only response
+  shape/accounting fields, terminates the server process group, and checks
+  for remaining process-group PIDs.
+- The remote source tree was refreshed with `--sync`, preserving the complete
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`. The fresh pre-run snapshot showed 141773 MiB
+  free on GPU 1 and 116670 MiB free on GPU 7.
+- The fixed loopback port `28135` was checked as available before the run.
+- The passing boundary used `max_model_len=262144`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 65-minute outer timeout, a
+  2700-second readiness timeout, and a 600-second request timeout.
+- The synthetic prompt targeted 16000 prompt tokens. Local tokenizer
+  accounting measured 15995 prompt tokens before sending the request.
+- The server started on `http://127.0.0.1:28135`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` with
+  `max_model_len=262144` from `/v1/models`, and accepted one
+  `/v1/completions` request with `max_tokens=1`, `temperature=0.0`,
+  `top_p=1.0`, `seed=0`, and `stream=false`.
+- The completion request returned HTTP 200 with one response choice. Usage
+  reported `prompt_tokens=15995`, `completion_tokens=1`, and
+  `total_tokens=15996`.
+- The probe recorded response object and choice key shape only. It did not
+  record raw prompt text, raw generated text, token identity, logprob values,
+  or stop-token behavior.
+- The probe exited 0 after 126.517 seconds with `prompt_sent=true` and
+  `generation_attempted=true`.
+- The probe sent `SIGTERM`, vLLM logged API server shutdown, and the probe
+  reported no remaining process-group PIDs. The immediate post-run
+  selected-GPU memory snapshot matched the pre-run baseline.
+- The run establishes local-only long-prompt admission evidence only; it is
+  not generated-text correctness, tokenizer semantic correctness, prompt
+  semantic correctness, token identity, logprob, stop-token, latency,
+  throughput, production-readiness, broad determinism, or simpler-nv/vLLM
+  integration evidence.
+
+Detailed long-prompt admission evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_long_prompt_admission_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
@@ -602,8 +648,8 @@ server-startup, health/model-list readiness, one-token inference smoke, one
 bounded response-contract probe, warmup/request-shape gates,
 deterministic-repeat serving-semantics, one explicit logprobs response shape
 probe, one explicit echo response-shape probe, one explicit stop-field
-acceptance probe, and 64K, 128K, plus 256K server-health/model-list capacity
-gates:
+acceptance probe, 64K, 128K, plus 256K server-health/model-list capacity
+gates, and one bounded 16K long-prompt admission request:
 
 ```text
 remote_h200_reachable: yes
@@ -617,6 +663,8 @@ local_only_vllm_server_health: passed under recorded 4096-token boundary
 local_only_vllm_64k_server_health: passed under recorded 65536-token boundary
 local_only_vllm_128k_server_health: passed under recorded 131072-token boundary
 local_only_vllm_256k_server_health: passed under recorded 262144-token boundary
+local_only_vllm_16k_long_prompt_admission: passed under recorded 262144-token
+  boundary
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -628,8 +676,8 @@ stop_contract_probe: passed under recorded explicit stop-field boundary
 serving_readiness: bounded local-only response contract and warmup-shape
   variation plus deterministic-repeat serving-semantics, logprobs response
   shape, echo response-shape, stop-field acceptance observations, and 64K,
-  128K, plus 256K server-health/model-list capacity gates; no correctness
-  claims
+  128K, plus 256K server-health/model-list capacity gates, plus one bounded
+  16K long-prompt admission request; no correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -655,13 +703,15 @@ It has also passed local-only 64K, 128K, and 256K
 server-health/model-list capacity gates without sending a long prompt or
 attempting generation.
 
+It has now passed one local-only long-prompt admission request near a 16K
+prompt-token budget under the recorded 262144-token vLLM server boundary.
+
 ## Next Gate
 
-The next PR-sized gate can move from endpoint-only 256K capacity evidence to
-a bounded long-prompt admission check under a separate contract. That later
-gate needs its own command, resource plan, expected failure mode, and
-non-claims, and it should stay separate from generated-text correctness,
-throughput, latency, and production-readiness claims.
+The next PR-sized gate can stay under the same local-only vLLM boundary and
+probe a bounded long-prompt response-contract variant, still without judging
+generated text. A separate later gate can decide whether to raise the prompt
+budget beyond this 16K admission check.
 
 ## Non-Claims
 
