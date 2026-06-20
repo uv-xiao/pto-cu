@@ -691,6 +691,61 @@ Fresh remote H200 long-prompt response-contract evidence from this slice:
 Detailed long-prompt response-contract evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_long_prompt_response_contract_probe.md`.
 
+Fresh remote H200 long-prompt warmup/follow-up evidence from this slice:
+
+- A repo-owned long-prompt warmup/follow-up probe script now reuses the
+  server-health lifecycle, long-prompt synthetic prompt builder, readiness
+  contract, and response-contract validator. It checks `/health` and
+  `/v1/models`, sends one labeled `warmup` non-streaming `/v1/completions`
+  request, sends one labeled `followup` request with the same request shape,
+  validates review-safe response-contract fields for both responses,
+  terminates the server process group, and checks for remaining process-group
+  PIDs.
+- The remote source tree was refreshed with `--sync`, preserving the complete
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`. The fresh pre-run snapshot showed 141773 MiB
+  free on GPU 1 and 116670 MiB free on GPU 7.
+- The fixed loopback port `28137` was checked as available before the run.
+- The passing boundary used `max_model_len=262144`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 75-minute outer timeout, a
+  2700-second readiness timeout, a 600-second per-request timeout, and a
+  2-second log-settle interval after each completion request.
+- The synthetic prompt targeted 16000 prompt tokens. Local tokenizer
+  accounting measured 15995 prompt tokens before sending either request.
+- The server started on `http://127.0.0.1:28137`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` with
+  `max_model_len=262144` from `/v1/models`, and accepted two same-shape
+  `/v1/completions` requests with `max_tokens=4`, `temperature=0.0`,
+  `top_p=1.0`, `seed=0`, `n=1`, and `stream=false`.
+- Both completion requests returned HTTP 200 with exactly one response
+  choice, response `model`, choice `text` and `finish_reason`, and usage
+  counts: `prompt_tokens=15995`, `completion_tokens=4`, and
+  `total_tokens=15999`.
+- For both responses, `usage.prompt_tokens` matched the measured prompt-token
+  count, `usage.completion_tokens` was within the request `max_tokens` bound,
+  and `usage.total_tokens >= usage.prompt_tokens + usage.completion_tokens`.
+- The probe recorded generated text lengths only, not generated text contents
+  or generated text digests. It did not record raw prompt text, raw generated
+  text, token identity, logprob values, or stop-token behavior.
+- The probe exited 0 after 120.038 seconds with `prompt_sent=true` and
+  `generation_attempted=true`. The elapsed time is a run fact only, not
+  latency or throughput evidence.
+- The probe sent `SIGTERM`, vLLM logged API server shutdown, and the probe
+  reported no remaining process-group PIDs. The immediate post-run
+  selected-GPU memory snapshot matched the pre-run baseline.
+- The run establishes local-only long-prompt warmup/follow-up
+  response-contract evidence only; it is not generated-text correctness,
+  tokenizer semantic correctness, prompt semantic correctness, token identity,
+  logprob, stop-token, latency, throughput, production-readiness, broad
+  determinism, or simpler-nv/vLLM integration evidence.
+
+Detailed long-prompt warmup/follow-up evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_long_prompt_warmup_followup_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
@@ -700,7 +755,8 @@ deterministic-repeat serving-semantics, one explicit logprobs response shape
 probe, one explicit echo response-shape probe, one explicit stop-field
 acceptance probe, 64K, 128K, plus 256K server-health/model-list capacity
 gates, one bounded 16K long-prompt admission request, and one bounded 16K
-long-prompt response-contract probe:
+long-prompt response-contract probe, and one bounded 16K long-prompt
+same-shape warmup/follow-up probe:
 
 ```text
 remote_h200_reachable: yes
@@ -718,6 +774,8 @@ local_only_vllm_16k_long_prompt_admission: passed under recorded 262144-token
   boundary
 local_only_vllm_16k_long_prompt_response_contract: passed under recorded
   262144-token boundary
+local_only_vllm_16k_long_prompt_warmup_followup: passed under recorded
+  same-shape 262144-token boundary
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -731,7 +789,8 @@ serving_readiness: bounded local-only response contract and warmup-shape
   shape, echo response-shape, stop-field acceptance observations, and 64K,
   128K, plus 256K server-health/model-list capacity gates, plus one bounded
   16K long-prompt admission request, plus one bounded 16K long-prompt
-  response-contract probe; no correctness claims
+  response-contract probe, plus one bounded 16K same-shape warmup/follow-up
+  probe; no correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -762,13 +821,17 @@ prompt-token budget under the recorded 262144-token vLLM server boundary.
 It has also passed one local-only long-prompt response-contract request for
 the same prompt class with `max_tokens=4`, recording response structure and
 usage accounting without recording raw prompt or generated text.
+It has now also passed two consecutive same-shape local-only long-prompt
+completion requests for the same prompt class inside one server lifecycle,
+recording response structure and usage accounting without recording raw prompt
+or generated text.
 
 ## Next Gate
 
 The next PR-sized gate can stay under the same local-only vLLM boundary and
-probe a bounded long-prompt same-shape warmup/follow-up variant, still
-without judging generated text. A separate later gate can decide whether to
-raise the prompt budget beyond this 16K response-contract check.
+either increase the prompt-token budget beyond this 16K-ish same-shape class
+or vary one request shape after the same long-prompt warmup, still without
+judging generated text.
 
 ## Non-Claims
 
