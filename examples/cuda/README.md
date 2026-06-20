@@ -141,3 +141,37 @@ reported by the probe. This is server startup and health/model-list evidence,
 not generated-text correctness, tokenizer semantics, 256K context,
 throughput, latency, production readiness, or simpler-nv/vLLM integration
 evidence.
+
+## DeepSeek V4 Flash vLLM Inference Smoke Probe
+
+```bash
+CUDA_VISIBLE_DEVICES=<two ids> VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 55m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_inference_smoke_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28124 \
+  --server-log tmp/vllm-inference-smoke-probe/server-28124.log \
+  --max-model-len 4096 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 180 --terminate-timeout-seconds 60 \
+  --endpoint /v1/completions --prompt Hello --max-tokens 1 \
+  --temperature 0.0
+```
+
+This starts the same local-only server boundary, checks `/health` and
+`/v1/models`, sends exactly one bounded completion request by default, records
+request limits and response shape, and terminates the server process group.
+The remote H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_inference_smoke_probe.md`: the
+server returned HTTP 200 from readiness endpoints, returned HTTP 200 from one
+`/v1/completions` request with `max_tokens=1`, and shut down with no remaining
+process-group PIDs reported by the probe. This is inference-smoke evidence,
+not generated-text correctness, tokenizer semantics, prompt correctness, 256K
+context, throughput, latency, production readiness, or simpler-nv/vLLM
+integration evidence.
