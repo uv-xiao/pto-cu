@@ -64,7 +64,64 @@ def test_planned_needle_request_is_review_safe():
     assert request["limits"]["logprobs"] is False
     assert safe["prompt_text_recorded"] is False
     assert safe["payload_recorded"] is False
+    assert "stop" not in request
+    assert "stop" not in safe["limits"]
     assert "prompt" not in safe
+    assert "payload" not in safe
+
+
+def test_needle_request_omits_stop_control_by_default(monkeypatch):
+    probe = load_probe_module()
+
+    monkeypatch.setattr(
+        probe,
+        "build_synthetic_needle_prompt",
+        lambda **_: {
+            "prompt": "NEEDLE_ANSWER: PTO_NEEDLE_256K_CONTEXT_OK_28143",
+            "accounting": {
+                "target_prompt_tokens": 255800,
+                "actual_prompt_tokens": 255799,
+                "tokenizer_accounting": "test",
+                "prompt_chars": 44,
+                "prompt_unit_chars": 1,
+                "needle_occurrences": 1,
+            },
+        },
+    )
+
+    request = probe.build_needle_request()
+
+    assert "stop" not in request["payload"]
+    assert "stop" not in request["limits"]
+
+
+def test_stop_sequence_is_carried_in_request_and_review_safe_limits(monkeypatch):
+    probe = load_probe_module()
+
+    monkeypatch.setattr(
+        probe,
+        "build_synthetic_needle_prompt",
+        lambda **_: {
+            "prompt": "NEEDLE_ANSWER: PTO_NEEDLE_256K_CONTEXT_OK_28143",
+            "accounting": {
+                "target_prompt_tokens": 255800,
+                "actual_prompt_tokens": 255799,
+                "tokenizer_accounting": "test",
+                "prompt_chars": 44,
+                "prompt_unit_chars": 1,
+                "needle_occurrences": 1,
+            },
+        },
+    )
+
+    request = probe.build_needle_request(stop_sequences=["\n```"])
+    safe = probe.review_safe_request(request)
+
+    assert request["payload"]["stop"] == ["\n```"]
+    assert request["limits"]["stop"] == ["\n```"]
+    assert safe["limits"]["stop"] == ["\n```"]
+    assert safe["prompt_text_recorded"] is False
+    assert safe["payload_recorded"] is False
     assert "payload" not in safe
 
 
@@ -153,6 +210,28 @@ def test_validate_needle_correctness_exact_mode_rejects_extra_wording():
     assert "correctly extracts" in result["normalized_generated_text"]
 
 
+def test_validate_needle_correctness_exact_mode_rejects_unmatched_trailing_fence():
+    probe = load_probe_module()
+    expected = "PTO_NEEDLE_256K_CONTEXT_OK_28143"
+    request = probe.build_planned_needle_request(
+        expected_answer=expected,
+        match_mode="exact",
+    )
+
+    result = probe.validate_needle_correctness_response(
+        completion_payload(f"\n{expected}\n```\n"),
+        request=request,
+        served_model_name="deepseek-ai/DeepSeek-V4-Flash",
+        expected_answer=expected,
+        match_mode="exact",
+    )
+
+    assert result["status"] == "failed"
+    assert result["checks"]["expected_answer_exact"] == "failed"
+    assert result["failure"]["category"] == "needle_expected_answer_not_exact"
+    assert result["normalized_generated_text"] == f"{expected}\n```"
+
+
 def test_validate_needle_correctness_contains_mode_still_allows_extra_wording():
     probe = load_probe_module()
     expected = "PTO_NEEDLE_256K_CONTEXT_OK_28143"
@@ -238,6 +317,7 @@ def test_dry_run_cli_output_is_review_safe():
     assert payload["prompt_sent"] is False
     assert payload["request"]["prompt_text_recorded"] is False
     assert payload["request"]["payload_recorded"] is False
+    assert "stop" not in payload["request"]["limits"]
     assert "prompt" not in payload["request"]
     assert "payload" not in payload["request"]
     assert "text_" + "sha256" not in result.stdout
@@ -250,3 +330,41 @@ def test_dry_run_cli_output_is_review_safe():
         claim == "not generated-text correctness evidence"
         for claim in payload["non_claims"]
     )
+
+
+def test_dry_run_cli_output_records_configured_stop_sequence_safely():
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(PROBE_PATH),
+            "--dry-run",
+            "--port",
+            "28145",
+            "--target-prompt-tokens",
+            "255800",
+            "--max-model-len",
+            "262144",
+            "--max-tokens",
+            "64",
+            "--match-mode",
+            "exact",
+            "--stop-sequence",
+            "\n```",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+
+    assert payload["status"] == "planned"
+    assert payload["server_port"] == 28145
+    assert payload["request"]["limits"]["match_mode"] == "exact"
+    assert payload["request"]["limits"]["stop"] == ["\n```"]
+    assert payload["request"]["prompt_text_recorded"] is False
+    assert payload["request"]["payload_recorded"] is False
+    assert "payload" not in payload["request"]
+    assert "raw request payload" in result.stdout

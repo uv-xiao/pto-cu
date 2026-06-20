@@ -156,8 +156,9 @@ def _planned_limits(
     seed: int,
     expected_answer: str,
     match_mode: str,
+    stop_sequences: list[str],
 ) -> dict[str, Any]:
-    return {
+    limits = {
         "target_prompt_tokens": target_prompt_tokens,
         "actual_prompt_tokens": None,
         "tokenizer_accounting": "planned",
@@ -174,9 +175,22 @@ def _planned_limits(
         "expected_answer": expected_answer,
         "match_mode": match_mode,
         "normalization": NORMALIZATION_RULE,
+        "stop_sequences_configured": bool(stop_sequences),
         "needle_occurrences": 1,
         "generated_text_recording": "short_synthetic_output_only",
     }
+    if stop_sequences:
+        limits["stop"] = stop_sequences
+    return limits
+
+
+def _normalize_stop_sequences(stop_sequences: list[str] | None) -> list[str]:
+    if stop_sequences is None:
+        return []
+    normalized = list(stop_sequences)
+    if not all(isinstance(value, str) and value for value in normalized):
+        raise ValueError("stop sequences must be non-empty strings")
+    return normalized
 
 
 def _validate_request_bounds(
@@ -185,6 +199,7 @@ def _validate_request_bounds(
     max_tokens: int,
     expected_answer: str,
     match_mode: str = DEFAULT_MATCH_MODE,
+    stop_sequences: list[str] | None = None,
 ) -> None:
     if target_prompt_tokens < 1:
         raise ValueError("target prompt-token budget must be positive")
@@ -197,6 +212,7 @@ def _validate_request_bounds(
         raise ValueError("expected needle answer must be non-empty")
     if match_mode not in MATCH_MODES:
         raise ValueError(f"match_mode must be one of: {', '.join(MATCH_MODES)}")
+    _normalize_stop_sequences(stop_sequences)
 
 
 def normalize_generated_output_for_exact_match(text: str) -> str:
@@ -299,13 +315,16 @@ def build_needle_request(
     seed: int = DEFAULT_SEED,
     expected_answer: str = DEFAULT_EXPECTED_ANSWER,
     match_mode: str = DEFAULT_MATCH_MODE,
+    stop_sequences: list[str] | None = None,
 ) -> dict[str, Any]:
     _validate_request_bounds(
         target_prompt_tokens=target_prompt_tokens,
         max_tokens=max_tokens,
         expected_answer=expected_answer,
         match_mode=match_mode,
+        stop_sequences=stop_sequences,
     )
+    normalized_stop_sequences = _normalize_stop_sequences(stop_sequences)
     prompt_result = build_synthetic_needle_prompt(
         artifact_dir=artifact_dir,
         target_prompt_tokens=target_prompt_tokens,
@@ -323,24 +342,30 @@ def build_needle_request(
         "n": 1,
         "stream": False,
     }
+    if normalized_stop_sequences:
+        payload["stop"] = normalized_stop_sequences
+    limits = {
+        **prompt_result["accounting"],
+        "max_tokens": max_tokens,
+        "stream": False,
+        "n": 1,
+        "temperature": temperature,
+        "top_p": top_p,
+        "seed": seed,
+        "echo": False,
+        "logprobs": False,
+        "expected_answer": expected_answer,
+        "match_mode": match_mode,
+        "normalization": NORMALIZATION_RULE,
+        "stop_sequences_configured": bool(normalized_stop_sequences),
+        "generated_text_recording": "short_synthetic_output_only",
+    }
+    if normalized_stop_sequences:
+        limits["stop"] = normalized_stop_sequences
     return {
         "endpoint": DEFAULT_ENDPOINT,
         "payload": payload,
-        "limits": {
-            **prompt_result["accounting"],
-            "max_tokens": max_tokens,
-            "stream": False,
-            "n": 1,
-            "temperature": temperature,
-            "top_p": top_p,
-            "seed": seed,
-            "echo": False,
-            "logprobs": False,
-            "expected_answer": expected_answer,
-            "match_mode": match_mode,
-            "normalization": NORMALIZATION_RULE,
-            "generated_text_recording": "short_synthetic_output_only",
-        },
+        "limits": limits,
     }
 
 
@@ -353,13 +378,16 @@ def build_planned_needle_request(
     seed: int = DEFAULT_SEED,
     expected_answer: str = DEFAULT_EXPECTED_ANSWER,
     match_mode: str = DEFAULT_MATCH_MODE,
+    stop_sequences: list[str] | None = None,
 ) -> dict[str, Any]:
     _validate_request_bounds(
         target_prompt_tokens=target_prompt_tokens,
         max_tokens=max_tokens,
         expected_answer=expected_answer,
         match_mode=match_mode,
+        stop_sequences=stop_sequences,
     )
+    normalized_stop_sequences = _normalize_stop_sequences(stop_sequences)
     return {
         "endpoint": DEFAULT_ENDPOINT,
         "limits": _planned_limits(
@@ -370,6 +398,7 @@ def build_planned_needle_request(
             seed=seed,
             expected_answer=expected_answer,
             match_mode=match_mode,
+            stop_sequences=normalized_stop_sequences,
         ),
     }
 
@@ -737,6 +766,7 @@ def run_probe(
     seed: int = DEFAULT_SEED,
     expected_answer: str = DEFAULT_EXPECTED_ANSWER,
     match_mode: str = DEFAULT_MATCH_MODE,
+    stop_sequences: list[str] | None = None,
     dry_run: bool = False,
 ) -> dict[str, Any]:
     selected_port = port if port is not None else health_probe.choose_local_port()
@@ -772,6 +802,7 @@ def run_probe(
                 seed=seed,
                 expected_answer=expected_answer,
                 match_mode=match_mode,
+                stop_sequences=stop_sequences,
             )
         else:
             needle_request = build_needle_request(
@@ -784,6 +815,7 @@ def run_probe(
                 seed=seed,
                 expected_answer=expected_answer,
                 match_mode=match_mode,
+                stop_sequences=stop_sequences,
             )
     except ValueError as exc:
         return {
@@ -985,6 +1017,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Markdown code fence if present, then compares exactly"
         ),
     )
+    parser.add_argument(
+        "--stop-sequence",
+        action="append",
+        default=None,
+        help=(
+            "repeatable OpenAI-compatible stop string for the completion "
+            "request; omitted from the request body when unset"
+        ),
+    )
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
 
@@ -1017,6 +1058,7 @@ def main(argv: list[str] | None = None) -> int:
         seed=args.seed,
         expected_answer=args.expected_answer,
         match_mode=args.match_mode,
+        stop_sequences=args.stop_sequence,
         dry_run=args.dry_run,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
