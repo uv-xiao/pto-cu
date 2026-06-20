@@ -1573,6 +1573,28 @@ Detailed chat-completions near-256K needle exact-repeat evidence is recorded
 in
 `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_repeat_probe.md`.
 
+It has now also passed one local-only OpenAI-compatible near-256K streaming
+`/v1/chat/completions` synthetic needle exact-output request under the same
+recorded 262144-token vLLM server boundary. The request targeted a
+255800-token prompt budget, used `max_tokens=64`, `temperature=0.0`,
+`top_p=1.0`, `seed=0`, expected answer
+`PTO_CHAT_NEEDLE_256K_STREAM_OK_28153`, strict exact match mode, stop
+sequence `"\n```"`, and `stream=true`. The streaming path returned HTTP 200,
+parsed 19 SSE chunk events, assembled 16 assistant content deltas in memory,
+reported `finish_reason=stop`, did not return streaming usage, and the
+narrowly normalized assembled assistant content exactly matched the expected
+answer. The probe recorded only review-safe request limits, streaming event
+counts, response shape, usage state, exact-match status, and cleanup state;
+it did not record raw prompt text, raw request payload, raw generated text,
+raw streaming chunk content, token ID arrays, logprob values,
+generated-text digests, model artifact contents, non-loopback URLs,
+hostnames, usernames, or private absolute paths.
+
+Detailed chat-completions near-256K needle streaming exact-output evidence is
+recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_probe.md`.
+Status marker: `local_only_vllm_chat_256k_needle_stream: passed`.
+
 ## Next Gate
 
 The next PR-sized gate can stay under the same local-only vLLM boundary for
