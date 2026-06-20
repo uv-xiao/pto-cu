@@ -1370,6 +1370,8 @@ local_only_vllm_256k_needle_position_sweep: passed under recorded
   262144-token boundary and one server lifecycle
 local_only_vllm_chat_exact_canary: passed under recorded 262144-token
   boundary and one server lifecycle
+local_only_vllm_chat_exact_truncated_failure: failed under recorded
+  262144-token boundary with max_tokens=1 as expected
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -1396,8 +1398,9 @@ serving_readiness: bounded local-only response contract and warmup-shape
   stop-controlled synthetic exact-output truncated-generation failure-mode
   gate, plus one three-position near-256K stop-controlled synthetic
   exact-output sweep pass gate, plus one bounded OpenAI-compatible
-  chat-completions exact-output canary pass gate; no general correctness
-  claims
+  chat-completions exact-output canary pass gate, plus one bounded
+  OpenAI-compatible chat-completions exact-output truncated-generation
+  failure-mode gate; no general correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -1505,6 +1508,22 @@ paths.
 
 Detailed chat-completions exact canary evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_chat_exact_canary_probe.md`.
+
+It has now also recorded one expected local-only OpenAI-compatible
+`/v1/chat/completions` exact-output failure under the same recorded
+262144-token vLLM server boundary. The request intentionally used
+`max_tokens=1` with expected answer `PTO_CHAT_EXACT_CANARY_28149`; the serving
+path returned HTTP 200 with one response choice, generation was attempted,
+usage reported `prompt_tokens=33`, `completion_tokens=1`, and
+`total_tokens=34`, strict exact mode failed with
+`chat_canary_expected_answer_not_exact`, and cleanup reported no remaining
+process-group PIDs. This is an expected strict exact-comparator failure-mode
+characterization, not a transport/server failure and not generated-text
+correctness evidence.
+
+Detailed chat-completions exact truncated-generation failure evidence is
+recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_exact_truncated_failure_probe.md`.
 
 ## Next Gate
 

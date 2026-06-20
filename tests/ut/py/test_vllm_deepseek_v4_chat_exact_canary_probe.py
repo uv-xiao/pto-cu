@@ -158,6 +158,41 @@ def test_validate_chat_canary_rejects_extra_text_without_weakening_exact_match()
     assert "Additional explanation" not in json.dumps(result)
 
 
+def test_validate_chat_canary_records_safe_usage_on_truncated_exact_failure():
+    probe = load_probe_module()
+    request = probe.build_planned_chat_canary_request(
+        max_tokens=1,
+        expected_answer=EXPECTED,
+    )
+
+    result = probe.validate_chat_canary_response(
+        chat_payload("P", completion_tokens=1),
+        request=request,
+        served_model_name="deepseek-ai/DeepSeek-V4-Flash",
+        expected_answer=EXPECTED,
+    )
+    serialized = json.dumps(result)
+
+    assert result["status"] == "failed"
+    assert result["checks"]["usage_shape"] == "passed"
+    assert result["checks"]["usage_completion_bound"] == "passed"
+    assert result["checks"]["usage_total_tokens"] == "passed"
+    assert result["checks"]["expected_answer_exact"] == "failed"
+    assert result["failure"]["category"] == "chat_canary_expected_answer_not_exact"
+    assert result["usage"] == {
+        "prompt_tokens": 19,
+        "completion_tokens": 1,
+        "total_tokens": 20,
+    }
+    assert result["normalized_output_equals_expected"] is False
+    assert result["normalized_output_length_chars"] == 1
+    assert "generated_text" not in result
+    assert "text_sha256" not in serialized
+    assert "token_ids" not in serialized
+    assert "logprobs" not in serialized
+    assert "PTO_CHAT_EXACT_CANARY_28149" in serialized
+
+
 def test_response_shape_omits_prompt_text_token_id_and_logprob_keys():
     probe = load_probe_module()
     request = probe.build_planned_chat_canary_request(expected_answer=EXPECTED)
@@ -271,3 +306,48 @@ def test_dry_run_cli_output_is_review_safe():
     assert "tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash" not in output
     assert "/" + "home/" not in output
     assert "uv" + "xiao" not in output
+
+
+def test_truncated_dry_run_cli_output_is_review_safe():
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(PROBE_PATH),
+            "--dry-run",
+            "--port",
+            "28150",
+            "--max-model-len",
+            "262144",
+            "--max-tokens",
+            "1",
+            "--expected-answer",
+            EXPECTED,
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+    output = result.stdout
+
+    assert payload["status"] == "planned"
+    assert payload["server_port"] == 28150
+    assert payload["request"]["endpoint"] == "/v1/chat/completions"
+    assert payload["request"]["limits"]["max_tokens"] == 1
+    assert payload["request"]["limits"]["expected_answer"] == EXPECTED
+    assert payload["request"]["limits"]["match_mode"] == "exact"
+    assert payload["request"]["limits"]["generated_text_recording"] is False
+    assert payload["generation_attempted"] is False
+    assert payload["prompt_sent"] is False
+    assert payload["request"]["prompt_text_recorded"] is False
+    assert payload["request"]["payload_recorded"] is False
+    assert "messages" not in payload["request"]
+    assert "payload" not in payload["request"]
+    assert "Return exactly" not in output
+    assert "text_sha256" not in output
+    assert "generated_text_digest" not in output
+    assert "token_ids" not in output
+    assert "logprobs" not in output
