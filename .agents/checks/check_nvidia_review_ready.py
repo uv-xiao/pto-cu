@@ -143,6 +143,7 @@ def check_examples_and_rules() -> None:
         "docs/in_progress/nvidia_backend/vllm_remote_warmup_shape_probe.md",
         "docs/in_progress/nvidia_backend/vllm_remote_request_shape_variation_probe.md",
         "docs/in_progress/nvidia_backend/vllm_remote_serving_semantics_probe.md",
+        "docs/in_progress/nvidia_backend/vllm_remote_logprobs_contract_probe.md",
         "docs/in_progress/nvidia_backend/deepseek_v4_flash_serving_readiness.md",
         "examples/cuda/README.md",
         "examples/cuda/host_schedule_vector_ops.py",

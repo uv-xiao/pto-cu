@@ -335,11 +335,57 @@ Fresh remote H200 serving-semantics evidence from this slice:
 Detailed serving-semantics evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_serving_semantics_probe.md`.
 
+Fresh remote H200 logprobs-contract evidence from this slice:
+
+- The repo-owned response-contract probe script now has a
+  `--logprobs-contract` mode that reuses the existing server lifecycle,
+  health/model-list readiness checks, response-contract validation, cleanup,
+  and local-only server boundary.
+- The remote source tree was refreshed with `--sync`, preserving the complete
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`. The fresh pre-run snapshot showed 141773 MiB free
+  on GPU 1 and 116662 MiB free on GPU 7.
+- The passing boundary used `max_model_len=4096`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 65-minute outer timeout, a
+  2700-second readiness timeout, and a 180-second request timeout.
+- The server started on `http://127.0.0.1:28129`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` from `/v1/models`, and
+  accepted one completion payload with `prompt=Hello`, `max_tokens=4`,
+  `temperature=0.0`, `top_p=1.0`, `seed=0`, `n=1`, `stream=false`,
+  `logprobs=1`, and `prompt_logprobs=1`.
+- The completion request returned HTTP 200 with exactly one response choice
+  and structurally valid response-contract fields. The response reported
+  `usage.prompt_tokens=1`, `usage.completion_tokens=4`, and
+  `usage.total_tokens=5`.
+- The explicit logprobs response-shape checks passed:
+  `choice.logprobs` exposed list-valued completion logprob fields with
+  lengths matching `usage.completion_tokens`, and `choice.prompt_logprobs`
+  was list-valued and bounded by `usage.prompt_tokens`.
+- The probe exited 0 after 110.636 seconds with `generation_attempted=true`.
+- The probe sent `SIGTERM`, vLLM logged API server and engine shutdown, and
+  the probe reported no remaining process-group PIDs. The immediate post-run
+  selected-GPU memory snapshot showed GPU 1 and GPU 7 back at their pre-run
+  memory baseline.
+- The run establishes a local-only logprobs response-shape observation for
+  this exact bounded request; it is not generated-text correctness, tokenizer
+  semantic correctness, prompt correctness, token identity or logprob value
+  correctness, latency, throughput, long-context, production-readiness, or
+  simpler-nv/vLLM integration evidence.
+
+Detailed logprobs-contract evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_logprobs_contract_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
-server-startup, health/model-list readiness, one-token inference smoke, and
-one bounded response-contract probe:
+server-startup, health/model-list readiness, one-token inference smoke, one
+bounded response-contract probe, warmup/request-shape gates,
+deterministic-repeat serving-semantics, and one explicit logprobs response
+shape probe:
 
 ```text
 remote_h200_reachable: yes
@@ -355,9 +401,10 @@ response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
 request_shape_variation_probe: passed under recorded three-request boundary
 serving_semantics_probe: passed under recorded deterministic-repeat boundary
+logprobs_contract_probe: passed under recorded explicit logprob boundary
 serving_readiness: bounded local-only response contract and warmup-shape
-  variation plus deterministic-repeat serving-semantics observation; no
-  correctness claims
+  variation plus deterministic-repeat serving-semantics and logprobs response
+  shape observations; no correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -367,25 +414,28 @@ two-H200 boundary. It has also passed one bounded same-shape warmup/follow-up
 observation and one bounded request-shape variation observation of the
 selected Triton JIT warning string. It has now passed one bounded
 deterministic-repeat serving-semantics observation that compares response
-digests and accounting without recording or judging generated text. It is
-still too early to claim generated text correctness, long-context behavior,
-latency, throughput, production readiness, broad determinism, or
-simpler-nv/vLLM kernel integration.
+digests and accounting without recording or judging generated text. It has
+also passed one bounded explicit `logprobs` / `prompt_logprobs` response-shape
+observation without inspecting token identity or logprob values. It is still
+too early to claim generated text correctness, token/logprob semantic
+correctness, long-context behavior, latency, throughput, production readiness,
+broad determinism, or simpler-nv/vLLM kernel integration.
 
 ## Next Gate
 
-The next PR-sized gate can move to a separate explicit stop/echo/logprob
+The next PR-sized gate can move to explicit `echo` or `stop` / `stop_token_ids`
 serving behavior if vLLM exposes it safely, or to another bounded request
-shape that is deliberately independent from correctness. That later gate
-needs its own command, resource plan, expected failure mode, and non-claims,
-and it should stay separate from throughput, latency, long-context, and
-production-readiness claims.
+shape that is deliberately independent from generated-text correctness. That
+later gate needs its own command, resource plan, expected failure mode, and
+non-claims, and it should stay separate from throughput, latency,
+long-context, and production-readiness claims.
 
 ## Non-Claims
 
 - This is not prompt, tokenizer semantic, correct-text, long-context,
   throughput, latency, or production readiness evidence.
 - This is not generated-text correctness evidence.
+- This is not token identity or logprob value correctness evidence.
 - This is not broad serving determinism evidence.
 - This is not simpler-nv or vLLM kernel integration evidence.
 - This did not commit raw model artifacts, venvs, command dumps, or `tmp/`

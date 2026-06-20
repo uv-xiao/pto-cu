@@ -67,6 +67,24 @@ def completion_payload(*, completion_tokens=2, token_ids=None):
     }
 
 
+def logprobs_payload(*, completion_tokens=2, prompt_tokens=3):
+    payload = completion_payload(completion_tokens=completion_tokens)
+    payload["usage"]["prompt_tokens"] = prompt_tokens
+    payload["usage"]["total_tokens"] = prompt_tokens + completion_tokens
+    payload["choices"][0]["logprobs"] = {
+        "tokens": ["o", "k"][:completion_tokens],
+        "token_logprobs": [-0.1, -0.2][:completion_tokens],
+        "top_logprobs": [{"o": -0.1}, {"k": -0.2}][:completion_tokens],
+        "text_offset": [0, 1][:completion_tokens],
+    }
+    payload["choices"][0]["prompt_logprobs"] = [
+        None,
+        {"9906": {"logprob": -0.3, "rank": 1, "decoded_token": "Hello"}},
+        {"13": {"logprob": -0.4, "rank": 1, "decoded_token": "."}},
+    ][:prompt_tokens]
+    return payload
+
+
 def test_validate_completion_contract_accepts_structurally_consistent_payload():
     probe = load_probe_module()
     request = probe.build_contract_request(max_tokens=4)
@@ -125,6 +143,61 @@ def test_validate_completion_contract_rejects_token_id_count_mismatch():
 
     assert result["status"] == "failed"
     assert result["failure"]["category"] == "response_contract_token_ids_mismatch"
+
+
+def test_build_logprobs_request_adds_explicit_bounded_logprob_fields():
+    probe = load_probe_module()
+
+    request = probe.build_logprobs_contract_request(max_tokens=2)
+
+    assert request["endpoint"] == "/v1/completions"
+    assert request["payload"]["logprobs"] == 1
+    assert request["payload"]["prompt_logprobs"] == 1
+    assert request["payload"]["stream"] is False
+    assert request["limits"]["logprobs"] == 1
+    assert request["limits"]["prompt_logprobs"] == 1
+    assert request["limits"]["max_tokens"] == 2
+
+
+def test_validate_logprobs_contract_accepts_completion_and_prompt_shapes():
+    probe = load_probe_module()
+    request = probe.build_logprobs_contract_request(max_tokens=2)
+
+    result = probe.validate_logprobs_contract(
+        logprobs_payload(completion_tokens=2, prompt_tokens=3),
+        request=request,
+    )
+
+    assert result["status"] == "passed"
+    assert result["checks"]["base_completion_contract"] == "passed"
+    assert result["checks"]["completion_logprobs_shape"] == "passed"
+    assert result["checks"]["prompt_logprobs_shape"] == "passed"
+    assert result["logprobs"]["completion_token_count"] == 2
+    assert result["logprobs"]["prompt_logprobs_count"] == 3
+
+
+def test_validate_logprobs_contract_rejects_missing_completion_logprobs():
+    probe = load_probe_module()
+    request = probe.build_logprobs_contract_request(max_tokens=2)
+    payload = logprobs_payload(completion_tokens=2)
+    payload["choices"][0]["logprobs"] = None
+
+    result = probe.validate_logprobs_contract(payload, request=request)
+
+    assert result["status"] == "failed"
+    assert result["failure"]["category"] == "logprobs_contract_completion_shape"
+
+
+def test_validate_logprobs_contract_rejects_prompt_logprobs_beyond_usage_bound():
+    probe = load_probe_module()
+    request = probe.build_logprobs_contract_request(max_tokens=2)
+    payload = logprobs_payload(completion_tokens=2, prompt_tokens=1)
+    payload["choices"][0]["prompt_logprobs"] = [None, {"1": {"logprob": -0.1}}]
+
+    result = probe.validate_logprobs_contract(payload, request=request)
+
+    assert result["status"] == "failed"
+    assert result["failure"]["category"] == "logprobs_contract_prompt_bound"
 
 
 def test_send_contract_request_classifies_http_failure():

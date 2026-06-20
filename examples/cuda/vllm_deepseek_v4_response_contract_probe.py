@@ -24,6 +24,9 @@ DEFAULT_TEMPERATURE = 0.0
 DEFAULT_TOP_P = 1.0
 DEFAULT_SEED = 0
 MAX_ALLOWED_TOKENS = 16
+DEFAULT_LOGPROBS = 1
+DEFAULT_PROMPT_LOGPROBS = 1
+MAX_ALLOWED_LOGPROBS = 5
 NON_CLAIMS = [
     "not generated-text correctness evidence",
     "not tokenizer semantic correctness evidence",
@@ -111,6 +114,39 @@ def build_contract_request(
             "seed": seed,
         },
     }
+
+
+def build_logprobs_contract_request(
+    *,
+    served_model_name: str = health_probe.DEFAULT_SERVED_MODEL_NAME,
+    prompt: str = DEFAULT_PROMPT,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
+    temperature: float = DEFAULT_TEMPERATURE,
+    top_p: float = DEFAULT_TOP_P,
+    seed: int = DEFAULT_SEED,
+    logprobs: int = DEFAULT_LOGPROBS,
+    prompt_logprobs: int = DEFAULT_PROMPT_LOGPROBS,
+) -> dict[str, Any]:
+    if logprobs < 1 or logprobs > MAX_ALLOWED_LOGPROBS:
+        raise ValueError(f"logprobs-contract requests require 1..{MAX_ALLOWED_LOGPROBS}")
+    if prompt_logprobs < 1 or prompt_logprobs > MAX_ALLOWED_LOGPROBS:
+        raise ValueError(
+            f"logprobs-contract requests require prompt_logprobs "
+            f"1..{MAX_ALLOWED_LOGPROBS}"
+        )
+    request = build_contract_request(
+        served_model_name=served_model_name,
+        prompt=prompt,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        top_p=top_p,
+        seed=seed,
+    )
+    request["payload"]["logprobs"] = logprobs
+    request["payload"]["prompt_logprobs"] = prompt_logprobs
+    request["limits"]["logprobs"] = logprobs
+    request["limits"]["prompt_logprobs"] = prompt_logprobs
+    return request
 
 
 def _response_shape(payload: Any) -> dict[str, Any]:
@@ -274,12 +310,125 @@ def validate_completion_contract(
     return result
 
 
+def _is_logprob_number(value: Any) -> bool:
+    return isinstance(value, (float, int)) and not isinstance(value, bool)
+
+
+def _validate_completion_logprobs_shape(
+    logprobs: Any,
+    *,
+    completion_tokens: int,
+) -> tuple[str, dict[str, Any] | None]:
+    if not isinstance(logprobs, dict):
+        return "completion logprobs must be a JSON object", None
+    tokens = logprobs.get("tokens")
+    token_logprobs = logprobs.get("token_logprobs")
+    top_logprobs = logprobs.get("top_logprobs")
+    text_offset = logprobs.get("text_offset")
+    fields = (tokens, token_logprobs, top_logprobs, text_offset)
+    if not all(isinstance(field, list) for field in fields):
+        return (
+            "completion logprobs tokens, token_logprobs, top_logprobs, "
+            "and text_offset must be lists"
+        ), None
+    field_lengths = {
+        "tokens": len(tokens),
+        "token_logprobs": len(token_logprobs),
+        "top_logprobs": len(top_logprobs),
+        "text_offset": len(text_offset),
+    }
+    if set(field_lengths.values()) != {completion_tokens}:
+        return (
+            f"completion logprobs list lengths {field_lengths} must match "
+            f"usage.completion_tokens={completion_tokens}"
+        ), None
+    if not all(isinstance(token, str) for token in tokens):
+        return "completion logprobs tokens must be strings", None
+    if not all(value is None or _is_logprob_number(value) for value in token_logprobs):
+        return "completion token_logprobs values must be numbers or null", None
+    if not all(isinstance(value, int) for value in text_offset):
+        return "completion text_offset values must be integers", None
+    if not all(value is None or isinstance(value, dict) for value in top_logprobs):
+        return "completion top_logprobs values must be objects or null", None
+    return "", {
+        "completion_token_count": len(tokens),
+        "top_logprobs_entry_count": len(top_logprobs),
+    }
+
+
+def _validate_prompt_logprobs_shape(
+    prompt_logprobs: Any,
+    *,
+    prompt_tokens: int,
+) -> tuple[str, dict[str, Any] | None]:
+    if not isinstance(prompt_logprobs, list):
+        return "prompt_logprobs must be a list", None
+    if len(prompt_logprobs) > prompt_tokens:
+        return (
+            f"prompt_logprobs length {len(prompt_logprobs)} exceeds "
+            f"usage.prompt_tokens={prompt_tokens}"
+        ), None
+    if not all(value is None or isinstance(value, dict) for value in prompt_logprobs):
+        return "prompt_logprobs entries must be objects or null", None
+    non_null_entries = sum(1 for value in prompt_logprobs if value is not None)
+    return "", {
+        "prompt_logprobs_count": len(prompt_logprobs),
+        "prompt_logprobs_non_null_count": non_null_entries,
+    }
+
+
+def validate_logprobs_contract(
+    payload: Any,
+    *,
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    result = validate_completion_contract(payload, request=request)
+    result["logprobs"] = {}
+    if result["status"] != "passed":
+        result["checks"]["base_completion_contract"] = "failed"
+        return result
+    result["checks"]["base_completion_contract"] = "passed"
+    assert isinstance(payload, dict)
+    choice = payload["choices"][0]
+
+    completion_error, completion_summary = _validate_completion_logprobs_shape(
+        choice.get("logprobs"),
+        completion_tokens=result["usage"]["completion_tokens"],
+    )
+    if completion_error:
+        result["checks"]["completion_logprobs_shape"] = "failed"
+        return _fail_contract(
+            result,
+            category="logprobs_contract_completion_shape",
+            message=completion_error,
+        )
+    result["checks"]["completion_logprobs_shape"] = "passed"
+    result["logprobs"].update(completion_summary or {})
+
+    prompt_error, prompt_summary = _validate_prompt_logprobs_shape(
+        choice.get("prompt_logprobs"),
+        prompt_tokens=result["usage"]["prompt_tokens"],
+    )
+    if prompt_error:
+        result["checks"]["prompt_logprobs_shape"] = "failed"
+        category = (
+            "logprobs_contract_prompt_bound"
+            if "exceeds usage.prompt_tokens" in prompt_error
+            else "logprobs_contract_prompt_shape"
+        )
+        return _fail_contract(result, category=category, message=prompt_error)
+    result["checks"]["prompt_logprobs_shape"] = "passed"
+    result["logprobs"].update(prompt_summary or {})
+    return result
+
+
 def send_contract_request(
     *,
     port: int,
     request: dict[str, Any],
     timeout_seconds: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
     http_post: HttpPost = _http_post,
+    validator: Callable[..., dict[str, Any]] = validate_completion_contract,
 ) -> dict[str, Any]:
     endpoint = request["endpoint"]
     url = f"http://{health_probe.LOCAL_HOST}:{port}{endpoint}"
@@ -320,7 +469,7 @@ def send_contract_request(
         )
         return result
 
-    contract = validate_completion_contract(payload, request=request)
+    contract = validator(payload, request=request)
     result["contract"] = contract
     result["response_shape"] = contract["response_shape"]
     result["status"] = contract["status"]
@@ -329,6 +478,22 @@ def send_contract_request(
     else:
         result["observation"] = _completion_observation(payload)
     return result
+
+
+def send_logprobs_contract_request(
+    *,
+    port: int,
+    request: dict[str, Any],
+    timeout_seconds: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    http_post: HttpPost = _http_post,
+) -> dict[str, Any]:
+    return send_contract_request(
+        port=port,
+        request=request,
+        timeout_seconds=timeout_seconds,
+        http_post=http_post,
+        validator=validate_logprobs_contract,
+    )
 
 
 def run_probe(
@@ -356,6 +521,9 @@ def run_probe(
     temperature: float = DEFAULT_TEMPERATURE,
     top_p: float = DEFAULT_TOP_P,
     seed: int = DEFAULT_SEED,
+    logprobs_contract: bool = False,
+    logprobs: int = DEFAULT_LOGPROBS,
+    prompt_logprobs: int = DEFAULT_PROMPT_LOGPROBS,
     dry_run: bool = False,
 ) -> dict[str, Any]:
     selected_port = port if port is not None else health_probe.choose_local_port()
@@ -367,14 +535,23 @@ def run_probe(
             "non_claims": NON_CLAIMS,
         }
     try:
-        contract_request = build_contract_request(
-            served_model_name=served_model_name,
-            prompt=prompt,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            seed=seed,
+        request_builder = (
+            build_logprobs_contract_request
+            if logprobs_contract
+            else build_contract_request
         )
+        request_kwargs = {
+            "served_model_name": served_model_name,
+            "prompt": prompt,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "top_p": top_p,
+            "seed": seed,
+        }
+        if logprobs_contract:
+            request_kwargs["logprobs"] = logprobs
+            request_kwargs["prompt_logprobs"] = prompt_logprobs
+        contract_request = request_builder(**request_kwargs)
     except ValueError as exc:
         return {
             "status": "failed",
@@ -410,6 +587,7 @@ def run_probe(
         "server_port": selected_port,
         "server_log": health_probe._display_path(log_path),
         "endpoints": ["/health", "/v1/models", DEFAULT_ENDPOINT],
+        "contract_mode": "logprobs" if logprobs_contract else "response",
         "contract_request": contract_request,
         "contract_checks": [
             "HTTP 200 from /health",
@@ -431,6 +609,15 @@ def run_probe(
         "generation_attempted": False,
         "non_claims": NON_CLAIMS,
     }
+    if logprobs_contract:
+        result["contract_checks"].extend(
+            [
+                "explicit logprobs and prompt_logprobs request fields",
+                "choice.logprobs exposes list-valued completion logprob fields",
+                "completion logprob list lengths match usage.completion_tokens",
+                "choice.prompt_logprobs is list-valued and bounded by usage.prompt_tokens",
+            ]
+        )
     if dry_run:
         return result
 
@@ -454,7 +641,12 @@ def run_probe(
                 _failure_payload("readiness_failed", "server readiness failed"),
             )
             return result
-        completion = send_contract_request(
+        send_request = (
+            send_logprobs_contract_request
+            if logprobs_contract
+            else send_contract_request
+        )
+        completion = send_request(
             port=selected_port,
             request=contract_request,
             timeout_seconds=request_timeout_seconds,
@@ -542,6 +734,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--temperature", type=float, default=DEFAULT_TEMPERATURE)
     parser.add_argument("--top-p", type=float, default=DEFAULT_TOP_P)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    parser.add_argument("--logprobs-contract", action="store_true")
+    parser.add_argument("--logprobs", type=int, default=DEFAULT_LOGPROBS)
+    parser.add_argument("--prompt-logprobs", type=int, default=DEFAULT_PROMPT_LOGPROBS)
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
 
@@ -572,6 +767,9 @@ def main(argv: list[str] | None = None) -> int:
         temperature=args.temperature,
         top_p=args.top_p,
         seed=args.seed,
+        logprobs_contract=args.logprobs_contract,
+        logprobs=args.logprobs,
+        prompt_logprobs=args.prompt_logprobs,
         dry_run=args.dry_run,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
