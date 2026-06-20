@@ -1,16 +1,25 @@
 #!/usr/bin/env python3
-"""Run a CUDA host_schedule vector smoke example."""
+"""Describe the historical CUDA host_schedule vector benchmark row."""
 
 from __future__ import annotations
 
 import argparse
-import runpy
-import sys
+import json
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SMOKE = ROOT / ".agents" / "skills" / "cuda-backend-eval" / "scripts" / "cuda_smoke.py"
+HISTORICAL_CAPTURE_COMMIT = "743709f3"
+HOST_SCHEDULE_PROVENANCE = {
+    "runtime": "host_schedule",
+    "benchmark_id": "host_schedule_vector_ops",
+    "historical_capture_commit": HISTORICAL_CAPTURE_COMMIT,
+    "evidence_refs": [
+        "docs/nvidia-backend/history/captures/current-head-layered-cross-743709f3.md",
+        "src/cuda/platform/onboard/host/pto_runtime_c_api.cpp",
+        "src/cuda/platform/include/host/pto_cuda_host_schedule_abi.h",
+    ],
+}
 
 
 def main() -> None:
@@ -37,30 +46,32 @@ def main() -> None:
     )
     parser.add_argument("--build", action="store_true")
     parser.add_argument("--output-json", type=Path)
+    parser.add_argument(
+        "--describe",
+        action="store_true",
+        help="emit review provenance for the historical benchmark row",
+    )
     args = parser.parse_args()
 
-    forwarded = [
-        str(SMOKE),
-        "--runner",
-        "worker",
-        "--device",
-        str(args.device),
-        "--n",
-        str(args.n),
-        "--block-dim",
-        str(args.block_dim),
-        "--arch",
-        args.arch,
-        "--op",
-        args.op,
-    ]
-    if not args.build:
-        forwarded.append("--no-build")
+    payload = {
+        **HOST_SCHEDULE_PROVENANCE,
+        "status": "historical_provenance_only",
+        "device": args.device,
+        "n": args.n,
+        "block_dim": args.block_dim,
+        "arch": args.arch,
+        "op": args.op,
+        "build_requested": args.build,
+        "description": (
+            "The active smoke runner used for the 743709f3 capture was removed "
+            "when the CUDA eval skill was slimmed. This example now preserves "
+            "the review-facing row metadata without claiming a fresh CUDA run."
+        ),
+    }
+    text = json.dumps(payload, indent=2, sort_keys=True)
     if args.output_json is not None:
-        forwarded.extend(["--output-json", str(args.output_json)])
-
-    sys.argv = forwarded
-    runpy.run_path(str(SMOKE), run_name="__main__")
+        args.output_json.write_text(text + "\n", encoding="utf-8")
+    print(text)
 
 
 if __name__ == "__main__":

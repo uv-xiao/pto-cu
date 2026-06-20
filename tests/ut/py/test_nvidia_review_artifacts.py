@@ -1,4 +1,5 @@
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -7,6 +8,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 DOC_ROOT = ROOT / "docs" / "nvidia-backend"
 VIEWER_ROOT = DOC_ROOT / "benchmark-viewer"
+REMOVED_EVAL_SCRIPT_RE = re.compile(
+    r"cuda_(smoke|persistent_smoke|benchmark)\.py|cuda-backend-eval/scripts"
+)
+ACTIVE_REVIEW_SURFACES = [
+    VIEWER_ROOT / "data" / "benchmarks.json",
+    VIEWER_ROOT / "data" / "methods.json",
+    VIEWER_ROOT / "data" / "results.json",
+    ROOT / "examples" / "cuda" / "README.md",
+    ROOT / "examples" / "cuda" / "host_schedule_vector_ops.py",
+    ROOT / "examples" / "cuda" / "persistent_layered_cross.py",
+]
 
 
 def test_nvidia_review_guard_passes():
@@ -97,6 +109,12 @@ def test_review_policy_changelog_and_examples_exist():
     assert (example_root / "README.md").is_file()
     assert (example_root / "host_schedule_vector_ops.py").is_file()
     assert (example_root / "persistent_layered_cross.py").is_file()
+
+
+def test_active_review_surfaces_do_not_reference_removed_eval_scripts():
+    for path in ACTIVE_REVIEW_SURFACES:
+        text = path.read_text(encoding="utf-8")
+        assert REMOVED_EVAL_SCRIPT_RE.search(text) is None, path
 
 
 def test_nvidia_branch_ci_avoids_ascend_jobs():

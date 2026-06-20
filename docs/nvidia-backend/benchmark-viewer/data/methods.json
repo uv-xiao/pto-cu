@@ -49,9 +49,14 @@
       "lifecycle": "The host still owns graph construction and replay; this baseline isolates host-launch amortization from PTO runtime behavior.",
       "evidence_refs": [
         {
-          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py",
+          "path": "docs/nvidia-backend/evaluation-current.md",
           "symbols": [
-            "run_direct_sample",
+            "direct_driver_graph"
+          ]
+        },
+        {
+          "path": "tests/ut/py/test_cuda_benchmark_report.py",
+          "symbols": [
             "direct_driver_graph"
           ]
         }
@@ -64,9 +69,14 @@
       "lifecycle": "The host owns cuBLAS handle setup and graph instantiation; device execution is a library baseline rather than PTO task scheduling.",
       "evidence_refs": [
         {
-          "path": ".agents/skills/cuda-backend-eval/scripts/cuda_benchmark.py",
+          "path": "docs/nvidia-backend/evaluation-current.md",
           "symbols": [
-            "cublas_sgemm",
+            "cublas_sgemm_graph"
+          ]
+        },
+        {
+          "path": "tests/ut/py/test_cuda_benchmark_report.py",
+          "symbols": [
             "cublas_sgemm_graph"
           ]
         }
