@@ -86,3 +86,27 @@ completion gate is recorded in
 remote vLLM import/config probes pass, and the artifact/manifest gates now
 find all 46 indexed shards at the repo-relative artifact path. These gates are
 not model-load or serving evidence.
+
+## DeepSeek V4 Flash vLLM Model-Load Probe
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_model_load_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --require-artifacts --require-vllm \
+  --max-model-len 4096 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 \
+  --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager
+```
+
+Run it only under an explicit GPU boundary, for example
+`CUDA_VISIBLE_DEVICES=<two ids>` with a matching `--tensor-parallel-size 2`,
+and an external timeout. The remote H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_model_load_probe.md`: vLLM loaded
+all 46 shards and initialized an `LLMEngine` on two H200 GPUs at
+`max_model_len=4096`. This is model-load and engine-initialization evidence,
+not server health, inference correctness, 256K context, throughput, latency, or
+production-readiness evidence.
