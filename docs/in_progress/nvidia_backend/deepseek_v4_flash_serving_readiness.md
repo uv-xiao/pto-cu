@@ -993,6 +993,53 @@ slice:
 Detailed 256K long-prompt response-contract evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_256k_long_prompt_response_contract_probe.md`.
 
+Fresh remote H200 256K needle correctness evidence from this slice:
+
+- A repo-owned needle correctness probe script now reuses the server-health
+  lifecycle, checks `/health` and `/v1/models`, sends one synthetic
+  `/v1/completions` request near a 256K prompt-token budget, validates
+  response structure and usage accounting, and reports `status=passed` only
+  when the generated output contains the exact expected answer string.
+- The remote source tree was refreshed with `--sync`, preserving the complete
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`.
+- The passing boundary used `max_model_len=262144`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 120-minute outer timeout, a
+  2700-second readiness timeout, and an 1800-second request timeout.
+- The synthetic prompt targeted 255800 prompt tokens. Local tokenizer
+  accounting measured 255799 prompt tokens before sending the request, and
+  the prompt contained the expected answer
+  `PTO_NEEDLE_256K_CONTEXT_OK_28143` exactly once.
+- The request contained 1230965 prompt characters and used `max_tokens=64`,
+  `temperature=0.0`, `top_p=1.0`, `seed=0`, `stream=false`, `echo=false`,
+  and `logprobs=false`.
+- The server started on `http://127.0.0.1:28143`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` with
+  `max_model_len=262144` from `/v1/models`, and accepted one
+  `/v1/completions` request.
+- The completion request returned HTTP 200 with exactly one response choice,
+  `finish_reason=length`, short synthetic generated text recorded as 269
+  characters, and usage counts: `prompt_tokens=255799`,
+  `completion_tokens=64`, and `total_tokens=255863`.
+- The generated output contained the exact expected answer
+  `PTO_NEEDLE_256K_CONTEXT_OK_28143`.
+- vLLM 0.23.0 ran with Torch 2.11.0+cu130 and CUDA 13.0.
+- The probe did not record raw prompt text, raw request payloads, token ID
+  arrays, logprob values, generated-text digests, model artifact contents, or
+  symlinks.
+- The probe cleanup passed and reported no remaining process-group PIDs.
+- The run establishes local-only synthetic needle retrieval correctness
+  evidence only; it is not general generated-text correctness, semantic
+  correctness, latency, throughput, production-readiness, broad determinism,
+  or simpler-nv/vLLM integration evidence.
+
+Detailed 256K needle correctness evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_256k_needle_correctness_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
@@ -1007,7 +1054,8 @@ same-shape warmup/follow-up probe, plus one bounded 32K long-prompt
 response-contract probe, plus one bounded 64K long-prompt response-contract
 probe, plus one bounded 128K long-prompt response-contract probe, plus one
 bounded 192K long-prompt response-contract probe, plus one bounded 256K
-long-prompt response-contract probe:
+long-prompt response-contract probe, plus one bounded near-256K synthetic
+needle correctness probe:
 
 ```text
 remote_h200_reachable: yes
@@ -1037,6 +1085,8 @@ local_only_vllm_192k_long_prompt_response_contract: passed under recorded
   262144-token boundary
 local_only_vllm_256k_long_prompt_response_contract: passed under recorded
   262144-token boundary
+local_only_vllm_256k_needle_correctness: passed under recorded 262144-token
+  boundary
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -1055,7 +1105,8 @@ serving_readiness: bounded local-only response contract and warmup-shape
   bounded 64K long-prompt response-contract probe, plus one bounded 128K
   long-prompt response-contract probe, plus one bounded 192K long-prompt
   response-contract probe, plus one bounded 256K long-prompt
-  response-contract probe; no correctness claims
+  response-contract probe, plus one bounded near-256K synthetic needle
+  correctness probe; no general correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -1116,20 +1167,26 @@ near a 256K prompt-token budget under the recorded 262144-token vLLM server
 boundary, recording response structure and usage accounting without recording
 raw prompt or generated text.
 
+It has now also passed one local-only synthetic needle correctness request
+near a 256K prompt-token budget under the recorded 262144-token vLLM server
+boundary. The probe recorded a short synthetic generated output and required
+that output to contain the exact expected answer
+`PTO_NEEDLE_256K_CONTEXT_OK_28143`.
+
 ## Next Gate
 
 The next PR-sized gate can stay under the same local-only vLLM boundary and
 choose a follow-up for failure-mode characterization or repeated near-boundary
 response-contract confirmation only after preserving the
 request-plus-completion budget under `max_model_len=262144`, still without
-recording raw prompt text, recording generated text contents, or judging
-generated text.
+recording raw prompt text, dumping raw request payloads, or expanding beyond
+synthetic-test-scoped generated output.
 
 ## Non-Claims
 
-- This is not prompt, tokenizer semantic, correct-text, unbounded long-prompt,
-  throughput, latency, or production readiness evidence.
-- This is not generated-text correctness evidence.
+- This is not prompt, tokenizer semantic, general correct-text, unbounded
+  long-prompt, throughput, latency, or production readiness evidence.
+- This is not general generated-text correctness evidence.
 - This is not token identity or logprob value correctness evidence.
 - This is not stop-trigger or stop-token semantic correctness evidence.
 - This is not broad serving determinism evidence.

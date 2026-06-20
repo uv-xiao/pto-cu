@@ -144,6 +144,7 @@ def check_examples_and_rules() -> None:
         "docs/in_progress/nvidia_backend/vllm_remote_request_shape_variation_probe.md",
         "docs/in_progress/nvidia_backend/vllm_remote_serving_semantics_probe.md",
         "docs/in_progress/nvidia_backend/vllm_remote_logprobs_contract_probe.md",
+        "docs/in_progress/nvidia_backend/vllm_remote_256k_needle_correctness_probe.md",
         "docs/in_progress/nvidia_backend/deepseek_v4_flash_serving_readiness.md",
         "examples/cuda/README.md",
         "examples/cuda/host_schedule_vector_ops.py",
@@ -155,6 +156,7 @@ def check_examples_and_rules() -> None:
         "examples/cuda/vllm_deepseek_v4_warmup_shape_probe.py",
         "examples/cuda/vllm_deepseek_v4_request_shape_variation_probe.py",
         "examples/cuda/vllm_deepseek_v4_serving_semantics_probe.py",
+        "examples/cuda/vllm_deepseek_v4_needle_correctness_probe.py",
     ]:
         require_file(ROOT / relpath)
 
