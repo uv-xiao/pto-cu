@@ -135,6 +135,9 @@ def test_review_policy_changelog_and_examples_exist():
         in_progress_root / "vllm_remote_stop_contract_probe.md"
     ).is_file()
     assert (
+        in_progress_root / "vllm_remote_64k_context_health_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
