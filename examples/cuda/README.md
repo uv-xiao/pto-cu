@@ -464,6 +464,48 @@ general generated-text correctness, semantic correctness, throughput, latency,
 production readiness, broad determinism, or simpler-nv/vLLM integration
 evidence.
 
+## DeepSeek V4 Flash vLLM Chat 256K Needle Streaming Repeat Probe
+
+````bash
+CUDA_VISIBLE_DEVICES=1,7 VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 80m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_chat_256k_needle_stream_repeat_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28154 \
+  --server-log tmp/vllm-chat-256k-needle-stream-repeat-probe/server-28154.log \
+  --max-model-len 262144 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 180 --terminate-timeout-seconds 60 \
+  --target-prompt-tokens 255800 --max-tokens 64 \
+  --temperature 0.0 --top-p 1.0 --seed 0 \
+  --expected-answer PTO_CHAT_NEEDLE_256K_STREAM_REPEAT_OK_28154 \
+  --repeat-count 2
+````
+
+This starts the same local-only two-H200 vLLM server boundary, checks
+`/health` and `/v1/models`, sends exactly two identical bounded streaming
+`/v1/chat/completions` requests with a synthetic needle placed inside a
+near-256K user entry, parses server-sent events for both attempts, and
+requires each attempt to receive terminal `[DONE]`, record a final
+`finish_reason`, and narrowly normalize to exactly
+`PTO_CHAT_NEEDLE_256K_STREAM_REPEAT_OK_28154`. The remote H200 evidence is
+recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_repeat_probe.md`.
+Both attempts returned HTTP 200, each parsed 22 SSE events and 19 assistant
+content deltas, each received terminal `[DONE]`, each reported
+`finish_reason=stop`, usage was `not_returned`, both strict exact checks
+passed, and cleanup reported no remaining process-group PIDs. This is one
+synthetic streaming chat-completions needle exact-repeat gate, not general
+generated-text correctness, semantic correctness, throughput, latency,
+production readiness, broad determinism, or simpler-nv/vLLM integration
+evidence.
+
 ## DeepSeek V4 Flash vLLM Chat Exact Truncated Failure Probe
 
 ```bash

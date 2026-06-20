@@ -202,6 +202,10 @@ def test_review_policy_changelog_and_examples_exist():
         in_progress_root / "vllm_remote_chat_256k_needle_stream_probe.md"
     ).is_file()
     assert (
+        in_progress_root
+        / "vllm_remote_chat_256k_needle_stream_repeat_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
     assert (
@@ -249,6 +253,10 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         example_root / "vllm_deepseek_v4_chat_256k_needle_stream_probe.py"
+    ).is_file()
+    assert (
+        example_root
+        / "vllm_deepseek_v4_chat_256k_needle_stream_repeat_probe.py"
     ).is_file()
 
 
@@ -300,6 +308,66 @@ def test_chat_256k_needle_stream_evidence_is_review_safe():
     assert "private absolute paths are not recorded" in evidence
     assert "local_only_vllm_chat_256k_needle_stream" in readiness
     assert "vllm_remote_chat_256k_needle_stream_probe.md" in readiness
+    assert "text_" + "sha256" not in evidence
+    assert "token_ids" not in evidence
+    assert "/" + "home/" not in evidence
+
+
+def test_chat_256k_needle_stream_repeat_evidence_is_review_safe():
+    evidence = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "vllm_remote_chat_256k_needle_stream_repeat_probe.md"
+    ).read_text(encoding="utf-8")
+    readiness = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "deepseek_v4_flash_serving_readiness.md"
+    ).read_text(encoding="utf-8")
+
+    assert "PROBE_EXIT_STATUS=" in evidence
+    assert "CUDA_VISIBLE_DEVICES=1,7" in evidence
+    assert "server_port: 28154" in evidence
+    assert "endpoint: /v1/chat/completions" in evidence
+    assert "stream: true" in evidence
+    assert "repeat_count: 2" in evidence
+    assert "attempts_completed:" in evidence
+    assert "passed_attempts:" in evidence
+    assert "failed_attempts:" in evidence
+    assert "same streaming request payload" in evidence
+    assert "max_model_len=262144" in evidence
+    assert "tensor_parallel_size=2" in evidence
+    assert "target_prompt_tokens=255800" in evidence
+    assert "max_tokens=64" in evidence
+    assert "temperature=0.0" in evidence
+    assert "top_p=1.0" in evidence
+    assert "seed=0" in evidence
+    assert (
+        "expected_answer: PTO_CHAT_NEEDLE_256K_STREAM_REPEAT_OK_28154"
+        in evidence
+    )
+    assert "match_mode: exact" in evidence
+    assert "stop_sequences_configured: true" in evidence
+    assert 'stop: ["\\n```"]' in evidence
+    assert "stream_events_received:" in evidence
+    assert "done_seen:" in evidence
+    assert "finish_reason:" in evidence
+    assert "normalized_output_equals_expected:" in evidence
+    assert "expected_answer_exact:" in evidence
+    assert "raw prompt text is not recorded" in evidence
+    assert "raw request payload is not recorded" in evidence
+    assert "raw generated text is not recorded" in evidence
+    assert "raw streaming chunk content is not recorded" in evidence
+    assert "token ID arrays are not recorded" in evidence
+    assert "logprob values are not recorded" in evidence
+    assert "generated-text digests are not recorded" in evidence
+    assert "private absolute paths are not recorded" in evidence
+    assert "local_only_vllm_chat_256k_needle_stream_repeat" in readiness
+    assert "vllm_remote_chat_256k_needle_stream_repeat_probe.md" in readiness
     assert "text_" + "sha256" not in evidence
     assert "token_ids" not in evidence
     assert "/" + "home/" not in evidence

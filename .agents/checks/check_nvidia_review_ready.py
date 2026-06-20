@@ -155,6 +155,7 @@ def check_examples_and_rules() -> None:
         "docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_exact_probe.md",
         "docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_repeat_probe.md",
         "docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_probe.md",
+        "docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_repeat_probe.md",
         "docs/in_progress/nvidia_backend/deepseek_v4_flash_serving_readiness.md",
         "examples/cuda/README.md",
         "examples/cuda/host_schedule_vector_ops.py",
@@ -171,6 +172,7 @@ def check_examples_and_rules() -> None:
         "examples/cuda/vllm_deepseek_v4_chat_256k_needle_exact_probe.py",
         "examples/cuda/vllm_deepseek_v4_chat_256k_needle_repeat_probe.py",
         "examples/cuda/vllm_deepseek_v4_chat_256k_needle_stream_probe.py",
+        "examples/cuda/vllm_deepseek_v4_chat_256k_needle_stream_repeat_probe.py",
     ]:
         require_file(ROOT / relpath)
 
