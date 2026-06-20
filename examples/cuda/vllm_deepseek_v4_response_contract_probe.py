@@ -149,6 +149,28 @@ def build_logprobs_contract_request(
     return request
 
 
+def build_echo_contract_request(
+    *,
+    served_model_name: str = health_probe.DEFAULT_SERVED_MODEL_NAME,
+    prompt: str = DEFAULT_PROMPT,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
+    temperature: float = DEFAULT_TEMPERATURE,
+    top_p: float = DEFAULT_TOP_P,
+    seed: int = DEFAULT_SEED,
+) -> dict[str, Any]:
+    request = build_contract_request(
+        served_model_name=served_model_name,
+        prompt=prompt,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        top_p=top_p,
+        seed=seed,
+    )
+    request["payload"]["echo"] = True
+    request["limits"]["echo"] = True
+    return request
+
+
 def _response_shape(payload: Any) -> dict[str, Any]:
     if not isinstance(payload, dict):
         return {"type": type(payload).__name__}
@@ -422,6 +444,55 @@ def validate_logprobs_contract(
     return result
 
 
+def validate_echo_contract(
+    payload: Any,
+    *,
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    result = validate_completion_contract(payload, request=request)
+    result["echo"] = {}
+    if result["status"] != "passed":
+        result["checks"]["base_completion_contract"] = "failed"
+        return result
+    result["checks"]["base_completion_contract"] = "passed"
+
+    request_payload = request.get("payload")
+    prompt = request_payload.get("prompt") if isinstance(request_payload, dict) else None
+    if not isinstance(prompt, str):
+        result["checks"]["echo_request_prompt"] = "failed"
+        return _fail_contract(
+            result,
+            category="echo_contract_request_prompt",
+            message="echo-contract request must use a string prompt",
+        )
+    if request_payload.get("echo") is not True:
+        result["checks"]["echo_request_field"] = "failed"
+        return _fail_contract(
+            result,
+            category="echo_contract_request_field",
+            message="echo-contract request must set echo=true",
+        )
+
+    assert isinstance(payload, dict)
+    choice_text = payload["choices"][0]["text"]
+    if not choice_text.startswith(prompt):
+        result["checks"]["echo_prompt_prefix"] = "failed"
+        return _fail_contract(
+            result,
+            category="echo_contract_prompt_prefix",
+            message="echo completion text must start with the request prompt",
+        )
+    result["checks"]["echo_request_prompt"] = "passed"
+    result["checks"]["echo_request_field"] = "passed"
+    result["checks"]["echo_prompt_prefix"] = "passed"
+    result["echo"] = {
+        "prompt_chars": len(prompt),
+        "text_length_chars": len(choice_text),
+        "generated_suffix_chars": max(0, len(choice_text) - len(prompt)),
+    }
+    return result
+
+
 def send_contract_request(
     *,
     port: int,
@@ -496,6 +567,22 @@ def send_logprobs_contract_request(
     )
 
 
+def send_echo_contract_request(
+    *,
+    port: int,
+    request: dict[str, Any],
+    timeout_seconds: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    http_post: HttpPost = _http_post,
+) -> dict[str, Any]:
+    return send_contract_request(
+        port=port,
+        request=request,
+        timeout_seconds=timeout_seconds,
+        http_post=http_post,
+        validator=validate_echo_contract,
+    )
+
+
 def run_probe(
     *,
     artifact_dir: Path = health_probe.DEFAULT_ARTIFACT_DIR,
@@ -521,6 +608,7 @@ def run_probe(
     temperature: float = DEFAULT_TEMPERATURE,
     top_p: float = DEFAULT_TOP_P,
     seed: int = DEFAULT_SEED,
+    echo_contract: bool = False,
     logprobs_contract: bool = False,
     logprobs: int = DEFAULT_LOGPROBS,
     prompt_logprobs: int = DEFAULT_PROMPT_LOGPROBS,
@@ -534,12 +622,23 @@ def run_probe(
             "generation_attempted": False,
             "non_claims": NON_CLAIMS,
         }
+    if echo_contract and logprobs_contract:
+        return {
+            "status": "failed",
+            "failure": _failure_payload(
+                "invalid_request",
+                "choose only one explicit contract mode: echo or logprobs",
+            ),
+            "generation_attempted": False,
+            "non_claims": NON_CLAIMS,
+        }
     try:
-        request_builder = (
-            build_logprobs_contract_request
-            if logprobs_contract
-            else build_contract_request
-        )
+        if echo_contract:
+            request_builder = build_echo_contract_request
+        elif logprobs_contract:
+            request_builder = build_logprobs_contract_request
+        else:
+            request_builder = build_contract_request
         request_kwargs = {
             "served_model_name": served_model_name,
             "prompt": prompt,
@@ -587,7 +686,9 @@ def run_probe(
         "server_port": selected_port,
         "server_log": health_probe._display_path(log_path),
         "endpoints": ["/health", "/v1/models", DEFAULT_ENDPOINT],
-        "contract_mode": "logprobs" if logprobs_contract else "response",
+        "contract_mode": (
+            "echo" if echo_contract else "logprobs" if logprobs_contract else "response"
+        ),
         "contract_request": contract_request,
         "contract_checks": [
             "HTTP 200 from /health",
@@ -618,6 +719,14 @@ def run_probe(
                 "choice.prompt_logprobs is list-valued and bounded by usage.prompt_tokens",
             ]
         )
+    if echo_contract:
+        result["contract_checks"].extend(
+            [
+                "explicit echo=true request field",
+                "echo response text starts with request prompt",
+                "raw generated text is not recorded or checked for correctness",
+            ]
+        )
     if dry_run:
         return result
 
@@ -641,11 +750,12 @@ def run_probe(
                 _failure_payload("readiness_failed", "server readiness failed"),
             )
             return result
-        send_request = (
-            send_logprobs_contract_request
-            if logprobs_contract
-            else send_contract_request
-        )
+        if echo_contract:
+            send_request = send_echo_contract_request
+        elif logprobs_contract:
+            send_request = send_logprobs_contract_request
+        else:
+            send_request = send_contract_request
         completion = send_request(
             port=selected_port,
             request=contract_request,
@@ -734,6 +844,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--temperature", type=float, default=DEFAULT_TEMPERATURE)
     parser.add_argument("--top-p", type=float, default=DEFAULT_TOP_P)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    parser.add_argument("--echo-contract", action="store_true")
     parser.add_argument("--logprobs-contract", action="store_true")
     parser.add_argument("--logprobs", type=int, default=DEFAULT_LOGPROBS)
     parser.add_argument("--prompt-logprobs", type=int, default=DEFAULT_PROMPT_LOGPROBS)
@@ -767,6 +878,7 @@ def main(argv: list[str] | None = None) -> int:
         temperature=args.temperature,
         top_p=args.top_p,
         seed=args.seed,
+        echo_contract=args.echo_contract,
         logprobs_contract=args.logprobs_contract,
         logprobs=args.logprobs,
         prompt_logprobs=args.prompt_logprobs,

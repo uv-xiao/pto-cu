@@ -159,6 +159,20 @@ def test_build_logprobs_request_adds_explicit_bounded_logprob_fields():
     assert request["limits"]["max_tokens"] == 2
 
 
+def test_build_echo_request_adds_explicit_bounded_echo_field():
+    probe = load_probe_module()
+
+    request = probe.build_echo_contract_request(prompt="Hello", max_tokens=1)
+
+    assert request["endpoint"] == "/v1/completions"
+    assert request["payload"]["echo"] is True
+    assert request["payload"]["stream"] is False
+    assert request["payload"]["max_tokens"] == 1
+    assert request["limits"]["echo"] is True
+    assert request["limits"]["prompt_chars"] == 5
+    assert request["limits"]["max_tokens"] == 1
+
+
 def test_validate_logprobs_contract_accepts_completion_and_prompt_shapes():
     probe = load_probe_module()
     request = probe.build_logprobs_contract_request(max_tokens=2)
@@ -198,6 +212,35 @@ def test_validate_logprobs_contract_rejects_prompt_logprobs_beyond_usage_bound()
 
     assert result["status"] == "failed"
     assert result["failure"]["category"] == "logprobs_contract_prompt_bound"
+
+
+def test_validate_echo_contract_accepts_prompt_prefix_without_recording_text():
+    probe = load_probe_module()
+    request = probe.build_echo_contract_request(prompt="Hello", max_tokens=1)
+    payload = completion_payload(completion_tokens=1)
+    payload["choices"][0]["text"] = "Hello!"
+
+    result = probe.validate_echo_contract(payload, request=request)
+
+    assert result["status"] == "passed"
+    assert result["checks"]["base_completion_contract"] == "passed"
+    assert result["checks"]["echo_prompt_prefix"] == "passed"
+    assert result["echo"]["prompt_chars"] == 5
+    assert result["echo"]["text_length_chars"] == 6
+    assert "text" not in result["echo"]
+
+
+def test_validate_echo_contract_rejects_missing_prompt_prefix():
+    probe = load_probe_module()
+    request = probe.build_echo_contract_request(prompt="Hello", max_tokens=1)
+
+    result = probe.validate_echo_contract(
+        completion_payload(completion_tokens=1),
+        request=request,
+    )
+
+    assert result["status"] == "failed"
+    assert result["failure"]["category"] == "echo_contract_prompt_prefix"
 
 
 def test_send_contract_request_classifies_http_failure():

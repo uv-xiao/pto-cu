@@ -347,3 +347,36 @@ This is a bounded logprobs response-shape observation, not generated-text
 correctness, tokenizer semantics, prompt correctness, token identity or
 logprob value correctness, 256K context, throughput, latency, production
 readiness, or simpler-nv/vLLM integration evidence.
+
+## DeepSeek V4 Flash vLLM Echo-Contract Probe
+
+```bash
+CUDA_VISIBLE_DEVICES=<two ids> VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 65m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_response_contract_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28130 \
+  --server-log tmp/vllm-echo-contract-probe/server-28130.log \
+  --max-model-len 4096 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 180 --terminate-timeout-seconds 60 \
+  --prompt Hello --max-tokens 1 --temperature 0.0 --top-p 1.0 \
+  --seed 0 --echo-contract
+```
+
+This starts the same local-only server boundary, checks `/health` and
+`/v1/models`, sends one bounded non-streaming `/v1/completions` request with
+explicit `echo=true`, validates the base structural response contract, then
+checks only echo response shape: the request prompt is string-valued and the
+response text starts with that prompt. The remote H200 evidence is recorded
+in `docs/in_progress/nvidia_backend/vllm_remote_echo_contract_probe.md`. This
+is a bounded echo response-shape observation, not generated-text correctness,
+tokenizer semantics, prompt correctness, token identity or logprob value
+correctness, 256K context, throughput, latency, production readiness, or
+simpler-nv/vLLM integration evidence.
