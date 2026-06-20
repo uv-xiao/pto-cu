@@ -1618,3 +1618,33 @@ def test_cuda_comm_descriptor_and_nccl_worker_control_artifacts_are_recorded():
     readme_text = readme.read_text(encoding="utf-8")
     assert "nccl_two_gpu_baseline.py" in readme_text
     assert "nccl_worker_control_ops.py" in readme_text
+
+
+def test_host_runtime_comm_operation_symbols_are_exported_by_all_producers():
+    required_symbols = [
+        "comm_all_reduce_f32",
+        "comm_reduce_scatter_f32",
+        "comm_all_gather_f32",
+        "comm_send_recv_f32",
+    ]
+    producer_sources = {
+        "cuda-onboard": [
+            ROOT / "src" / "cuda" / "platform" / "onboard" / "host" / "pto_runtime_c_api.cpp",
+        ],
+        "common-sim": [
+            ROOT / "src" / "common" / "platform_comm" / "comm_sim.cpp",
+        ],
+        "a2a3-onboard": [
+            ROOT / "src" / "a2a3" / "platform" / "onboard" / "host" / "comm_hccl.cpp",
+        ],
+        "a5-onboard": [
+            ROOT / "src" / "a5" / "platform" / "onboard" / "host" / "pto_runtime_c_api.cpp",
+        ],
+    }
+
+    for producer, paths in producer_sources.items():
+        text = "\n".join(path.read_text(encoding="utf-8") for path in paths)
+        for symbol in required_symbols:
+            assert re.search(
+                rf'(?:extern "C"\s+)?int\s+{symbol}\s*\(', text
+            ), f"{producer} is missing {symbol}"

@@ -29,7 +29,11 @@
  *   - ACL/stream:   ensure_acl_ready_ctx, create_comm_stream_ctx,
  *                   destroy_comm_stream_ctx
  *   - comm:         comm_init, comm_alloc_windows, comm_get_local_window_base,
- *                   comm_get_window_size, comm_barrier, comm_destroy
+ *                   comm_get_window_size, comm_derive_context,
+ *                   comm_alloc_domain_windows, comm_release_domain_windows,
+ *                   comm_barrier, comm_all_reduce_f32,
+ *                   comm_reduce_scatter_f32, comm_all_gather_f32,
+ *                   comm_send_recv_f32, comm_destroy
  *
  * Optional extensions:
  *   - role init:    simpler_init_roles
