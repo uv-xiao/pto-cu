@@ -1351,7 +1351,9 @@ synthetic exact-output sweep pass gate, plus one bounded OpenAI-compatible
 chat-completions exact-output canary pass gate, plus one bounded
 OpenAI-compatible near-256K chat-completions synthetic needle exact-output
 pass gate, plus one two-request OpenAI-compatible near-256K streaming
-chat-completions synthetic needle exact-repeat pass gate:
+chat-completions synthetic needle exact-repeat pass gate, plus one bounded
+OpenAI-compatible near-256K streaming chat-completions synthetic needle
+truncated-generation failure-mode gate:
 
 ```text
 remote_h200_reachable: yes
@@ -1403,6 +1405,8 @@ local_only_vllm_chat_256k_needle_repeat: passed under recorded 262144-token
   boundary and one server lifecycle
 local_only_vllm_chat_256k_needle_stream_repeat: passed under recorded
   262144-token boundary and one server lifecycle
+local_only_vllm_chat_256k_needle_stream_truncated_failure: failed under
+  recorded 262144-token boundary with max_tokens=1 as expected
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -1436,7 +1440,9 @@ serving_readiness: bounded local-only response contract and warmup-shape
   two-request OpenAI-compatible near-256K chat-completions synthetic needle
   exact-output repeat pass gate, plus one two-request OpenAI-compatible
   near-256K streaming chat-completions synthetic needle exact-repeat pass
-  gate; no general correctness claims
+  gate, plus one bounded OpenAI-compatible near-256K streaming
+  chat-completions synthetic needle truncated-generation failure-mode gate;
+  no general correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -1644,6 +1650,30 @@ Detailed chat-completions near-256K needle streaming exact-repeat evidence is
 recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_repeat_probe.md`.
 Status marker: `local_only_vllm_chat_256k_needle_stream_repeat: passed`.
+
+It has now also recorded one expected local-only OpenAI-compatible near-256K
+streaming `/v1/chat/completions` synthetic needle exact-output failure under
+the same recorded 262144-token vLLM server boundary. The request targeted a
+255800-token prompt budget, used `max_tokens=1`, `temperature=0.0`,
+`top_p=1.0`, `seed=0`, expected answer
+`PTO_CHAT_NEEDLE_256K_STREAM_TRUNCATED_OK_28155`, strict exact match mode,
+stop sequence `"\n```"`, and `stream=true`. The streaming path returned HTTP
+200, parsed SSE chunk events, received terminal `[DONE]`, reported
+`finish_reason=length`, did not return streaming usage, and strict exact mode
+failed with `chat_needle_stream_expected_answer_not_exact`. The probe
+recorded only review-safe request limits, streaming event counters, usage
+state, exact-match status, and cleanup state; it did not record raw prompt
+text, raw request payload, raw generated text, raw streaming chunk content,
+token ID arrays, logprob values, generated-text digests, model artifact
+contents, non-loopback URLs, hostnames, usernames, or private absolute paths.
+This is an expected strict exact-comparator failure-mode characterization,
+not a transport/server failure and not generated-text correctness evidence.
+
+Detailed chat-completions near-256K needle streaming truncated-generation
+failure evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_truncated_failure_probe.md`.
+Status marker:
+`local_only_vllm_chat_256k_needle_stream_truncated_failure: failed`.
 
 ## Next Gate
 
