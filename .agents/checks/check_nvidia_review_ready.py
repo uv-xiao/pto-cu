@@ -22,6 +22,7 @@ ACTIVE_REVIEW_SURFACES = [
     ROOT / "examples" / "cuda" / "README.md",
     ROOT / "examples" / "cuda" / "host_schedule_vector_ops.py",
     ROOT / "examples" / "cuda" / "persistent_layered_cross.py",
+    ROOT / "examples" / "cuda" / "persistent_moe_dispatch_combine.py",
 ]
 
 
@@ -135,6 +136,7 @@ def check_examples_and_rules() -> None:
         "examples/cuda/README.md",
         "examples/cuda/host_schedule_vector_ops.py",
         "examples/cuda/persistent_layered_cross.py",
+        "examples/cuda/persistent_moe_dispatch_combine.py",
     ]:
         require_file(ROOT / relpath)
 

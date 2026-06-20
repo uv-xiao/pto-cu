@@ -39,6 +39,15 @@ class GluonKernelArtifact:
     tile_shape: tuple[int, int, int]
 
 
+@dataclass(frozen=True)
+class GluonPersistentTaskBodyArtifact:
+    kernel_name: str
+    task_name: str
+    body: str
+    source_kind: str
+    source_sha256: str
+
+
 def default_gluon_cache_root() -> Path:
     return PROJECT_ROOT / _DEFAULT_CACHE_ROOT
 
@@ -85,6 +94,23 @@ def generate_gluon_kernel(
     )
 
 
+def generate_gluon_persistent_task_body(kernel_name: str) -> GluonPersistentTaskBodyArtifact:
+    if kernel_name != "moe_expert_affine_f32":
+        raise ValueError(
+            "persistent task-body bridge is only available for "
+            "'moe_expert_affine_f32'"
+        )
+
+    body = _render_moe_expert_affine_persistent_body()
+    return GluonPersistentTaskBodyArtifact(
+        kernel_name=kernel_name,
+        task_name="gluon_moe_expert_affine_f32",
+        body=body,
+        source_kind="gluon-persistent-task-body-bridge",
+        source_sha256=sha256(body.encode("utf-8")).hexdigest(),
+    )
+
+
 def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
     if kernel_name == "gemm_f32":
         return _render_gemm_f32_source()
@@ -118,6 +144,16 @@ def _render_gemm_f32_source() -> str:
             gl.store(c_ptr + row * n + col, acc)
         """
     ).lstrip()
+
+
+def _render_moe_expert_affine_persistent_body() -> str:
+    return dedent(
+        """
+        const PtoCudaPersistentDagTask *task = ctx->task;
+        unsigned long long i = ctx->i;
+        task->out[i] = task->scalar0 * task->a[i] + task->scalar1 * task->b[i];
+        """
+    ).strip()
 
 
 def _render_tensor_core_gemm_source(tile_shape: tuple[int, int, int]) -> str:

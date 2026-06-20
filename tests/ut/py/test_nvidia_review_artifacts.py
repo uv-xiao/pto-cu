@@ -18,6 +18,7 @@ ACTIVE_REVIEW_SURFACES = [
     ROOT / "examples" / "cuda" / "README.md",
     ROOT / "examples" / "cuda" / "host_schedule_vector_ops.py",
     ROOT / "examples" / "cuda" / "persistent_layered_cross.py",
+    ROOT / "examples" / "cuda" / "persistent_moe_dispatch_combine.py",
 ]
 
 
@@ -109,6 +110,7 @@ def test_review_policy_changelog_and_examples_exist():
     assert (example_root / "README.md").is_file()
     assert (example_root / "host_schedule_vector_ops.py").is_file()
     assert (example_root / "persistent_layered_cross.py").is_file()
+    assert (example_root / "persistent_moe_dispatch_combine.py").is_file()
 
 
 def test_active_review_surfaces_do_not_reference_removed_eval_scripts():
