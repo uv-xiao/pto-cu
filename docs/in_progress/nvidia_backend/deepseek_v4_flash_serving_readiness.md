@@ -428,13 +428,69 @@ Fresh remote H200 echo-contract evidence from this slice:
 Detailed echo-contract evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_echo_contract_probe.md`.
 
+Fresh remote H200 stop-contract evidence from this slice:
+
+- The repo-owned response-contract probe script now has a `--stop-contract`
+  mode that reuses the existing server lifecycle, health/model-list readiness
+  checks, response-contract validation, cleanup, and local-only server
+  boundary.
+- The remote vLLM 0.23.0 completion request model was inspected before
+  choosing this gate. It exposes explicit `stop`, `stop_token_ids`, and
+  `include_stop_str_in_output` fields, carries them into `SamplingParams`,
+  and exposes `finish_reason` and `stop_reason` in completion responses.
+- Source inspection did not provide a request-controlled way to force
+  `deepseek-ai/DeepSeek-V4-Flash` to emit a chosen stop string or token
+  without judging generated text or token identity, so this slice records
+  stop-field acceptance and response-contract evidence rather than live
+  stop-trigger evidence.
+- The remote source tree was refreshed with `--sync`, preserving the complete
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`. The fresh pre-run snapshot showed 141773 MiB free
+  on GPU 1 and 116662 MiB free on GPU 7.
+- The passing boundary used `max_model_len=4096`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 65-minute outer timeout, a
+  2700-second readiness timeout, and a 180-second request timeout.
+- The server started on `http://127.0.0.1:28131`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` from `/v1/models`, and
+  accepted one completion payload with `prompt=Hello`, `max_tokens=4`,
+  `temperature=0.0`, `top_p=1.0`, `seed=0`, `n=1`, `stream=false`, one
+  request-controlled stop string, one integer `stop_token_ids` entry, and
+  `include_stop_str_in_output=false`.
+- The completion request returned HTTP 200 with exactly one response choice
+  and structurally valid response-contract fields. The response reported
+  `usage.prompt_tokens=1`, `usage.completion_tokens=4`, and
+  `usage.total_tokens=5`.
+- The explicit stop-contract checks passed for request field shape and base
+  response-contract validity. The result recorded `stop_trigger=not_asserted`;
+  it did not assert stop marker presence, stop marker absence, token identity,
+  or stop-token semantic correctness.
+- The probe exited 0 after 111.779 seconds with `generation_attempted=true`.
+- The probe sent `SIGTERM`, vLLM logged API server and engine shutdown, and
+  the probe reported no remaining process-group PIDs. The immediate post-run
+  selected-GPU memory snapshot showed GPU 1 and GPU 7 back at their pre-run
+  memory baseline.
+- The run establishes local-only stop-field acceptance and response-contract
+  evidence for this exact bounded request; it is not stop-trigger,
+  generated-text correctness, tokenizer semantic correctness, prompt
+  correctness, token identity or stop-token semantic correctness, latency,
+  throughput, long-context, production-readiness, broad determinism, or
+  simpler-nv/vLLM integration evidence.
+
+Detailed stop-contract evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_stop_contract_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
 server-startup, health/model-list readiness, one-token inference smoke, one
 bounded response-contract probe, warmup/request-shape gates,
 deterministic-repeat serving-semantics, one explicit logprobs response shape
-probe, and one explicit echo response-shape probe:
+probe, one explicit echo response-shape probe, and one explicit stop-field
+acceptance probe:
 
 ```text
 remote_h200_reachable: yes
@@ -452,9 +508,11 @@ request_shape_variation_probe: passed under recorded three-request boundary
 serving_semantics_probe: passed under recorded deterministic-repeat boundary
 logprobs_contract_probe: passed under recorded explicit logprob boundary
 echo_contract_probe: passed under recorded explicit echo boundary
+stop_contract_probe: passed under recorded explicit stop-field boundary
 serving_readiness: bounded local-only response contract and warmup-shape
   variation plus deterministic-repeat serving-semantics, logprobs response
-  shape, and echo response-shape observations; no correctness claims
+  shape, echo response-shape, and stop-field acceptance observations; no
+  correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -468,19 +526,23 @@ digests and accounting without recording or judging generated text. It has
 also passed one bounded explicit `logprobs` / `prompt_logprobs` response-shape
 observation without inspecting token identity or logprob values. It has also
 passed one bounded explicit `echo=true` response-shape observation without
-recording raw generated text or judging the generated suffix. It is still too
-early to claim generated text correctness, token/logprob semantic correctness,
+recording raw generated text or judging the generated suffix. It has also
+passed one bounded explicit `stop` / `stop_token_ids` field-acceptance
+observation without asserting stop triggering, marker presence, token
+identity, or stop-token semantic correctness. It is still too early to claim
+generated text correctness, token/logprob/stop-token semantic correctness,
 long-context behavior, latency, throughput, production readiness, broad
 determinism, or simpler-nv/vLLM kernel integration.
 
 ## Next Gate
 
-The next PR-sized gate can move to explicit `stop` / `stop_token_ids`
-serving behavior if it can be validated without generated-text correctness
-claims, or to another bounded request shape that is deliberately independent
-from generated-text correctness. That later gate needs its own command,
-resource plan, expected failure mode, and non-claims, and it should stay
-separate from throughput, latency, long-context, and production-readiness
+The next PR-sized gate can move to a live stop-trigger validator only if a
+request-controlled path can be shown without generated-text correctness,
+token identity, or stop-token semantic claims. Otherwise, the next safe gate
+should choose another bounded request or response shape that is deliberately
+independent from generated-text correctness. That later gate needs its own
+command, resource plan, expected failure mode, and non-claims, and it should
+stay separate from throughput, latency, long-context, and production-readiness
 claims.
 
 ## Non-Claims
@@ -489,6 +551,7 @@ claims.
   throughput, latency, or production readiness evidence.
 - This is not generated-text correctness evidence.
 - This is not token identity or logprob value correctness evidence.
+- This is not stop-trigger or stop-token semantic correctness evidence.
 - This is not broad serving determinism evidence.
 - This is not simpler-nv or vLLM kernel integration evidence.
 - This did not commit raw model artifacts, venvs, command dumps, or `tmp/`

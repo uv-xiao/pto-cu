@@ -380,3 +380,38 @@ is a bounded echo response-shape observation, not generated-text correctness,
 tokenizer semantics, prompt correctness, token identity or logprob value
 correctness, 256K context, throughput, latency, production readiness, or
 simpler-nv/vLLM integration evidence.
+
+## DeepSeek V4 Flash vLLM Stop-Contract Probe
+
+```bash
+CUDA_VISIBLE_DEVICES=<two ids> VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 65m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_response_contract_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28131 \
+  --server-log tmp/vllm-stop-contract-probe/server-28131.log \
+  --max-model-len 4096 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 180 --terminate-timeout-seconds 60 \
+  --prompt Hello --max-tokens 4 --temperature 0.0 --top-p 1.0 \
+  --seed 0 --stop-contract
+```
+
+This starts the same local-only server boundary, checks `/health` and
+`/v1/models`, sends one bounded non-streaming `/v1/completions` request with
+explicit `stop`, `stop_token_ids`, and `include_stop_str_in_output=false`,
+validates the base structural response contract, and checks only that the
+explicit stop fields were carried in the accepted request. The remote H200
+evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_stop_contract_probe.md`. This is
+bounded stop-field acceptance and response-contract evidence, not stop-trigger
+evidence, generated-text correctness, tokenizer semantics, prompt
+correctness, token identity or stop-token semantic correctness, 256K context,
+throughput, latency, production readiness, broad determinism, or
+simpler-nv/vLLM integration evidence.

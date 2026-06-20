@@ -173,6 +173,22 @@ def test_build_echo_request_adds_explicit_bounded_echo_field():
     assert request["limits"]["max_tokens"] == 1
 
 
+def test_build_stop_request_adds_explicit_bounded_stop_fields():
+    probe = load_probe_module()
+
+    request = probe.build_stop_contract_request(prompt="Hello", max_tokens=4)
+
+    assert request["endpoint"] == "/v1/completions"
+    assert request["payload"]["stop"] == ["<pto-cu-stop-contract-marker>"]
+    assert request["payload"]["stop_token_ids"] == [0]
+    assert request["payload"]["include_stop_str_in_output"] is False
+    assert request["payload"]["stream"] is False
+    assert request["limits"]["stop"] == ["<pto-cu-stop-contract-marker>"]
+    assert request["limits"]["stop_token_ids_count"] == 1
+    assert request["limits"]["include_stop_str_in_output"] is False
+    assert request["limits"]["stop_trigger_asserted"] is False
+
+
 def test_validate_logprobs_contract_accepts_completion_and_prompt_shapes():
     probe = load_probe_module()
     request = probe.build_logprobs_contract_request(max_tokens=2)
@@ -241,6 +257,38 @@ def test_validate_echo_contract_rejects_missing_prompt_prefix():
 
     assert result["status"] == "failed"
     assert result["failure"]["category"] == "echo_contract_prompt_prefix"
+
+
+def test_validate_stop_contract_accepts_fields_without_stop_trigger_claim():
+    probe = load_probe_module()
+    request = probe.build_stop_contract_request(prompt="Hello", max_tokens=4)
+
+    result = probe.validate_stop_contract(
+        completion_payload(completion_tokens=4),
+        request=request,
+    )
+
+    assert result["status"] == "passed"
+    assert result["checks"]["base_completion_contract"] == "passed"
+    assert result["checks"]["stop_request_fields"] == "passed"
+    assert result["checks"]["stop_trigger"] == "not_asserted"
+    assert result["stop"]["stop_strings_count"] == 1
+    assert result["stop"]["stop_token_ids_count"] == 1
+    assert result["stop"]["stop_trigger_asserted"] is False
+    assert "text" not in result["stop"]
+
+
+def test_validate_stop_contract_rejects_missing_explicit_stop_fields():
+    probe = load_probe_module()
+    request = probe.build_contract_request(max_tokens=4)
+
+    result = probe.validate_stop_contract(
+        completion_payload(completion_tokens=4),
+        request=request,
+    )
+
+    assert result["status"] == "failed"
+    assert result["failure"]["category"] == "stop_contract_request_fields"
 
 
 def test_send_contract_request_classifies_http_failure():
