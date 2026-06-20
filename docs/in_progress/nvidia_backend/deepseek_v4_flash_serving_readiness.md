@@ -233,6 +233,57 @@ Fresh remote H200 warmup-shape evidence from this slice:
 Detailed warmup-shape evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_warmup_shape_probe.md`.
 
+Fresh remote H200 request-shape variation evidence from this slice:
+
+- A repo-owned request-shape variation probe script now reuses the
+  warmup-shape lifecycle, checks `/health` and `/v1/models`, sends one known
+  warmup `/v1/completions` request, sends one same-shape follow-up request to
+  preserve the prior baseline inside the run, sends one separate bounded
+  variation `/v1/completions` request with a different prompt/token shape,
+  validates the structural response contract for all three responses, inspects
+  selected Triton JIT warning strings by server-log request windows,
+  terminates the server, and checks for remaining process-group PIDs.
+- The remote source tree was refreshed with `--sync`, preserving the complete
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`. The fresh pre-run snapshot showed 141773 MiB free
+  on GPU 1 and 116662 MiB free on GPU 7.
+- The passing boundary used `max_model_len=4096`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 65-minute outer timeout, a
+  2700-second readiness timeout, a 180-second request timeout, and a 2-second
+  server-log settle interval after each completion request.
+- The server started on `http://127.0.0.1:28127`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` from `/v1/models`,
+  accepted the known warmup and same-shape follow-up payloads with prompt
+  `Hello` and `max_tokens=4`, then accepted a variation payload with prompt
+  `Hello. Provide one short sentence about bounded CUDA serving probes.` and
+  `max_tokens=8`.
+- All three completion requests returned HTTP 200 with exactly one response
+  choice and structurally valid response-contract fields. The variation
+  response reported `usage.prompt_tokens=13`, `usage.completion_tokens=8`,
+  and `usage.total_tokens=21`.
+- The selected warning pattern
+  `Triton kernel JIT compilation during inference` appeared 8 times in the
+  warmup request log window, 0 times in the follow-up same-shape request log
+  window, and 3 times in the variation request log window. The variation
+  warning lines named `_build_prefill_chunk_metadata_kernel`,
+  `_compute_prefill_metadata_kernel`, and `_combine_topk_swa_indices_kernel`.
+- The probe exited 0 after 163.042 seconds with `generation_attempted=true`.
+- The probe sent `SIGTERM`, vLLM logged API server and engine shutdown, and
+  the probe reported no remaining process-group PIDs. The immediate post-run
+  selected-GPU memory snapshot showed GPU 1 and GPU 7 back at their pre-run
+  memory baseline.
+- The run establishes local-only request-shape variation observation evidence
+  only; it is not generated-text correctness, tokenizer semantic correctness,
+  prompt correctness, latency, throughput, long-context, production-readiness,
+  broad warmup-eliminates-JIT, or simpler-nv/vLLM integration evidence.
+
+Detailed request-shape variation evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_request_shape_variation_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
@@ -251,23 +302,25 @@ local_only_vllm_server_health: passed under recorded 4096-token boundary
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
+request_shape_variation_probe: passed under recorded three-request boundary
 serving_readiness: bounded local-only response contract and warmup-shape
-  observation; no correctness claims
+  variation observation; no correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
 startup, one bounded local-only inference request, and one bounded
 OpenAI-compatible completion response-contract check under the recorded
 two-H200 boundary. It has also passed one bounded same-shape warmup/follow-up
-observation of the selected Triton JIT warning string. It is still too early
-to claim generated text correctness, long-context behavior, latency,
-throughput, production readiness, or simpler-nv/vLLM kernel integration.
+observation and one bounded request-shape variation observation of the
+selected Triton JIT warning string. It is still too early to claim generated
+text correctness, long-context behavior, latency, throughput, production
+readiness, or simpler-nv/vLLM kernel integration.
 
 ## Next Gate
 
-The next PR-sized gate can move to a separate serving-semantics check, or run
-a separate explicitly bounded request-shape variation and record whether fresh
-JIT warning lines appear. That later gate needs its own command, resource
+The next PR-sized gate can move to a separate bounded serving-semantics
+contract, or run a second explicit bounded request-shape variation if more
+shape coverage is needed. That later gate needs its own command, resource
 plan, expected failure mode, and non-claims, and it should stay separate from
 correctness, throughput, latency, long-context, and production-readiness
 claims.
