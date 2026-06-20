@@ -1325,7 +1325,8 @@ synthetic exact-output pass gate, plus one three-request near-256K
 stop-controlled synthetic exact-output repeat pass gate, plus one bounded
 near-256K stop-controlled synthetic exact-output truncated-generation
 failure-mode gate, plus one three-position near-256K stop-controlled
-synthetic exact-output sweep pass gate:
+synthetic exact-output sweep pass gate, plus one bounded OpenAI-compatible
+chat-completions exact-output canary pass gate:
 
 ```text
 remote_h200_reachable: yes
@@ -1367,6 +1368,8 @@ local_only_vllm_256k_needle_exact_truncated_failure: failed under recorded
   262144-token boundary with max_tokens=1 as expected
 local_only_vllm_256k_needle_position_sweep: passed under recorded
   262144-token boundary and one server lifecycle
+local_only_vllm_chat_exact_canary: passed under recorded 262144-token
+  boundary and one server lifecycle
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -1392,7 +1395,9 @@ serving_readiness: bounded local-only response contract and warmup-shape
   synthetic exact-output repeat pass gate, plus one bounded near-256K
   stop-controlled synthetic exact-output truncated-generation failure-mode
   gate, plus one three-position near-256K stop-controlled synthetic
-  exact-output sweep pass gate; no general correctness claims
+  exact-output sweep pass gate, plus one bounded OpenAI-compatible
+  chat-completions exact-output canary pass gate; no general correctness
+  claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -1486,6 +1491,20 @@ position sweep near the same prompt-token budget under one recorded
 late needle placement; each position used the same strict exact comparator and
 stop sequence, and the sweep aggregate recorded only review-safe per-position
 summaries.
+
+It has now also passed one local-only OpenAI-compatible
+`/v1/chat/completions` exact-output canary under the recorded 262144-token
+vLLM server boundary. The request used two chat messages, `max_tokens=16`,
+`temperature=0.0`, `top_p=1.0`, and `seed=0`; the response returned HTTP 200,
+`finish_reason=stop`, and assistant content whose narrowly normalized output
+exactly matched `PTO_CHAT_EXACT_CANARY_28149`. The probe recorded usage
+accounting and review-safe response shape only, without recording raw prompt
+text, raw request payload, raw generated text, token ID arrays, probability
+details, generated-text digests, model artifact contents, or private absolute
+paths.
+
+Detailed chat-completions exact canary evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_exact_canary_probe.md`.
 
 ## Next Gate
 

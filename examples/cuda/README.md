@@ -307,6 +307,38 @@ semantic correctness, prompt semantic correctness, token identity, logprob,
 stop-token, throughput, latency, production readiness, broad determinism, or
 simpler-nv/vLLM integration evidence.
 
+## DeepSeek V4 Flash vLLM Chat Exact Canary Probe
+
+```bash
+CUDA_VISIBLE_DEVICES=<two ids> VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 65m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_chat_exact_canary_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28149 \
+  --server-log tmp/vllm-chat-exact-canary-probe/server-28149.log \
+  --max-model-len 262144 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 180 --terminate-timeout-seconds 60 \
+  --max-tokens 16 --temperature 0.0 --top-p 1.0 \
+  --seed 0 --expected-answer PTO_CHAT_EXACT_CANARY_28149
+```
+
+This starts the same local-only server boundary, checks `/health` and
+`/v1/models`, sends one bounded non-streaming `/v1/chat/completions` request,
+and requires the narrowly normalized assistant content to exactly equal the
+expected canary string. The remote H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_exact_canary_probe.md`.
+This is a bounded OpenAI-compatible chat-completions exact-output canary, not
+general generated-text correctness, semantic correctness, long-prompt chat
+behavior, throughput, latency, production readiness, broad determinism, or
+simpler-nv/vLLM integration evidence.
+
 ## DeepSeek V4 Flash vLLM Long-Prompt Warmup/Follow-Up Probe
 
 ```bash

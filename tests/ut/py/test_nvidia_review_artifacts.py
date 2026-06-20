@@ -190,6 +190,9 @@ def test_review_policy_changelog_and_examples_exist():
         / "vllm_remote_256k_needle_position_sweep_probe.md"
     ).is_file()
     assert (
+        in_progress_root / "vllm_remote_chat_exact_canary_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
@@ -225,6 +228,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         example_root / "vllm_deepseek_v4_needle_correctness_probe.py"
+    ).is_file()
+    assert (
+        example_root / "vllm_deepseek_v4_chat_exact_canary_probe.py"
     ).is_file()
 
 
@@ -690,6 +696,59 @@ def test_256k_needle_position_sweep_evidence_is_review_safe():
     assert "generated-text digests are not recorded" in evidence
     assert "local_only_vllm_256k_needle_position_sweep: passed" in readiness
     assert "vllm_remote_256k_needle_position_sweep_probe.md" in readiness
+    assert "text_" + "sha256" not in evidence
+    assert "token_ids" not in evidence
+    assert "/" + "home/" not in evidence
+
+
+def test_chat_exact_canary_evidence_is_review_safe():
+    evidence = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "vllm_remote_chat_exact_canary_probe.md"
+    ).read_text(encoding="utf-8")
+    readiness = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "deepseek_v4_flash_serving_readiness.md"
+    ).read_text(encoding="utf-8")
+
+    assert "status: passed" in evidence
+    assert "PROBE_EXIT_STATUS=0" in evidence
+    assert "CUDA_VISIBLE_DEVICES=1,7" in evidence
+    assert "server_port: 28149" in evidence
+    assert "endpoint: /v1/chat/completions" in evidence
+    assert "max_model_len=262144" in evidence
+    assert "tensor_parallel_size=2" in evidence
+    assert "max_tokens=16" in evidence
+    assert "temperature=0.0" in evidence
+    assert "top_p=1.0" in evidence
+    assert "seed=0" in evidence
+    assert "message_count: 2" in evidence
+    assert "message_roles: system,user" in evidence
+    assert "expected_answer: PTO_CHAT_EXACT_CANARY_28149" in evidence
+    assert "match_mode: exact" in evidence
+    assert "HTTP status: 200" in evidence
+    assert "finish_reason: stop" in evidence
+    assert "normalized_output_equals_expected: true" in evidence
+    assert "normalized_output_length_chars: 27" in evidence
+    assert "expected_answer_exact: passed" in evidence
+    assert "usage.prompt_tokens: 33" in evidence
+    assert "usage.completion_tokens: 13" in evidence
+    assert "usage.total_tokens: 46" in evidence
+    assert "POST /v1/chat/completions HTTP/1.1" in evidence
+    assert "remaining_process_group_pids: []" in evidence
+    assert "raw prompt text is not recorded" in evidence
+    assert "raw request payload is not recorded" in evidence
+    assert "raw generated text is not recorded" in evidence
+    assert "token ID arrays are not recorded" in evidence
+    assert "generated-text digests are not recorded" in evidence
+    assert "local_only_vllm_chat_exact_canary: passed" in readiness
+    assert "vllm_remote_chat_exact_canary_probe.md" in readiness
     assert "text_" + "sha256" not in evidence
     assert "token_ids" not in evidence
     assert "/" + "home/" not in evidence
