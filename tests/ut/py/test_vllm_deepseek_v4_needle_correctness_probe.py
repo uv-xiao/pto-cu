@@ -368,3 +368,205 @@ def test_dry_run_cli_output_records_configured_stop_sequence_safely():
     assert payload["request"]["payload_recorded"] is False
     assert "payload" not in payload["request"]
     assert "raw request payload" in result.stdout
+
+
+def test_dry_run_cli_output_preserves_single_request_shape_by_default():
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(PROBE_PATH),
+            "--dry-run",
+            "--port",
+            "28146",
+            "--target-prompt-tokens",
+            "255800",
+            "--max-model-len",
+            "262144",
+            "--max-tokens",
+            "64",
+            "--match-mode",
+            "exact",
+            "--stop-sequence",
+            "\n```",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+
+    assert payload["status"] == "planned"
+    assert payload["generation_attempted"] is False
+    assert payload["prompt_sent"] is False
+    assert "repeat" not in payload
+    assert "repeat_count" not in payload
+    assert "attempts" not in payload
+    assert "completion" not in payload
+
+
+def test_parse_args_rejects_invalid_repeat_count():
+    probe = load_probe_module()
+
+    try:
+        probe.parse_args(["--repeat-count", "0"])
+    except SystemExit as exc:
+        assert exc.code == 2
+    else:
+        raise AssertionError("expected repeat count validation failure")
+
+
+def test_repeat_aggregation_fails_if_any_attempt_fails():
+    probe = load_probe_module()
+    expected = "PTO_NEEDLE_256K_CONTEXT_OK_28143"
+    request = probe.build_planned_needle_request(
+        expected_answer=expected,
+        match_mode="exact",
+        stop_sequences=["\n```"],
+    )
+    attempts = [
+        {
+            "status": "passed",
+            "http_status": 200,
+            "validation": {
+                "checks": {"expected_answer_exact": "passed"},
+            },
+            "observation": {
+                "finish_reason": "stop",
+                "text_length_chars": 33,
+                "usage": {
+                    "prompt_tokens": 255799,
+                    "completion_tokens": 17,
+                    "total_tokens": 255816,
+                },
+                "generated_text": expected,
+                "normalized_generated_text": expected,
+            },
+        },
+        {
+            "status": "failed",
+            "http_status": 200,
+            "failure": {
+                "category": "needle_expected_answer_not_exact",
+                "message": "normalized generated output did not exactly equal expected",
+            },
+            "validation": {
+                "checks": {"expected_answer_exact": "failed"},
+            },
+            "observation": {
+                "finish_reason": "stop",
+                "text_length_chars": 37,
+                "usage": {
+                    "prompt_tokens": 255799,
+                    "completion_tokens": 18,
+                    "total_tokens": 255817,
+                },
+                "generated_text": f"{expected}\n```",
+                "normalized_generated_text": f"{expected}\n```",
+            },
+        },
+    ]
+
+    aggregate = probe.aggregate_repeat_attempts(attempts, request=request)
+
+    assert aggregate["status"] == "failed"
+    assert aggregate["repeat_count"] == 2
+    assert aggregate["passed_attempts"] == 1
+    assert aggregate["failed_attempts"] == 1
+    assert aggregate["failure"]["category"] == "needle_expected_answer_not_exact"
+    assert aggregate["attempts"][0]["attempt_index"] == 1
+    assert aggregate["attempts"][1]["attempt_index"] == 2
+    assert aggregate["attempts"][1]["exact_check"] == "failed"
+    assert "generated_text" not in aggregate["attempts"][0]
+    assert "normalized_generated_text" not in aggregate["attempts"][0]
+    assert "payload" not in aggregate["attempts"][0]
+    assert "prompt" not in aggregate["attempts"][0]
+    assert expected not in json.dumps(aggregate["attempts"])
+
+
+def test_repeat_aggregation_fails_when_attempt_count_is_incomplete():
+    probe = load_probe_module()
+    request = probe.build_planned_needle_request(match_mode="exact")
+    attempts = [
+        {
+            "status": "passed",
+            "http_status": 200,
+            "validation": {
+                "checks": {"expected_answer_exact": "passed"},
+                "finish_reason": "stop",
+                "text_length_chars": 33,
+                "usage": {
+                    "prompt_tokens": 255799,
+                    "completion_tokens": 17,
+                    "total_tokens": 255816,
+                },
+            },
+        },
+    ]
+
+    aggregate = probe.aggregate_repeat_attempts(
+        attempts,
+        request=request,
+        expected_count=3,
+    )
+
+    assert aggregate["status"] == "failed"
+    assert aggregate["repeat_count"] == 3
+    assert aggregate["attempts_completed"] == 1
+    assert aggregate["failure"]["category"] == "needle_repeat_incomplete"
+
+
+def test_repeat_summary_uses_review_safe_fields_only():
+    probe = load_probe_module()
+    expected = "PTO_NEEDLE_256K_CONTEXT_OK_28143"
+    completion = {
+        "status": "passed",
+        "endpoint": "/v1/completions",
+        "url": "http://127.0.0.1:28146/v1/completions",
+        "http_status": 200,
+        "request_limits": {
+            "target_prompt_tokens": 255800,
+            "actual_prompt_tokens": 255799,
+            "max_tokens": 64,
+            "match_mode": "exact",
+        },
+        "validation": {
+            "checks": {
+                "expected_answer_exact": "passed",
+                "usage_prompt_tokens_match": "passed",
+                "usage_completion_bound": "passed",
+            },
+        },
+        "observation": {
+            "expected_answer": expected,
+            "match_mode": "exact",
+            "finish_reason": "stop",
+            "text_length_chars": 33,
+            "generated_text": expected,
+            "normalized_generated_text": expected,
+            "usage": {
+                "prompt_tokens": 255799,
+                "completion_tokens": 17,
+                "total_tokens": 255816,
+            },
+        },
+    }
+
+    summary = probe.review_safe_repeat_attempt_summary(completion, attempt_index=3)
+
+    assert summary == {
+        "attempt_index": 3,
+        "status": "passed",
+        "http_status": 200,
+        "finish_reason": "stop",
+        "generated_text_length_chars": 33,
+        "exact_check": "passed",
+        "usage": {
+            "prompt_tokens": 255799,
+            "completion_tokens": 17,
+            "total_tokens": 255816,
+        },
+    }
+    assert expected not in json.dumps(summary)
