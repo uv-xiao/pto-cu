@@ -18,6 +18,10 @@ Ultimate-goal work defaults to a dispatcher/worker split:
   handoff is recorded in the dispatch log;
 - each child slice uses one PR-sized branch unless the dispatcher records a
   narrower dependency PR first;
+- each worker prompt names the target repository, base branch, and expected PR
+  command shape explicitly. For this repository, use `uv-xiao/pto-cu`,
+  base `main`, and a PR command that includes
+  `--repo uv-xiao/pto-cu --base main --head <branch>`;
 - the dispatcher does not perform direct long-running implementation work.
 
 Dispatcher-owned work should be limited to state audits, dispatch-log updates,
@@ -109,6 +113,7 @@ Every dispatch entry must include:
 - exact Codex command or script invocation;
 - transcript/session id and tmux pane when the worker is monitorable;
 - branch name, PR URL or planned PR slot, and parent goal;
+- target repository, base branch, base ref, and expected PR command shape;
 - allowed scope and files;
 - dependencies and blocked assumptions;
 - verification commands and results;

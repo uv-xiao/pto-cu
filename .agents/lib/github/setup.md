@@ -14,23 +14,48 @@ If authentication fails, tell the user to run `gh auth login` and stop.
 
 ## Detect Canonical Repository
 
-Prefer the current GitHub CLI context:
+Parse `origin` first. For `pto-cu`, `origin` is the canonical PR repository:
+expected target `uv-xiao/pto-cu`, base `main`, and base ref `origin/main`.
+Use `gh repo view` only as a fallback or consistency check.
 
 ```bash
-PR_REPO_OWNER=$(gh repo view --json owner -q '.owner.login')
-PR_REPO_NAME=$(gh repo view --json name -q '.name')
-DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef -q '.defaultBranchRef.name')
+ORIGIN_URL=$(git remote get-url origin 2>/dev/null || echo "")
+REPO_PATH=$(echo "$ORIGIN_URL" | sed -n 's#.*[:/]\([^/]*\/[^/]*\)$#\1#p')
+REPO_OWNER=${REPO_PATH%%/*}
+REPO_NAME=${REPO_PATH#*/}
+REPO_NAME=${REPO_NAME%.git}
+
+GH_REPO_OWNER=$(gh repo view --json owner -q '.owner.login' 2>/dev/null || echo "")
+GH_REPO_NAME=$(gh repo view --json name -q '.name' 2>/dev/null || echo "")
+GH_DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef -q '.defaultBranchRef.name' 2>/dev/null || echo "")
+
+if [ "$REPO_OWNER/$REPO_NAME" = "uv-xiao/pto-cu" ]; then
+  PR_REPO_OWNER="uv-xiao"
+  PR_REPO_NAME="pto-cu"
+  DEFAULT_BRANCH="main"
+  if [ -n "$GH_REPO_OWNER$GH_REPO_NAME" ] \
+    && [ "$GH_REPO_OWNER/$GH_REPO_NAME" != "uv-xiao/pto-cu" ]; then
+    echo "Ignoring stale gh repo view context: $GH_REPO_OWNER/$GH_REPO_NAME"
+  fi
+elif [ -n "$GH_REPO_OWNER" ] && [ -n "$GH_REPO_NAME" ]; then
+  PR_REPO_OWNER="$GH_REPO_OWNER"
+  PR_REPO_NAME="$GH_REPO_NAME"
+  DEFAULT_BRANCH="${GH_DEFAULT_BRANCH:-main}"
+else
+  PR_REPO_OWNER="uv-xiao"
+  PR_REPO_NAME="pto-cu"
+  DEFAULT_BRANCH="main"
+fi
 ```
 
-Fallback for this repository is `uv-xiao/pto-cu` and `main`.
+If `origin` is `git@github.com:uv-xiao/pto-cu.git` but `gh repo view`
+returns another repository such as `hw-native-sys/simpler`, treat
+`gh repo view` as stale context. Do not add an `upstream` remote from that
+stale value.
 
 ## Detect Role And Remotes
 
 ```bash
-ORIGIN_URL=$(git remote get-url origin 2>/dev/null || echo "")
-REPO_OWNER=$(echo "$ORIGIN_URL" | sed -n 's#.*[:/]\([^/]*\)/\([^/]*\)\.git.*#\1#p')
-REPO_NAME=$(echo "$ORIGIN_URL" | sed -n 's#.*[:/]\([^/]*\)/\([^/]*\)\.git.*#\2#p')
-
 if [ "$REPO_OWNER" = "$PR_REPO_OWNER" ] && [ "$REPO_NAME" = "$PR_REPO_NAME" ]; then
   ROLE="owner"
   BASE_REMOTE="origin"
