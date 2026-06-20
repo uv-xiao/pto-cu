@@ -339,6 +339,41 @@ general generated-text correctness, semantic correctness, long-prompt chat
 behavior, throughput, latency, production readiness, broad determinism, or
 simpler-nv/vLLM integration evidence.
 
+## DeepSeek V4 Flash vLLM Chat Exact Truncated Failure Probe
+
+```bash
+CUDA_VISIBLE_DEVICES=<two ids> VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 65m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_chat_exact_canary_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28150 \
+  --server-log tmp/vllm-chat-exact-truncated-failure-probe/server-28150.log \
+  --max-model-len 262144 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 180 --terminate-timeout-seconds 60 \
+  --max-tokens 1 --temperature 0.0 --top-p 1.0 \
+  --seed 0 --expected-answer PTO_CHAT_EXACT_CANARY_28149
+```
+
+This starts the same local-only server boundary, checks `/health` and
+`/v1/models`, sends one bounded non-streaming `/v1/chat/completions` request,
+and intentionally gives the strict exact comparator an insufficient
+one-token generation budget. The remote H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_exact_truncated_failure_probe.md`:
+the request returned HTTP 200 with one response choice, usage reported
+`prompt_tokens=33`, `completion_tokens=1`, and `total_tokens=34`, strict exact
+mode failed with `chat_canary_expected_answer_not_exact`, and cleanup
+reported no remaining process-group PIDs. This is an expected failure-mode
+characterization, not generated-text correctness, semantic correctness,
+long-prompt chat behavior, throughput, latency, production readiness, broad
+determinism, or simpler-nv/vLLM integration evidence.
+
 ## DeepSeek V4 Flash vLLM Long-Prompt Warmup/Follow-Up Probe
 
 ```bash

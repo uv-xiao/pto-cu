@@ -354,14 +354,6 @@ def validate_chat_canary_response(
     normalized_output = normalize_generated_output_for_exact_match(content)
     result["normalized_output_length_chars"] = len(normalized_output)
     result["normalized_output_equals_expected"] = normalized_output == expected_answer
-    if normalized_output != expected_answer:
-        result["checks"]["expected_answer_exact"] = "failed"
-        return _fail_contract(
-            result,
-            category="chat_canary_expected_answer_not_exact",
-            message="normalized assistant content did not exactly equal the expected canary",
-        )
-    result["checks"]["expected_answer_exact"] = "passed"
 
     usage = payload.get("usage")
     if not isinstance(usage, dict):
@@ -412,6 +404,15 @@ def validate_chat_canary_response(
             ),
         )
     result["checks"]["usage_total_tokens"] = "passed"
+
+    if normalized_output != expected_answer:
+        result["checks"]["expected_answer_exact"] = "failed"
+        return _fail_contract(
+            result,
+            category="chat_canary_expected_answer_not_exact",
+            message="normalized assistant content did not exactly equal the expected canary",
+        )
+    result["checks"]["expected_answer_exact"] = "passed"
     return result
 
 
