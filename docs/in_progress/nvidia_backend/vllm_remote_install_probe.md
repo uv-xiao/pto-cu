@@ -4,6 +4,13 @@ This note records a bounded remote H200 readiness check for the existing
 weight-free vLLM DeepSeek V4 probes. It does not install vLLM, initialize a
 vLLM engine, load model weights, start a server, or run inference.
 
+Follow-up evidence after creating a checkout-local vLLM probe environment is
+recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_env_artifact_probe.md`.
+That later gate passes the import/config probes and still fails the artifact
+gates because the repo-relative artifact path exposes only metadata/tokenizer
+files, not the indexed weight shards.
+
 ## Remote Environment
 
 The probe used the checked-in remote runner with `--sync`, so the remote

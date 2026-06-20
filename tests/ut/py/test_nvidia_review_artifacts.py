@@ -108,9 +108,12 @@ def test_review_policy_changelog_and_examples_exist():
 
     in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
     assert (in_progress_root / "vllm_remote_install_probe.md").is_file()
+    assert (in_progress_root / "vllm_remote_env_artifact_probe.md").is_file()
     assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
+
+    assert (ROOT / "tools" / "check_nvidia_review_ready.py").is_file()
 
     example_root = ROOT / "examples" / "cuda"
     assert (example_root / "README.md").is_file()
