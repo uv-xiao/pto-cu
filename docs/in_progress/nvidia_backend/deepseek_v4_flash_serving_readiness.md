@@ -1376,6 +1376,8 @@ local_only_vllm_chat_exact_truncated_failure: failed under recorded
   262144-token boundary with max_tokens=1 as expected
 local_only_vllm_chat_256k_needle_exact: passed under recorded 262144-token
   boundary and one server lifecycle
+local_only_vllm_chat_256k_needle_repeat: passed under recorded 262144-token
+  boundary and one server lifecycle
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -1405,8 +1407,9 @@ serving_readiness: bounded local-only response contract and warmup-shape
   chat-completions exact-output canary pass gate, plus one bounded
   OpenAI-compatible chat-completions exact-output truncated-generation
   failure-mode gate, plus one bounded OpenAI-compatible near-256K
-  chat-completions synthetic needle exact-output pass gate; no general
-  correctness claims
+  chat-completions synthetic needle exact-output pass gate, plus one
+  two-request OpenAI-compatible near-256K chat-completions synthetic needle
+  exact-output repeat pass gate; no general correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -1549,6 +1552,26 @@ digests, model artifact contents, or private absolute paths.
 Detailed chat-completions near-256K needle exact-output evidence is recorded
 in
 `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_exact_probe.md`.
+
+It has now also passed two identical local-only OpenAI-compatible near-256K
+`/v1/chat/completions` synthetic needle exact-output requests under one
+recorded 262144-token vLLM server lifecycle. The requests targeted a
+255800-token prompt budget, used `max_tokens=64`, `temperature=0.0`,
+`top_p=1.0`, `seed=0`, expected answer
+`PTO_CHAT_NEEDLE_256K_REPEAT_OK_28152`, strict exact match mode, and stop
+sequence `"\n```"`. Both attempts returned HTTP 200 with one response choice,
+`finish_reason=stop`, usage reported `prompt_tokens=255796`,
+`completion_tokens=19`, and `total_tokens=255815`, and the narrowly
+normalized assistant content exactly matched the expected answer. The repeat
+aggregate recorded only review-safe request limits, response shape, usage,
+exact-match status, and cleanup state; it did not record raw prompt text, raw
+request payload, raw generated text, token ID arrays, logprob values,
+generated-text digests, model artifact contents, non-loopback URLs, hostnames,
+usernames, or private absolute paths.
+
+Detailed chat-completions near-256K needle exact-repeat evidence is recorded
+in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_repeat_probe.md`.
 
 ## Next Gate
 

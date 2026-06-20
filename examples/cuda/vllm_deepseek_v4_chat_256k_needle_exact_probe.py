@@ -30,6 +30,7 @@ DEFAULT_SEED = 0
 DEFAULT_EXPECTED_ANSWER = "PTO_CHAT_NEEDLE_256K_CONTEXT_OK_28151"
 DEFAULT_MATCH_MODE = "exact"
 DEFAULT_MAX_MODEL_LEN = 262_144
+DEFAULT_REPEAT_COUNT = 1
 DEFAULT_NEEDLE_POSITION = "middle"
 NEEDLE_POSITIONS = ("early", "middle", "late")
 NORMALIZATION_RULE = (
@@ -95,6 +96,13 @@ def _failure_payload(category: str, message: str) -> dict[str, str]:
 
 def _exception_summary(exc: BaseException) -> str:
     return f"{type(exc).__name__}: {exc}"
+
+
+def _positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("value must be a positive integer")
+    return parsed
 
 
 def _read_json_response(response: Any) -> Any:
@@ -828,6 +836,152 @@ def send_chat_needle_request(
     return result
 
 
+def repeat_contract_checks(repeat_count: int) -> list[str]:
+    if repeat_count == 1:
+        return list(CONTRACT_CHECKS)
+    checks = []
+    for check in CONTRACT_CHECKS:
+        if check == "HTTP 200 from one non-streaming /v1/chat/completions request":
+            checks.append(
+                "HTTP 200 from exactly "
+                f"{repeat_count} identical non-streaming "
+                "/v1/chat/completions requests in one server lifecycle"
+            )
+        else:
+            checks.append(check)
+    checks.append("same review-safe request limits are used for each repeat attempt")
+    checks.append("every repeat attempt passes the strict chat needle exact comparator")
+    return checks
+
+
+def review_safe_chat_repeat_attempt_summary(
+    completion: dict[str, Any],
+    *,
+    attempt_index: int,
+) -> dict[str, Any]:
+    validation = completion.get("validation", {})
+    observation = completion.get("observation", {})
+    checks = validation.get("checks", {})
+    usage = observation.get("usage") or validation.get("usage")
+    summary: dict[str, Any] = {
+        "attempt_index": attempt_index,
+        "status": completion.get("status", "unknown"),
+        "endpoint": completion.get("endpoint"),
+    }
+    if "http_status" in completion:
+        summary["http_status"] = completion["http_status"]
+    finish_reason = observation.get("finish_reason") or validation.get("finish_reason")
+    if finish_reason is not None:
+        summary["finish_reason"] = finish_reason
+    if "normalized_output_equals_expected" in observation:
+        summary["normalized_output_equals_expected"] = observation[
+            "normalized_output_equals_expected"
+        ]
+    elif "normalized_output_equals_expected" in validation:
+        summary["normalized_output_equals_expected"] = validation[
+            "normalized_output_equals_expected"
+        ]
+    if "normalized_output_length_chars" in observation:
+        summary["normalized_output_length_chars"] = observation[
+            "normalized_output_length_chars"
+        ]
+    elif "normalized_output_length_chars" in validation:
+        summary["normalized_output_length_chars"] = validation[
+            "normalized_output_length_chars"
+        ]
+    if "expected_answer_exact" in checks:
+        summary["exact_check"] = checks["expected_answer_exact"]
+    if isinstance(usage, dict):
+        summary["usage"] = {
+            key: usage[key]
+            for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+            if key in usage
+        }
+    failure = completion.get("failure")
+    if isinstance(failure, dict) and "category" in failure:
+        summary["failure_category"] = failure["category"]
+    return summary
+
+
+def aggregate_chat_repeat_attempts(
+    attempts: list[dict[str, Any]],
+    *,
+    request: dict[str, Any],
+    expected_count: int | None = None,
+) -> dict[str, Any]:
+    requested_count = expected_count if expected_count is not None else len(attempts)
+    summaries = [
+        review_safe_chat_repeat_attempt_summary(completion, attempt_index=index)
+        for index, completion in enumerate(attempts, start=1)
+    ]
+    failed_attempts = [
+        completion for completion in attempts if completion.get("status") != "passed"
+    ]
+    incomplete = len(attempts) != requested_count
+    aggregate: dict[str, Any] = {
+        "status": "failed" if failed_attempts or incomplete else "passed",
+        "repeat_count": requested_count,
+        "attempts_completed": len(attempts),
+        "passed_attempts": len(attempts) - len(failed_attempts),
+        "failed_attempts": len(failed_attempts),
+        "request": review_safe_request(request),
+        "attempts": summaries,
+    }
+    if incomplete:
+        aggregate["failure"] = _failure_payload(
+            "chat_needle_repeat_incomplete",
+            (
+                f"completed {len(attempts)} of {requested_count} requested "
+                "repeat attempts"
+            ),
+        )
+    elif failed_attempts:
+        aggregate["failure"] = failed_attempts[0].get(
+            "failure",
+            _failure_payload(
+                "chat_needle_repeat_attempt_failed",
+                "one or more chat repeat attempts failed",
+            ),
+        )
+    return aggregate
+
+
+def send_chat_needle_repeat_requests(
+    *,
+    port: int,
+    request: dict[str, Any],
+    repeat_count: int,
+    served_model_name: str,
+    expected_answer: str,
+    timeout_seconds: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    http_post: HttpPost = _http_post,
+) -> dict[str, Any]:
+    if repeat_count < 1:
+        return {
+            "status": "failed",
+            "failure": _failure_payload(
+                "invalid_repeat_count",
+                f"repeat_count must be positive, got {repeat_count}",
+            ),
+        }
+    attempts = [
+        send_chat_needle_request(
+            port=port,
+            request=request,
+            served_model_name=served_model_name,
+            expected_answer=expected_answer,
+            timeout_seconds=timeout_seconds,
+            http_post=http_post,
+        )
+        for _ in range(repeat_count)
+    ]
+    return aggregate_chat_repeat_attempts(
+        attempts,
+        request=request,
+        expected_count=repeat_count,
+    )
+
+
 def run_probe(
     *,
     artifact_dir: Path = health_probe.DEFAULT_ARTIFACT_DIR,
@@ -855,6 +1009,7 @@ def run_probe(
     seed: int = DEFAULT_SEED,
     expected_answer: str = DEFAULT_EXPECTED_ANSWER,
     stop_sequences: list[str] | None = None,
+    repeat_count: int = DEFAULT_REPEAT_COUNT,
     needle_position: str = DEFAULT_NEEDLE_POSITION,
     dry_run: bool = False,
 ) -> dict[str, Any]:
@@ -863,6 +1018,17 @@ def run_probe(
         return {
             "status": "failed",
             "failure": _failure_payload("invalid_port", f"invalid port: {selected_port}"),
+            "generation_attempted": False,
+            "prompt_sent": False,
+            "non_claims": NON_CLAIMS,
+        }
+    if repeat_count < 1:
+        return {
+            "status": "failed",
+            "failure": _failure_payload(
+                "invalid_repeat_count",
+                f"repeat_count must be positive, got {repeat_count}",
+            ),
             "generation_attempted": False,
             "prompt_sent": False,
             "non_claims": NON_CLAIMS,
@@ -960,7 +1126,8 @@ def run_probe(
         "server_log": health_probe._display_path(log_path),
         "endpoints": ["/health", "/v1/models", DEFAULT_ENDPOINT],
         "request": review_safe_request(request),
-        "contract_checks": CONTRACT_CHECKS,
+        "contract_checks": repeat_contract_checks(repeat_count),
+        "repeat_count": repeat_count,
         "request_timeout_seconds": request_timeout_seconds,
         "runtime_versions": {} if dry_run else _runtime_versions(),
         "gpu_memory_before": [] if dry_run else health_probe._query_nvidia_smi_memory(),
@@ -997,22 +1164,45 @@ def run_probe(
                 _failure_payload("readiness_failed", "server readiness failed"),
             )
             return result
-        completion = send_chat_needle_request(
-            port=selected_port,
-            request=request,
-            served_model_name=served_model_name,
-            expected_answer=expected_answer,
-            timeout_seconds=request_timeout_seconds,
-        )
         result["generation_attempted"] = True
         result["prompt_sent"] = True
-        result["chat_completion"] = completion
-        result["status"] = completion["status"]
-        if completion["status"] != "passed":
-            result["failure"] = completion.get(
-                "failure",
-                _failure_payload("chat_needle_failed", "chat needle exact probe failed"),
+        if repeat_count == 1:
+            completion = send_chat_needle_request(
+                port=selected_port,
+                request=request,
+                served_model_name=served_model_name,
+                expected_answer=expected_answer,
+                timeout_seconds=request_timeout_seconds,
             )
+            result["chat_completion"] = completion
+            result["status"] = completion["status"]
+            if completion["status"] != "passed":
+                result["failure"] = completion.get(
+                    "failure",
+                    _failure_payload(
+                        "chat_needle_failed",
+                        "chat needle exact probe failed",
+                    ),
+                )
+        else:
+            repeat = send_chat_needle_repeat_requests(
+                port=selected_port,
+                request=request,
+                repeat_count=repeat_count,
+                served_model_name=served_model_name,
+                expected_answer=expected_answer,
+                timeout_seconds=request_timeout_seconds,
+            )
+            result["repeat"] = repeat
+            result["status"] = repeat["status"]
+            if repeat["status"] != "passed":
+                result["failure"] = repeat.get(
+                    "failure",
+                    _failure_payload(
+                        "chat_needle_repeat_failed",
+                        "one or more chat needle repeat attempts failed",
+                    ),
+                )
         if process.poll() is not None and result["status"] != "passed":
             result["failure"] = _failure_payload(
                 "server_exited_during_probe",
@@ -1095,6 +1285,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--expected-answer", default=DEFAULT_EXPECTED_ANSWER)
     parser.add_argument("--stop-sequence", action="append", dest="stop_sequences")
     parser.add_argument(
+        "--repeat-count",
+        type=_positive_int,
+        default=DEFAULT_REPEAT_COUNT,
+        help=(
+            "number of repeated chat completion requests to send within one "
+            "server lifecycle; defaults to one"
+        ),
+    )
+    parser.add_argument(
         "--needle-position",
         choices=NEEDLE_POSITIONS,
         default=DEFAULT_NEEDLE_POSITION,
@@ -1131,6 +1330,7 @@ def main(argv: list[str] | None = None) -> int:
         seed=args.seed,
         expected_answer=args.expected_answer,
         stop_sequences=args.stop_sequences,
+        repeat_count=args.repeat_count,
         needle_position=args.needle_position,
         dry_run=args.dry_run,
     )
