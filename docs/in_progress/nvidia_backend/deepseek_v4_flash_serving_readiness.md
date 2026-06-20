@@ -146,10 +146,50 @@ Fresh remote H200 inference-smoke evidence from this slice:
 Detailed inference-smoke evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_inference_smoke_probe.md`.
 
+Fresh remote H200 response-contract evidence from this slice:
+
+- A repo-owned response-contract probe script now reuses the server-health
+  lifecycle, checks `/health` and `/v1/models`, sends one bounded
+  `/v1/completions` request, validates structural response invariants,
+  terminates the server, and checks for remaining process-group PIDs.
+- The remote source tree was refreshed with `--sync`, preserving the complete
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`. The fresh pre-run snapshot showed 141773 MiB free
+  on GPU 1 and 116662 MiB free on GPU 7.
+- The passing boundary used `max_model_len=4096`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 60-minute outer timeout, a
+  2700-second readiness timeout, and a 180-second request timeout.
+- The server started on `http://127.0.0.1:28125`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` from `/v1/models`, and
+  accepted one `/v1/completions` request with prompt `Hello`, `max_tokens=4`,
+  `temperature=0.0`, `top_p=1.0`, `seed=0`, `n=1`, and `stream=false`.
+- The completion request returned HTTP 200 with exactly one response choice,
+  response `model`, choice `text` and `finish_reason`, and usage counts:
+  `prompt_tokens=1`, `completion_tokens=4`, and `total_tokens=5`.
+- `usage.completion_tokens` was within the request `max_tokens` bound, and
+  `usage.total_tokens >= usage.prompt_tokens`.
+- The response choice shape included a `token_ids` key, but the value was not
+  a list in this response, so the token-id length check was recorded as
+  `not_present` rather than asserting a count from a null field.
+- The probe exited 0 after 109.204 seconds with `generation_attempted=true`.
+- The probe sent `SIGTERM`, vLLM logged API server and engine shutdown, and
+  the probe reported no remaining process-group PIDs. The immediate post-run
+  snapshot showed the selected GPUs back at their pre-run memory baseline.
+- The run establishes local-only response-contract evidence only; it is not
+  generated-text correctness evidence.
+
+Detailed response-contract evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_response_contract_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
-server-startup, health/model-list readiness, and one-token inference smoke:
+server-startup, health/model-list readiness, one-token inference smoke, and
+one bounded response-contract probe:
 
 ```text
 remote_h200_reachable: yes
@@ -161,18 +201,20 @@ weight_manifest_gate: complete
 two_h200_vllm_model_load: passed under recorded 4096-token boundary
 local_only_vllm_server_health: passed under recorded 4096-token boundary
 one_token_inference_smoke: passed under recorded 4096-token boundary
-serving_readiness: one bounded local-only request; no correctness claims
+response_contract_probe: passed under recorded 4096-token boundary
+serving_readiness: one bounded local-only response contract; no correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
-startup and one bounded local-only inference request under the recorded
+startup, one bounded local-only inference request, and one bounded
+OpenAI-compatible completion response-contract check under the recorded
 two-H200 boundary. It is still too early to claim generated text correctness,
 long-context behavior, latency, throughput, production readiness, or
 simpler-nv/vLLM kernel integration.
 
 ## Next Gate
 
-The next PR-sized gate can decide whether to reduce first-request JIT/TileLang
+The next PR-sized gate can decide whether to reduce first-request JIT/Triton
 compilation surprises with an explicit warmup shape, or move to a separate
 serving-semantics check. That later gate needs its own command, resource plan,
 expected failure mode, and non-claims, and it should stay separate from

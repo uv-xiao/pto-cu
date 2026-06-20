@@ -175,3 +175,37 @@ process-group PIDs reported by the probe. This is inference-smoke evidence,
 not generated-text correctness, tokenizer semantics, prompt correctness, 256K
 context, throughput, latency, production readiness, or simpler-nv/vLLM
 integration evidence.
+
+## DeepSeek V4 Flash vLLM Response-Contract Probe
+
+```bash
+CUDA_VISIBLE_DEVICES=<two ids> VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 60m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_response_contract_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28125 \
+  --server-log tmp/vllm-response-contract-probe/server-28125.log \
+  --max-model-len 4096 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 180 --terminate-timeout-seconds 60 \
+  --prompt Hello --max-tokens 4 --temperature 0.0 --top-p 1.0 --seed 0
+```
+
+This starts the same local-only server boundary, checks `/health` and
+`/v1/models`, sends one bounded non-streaming completion request with explicit
+sampler settings, validates OpenAI-compatible response structure, and
+terminates the server process group. The remote H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_response_contract_probe.md`: the
+server returned HTTP 200 from readiness endpoints and `/v1/completions`, the
+response had exactly one choice, usage token counts were internally
+consistent and within the request bound, and cleanup reported no remaining
+process-group PIDs. This is response-contract evidence, not generated-text
+correctness, tokenizer semantics, prompt correctness, 256K context,
+throughput, latency, production readiness, or simpler-nv/vLLM integration
+evidence.
