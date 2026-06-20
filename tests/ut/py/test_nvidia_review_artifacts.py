@@ -171,6 +171,9 @@ def test_review_policy_changelog_and_examples_exist():
         in_progress_root / "vllm_remote_256k_needle_correctness_probe.md"
     ).is_file()
     assert (
+        in_progress_root / "vllm_remote_256k_needle_exact_output_failure.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
@@ -407,6 +410,56 @@ def test_256k_needle_correctness_evidence_is_review_safe():
     assert "/" + "home/" not in evidence
 
 
+def test_256k_needle_exact_output_failure_evidence_is_review_safe():
+    evidence = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "vllm_remote_256k_needle_exact_output_failure.md"
+    ).read_text(encoding="utf-8")
+    readiness = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "deepseek_v4_flash_serving_readiness.md"
+    ).read_text(encoding="utf-8")
+
+    assert "status: failed" in evidence
+    assert "PROBE_EXIT_STATUS=2" in evidence
+    assert "failure_category: needle_expected_answer_not_exact" in evidence
+    assert "vllm: 0.23.0" in evidence
+    assert "torch: 2.11.0+cu130" in evidence
+    assert "torch CUDA: 13.0" in evidence
+    assert "CUDA_VISIBLE_DEVICES=1,7" in evidence
+    assert "server_port: 28144" in evidence
+    assert "max_model_len=262144" in evidence
+    assert "tensor_parallel_size=2" in evidence
+    assert "target_prompt_tokens=255800" in evidence
+    assert "actual_prompt_tokens=255799" in evidence
+    assert "prompt_chars: 1230965" in evidence
+    assert "expected_answer: PTO_NEEDLE_256K_CONTEXT_OK_28143" in evidence
+    assert "needle_occurrences: 1" in evidence
+    assert "match_mode: exact" in evidence
+    assert "finish_reason: stop" in evidence
+    assert "generated_text_length_chars: 37" in evidence
+    assert "expected_answer_exact: failed" in evidence
+    assert " PTO_NEEDLE_256K_CONTEXT_OK_28143" in evidence
+    assert "PTO_NEEDLE_256K_CONTEXT_OK_28143" in evidence
+    assert "raw prompt text is not recorded" in evidence
+    assert "raw request payload is not recorded" in evidence
+    assert "token ID arrays are not recorded" in evidence
+    assert "logprob values are not recorded" in evidence
+    assert "generated-text digests are not recorded" in evidence
+    assert "remaining_process_group_pids: []" in evidence
+    assert "local_only_vllm_256k_needle_exact_output: failed" in readiness
+    assert "vllm_remote_256k_needle_exact_output_failure.md" in readiness
+    assert "text_" + "sha256" not in evidence
+    assert "token_ids" not in evidence
+    assert "/" + "home/" not in evidence
+
+
 def test_long_prompt_admission_probe_dry_run_contract():
     script = (
         ROOT
@@ -638,6 +691,11 @@ def test_needle_correctness_probe_dry_run_contract():
     assert payload["request"]["endpoint"] == "/v1/completions"
     assert payload["request"]["limits"]["target_prompt_tokens"] == 255800
     assert payload["request"]["limits"]["max_tokens"] == 64
+    assert payload["request"]["limits"]["match_mode"] == "contains"
+    assert payload["request"]["limits"]["normalization"] == (
+        "strip leading/trailing whitespace, then strip one surrounding "
+        "Markdown code fence when the whole output is fenced"
+    )
     assert payload["request"]["limits"]["expected_answer"] == (
         "PTO_NEEDLE_256K_CONTEXT_OK_28143"
     )
@@ -659,7 +717,8 @@ def test_needle_correctness_probe_dry_run_contract():
         "response model field matches served model when returned",
         "exactly one response choice object",
         "first choice exposes text and finish_reason fields",
-        "generated output contains the exact expected needle answer",
+        "generated output contains the exact expected needle answer in contains mode",
+        "normalized generated output equals the expected needle answer in exact mode",
         "short synthetic generated output is recorded when within review-safe bound",
         "usage prompt/completion/total token fields are internally consistent when returned",
         "usage.prompt_tokens matches measured prompt tokens when available",

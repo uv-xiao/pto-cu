@@ -26,6 +26,12 @@ DEFAULT_TEMPERATURE = 0.0
 DEFAULT_TOP_P = 1.0
 DEFAULT_SEED = 0
 DEFAULT_EXPECTED_ANSWER = "PTO_NEEDLE_256K_CONTEXT_OK_28143"
+DEFAULT_MATCH_MODE = "contains"
+MATCH_MODES = ("contains", "exact")
+NORMALIZATION_RULE = (
+    "strip leading/trailing whitespace, then strip one surrounding Markdown "
+    "code fence when the whole output is fenced"
+)
 MAX_RECORDED_GENERATED_TEXT_CHARS = 512
 DEFAULT_PROMPT_UNIT = (
     " Synthetic filler for the local-only vLLM needle probe; ignore this sentence."
@@ -47,7 +53,8 @@ CONTRACT_CHECKS = [
     "response model field matches served model when returned",
     "exactly one response choice object",
     "first choice exposes text and finish_reason fields",
-    "generated output contains the exact expected needle answer",
+    "generated output contains the exact expected needle answer in contains mode",
+    "normalized generated output equals the expected needle answer in exact mode",
     "short synthetic generated output is recorded when within review-safe bound",
     "usage prompt/completion/total token fields are internally consistent when returned",
     "usage.prompt_tokens matches measured prompt tokens when available",
@@ -148,6 +155,7 @@ def _planned_limits(
     top_p: float,
     seed: int,
     expected_answer: str,
+    match_mode: str,
 ) -> dict[str, Any]:
     return {
         "target_prompt_tokens": target_prompt_tokens,
@@ -164,6 +172,8 @@ def _planned_limits(
         "echo": False,
         "logprobs": False,
         "expected_answer": expected_answer,
+        "match_mode": match_mode,
+        "normalization": NORMALIZATION_RULE,
         "needle_occurrences": 1,
         "generated_text_recording": "short_synthetic_output_only",
     }
@@ -174,13 +184,32 @@ def _validate_request_bounds(
     target_prompt_tokens: int,
     max_tokens: int,
     expected_answer: str,
+    match_mode: str = DEFAULT_MATCH_MODE,
 ) -> None:
     if target_prompt_tokens < 1:
         raise ValueError("target prompt-token budget must be positive")
     if max_tokens < 1 or max_tokens > DEFAULT_MAX_TOKENS:
-        raise ValueError(f"needle correctness requests require 1 <= max_tokens <= {DEFAULT_MAX_TOKENS}")
+        raise ValueError(
+            "needle correctness requests require "
+            f"1 <= max_tokens <= {DEFAULT_MAX_TOKENS}"
+        )
     if not expected_answer:
         raise ValueError("expected needle answer must be non-empty")
+    if match_mode not in MATCH_MODES:
+        raise ValueError(f"match_mode must be one of: {', '.join(MATCH_MODES)}")
+
+
+def normalize_generated_output_for_exact_match(text: str) -> str:
+    """Apply the narrow exact-match normalization used by the probe."""
+    normalized = text.strip()
+    lines = normalized.splitlines()
+    if (
+        len(lines) >= 2
+        and lines[0].startswith("```")
+        and lines[-1].strip() == "```"
+    ):
+        normalized = "\n".join(lines[1:-1]).strip()
+    return normalized
 
 
 def build_synthetic_needle_prompt(
@@ -269,11 +298,13 @@ def build_needle_request(
     top_p: float = DEFAULT_TOP_P,
     seed: int = DEFAULT_SEED,
     expected_answer: str = DEFAULT_EXPECTED_ANSWER,
+    match_mode: str = DEFAULT_MATCH_MODE,
 ) -> dict[str, Any]:
     _validate_request_bounds(
         target_prompt_tokens=target_prompt_tokens,
         max_tokens=max_tokens,
         expected_answer=expected_answer,
+        match_mode=match_mode,
     )
     prompt_result = build_synthetic_needle_prompt(
         artifact_dir=artifact_dir,
@@ -306,6 +337,8 @@ def build_needle_request(
             "echo": False,
             "logprobs": False,
             "expected_answer": expected_answer,
+            "match_mode": match_mode,
+            "normalization": NORMALIZATION_RULE,
             "generated_text_recording": "short_synthetic_output_only",
         },
     }
@@ -319,11 +352,13 @@ def build_planned_needle_request(
     top_p: float = DEFAULT_TOP_P,
     seed: int = DEFAULT_SEED,
     expected_answer: str = DEFAULT_EXPECTED_ANSWER,
+    match_mode: str = DEFAULT_MATCH_MODE,
 ) -> dict[str, Any]:
     _validate_request_bounds(
         target_prompt_tokens=target_prompt_tokens,
         max_tokens=max_tokens,
         expected_answer=expected_answer,
+        match_mode=match_mode,
     )
     return {
         "endpoint": DEFAULT_ENDPOINT,
@@ -334,6 +369,7 @@ def build_planned_needle_request(
             top_p=top_p,
             seed=seed,
             expected_answer=expected_answer,
+            match_mode=match_mode,
         ),
     }
 
@@ -392,13 +428,24 @@ def validate_needle_correctness_response(
     request: dict[str, Any],
     served_model_name: str,
     expected_answer: str,
+    match_mode: str = DEFAULT_MATCH_MODE,
 ) -> dict[str, Any]:
     result: dict[str, Any] = {
         "status": "passed",
         "expected_answer": expected_answer,
+        "match_mode": match_mode,
+        "normalization": NORMALIZATION_RULE,
         "response_shape": _response_shape(payload),
         "checks": {},
     }
+    if match_mode not in MATCH_MODES:
+        result["checks"]["match_mode"] = "failed"
+        return _fail_contract(
+            result,
+            category="needle_match_mode_invalid",
+            message=f"match_mode must be one of: {', '.join(MATCH_MODES)}",
+        )
+    result["checks"]["match_mode"] = "passed"
     if not isinstance(payload, dict):
         result["checks"]["payload_object"] = "failed"
         return _fail_contract(
@@ -448,14 +495,32 @@ def validate_needle_correctness_response(
     result["finish_reason"] = choice.get("finish_reason")
     text = choice["text"]
     _record_short_generated_text(result, text)
-    if expected_answer not in text:
-        result["checks"]["expected_answer_contained"] = "failed"
-        return _fail_contract(
-            result,
-            category="needle_expected_answer_missing",
-            message="generated output did not contain the exact expected needle answer",
-        )
-    result["checks"]["expected_answer_contained"] = "passed"
+    if match_mode == "contains":
+        if expected_answer not in text:
+            result["checks"]["expected_answer_contained"] = "failed"
+            return _fail_contract(
+                result,
+                category="needle_expected_answer_missing",
+                message=(
+                    "generated output did not contain the exact expected "
+                    "needle answer"
+                ),
+            )
+        result["checks"]["expected_answer_contained"] = "passed"
+    else:
+        normalized_text = normalize_generated_output_for_exact_match(text)
+        result["normalized_generated_text"] = normalized_text
+        if normalized_text != expected_answer:
+            result["checks"]["expected_answer_exact"] = "failed"
+            return _fail_contract(
+                result,
+                category="needle_expected_answer_not_exact",
+                message=(
+                    "normalized generated output did not exactly equal the "
+                    "expected needle answer"
+                ),
+            )
+        result["checks"]["expected_answer_exact"] = "passed"
 
     usage = payload.get("usage")
     if not isinstance(usage, dict):
@@ -532,6 +597,7 @@ def send_needle_request(
     request: dict[str, Any],
     served_model_name: str,
     expected_answer: str,
+    match_mode: str = DEFAULT_MATCH_MODE,
     timeout_seconds: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
     http_post: HttpPost = _http_post,
 ) -> dict[str, Any]:
@@ -579,6 +645,7 @@ def send_needle_request(
         request=request,
         served_model_name=served_model_name,
         expected_answer=expected_answer,
+        match_mode=match_mode,
     )
     result["validation"] = validation
     result["response_shape"] = validation["response_shape"]
@@ -590,9 +657,12 @@ def send_needle_request(
             key: validation[key]
             for key in (
                 "expected_answer",
+                "match_mode",
+                "normalization",
                 "finish_reason",
                 "text_length_chars",
                 "generated_text",
+                "normalized_generated_text",
                 "generated_text_recorded",
                 "usage",
             )
@@ -617,6 +687,7 @@ def _failure_note(
     max_tokens: int,
     selected_port: int,
     log_path: Path,
+    match_mode: str,
 ) -> dict[str, Any]:
     failure = result.get("failure", {})
     return {
@@ -626,6 +697,7 @@ def _failure_note(
             "max_model_len": max_model_len,
             "target_prompt_tokens": target_prompt_tokens,
             "max_tokens": max_tokens,
+            "match_mode": match_mode,
         },
         "failure_category": failure.get("category", "unknown"),
         "failure_message": failure.get("message", ""),
@@ -633,7 +705,7 @@ def _failure_note(
         "cleanup": result.get("cleanup", {}),
         "next_diagnostic_gate": (
             "rerun the same synthetic needle correctness probe without weakening "
-            "the exact expected-answer containment assertion"
+            "the requested expected-answer match assertion"
         ),
     }
 
@@ -664,6 +736,7 @@ def run_probe(
     top_p: float = DEFAULT_TOP_P,
     seed: int = DEFAULT_SEED,
     expected_answer: str = DEFAULT_EXPECTED_ANSWER,
+    match_mode: str = DEFAULT_MATCH_MODE,
     dry_run: bool = False,
 ) -> dict[str, Any]:
     selected_port = port if port is not None else health_probe.choose_local_port()
@@ -698,6 +771,7 @@ def run_probe(
                 top_p=top_p,
                 seed=seed,
                 expected_answer=expected_answer,
+                match_mode=match_mode,
             )
         else:
             needle_request = build_needle_request(
@@ -709,6 +783,7 @@ def run_probe(
                 top_p=top_p,
                 seed=seed,
                 expected_answer=expected_answer,
+                match_mode=match_mode,
             )
     except ValueError as exc:
         return {
@@ -791,6 +866,7 @@ def run_probe(
             request=needle_request,
             served_model_name=served_model_name,
             expected_answer=expected_answer,
+            match_mode=match_mode,
             timeout_seconds=request_timeout_seconds,
         )
         result["generation_attempted"] = True
@@ -837,6 +913,7 @@ def run_probe(
                 max_tokens=max_tokens,
                 selected_port=selected_port,
                 log_path=log_path,
+                match_mode=match_mode,
             )
     return result
 
@@ -898,6 +975,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--top-p", type=float, default=DEFAULT_TOP_P)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--expected-answer", default=DEFAULT_EXPECTED_ANSWER)
+    parser.add_argument(
+        "--match-mode",
+        choices=MATCH_MODES,
+        default=DEFAULT_MATCH_MODE,
+        help=(
+            "contains checks raw generated output contains the expected answer; "
+            "exact strips leading/trailing whitespace, strips one surrounding "
+            "Markdown code fence if present, then compares exactly"
+        ),
+    )
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
 
@@ -929,6 +1016,7 @@ def main(argv: list[str] | None = None) -> int:
         top_p=args.top_p,
         seed=args.seed,
         expected_answer=args.expected_answer,
+        match_mode=args.match_mode,
         dry_run=args.dry_run,
     )
     print(json.dumps(result, indent=2, sort_keys=True))

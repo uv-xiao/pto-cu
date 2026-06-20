@@ -1040,6 +1040,58 @@ Fresh remote H200 256K needle correctness evidence from this slice:
 Detailed 256K needle correctness evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_256k_needle_correctness_probe.md`.
 
+Fresh remote H200 256K needle exact-output evidence from this slice:
+
+- The repo-owned needle correctness probe now supports
+  `--match-mode contains|exact`. The default containment mode preserves the
+  previous gate, while exact mode strips leading/trailing whitespace, strips
+  one surrounding Markdown code fence only when the whole output is fenced,
+  and then compares the normalized generated output exactly to the expected
+  synthetic answer.
+- The remote source tree was refreshed with `--sync`, preserving the complete
+  ignored artifact directory and `.venv-vllm-probe`. Remote git metadata was
+  unavailable after sync due stale worktree metadata, so the synced source
+  tree and structured command output are the run evidence.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`.
+- The failing exact-output boundary used `max_model_len=262144`,
+  `dtype=bfloat16`, `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 120-minute outer timeout, a
+  2700-second readiness timeout, and an 1800-second request timeout.
+- The synthetic prompt targeted 255800 prompt tokens. Local tokenizer
+  accounting measured 255799 prompt tokens before sending the request, and
+  the prompt contained the expected answer
+  `PTO_NEEDLE_256K_CONTEXT_OK_28143` exactly once.
+- The request used `match_mode=exact`, `max_tokens=64`,
+  `temperature=0.0`, `top_p=1.0`, `seed=0`, `stream=false`, `echo=false`,
+  and `logprobs=false`.
+- The server started on `http://127.0.0.1:28144`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` with
+  `max_model_len=262144` from `/v1/models`, and accepted one
+  `/v1/completions` request.
+- The completion request returned HTTP 200 with exactly one response choice,
+  `finish_reason=stop`, and short synthetic generated text recorded as 37
+  characters. The generated output contained the expected answer followed by
+  an unmatched closing Markdown fence.
+- Strict exact mode failed with
+  `failure_category=needle_expected_answer_not_exact` because the normalized
+  generated output was `PTO_NEEDLE_256K_CONTEXT_OK_28143` plus the unmatched
+  closing Markdown fence, not exactly the expected answer.
+- vLLM 0.23.0 ran with Torch 2.11.0+cu130 and CUDA 13.0.
+- The probe did not record raw prompt text, raw request payloads, token ID
+  arrays, logprob values, generated-text digests, model artifact contents, or
+  symlinks.
+- The probe cleanup passed and reported no remaining process-group PIDs.
+- The run establishes a strict synthetic exact-output failure record only; it
+  is not general generated-text correctness, semantic correctness, latency,
+  throughput, production-readiness, broad determinism, or simpler-nv/vLLM
+  integration evidence.
+
+Detailed 256K needle exact-output failure evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_output_failure.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
@@ -1055,7 +1107,8 @@ response-contract probe, plus one bounded 64K long-prompt response-contract
 probe, plus one bounded 128K long-prompt response-contract probe, plus one
 bounded 192K long-prompt response-contract probe, plus one bounded 256K
 long-prompt response-contract probe, plus one bounded near-256K synthetic
-needle correctness probe:
+needle containment/correctness probe, plus one bounded near-256K synthetic
+exact-output failure gate:
 
 ```text
 remote_h200_reachable: yes
@@ -1087,6 +1140,8 @@ local_only_vllm_256k_long_prompt_response_contract: passed under recorded
   262144-token boundary
 local_only_vllm_256k_needle_correctness: passed under recorded 262144-token
   boundary
+local_only_vllm_256k_needle_exact_output: failed under recorded 262144-token
+  boundary
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -1106,7 +1161,8 @@ serving_readiness: bounded local-only response contract and warmup-shape
   long-prompt response-contract probe, plus one bounded 192K long-prompt
   response-contract probe, plus one bounded 256K long-prompt
   response-contract probe, plus one bounded near-256K synthetic needle
-  correctness probe; no general correctness claims
+  correctness probe, plus one bounded near-256K synthetic exact-output
+  failure gate; no general correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
