@@ -95,6 +95,94 @@ def test_needle_request_omits_stop_control_by_default(monkeypatch):
     assert "stop" not in request["limits"]
 
 
+def test_synthetic_prompt_records_requested_needle_position(monkeypatch):
+    probe = load_probe_module()
+
+    class FakeTokenizer:
+        pass
+
+    monkeypatch.setattr(probe, "_load_tokenizer", lambda _: FakeTokenizer())
+    monkeypatch.setattr(
+        probe,
+        "_count_tokens",
+        lambda _tokenizer, text: text.count(probe.DEFAULT_PROMPT_UNIT) + 12,
+    )
+
+    early = probe.build_synthetic_needle_prompt(
+        artifact_dir=Path("unused"),
+        target_prompt_tokens=112,
+        expected_answer="NEEDLE",
+        needle_position="early",
+    )
+    middle = probe.build_synthetic_needle_prompt(
+        artifact_dir=Path("unused"),
+        target_prompt_tokens=112,
+        expected_answer="NEEDLE",
+        needle_position="middle",
+    )
+    late = probe.build_synthetic_needle_prompt(
+        artifact_dir=Path("unused"),
+        target_prompt_tokens=112,
+        expected_answer="NEEDLE",
+        needle_position="late",
+    )
+
+    assert early["accounting"]["needle_position"] == "early"
+    assert middle["accounting"]["needle_position"] == "middle"
+    assert late["accounting"]["needle_position"] == "late"
+    assert early["accounting"]["filler_units_before_needle"] < middle["accounting"][
+        "filler_units_before_needle"
+    ]
+    assert middle["accounting"]["filler_units_before_needle"] < late["accounting"][
+        "filler_units_before_needle"
+    ]
+    assert early["accounting"]["filler_units_after_needle"] > middle["accounting"][
+        "filler_units_after_needle"
+    ]
+    assert middle["accounting"]["filler_units_after_needle"] > late["accounting"][
+        "filler_units_after_needle"
+    ]
+
+
+def test_planned_needle_request_records_requested_position():
+    probe = load_probe_module()
+
+    request = probe.build_planned_needle_request(needle_position="late")
+
+    assert request["limits"]["needle_position"] == "late"
+
+
+def test_build_needle_request_records_position_limits(monkeypatch):
+    probe = load_probe_module()
+
+    monkeypatch.setattr(
+        probe,
+        "build_synthetic_needle_prompt",
+        lambda **kwargs: {
+            "prompt": "NEEDLE_ANSWER: PTO_NEEDLE_256K_CONTEXT_OK_28143",
+            "accounting": {
+                "target_prompt_tokens": kwargs["target_prompt_tokens"],
+                "actual_prompt_tokens": 255799,
+                "tokenizer_accounting": "test",
+                "prompt_chars": 44,
+                "prompt_unit_chars": 1,
+                "needle_occurrences": 1,
+                "needle_position": kwargs["needle_position"],
+                "filler_units_before_needle": 9,
+                "filler_units_after_needle": 91,
+            },
+        },
+    )
+
+    request = probe.build_needle_request(needle_position="early")
+
+    assert request["limits"]["needle_position"] == "early"
+    assert request["limits"]["filler_units_before_needle"] == 9
+    assert request["limits"]["filler_units_after_needle"] == 91
+    assert "prompt" not in probe.review_safe_request(request)
+    assert "payload" not in probe.review_safe_request(request)
+
+
 def test_stop_sequence_is_carried_in_request_and_review_safe_limits(monkeypatch):
     probe = load_probe_module()
 
@@ -134,6 +222,17 @@ def test_planned_needle_request_rejects_unbounded_generation():
         assert "max_tokens" in str(exc)
     else:
         raise AssertionError("expected max_tokens validation failure")
+
+
+def test_planned_needle_request_rejects_invalid_position():
+    probe = load_probe_module()
+
+    try:
+        probe.build_planned_needle_request(needle_position="near")
+    except ValueError as exc:
+        assert "needle_position" in str(exc)
+    else:
+        raise AssertionError("expected needle position validation failure")
 
 
 def test_validate_needle_correctness_passes_on_exact_expected_answer():
@@ -306,6 +405,7 @@ def test_dry_run_cli_output_is_review_safe():
     assert payload["request"]["limits"]["target_prompt_tokens"] == 255800
     assert payload["request"]["limits"]["max_tokens"] == 64
     assert payload["request"]["limits"]["match_mode"] == "exact"
+    assert payload["request"]["limits"]["needle_position"] == "middle"
     assert payload["request"]["limits"]["normalization"] == (
         "strip leading/trailing whitespace, then strip one surrounding "
         "Markdown code fence when the whole output is fenced"
@@ -330,6 +430,115 @@ def test_dry_run_cli_output_is_review_safe():
         claim == "not generated-text correctness evidence"
         for claim in payload["non_claims"]
     )
+
+
+def test_dry_run_cli_output_records_requested_needle_position_safely():
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(PROBE_PATH),
+            "--dry-run",
+            "--port",
+            "28148",
+            "--target-prompt-tokens",
+            "255800",
+            "--max-model-len",
+            "262144",
+            "--max-tokens",
+            "64",
+            "--match-mode",
+            "exact",
+            "--needle-position",
+            "late",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+
+    assert payload["status"] == "planned"
+    assert payload["request"]["limits"]["needle_position"] == "late"
+    assert payload["request"]["prompt_text_recorded"] is False
+    assert payload["request"]["payload_recorded"] is False
+    assert "prompt" not in payload["request"]
+    assert "payload" not in payload["request"]
+
+
+def test_dry_run_cli_output_records_position_sweep_safely():
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(PROBE_PATH),
+            "--dry-run",
+            "--port",
+            "28148",
+            "--target-prompt-tokens",
+            "255800",
+            "--max-model-len",
+            "262144",
+            "--max-tokens",
+            "64",
+            "--match-mode",
+            "exact",
+            "--stop-sequence",
+            "\n```",
+            "--needle-position-sweep",
+            "early,middle,late",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+
+    assert payload["status"] == "planned"
+    assert payload["generation_attempted"] is False
+    assert payload["prompt_sent"] is False
+    assert payload["sweep"]["positions_planned"] == ["early", "middle", "late"]
+    assert payload["sweep"]["attempts_planned"] == 3
+    assert payload["sweep"]["attempt_summaries_record"] == "review_safe_only"
+    assert [request["limits"]["needle_position"] for request in payload["sweep"]["requests"]] == [
+        "early",
+        "middle",
+        "late",
+    ]
+    assert all(
+        request["prompt_text_recorded"] is False
+        and request["payload_recorded"] is False
+        and "prompt" not in request
+        and "payload" not in request
+        for request in payload["sweep"]["requests"]
+    )
+    assert "completion" not in payload
+
+
+def test_parse_args_rejects_duplicate_sweep_positions():
+    probe = load_probe_module()
+
+    try:
+        probe.parse_args(["--needle-position-sweep", "early,middle,early"])
+    except SystemExit as exc:
+        assert exc.code == 2
+    else:
+        raise AssertionError("expected duplicate sweep validation failure")
+
+
+def test_parse_args_rejects_missing_sweep_position():
+    probe = load_probe_module()
+
+    try:
+        probe.parse_args(["--needle-position-sweep", "early,,late"])
+    except SystemExit as exc:
+        assert exc.code == 2
+    else:
+        raise AssertionError("expected missing sweep position validation failure")
 
 
 def test_dry_run_cli_output_records_configured_stop_sequence_safely():
@@ -570,3 +779,148 @@ def test_repeat_summary_uses_review_safe_fields_only():
         },
     }
     assert expected not in json.dumps(summary)
+
+
+def test_sweep_aggregation_fails_if_any_position_fails():
+    probe = load_probe_module()
+    expected = "PTO_NEEDLE_256K_CONTEXT_OK_28143"
+    requests = {
+        position: probe.build_planned_needle_request(
+            expected_answer=expected,
+            match_mode="exact",
+            stop_sequences=["\n```"],
+            needle_position=position,
+        )
+        for position in ("early", "middle", "late")
+    }
+    completions = [
+        {
+            "status": "passed",
+            "http_status": 200,
+            "request_limits": requests["early"]["limits"],
+            "validation": {"checks": {"expected_answer_exact": "passed"}},
+            "observation": {
+                "finish_reason": "stop",
+                "text_length_chars": 33,
+                "usage": {
+                    "prompt_tokens": 255799,
+                    "completion_tokens": 17,
+                    "total_tokens": 255816,
+                },
+                "generated_text": expected,
+                "normalized_generated_text": expected,
+            },
+        },
+        {
+            "status": "failed",
+            "http_status": 200,
+            "request_limits": requests["middle"]["limits"],
+            "failure": {
+                "category": "needle_expected_answer_not_exact",
+                "message": "normalized generated output did not exactly equal expected",
+            },
+            "validation": {"checks": {"expected_answer_exact": "failed"}},
+            "observation": {
+                "finish_reason": "stop",
+                "text_length_chars": 37,
+                "usage": {
+                    "prompt_tokens": 255799,
+                    "completion_tokens": 18,
+                    "total_tokens": 255817,
+                },
+                "generated_text": f"{expected}\n```",
+                "normalized_generated_text": f"{expected}\n```",
+            },
+        },
+    ]
+
+    aggregate = probe.aggregate_position_sweep_attempts(
+        completions,
+        requests=requests,
+        expected_positions=["early", "middle", "late"],
+    )
+
+    assert aggregate["status"] == "failed"
+    assert aggregate["positions_requested"] == ["early", "middle", "late"]
+    assert aggregate["positions_completed"] == ["early", "middle"]
+    assert aggregate["passed_attempts"] == 1
+    assert aggregate["failed_attempts"] == 1
+    assert aggregate["failure"]["category"] == "needle_expected_answer_not_exact"
+    assert aggregate["attempts"][0]["needle_position"] == "early"
+    assert aggregate["attempts"][1]["needle_position"] == "middle"
+    assert aggregate["attempts"][1]["exact_check"] == "failed"
+    assert "generated_text" not in aggregate["attempts"][0]
+    assert "normalized_generated_text" not in aggregate["attempts"][0]
+    assert expected not in json.dumps(aggregate["attempts"])
+
+
+def test_sweep_aggregation_fails_when_position_is_incomplete():
+    probe = load_probe_module()
+    requests = {
+        position: probe.build_planned_needle_request(
+            match_mode="exact",
+            needle_position=position,
+        )
+        for position in ("early", "middle", "late")
+    }
+    completions = [
+        {
+            "status": "passed",
+            "http_status": 200,
+            "request_limits": requests["early"]["limits"],
+            "validation": {
+                "checks": {"expected_answer_exact": "passed"},
+                "finish_reason": "stop",
+                "text_length_chars": 33,
+                "usage": {
+                    "prompt_tokens": 255799,
+                    "completion_tokens": 17,
+                    "total_tokens": 255816,
+                },
+            },
+        },
+    ]
+
+    aggregate = probe.aggregate_position_sweep_attempts(
+        completions,
+        requests=requests,
+        expected_positions=["early", "middle", "late"],
+    )
+
+    assert aggregate["status"] == "failed"
+    assert aggregate["positions_completed"] == ["early"]
+    assert aggregate["failure"]["category"] == "needle_position_sweep_incomplete"
+
+
+def test_sweep_aggregation_fails_on_duplicate_completed_position():
+    probe = load_probe_module()
+    requests = {
+        position: probe.build_planned_needle_request(
+            match_mode="exact",
+            needle_position=position,
+        )
+        for position in ("early", "middle", "late")
+    }
+    completions = [
+        {
+            "status": "passed",
+            "http_status": 200,
+            "request_limits": requests["early"]["limits"],
+            "validation": {"checks": {"expected_answer_exact": "passed"}},
+        },
+        {
+            "status": "passed",
+            "http_status": 200,
+            "request_limits": requests["early"]["limits"],
+            "validation": {"checks": {"expected_answer_exact": "passed"}},
+        },
+    ]
+
+    aggregate = probe.aggregate_position_sweep_attempts(
+        completions,
+        requests=requests,
+        expected_positions=["early", "middle", "late"],
+    )
+
+    assert aggregate["status"] == "failed"
+    assert aggregate["failure"]["category"] == "needle_position_sweep_duplicate"

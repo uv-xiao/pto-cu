@@ -149,6 +149,7 @@ def check_examples_and_rules() -> None:
         "docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_stop_sequence_probe.md",
         "docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_stop_repeat_probe.md",
         "docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_truncated_failure_probe.md",
+        "docs/in_progress/nvidia_backend/vllm_remote_256k_needle_position_sweep_probe.md",
         "docs/in_progress/nvidia_backend/deepseek_v4_flash_serving_readiness.md",
         "examples/cuda/README.md",
         "examples/cuda/host_schedule_vector_ops.py",
