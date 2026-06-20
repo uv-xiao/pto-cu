@@ -209,3 +209,37 @@ process-group PIDs. This is response-contract evidence, not generated-text
 correctness, tokenizer semantics, prompt correctness, 256K context,
 throughput, latency, production readiness, or simpler-nv/vLLM integration
 evidence.
+
+## DeepSeek V4 Flash vLLM Warmup-Shape Probe
+
+```bash
+CUDA_VISIBLE_DEVICES=<two ids> VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 65m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_warmup_shape_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28126 \
+  --server-log tmp/vllm-warmup-shape-probe/server-28126.log \
+  --max-model-len 4096 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 180 --terminate-timeout-seconds 60 \
+  --prompt Hello --max-tokens 4 --temperature 0.0 --top-p 1.0 \
+  --seed 0 --log-settle-seconds 2
+```
+
+This starts the same local-only server boundary, checks `/health` and
+`/v1/models`, sends one labeled warmup `/v1/completions` request, sends one
+follow-up same-shape `/v1/completions` request, validates the same structural
+response contract for both responses, counts selected Triton JIT warning
+strings in server-log windows around the two requests, and terminates the
+server process group. The remote H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_warmup_shape_probe.md`. This is
+warmup-shape observation evidence, not generated-text correctness, tokenizer
+semantics, prompt correctness, 256K context, throughput, latency, production
+readiness, warmup-eliminates-JIT evidence, or simpler-nv/vLLM integration
+evidence.
