@@ -16,6 +16,7 @@ from pathlib import Path
 import sys
 from types import ModuleType, SimpleNamespace
 
+from simpler_setup.gluon_gen import generate_gluon_persistent_task_body
 from simpler_setup import kernel_compiler
 from simpler_setup.kernel_compiler import KernelCompiler
 
@@ -68,6 +69,15 @@ def _load_gluon_moe_expert_example():
 def _load_gluon_benchmark_example():
     module_path = "examples/cuda/gluon_benchmark.py"
     spec = importlib.util.spec_from_file_location("gluon_benchmark_example", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_persistent_moe_dispatch_example():
+    module_path = "examples/cuda/persistent_moe_dispatch_combine.py"
+    spec = importlib.util.spec_from_file_location("persistent_moe_dispatch_combine_example", module_path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
@@ -477,6 +487,28 @@ def test_generate_gluon_moe_expert_affine_writes_source_and_manifest(tmp_path):
     assert "def moe_expert_affine_f32_kernel" in source
     assert "scale_a * a + scale_b * b" in source
     assert "def run_moe_expert_affine_f32" in source
+
+
+def test_generate_gluon_persistent_moe_expert_task_body_bridge():
+    artifact = generate_gluon_persistent_task_body("moe_expert_affine_f32")
+
+    assert artifact.kernel_name == "moe_expert_affine_f32"
+    assert artifact.task_name == "gluon_moe_expert_affine_f32"
+    assert artifact.source_kind == "gluon-persistent-task-body-bridge"
+    assert "task->scalar0 * task->a[i] + task->scalar1 * task->b[i]" in artifact.body
+    assert artifact.source_sha256
+
+
+def test_persistent_moe_dispatch_source_uses_gluon_expert_and_weighted_combine():
+    example = _load_persistent_moe_dispatch_example()
+
+    source = example.rendered_dispatch_source(example.build_task_body_specs())
+
+    assert "pto_dag_task_gluon_moe_expert_affine_f32" in source
+    assert "pto_dag_task_weighted_combine_f32" in source
+    assert "case 12U:" in source
+    assert "case 13U:" in source
+    assert "task->scalar_args[3] * task->d[i]" in source
 
 
 def test_gluon_moe_expert_affine_example_reports_skip_json_and_relative_artifacts(

@@ -11,11 +11,13 @@
 from __future__ import annotations
 
 import ctypes
+import importlib.util
 import json
 import subprocess
 import sys
 import threading
 import time
+from pathlib import Path
 
 import pytest
 
@@ -27,6 +29,28 @@ from simpler_setup.runtime_builder import RuntimeBuilder
 
 _CUDA_SKIP_REASON = cuda_skip_reason(require_nvcc=True)
 requires_cuda = pytest.mark.skipif(_CUDA_SKIP_REASON is not None, reason=_CUDA_SKIP_REASON or "")
+_PERSISTENT_SMOKE_SCRIPT = Path(".agents/skills/cuda-backend-eval/scripts/cuda_persistent_smoke.py")
+_PERSISTENT_SMOKE_SKIP_REASON = (
+    _CUDA_SKIP_REASON
+    or (
+        "cuda_persistent_smoke.py is not part of the slim CUDA eval skill"
+        if not _PERSISTENT_SMOKE_SCRIPT.is_file()
+        else None
+    )
+)
+requires_cuda_persistent_smoke = pytest.mark.skipif(
+    _PERSISTENT_SMOKE_SKIP_REASON is not None,
+    reason=_PERSISTENT_SMOKE_SKIP_REASON or "",
+)
+
+
+def _load_persistent_moe_dispatch_example():
+    module_path = "examples/cuda/persistent_moe_dispatch_combine.py"
+    spec = importlib.util.spec_from_file_location("persistent_moe_dispatch_combine_example", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_cuda_platform_maps_to_onboard_variant():
@@ -44,6 +68,47 @@ def test_cuda_runtime_builder_discovers_persistent_device():
     builder = RuntimeBuilder(platform="cuda")
 
     assert "persistent_device" in builder.list_runtimes()
+
+
+def test_cuda_persistent_moe_dispatch_descriptor_has_four_experts_and_combine():
+    example = _load_persistent_moe_dispatch_example()
+
+    descriptor = example.graph_descriptor()
+
+    assert descriptor["dag_shape"] == "graph_descriptor_moe_dispatch_combine"
+    assert descriptor["runtime"] == "persistent_device"
+    assert descriptor["expert_task_count"] == 4
+    assert descriptor["combine_task_count"] == 1
+    assert descriptor["device_side_fanin_before_combine"] is True
+    assert descriptor["fanin"] == [0, 0, 0, 0, 4]
+    assert descriptor["dependents"] == [4, 4, 4, 4]
+    assert [task["role"] for task in descriptor["tasks"]] == [
+        "expert_transform",
+        "expert_transform",
+        "expert_transform",
+        "expert_transform",
+        "weighted_combine",
+    ]
+    assert descriptor["tasks"][4]["depends_on"] == [0, 1, 2, 3]
+    assert descriptor["tasks"][4]["weights"] == [0.5, 0.25, 0.125, 0.0625]
+
+
+def test_cuda_persistent_moe_dispatch_example_skips_with_structured_json():
+    example = _load_persistent_moe_dispatch_example()
+
+    result = example.run_moe_dispatch_combine(
+        n=16,
+        arch="compute_90",
+        skip_reason=lambda: "CUDA unavailable in unit test",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "CUDA unavailable in unit test"
+    assert result["dag_shape"] == "graph_descriptor_moe_dispatch_combine"
+    assert result["graph_descriptor"]["task_count"] == 5
+    assert result["dispatch_source"]["source_kind"] == "generated-dispatch"
+    assert len(result["expected_preview"]) == 8
+    assert "no distributed expert parallelism or communication path" in result["non_claims"]
 
 
 class CudaHostCallable(ctypes.Structure):
@@ -565,7 +630,7 @@ for _ in range(2):
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_vector_add_tasks():
     script = """
 import sys
@@ -588,7 +653,7 @@ assert result["task_count"] == 2
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_multi_block_vector_add_tasks():
     script = """
 import sys
@@ -620,7 +685,7 @@ assert result["worker_blocks"] == 8
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_scheduler_worker_queue():
     script = """
 import sys
@@ -646,7 +711,7 @@ assert result["completed_count"] == 4
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_queue_with_explicit_resource_policy():
     script = """
 import sys
@@ -691,7 +756,7 @@ assert result["completed_count"] == 6
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_bounded_ring_queue():
     script = """
 import sys
@@ -723,7 +788,7 @@ assert result["completed_count"] == 6
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_dispatch_dag():
     script = """
 import sys
@@ -759,7 +824,7 @@ assert result["source_kind"] == "generated-dispatch"
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_dag_with_explicit_worker_blocks():
     script = """
 import sys
@@ -807,7 +872,7 @@ assert result["fanin_remaining"] == [0, 0, 0, 0, 0]
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_dag_with_explicit_scheduler_blocks():
     script = """
 import sys
@@ -862,7 +927,7 @@ assert result["device_scheduler_errors"] == {"count": 0, "code": 0, "task_id": 0
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_parallel_chains_scheduler_load():
     script = """
 import sys
@@ -915,7 +980,7 @@ assert result["device_scheduler_errors"] == {"count": 0, "code": 0, "task_id": 0
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_multi_fanin_graph():
     script = """
 import sys
@@ -966,7 +1031,7 @@ assert result["device_scheduler_errors"] == {"count": 0, "code": 0, "task_id": 0
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_layered_cross_graph():
     script = """
 import sys
@@ -1032,7 +1097,7 @@ assert result["device_scheduler_errors"] == {"count": 0, "code": 0, "task_id": 0
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_reports_device_scheduler_errors():
     script = """
 import sys
@@ -1068,7 +1133,7 @@ else:
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_reports_bad_dependent_errors():
     script = """
 import sys
@@ -1104,7 +1169,7 @@ else:
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_reports_bad_dependent_range_errors():
     script = """
 import sys
@@ -1140,7 +1205,7 @@ else:
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_reports_bad_fanin_underflow_errors():
     script = """
 import sys
@@ -1176,7 +1241,7 @@ else:
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_reports_duplicate_dependent_errors():
     script = """
 import sys
@@ -1212,7 +1277,7 @@ else:
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_reports_self_dependent_errors():
     script = """
 import sys
@@ -1248,7 +1313,7 @@ else:
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_reports_initial_fanin_mismatch_errors():
     script = """
 import sys
@@ -1284,7 +1349,7 @@ else:
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_reports_no_root_dag_errors():
     script = """
 import sys
@@ -1321,7 +1386,7 @@ else:
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_reports_unreachable_dag_errors():
     script = """
 import sys
@@ -1359,7 +1424,7 @@ else:
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_dispatch_dag_chain():
     script = """
 import sys
@@ -1397,7 +1462,7 @@ assert result["source_kind"] == "generated-dispatch"
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_chain():
     script = """
 import sys
@@ -1444,7 +1509,7 @@ assert "scalar_args" not in result
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_reuses_prepared_dag_callable():
     script = """
 import sys
@@ -1483,7 +1548,7 @@ assert result["fanin_remaining"] == [0, 0, 0, 0, 0]
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_dispatch_dag_with_scratch_reuse():
     script = """
 import sys
@@ -1522,7 +1587,7 @@ assert result["scratch_reuse"] == {"reused_buffer": "tmp0", "reuse_task": 4}
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_dispatch_dag_tensor_tile():
     script = """
 import sys
@@ -1572,7 +1637,7 @@ assert result["tensor_tile"] == {
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_dispatch_dag_scalar_axpy():
     script = """
 import sys
@@ -1611,7 +1676,7 @@ assert result["scalar_args"] == {"scalar0": 1.5}
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_dispatch_dag_scalar_affine():
     script = """
 import sys
@@ -1650,7 +1715,7 @@ assert result["scalar_args"] == {"scalar0": 1.5, "scalar1": 0.5}
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_dispatch_dag_triad():
     script = """
 import sys
@@ -1689,7 +1754,7 @@ assert result["tensor_args"] == {"c": "tmp0"}
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_dispatch_dag_quad():
     script = """
 import sys
@@ -1728,7 +1793,7 @@ assert result["tensor_args"] == {"c": "tmp0", "d": "tmp3"}
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_triad():
     script = """
 import sys
@@ -1773,7 +1838,7 @@ assert result["tensor_args"] == {"c": "tmp0"}
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_quad():
     script = """
 import sys
@@ -1818,7 +1883,7 @@ assert result["tensor_args"] == {"c": "tmp0", "d": "tmp3"}
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_node_attrs():
     script = """
 import sys
@@ -1865,7 +1930,7 @@ assert result["graph_node_attrs"] == {"task0": "attrs:tensor_args,scalar_args"}
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_node_port_dict():
     script = """
 import sys
@@ -1920,7 +1985,7 @@ assert result["graph_task_args"] == {
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_task_dict():
     script = """
 import sys
@@ -1970,7 +2035,7 @@ assert result["graph_task_args"] == {
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_named_callable():
     script = """
 import sys
@@ -2025,7 +2090,7 @@ assert result["graph_task_args"] == {
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_submits():
     script = """
 import sys
@@ -2075,7 +2140,7 @@ assert result["graph_task_args"] == {
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_submit_groups():
     script = """
 import sys
@@ -2125,7 +2190,7 @@ assert result["graph_task_args"] == {
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_scratch_reuse():
     script = """
 import sys
@@ -2173,7 +2238,7 @@ assert "scalar_args" not in result
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_dispatch_dag_generic_args():
     script = """
 import sys
@@ -2212,7 +2277,7 @@ assert result["generic_args"] == {"tensor_args": {"0": "tmp0", "1": "tmp3"}, "sc
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_dispatch_dag_scalar_scale():
     script = """
 import sys
@@ -2251,7 +2316,7 @@ assert result["scalar_args"] == {"scalar0": 2.0}
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_scalar_scale():
     script = """
 import sys
@@ -2296,7 +2361,7 @@ assert result["scalar_args"] == {"scalar0": 2.0}
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_scalar_axpy():
     script = """
 import sys
@@ -2341,7 +2406,7 @@ assert result["scalar_args"] == {"scalar0": 1.5}
     assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
 
 
-@requires_cuda
+@requires_cuda_persistent_smoke
 def test_cuda_persistent_device_smoke_runs_graph_descriptor_scalar_affine():
     script = """
 import sys

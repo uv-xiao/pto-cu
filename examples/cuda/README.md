@@ -1,9 +1,9 @@
 # CUDA Examples
 
-These examples preserve the review-facing metadata for the current NVIDIA
-backend benchmark rows. They do not run fresh CUDA hardware checks; the
-corresponding A100/H200 measurements remain the historical `743709f3` capture
-documented under `docs/nvidia-backend/history/`.
+These examples preserve review-facing CUDA backend metadata and provide small
+skip-safe probes for current work. Historical benchmark rows do not run fresh
+CUDA hardware checks; their A100/H200 measurements remain the `743709f3`
+capture documented under `docs/nvidia-backend/history/`.
 
 ## Host-Schedule Vector Ops
 
@@ -27,3 +27,16 @@ PYTHONPATH=$PWD:$PWD/python \
 
 This describes the same `graph_descriptor_layered_cross` shape that feeds the
 current `743709f3` benchmark gate.
+
+## Persistent MoE Dispatch/Combine
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/persistent_moe_dispatch_combine.py \
+  --output-json tmp/persistent-moe-dispatch-combine-local.json
+```
+
+This emits structured JSON for `graph_descriptor_moe_dispatch_combine`: four
+expert transform tasks, one weighted combine task, and device-side fan-in
+before the combine. Without CUDA tooling or a visible NVIDIA GPU it reports a
+skip; with `--require-cuda`, the same skip returns a non-zero exit status.
