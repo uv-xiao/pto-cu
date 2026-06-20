@@ -10,10 +10,121 @@
 
 from __future__ import annotations
 
+import importlib.util
+import json
+from pathlib import Path
+import sys
 from types import SimpleNamespace
 
 from simpler_setup import kernel_compiler
 from simpler_setup.kernel_compiler import KernelCompiler
+
+
+def _load_gluon_gemm_example():
+    module_path = "examples/cuda/gluon_gemm_f32.py"
+    spec = importlib.util.spec_from_file_location("gluon_gemm_f32_example", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_generate_gluon_gemm_f32_writes_source_and_manifest(tmp_path):
+    artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
+        "gemm_f32",
+        output_dir=tmp_path,
+        arch="compute_90",
+        tile_shape=(16, 16, 16),
+    )
+
+    source = artifact.source_path.read_text()
+    manifest = json.loads(artifact.manifest_path.read_text())
+
+    assert artifact.kernel_name == "gemm_f32"
+    assert artifact.compiler_role == "pto-isa-replacement"
+    assert artifact.arch == "compute_90"
+    assert artifact.tile_shape == (16, 16, 16)
+    assert artifact.source_path.name == "gemm_f32.gluon.py"
+    assert artifact.manifest_path.name == "gemm_f32.gluon.json"
+    assert "from triton.experimental import gluon" in source
+    assert "def gemm_f32_kernel" in source
+    assert "gl.program_id(0)" in source
+    assert "acc += a * b" in source
+    assert manifest["kernel_name"] == "gemm_f32"
+    assert manifest["compiler_role"] == "pto-isa-replacement"
+    assert manifest["source_kind"] == "triton-gluon-python"
+    assert manifest["source_path"] == "gemm_f32.gluon.py"
+    assert manifest["tile_shape"] == [16, 16, 16]
+    assert manifest["source_sha256"] == artifact.source_sha256
+
+
+def test_gluon_generation_is_cuda_only(tmp_path):
+    compiler = KernelCompiler(platform="a2a3sim")
+
+    try:
+        compiler.generate_gluon_kernel("gemm_f32", output_dir=tmp_path)
+    except ValueError as exc:
+        assert "only available for platform='cuda'" in str(exc)
+    else:
+        raise AssertionError("expected generate_gluon_kernel to reject non-CUDA platforms")
+
+
+def test_gluon_generation_rejects_non_scalar_kernels(tmp_path):
+    compiler = KernelCompiler(platform="cuda")
+
+    try:
+        compiler.generate_gluon_kernel("flashattention_fwd_f32", output_dir=tmp_path)
+    except ValueError as exc:
+        assert "unsupported Gluon kernel" in str(exc)
+        assert "gemm_f32" in str(exc)
+    else:
+        raise AssertionError("expected scalar generator to reject non-GEMM kernels")
+
+
+def test_gluon_gemm_example_reports_skip_json_and_relative_artifacts(tmp_path, monkeypatch):
+    example = _load_gluon_gemm_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_gemm_correctness(
+        output_dir=Path("gluon-artifacts"),
+        arch="compute_90",
+        tile_shape=(16, 16, 16),
+        m=16,
+        n=16,
+        k=16,
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "torch.cuda is not available"
+    assert result["shape"] == {"m": 16, "n": 16, "k": 16}
+    assert result["artifact"]["source_path"] == "gluon-artifacts/gemm_f32.gluon.py"
+    assert result["artifact"]["manifest_path"] == "gluon-artifacts/gemm_f32.gluon.json"
+    assert result["artifact"]["tile_shape"] == [16, 16, 16]
+
+
+def test_gluon_gemm_example_main_requires_cuda_on_skip(tmp_path, capsys, monkeypatch):
+    example = _load_gluon_gemm_example()
+    monkeypatch.setattr(example, "gluon_gemm_skip_reason", lambda: "missing triton")
+
+    code = example.main(
+        [
+            "--output-dir",
+            str(tmp_path),
+            "--m",
+            "16",
+            "--n",
+            "16",
+            "--k",
+            "16",
+            "--require-cuda",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "skipped"
+    assert payload["reason"] == "missing triton"
 
 
 def test_cuda_kernel_compiler_compiles_host_schedule_task_body(tmp_path, monkeypatch):

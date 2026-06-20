@@ -595,6 +595,28 @@ class KernelCompiler:
             nvcc=nvcc,
         )
 
+    def generate_gluon_kernel(
+        self,
+        kernel_name: str,
+        *,
+        output_dir: Optional[Union[str, Path]] = None,
+        arch: str = "compute_90",
+        tile_shape: tuple[int, int, int] = (64, 128, 32),
+    ):
+        """Generate a reviewable Triton/Gluon source artifact."""
+
+        if self.platform != "cuda":
+            raise ValueError("generate_gluon_kernel is only available for platform='cuda'")
+
+        from .gluon_gen import generate_gluon_kernel
+
+        return generate_gluon_kernel(
+            kernel_name,
+            output_dir=output_dir,
+            arch=arch,
+            tile_shape=tile_shape,
+        )
+
     def _compile_incore_sim(
         self,
         source_path: str,
