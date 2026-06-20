@@ -56,6 +56,15 @@ def _load_gluon_flashattention_example():
     return module
 
 
+def _load_gluon_moe_expert_example():
+    module_path = "examples/cuda/gluon_moe_expert_affine.py"
+    spec = importlib.util.spec_from_file_location("gluon_moe_expert_affine_example", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_gluon_benchmark_example():
     module_path = "examples/cuda/gluon_benchmark.py"
     spec = importlib.util.spec_from_file_location("gluon_benchmark_example", module_path)
@@ -444,6 +453,100 @@ def test_gluon_flashattention_skip_reason_checks_required_gluon_apis(monkeypatch
     assert example.flashattention_skip_reason() == (
         "triton Gluon import failed: missing gl.dot_fma"
     )
+
+
+def test_generate_gluon_moe_expert_affine_writes_source_and_manifest(tmp_path):
+    artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
+        "moe_expert_affine_f32",
+        output_dir=tmp_path,
+        arch="compute_90",
+        tile_shape=(1, 1, 1),
+    )
+
+    source = artifact.source_path.read_text(encoding="utf-8")
+    manifest = json.loads(artifact.manifest_path.read_text(encoding="utf-8"))
+
+    assert artifact.kernel_name == "moe_expert_affine_f32"
+    assert artifact.source_path.name == "moe_expert_affine_f32.gluon.py"
+    assert artifact.manifest_path.name == "moe_expert_affine_f32.gluon.json"
+    assert manifest["kernel_name"] == "moe_expert_affine_f32"
+    assert manifest["compiler_role"] == "pto-isa-replacement"
+    assert manifest["source_kind"] == "triton-gluon-python"
+    assert manifest["source_path"] == "moe_expert_affine_f32.gluon.py"
+    assert manifest["tile_shape"] == [1, 1, 1]
+    assert "def moe_expert_affine_f32_kernel" in source
+    assert "scale_a * a + scale_b * b" in source
+    assert "def run_moe_expert_affine_f32" in source
+
+
+def test_gluon_moe_expert_affine_example_reports_skip_json_and_relative_artifacts(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_moe_expert_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_moe_expert_correctness(
+        output_dir=Path("tmp/gluon-moe-expert-local"),
+        arch="compute_90",
+        n=4096,
+        scale_a=1.25,
+        scale_b=0.5,
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "torch.cuda is not available"
+    assert result["kernel_name"] == "moe_expert_affine_f32"
+    assert result["shape"] == {"n": 4096}
+    assert result["scalars"] == {"scale_a": 1.25, "scale_b": 0.5}
+    assert result["artifact"]["source_path"] == (
+        "tmp/gluon-moe-expert-local/moe_expert_affine_f32.gluon.py"
+    )
+    assert result["artifact"]["manifest_path"] == (
+        "tmp/gluon-moe-expert-local/moe_expert_affine_f32.gluon.json"
+    )
+    assert not Path(result["artifact"]["source_path"]).is_absolute()
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_gluon_moe_expert_affine_example_main_requires_cuda_on_skip(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    example = _load_gluon_moe_expert_example()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(example, "moe_expert_skip_reason", lambda: "missing CUDA")
+
+    code = example.main(
+        [
+            "--output-dir",
+            "tmp/gluon-moe-expert-local",
+            "--n",
+            "4096",
+            "--require-cuda",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert code == 2
+    assert captured.err == ""
+    assert payload["status"] == "skipped"
+    assert payload["reason"] == "missing CUDA"
+
+
+def test_gluon_moe_expert_affine_rejects_absolute_output_dir(capsys):
+    example = _load_gluon_moe_expert_example()
+
+    code = example.main(["--output-dir", "/tmp/private-output"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == "failed"
+    assert payload["error"] == "--output-dir must be repo-relative"
+    assert "/tmp/private-output" not in json.dumps(payload)
 
 
 def test_gluon_benchmark_cli_skips_all_kernels_with_structured_json(

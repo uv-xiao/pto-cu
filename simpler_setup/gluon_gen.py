@@ -24,6 +24,7 @@ _SUPPORTED_KERNELS = {
     "gemm_tensor_core_f16_f32",
     "gemm_tensor_core_tiled_f16_f32",
     "flashattention_fwd_f32",
+    "moe_expert_affine_f32",
 }
 
 
@@ -93,6 +94,8 @@ def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
         return _render_tiled_tensor_core_gemm_source(tile_shape)
     if kernel_name == "flashattention_fwd_f32":
         return _render_flashattention_source(tile_shape)
+    if kernel_name == "moe_expert_affine_f32":
+        return _render_moe_expert_affine_source()
     raise AssertionError(f"unhandled Gluon kernel: {kernel_name}")
 
 
@@ -352,6 +355,42 @@ def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
                 {block_n},
                 {block_d},
                 resolved_scale,
+                num_warps=num_warps,
+            )
+        """
+    ).lstrip()
+
+
+def _render_moe_expert_affine_source() -> str:
+    return dedent(
+        """
+        from triton.experimental import gluon
+        from triton.experimental.gluon import language as gl
+
+
+        @gluon.jit
+        def moe_expert_affine_f32_kernel(a_ptr, b_ptr, out_ptr, n: gl.constexpr, scale_a: gl.constexpr, scale_b: gl.constexpr):
+            idx = gl.program_id(0)
+            a = gl.load(a_ptr + idx)
+            b = gl.load(b_ptr + idx)
+            gl.store(out_ptr + idx, scale_a * a + scale_b * b)
+
+
+        def run_moe_expert_affine_f32(a, b, out, scale_a=1.25, scale_b=0.5, num_warps=4):
+            expected_rank = 1
+            for name, tensor in [("a", a), ("b", b), ("out", out)]:
+                if len(tensor.shape) != expected_rank:
+                    raise ValueError(f"expected {name} to be rank-1, got shape {tuple(tensor.shape)}")
+            if a.numel() != b.numel() or out.numel() != a.numel():
+                raise ValueError(f"expected equal vector lengths, got a={a.numel()}, b={b.numel()}, out={out.numel()}")
+
+            moe_expert_affine_f32_kernel[(a.numel(),)](
+                a,
+                b,
+                out,
+                a.numel(),
+                scale_a,
+                scale_b,
                 num_warps=num_warps,
             )
         """
