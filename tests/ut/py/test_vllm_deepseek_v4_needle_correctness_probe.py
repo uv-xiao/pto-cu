@@ -89,6 +89,7 @@ def test_validate_needle_correctness_passes_on_exact_expected_answer():
         request=request,
         served_model_name="deepseek-ai/DeepSeek-V4-Flash",
         expected_answer=expected,
+        match_mode="contains",
     )
 
     assert result["status"] == "passed"
@@ -97,6 +98,80 @@ def test_validate_needle_correctness_passes_on_exact_expected_answer():
     assert result["generated_text"] == f"\n{expected}\n"
     assert result["generated_text_recorded"] == "short_synthetic_output"
     assert result["usage"]["prompt_tokens"] == 255800
+
+
+def test_validate_needle_correctness_exact_mode_normalizes_narrowly():
+    probe = load_probe_module()
+    expected = "PTO_NEEDLE_256K_CONTEXT_OK_28143"
+    request = probe.build_planned_needle_request(
+        expected_answer=expected,
+        match_mode="exact",
+    )
+
+    result = probe.validate_needle_correctness_response(
+        completion_payload(f"\n```text\n{expected}\n```\n"),
+        request=request,
+        served_model_name="deepseek-ai/DeepSeek-V4-Flash",
+        expected_answer=expected,
+        match_mode="exact",
+    )
+
+    assert result["status"] == "passed"
+    assert result["match_mode"] == "exact"
+    assert result["checks"]["expected_answer_exact"] == "passed"
+    assert result["normalization"] == (
+        "strip leading/trailing whitespace, then strip one surrounding "
+        "Markdown code fence when the whole output is fenced"
+    )
+    assert result["normalized_generated_text"] == expected
+
+
+def test_validate_needle_correctness_exact_mode_rejects_extra_wording():
+    probe = load_probe_module()
+    expected = "PTO_NEEDLE_256K_CONTEXT_OK_28143"
+    request = probe.build_planned_needle_request(
+        expected_answer=expected,
+        match_mode="exact",
+    )
+
+    result = probe.validate_needle_correctness_response(
+        completion_payload(
+            "\n"
+            f"{expected}\n\n"
+            "The model correctly extracts the needle value from the context."
+        ),
+        request=request,
+        served_model_name="deepseek-ai/DeepSeek-V4-Flash",
+        expected_answer=expected,
+        match_mode="exact",
+    )
+
+    assert result["status"] == "failed"
+    assert result["checks"]["expected_answer_exact"] == "failed"
+    assert result["failure"]["category"] == "needle_expected_answer_not_exact"
+    assert result["normalized_generated_text"].startswith(expected)
+    assert "correctly extracts" in result["normalized_generated_text"]
+
+
+def test_validate_needle_correctness_contains_mode_still_allows_extra_wording():
+    probe = load_probe_module()
+    expected = "PTO_NEEDLE_256K_CONTEXT_OK_28143"
+    request = probe.build_planned_needle_request(
+        expected_answer=expected,
+        match_mode="contains",
+    )
+
+    result = probe.validate_needle_correctness_response(
+        completion_payload(f"\n{expected}\n\nExtra wording remains allowed here."),
+        request=request,
+        served_model_name="deepseek-ai/DeepSeek-V4-Flash",
+        expected_answer=expected,
+        match_mode="contains",
+    )
+
+    assert result["status"] == "passed"
+    assert result["match_mode"] == "contains"
+    assert result["checks"]["expected_answer_contained"] == "passed"
 
 
 def test_validate_needle_correctness_fails_without_weakening_assertion():
@@ -109,6 +184,7 @@ def test_validate_needle_correctness_fails_without_weakening_assertion():
         request=request,
         served_model_name="deepseek-ai/DeepSeek-V4-Flash",
         expected_answer=expected,
+        match_mode="contains",
     )
 
     assert result["status"] == "failed"
@@ -132,6 +208,8 @@ def test_dry_run_cli_output_is_review_safe():
             "262144",
             "--max-tokens",
             "64",
+            "--match-mode",
+            "exact",
         ],
         cwd=ROOT,
         text=True,
@@ -148,6 +226,11 @@ def test_dry_run_cli_output_is_review_safe():
     assert payload["request"]["endpoint"] == "/v1/completions"
     assert payload["request"]["limits"]["target_prompt_tokens"] == 255800
     assert payload["request"]["limits"]["max_tokens"] == 64
+    assert payload["request"]["limits"]["match_mode"] == "exact"
+    assert payload["request"]["limits"]["normalization"] == (
+        "strip leading/trailing whitespace, then strip one surrounding "
+        "Markdown code fence when the whole output is fenced"
+    )
     assert payload["request"]["limits"]["expected_answer"] == (
         "PTO_NEEDLE_256K_CONTEXT_OK_28143"
     )
@@ -160,7 +243,7 @@ def test_dry_run_cli_output_is_review_safe():
     assert "text_" + "sha256" not in result.stdout
     assert "token_ids" not in result.stdout
     assert "raw " + "filler prompt" not in result.stdout
-    assert "generated output contains the exact expected needle answer" in (
+    assert "normalized generated output equals the expected needle answer in exact mode" in (
         payload["contract_checks"]
     )
     assert not any(

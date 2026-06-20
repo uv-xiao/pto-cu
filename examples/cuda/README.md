@@ -553,14 +553,16 @@ timeout --foreground 120m \
   --request-timeout-seconds 1800 --terminate-timeout-seconds 60 \
   --target-prompt-tokens 255800 --max-tokens 64 \
   --temperature 0.0 --top-p 1.0 --seed 0 \
-  --expected-answer PTO_NEEDLE_256K_CONTEXT_OK_28143
+  --expected-answer PTO_NEEDLE_256K_CONTEXT_OK_28143 \
+  --match-mode contains
 ```
 
 This starts a local-only vLLM server bound to `127.0.0.1` with the
 262,144-token model length, sends one synthetic non-streaming
 `/v1/completions` request near a 256K prompt-token budget, and reports
-`status=passed` only when the short generated output contains the exact
-expected answer string. The remote H200 evidence is recorded in
+`status=passed` only when the short generated output satisfies the selected
+match mode. The default `contains` mode preserves the existing containment
+gate. The remote H200 containment evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_256k_needle_correctness_probe.md`:
 the request returned HTTP 200 with one response choice, usage reported
 `prompt_tokens=255799`, `completion_tokens=64`, and `total_tokens=255863`,
@@ -569,6 +571,43 @@ reported no remaining process-group PIDs. This is synthetic needle retrieval
 correctness evidence only, not general generated-text correctness, semantic
 correctness, throughput, latency, production readiness, broad determinism, or
 simpler-nv/vLLM integration evidence.
+
+## DeepSeek V4 Flash vLLM 256K Needle Exact-Output Probe
+
+```bash
+CUDA_VISIBLE_DEVICES=1,7 VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 120m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_needle_correctness_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28144 \
+  --server-log tmp/vllm-256k-needle-exact-output-probe/server-28144.log \
+  --max-model-len 262144 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 1800 --terminate-timeout-seconds 60 \
+  --target-prompt-tokens 255800 --max-tokens 64 \
+  --temperature 0.0 --top-p 1.0 --seed 0 \
+  --expected-answer PTO_NEEDLE_256K_CONTEXT_OK_28143 \
+  --match-mode exact
+```
+
+Exact mode strips leading/trailing whitespace, strips one surrounding
+Markdown code fence only when the whole output is fenced, and then compares
+the normalized generated output exactly to the expected synthetic answer. It
+does not remove explanatory sentences, punctuation, unmatched Markdown fences,
+or unrelated tokens. The remote H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_output_failure.md`:
+the request returned HTTP 200 with one response choice, but strict exact mode
+failed because the normalized output retained an unmatched closing Markdown
+fence after `PTO_NEEDLE_256K_CONTEXT_OK_28143`. This is a strict synthetic
+exact-output failure record only, not general generated-text correctness,
+semantic correctness, throughput, latency, production readiness, broad
+determinism, or simpler-nv/vLLM integration evidence.
 
 ## DeepSeek V4 Flash vLLM Inference Smoke Probe
 
