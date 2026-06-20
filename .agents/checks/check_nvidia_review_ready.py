@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -11,6 +12,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 DOC_ROOT = ROOT / "docs" / "nvidia-backend"
 VIEWER_ROOT = DOC_ROOT / "benchmark-viewer"
+REMOVED_EVAL_SCRIPT_RE = re.compile(
+    r"cuda_(smoke|persistent_smoke|benchmark)\.py|cuda-backend-eval/scripts"
+)
+ACTIVE_REVIEW_SURFACES = [
+    VIEWER_ROOT / "data" / "benchmarks.json",
+    VIEWER_ROOT / "data" / "methods.json",
+    VIEWER_ROOT / "data" / "results.json",
+    ROOT / "examples" / "cuda" / "README.md",
+    ROOT / "examples" / "cuda" / "host_schedule_vector_ops.py",
+    ROOT / "examples" / "cuda" / "persistent_layered_cross.py",
+]
 
 
 def fail(message: str) -> None:
@@ -127,10 +139,23 @@ def check_examples_and_rules() -> None:
         require_file(ROOT / relpath)
 
 
+def check_active_surfaces_do_not_reference_removed_eval_scripts() -> None:
+    for path in ACTIVE_REVIEW_SURFACES:
+        require_file(path)
+        text = path.read_text(encoding="utf-8", errors="replace")
+        match = REMOVED_EVAL_SCRIPT_RE.search(text)
+        if match:
+            fail(
+                f"{path.relative_to(ROOT)} references removed eval script surface: "
+                f"{match.group(0)}"
+            )
+
+
 def main() -> None:
     check_evaluation_docs()
     check_viewer_data()
     check_examples_and_rules()
+    check_active_surfaces_do_not_reference_removed_eval_scripts()
     print("nvidia review guard passed")
 
 

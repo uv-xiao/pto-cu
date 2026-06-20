@@ -1,16 +1,34 @@
 #!/usr/bin/env python3
-"""Run the CUDA persistent-device layered-cross graph example."""
+"""Describe the historical CUDA persistent layered-cross benchmark row."""
 
 from __future__ import annotations
 
 import argparse
-import runpy
-import sys
+import json
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SMOKE = ROOT / ".agents" / "skills" / "cuda-backend-eval" / "scripts" / "cuda_persistent_smoke.py"
+HISTORICAL_CAPTURE_COMMIT = "743709f3"
+GRAPH_LAYERED_CROSS_DESCRIPTOR = {
+    "dispatch_func_ids": [1, 2, 11, 1, 2, 1, 6, 1, 1],
+    "fanin": [0, 0, 0, 2, 3, 1, 2, 3, 2],
+    "dependents": [3, 3, 4, 4, 5, 4, 6, 7, 6, 7, 7, 8, 8],
+    "scalar0": 2.0,
+    "tensor_alias": "c=a",
+}
+PERSISTENT_LAYERED_CROSS_PROVENANCE = {
+    "runtime": "persistent_device",
+    "benchmark_id": "graph_layered_cross",
+    "historical_capture_commit": HISTORICAL_CAPTURE_COMMIT,
+    "dag_shape": "graph_descriptor_layered_cross",
+    "descriptor": GRAPH_LAYERED_CROSS_DESCRIPTOR,
+    "evidence_refs": [
+        "docs/nvidia-backend/history/captures/current-head-layered-cross-743709f3.md",
+        "tests/ut/py/test_cuda_backend.py",
+        "src/cuda/platform/include/host/pto_cuda_persistent_device_abi.h",
+    ],
+}
 
 
 def main() -> None:
@@ -24,38 +42,35 @@ def main() -> None:
     parser.add_argument("--repeat-runs", type=int, default=2)
     parser.add_argument("--stream-id", type=int, default=0)
     parser.add_argument("--output-json", type=Path)
+    parser.add_argument(
+        "--describe",
+        action="store_true",
+        help="emit review provenance for the historical benchmark row",
+    )
     args = parser.parse_args()
 
-    forwarded = [
-        str(SMOKE),
-        "--device",
-        str(args.device),
-        "--task-count",
-        "9",
-        "--n",
-        str(args.n),
-        "--arch",
-        args.arch,
-        "--mode",
-        "dag",
-        "--dag-shape",
-        "graph_descriptor_layered_cross",
-        "--block-dim",
-        str(args.block_dim),
-        "--scheduler-blocks",
-        str(args.scheduler_blocks),
-        "--worker-blocks",
-        str(args.worker_blocks),
-        "--repeat-runs",
-        str(args.repeat_runs),
-        "--stream-id",
-        str(args.stream_id),
-    ]
+    payload = {
+        **PERSISTENT_LAYERED_CROSS_PROVENANCE,
+        "status": "historical_provenance_only",
+        "device": args.device,
+        "n": args.n,
+        "arch": args.arch,
+        "block_dim": args.block_dim,
+        "scheduler_blocks": args.scheduler_blocks,
+        "worker_blocks": args.worker_blocks,
+        "repeat_runs": args.repeat_runs,
+        "stream_id": args.stream_id,
+        "description": (
+            "The active persistent smoke runner used for the 743709f3 capture "
+            "was removed when the CUDA eval skill was slimmed. This example "
+            "now preserves the review-facing graph metadata without claiming "
+            "a fresh CUDA run."
+        ),
+    }
+    text = json.dumps(payload, indent=2, sort_keys=True)
     if args.output_json is not None:
-        forwarded.extend(["--output-json", str(args.output_json)])
-
-    sys.argv = forwarded
-    runpy.run_path(str(SMOKE), run_name="__main__")
+        args.output_json.write_text(text + "\n", encoding="utf-8")
+    print(text)
 
 
 if __name__ == "__main__":

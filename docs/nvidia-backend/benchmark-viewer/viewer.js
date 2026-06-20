@@ -90,7 +90,7 @@ function renderBenchmarks() {
     codeText.append(text(benchmark.code));
     code.append(codeText);
     const run = document.createElement("h3");
-    run.append(text("Run"));
+    run.append(text(benchmark.run.kind === "historical" ? "Historical Provenance" : "Provenance"));
     const evidence = document.createElement("h3");
     evidence.append(text("Evidence"));
     details.append(
