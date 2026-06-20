@@ -56,6 +56,15 @@ def _load_gluon_flashattention_example():
     return module
 
 
+def _load_gluon_benchmark_example():
+    module_path = "examples/cuda/gluon_benchmark.py"
+    spec = importlib.util.spec_from_file_location("gluon_benchmark_example", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def test_generate_gluon_gemm_f32_writes_source_and_manifest(tmp_path):
     artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
         "gemm_f32",
@@ -435,6 +444,106 @@ def test_gluon_flashattention_skip_reason_checks_required_gluon_apis(monkeypatch
     assert example.flashattention_skip_reason() == (
         "triton Gluon import failed: missing gl.dot_fma"
     )
+
+
+def test_gluon_benchmark_cli_skips_all_kernels_with_structured_json(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    benchmark = _load_gluon_benchmark_example()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        benchmark,
+        "h200_skip_reason",
+        lambda: "torch.cuda is not available",
+    )
+
+    code = benchmark.main(
+        [
+            "--output-dir",
+            "tmp/gluon-performance-local",
+            "--warmup",
+            "1",
+            "--iterations",
+            "2",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert payload["schema_version"] == 1
+    assert payload["status"] == "skipped"
+    assert payload["machine_class"] == "H200"
+    assert payload["command"] == (
+        "examples/cuda/gluon_benchmark.py --output-dir "
+        "tmp/gluon-performance-local --warmup 1 --iterations 2"
+    )
+    assert payload["non_claims"] == [
+        "microbenchmark timings are not serving throughput",
+        "skipped runs are not H200 performance evidence",
+        "results cover only the listed shapes and dtypes",
+    ]
+    assert [entry["kernel_name"] for entry in payload["benchmarks"]] == [
+        "gemm_f32",
+        "gemm_tensor_core_f16_f32",
+        "gemm_tensor_core_tiled_f16_f32",
+        "flashattention_fwd_f32",
+    ]
+    for entry in payload["benchmarks"]:
+        assert entry["status"] == "skipped"
+        assert entry["reason"] == "torch.cuda is not available"
+        assert entry["machine_class"] == "H200"
+        assert entry["correctness"] == {"measured": False, "status": "skipped"}
+        assert entry["timing"]["measured"] is False
+        assert entry["timing"]["warmup"] == 1
+        assert entry["timing"]["iterations"] == 2
+        assert not Path(entry["artifact"]["source_path"]).is_absolute()
+        assert not Path(entry["artifact"]["manifest_path"]).is_absolute()
+        assert str(tmp_path) not in json.dumps(payload)
+
+
+def test_gluon_benchmark_cli_require_cuda_returns_nonzero_on_skip(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    benchmark = _load_gluon_benchmark_example()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(benchmark, "h200_skip_reason", lambda: "expected H200 GPU")
+
+    code = benchmark.main(["--output-dir", "tmp/gluon-performance-local", "--require-cuda"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "skipped"
+    assert {entry["reason"] for entry in payload["benchmarks"]} == {"expected H200 GPU"}
+
+
+def test_gluon_benchmark_rejects_absolute_output_dir(capsys):
+    benchmark = _load_gluon_benchmark_example()
+
+    code = benchmark.main(["--output-dir", "/tmp/private-output"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == "failed"
+    assert payload["error"] == "--output-dir must be repo-relative"
+    assert "/tmp/private-output" not in json.dumps(payload)
+
+
+def test_gluon_benchmark_cli_parse_errors_are_json(capsys):
+    benchmark = _load_gluon_benchmark_example()
+
+    code = benchmark.main(["--not-a-real-flag"])
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert code == 1
+    assert captured.err == ""
+    assert payload["status"] == "failed"
+    assert payload["error_type"] == "ValueError"
+    assert "unrecognized arguments: --not-a-real-flag" in payload["error"]
 
 
 def test_cuda_kernel_compiler_compiles_host_schedule_task_body(tmp_path, monkeypatch):
