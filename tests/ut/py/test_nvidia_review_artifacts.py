@@ -156,6 +156,9 @@ def test_review_policy_changelog_and_examples_exist():
         in_progress_root / "vllm_remote_32k_long_prompt_response_contract_probe.md"
     ).is_file()
     assert (
+        in_progress_root / "vllm_remote_64k_long_prompt_response_contract_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
@@ -189,6 +192,44 @@ def test_review_policy_changelog_and_examples_exist():
     assert (
         example_root / "vllm_deepseek_v4_long_prompt_warmup_followup_probe.py"
     ).is_file()
+
+
+def test_64k_long_prompt_response_contract_evidence_is_review_safe():
+    evidence = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "vllm_remote_64k_long_prompt_response_contract_probe.md"
+    ).read_text(encoding="utf-8")
+    readiness = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "deepseek_v4_flash_serving_readiness.md"
+    ).read_text(encoding="utf-8")
+
+    assert "status: passed" in evidence
+    assert "vllm: 0.23.0" in evidence
+    assert "torch: 2.11.0+cu130" in evidence
+    assert "torch CUDA: 13.0" in evidence
+    assert "CUDA_VISIBLE_DEVICES=1,7" in evidence
+    assert "server_port: 28139" in evidence
+    assert "max_model_len=262144" in evidence
+    assert "tensor_parallel_size=2" in evidence
+    assert "target_prompt_tokens=64000" in evidence
+    assert "actual_prompt_tokens=63999" in evidence
+    assert "prompt_chars: 418877" in evidence
+    assert "usage.prompt_tokens: 63999" in evidence
+    assert "usage.completion_tokens: 4" in evidence
+    assert "usage.total_tokens: 64003" in evidence
+    assert "raw prompt text is not recorded" in evidence
+    assert "raw generated text is not recorded" in evidence
+    assert "remaining_process_group_pids: []" in evidence
+    assert "local_only_vllm_64k_long_prompt_response_contract" in readiness
+    assert "vllm_remote_64k_long_prompt_response_contract_probe.md" in readiness
+    assert "text_sha256" not in evidence
 
 
 def test_long_prompt_admission_probe_dry_run_contract():
