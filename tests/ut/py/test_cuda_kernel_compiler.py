@@ -511,6 +511,32 @@ def test_persistent_moe_dispatch_source_uses_gluon_expert_and_weighted_combine()
     assert "task->scalar_args[3] * task->d[i]" in source
 
 
+def test_persistent_moe_dispatch_reports_gluon_expert_bridge_on_skip():
+    example = _load_persistent_moe_dispatch_example()
+    expected = generate_gluon_persistent_task_body("moe_expert_affine_f32")
+
+    result = example.run_moe_dispatch_combine(
+        n=8,
+        arch="compute_90",
+        skip_reason=lambda: "CUDA unavailable",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["gluon_expert_bridge"] == {
+        "func_id": 12,
+        "kernel_name": "moe_expert_affine_f32",
+        "task_name": "gluon_moe_expert_affine_f32",
+        "source_kind": "gluon-persistent-task-body-bridge",
+        "source_sha256": expected.source_sha256,
+    }
+    expert_body = next(
+        body for body in result["task_bodies"] if body["func_id"] == 12
+    )
+    assert expert_body["name"] == result["gluon_expert_bridge"]["task_name"]
+    assert expert_body["source_kind"] == result["gluon_expert_bridge"]["source_kind"]
+    assert expert_body["source_sha256"] == result["gluon_expert_bridge"]["source_sha256"]
+
+
 def test_gluon_moe_expert_affine_example_reports_skip_json_and_relative_artifacts(
     tmp_path,
     monkeypatch,
