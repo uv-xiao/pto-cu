@@ -284,6 +284,57 @@ Fresh remote H200 request-shape variation evidence from this slice:
 Detailed request-shape variation evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_request_shape_variation_probe.md`.
 
+Fresh remote H200 serving-semantics evidence from this slice:
+
+- A repo-owned serving-semantics probe script now reuses the warmup-shape
+  lifecycle and response-contract validation, checks `/health` and
+  `/v1/models`, sends two identical bounded deterministic
+  `/v1/completions` requests, compares selected API-boundary observations,
+  inspects selected Triton JIT warning strings by server-log request windows,
+  terminates the server, and checks for remaining process-group PIDs.
+- The remote source tree was refreshed with `--sync`, preserving the complete
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`. The fresh pre-run snapshot showed 141773 MiB free
+  on GPU 1 and 116662 MiB free on GPU 7.
+- The passing boundary used `max_model_len=4096`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 65-minute outer timeout, a
+  2700-second readiness timeout, a 180-second request timeout, and a 2-second
+  server-log settle interval after each completion request.
+- The server started on `http://127.0.0.1:28128`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` from `/v1/models`, and
+  accepted two identical deterministic completion payloads with prompt
+  `Hello. Keep this deterministic serving probe bounded.`, `max_tokens=8`,
+  `temperature=0.0`, `top_p=1.0`, `seed=0`, `n=1`, and `stream=false`.
+- Both completion requests returned HTTP 200 with exactly one response choice
+  and structurally valid response-contract fields. Both responses reported
+  `usage.prompt_tokens=9`, `usage.completion_tokens=8`, and
+  `usage.total_tokens=17`.
+- The deterministic-repeat serving-semantics comparison passed for completion
+  text digest, text length, `finish_reason`, and usage accounting. The probe
+  did not record the raw generated text and did not compare it against an
+  expected answer.
+- The selected warning pattern
+  `Triton kernel JIT compilation during inference` appeared 11 times in the
+  first request log window and 0 times in the repeat deterministic request
+  log window.
+- The probe exited 0 after 125.057 seconds with `generation_attempted=true`.
+- The probe sent `SIGTERM`, vLLM logged API server and engine shutdown, and
+  the probe reported no remaining process-group PIDs. The immediate post-run
+  selected-GPU memory snapshot showed GPU 1 and GPU 7 back at their pre-run
+  memory baseline.
+- The run establishes a local-only deterministic serving-semantics
+  observation for this exact bounded request pair; it is not generated-text
+  correctness, tokenizer semantic correctness, prompt correctness, latency,
+  throughput, long-context, broad determinism, production-readiness, or
+  simpler-nv/vLLM integration evidence.
+
+Detailed serving-semantics evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_serving_semantics_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
@@ -303,8 +354,10 @@ one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
 request_shape_variation_probe: passed under recorded three-request boundary
+serving_semantics_probe: passed under recorded deterministic-repeat boundary
 serving_readiness: bounded local-only response contract and warmup-shape
-  variation observation; no correctness claims
+  variation plus deterministic-repeat serving-semantics observation; no
+  correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -312,24 +365,28 @@ startup, one bounded local-only inference request, and one bounded
 OpenAI-compatible completion response-contract check under the recorded
 two-H200 boundary. It has also passed one bounded same-shape warmup/follow-up
 observation and one bounded request-shape variation observation of the
-selected Triton JIT warning string. It is still too early to claim generated
-text correctness, long-context behavior, latency, throughput, production
-readiness, or simpler-nv/vLLM kernel integration.
+selected Triton JIT warning string. It has now passed one bounded
+deterministic-repeat serving-semantics observation that compares response
+digests and accounting without recording or judging generated text. It is
+still too early to claim generated text correctness, long-context behavior,
+latency, throughput, production readiness, broad determinism, or
+simpler-nv/vLLM kernel integration.
 
 ## Next Gate
 
-The next PR-sized gate can move to a separate bounded serving-semantics
-contract, or run a second explicit bounded request-shape variation if more
-shape coverage is needed. That later gate needs its own command, resource
-plan, expected failure mode, and non-claims, and it should stay separate from
-correctness, throughput, latency, long-context, and production-readiness
-claims.
+The next PR-sized gate can move to a separate explicit stop/echo/logprob
+serving behavior if vLLM exposes it safely, or to another bounded request
+shape that is deliberately independent from correctness. That later gate
+needs its own command, resource plan, expected failure mode, and non-claims,
+and it should stay separate from throughput, latency, long-context, and
+production-readiness claims.
 
 ## Non-Claims
 
 - This is not prompt, tokenizer semantic, correct-text, long-context,
   throughput, latency, or production readiness evidence.
 - This is not generated-text correctness evidence.
+- This is not broad serving determinism evidence.
 - This is not simpler-nv or vLLM kernel integration evidence.
 - This did not commit raw model artifacts, venvs, command dumps, or `tmp/`
   symlinks.

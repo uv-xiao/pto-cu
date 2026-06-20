@@ -278,3 +278,37 @@ This is request-shape variation observation evidence, not generated-text
 correctness, tokenizer semantics, prompt correctness, 256K context,
 throughput, latency, production readiness, broad warmup-eliminates-JIT
 evidence, or simpler-nv/vLLM integration evidence.
+
+## DeepSeek V4 Flash vLLM Serving-Semantics Probe
+
+```bash
+CUDA_VISIBLE_DEVICES=<two ids> VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 65m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_serving_semantics_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28128 \
+  --server-log tmp/vllm-serving-semantics-probe/server-28128.log \
+  --max-model-len 4096 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 180 --terminate-timeout-seconds 60 \
+  --max-tokens 8 --temperature 0.0 --top-p 1.0 \
+  --seed 0 --log-settle-seconds 2
+```
+
+This starts the same local-only server boundary, checks `/health` and
+`/v1/models`, sends two identical bounded deterministic `/v1/completions`
+requests, validates the structural response contract for both responses,
+then compares response observations: completion text digest, text length,
+`finish_reason`, and usage accounting. The generated text is not recorded or
+judged for correctness. The remote H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_serving_semantics_probe.md`.
+This is a bounded serving-semantics observation, not generated-text
+correctness, tokenizer semantics, prompt correctness, 256K context,
+throughput, latency, production readiness, broad determinism evidence, or
+simpler-nv/vLLM integration evidence.
