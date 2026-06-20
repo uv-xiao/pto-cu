@@ -1195,6 +1195,62 @@ Detailed 256K needle stop-controlled exact-output repeat evidence is recorded
 in
 `docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_stop_repeat_probe.md`.
 
+Fresh remote H200 256K needle exact truncated-generation failure evidence from
+this slice:
+
+- The repo-owned needle correctness probe was reused without code changes to
+  characterize the failure mode where the strict exact comparator is kept but
+  the completion budget is intentionally too small to emit the full synthetic
+  answer.
+- A pre-run remote check explicitly confirmed that the preserved prior path
+  `REMOTE_PTO_CU=/tmp/pto-cu-vllm-remote-env-artifact` contained
+  `.venv-vllm-probe/bin/python`, `.venv-vllm-probe/bin/vllm`,
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash`, and the repo-owned
+  needle probe script. The environment reported vLLM 0.23.0, Torch
+  2.11.0+cu130, and CUDA 13.0.
+- Remote git metadata was unavailable due stale worktree metadata, but this
+  was not a setup failure because the required venv, vLLM executable,
+  artifacts, and probe script were present.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`.
+- The expected failing boundary used `max_model_len=262144`,
+  `dtype=bfloat16`, `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 120-minute outer timeout, a
+  2700-second readiness timeout, and an 1800-second request timeout.
+- The request used `target_prompt_tokens=255800`,
+  `actual_prompt_tokens=255799`, `max_tokens=1`, `match_mode=exact`,
+  `temperature=0.0`, `top_p=1.0`, `seed=0`, `stream=false`, `echo=false`,
+  `logprobs=false`, and the stop sequence `"\n```"`.
+- The server started on `http://127.0.0.1:28147`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` with
+  `max_model_len=262144` from `/v1/models`, and accepted one
+  `/v1/completions` request.
+- The completion request returned HTTP 200 with exactly one response choice,
+  `finish_reason=length`, short synthetic generated text recorded as 2
+  characters, and usage counts: `prompt_tokens=255799`,
+  `completion_tokens=1`, and `total_tokens=255800`.
+- Strict exact mode failed with
+  `failure_category=needle_expected_answer_not_exact` because the normalized
+  generated text was only `P`, not
+  `PTO_NEEDLE_256K_CONTEXT_OK_28143`.
+- The probe wrapper preserved the honest probe result as
+  `PROBE_EXIT_STATUS=2` while allowing this expected failure-mode
+  characterization to be documented.
+- The probe did not record raw prompt text, raw request payloads, token ID
+  arrays, logprob values, generated-text digests, model artifact contents, or
+  symlinks.
+- The probe cleanup passed and reported no remaining process-group PIDs.
+- The run establishes expected exact-comparator failure-mode evidence only;
+  it is not serving correctness, general generated-text correctness,
+  semantic correctness, latency, throughput, production-readiness, broad
+  determinism, or simpler-nv/vLLM integration evidence.
+
+Detailed 256K needle exact truncated-generation failure evidence is recorded
+in
+`docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_truncated_failure_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
@@ -1213,7 +1269,9 @@ long-prompt response-contract probe, plus one bounded near-256K synthetic
 needle containment/correctness probe, plus one bounded near-256K synthetic
 exact-output failure gate, plus one bounded near-256K stop-controlled
 synthetic exact-output pass gate, plus one three-request near-256K
-stop-controlled synthetic exact-output repeat pass gate:
+stop-controlled synthetic exact-output repeat pass gate, plus one bounded
+near-256K stop-controlled synthetic exact-output truncated-generation
+failure-mode gate:
 
 ```text
 remote_h200_reachable: yes
@@ -1251,6 +1309,8 @@ local_only_vllm_256k_needle_exact_stop_sequence: passed under recorded
   262144-token boundary
 local_only_vllm_256k_needle_exact_stop_repeat: passed under recorded
   262144-token boundary and one server lifecycle
+local_only_vllm_256k_needle_exact_truncated_failure: failed under recorded
+  262144-token boundary with max_tokens=1 as expected
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -1273,7 +1333,9 @@ serving_readiness: bounded local-only response contract and warmup-shape
   correctness probe, plus one bounded near-256K synthetic exact-output
   failure gate, plus one bounded near-256K stop-controlled synthetic
   exact-output pass gate, plus one three-request near-256K stop-controlled
-  synthetic exact-output repeat pass gate; no general correctness claims
+  synthetic exact-output repeat pass gate, plus one bounded near-256K
+  stop-controlled synthetic exact-output truncated-generation failure-mode
+  gate; no general correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -1353,11 +1415,19 @@ exact-output requests near the same prompt-token budget under one recorded
 comparator and stop sequence, and the repeat aggregate recorded only
 review-safe attempt summaries.
 
+It has now also recorded one expected local-only stop-controlled synthetic
+exact-output failure near the same prompt-token budget under the recorded
+262144-token vLLM server boundary. The request intentionally used
+`max_tokens=1`; the serving path returned HTTP 200 with one response choice,
+generation was attempted, strict exact mode failed with
+`needle_expected_answer_not_exact`, and cleanup reported no remaining
+process-group PIDs.
+
 ## Next Gate
 
 The next PR-sized gate can stay under the same local-only vLLM boundary for
-failure-mode characterization or a narrowly scoped serving-contract follow-up
-only after preserving the request-plus-completion budget under
+another narrowly scoped failure-mode characterization or serving-contract
+follow-up only after preserving the request-plus-completion budget under
 `max_model_len=262144`, still without recording raw prompt text, dumping raw
 request payloads, or expanding beyond synthetic-test-scoped generated output.
 
