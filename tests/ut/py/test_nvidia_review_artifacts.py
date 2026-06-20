@@ -150,6 +150,9 @@ def test_review_policy_changelog_and_examples_exist():
         in_progress_root / "vllm_remote_long_prompt_response_contract_probe.md"
     ).is_file()
     assert (
+        in_progress_root / "vllm_remote_long_prompt_warmup_followup_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
@@ -179,6 +182,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         example_root / "vllm_deepseek_v4_long_prompt_response_contract_probe.py"
+    ).is_file()
+    assert (
+        example_root / "vllm_deepseek_v4_long_prompt_warmup_followup_probe.py"
     ).is_file()
 
 
@@ -289,6 +295,84 @@ def test_long_prompt_response_contract_probe_dry_run_contract():
         "exactly one response choice object",
         "first choice exposes text and finish_reason fields",
         "generated text length is recorded without generated text contents",
+        "usage prompt/completion/total token fields are internally consistent when returned",
+        "usage.prompt_tokens matches measured prompt tokens when available",
+        "usage.completion_tokens within request max_tokens",
+        "usage.total_tokens >= usage.prompt_tokens + usage.completion_tokens",
+        "raw prompt text is not recorded",
+        "raw generated text is not recorded",
+        "server process group cleanup leaves no remaining PIDs",
+    ]
+
+
+def test_long_prompt_warmup_followup_probe_dry_run_contract():
+    script = (
+        ROOT
+        / "examples"
+        / "cuda"
+        / "vllm_deepseek_v4_long_prompt_warmup_followup_probe.py"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--dry-run",
+            "--port",
+            "28137",
+            "--target-prompt-tokens",
+            "16000",
+            "--max-model-len",
+            "262144",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+
+    assert payload["status"] == "planned"
+    assert payload["server_host"] == "127.0.0.1"
+    assert payload["server_port"] == 28137
+    assert payload["endpoints"] == [
+        "/health",
+        "/v1/models",
+        "/v1/completions",
+        "/v1/completions",
+    ]
+    for request_key, label in [
+        ("warmup_request", "warmup"),
+        ("followup_request", "followup"),
+    ]:
+        request = payload[request_key]
+        assert request["label"] == label
+        assert request["endpoint"] == "/v1/completions"
+        assert request["limits"]["target_prompt_tokens"] == 16000
+        assert request["limits"]["max_tokens"] == 4
+        assert request["limits"]["stream"] is False
+        assert request["limits"]["echo"] is False
+        assert request["limits"]["logprobs"] is False
+        assert request["prompt_text_recorded"] is False
+        assert request["payload_recorded"] is False
+        assert "prompt" not in request
+        assert "payload" not in request
+    assert payload["generation_attempted"] is False
+    assert payload["prompt_sent"] is False
+    assert "text_sha256" not in result.stdout
+    assert not any("generated text" in claim for claim in payload["non_claims"])
+    assert payload["contract_checks"] == [
+        "HTTP 200 from /health",
+        "HTTP 200 from /v1/models",
+        "model list includes served model and max_model_len=262144",
+        "HTTP 200 from warmup non-streaming /v1/completions request",
+        "HTTP 200 from followup non-streaming /v1/completions request",
+        "top-level completion responses are JSON objects",
+        "response model fields match served model when returned",
+        "exactly one response choice object per response",
+        "first choices expose text and finish_reason fields",
+        "generated text lengths are recorded without generated text contents",
         "usage prompt/completion/total token fields are internally consistent when returned",
         "usage.prompt_tokens matches measured prompt tokens when available",
         "usage.completion_tokens within request max_tokens",
