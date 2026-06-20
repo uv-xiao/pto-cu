@@ -339,6 +339,45 @@ general generated-text correctness, semantic correctness, long-prompt chat
 behavior, throughput, latency, production readiness, broad determinism, or
 simpler-nv/vLLM integration evidence.
 
+## DeepSeek V4 Flash vLLM Chat 256K Needle Exact Probe
+
+````bash
+CUDA_VISIBLE_DEVICES=1,7 VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 65m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_chat_256k_needle_exact_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28151 \
+  --server-log tmp/vllm-chat-256k-needle-exact-probe/server-28151.log \
+  --max-model-len 262144 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 180 --terminate-timeout-seconds 60 \
+  --target-prompt-tokens 255800 --max-tokens 64 \
+  --temperature 0.0 --top-p 1.0 --seed 0 \
+  --expected-answer PTO_CHAT_NEEDLE_256K_CONTEXT_OK_28151 \
+  --stop-sequence $'\n```'
+````
+
+This starts the same local-only two-H200 vLLM server boundary, checks
+`/health` and `/v1/models`, sends one bounded non-streaming
+`/v1/chat/completions` request with a synthetic needle placed inside a
+near-256K user entry, and requires the narrowly normalized assistant content
+to exactly equal `PTO_CHAT_NEEDLE_256K_CONTEXT_OK_28151`. The remote H200
+evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_exact_probe.md`:
+the request returned HTTP 200, `finish_reason=stop`, usage reported
+`prompt_tokens=255795`, `completion_tokens=18`, and `total_tokens=255813`,
+the strict exact check passed, and cleanup reported no remaining
+process-group PIDs. This is one synthetic chat-completions needle exact-output
+gate, not general generated-text correctness, semantic correctness,
+throughput, latency, production readiness, broad determinism, or
+simpler-nv/vLLM integration evidence.
+
 ## DeepSeek V4 Flash vLLM Chat Exact Truncated Failure Probe
 
 ```bash
