@@ -74,6 +74,11 @@ command. It does not attempt model load, start a server, or run inference.
 The remote H200 readiness slice is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_install_probe.md` and
 `docs/in_progress/nvidia_backend/deepseek_v4_flash_serving_readiness.md`. It
-records remote H200 reachability plus the current missing remote vLLM
-environment and missing repo-relative artifact directory. It is not
+records remote H200 reachability, the original missing remote vLLM environment,
+and the current repo-relative artifact-path blocker. Follow-up environment
+evidence in
+`docs/in_progress/nvidia_backend/vllm_remote_env_artifact_probe.md` records a
+passing remote `.venv-vllm-probe` import/config gate while the artifact probe
+and manifest still fail because
+`tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash` is missing. It is not
 model-load or serving evidence.

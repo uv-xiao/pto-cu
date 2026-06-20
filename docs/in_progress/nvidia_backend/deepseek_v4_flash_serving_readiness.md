@@ -19,13 +19,18 @@ Fresh remote H200 evidence from this slice:
 - The remote H200 runner is reachable.
 - The remote reports 8 x NVIDIA H200 NVL GPUs, compute capability 9.0,
   driver 580.126.20, 143771 MiB per GPU, and CUDA 12.8 `nvcc`.
-- The synced remote checkout does not have `.venv-vllm-probe/bin/python`.
-- System Python on the remote does not have importable `vllm`.
-- The repo-relative remote artifact path
-  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash` is missing.
-- The existing required vLLM/artifact probes return structured failures or
-  skips, with exit code `2`, when run with `--require-vllm` and
-  `--require-artifacts`.
+- A follow-up remote-local `.venv-vllm-probe` was created and vLLM was
+  installed only into that venv.
+- The vLLM probe venv now imports `vllm` and passes `pip check` after
+  venv-local compatibility fixes for system-site package shadowing.
+- The weight-free DeepSeek V4 vLLM import probe passes with
+  `--require-vllm`.
+- The weight-free DeepSeek V4 vLLM config probe passes with
+  `--require-vllm --max-position-embeddings 262144`.
+- After sync, the repo-relative remote artifact path
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash` is still missing.
+- The artifact probe and weight manifest gate now fail explicitly against that
+  missing repo-relative path.
 
 ## Serving Readiness State
 
@@ -33,27 +38,26 @@ The current remote state is blocked before serving can be tested:
 
 ```text
 remote_h200_reachable: yes
-remote_vllm_environment: missing
+remote_vllm_environment: ready for weight-free import/config probes
 remote_repo_relative_artifacts: missing
-weight_free_require_vllm_probes: failed/skipped because vLLM is missing
-artifact_require_probe: failed because artifacts and vLLM are missing
+weight_free_require_vllm_probes: passed
+artifact_require_probe: failed because artifact directory is missing
+weight_manifest_gate: failed because artifact directory is missing
 serving_readiness: not established
 ```
 
-This means the next reviewable step is still environment/artifact readiness on
-the H200 checkout. It is too early to claim model-load readiness, server
-readiness, or generated text correctness.
+This means the next reviewable step is artifact-path readiness on the H200
+checkout. It is too early to claim model-load readiness, server readiness, or
+generated text correctness.
 
 ## Next Gate
 
 The next PR-sized gate should:
 
-1. Create or document a remote-local vLLM probe venv, such as
-   `.venv-vllm-probe`, without committing dependencies or lockfiles.
-2. Expose the already-available model artifacts through the repo-relative
-   remote path `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash`, using
-   symlinks under `tmp/` if the raw shards live elsewhere on the host.
-3. Rerun:
+1. Expose a complete model artifact directory through the repo-relative remote
+   path `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash`, using symlinks
+   under `tmp/` if the raw shards live elsewhere on the host.
+2. Rerun:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
@@ -78,6 +82,16 @@ PYTHONPATH=$PWD:$PWD/python \
 
 That gate should remain weight-free unless the dispatcher explicitly assigns a
 model-load or serving slice.
+
+Also rerun the weight manifest gate against the same path:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv-vllm-probe/bin/python \
+  examples/cuda/deepseek_v4_flash_weight_manifest.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --require-complete
+```
 
 ## Non-Claims
 

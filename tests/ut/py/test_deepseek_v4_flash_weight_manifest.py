@@ -102,6 +102,33 @@ def test_manifest_require_complete_fails_when_shards_are_missing(tmp_path):
     assert json.loads(result.stdout)["status"] == "incomplete"
 
 
+def test_manifest_require_complete_fails_when_artifact_dir_is_missing(tmp_path):
+    artifact_dir = tmp_path / "missing-model"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--artifact-dir",
+            str(artifact_dir),
+            "--require-complete",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+
+    assert result.returncode == 2, result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "missing"
+    assert payload["reason"] == "artifact directory is missing"
+    assert payload["indexed_shards"] == 0
+    assert payload["present_shards"] == 0
+    assert payload["missing_shards"] == 0
+
+
 def test_manifest_reports_complete_weight_shards_without_serving_claim(tmp_path):
     artifact_dir = tmp_path / "model"
     artifact_dir.mkdir()

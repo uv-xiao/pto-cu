@@ -43,6 +43,42 @@ def _display_path(path: Path) -> str:
 
 def build_manifest(artifact_dir: Path, metadata_path: Path | None) -> dict[str, Any]:
     index_path = artifact_dir / "model.safetensors.index.json"
+    if not artifact_dir.is_dir():
+        return {
+            "status": "missing",
+            "reason": "artifact directory is missing",
+            "model_id": "unknown",
+            "artifact_dir": _display_path(artifact_dir),
+            "index_path": _display_path(index_path),
+            "indexed_tensors": 0,
+            "indexed_shards": 0,
+            "present_shards": 0,
+            "missing_shards": 0,
+            "present_bytes": 0,
+            "index_total_size": None,
+            "metadata_used_storage": None,
+            "metadata_safetensors_total": None,
+            "missing_examples": [],
+            "non_claim": "not serving evidence",
+        }
+    if not index_path.is_file():
+        return {
+            "status": "missing",
+            "reason": "model.safetensors.index.json is missing",
+            "model_id": "unknown",
+            "artifact_dir": _display_path(artifact_dir),
+            "index_path": _display_path(index_path),
+            "indexed_tensors": 0,
+            "indexed_shards": 0,
+            "present_shards": 0,
+            "missing_shards": 0,
+            "present_bytes": 0,
+            "index_total_size": None,
+            "metadata_used_storage": None,
+            "metadata_safetensors_total": None,
+            "missing_examples": [],
+            "non_claim": "not serving evidence",
+        }
     index = _read_json(index_path)
     metadata = _safe_metadata(metadata_path)
 
