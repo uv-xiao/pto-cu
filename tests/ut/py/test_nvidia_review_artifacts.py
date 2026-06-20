@@ -144,6 +144,9 @@ def test_review_policy_changelog_and_examples_exist():
         in_progress_root / "vllm_remote_256k_context_health_probe.md"
     ).is_file()
     assert (
+        in_progress_root / "vllm_remote_long_prompt_admission_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
@@ -168,6 +171,63 @@ def test_review_policy_changelog_and_examples_exist():
     assert (
         example_root / "vllm_deepseek_v4_serving_semantics_probe.py"
     ).is_file()
+    assert (
+        example_root / "vllm_deepseek_v4_long_prompt_admission_probe.py"
+    ).is_file()
+
+
+def test_long_prompt_admission_probe_dry_run_contract():
+    script = (
+        ROOT
+        / "examples"
+        / "cuda"
+        / "vllm_deepseek_v4_long_prompt_admission_probe.py"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--dry-run",
+            "--port",
+            "28135",
+            "--target-prompt-tokens",
+            "16000",
+            "--max-model-len",
+            "262144",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+
+    assert payload["status"] == "planned"
+    assert payload["server_host"] == "127.0.0.1"
+    assert payload["server_port"] == 28135
+    assert payload["request"]["endpoint"] == "/v1/completions"
+    assert payload["request"]["limits"]["target_prompt_tokens"] == 16000
+    assert payload["request"]["limits"]["max_tokens"] == 1
+    assert payload["request"]["limits"]["stream"] is False
+    assert payload["request"]["limits"]["echo"] is False
+    assert payload["request"]["limits"]["logprobs"] is False
+    assert payload["generation_attempted"] is False
+    assert payload["prompt_sent"] is False
+    assert "prompt" not in payload["request"]
+    assert "payload" not in payload["request"]
+    assert not any("generated text" in claim for claim in payload["non_claims"])
+    assert payload["contract_checks"] == [
+        "HTTP 200 from /health",
+        "HTTP 200 from /v1/models",
+        "HTTP 200 from one non-streaming /v1/completions request",
+        "exactly one response choice when HTTP 200 returns",
+        "usage fields recorded when returned",
+        "raw prompt text is not recorded",
+        "raw generated text is not recorded",
+        "server process group cleanup leaves no remaining PIDs",
+    ]
 
 
 def test_active_review_surfaces_do_not_reference_removed_eval_scripts():

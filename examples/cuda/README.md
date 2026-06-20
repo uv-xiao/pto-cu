@@ -235,6 +235,41 @@ capacity gate only, not long-prompt behavior, generated-text correctness,
 tokenizer semantics, prompt correctness, throughput, latency, production
 readiness, or simpler-nv/vLLM integration evidence.
 
+## DeepSeek V4 Flash vLLM Long-Prompt Admission Probe
+
+```bash
+CUDA_VISIBLE_DEVICES=1,7 VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 65m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_long_prompt_admission_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28135 \
+  --server-log tmp/vllm-long-prompt-admission-probe/server-28135.log \
+  --max-model-len 262144 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 600 --terminate-timeout-seconds 60 \
+  --target-prompt-tokens 16000 --max-tokens 1 \
+  --temperature 0.0 --top-p 1.0 --seed 0
+```
+
+This starts a local-only vLLM server bound to `127.0.0.1` with the
+262,144-token model length, sends one synthetic non-streaming
+`/v1/completions` request near a 16K prompt-token budget, records only
+review-safe shape/accounting fields, and terminates the server process group.
+The remote H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_long_prompt_admission_probe.md`:
+the request returned HTTP 200 with one response choice, usage reported
+`prompt_tokens=15995`, and cleanup reported no remaining process-group PIDs.
+This is long-prompt admission evidence only, not generated-text correctness,
+tokenizer semantic correctness, prompt semantic correctness, token identity,
+logprob, stop-token, throughput, latency, production readiness, broad
+determinism, or simpler-nv/vLLM integration evidence.
+
 ## DeepSeek V4 Flash vLLM Inference Smoke Probe
 
 ```bash
