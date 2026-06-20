@@ -23,6 +23,7 @@ _SUPPORTED_KERNELS = {
     "gemm_f32",
     "gemm_tensor_core_f16_f32",
     "gemm_tensor_core_tiled_f16_f32",
+    "flashattention_fwd_f32",
 }
 
 
@@ -90,6 +91,8 @@ def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
         return _render_tensor_core_gemm_source(tile_shape)
     if kernel_name == "gemm_tensor_core_tiled_f16_f32":
         return _render_tiled_tensor_core_gemm_source(tile_shape)
+    if kernel_name == "flashattention_fwd_f32":
+        return _render_flashattention_source(tile_shape)
     raise AssertionError(f"unhandled Gluon kernel: {kernel_name}")
 
 
@@ -284,6 +287,71 @@ def _render_tiled_tensor_core_gemm_source(tile_shape: tuple[int, int, int]) -> s
                 c_desc,
                 d_desc,
                 instr_shape_n,
+                num_warps=num_warps,
+            )
+        """
+    ).lstrip()
+
+
+def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
+    block_m, block_n, block_d = tile_shape
+    return dedent(
+        f"""
+        import math
+
+        from triton.experimental import gluon
+        from triton.experimental.gluon import language as gl
+
+
+        @gluon.jit
+        def flashattention_fwd_f32_kernel(q_ptr, k_ptr, v_ptr, out_ptr, seqlen_q: gl.constexpr, seqlen_k: gl.constexpr, head_dim: gl.constexpr, scale: gl.constexpr):
+            layout: gl.constexpr = gl.BlockedLayout([1, 1], [32, 1], [gl.num_warps(), 1], [1, 0])
+            lhs_layout: gl.constexpr = gl.DotOperandLayout(parent=layout, operand_index=0, k_width=0)
+            rhs_layout: gl.constexpr = gl.DotOperandLayout(parent=layout, operand_index=1, k_width=0)
+
+            offs_m = gl.arange(0, {block_m}, layout=gl.SliceLayout(1, layout))[:, None]
+            offs_n = gl.arange(0, {block_n}, layout=gl.SliceLayout(0, layout))[None, :]
+            offs_k_col = gl.arange(0, {block_d}, layout=gl.SliceLayout(0, layout))[None, :]
+            offs_k_row = gl.arange(0, {block_d}, layout=gl.SliceLayout(1, layout))[:, None]
+
+            q = gl.load(q_ptr + offs_m * head_dim + offs_k_col)
+            k_t = gl.load(k_ptr + offs_k_row * head_dim + offs_n)
+            q = gl.convert_layout(q, lhs_layout)
+            k_t = gl.convert_layout(k_t, rhs_layout)
+            score_acc = gl.full(({block_m}, {block_n}), 0.0, gl.float32, layout=layout)
+            scores = gl.dot_fma(q, k_t, score_acc) * scale
+
+            row_max = gl.max(scores, axis=1)
+            probs = gl.exp(scores - row_max[:, None])
+            row_sum = gl.sum(probs, axis=1)
+            probs = probs / row_sum[:, None]
+
+            offs_d = gl.arange(0, {block_d}, layout=gl.SliceLayout(0, layout))[None, :]
+            offs_vn = gl.arange(0, {block_n}, layout=gl.SliceLayout(1, layout))[:, None]
+            probs = gl.convert_layout(probs, lhs_layout)
+            v = gl.load(v_ptr + offs_d * head_dim + offs_vn)
+            v = gl.convert_layout(v, rhs_layout)
+            out_acc = gl.full(({block_m}, {block_d}), 0.0, gl.float32, layout=layout)
+            out = gl.dot_fma(probs, v, out_acc)
+            gl.store(out_ptr + offs_m * head_dim + offs_d, out)
+
+
+        def run_flashattention_fwd_f32(q, k, v, out, scale=None, num_warps=4):
+            expected_shapes = (({block_m}, {block_d}), ({block_n}, {block_d}), ({block_n}, {block_d}), ({block_m}, {block_d}))
+            actual_shapes = (tuple(q.shape), tuple(k.shape), tuple(v.shape), tuple(out.shape))
+            if actual_shapes != expected_shapes:
+                raise ValueError(f"expected tensor shapes {{expected_shapes}}, got {{actual_shapes}}")
+
+            resolved_scale = 1.0 / math.sqrt({block_d}) if scale is None else scale
+            flashattention_fwd_f32_kernel[(1,)](
+                q,
+                k,
+                v,
+                out,
+                {block_m},
+                {block_n},
+                {block_d},
+                resolved_scale,
                 num_warps=num_warps,
             )
         """

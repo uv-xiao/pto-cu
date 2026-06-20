@@ -14,7 +14,7 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 
 from simpler_setup import kernel_compiler
 from simpler_setup.kernel_compiler import KernelCompiler
@@ -41,6 +41,15 @@ def _load_gluon_tensor_core_example():
 def _load_gluon_tensor_core_tiled_example():
     module_path = "examples/cuda/gluon_gemm_tensor_core_tiled.py"
     spec = importlib.util.spec_from_file_location("gluon_gemm_tensor_core_tiled_example", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_gluon_flashattention_example():
+    module_path = "examples/cuda/gluon_flashattention_fwd.py"
+    spec = importlib.util.spec_from_file_location("gluon_flashattention_fwd_example", module_path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
@@ -87,16 +96,17 @@ def test_gluon_generation_is_cuda_only(tmp_path):
         raise AssertionError("expected generate_gluon_kernel to reject non-CUDA platforms")
 
 
-def test_gluon_generation_rejects_non_scalar_kernels(tmp_path):
+def test_gluon_generation_rejects_unknown_kernels(tmp_path):
     compiler = KernelCompiler(platform="cuda")
 
     try:
-        compiler.generate_gluon_kernel("flashattention_fwd_f32", output_dir=tmp_path)
+        compiler.generate_gluon_kernel("unknown_cuda_kernel", output_dir=tmp_path)
     except ValueError as exc:
         assert "unsupported Gluon kernel" in str(exc)
+        assert "flashattention_fwd_f32" in str(exc)
         assert "gemm_f32" in str(exc)
     else:
-        raise AssertionError("expected scalar generator to reject non-GEMM kernels")
+        raise AssertionError("expected generator to reject unknown kernels")
 
 
 def test_generate_gluon_tensor_core_gemm_writes_wgmma_source(tmp_path):
@@ -304,6 +314,127 @@ def test_gluon_tiled_tensor_core_example_main_reports_generation_failure(capsys,
     assert payload["status"] == "failed"
     assert payload["error_type"] == "RuntimeError"
     assert payload["error"] == "tiled generation failed"
+
+
+def test_generate_gluon_flashattention_writes_dot_fma_source_and_manifest(tmp_path):
+    artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
+        "flashattention_fwd_f32",
+        output_dir=tmp_path,
+        arch="compute_90",
+        tile_shape=(32, 32, 32),
+    )
+
+    source = artifact.source_path.read_text(encoding="utf-8")
+    manifest = json.loads(artifact.manifest_path.read_text(encoding="utf-8"))
+
+    assert artifact.kernel_name == "flashattention_fwd_f32"
+    assert artifact.tile_shape == (32, 32, 32)
+    assert artifact.source_path.name == "flashattention_fwd_f32.gluon.py"
+    assert manifest["kernel_name"] == "flashattention_fwd_f32"
+    assert manifest["compiler_role"] == "pto-isa-replacement"
+    assert manifest["source_kind"] == "triton-gluon-python"
+    assert manifest["source_path"] == "flashattention_fwd_f32.gluon.py"
+    assert manifest["tile_shape"] == [32, 32, 32]
+    assert "def flashattention_fwd_f32_kernel" in source
+    assert "q_ptr" in source
+    assert "k_ptr" in source
+    assert "v_ptr" in source
+    assert "out_ptr" in source
+    assert "gl.DotOperandLayout" in source
+    assert "gl.dot_fma(q, k_t, score_acc)" in source
+    assert "k_ptr + offs_k_row * head_dim + offs_n" in source
+    assert "v_ptr + offs_d * head_dim + offs_vn" in source
+    assert "gl.softmax" not in source
+    assert "gl.dot(" not in source
+    assert "def run_flashattention_fwd_f32" in source
+
+
+def test_gluon_flashattention_example_reports_skip_json_and_relative_artifacts(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_flashattention_correctness(
+        output_dir=Path("flashattention-artifacts"),
+        arch="compute_90",
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "torch.cuda is not available"
+    assert result["kernel_name"] == "flashattention_fwd_f32"
+    assert result["shape"] == {"seqlen_q": 32, "seqlen_k": 32, "head_dim": 32}
+    assert result["artifact"]["source_path"] == (
+        "flashattention-artifacts/flashattention_fwd_f32.gluon.py"
+    )
+    assert result["artifact"]["manifest_path"] == (
+        "flashattention-artifacts/flashattention_fwd_f32.gluon.json"
+    )
+    assert result["artifact"]["tile_shape"] == [32, 32, 32]
+
+
+def test_gluon_flashattention_example_main_requires_cuda_on_skip(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.setattr(
+        example,
+        "flashattention_skip_reason",
+        lambda: "triton Gluon import failed: missing gl.dot_fma",
+    )
+
+    code = example.main(["--output-dir", str(tmp_path), "--require-cuda"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "skipped"
+    assert payload["reason"] == "triton Gluon import failed: missing gl.dot_fma"
+
+
+def test_gluon_flashattention_example_main_reports_generation_failure(capsys, monkeypatch):
+    example = _load_gluon_flashattention_example()
+
+    def fail_generation(**_kwargs):
+        raise RuntimeError("flashattention generation failed")
+
+    monkeypatch.setattr(example, "build_flashattention_artifact", fail_generation)
+
+    code = example.main(["--require-cuda"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["kernel_name"] == "flashattention_fwd_f32"
+    assert payload["status"] == "failed"
+    assert payload["error_type"] == "RuntimeError"
+    assert payload["error"] == "flashattention generation failed"
+
+
+def test_gluon_flashattention_skip_reason_checks_required_gluon_apis(monkeypatch):
+    example = _load_gluon_flashattention_example()
+    fake_torch = SimpleNamespace(cuda=SimpleNamespace(is_available=lambda: True))
+    fake_triton = ModuleType("triton")
+    fake_experimental = ModuleType("triton.experimental")
+    fake_gluon = ModuleType("triton.experimental.gluon")
+    fake_gl = ModuleType("triton.experimental.gluon.language")
+    fake_gl.exp = object()
+    fake_gl.max = object()
+    fake_gl.sum = object()
+    fake_experimental.gluon = fake_gluon
+    fake_gluon.language = fake_gl
+
+    monkeypatch.setitem(sys.modules, "torch", fake_torch)
+    monkeypatch.setitem(sys.modules, "triton", fake_triton)
+    monkeypatch.setitem(sys.modules, "triton.experimental", fake_experimental)
+    monkeypatch.setitem(sys.modules, "triton.experimental.gluon", fake_gluon)
+    monkeypatch.setitem(sys.modules, "triton.experimental.gluon.language", fake_gl)
+
+    assert example.flashattention_skip_reason() == (
+        "triton Gluon import failed: missing gl.dot_fma"
+    )
 
 
 def test_cuda_kernel_compiler_compiles_host_schedule_task_body(tmp_path, monkeypatch):
