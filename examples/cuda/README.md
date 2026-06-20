@@ -40,3 +40,19 @@ This emits structured JSON for `graph_descriptor_moe_dispatch_combine`: four
 expert transform tasks, one weighted combine task, and device-side fan-in
 before the combine. Without CUDA tooling or a visible NVIDIA GPU it reports a
 skip; with `--require-cuda`, the same skip returns a non-zero exit status.
+
+## DeepSeek V4 Flash Weight Manifest
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/deepseek_v4_flash_weight_manifest.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --metadata tmp/sources/model-metadata/deepseek-ai-DeepSeek-V4-Flash.json \
+  --require-complete
+```
+
+This checks local gitignored shard presence against
+`model.safetensors.index.json`. The completed local artifact evidence is
+recorded in
+`docs/in_progress/nvidia_backend/deepseek_v4_flash_weight_manifest_complete.md`.
+It is not model-load or serving evidence.
