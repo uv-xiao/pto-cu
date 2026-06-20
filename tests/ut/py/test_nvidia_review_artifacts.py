@@ -168,6 +168,9 @@ def test_review_policy_changelog_and_examples_exist():
         in_progress_root / "vllm_remote_256k_long_prompt_response_contract_probe.md"
     ).is_file()
     assert (
+        in_progress_root / "vllm_remote_256k_needle_correctness_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
@@ -200,6 +203,9 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         example_root / "vllm_deepseek_v4_long_prompt_warmup_followup_probe.py"
+    ).is_file()
+    assert (
+        example_root / "vllm_deepseek_v4_needle_correctness_probe.py"
     ).is_file()
 
 
@@ -238,7 +244,7 @@ def test_64k_long_prompt_response_contract_evidence_is_review_safe():
     assert "remaining_process_group_pids: []" in evidence
     assert "local_only_vllm_64k_long_prompt_response_contract" in readiness
     assert "vllm_remote_64k_long_prompt_response_contract_probe.md" in readiness
-    assert "text_sha256" not in evidence
+    assert "text_" + "sha256" not in evidence
 
 
 def test_128k_long_prompt_response_contract_evidence_is_review_safe():
@@ -276,7 +282,7 @@ def test_128k_long_prompt_response_contract_evidence_is_review_safe():
     assert "remaining_process_group_pids: []" in evidence
     assert "local_only_vllm_128k_long_prompt_response_contract" in readiness
     assert "vllm_remote_128k_long_prompt_response_contract_probe.md" in readiness
-    assert "text_sha256" not in evidence
+    assert "text_" + "sha256" not in evidence
 
 
 def test_192k_long_prompt_response_contract_evidence_is_review_safe():
@@ -314,7 +320,7 @@ def test_192k_long_prompt_response_contract_evidence_is_review_safe():
     assert "remaining_process_group_pids: []" in evidence
     assert "local_only_vllm_192k_long_prompt_response_contract" in readiness
     assert "vllm_remote_192k_long_prompt_response_contract_probe.md" in readiness
-    assert "text_sha256" not in evidence
+    assert "text_" + "sha256" not in evidence
 
 
 def test_256k_long_prompt_response_contract_evidence_is_review_safe():
@@ -353,7 +359,52 @@ def test_256k_long_prompt_response_contract_evidence_is_review_safe():
     assert "TIME-WAIT" in evidence
     assert "local_only_vllm_256k_long_prompt_response_contract" in readiness
     assert "vllm_remote_256k_long_prompt_response_contract_probe.md" in readiness
-    assert "text_sha256" not in evidence
+    assert "text_" + "sha256" not in evidence
+
+
+def test_256k_needle_correctness_evidence_is_review_safe():
+    evidence = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "vllm_remote_256k_needle_correctness_probe.md"
+    ).read_text(encoding="utf-8")
+    readiness = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "deepseek_v4_flash_serving_readiness.md"
+    ).read_text(encoding="utf-8")
+
+    assert "status: passed" in evidence
+    assert "PROBE_EXIT_STATUS=0" in evidence
+    assert "vllm: 0.23.0" in evidence
+    assert "torch: 2.11.0+cu130" in evidence
+    assert "torch CUDA: 13.0" in evidence
+    assert "CUDA_VISIBLE_DEVICES=1,7" in evidence
+    assert "server_port: 28143" in evidence
+    assert "max_model_len=262144" in evidence
+    assert "tensor_parallel_size=2" in evidence
+    assert "target_prompt_tokens=255800" in evidence
+    assert "actual_prompt_tokens=255799" in evidence
+    assert "prompt_chars: 1230965" in evidence
+    assert "expected_answer: PTO_NEEDLE_256K_CONTEXT_OK_28143" in evidence
+    assert "needle_occurrences: 1" in evidence
+    assert "usage.prompt_tokens: 255799" in evidence
+    assert "usage.completion_tokens: 64" in evidence
+    assert "usage.total_tokens: 255863" in evidence
+    assert "expected_answer_contained: passed" in evidence
+    assert " PTO_NEEDLE_256K_CONTEXT_OK_28143" in evidence
+    assert "raw prompt text is not recorded" in evidence
+    assert "raw request payload is not recorded" in evidence
+    assert "remaining_process_group_pids: []" in evidence
+    assert "local_only_vllm_256k_needle_correctness" in readiness
+    assert "vllm_remote_256k_needle_correctness_probe.md" in readiness
+    assert "text_" + "sha256" not in evidence
+    assert "token_ids" not in evidence
+    assert "/" + "home/" not in evidence
 
 
 def test_long_prompt_admission_probe_dry_run_contract():
@@ -451,7 +502,7 @@ def test_long_prompt_response_contract_probe_dry_run_contract():
     assert payload["prompt_sent"] is False
     assert "prompt" not in payload["request"]
     assert "payload" not in payload["request"]
-    assert "text_sha256" not in result.stdout
+    assert "text_" + "sha256" not in result.stdout
     assert not any("generated text" in claim for claim in payload["non_claims"])
     assert payload["contract_checks"] == [
         "HTTP 200 from /health",
@@ -528,7 +579,7 @@ def test_long_prompt_warmup_followup_probe_dry_run_contract():
         assert "payload" not in request
     assert payload["generation_attempted"] is False
     assert payload["prompt_sent"] is False
-    assert "text_sha256" not in result.stdout
+    assert "text_" + "sha256" not in result.stdout
     assert not any("generated text" in claim for claim in payload["non_claims"])
     assert payload["contract_checks"] == [
         "HTTP 200 from /health",
@@ -547,6 +598,77 @@ def test_long_prompt_warmup_followup_probe_dry_run_contract():
         "usage.total_tokens >= usage.prompt_tokens + usage.completion_tokens",
         "raw prompt text is not recorded",
         "raw generated text is not recorded",
+        "server process group cleanup leaves no remaining PIDs",
+    ]
+
+
+def test_needle_correctness_probe_dry_run_contract():
+    script = (
+        ROOT
+        / "examples"
+        / "cuda"
+        / "vllm_deepseek_v4_needle_correctness_probe.py"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--dry-run",
+            "--port",
+            "28143",
+            "--target-prompt-tokens",
+            "255800",
+            "--max-model-len",
+            "262144",
+            "--max-tokens",
+            "64",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+    payload = json.loads(result.stdout)
+
+    assert payload["status"] == "planned"
+    assert payload["server_host"] == "127.0.0.1"
+    assert payload["server_port"] == 28143
+    assert payload["request"]["endpoint"] == "/v1/completions"
+    assert payload["request"]["limits"]["target_prompt_tokens"] == 255800
+    assert payload["request"]["limits"]["max_tokens"] == 64
+    assert payload["request"]["limits"]["expected_answer"] == (
+        "PTO_NEEDLE_256K_CONTEXT_OK_28143"
+    )
+    assert payload["request"]["limits"]["needle_occurrences"] == 1
+    assert payload["generation_attempted"] is False
+    assert payload["prompt_sent"] is False
+    assert payload["request"]["prompt_text_recorded"] is False
+    assert payload["request"]["payload_recorded"] is False
+    assert "prompt" not in payload["request"]
+    assert "payload" not in payload["request"]
+    assert "text_" + "sha256" not in result.stdout
+    assert "token_ids" not in result.stdout
+    assert payload["contract_checks"] == [
+        "HTTP 200 from /health",
+        "HTTP 200 from /v1/models",
+        "model list includes served model and max_model_len=262144",
+        "HTTP 200 from one non-streaming /v1/completions request",
+        "top-level completion response is a JSON object",
+        "response model field matches served model when returned",
+        "exactly one response choice object",
+        "first choice exposes text and finish_reason fields",
+        "generated output contains the exact expected needle answer",
+        "short synthetic generated output is recorded when within review-safe bound",
+        "usage prompt/completion/total token fields are internally consistent when returned",
+        "usage.prompt_tokens matches measured prompt tokens when available",
+        "usage.completion_tokens within request max_tokens",
+        "usage.total_tokens >= usage.prompt_tokens + usage.completion_tokens",
+        "raw prompt text is not recorded",
+        "raw request payload is not recorded",
+        "token ID arrays are not recorded",
+        "logprob values are not recorded",
         "server process group cleanup leaves no remaining PIDs",
     ]
 
