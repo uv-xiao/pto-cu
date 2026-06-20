@@ -1251,6 +1251,59 @@ Detailed 256K needle exact truncated-generation failure evidence is recorded
 in
 `docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_truncated_failure_probe.md`.
 
+Fresh remote H200 256K needle stop-controlled exact-output position sweep
+evidence from this slice:
+
+- The repo-owned needle correctness probe now supports `--needle-position`
+  values `early`, `middle`, and `late`, with `middle` as the default to
+  preserve the prior prompt placement behavior.
+- The probe also supports `--needle-position-sweep`, which runs unique
+  requested positions under one local-only vLLM server lifecycle and fails the
+  aggregate if a requested position is missing, duplicated, or fails the
+  strict exact comparator.
+- A pre-run remote check explicitly confirmed that the preserved prior path
+  `REMOTE_PTO_CU=/tmp/pto-cu-vllm-remote-env-artifact` contained
+  `.venv-vllm-probe/bin/python`, `.venv-vllm-probe/bin/vllm`, and
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash`. The environment
+  reported vLLM 0.23.0, Torch 2.11.0+cu130, CUDA 13.0, and transformers
+  5.12.1.
+- The remote source tree was refreshed with `--sync`, preserving the existing
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`.
+- The passing sweep boundary used `max_model_len=262144`,
+  `dtype=bfloat16`, `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 120-minute outer timeout, a
+  2700-second readiness timeout, and an 1800-second request timeout.
+- The sweep requests used `target_prompt_tokens=255800`,
+  `actual_prompt_tokens=255799`, `max_tokens=64`, `match_mode=exact`,
+  `temperature=0.0`, `top_p=1.0`, `seed=0`, `stream=false`, `echo=false`,
+  `logprobs=false`, and the stop sequence `"\n```"`.
+- The server started on `http://127.0.0.1:28148`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` with
+  `max_model_len=262144` from `/v1/models`, and accepted early, middle, and
+  late `/v1/completions` requests.
+- All three positions passed strict exact mode with `finish_reason=stop`,
+  generated-text length 33, and `usage.prompt_tokens=255799`. The early and
+  middle attempts reported `completion_tokens=17` and `total_tokens=255816`;
+  the late attempt reported `completion_tokens=16` and `total_tokens=255815`.
+- The sweep summary recorded `positions_requested=early,middle,late`,
+  `positions_completed=early,middle,late`, `passed_attempts=3`, and
+  `failed_attempts=0`.
+- The sweep aggregate did not record raw prompt text, raw request payloads,
+  raw generated text, token ID arrays, logprob values, generated-text
+  digests, model artifact contents, or symlinks.
+- The probe cleanup passed and reported no remaining process-group PIDs.
+- The run establishes stop-controlled synthetic exact-output position coverage
+  only; it is not general generated-text correctness, semantic correctness,
+  latency, throughput, production-readiness, broad determinism, or
+  simpler-nv/vLLM integration evidence.
+
+Detailed 256K needle position-sweep evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_256k_needle_position_sweep_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
@@ -1271,7 +1324,8 @@ exact-output failure gate, plus one bounded near-256K stop-controlled
 synthetic exact-output pass gate, plus one three-request near-256K
 stop-controlled synthetic exact-output repeat pass gate, plus one bounded
 near-256K stop-controlled synthetic exact-output truncated-generation
-failure-mode gate:
+failure-mode gate, plus one three-position near-256K stop-controlled
+synthetic exact-output sweep pass gate:
 
 ```text
 remote_h200_reachable: yes
@@ -1311,6 +1365,8 @@ local_only_vllm_256k_needle_exact_stop_repeat: passed under recorded
   262144-token boundary and one server lifecycle
 local_only_vllm_256k_needle_exact_truncated_failure: failed under recorded
   262144-token boundary with max_tokens=1 as expected
+local_only_vllm_256k_needle_position_sweep: passed under recorded
+  262144-token boundary and one server lifecycle
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -1335,7 +1391,8 @@ serving_readiness: bounded local-only response contract and warmup-shape
   exact-output pass gate, plus one three-request near-256K stop-controlled
   synthetic exact-output repeat pass gate, plus one bounded near-256K
   stop-controlled synthetic exact-output truncated-generation failure-mode
-  gate; no general correctness claims
+  gate, plus one three-position near-256K stop-controlled synthetic
+  exact-output sweep pass gate; no general correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -1422,6 +1479,13 @@ exact-output failure near the same prompt-token budget under the recorded
 generation was attempted, strict exact mode failed with
 `needle_expected_answer_not_exact`, and cleanup reported no remaining
 process-group PIDs.
+
+It has now passed one local-only stop-controlled synthetic exact-output
+position sweep near the same prompt-token budget under one recorded
+262144-token vLLM server lifecycle. The sweep requested early, middle, and
+late needle placement; each position used the same strict exact comparator and
+stop sequence, and the sweep aggregate recorded only review-safe per-position
+summaries.
 
 ## Next Gate
 

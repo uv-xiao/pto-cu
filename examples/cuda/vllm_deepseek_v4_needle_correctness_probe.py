@@ -28,6 +28,8 @@ DEFAULT_SEED = 0
 DEFAULT_EXPECTED_ANSWER = "PTO_NEEDLE_256K_CONTEXT_OK_28143"
 DEFAULT_MATCH_MODE = "contains"
 MATCH_MODES = ("contains", "exact")
+DEFAULT_NEEDLE_POSITION = "middle"
+NEEDLE_POSITIONS = ("early", "middle", "late")
 NORMALIZATION_RULE = (
     "strip leading/trailing whitespace, then strip one surrounding Markdown "
     "code fence when the whole output is fenced"
@@ -126,9 +128,33 @@ def _count_tokens(tokenizer: Any, text: str) -> int:
     return len(tokens)
 
 
-def _render_needle_prompt(unit_count: int, expected_answer: str) -> str:
-    before_units = unit_count // 2
+def _validate_needle_position(needle_position: str) -> None:
+    if needle_position not in NEEDLE_POSITIONS:
+        raise ValueError(
+            f"needle_position must be one of: {', '.join(NEEDLE_POSITIONS)}"
+        )
+
+
+def _split_filler_units(unit_count: int, needle_position: str) -> tuple[int, int]:
+    _validate_needle_position(needle_position)
+    if needle_position == "early":
+        before_units = unit_count // 10
+    elif needle_position == "middle":
+        before_units = unit_count // 2
+    else:
+        before_units = (unit_count * 9) // 10
+    before_units = max(0, min(before_units, unit_count))
     after_units = unit_count - before_units
+    return before_units, after_units
+
+
+def _render_needle_prompt(
+    unit_count: int,
+    expected_answer: str,
+    *,
+    needle_position: str = DEFAULT_NEEDLE_POSITION,
+) -> str:
+    before_units, after_units = _split_filler_units(unit_count, needle_position)
     prefix = (
         "Bounded local-only vLLM synthetic needle retrieval probe.\n"
         "The prompt contains one line labeled NEEDLE_ANSWER. Return only that value.\n"
@@ -157,6 +183,7 @@ def _planned_limits(
     expected_answer: str,
     match_mode: str,
     stop_sequences: list[str],
+    needle_position: str,
 ) -> dict[str, Any]:
     limits = {
         "target_prompt_tokens": target_prompt_tokens,
@@ -174,6 +201,7 @@ def _planned_limits(
         "logprobs": False,
         "expected_answer": expected_answer,
         "match_mode": match_mode,
+        "needle_position": needle_position,
         "normalization": NORMALIZATION_RULE,
         "stop_sequences_configured": bool(stop_sequences),
         "needle_occurrences": 1,
@@ -203,6 +231,27 @@ def _positive_int(value: str) -> int:
     return parsed
 
 
+def _parse_needle_position_sweep(value: str) -> list[str]:
+    raw_parts = value.split(",")
+    parts = [part.strip() for part in raw_parts]
+    if not parts or any(not part for part in parts):
+        raise argparse.ArgumentTypeError(
+            "needle-position-sweep requires non-empty comma-separated positions"
+        )
+    seen: set[str] = set()
+    for part in parts:
+        try:
+            _validate_needle_position(part)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(str(exc)) from exc
+        if part in seen:
+            raise argparse.ArgumentTypeError(
+                f"needle-position-sweep contains duplicate position: {part}"
+            )
+        seen.add(part)
+    return parts
+
+
 def _validate_request_bounds(
     *,
     target_prompt_tokens: int,
@@ -210,6 +259,7 @@ def _validate_request_bounds(
     expected_answer: str,
     match_mode: str = DEFAULT_MATCH_MODE,
     stop_sequences: list[str] | None = None,
+    needle_position: str = DEFAULT_NEEDLE_POSITION,
 ) -> None:
     if target_prompt_tokens < 1:
         raise ValueError("target prompt-token budget must be positive")
@@ -222,6 +272,7 @@ def _validate_request_bounds(
         raise ValueError("expected needle answer must be non-empty")
     if match_mode not in MATCH_MODES:
         raise ValueError(f"match_mode must be one of: {', '.join(MATCH_MODES)}")
+    _validate_needle_position(needle_position)
     _normalize_stop_sequences(stop_sequences)
 
 
@@ -243,14 +294,21 @@ def build_synthetic_needle_prompt(
     artifact_dir: Path,
     target_prompt_tokens: int = DEFAULT_TARGET_PROMPT_TOKENS,
     expected_answer: str = DEFAULT_EXPECTED_ANSWER,
+    needle_position: str = DEFAULT_NEEDLE_POSITION,
 ) -> dict[str, Any]:
     if target_prompt_tokens < 1:
         raise ValueError("target prompt-token budget must be positive")
+    _validate_needle_position(needle_position)
     try:
         tokenizer = _load_tokenizer(artifact_dir)
     except Exception as exc:
         unit_count = max(1, target_prompt_tokens // 8)
-        prompt = _render_needle_prompt(unit_count, expected_answer)
+        before_units, after_units = _split_filler_units(unit_count, needle_position)
+        prompt = _render_needle_prompt(
+            unit_count,
+            expected_answer,
+            needle_position=needle_position,
+        )
         return {
             "prompt": prompt,
             "accounting": {
@@ -261,22 +319,36 @@ def build_synthetic_needle_prompt(
                 "prompt_chars": len(prompt),
                 "prompt_unit_chars": len(DEFAULT_PROMPT_UNIT),
                 "needle_occurrences": prompt.count(expected_answer),
+                "needle_position": needle_position,
+                "filler_units_before_needle": before_units,
+                "filler_units_after_needle": after_units,
             },
         }
 
     unit_tokens = max(1, _count_tokens(tokenizer, DEFAULT_PROMPT_UNIT))
     low = max(1, target_prompt_tokens // unit_tokens - 128)
     high = max(low, target_prompt_tokens // unit_tokens + 128)
-    best_prompt = _render_needle_prompt(low, expected_answer)
+    best_prompt = _render_needle_prompt(
+        low,
+        expected_answer,
+        needle_position=needle_position,
+    )
+    best_unit_count = low
     best_count = _count_tokens(tokenizer, best_prompt)
     while best_count < target_prompt_tokens and high < target_prompt_tokens * 4:
-        candidate = _render_needle_prompt(high, expected_answer)
+        candidate = _render_needle_prompt(
+            high,
+            expected_answer,
+            needle_position=needle_position,
+        )
         candidate_count = _count_tokens(tokenizer, candidate)
         if candidate_count >= target_prompt_tokens:
             best_prompt = candidate
+            best_unit_count = high
             best_count = candidate_count
             break
         best_prompt = candidate
+        best_unit_count = high
         best_count = candidate_count
         low = high
         high *= 2
@@ -285,12 +357,17 @@ def build_synthetic_needle_prompt(
     right = max(left, high)
     while left <= right:
         midpoint = (left + right) // 2
-        candidate = _render_needle_prompt(midpoint, expected_answer)
+        candidate = _render_needle_prompt(
+            midpoint,
+            expected_answer,
+            needle_position=needle_position,
+        )
         candidate_count = _count_tokens(tokenizer, candidate)
         if abs(candidate_count - target_prompt_tokens) < abs(
             best_count - target_prompt_tokens
         ):
             best_prompt = candidate
+            best_unit_count = midpoint
             best_count = candidate_count
         if candidate_count < target_prompt_tokens:
             left = midpoint + 1
@@ -298,9 +375,11 @@ def build_synthetic_needle_prompt(
             right = midpoint - 1
         else:
             best_prompt = candidate
+            best_unit_count = midpoint
             best_count = candidate_count
             break
 
+    before_units, after_units = _split_filler_units(best_unit_count, needle_position)
     return {
         "prompt": best_prompt,
         "accounting": {
@@ -310,6 +389,9 @@ def build_synthetic_needle_prompt(
             "prompt_chars": len(best_prompt),
             "prompt_unit_chars": len(DEFAULT_PROMPT_UNIT),
             "needle_occurrences": best_prompt.count(expected_answer),
+            "needle_position": needle_position,
+            "filler_units_before_needle": before_units,
+            "filler_units_after_needle": after_units,
         },
     }
 
@@ -326,6 +408,7 @@ def build_needle_request(
     expected_answer: str = DEFAULT_EXPECTED_ANSWER,
     match_mode: str = DEFAULT_MATCH_MODE,
     stop_sequences: list[str] | None = None,
+    needle_position: str = DEFAULT_NEEDLE_POSITION,
 ) -> dict[str, Any]:
     _validate_request_bounds(
         target_prompt_tokens=target_prompt_tokens,
@@ -333,12 +416,14 @@ def build_needle_request(
         expected_answer=expected_answer,
         match_mode=match_mode,
         stop_sequences=stop_sequences,
+        needle_position=needle_position,
     )
     normalized_stop_sequences = _normalize_stop_sequences(stop_sequences)
     prompt_result = build_synthetic_needle_prompt(
         artifact_dir=artifact_dir,
         target_prompt_tokens=target_prompt_tokens,
         expected_answer=expected_answer,
+        needle_position=needle_position,
     )
     if prompt_result["accounting"]["needle_occurrences"] != 1:
         raise ValueError("synthetic needle answer must appear exactly once in the prompt")
@@ -389,6 +474,7 @@ def build_planned_needle_request(
     expected_answer: str = DEFAULT_EXPECTED_ANSWER,
     match_mode: str = DEFAULT_MATCH_MODE,
     stop_sequences: list[str] | None = None,
+    needle_position: str = DEFAULT_NEEDLE_POSITION,
 ) -> dict[str, Any]:
     _validate_request_bounds(
         target_prompt_tokens=target_prompt_tokens,
@@ -396,6 +482,7 @@ def build_planned_needle_request(
         expected_answer=expected_answer,
         match_mode=match_mode,
         stop_sequences=stop_sequences,
+        needle_position=needle_position,
     )
     normalized_stop_sequences = _normalize_stop_sequences(stop_sequences)
     return {
@@ -409,6 +496,7 @@ def build_planned_needle_request(
             expected_answer=expected_answer,
             match_mode=match_mode,
             stop_sequences=normalized_stop_sequences,
+            needle_position=needle_position,
         ),
     }
 
@@ -752,6 +840,22 @@ def review_safe_repeat_attempt_summary(
     return summary
 
 
+def review_safe_position_attempt_summary(
+    completion: dict[str, Any],
+    *,
+    attempt_index: int,
+) -> dict[str, Any]:
+    summary = review_safe_repeat_attempt_summary(
+        completion,
+        attempt_index=attempt_index,
+    )
+    request_limits = completion.get("request_limits", {})
+    needle_position = request_limits.get("needle_position")
+    if needle_position is not None:
+        summary["needle_position"] = needle_position
+    return summary
+
+
 def aggregate_repeat_attempts(
     attempts: list[dict[str, Any]],
     *,
@@ -797,6 +901,75 @@ def aggregate_repeat_attempts(
     return aggregate
 
 
+def aggregate_position_sweep_attempts(
+    completions: list[dict[str, Any]],
+    *,
+    requests: dict[str, dict[str, Any]],
+    expected_positions: list[str],
+) -> dict[str, Any]:
+    summaries = [
+        review_safe_position_attempt_summary(completion, attempt_index=index)
+        for index, completion in enumerate(completions, start=1)
+    ]
+    positions_completed = [
+        summary.get("needle_position", "unknown")
+        for summary in summaries
+    ]
+    seen: set[str] = set()
+    duplicate_positions: list[str] = []
+    for position in positions_completed:
+        if position in seen and position not in duplicate_positions:
+            duplicate_positions.append(position)
+        seen.add(position)
+    missing_positions = [
+        position
+        for position in expected_positions
+        if position not in positions_completed
+    ]
+    failed_attempts = [
+        completion
+        for completion in completions
+        if completion.get("status") != "passed"
+    ]
+    aggregate: dict[str, Any] = {
+        "status": "failed"
+        if duplicate_positions or failed_attempts or missing_positions
+        else "passed",
+        "positions_requested": expected_positions,
+        "positions_completed": positions_completed,
+        "attempts_completed": len(completions),
+        "passed_attempts": len(completions) - len(failed_attempts),
+        "failed_attempts": len(failed_attempts),
+        "requests": [
+            review_safe_request(requests[position])
+            for position in expected_positions
+            if position in requests
+        ],
+        "attempts": summaries,
+    }
+    if duplicate_positions:
+        aggregate["failure"] = _failure_payload(
+            "needle_position_sweep_duplicate",
+            "position sweep completed duplicate positions: "
+            + ", ".join(duplicate_positions),
+        )
+    elif failed_attempts:
+        aggregate["failure"] = failed_attempts[0].get(
+            "failure",
+            _failure_payload(
+                "needle_position_sweep_attempt_failed",
+                "one or more needle position sweep attempts failed",
+            ),
+        )
+    elif missing_positions:
+        aggregate["failure"] = _failure_payload(
+            "needle_position_sweep_incomplete",
+            "position sweep did not complete requested positions: "
+            + ", ".join(missing_positions),
+        )
+    return aggregate
+
+
 def _server_log_snippets(log_path: Path, *, max_lines: int = 80) -> list[str]:
     try:
         lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -815,6 +988,8 @@ def _failure_note(
     log_path: Path,
     match_mode: str,
     repeat_count: int,
+    needle_position: str,
+    needle_position_sweep: list[str] | None,
 ) -> dict[str, Any]:
     failure = result.get("failure", {})
     return {
@@ -826,6 +1001,8 @@ def _failure_note(
             "max_tokens": max_tokens,
             "match_mode": match_mode,
             "repeat_count": repeat_count,
+            "needle_position": needle_position,
+            "needle_position_sweep": needle_position_sweep,
         },
         "failure_category": failure.get("category", "unknown"),
         "failure_message": failure.get("message", ""),
@@ -866,6 +1043,8 @@ def run_probe(
     expected_answer: str = DEFAULT_EXPECTED_ANSWER,
     match_mode: str = DEFAULT_MATCH_MODE,
     stop_sequences: list[str] | None = None,
+    needle_position: str = DEFAULT_NEEDLE_POSITION,
+    needle_position_sweep: list[str] | None = None,
     repeat_count: int = 1,
     dry_run: bool = False,
 ) -> dict[str, Any]:
@@ -889,6 +1068,17 @@ def run_probe(
             "prompt_sent": False,
             "non_claims": NON_CLAIMS,
         }
+    if needle_position_sweep is not None and repeat_count != 1:
+        return {
+            "status": "failed",
+            "failure": _failure_payload(
+                "invalid_request",
+                "needle-position-sweep cannot be combined with repeat-count > 1",
+            ),
+            "generation_attempted": False,
+            "prompt_sent": False,
+            "non_claims": NON_CLAIMS,
+        }
     if target_prompt_tokens + max_tokens > max_model_len:
         return {
             "status": "failed",
@@ -904,30 +1094,35 @@ def run_probe(
             "non_claims": NON_CLAIMS,
         }
     try:
-        if dry_run:
-            needle_request = build_planned_needle_request(
-                target_prompt_tokens=target_prompt_tokens,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                top_p=top_p,
-                seed=seed,
-                expected_answer=expected_answer,
-                match_mode=match_mode,
-                stop_sequences=stop_sequences,
-            )
-        else:
-            needle_request = build_needle_request(
-                served_model_name=served_model_name,
-                artifact_dir=artifact_dir,
-                target_prompt_tokens=target_prompt_tokens,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                top_p=top_p,
-                seed=seed,
-                expected_answer=expected_answer,
-                match_mode=match_mode,
-                stop_sequences=stop_sequences,
-            )
+        sweep_positions = needle_position_sweep or [needle_position]
+        needle_requests: dict[str, dict[str, Any]] = {}
+        for position in sweep_positions:
+            if dry_run:
+                needle_requests[position] = build_planned_needle_request(
+                    target_prompt_tokens=target_prompt_tokens,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    top_p=top_p,
+                    seed=seed,
+                    expected_answer=expected_answer,
+                    match_mode=match_mode,
+                    stop_sequences=stop_sequences,
+                    needle_position=position,
+                )
+            else:
+                needle_requests[position] = build_needle_request(
+                    served_model_name=served_model_name,
+                    artifact_dir=artifact_dir,
+                    target_prompt_tokens=target_prompt_tokens,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    top_p=top_p,
+                    seed=seed,
+                    expected_answer=expected_answer,
+                    match_mode=match_mode,
+                    stop_sequences=stop_sequences,
+                    needle_position=position,
+                )
     except ValueError as exc:
         return {
             "status": "failed",
@@ -936,6 +1131,7 @@ def run_probe(
             "prompt_sent": False,
             "non_claims": NON_CLAIMS,
         }
+    needle_request = needle_requests[sweep_positions[0]]
 
     log_path = server_log or (
         ROOT / "tmp" / "vllm-needle-correctness-probe" / f"server-{selected_port}.log"
@@ -982,6 +1178,16 @@ def run_probe(
             "request_reused": True,
             "attempt_summaries_record": "review_safe_only",
         }
+    if needle_position_sweep is not None:
+        result["sweep"] = {
+            "positions_planned": sweep_positions,
+            "attempts_planned": len(sweep_positions),
+            "attempt_summaries_record": "review_safe_only",
+            "requests": [
+                review_safe_request(needle_requests[position])
+                for position in sweep_positions
+            ],
+        }
     if dry_run:
         return result
 
@@ -1013,7 +1219,39 @@ def run_probe(
             return result
         result["generation_attempted"] = True
         result["prompt_sent"] = True
-        if repeat_count == 1:
+        if needle_position_sweep is not None:
+            completions = []
+            for position in sweep_positions:
+                completions.append(
+                    send_needle_request(
+                        port=selected_port,
+                        request=needle_requests[position],
+                        served_model_name=served_model_name,
+                        expected_answer=expected_answer,
+                        match_mode=match_mode,
+                        timeout_seconds=request_timeout_seconds,
+                    )
+                )
+                if process.poll() is not None:
+                    break
+                if completions[-1].get("status") != "passed":
+                    break
+            sweep = aggregate_position_sweep_attempts(
+                completions,
+                requests=needle_requests,
+                expected_positions=sweep_positions,
+            )
+            result["sweep"] = sweep
+            result["status"] = sweep["status"]
+            if sweep["status"] != "passed":
+                result["failure"] = sweep.get(
+                    "failure",
+                    _failure_payload(
+                        "needle_position_sweep_failed",
+                        "one or more synthetic needle position attempts failed",
+                    ),
+                )
+        elif repeat_count == 1:
             completion = send_needle_request(
                 port=selected_port,
                 request=needle_request,
@@ -1096,6 +1334,8 @@ def run_probe(
                 log_path=log_path,
                 match_mode=match_mode,
                 repeat_count=repeat_count,
+                needle_position=needle_position,
+                needle_position_sweep=needle_position_sweep,
             )
     return result
 
@@ -1177,6 +1417,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--needle-position",
+        choices=NEEDLE_POSITIONS,
+        default=DEFAULT_NEEDLE_POSITION,
+        help=(
+            "bounded synthetic prompt placement for the needle; default keeps "
+            "the historical midpoint behavior"
+        ),
+    )
+    parser.add_argument(
+        "--needle-position-sweep",
+        type=_parse_needle_position_sweep,
+        default=None,
+        help=(
+            "comma-separated unique needle positions to request under one "
+            "server lifecycle, for example early,middle,late"
+        ),
+    )
+    parser.add_argument(
         "--repeat-count",
         type=_positive_int,
         default=1,
@@ -1218,6 +1476,8 @@ def main(argv: list[str] | None = None) -> int:
         expected_answer=args.expected_answer,
         match_mode=args.match_mode,
         stop_sequences=args.stop_sequence,
+        needle_position=args.needle_position,
+        needle_position_sweep=args.needle_position_sweep,
         repeat_count=args.repeat_count,
         dry_run=args.dry_run,
     )

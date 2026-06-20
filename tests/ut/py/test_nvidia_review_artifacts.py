@@ -186,6 +186,10 @@ def test_review_policy_changelog_and_examples_exist():
         / "vllm_remote_256k_needle_exact_truncated_failure_probe.md"
     ).is_file()
     assert (
+        in_progress_root
+        / "vllm_remote_256k_needle_position_sweep_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
@@ -632,6 +636,60 @@ def test_256k_needle_exact_truncated_failure_evidence_is_review_safe():
         "vllm_remote_256k_needle_exact_truncated_failure_probe.md"
         in readiness
     )
+    assert "text_" + "sha256" not in evidence
+    assert "token_ids" not in evidence
+    assert "/" + "home/" not in evidence
+
+
+def test_256k_needle_position_sweep_evidence_is_review_safe():
+    evidence = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "vllm_remote_256k_needle_position_sweep_probe.md"
+    ).read_text(encoding="utf-8")
+    readiness = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "deepseek_v4_flash_serving_readiness.md"
+    ).read_text(encoding="utf-8")
+
+    assert "status: passed" in evidence
+    assert "PROBE_EXIT_STATUS=0" in evidence
+    assert "CUDA_VISIBLE_DEVICES=1,7" in evidence
+    assert "server_port: 28148" in evidence
+    assert "max_model_len=262144" in evidence
+    assert "tensor_parallel_size=2" in evidence
+    assert "target_prompt_tokens=255800" in evidence
+    assert "max_tokens=64" in evidence
+    assert "match_mode: exact" in evidence
+    assert "stop_sequences_configured: true" in evidence
+    assert 'stop: ["\\n```"]' in evidence
+    assert "positions_requested: early,middle,late" in evidence
+    assert "positions_completed: early,middle,late" in evidence
+    assert "passed_attempts: 3" in evidence
+    assert "failed_attempts: 0" in evidence
+    for position in ("early", "middle", "late"):
+        assert f"needle_position: {position}" in evidence
+    assert evidence.count("finish_reason: stop") == 3
+    assert evidence.count("exact_check: passed") == 3
+    assert evidence.count("usage.prompt_tokens: 255799") == 3
+    assert evidence.count("usage.completion_tokens: 17") == 2
+    assert evidence.count("usage.total_tokens: 255816") == 2
+    assert "usage.completion_tokens: 16" in evidence
+    assert "usage.total_tokens: 255815" in evidence
+    assert "remaining_process_group_pids: []" in evidence
+    assert "raw prompt text is not recorded" in evidence
+    assert "raw request payload is not recorded" in evidence
+    assert "raw generated text is not recorded" in evidence
+    assert "token ID arrays are not recorded" in evidence
+    assert "logprob values are not recorded" in evidence
+    assert "generated-text digests are not recorded" in evidence
+    assert "local_only_vllm_256k_needle_position_sweep: passed" in readiness
+    assert "vllm_remote_256k_needle_position_sweep_probe.md" in readiness
     assert "text_" + "sha256" not in evidence
     assert "token_ids" not in evidence
     assert "/" + "home/" not in evidence
