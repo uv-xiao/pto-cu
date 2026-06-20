@@ -20,10 +20,12 @@ This repository keeps Codex-facing project guidance under `.agents/`.
 3. Follow `.agents/rules/` for CUDA backend review, evaluation, dispatch, and
    evidence discipline.
 4. Use `.agents/skills/cuda-backend-eval/` for CUDA smoke and benchmark work.
-5. Use `.agents/templates/ultimate-goal.md` with
+5. Use `.agents/skills/codex-goal-monitor/` when a separate Codex `/goal`
+   session needs read-only tmux supervision or approved steering.
+6. Use `.agents/templates/ultimate-goal.md` with
    `.agents/rules/ultimate-goal-dispatch.md` when work spans multiple PRs or
    Codex sessions.
-6. Run `.agents/checks/check_nvidia_review_ready.py` before claiming that the
+7. Run `.agents/checks/check_nvidia_review_ready.py` before claiming that the
    NVIDIA backend branch is ready for human review.
 
 ## Repository Purpose
