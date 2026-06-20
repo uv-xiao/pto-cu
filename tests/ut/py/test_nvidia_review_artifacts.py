@@ -887,6 +887,75 @@ def test_chat_256k_needle_exact_evidence_is_review_safe():
     assert "/" + "home/" not in evidence
 
 
+def test_chat_256k_needle_repeat_evidence_is_review_safe():
+    evidence = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "vllm_remote_chat_256k_needle_repeat_probe.md"
+    ).read_text(encoding="utf-8")
+    readiness = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "deepseek_v4_flash_serving_readiness.md"
+    ).read_text(encoding="utf-8")
+
+    assert "CUDA_VISIBLE_DEVICES=1,7" in evidence
+    assert "server_port: 28152" in evidence
+    assert "endpoint: /v1/chat/completions" in evidence
+    assert "max_model_len=262144" in evidence
+    assert "tensor_parallel_size=2" in evidence
+    assert "target_prompt_tokens=255800" in evidence
+    assert "max_tokens=64" in evidence
+    assert "temperature=0.0" in evidence
+    assert "top_p=1.0" in evidence
+    assert "seed=0" in evidence
+    assert "repeat_count: 2" in evidence
+    assert "message_count: 2" in evidence
+    assert "message_roles: system,user" in evidence
+    assert "expected_answer: PTO_CHAT_NEEDLE_256K_REPEAT_OK_28152" in evidence
+    assert "match_mode: exact" in evidence
+    assert "stop_sequence: \\n```" in evidence
+    assert "needle_occurrences: 1" in evidence
+    assert "HTTP status: 200" in evidence
+    assert "attempt_index: 1" in evidence
+    assert "attempt_index: 2" in evidence
+    assert "remaining_process_group_pids: []" in evidence
+    assert "raw prompt text is not recorded" in evidence
+    assert "raw request payload is not recorded" in evidence
+    assert "raw generated text is not recorded" in evidence
+    assert "token ID arrays are not recorded" in evidence
+    assert "logprob values are not recorded" in evidence
+    assert "generated-text digests are not recorded" in evidence
+    assert "vllm_remote_chat_256k_needle_repeat_probe.md" in readiness
+
+    if "status: passed" in evidence:
+        assert "PROBE_EXIT_STATUS=0" in evidence
+        assert "passed_attempts: 2" in evidence
+        assert "failed_attempts: 0" in evidence
+        assert evidence.count("finish_reason: stop") == 2
+        assert evidence.count("exact_check: passed") == 2
+        assert "local_only_vllm_chat_256k_needle_repeat: passed" in readiness
+    else:
+        assert "status: failed" in evidence
+        assert "PROBE_EXIT_STATUS=2" in evidence
+        assert "failure_category:" in evidence
+        assert "local_only_vllm_chat_256k_needle_repeat: failed" in readiness
+
+    assert "messages" not in evidence
+    assert "NEEDLE_ANSWER" not in evidence
+    assert "Synthetic filler" not in evidence
+    assert "generated_text" not in evidence
+    assert "normalized_generated_text" not in evidence
+    assert "text_" + "sha256" not in evidence
+    assert "token_ids" not in evidence
+    assert "logprobs" not in evidence
+    assert "/" + "home/" not in evidence
+
+
 def test_long_prompt_admission_probe_dry_run_contract():
     script = (
         ROOT
