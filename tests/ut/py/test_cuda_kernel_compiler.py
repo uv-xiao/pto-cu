@@ -29,6 +29,24 @@ def _load_gluon_gemm_example():
     return module
 
 
+def _load_gluon_tensor_core_example():
+    module_path = "examples/cuda/gluon_gemm_tensor_core.py"
+    spec = importlib.util.spec_from_file_location("gluon_gemm_tensor_core_example", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_gluon_tensor_core_tiled_example():
+    module_path = "examples/cuda/gluon_gemm_tensor_core_tiled.py"
+    spec = importlib.util.spec_from_file_location("gluon_gemm_tensor_core_tiled_example", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def test_generate_gluon_gemm_f32_writes_source_and_manifest(tmp_path):
     artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
         "gemm_f32",
@@ -81,6 +99,55 @@ def test_gluon_generation_rejects_non_scalar_kernels(tmp_path):
         raise AssertionError("expected scalar generator to reject non-GEMM kernels")
 
 
+def test_generate_gluon_tensor_core_gemm_writes_wgmma_source(tmp_path):
+    artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
+        "gemm_tensor_core_f16_f32",
+        output_dir=tmp_path,
+        arch="compute_90",
+        tile_shape=(64, 32, 32),
+    )
+
+    source = artifact.source_path.read_text()
+    manifest = json.loads(artifact.manifest_path.read_text())
+
+    assert artifact.kernel_name == "gemm_tensor_core_f16_f32"
+    assert artifact.tile_shape == (64, 32, 32)
+    assert artifact.source_path.name == "gemm_tensor_core_f16_f32.gluon.py"
+    assert manifest["kernel_name"] == "gemm_tensor_core_f16_f32"
+    assert manifest["tile_shape"] == [64, 32, 32]
+    assert "TensorDescriptor" in source
+    assert "NVMMADistributedLayout" in source
+    assert "warpgroup_mma" in source
+    assert "tma.async_copy_global_to_shared" in source
+    assert "def gemm_tensor_core_f16_f32_kernel" in source
+    assert "def run_gemm_tensor_core_f16_f32" in source
+
+
+def test_generate_gluon_tiled_tensor_core_gemm_writes_tiled_source(tmp_path):
+    artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
+        "gemm_tensor_core_tiled_f16_f32",
+        output_dir=tmp_path,
+        arch="compute_90",
+        tile_shape=(64, 128, 32),
+    )
+
+    source = artifact.source_path.read_text()
+    manifest = json.loads(artifact.manifest_path.read_text())
+
+    assert artifact.kernel_name == "gemm_tensor_core_tiled_f16_f32"
+    assert manifest["tile_shape"] == [64, 128, 32]
+    assert "import triton" in source
+    assert "pid_m = gl.program_id(axis=0)" in source
+    assert "pid_n = gl.program_id(axis=1)" in source
+    assert "for k_offset in range(0, K, 32):" in source
+    assert "tma.async_copy_global_to_shared(a_desc, [off_m, k_offset]" in source
+    assert "tma.async_copy_shared_to_global(d_desc, [off_m, off_n]" in source
+    assert "TensorDescriptor.from_tensor(a, [64, 32], a_layout)" in source
+    assert "TensorDescriptor.from_tensor(b, [32, 128], b_layout)" in source
+    assert "triton.cdiv(c.shape[0], 64)" in source
+    assert "def run_gemm_tensor_core_tiled_f16_f32" in source
+
+
 def test_gluon_gemm_example_reports_skip_json_and_relative_artifacts(tmp_path, monkeypatch):
     example = _load_gluon_gemm_example()
     monkeypatch.chdir(tmp_path)
@@ -125,6 +192,118 @@ def test_gluon_gemm_example_main_requires_cuda_on_skip(tmp_path, capsys, monkeyp
     assert code == 2
     assert payload["status"] == "skipped"
     assert payload["reason"] == "missing triton"
+
+
+def test_gluon_tensor_core_example_reports_skip_json_and_relative_artifacts(tmp_path, monkeypatch):
+    example = _load_gluon_tensor_core_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_tensor_core_correctness(
+        output_dir=Path("tensor-core-artifacts"),
+        arch="compute_90",
+        skip_reason=lambda: "triton Gluon WGMMA import failed: missing primitive",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "triton Gluon WGMMA import failed: missing primitive"
+    assert result["kernel_name"] == "gemm_tensor_core_f16_f32"
+    assert result["shape"] == {"m": 64, "n": 32, "k": 32}
+    assert result["artifact"]["source_path"] == (
+        "tensor-core-artifacts/gemm_tensor_core_f16_f32.gluon.py"
+    )
+    assert result["artifact"]["manifest_path"] == (
+        "tensor-core-artifacts/gemm_tensor_core_f16_f32.gluon.json"
+    )
+    assert result["artifact"]["tile_shape"] == [64, 32, 32]
+
+
+def test_gluon_tensor_core_example_main_requires_cuda_on_skip(tmp_path, capsys, monkeypatch):
+    example = _load_gluon_tensor_core_example()
+    monkeypatch.setattr(example, "tensor_core_skip_reason", lambda: "torch.cuda is not available")
+
+    code = example.main(["--output-dir", str(tmp_path), "--require-cuda"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "skipped"
+    assert payload["reason"] == "torch.cuda is not available"
+
+
+def test_gluon_tensor_core_example_main_reports_generation_failure(capsys, monkeypatch):
+    example = _load_gluon_tensor_core_example()
+
+    def fail_generation(**_kwargs):
+        raise RuntimeError("generation failed")
+
+    monkeypatch.setattr(example, "build_tensor_core_artifact", fail_generation)
+
+    code = example.main(["--require-cuda"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["kernel_name"] == "gemm_tensor_core_f16_f32"
+    assert payload["status"] == "failed"
+    assert payload["error_type"] == "RuntimeError"
+    assert payload["error"] == "generation failed"
+
+
+def test_gluon_tiled_tensor_core_example_reports_skip_and_validates_shape(tmp_path):
+    example = _load_gluon_tensor_core_tiled_example()
+
+    result = example.run_tiled_tensor_core_correctness(
+        output_dir=tmp_path,
+        m=256,
+        n=256,
+        k=64,
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["kernel_name"] == "gemm_tensor_core_tiled_f16_f32"
+    assert result["artifact"]["tile_shape"] == [64, 128, 32]
+
+    try:
+        example.run_tiled_tensor_core_correctness(
+            output_dir=tmp_path,
+            m=224,
+            n=256,
+            k=64,
+            skip_reason=lambda: "not reached",
+        )
+    except ValueError as exc:
+        assert "expected m,n divisible by tile" in str(exc)
+    else:
+        raise AssertionError("expected tiled tensor-core harness to validate shapes")
+
+
+def test_gluon_tiled_tensor_core_example_main_requires_cuda_on_skip(tmp_path, capsys, monkeypatch):
+    example = _load_gluon_tensor_core_tiled_example()
+    monkeypatch.setattr(example, "tensor_core_skip_reason", lambda: "missing WGMMA APIs")
+
+    code = example.main(["--output-dir", str(tmp_path), "--require-cuda"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "skipped"
+    assert payload["reason"] == "missing WGMMA APIs"
+
+
+def test_gluon_tiled_tensor_core_example_main_reports_generation_failure(capsys, monkeypatch):
+    example = _load_gluon_tensor_core_tiled_example()
+
+    def fail_generation(**_kwargs):
+        raise RuntimeError("tiled generation failed")
+
+    monkeypatch.setattr(example, "build_tiled_tensor_core_artifact", fail_generation)
+
+    code = example.main(["--require-cuda"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["kernel_name"] == "gemm_tensor_core_tiled_f16_f32"
+    assert payload["status"] == "failed"
+    assert payload["error_type"] == "RuntimeError"
+    assert payload["error"] == "tiled generation failed"
 
 
 def test_cuda_kernel_compiler_compiles_host_schedule_task_body(tmp_path, monkeypatch):

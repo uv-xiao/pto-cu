@@ -19,7 +19,11 @@ from textwrap import dedent
 from .environment import PROJECT_ROOT
 
 _DEFAULT_CACHE_ROOT = Path("build") / "cache" / "cuda" / "onboard" / "gluon_gen"
-_SUPPORTED_KERNELS = {"gemm_f32"}
+_SUPPORTED_KERNELS = {
+    "gemm_f32",
+    "gemm_tensor_core_f16_f32",
+    "gemm_tensor_core_tiled_f16_f32",
+}
 
 
 @dataclass(frozen=True)
@@ -51,7 +55,7 @@ def generate_gluon_kernel(
     resolved_output_dir = default_gluon_cache_root() if output_dir is None else Path(output_dir)
     resolved_output_dir.mkdir(parents=True, exist_ok=True)
 
-    source = _render_gemm_f32_source()
+    source = _render_source(kernel_name, tile_shape)
     source_digest = sha256(source.encode("utf-8")).hexdigest()
     source_path = resolved_output_dir / f"{kernel_name}.gluon.py"
     manifest_path = resolved_output_dir / f"{kernel_name}.gluon.json"
@@ -79,6 +83,16 @@ def generate_gluon_kernel(
     )
 
 
+def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
+    if kernel_name == "gemm_f32":
+        return _render_gemm_f32_source()
+    if kernel_name == "gemm_tensor_core_f16_f32":
+        return _render_tensor_core_gemm_source(tile_shape)
+    if kernel_name == "gemm_tensor_core_tiled_f16_f32":
+        return _render_tiled_tensor_core_gemm_source(tile_shape)
+    raise AssertionError(f"unhandled Gluon kernel: {kernel_name}")
+
+
 def _render_gemm_f32_source() -> str:
     return dedent(
         """
@@ -96,5 +110,181 @@ def _render_gemm_f32_source() -> str:
                 b = gl.load(b_ptr + kk * n + col)
                 acc += a * b
             gl.store(c_ptr + row * n + col, acc)
+        """
+    ).lstrip()
+
+
+def _render_tensor_core_gemm_source(tile_shape: tuple[int, int, int]) -> str:
+    block_m, block_n, block_k = tile_shape
+    return dedent(
+        f"""
+        from triton.experimental import gluon
+        from triton.experimental.gluon import language as gl
+        from triton.experimental.gluon.nvidia.hopper import TensorDescriptor
+        from triton.experimental.gluon.language.nvidia.hopper import (
+            fence_async_shared,
+            mbarrier,
+            tma,
+            warpgroup_mma,
+            warpgroup_mma_wait,
+        )
+
+
+        @gluon.jit
+        def gemm_tensor_core_f16_f32_kernel(a_desc, b_desc, c_desc, d_desc, instr_shape_n: gl.constexpr, num_warps: gl.constexpr):
+            bar = gl.allocate_shared_memory(gl.int64, [1], mbarrier.MBarrierLayout())
+            mbarrier.init(bar, count=1)
+            a_smem = gl.allocate_shared_memory(a_desc.dtype, a_desc.block_type.shape, a_desc.layout)
+            b_smem = gl.allocate_shared_memory(b_desc.dtype, b_desc.block_type.shape, b_desc.layout)
+            c_smem = gl.allocate_shared_memory(c_desc.dtype, c_desc.block_type.shape, c_desc.layout)
+            mbarrier.expect(bar, a_desc.block_type.nbytes + b_desc.block_type.nbytes + c_desc.block_type.nbytes)
+            tma.async_copy_global_to_shared(a_desc, [0, 0], bar, a_smem)
+            tma.async_copy_global_to_shared(b_desc, [0, 0], bar, b_smem)
+            tma.async_copy_global_to_shared(c_desc, [0, 0], bar, c_smem)
+            mbarrier.wait(bar, phase=0)
+            mbarrier.invalidate(bar)
+
+            m: gl.constexpr = 16
+            k: gl.constexpr = 256 // a_desc.dtype.primitive_bitwidth
+            n: gl.constexpr = instr_shape_n
+            warps_per_cta: gl.constexpr = [num_warps, 1]
+            c_layout: gl.constexpr = gl.NVMMADistributedLayout(
+                version=[3, 0],
+                warps_per_cta=warps_per_cta,
+                instr_shape=[m, n, k],
+            )
+
+            c = c_smem.load(c_layout)
+            d = warpgroup_mma(a_smem, b_smem, c, is_async=True, use_acc=True)
+            d = warpgroup_mma_wait(num_outstanding=0, deps=(d,))
+
+            d_smem = gl.allocate_shared_memory(d_desc.dtype, d_desc.block_type.shape, d_desc.layout)
+            d_smem.store(d)
+            fence_async_shared()
+            tma.async_copy_shared_to_global(d_desc, [0, 0], d_smem)
+            tma.store_wait(pendings=0)
+
+
+        def run_gemm_tensor_core_f16_f32(a, b, c, d, instr_shape_n=16, num_warps=4):
+            expected_shapes = (({block_m}, {block_k}), ({block_k}, {block_n}), ({block_m}, {block_n}), ({block_m}, {block_n}))
+            actual_shapes = (tuple(a.shape), tuple(b.shape), tuple(c.shape), tuple(d.shape))
+            if actual_shapes != expected_shapes:
+                raise ValueError(f"expected tensor shapes {{expected_shapes}}, got {{actual_shapes}}")
+
+            a_layout = gl.NVMMASharedLayout.get_default_for(a.shape, gl.float16)
+            b_layout = gl.NVMMASharedLayout.get_default_for(b.shape, gl.float16)
+            cd_layout = gl.NVMMASharedLayout.get_default_for(c.shape, gl.float32)
+            a_desc = TensorDescriptor.from_tensor(a, a.shape, a_layout)
+            b_desc = TensorDescriptor.from_tensor(b, b.shape, b_layout)
+            c_desc = TensorDescriptor.from_tensor(c, c.shape, cd_layout)
+            d_desc = TensorDescriptor.from_tensor(d, d.shape, cd_layout)
+            gemm_tensor_core_f16_f32_kernel[(1,)](
+                a_desc,
+                b_desc,
+                c_desc,
+                d_desc,
+                instr_shape_n,
+                num_warps=num_warps,
+            )
+        """
+    ).lstrip()
+
+
+def _render_tiled_tensor_core_gemm_source(tile_shape: tuple[int, int, int]) -> str:
+    block_m, block_n, block_k = tile_shape
+    return dedent(
+        f"""
+        import triton
+
+        from triton.experimental import gluon
+        from triton.experimental.gluon import language as gl
+        from triton.experimental.gluon.nvidia.hopper import TensorDescriptor
+        from triton.experimental.gluon.language.nvidia.hopper import (
+            fence_async_shared,
+            mbarrier,
+            tma,
+            warpgroup_mma,
+            warpgroup_mma_wait,
+        )
+
+
+        @gluon.jit
+        def gemm_tensor_core_tiled_f16_f32_kernel(a_desc, b_desc, c_desc, d_desc, instr_shape_n: gl.constexpr, num_warps: gl.constexpr):
+            pid_m = gl.program_id(axis=0)
+            pid_n = gl.program_id(axis=1)
+            off_m = pid_m * {block_m}
+            off_n = pid_n * {block_n}
+
+            bar = gl.allocate_shared_memory(gl.int64, [1], mbarrier.MBarrierLayout())
+            mbarrier.init(bar, count=1)
+            a_smem = gl.allocate_shared_memory(a_desc.dtype, a_desc.block_type.shape, a_desc.layout)
+            b_smem = gl.allocate_shared_memory(b_desc.dtype, b_desc.block_type.shape, b_desc.layout)
+            c_smem = gl.allocate_shared_memory(c_desc.dtype, c_desc.block_type.shape, c_desc.layout)
+
+            phase = 0
+            mbarrier.expect(bar, c_desc.block_type.nbytes)
+            tma.async_copy_global_to_shared(c_desc, [off_m, off_n], bar, c_smem)
+            mbarrier.wait(bar, phase=phase)
+            phase ^= 1
+
+            m: gl.constexpr = 16
+            k: gl.constexpr = 256 // a_desc.dtype.primitive_bitwidth
+            n: gl.constexpr = instr_shape_n
+            warps_per_cta: gl.constexpr = [num_warps, 1]
+            c_layout: gl.constexpr = gl.NVMMADistributedLayout(
+                version=[3, 0],
+                warps_per_cta=warps_per_cta,
+                instr_shape=[m, n, k],
+            )
+
+            acc = c_smem.load(c_layout)
+            K = a_desc.shape[1]
+            for k_offset in range(0, K, {block_k}):
+                mbarrier.expect(bar, a_desc.block_type.nbytes + b_desc.block_type.nbytes)
+                tma.async_copy_global_to_shared(a_desc, [off_m, k_offset], bar, a_smem)
+                tma.async_copy_global_to_shared(b_desc, [k_offset, off_n], bar, b_smem)
+                mbarrier.wait(bar, phase=phase)
+                phase ^= 1
+
+                acc = warpgroup_mma(a_smem, b_smem, acc, is_async=True, use_acc=True)
+                acc = warpgroup_mma_wait(num_outstanding=0, deps=(acc,))
+
+            mbarrier.invalidate(bar)
+
+            d_smem = gl.allocate_shared_memory(d_desc.dtype, d_desc.block_type.shape, d_desc.layout)
+            d_smem.store(acc)
+            fence_async_shared()
+            tma.async_copy_shared_to_global(d_desc, [off_m, off_n], d_smem)
+            tma.store_wait(pendings=0)
+
+
+        def run_gemm_tensor_core_tiled_f16_f32(a, b, c, d, instr_shape_n=16, num_warps=4):
+            expected_rank = 2
+            for name, tensor in [("a", a), ("b", b), ("c", c), ("d", d)]:
+                if len(tensor.shape) != expected_rank:
+                    raise ValueError(f"expected {{name}} to be rank-2, got shape {{tuple(tensor.shape)}}")
+            if a.shape[1] % {block_k} != 0 or b.shape[0] != a.shape[1]:
+                raise ValueError(f"expected shared K dimension divisible by {block_k}, got a.shape={{tuple(a.shape)}}, b.shape={{tuple(b.shape)}}")
+            if a.shape[0] != c.shape[0] or b.shape[1] != c.shape[1] or d.shape != c.shape:
+                raise ValueError(f"expected c/d shape to match a@b, got a={{tuple(a.shape)}}, b={{tuple(b.shape)}}, c={{tuple(c.shape)}}, d={{tuple(d.shape)}}")
+            if c.shape[0] % {block_m} != 0 or c.shape[1] % {block_n} != 0:
+                raise ValueError(f"expected output shape divisible by tile ({block_m}, {block_n}), got {{tuple(c.shape)}}")
+
+            a_layout = gl.NVMMASharedLayout.get_default_for([{block_m}, {block_k}], gl.float16)
+            b_layout = gl.NVMMASharedLayout.get_default_for([{block_k}, {block_n}], gl.float16)
+            cd_layout = gl.NVMMASharedLayout.get_default_for([{block_m}, {block_n}], gl.float32)
+            a_desc = TensorDescriptor.from_tensor(a, [{block_m}, {block_k}], a_layout)
+            b_desc = TensorDescriptor.from_tensor(b, [{block_k}, {block_n}], b_layout)
+            c_desc = TensorDescriptor.from_tensor(c, [{block_m}, {block_n}], cd_layout)
+            d_desc = TensorDescriptor.from_tensor(d, [{block_m}, {block_n}], cd_layout)
+            grid = (triton.cdiv(c.shape[0], {block_m}), triton.cdiv(c.shape[1], {block_n}))
+            gemm_tensor_core_tiled_f16_f32_kernel[grid](
+                a_desc,
+                b_desc,
+                c_desc,
+                d_desc,
+                instr_shape_n,
+                num_warps=num_warps,
+            )
         """
     ).lstrip()
