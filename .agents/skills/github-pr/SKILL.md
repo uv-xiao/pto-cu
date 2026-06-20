@@ -15,7 +15,8 @@ Use this to create a new PR or update an existing PR.
 4. If on the default branch, create a feature branch from `BASE_REF`.
 5. If changes are uncommitted, use the `git-commit` skill.
 6. Use [commit-and-push](../../lib/github/commit-and-push.md).
-7. Create or update the PR.
+7. Create or update the PR using the repository variables from setup. Do not
+   replace them with a later `gh repo view` result.
 
 ## Create PR
 
@@ -37,6 +38,26 @@ EOF
 
 Generate the title and body from the final commit and actual verification. Keep the PR description
 current when additional commits are pushed.
+
+For this repository, setup should resolve `PR_REPO_OWNER/PR_REPO_NAME` to
+`uv-xiao/pto-cu` from `origin`. PR creation must pass the target repository
+explicitly:
+
+```bash
+gh pr create \
+  --repo uv-xiao/pto-cu \
+  --base main \
+  --head "$BRANCH_NAME" \
+  --title "Brief title" \
+  --body "$(cat <<'EOF'
+## Summary
+- ...
+
+## Testing
+- ...
+EOF
+)"
+```
 
 ## Update Existing PR
 
