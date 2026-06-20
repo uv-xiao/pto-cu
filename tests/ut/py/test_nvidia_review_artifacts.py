@@ -111,6 +111,7 @@ def test_review_policy_changelog_and_examples_exist():
     assert (in_progress_root / "vllm_remote_env_artifact_probe.md").is_file()
     assert (in_progress_root / "vllm_remote_artifact_complete.md").is_file()
     assert (in_progress_root / "vllm_remote_model_load_probe.md").is_file()
+    assert (in_progress_root / "vllm_remote_server_health_probe.md").is_file()
     assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
@@ -122,6 +123,7 @@ def test_review_policy_changelog_and_examples_exist():
     assert (example_root / "host_schedule_vector_ops.py").is_file()
     assert (example_root / "persistent_layered_cross.py").is_file()
     assert (example_root / "persistent_moe_dispatch_combine.py").is_file()
+    assert (example_root / "vllm_deepseek_v4_server_health_probe.py").is_file()
 
 
 def test_active_review_surfaces_do_not_reference_removed_eval_scripts():
