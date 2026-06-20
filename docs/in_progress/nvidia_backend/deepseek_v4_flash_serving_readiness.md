@@ -1092,6 +1092,58 @@ Fresh remote H200 256K needle exact-output evidence from this slice:
 Detailed 256K needle exact-output failure evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_output_failure.md`.
 
+Fresh remote H200 256K needle stop-controlled exact-output evidence from this
+slice:
+
+- The repo-owned needle correctness probe now supports repeatable
+  `--stop-sequence` arguments. When unset, the `/v1/completions` request body
+  omits `stop`; when set, the request body carries a list-valued `stop` field.
+- A pre-run remote check confirmed that the preserved `.venv-vllm-probe`
+  environment and repo-relative
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash` artifact directory were
+  present before launch. The environment reported vLLM 0.23.0, Torch 2.11.0,
+  and transformers 5.12.1.
+- The remote source tree was refreshed with `--sync`, preserving the existing
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`.
+- The passing stop-controlled exact-output boundary used
+  `max_model_len=262144`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 120-minute outer timeout, a
+  2700-second readiness timeout, and an 1800-second request timeout.
+- The synthetic prompt targeted 255800 prompt tokens. Local tokenizer
+  accounting measured 255799 prompt tokens before sending the request, and
+  the prompt contained the expected answer
+  `PTO_NEEDLE_256K_CONTEXT_OK_28143` exactly once.
+- The request used `match_mode=exact`, `max_tokens=64`,
+  `temperature=0.0`, `top_p=1.0`, `seed=0`, `stream=false`, `echo=false`,
+  `logprobs=false`, and the stop sequence `"\n```"`.
+- The server started on `http://127.0.0.1:28145`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` with
+  `max_model_len=262144` from `/v1/models`, and accepted one
+  `/v1/completions` request.
+- The completion request returned HTTP 200 with exactly one response choice,
+  `finish_reason=stop`, short synthetic generated text recorded as 33
+  characters, and usage counts: `prompt_tokens=255799`,
+  `completion_tokens=17`, and `total_tokens=255816`.
+- Strict exact mode passed: the normalized generated output exactly matched
+  `PTO_NEEDLE_256K_CONTEXT_OK_28143`.
+- vLLM 0.23.0 ran with Torch 2.11.0+cu130 and CUDA 13.0.
+- The probe did not record raw prompt text, raw request payloads, token ID
+  arrays, logprob values, generated-text digests, model artifact contents, or
+  symlinks.
+- The probe cleanup passed and reported no remaining process-group PIDs.
+- The run establishes stop-controlled synthetic exact-output evidence only; it
+  is not general generated-text correctness, semantic correctness, latency,
+  throughput, production-readiness, broad determinism, or simpler-nv/vLLM
+  integration evidence.
+
+Detailed 256K needle stop-controlled exact-output evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_stop_sequence_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
@@ -1108,7 +1160,8 @@ probe, plus one bounded 128K long-prompt response-contract probe, plus one
 bounded 192K long-prompt response-contract probe, plus one bounded 256K
 long-prompt response-contract probe, plus one bounded near-256K synthetic
 needle containment/correctness probe, plus one bounded near-256K synthetic
-exact-output failure gate:
+exact-output failure gate, plus one bounded near-256K stop-controlled
+synthetic exact-output pass gate:
 
 ```text
 remote_h200_reachable: yes
@@ -1142,6 +1195,8 @@ local_only_vllm_256k_needle_correctness: passed under recorded 262144-token
   boundary
 local_only_vllm_256k_needle_exact_output: failed under recorded 262144-token
   boundary
+local_only_vllm_256k_needle_exact_stop_sequence: passed under recorded
+  262144-token boundary
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -1162,7 +1217,8 @@ serving_readiness: bounded local-only response contract and warmup-shape
   response-contract probe, plus one bounded 256K long-prompt
   response-contract probe, plus one bounded near-256K synthetic needle
   correctness probe, plus one bounded near-256K synthetic exact-output
-  failure gate; no general correctness claims
+  failure gate, plus one bounded near-256K stop-controlled synthetic
+  exact-output pass gate; no general correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -1180,9 +1236,10 @@ recording raw generated text or judging the generated suffix. It has also
 passed one bounded explicit `stop` / `stop_token_ids` field-acceptance
 observation without asserting stop triggering, marker presence, token
 identity, or stop-token semantic correctness. It is still too early to claim
-generated text correctness, token/logprob/stop-token semantic correctness,
-long-prompt behavior, latency, throughput, production readiness, broad
-determinism, or simpler-nv/vLLM kernel integration.
+general generated text correctness, token/logprob/stop-token semantic
+correctness, long-prompt behavior beyond the recorded gates, latency,
+throughput, production readiness, broad determinism, or simpler-nv/vLLM kernel
+integration.
 
 It has also passed local-only 64K, 128K, and 256K
 server-health/model-list capacity gates without sending a long prompt or
@@ -1227,6 +1284,12 @@ It has now also passed one local-only synthetic needle correctness request
 near a 256K prompt-token budget under the recorded 262144-token vLLM server
 boundary. The probe recorded a short synthetic generated output and required
 that output to contain the exact expected answer
+`PTO_NEEDLE_256K_CONTEXT_OK_28143`.
+
+It has also passed one local-only stop-controlled synthetic exact-output
+request near a 256K prompt-token budget under the recorded 262144-token vLLM
+server boundary. The probe used `--match-mode exact` and stop sequence
+`"\n```"` and required the normalized synthetic output to exactly equal
 `PTO_NEEDLE_256K_CONTEXT_OK_28143`.
 
 ## Next Gate
