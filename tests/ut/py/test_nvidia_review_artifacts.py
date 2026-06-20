@@ -204,6 +204,9 @@ def test_review_policy_changelog_and_examples_exist():
     assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
+    assert (
+        in_progress_root / "deepseek_v4_flash_weight_manifest_preflight.md"
+    ).is_file()
 
     assert (ROOT / "tools" / "check_nvidia_review_ready.py").is_file()
 

@@ -52,8 +52,16 @@ PYTHONPATH=$PWD:$PWD/python \
 ```
 
 This checks local gitignored shard presence against
-`model.safetensors.index.json`. The completed local artifact evidence is
-recorded in
+`model.safetensors.index.json`. It also reports a preflight capacity surface:
+`required_missing_bytes`, `storage_free_bytes`, `storage_required_bytes`,
+`storage_has_capacity`, `preflight_status`, `next_gate`, and the later
+model-load `next_command`. Pass `--storage-dir <repo-relative tmp path>` to
+check a selected non-committed artifact directory, or
+`--require-preflight` to exit `3` unless the manifest permits the model-load
+gate. The local preflight evidence is recorded in
+`docs/in_progress/nvidia_backend/deepseek_v4_flash_weight_manifest_preflight.md`
+note.
+The completed local artifact evidence is recorded in
 `docs/in_progress/nvidia_backend/deepseek_v4_flash_weight_manifest_complete.md`.
 It is not model-load or serving evidence.
 
