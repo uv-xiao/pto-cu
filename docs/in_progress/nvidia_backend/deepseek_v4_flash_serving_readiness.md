@@ -483,14 +483,51 @@ Fresh remote H200 stop-contract evidence from this slice:
 Detailed stop-contract evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_stop_contract_probe.md`.
 
+Fresh remote H200 64K context health evidence from this slice:
+
+- A repo-owned server-health probe script was reused without sending a prompt:
+  it starts `vllm serve`, binds only to `127.0.0.1`, checks `/health` and
+  `/v1/models`, terminates the server process group, and reports remaining
+  process-group PIDs.
+- The remote source tree was refreshed with `--sync`, preserving the complete
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`. The fresh pre-run snapshot showed 141773 MiB free
+  on GPU 1 and 116662 MiB free on GPU 7.
+- The passing boundary used `max_model_len=65536`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 50-minute outer timeout, and a
+  2700-second readiness timeout.
+- The server started on `http://127.0.0.1:28132`, returned HTTP 200 from
+  `/health`, and returned `deepseek-ai/DeepSeek-V4-Flash` with
+  `max_model_len=65536` from `/v1/models`.
+- The vLLM server log reported `Using max model len 65536`, GPU KV cache
+  size 673,323 tokens, and maximum concurrency 10.27x for 65,536 tokens per
+  request.
+- The probe exited 0 after 114.36 seconds with `generation_attempted=false`.
+- The probe sent `SIGTERM`, vLLM logged API server and engine shutdown, and
+  the probe reported no remaining process-group PIDs. The immediate post-run
+  selected-GPU memory snapshot showed GPU 1 and GPU 7 back at their pre-run
+  memory baseline.
+- The run establishes a local-only 64K server-health/model-list capacity
+  gate only; it is not long-prompt, generated-text correctness, tokenizer
+  semantic correctness, prompt correctness, latency, throughput,
+  production-readiness, broad determinism, or simpler-nv/vLLM integration
+  evidence.
+
+Detailed 64K context health evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_64k_context_health_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
 server-startup, health/model-list readiness, one-token inference smoke, one
 bounded response-contract probe, warmup/request-shape gates,
 deterministic-repeat serving-semantics, one explicit logprobs response shape
-probe, one explicit echo response-shape probe, and one explicit stop-field
-acceptance probe:
+probe, one explicit echo response-shape probe, one explicit stop-field
+acceptance probe, and one 64K server-health/model-list capacity gate:
 
 ```text
 remote_h200_reachable: yes
@@ -501,6 +538,7 @@ artifact_require_probe: passed
 weight_manifest_gate: complete
 two_h200_vllm_model_load: passed under recorded 4096-token boundary
 local_only_vllm_server_health: passed under recorded 4096-token boundary
+local_only_vllm_64k_server_health: passed under recorded 65536-token boundary
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -511,8 +549,8 @@ echo_contract_probe: passed under recorded explicit echo boundary
 stop_contract_probe: passed under recorded explicit stop-field boundary
 serving_readiness: bounded local-only response contract and warmup-shape
   variation plus deterministic-repeat serving-semantics, logprobs response
-  shape, echo response-shape, and stop-field acceptance observations; no
-  correctness claims
+  shape, echo response-shape, stop-field acceptance observations, and a 64K
+  server-health/model-list capacity gate; no correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -531,24 +569,25 @@ passed one bounded explicit `stop` / `stop_token_ids` field-acceptance
 observation without asserting stop triggering, marker presence, token
 identity, or stop-token semantic correctness. It is still too early to claim
 generated text correctness, token/logprob/stop-token semantic correctness,
-long-context behavior, latency, throughput, production readiness, broad
-determinism, or simpler-nv/vLLM kernel integration.
+long-prompt behavior, 256K context behavior, latency, throughput, production
+readiness, broad determinism, or simpler-nv/vLLM kernel integration.
+
+It has also passed a local-only 64K server-health/model-list capacity gate
+without sending a long prompt or attempting generation.
 
 ## Next Gate
 
-The next PR-sized gate can move to a live stop-trigger validator only if a
-request-controlled path can be shown without generated-text correctness,
-token identity, or stop-token semantic claims. Otherwise, the next safe gate
-should choose another bounded request or response shape that is deliberately
-independent from generated-text correctness. That later gate needs its own
-command, resource plan, expected failure mode, and non-claims, and it should
-stay separate from throughput, latency, long-context, and production-readiness
-claims.
+The next PR-sized capacity gate can attempt the next smaller unproven serving
+boundary between 64K and the final 256K target, for example 128K
+server-health/model-list readiness under the same local-only, no-long-prompt
+contract. That later gate needs its own command, resource plan, expected
+failure mode, and non-claims, and it should stay separate from generated-text
+correctness, throughput, latency, and production-readiness claims.
 
 ## Non-Claims
 
-- This is not prompt, tokenizer semantic, correct-text, long-context,
-  throughput, latency, or production readiness evidence.
+- This is not prompt, tokenizer semantic, correct-text, long-prompt, 256K
+  context, throughput, latency, or production readiness evidence.
 - This is not generated-text correctness evidence.
 - This is not token identity or logprob value correctness evidence.
 - This is not stop-trigger or stop-token semantic correctness evidence.
