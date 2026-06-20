@@ -506,6 +506,43 @@ generated-text correctness, semantic correctness, throughput, latency,
 production readiness, broad determinism, or simpler-nv/vLLM integration
 evidence.
 
+## DeepSeek V4 Flash vLLM Chat 256K Needle Streaming Truncated Failure Probe
+
+````bash
+CUDA_VISIBLE_DEVICES=1,7 VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 80m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_chat_256k_needle_stream_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28155 \
+  --server-log tmp/vllm-chat-256k-needle-stream-truncated-failure-probe/server-28155.log \
+  --max-model-len 262144 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --request-timeout-seconds 180 --terminate-timeout-seconds 60 \
+  --target-prompt-tokens 255800 --max-tokens 1 \
+  --temperature 0.0 --top-p 1.0 --seed 0 \
+  --expected-answer PTO_CHAT_NEEDLE_256K_STREAM_TRUNCATED_OK_28155 \
+  --stop-sequence $'\n```'
+````
+
+This reuses the existing streaming chat 256K needle probe under the same
+local-only two-H200 vLLM server boundary, but intentionally gives the strict
+exact comparator an insufficient one-token completion budget. The remote H200
+evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_truncated_failure_probe.md`:
+the streaming request returned HTTP 200, parsed SSE events, received terminal
+`[DONE]`, reported `finish_reason=length`, failed strict exact mode with
+`chat_needle_stream_expected_answer_not_exact`, and cleanup reported no
+remaining process-group PIDs. This is an expected failure-mode
+characterization, not a transport/server failure, generated-text correctness,
+semantic correctness, throughput, latency, production readiness, broad
+determinism, or simpler-nv/vLLM integration evidence.
+
 ## DeepSeek V4 Flash vLLM Chat Exact Truncated Failure Probe
 
 ```bash
