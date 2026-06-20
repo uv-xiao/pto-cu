@@ -890,6 +890,57 @@ slice:
 Detailed 128K long-prompt response-contract evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_128k_long_prompt_response_contract_probe.md`.
 
+Fresh remote H200 192K long-prompt response-contract evidence from this
+slice:
+
+- The existing repo-owned long-prompt response-contract probe was reused
+  without a script change to raise the synthetic prompt budget to 192000
+  prompt tokens while preserving the same local-only server lifecycle and
+  review-safe response/accounting contract.
+- The remote source tree was refreshed with `--sync` during preflight from
+  local source commit `95503d8004472f3be446155b59550ca9b287701e`,
+  preserving the complete ignored artifact directory and `.venv-vllm-probe`.
+  Remote git metadata was not used as evidence after the sync.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`. The fresh pre-run selected-GPU memory snapshot
+  showed 141773 MiB free on GPU 1 and 116670 MiB free on GPU 7.
+- The fixed loopback port `28141` was checked as available before the run.
+- The passing boundary used `max_model_len=262144`, `dtype=bfloat16`,
+  `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 120-minute outer timeout, a
+  2700-second readiness timeout, and a 1200-second request timeout.
+- The synthetic prompt targeted 192000 prompt tokens. Local tokenizer
+  accounting measured 191995 prompt tokens before sending the request.
+- The request contained 1256669 prompt characters and used `max_tokens=4`,
+  `temperature=0.0`, `top_p=1.0`, `seed=0`, `stream=false`, `echo=false`,
+  and `logprobs=false`.
+- The server started on `http://127.0.0.1:28141`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` with
+  `max_model_len=262144` from `/v1/models`, and accepted one
+  `/v1/completions` request.
+- The completion request returned HTTP 200 with exactly one response choice,
+  `finish_reason=length`, generated text length recorded as 23 characters,
+  and usage counts: `prompt_tokens=191995`, `completion_tokens=4`, and
+  `total_tokens=191999`.
+- vLLM 0.23.0 ran with Torch 2.11.0+cu130 and CUDA 13.0.
+- The probe recorded generated text length only. It did not record raw prompt
+  text, raw generated text, token identity, logprob values, or stop-token
+  behavior.
+- The probe cleanup passed and reported no remaining process-group PIDs. The
+  immediate post-run selected-GPU memory snapshot matched the pre-run baseline
+  for GPU 1 and GPU 7, and a follow-up loopback bind check reported port
+  28141 free after cleanup.
+- The run establishes local-only 192K long-prompt response-contract evidence
+  only; it is not generated-text correctness, tokenizer semantic correctness,
+  prompt semantic correctness, token identity, logprob, stop-token, latency,
+  throughput, production-readiness, broad determinism, or simpler-nv/vLLM
+  integration evidence.
+
+Detailed 192K long-prompt response-contract evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_192k_long_prompt_response_contract_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
@@ -902,7 +953,8 @@ gates, one bounded 16K long-prompt admission request, and one bounded 16K
 long-prompt response-contract probe, and one bounded 16K long-prompt
 same-shape warmup/follow-up probe, plus one bounded 32K long-prompt
 response-contract probe, plus one bounded 64K long-prompt response-contract
-probe, plus one bounded 128K long-prompt response-contract probe:
+probe, plus one bounded 128K long-prompt response-contract probe, plus one
+bounded 192K long-prompt response-contract probe:
 
 ```text
 remote_h200_reachable: yes
@@ -928,6 +980,8 @@ local_only_vllm_64k_long_prompt_response_contract: passed under recorded
   262144-token boundary
 local_only_vllm_128k_long_prompt_response_contract: passed under recorded
   262144-token boundary
+local_only_vllm_192k_long_prompt_response_contract: passed under recorded
+  262144-token boundary
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -944,7 +998,8 @@ serving_readiness: bounded local-only response contract and warmup-shape
   response-contract probe, plus one bounded 16K same-shape warmup/follow-up
   probe, plus one bounded 32K long-prompt response-contract probe, plus one
   bounded 64K long-prompt response-contract probe, plus one bounded 128K
-  long-prompt response-contract probe; no correctness claims
+  long-prompt response-contract probe, plus one bounded 192K long-prompt
+  response-contract probe; no correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -995,12 +1050,18 @@ near a 128K prompt-token budget under the recorded 262144-token vLLM server
 boundary, recording response structure and usage accounting without recording
 raw prompt or generated text.
 
+It has now also passed one local-only long-prompt response-contract request
+near a 192K prompt-token budget under the recorded 262144-token vLLM server
+boundary, recording response structure and usage accounting without recording
+raw prompt or generated text.
+
 ## Next Gate
 
 The next PR-sized gate can stay under the same local-only vLLM boundary and
-raise the prompt-token budget beyond the bounded 128K response-contract
-request, still without recording raw prompt text, recording generated text
-contents, or judging generated text.
+choose a near-boundary follow-up beyond the bounded 192K response-contract
+request only after preserving the request-plus-completion budget under
+`max_model_len=262144`, still without recording raw prompt text, recording
+generated text contents, or judging generated text.
 
 ## Non-Claims
 
