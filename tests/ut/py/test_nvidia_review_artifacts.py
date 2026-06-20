@@ -153,6 +153,9 @@ def test_review_policy_changelog_and_examples_exist():
         in_progress_root / "vllm_remote_long_prompt_warmup_followup_probe.md"
     ).is_file()
     assert (
+        in_progress_root / "vllm_remote_32k_long_prompt_response_contract_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
