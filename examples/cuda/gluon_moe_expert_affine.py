@@ -18,6 +18,12 @@ from simpler_setup.kernel_compiler import KernelCompiler
 
 
 DEFAULT_OUTPUT_DIR = Path("tmp/gluon-moe-expert-local")
+MOE_EXPERT_SWEEP_CASES = [
+    {"name": "n16_baseline", "n": 16, "scale_a": 1.25, "scale_b": 0.5, "seed": 0},
+    {"name": "n31_signed", "n": 31, "scale_a": -0.75, "scale_b": 2.0, "seed": 7},
+    {"name": "n256_b_only", "n": 256, "scale_a": 0.0, "scale_b": -1.0, "seed": 13},
+    {"name": "n4096_mixed", "n": 4096, "scale_a": 1.5, "scale_b": -0.25, "seed": 23},
+]
 
 
 def build_moe_expert_artifact(
@@ -127,6 +133,77 @@ def run_moe_expert_correctness(
     }
 
 
+def run_moe_expert_sweep(
+    *,
+    output_dir: str | Path | None = None,
+    arch: str = "compute_90",
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
+    cases: list[dict] | None = None,
+    skip_reason: Callable[[], str | None] | None = None,
+) -> dict:
+    resolved_output_dir = DEFAULT_OUTPUT_DIR if output_dir is None else Path(output_dir)
+    if resolved_output_dir.is_absolute():
+        raise ValueError("--output-dir must be repo-relative")
+
+    case_specs = MOE_EXPERT_SWEEP_CASES if cases is None else cases
+    case_results = []
+    counts = {"passed": 0, "failed": 0, "skipped": 0}
+
+    for index, case in enumerate(case_specs):
+        case_name = str(case["name"])
+        try:
+            result = run_moe_expert_correctness(
+                output_dir=resolved_output_dir / case_name,
+                arch=arch,
+                n=int(case["n"]),
+                scale_a=float(case["scale_a"]),
+                scale_b=float(case["scale_b"]),
+                atol=atol,
+                rtol=rtol,
+                seed=int(case["seed"]),
+                skip_reason=skip_reason,
+            )
+            status = result["status"]
+            counts[status] += 1
+            case_results.append(_sweep_case_payload(index, case_name, result))
+        except Exception as exc:
+            counts["failed"] += 1
+            case_results.append(
+                {
+                    "case_index": index,
+                    "case_name": case_name,
+                    "shape": {"n": int(case["n"])},
+                    "scalars": {
+                        "scale_a": float(case["scale_a"]),
+                        "scale_b": float(case["scale_b"]),
+                    },
+                    "tolerance": {"atol": atol, "rtol": rtol},
+                    "status": "failed",
+                    "error_type": type(exc).__name__,
+                    "error": _clean_text(str(exc)),
+                }
+            )
+
+    case_count = len(case_results)
+    aggregate_status = "passed"
+    if counts["failed"]:
+        aggregate_status = "failed"
+    elif counts["skipped"]:
+        aggregate_status = "skipped"
+
+    return {
+        "schema_version": 1,
+        "kernel_name": "moe_expert_affine_f32",
+        "status": aggregate_status,
+        "case_count": case_count,
+        "passed_cases": counts["passed"],
+        "failed_cases": counts["failed"],
+        "skipped_cases": counts["skipped"],
+        "cases": case_results,
+    }
+
+
 class JsonArgumentParser(argparse.ArgumentParser):
     def error(self, message: str) -> None:
         raise ValueError(message)
@@ -147,6 +224,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument("--rtol", type=float, default=1e-6)
         parser.add_argument("--seed", type=int, default=0)
         parser.add_argument(
+            "--sweep",
+            action="store_true",
+            help="run the fixed review sweep instead of the single default case",
+        )
+        parser.add_argument(
             "--require-cuda",
             action="store_true",
             help="return a non-zero status when dependencies or CUDA are unavailable",
@@ -154,16 +236,24 @@ def main(argv: list[str] | None = None) -> int:
         args = parser.parse_args(raw_args)
         require_cuda = args.require_cuda
 
-        result = run_moe_expert_correctness(
-            output_dir=args.output_dir,
-            arch=args.arch,
-            n=args.n,
-            scale_a=args.scale_a,
-            scale_b=args.scale_b,
-            atol=args.atol,
-            rtol=args.rtol,
-            seed=args.seed,
-        )
+        if args.sweep:
+            result = run_moe_expert_sweep(
+                output_dir=args.output_dir,
+                arch=args.arch,
+                atol=args.atol,
+                rtol=args.rtol,
+            )
+        else:
+            result = run_moe_expert_correctness(
+                output_dir=args.output_dir,
+                arch=args.arch,
+                n=args.n,
+                scale_a=args.scale_a,
+                scale_b=args.scale_b,
+                atol=args.atol,
+                rtol=args.rtol,
+                seed=args.seed,
+            )
     except Exception as exc:
         result = {
             "schema_version": 1,
@@ -192,6 +282,23 @@ def _artifact_payload(artifact: GluonKernelArtifact) -> dict:
         "source_sha256": artifact.source_sha256,
         "tile_shape": list(artifact.tile_shape),
     }
+
+
+def _sweep_case_payload(index: int, case_name: str, result: dict) -> dict:
+    payload = {
+        "case_index": index,
+        "case_name": case_name,
+        "shape": result["shape"],
+        "scalars": result["scalars"],
+        "tolerance": result["tolerance"],
+        "status": result["status"],
+        "artifact": result["artifact"],
+    }
+    if "reason" in result:
+        payload["reason"] = result["reason"]
+    if "max_abs_error" in result:
+        payload["max_abs_error"] = result["max_abs_error"]
+    return payload
 
 
 def _relative_path(path: str | Path) -> str:

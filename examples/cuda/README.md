@@ -41,6 +41,23 @@ expert transform tasks, one weighted combine task, and device-side fan-in
 before the combine. Without CUDA tooling or a visible NVIDIA GPU it reports a
 skip; with `--require-cuda`, the same skip returns a non-zero exit status.
 
+## Gluon MoE Expert Affine
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_moe_expert_affine.py \
+  --output-dir tmp/gluon-moe-expert-sweep-local \
+  --arch compute_90 --sweep
+```
+
+This generates the `moe_expert_affine_f32` Gluon source and checks FP32
+`out = scale_a * a + scale_b * b` vector correctness. The default command runs
+one case; `--sweep` runs a fixed four-case shape and coefficient sweep with
+aggregate structured JSON. Without CUDA tooling or a visible NVIDIA GPU it
+reports skips; with `--require-cuda`, skipped cases return a non-zero exit
+status. H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/gluon_moe_expert_h200.md`.
+
 ## DeepSeek V4 Flash Weight Manifest
 
 ```bash
