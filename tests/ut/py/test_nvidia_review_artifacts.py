@@ -182,6 +182,10 @@ def test_review_policy_changelog_and_examples_exist():
         / "vllm_remote_256k_needle_exact_stop_repeat_probe.md"
     ).is_file()
     assert (
+        in_progress_root
+        / "vllm_remote_256k_needle_exact_truncated_failure_probe.md"
+    ).is_file()
+    assert (
         in_progress_root / "deepseek_v4_flash_serving_readiness.md"
     ).is_file()
 
@@ -566,6 +570,68 @@ def test_256k_needle_exact_stop_repeat_evidence_is_review_safe():
     assert "generated-text digests are not recorded" in evidence
     assert "local_only_vllm_256k_needle_exact_stop_repeat: passed" in readiness
     assert "vllm_remote_256k_needle_exact_stop_repeat_probe.md" in readiness
+    assert "text_" + "sha256" not in evidence
+    assert "token_ids" not in evidence
+    assert "/" + "home/" not in evidence
+
+
+def test_256k_needle_exact_truncated_failure_evidence_is_review_safe():
+    evidence = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "vllm_remote_256k_needle_exact_truncated_failure_probe.md"
+    ).read_text(encoding="utf-8")
+    readiness = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "deepseek_v4_flash_serving_readiness.md"
+    ).read_text(encoding="utf-8")
+
+    assert "status: failed" in evidence
+    assert "PROBE_EXIT_STATUS=2" in evidence
+    assert "failure_category: needle_expected_answer_not_exact" in evidence
+    assert "expected failure-mode characterization" in evidence
+    assert "vllm: 0.23.0" in evidence
+    assert "torch: 2.11.0+cu130" in evidence
+    assert "torch CUDA: 13.0" in evidence
+    assert "CUDA_VISIBLE_DEVICES=1,7" in evidence
+    assert "server_port: 28147" in evidence
+    assert "max_model_len=262144" in evidence
+    assert "tensor_parallel_size=2" in evidence
+    assert "target_prompt_tokens=255800" in evidence
+    assert "actual_prompt_tokens=255799" in evidence
+    assert "prompt_chars: 1230965" in evidence
+    assert "max_tokens=1" in evidence
+    assert "expected_answer: PTO_NEEDLE_256K_CONTEXT_OK_28143" in evidence
+    assert "needle_occurrences: 1" in evidence
+    assert "match_mode: exact" in evidence
+    assert "stop_sequences_configured: true" in evidence
+    assert 'stop: ["\\n```"]' in evidence
+    assert "finish_reason: length" in evidence
+    assert "generated_text_length_chars: 2" in evidence
+    assert "normalized_generated_text: P" in evidence
+    assert "expected_answer_exact: failed" in evidence
+    assert "usage.prompt_tokens: 255799" in evidence
+    assert "usage.completion_tokens: 1" in evidence
+    assert "usage.total_tokens: 255800" in evidence
+    assert "remaining_process_group_pids: []" in evidence
+    assert "raw prompt text is not recorded" in evidence
+    assert "raw request payload is not recorded" in evidence
+    assert "token ID arrays are not recorded" in evidence
+    assert "logprob values are not recorded" in evidence
+    assert "generated-text digests are not recorded" in evidence
+    assert (
+        "local_only_vllm_256k_needle_exact_truncated_failure: failed"
+        in readiness
+    )
+    assert (
+        "vllm_remote_256k_needle_exact_truncated_failure_probe.md"
+        in readiness
+    )
     assert "text_" + "sha256" not in evidence
     assert "token_ids" not in evidence
     assert "/" + "home/" not in evidence
