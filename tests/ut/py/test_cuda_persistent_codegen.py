@@ -356,13 +356,18 @@ def test_render_persistent_dag_source_records_device_scheduler_errors():
     assert "pto_dag_record_error(state, 4U, dependent_id);" in source
     assert "state->fanin[idx] != state->tasks[idx].initial_fanin" in source
     assert "pto_dag_record_error(state, 5U, idx);" in source
-    assert "unsigned int initial_ready_count = 0U;" in source
-    assert "++initial_ready_count;" in source
-    assert "initial_ready_count == 0U" in source
+    assert "unsigned int *scheduler_init_count;" in source
+    assert "atomicAdd(state->scheduler_init_count, 1U);" in source
+    assert "atomicAdd(state->scheduler_init_count, 0U) < scheduler_blocks" in source
+    assert (
+        "blockIdx.x == 0 && state->task_count != 0ULL && "
+        "atomicAdd(state->queue_tail, 0U) == 0U"
+    ) in source
     assert "pto_dag_record_error(state, 6U, 0U);" in source
     assert "__device__ unsigned int pto_dag_first_unready_task" in source
-    assert "published == completed" in source
-    assert "pto_dag_record_error(state, 7U, pto_dag_first_unready_task(state));" in source
+    assert "published == finished && claimed == completed" in source
+    assert "unsigned int unready_task = pto_dag_first_unready_task(state);" in source
+    assert "pto_dag_record_error(state, 7U, unready_task);" in source
     assert "for (unsigned int prev = 0; prev < idx; ++prev)" in source
     assert "pto_dag_record_error(state, 8U, dependent_id);" in source
     assert "atomicAdd(state->error_count, 0U) != 0U" in source
