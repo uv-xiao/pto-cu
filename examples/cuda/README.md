@@ -204,6 +204,37 @@ capacity gate only, not generated-text correctness, tokenizer semantics,
 prompt correctness, 256K context, throughput, latency, production readiness,
 or simpler-nv/vLLM integration evidence.
 
+## DeepSeek V4 Flash vLLM 256K Context Health Probe
+
+```bash
+CUDA_VISIBLE_DEVICES=1,7 VLLM_NO_USAGE_STATS=1 \
+PYTHONPATH=$PWD:$PWD/python \
+timeout --foreground 50m \
+.venv-vllm-probe/bin/python \
+  examples/cuda/vllm_deepseek_v4_server_health_probe.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --vllm-bin .venv-vllm-probe/bin/vllm \
+  --port 28134 \
+  --server-log tmp/vllm-256k-context-health-probe/server-28134.log \
+  --max-model-len 262144 --tensor-parallel-size 2 \
+  --dtype bfloat16 --quantization deepseek_v4_fp8 \
+  --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
+  --distributed-executor-backend mp --enforce-eager \
+  --timeout-seconds 2700 --poll-interval-seconds 10 \
+  --terminate-timeout-seconds 60
+```
+
+This reuses the local-only server-health probe with the model's configured
+262,144-token length and still checks only `/health` and `/v1/models`; it does
+not send a long prompt or run generation. The remote H200 evidence is recorded
+in
+`docs/in_progress/nvidia_backend/vllm_remote_256k_context_health_probe.md`:
+the server returned HTTP 200 from both checked endpoints and the model list
+reported `max_model_len=262144`. This is a 256K server-health/model-list
+capacity gate only, not long-prompt behavior, generated-text correctness,
+tokenizer semantics, prompt correctness, throughput, latency, production
+readiness, or simpler-nv/vLLM integration evidence.
+
 ## DeepSeek V4 Flash vLLM Inference Smoke Probe
 
 ```bash
