@@ -27,13 +27,17 @@ MAX_ALLOWED_TOKENS = 16
 DEFAULT_LOGPROBS = 1
 DEFAULT_PROMPT_LOGPROBS = 1
 MAX_ALLOWED_LOGPROBS = 5
+DEFAULT_STOP_STRINGS = ["<pto-cu-stop-contract-marker>"]
+DEFAULT_STOP_TOKEN_IDS = [0]
 NON_CLAIMS = [
     "not generated-text correctness evidence",
     "not tokenizer semantic correctness evidence",
     "not prompt correctness evidence",
+    "not token identity or stop-token semantic correctness evidence",
     "not 256K context evidence",
     "not throughput or latency evidence",
     "not production-readiness evidence",
+    "not broad determinism evidence",
     "not simpler-nv or vLLM kernel integration evidence",
 ]
 
@@ -168,6 +172,47 @@ def build_echo_contract_request(
     )
     request["payload"]["echo"] = True
     request["limits"]["echo"] = True
+    return request
+
+
+def build_stop_contract_request(
+    *,
+    served_model_name: str = health_probe.DEFAULT_SERVED_MODEL_NAME,
+    prompt: str = DEFAULT_PROMPT,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
+    temperature: float = DEFAULT_TEMPERATURE,
+    top_p: float = DEFAULT_TOP_P,
+    seed: int = DEFAULT_SEED,
+    stop: list[str] | None = None,
+    stop_token_ids: list[int] | None = None,
+) -> dict[str, Any]:
+    stop_strings = list(DEFAULT_STOP_STRINGS if stop is None else stop)
+    stop_ids = list(
+        DEFAULT_STOP_TOKEN_IDS if stop_token_ids is None else stop_token_ids
+    )
+    if not stop_strings or not all(
+        isinstance(value, str) and value for value in stop_strings
+    ):
+        raise ValueError(
+            "stop-contract requests require one or more non-empty stop strings"
+        )
+    if not stop_ids or not all(isinstance(value, int) for value in stop_ids):
+        raise ValueError("stop-contract requests require one or more integer stop_token_ids")
+    request = build_contract_request(
+        served_model_name=served_model_name,
+        prompt=prompt,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        top_p=top_p,
+        seed=seed,
+    )
+    request["payload"]["stop"] = stop_strings
+    request["payload"]["stop_token_ids"] = stop_ids
+    request["payload"]["include_stop_str_in_output"] = False
+    request["limits"]["stop"] = stop_strings
+    request["limits"]["stop_token_ids_count"] = len(stop_ids)
+    request["limits"]["include_stop_str_in_output"] = False
+    request["limits"]["stop_trigger_asserted"] = False
     return request
 
 
@@ -493,6 +538,59 @@ def validate_echo_contract(
     return result
 
 
+def validate_stop_contract(
+    payload: Any,
+    *,
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    result = validate_completion_contract(payload, request=request)
+    result["stop"] = {}
+    if result["status"] != "passed":
+        result["checks"]["base_completion_contract"] = "failed"
+        return result
+    result["checks"]["base_completion_contract"] = "passed"
+
+    request_payload = request.get("payload")
+    if not isinstance(request_payload, dict):
+        result["checks"]["stop_request_fields"] = "failed"
+        return _fail_contract(
+            result,
+            category="stop_contract_request_fields",
+            message="stop-contract request must include a JSON payload",
+        )
+    stop = request_payload.get("stop")
+    stop_token_ids = request_payload.get("stop_token_ids")
+    include_stop = request_payload.get("include_stop_str_in_output")
+    if (
+        not isinstance(stop, list)
+        or not stop
+        or not all(isinstance(value, str) and value for value in stop)
+        or not isinstance(stop_token_ids, list)
+        or not stop_token_ids
+        or not all(isinstance(value, int) for value in stop_token_ids)
+        or include_stop is not False
+    ):
+        result["checks"]["stop_request_fields"] = "failed"
+        return _fail_contract(
+            result,
+            category="stop_contract_request_fields",
+            message=(
+                "stop-contract request must set non-empty stop strings, "
+                "integer stop_token_ids, and include_stop_str_in_output=false"
+            ),
+        )
+
+    result["checks"]["stop_request_fields"] = "passed"
+    result["checks"]["stop_trigger"] = "not_asserted"
+    result["stop"] = {
+        "stop_strings_count": len(stop),
+        "stop_token_ids_count": len(stop_token_ids),
+        "include_stop_str_in_output": include_stop,
+        "stop_trigger_asserted": False,
+    }
+    return result
+
+
 def send_contract_request(
     *,
     port: int,
@@ -583,6 +681,22 @@ def send_echo_contract_request(
     )
 
 
+def send_stop_contract_request(
+    *,
+    port: int,
+    request: dict[str, Any],
+    timeout_seconds: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    http_post: HttpPost = _http_post,
+) -> dict[str, Any]:
+    return send_contract_request(
+        port=port,
+        request=request,
+        timeout_seconds=timeout_seconds,
+        http_post=http_post,
+        validator=validate_stop_contract,
+    )
+
+
 def run_probe(
     *,
     artifact_dir: Path = health_probe.DEFAULT_ARTIFACT_DIR,
@@ -610,6 +724,7 @@ def run_probe(
     seed: int = DEFAULT_SEED,
     echo_contract: bool = False,
     logprobs_contract: bool = False,
+    stop_contract: bool = False,
     logprobs: int = DEFAULT_LOGPROBS,
     prompt_logprobs: int = DEFAULT_PROMPT_LOGPROBS,
     dry_run: bool = False,
@@ -622,12 +737,13 @@ def run_probe(
             "generation_attempted": False,
             "non_claims": NON_CLAIMS,
         }
-    if echo_contract and logprobs_contract:
+    explicit_modes = [echo_contract, logprobs_contract, stop_contract]
+    if sum(1 for enabled in explicit_modes if enabled) > 1:
         return {
             "status": "failed",
             "failure": _failure_payload(
                 "invalid_request",
-                "choose only one explicit contract mode: echo or logprobs",
+                "choose only one explicit contract mode: echo, logprobs, or stop",
             ),
             "generation_attempted": False,
             "non_claims": NON_CLAIMS,
@@ -637,6 +753,8 @@ def run_probe(
             request_builder = build_echo_contract_request
         elif logprobs_contract:
             request_builder = build_logprobs_contract_request
+        elif stop_contract:
+            request_builder = build_stop_contract_request
         else:
             request_builder = build_contract_request
         request_kwargs = {
@@ -687,7 +805,13 @@ def run_probe(
         "server_log": health_probe._display_path(log_path),
         "endpoints": ["/health", "/v1/models", DEFAULT_ENDPOINT],
         "contract_mode": (
-            "echo" if echo_contract else "logprobs" if logprobs_contract else "response"
+            "echo"
+            if echo_contract
+            else "logprobs"
+            if logprobs_contract
+            else "stop"
+            if stop_contract
+            else "response"
         ),
         "contract_request": contract_request,
         "contract_checks": [
@@ -727,6 +851,15 @@ def run_probe(
                 "raw generated text is not recorded or checked for correctness",
             ]
         )
+    if stop_contract:
+        result["contract_checks"].extend(
+            [
+                "explicit stop and stop_token_ids request fields",
+                "explicit include_stop_str_in_output=false request field",
+                "base response contract remains valid when stop fields are accepted",
+                "stop trigger, stop marker presence, and token identity are not asserted",
+            ]
+        )
     if dry_run:
         return result
 
@@ -754,6 +887,8 @@ def run_probe(
             send_request = send_echo_contract_request
         elif logprobs_contract:
             send_request = send_logprobs_contract_request
+        elif stop_contract:
+            send_request = send_stop_contract_request
         else:
             send_request = send_contract_request
         completion = send_request(
@@ -846,6 +981,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--echo-contract", action="store_true")
     parser.add_argument("--logprobs-contract", action="store_true")
+    parser.add_argument("--stop-contract", action="store_true")
     parser.add_argument("--logprobs", type=int, default=DEFAULT_LOGPROBS)
     parser.add_argument("--prompt-logprobs", type=int, default=DEFAULT_PROMPT_LOGPROBS)
     parser.add_argument("--dry-run", action="store_true")
@@ -880,6 +1016,7 @@ def main(argv: list[str] | None = None) -> int:
         seed=args.seed,
         echo_contract=args.echo_contract,
         logprobs_contract=args.logprobs_contract,
+        stop_contract=args.stop_contract,
         logprobs=args.logprobs,
         prompt_logprobs=args.prompt_logprobs,
         dry_run=args.dry_run,
