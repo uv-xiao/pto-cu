@@ -135,6 +135,7 @@ def check_examples_and_rules() -> None:
         ".agents/skills/github-pr/SKILL.md",
         "docs/in_progress/nvidia_backend/vllm_remote_install_probe.md",
         "docs/in_progress/nvidia_backend/vllm_remote_env_artifact_probe.md",
+        "docs/in_progress/nvidia_backend/vllm_remote_artifact_complete.md",
         "docs/in_progress/nvidia_backend/deepseek_v4_flash_serving_readiness.md",
         "examples/cuda/README.md",
         "examples/cuda/host_schedule_vector_ops.py",

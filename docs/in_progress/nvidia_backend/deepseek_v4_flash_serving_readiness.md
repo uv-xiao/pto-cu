@@ -2,7 +2,7 @@
 
 This note records the current remote H200 readiness state for
 `deepseek-ai/DeepSeek-V4-Flash` after the local artifact and weight-free vLLM
-probe gates. It is a readiness gap record, not serving evidence.
+probe gates. It is a pre-load readiness record, not serving evidence.
 
 ## Current Evidence
 
@@ -14,7 +14,7 @@ Already merged inputs:
 - The local artifact readiness probe can compose artifact inspection with the
   existing vLLM import/config probes.
 
-Fresh remote H200 evidence from this slice:
+Merged remote H200 environment evidence:
 
 - The remote H200 runner is reachable.
 - The remote reports 8 x NVIDIA H200 NVL GPUs, compute capability 9.0,
@@ -29,76 +29,60 @@ Fresh remote H200 evidence from this slice:
   `--require-vllm`.
 - The weight-free DeepSeek V4 vLLM config probe passes with
   `--require-vllm --max-position-embeddings 262144`.
-- The repo-relative remote artifact path
-  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash` exposes metadata and
-  tokenizer files, but no indexed weight shards.
-- The artifact probe and weight manifest gate fail with exit code `2` because
-  artifacts are incomplete: 46 indexed shards, 0 present shards, and
-  159609485896 indexed bytes.
+- A prior remote artifact check showed the repo-relative artifact path exposed
+  metadata/tokenizer files but no indexed weight shards.
 
 Detailed follow-up evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_env_artifact_probe.md`.
 
+Fresh remote H200 artifact evidence from this slice:
+
+- The complete `deepseek-ai/DeepSeek-V4-Flash` artifact directory was copied
+  into the remote checkout's ignored repo-relative path:
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash`.
+- The source tree was refreshed to commit
+  `cf8fabaae2f25fb58b04d74f5c57517a9dab4ea3`; the existing
+  `.venv-vllm-probe` was reused without repair.
+- The weight-free DeepSeek V4 vLLM import probe passed with
+  `--require-vllm`.
+- The weight-free DeepSeek V4 vLLM config probe passed with
+  `--require-vllm --max-position-embeddings 262144`.
+- The composed artifact/vLLM probe passed with `--require-artifacts
+  --require-vllm`: 46 indexed shards, 46 present shards, 0 missing shards,
+  and 159617149040 present bytes.
+- The standalone weight manifest gate passed with `--require-complete`:
+  46 indexed shards, 46 present shards, 0 missing shards, and
+  159617149040 present bytes.
+
+Detailed artifact-complete evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_artifact_complete.md`.
+
 ## Serving Readiness State
 
-The current remote state is blocked before serving can be tested:
+The current remote state is complete through the weight-free pre-load artifact
+gate:
 
 ```text
 remote_h200_reachable: yes
 remote_vllm_environment: ready for weight-free import/config probes
-remote_repo_relative_artifacts: metadata/tokenizer only
+remote_repo_relative_artifacts: complete for indexed shard presence
 weight_free_require_vllm_probes: passed
-artifact_require_probe: failed because indexed shards are missing
-weight_manifest_gate: incomplete because indexed shards are missing
+artifact_require_probe: passed
+weight_manifest_gate: complete
 serving_readiness: not established
 ```
 
-This means the next reviewable step is remote artifact completion on the H200
-checkout. It is too early to claim model-load readiness, server readiness, or
-generated text correctness.
+This means the next reviewable step is an explicit model-load or serving probe
+with its own resource boundary. It is still too early to claim vLLM engine
+initialization, server readiness, generated text correctness, long-context
+behavior, latency, throughput, or production readiness.
 
 ## Next Gate
 
-The next PR-sized gate should:
-
-1. Expose a complete model artifact directory through the repo-relative remote
-   path `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash`, using symlinks
-   under `tmp/` if the raw shards live elsewhere on the host.
-2. Rerun:
-
-```bash
-PYTHONPATH=$PWD:$PWD/python \
-  .venv-vllm-probe/bin/python \
-  examples/cuda/vllm_deepseek_v4_import_probe.py --require-vllm
-```
-
-```bash
-PYTHONPATH=$PWD:$PWD/python \
-  .venv-vllm-probe/bin/python \
-  examples/cuda/vllm_deepseek_v4_config_probe.py \
-  --require-vllm --max-position-embeddings 262144
-```
-
-```bash
-PYTHONPATH=$PWD:$PWD/python \
-  .venv-vllm-probe/bin/python \
-  examples/cuda/vllm_deepseek_v4_artifact_probe.py \
-  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
-  --require-artifacts --require-vllm
-```
-
-That gate should remain weight-free unless the dispatcher explicitly assigns a
-model-load or serving slice.
-
-Also rerun the weight manifest gate against the same path:
-
-```bash
-PYTHONPATH=$PWD:$PWD/python \
-  .venv-vllm-probe/bin/python \
-  examples/cuda/deepseek_v4_flash_weight_manifest.py \
-  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
-  --require-complete
-```
+The next PR-sized gate should run an explicit model-load or serving readiness
+probe on the remote H200 checkout. That later gate needs its own command,
+resource plan, expected failure mode, and non-claims before it should make any
+serving statement.
 
 ## Non-Claims
 
@@ -107,4 +91,5 @@ PYTHONPATH=$PWD:$PWD/python \
 - This is not vLLM server health evidence.
 - This is not prompt, tokenizer semantic, correct-text, long-context,
   throughput, latency, or production readiness evidence.
-- This did not copy, sync, download, or commit raw model artifacts.
+- This did not commit raw model artifacts, venvs, command dumps, or `tmp/`
+  symlinks.
