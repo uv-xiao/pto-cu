@@ -193,6 +193,16 @@ def _normalize_stop_sequences(stop_sequences: list[str] | None) -> list[str]:
     return normalized
 
 
+def _positive_int(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("must be a positive integer") from exc
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
+
+
 def _validate_request_bounds(
     *,
     target_prompt_tokens: int,
@@ -700,6 +710,93 @@ def send_needle_request(
     return result
 
 
+def review_safe_repeat_attempt_summary(
+    completion: dict[str, Any],
+    *,
+    attempt_index: int,
+) -> dict[str, Any]:
+    validation = completion.get("validation", {})
+    observation = completion.get("observation", {})
+    checks = validation.get("checks", {}) if isinstance(validation, dict) else {}
+
+    summary: dict[str, Any] = {
+        "attempt_index": attempt_index,
+        "status": completion.get("status", "failed"),
+    }
+    if "http_status" in completion:
+        summary["http_status"] = completion["http_status"]
+
+    finish_reason = observation.get("finish_reason") or validation.get("finish_reason")
+    if finish_reason is not None:
+        summary["finish_reason"] = finish_reason
+
+    text_length_chars = observation.get("text_length_chars", validation.get("text_length_chars"))
+    if text_length_chars is not None:
+        summary["generated_text_length_chars"] = text_length_chars
+
+    if "expected_answer_exact" in checks:
+        summary["exact_check"] = checks["expected_answer_exact"]
+    if "expected_answer_contained" in checks:
+        summary["contains_check"] = checks["expected_answer_contained"]
+
+    usage = observation.get("usage") or validation.get("usage")
+    if usage is not None:
+        summary["usage"] = usage
+
+    failure = completion.get("failure")
+    if isinstance(failure, dict):
+        summary["failure"] = {
+            "category": failure.get("category", "unknown"),
+            "message": failure.get("message", ""),
+        }
+    return summary
+
+
+def aggregate_repeat_attempts(
+    attempts: list[dict[str, Any]],
+    *,
+    request: dict[str, Any],
+    expected_count: int | None = None,
+) -> dict[str, Any]:
+    requested_count = expected_count if expected_count is not None else len(attempts)
+    summaries = [
+        review_safe_repeat_attempt_summary(completion, attempt_index=index)
+        for index, completion in enumerate(attempts, start=1)
+    ]
+    failed_attempts = [
+        completion
+        for completion in attempts
+        if completion.get("status") != "passed"
+    ]
+    incomplete = len(attempts) != requested_count
+    aggregate: dict[str, Any] = {
+        "status": "failed" if failed_attempts or incomplete else "passed",
+        "repeat_count": requested_count,
+        "attempts_completed": len(attempts),
+        "passed_attempts": len(attempts) - len(failed_attempts),
+        "failed_attempts": len(failed_attempts),
+        "request": review_safe_request(request),
+        "attempts": summaries,
+    }
+    if incomplete:
+        aggregate["failure"] = _failure_payload(
+            "needle_repeat_incomplete",
+            (
+                f"completed {len(attempts)} of {requested_count} requested "
+                "repeat attempts"
+            ),
+        )
+    elif failed_attempts:
+        aggregate["failure"] = failed_attempts[0].get(
+            "failure",
+            _failure_payload(
+                "needle_repeat_attempt_failed",
+                "one or more repeat attempts failed",
+            ),
+        )
+    return aggregate
+
+
 def _server_log_snippets(log_path: Path, *, max_lines: int = 80) -> list[str]:
     try:
         lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -717,6 +814,7 @@ def _failure_note(
     selected_port: int,
     log_path: Path,
     match_mode: str,
+    repeat_count: int,
 ) -> dict[str, Any]:
     failure = result.get("failure", {})
     return {
@@ -727,6 +825,7 @@ def _failure_note(
             "target_prompt_tokens": target_prompt_tokens,
             "max_tokens": max_tokens,
             "match_mode": match_mode,
+            "repeat_count": repeat_count,
         },
         "failure_category": failure.get("category", "unknown"),
         "failure_message": failure.get("message", ""),
@@ -767,6 +866,7 @@ def run_probe(
     expected_answer: str = DEFAULT_EXPECTED_ANSWER,
     match_mode: str = DEFAULT_MATCH_MODE,
     stop_sequences: list[str] | None = None,
+    repeat_count: int = 1,
     dry_run: bool = False,
 ) -> dict[str, Any]:
     selected_port = port if port is not None else health_probe.choose_local_port()
@@ -774,6 +874,17 @@ def run_probe(
         return {
             "status": "failed",
             "failure": _failure_payload("invalid_port", f"invalid port: {selected_port}"),
+            "generation_attempted": False,
+            "prompt_sent": False,
+            "non_claims": NON_CLAIMS,
+        }
+    if repeat_count < 1:
+        return {
+            "status": "failed",
+            "failure": _failure_payload(
+                "invalid_repeat_count",
+                "repeat-count must be a positive integer",
+            ),
             "generation_attempted": False,
             "prompt_sent": False,
             "non_claims": NON_CLAIMS,
@@ -864,6 +975,13 @@ def run_probe(
         "prompt_sent": False,
         "non_claims": NON_CLAIMS,
     }
+    if repeat_count > 1:
+        result["repeat"] = {
+            "repeat_count": repeat_count,
+            "attempts_planned": repeat_count,
+            "request_reused": True,
+            "attempt_summaries_record": "review_safe_only",
+        }
     if dry_run:
         return result
 
@@ -893,26 +1011,57 @@ def run_probe(
                 _failure_payload("readiness_failed", "server readiness failed"),
             )
             return result
-        completion = send_needle_request(
-            port=selected_port,
-            request=needle_request,
-            served_model_name=served_model_name,
-            expected_answer=expected_answer,
-            match_mode=match_mode,
-            timeout_seconds=request_timeout_seconds,
-        )
         result["generation_attempted"] = True
         result["prompt_sent"] = True
-        result["completion"] = completion
-        result["status"] = completion["status"]
-        if completion["status"] != "passed":
-            result["failure"] = completion.get(
-                "failure",
-                _failure_payload(
-                    "needle_correctness_failed",
-                    "synthetic needle correctness check failed",
-                ),
+        if repeat_count == 1:
+            completion = send_needle_request(
+                port=selected_port,
+                request=needle_request,
+                served_model_name=served_model_name,
+                expected_answer=expected_answer,
+                match_mode=match_mode,
+                timeout_seconds=request_timeout_seconds,
             )
+            result["completion"] = completion
+            result["status"] = completion["status"]
+            if completion["status"] != "passed":
+                result["failure"] = completion.get(
+                    "failure",
+                    _failure_payload(
+                        "needle_correctness_failed",
+                        "synthetic needle correctness check failed",
+                    ),
+                )
+        else:
+            attempts = []
+            for _ in range(repeat_count):
+                attempts.append(
+                    send_needle_request(
+                        port=selected_port,
+                        request=needle_request,
+                        served_model_name=served_model_name,
+                        expected_answer=expected_answer,
+                        match_mode=match_mode,
+                        timeout_seconds=request_timeout_seconds,
+                    )
+                )
+                if process.poll() is not None:
+                    break
+            repeat = aggregate_repeat_attempts(
+                attempts,
+                request=needle_request,
+                expected_count=repeat_count,
+            )
+            result["repeat"] = repeat
+            result["status"] = repeat["status"]
+            if repeat["status"] != "passed":
+                result["failure"] = repeat.get(
+                    "failure",
+                    _failure_payload(
+                        "needle_repeat_failed",
+                        "one or more synthetic needle repeat attempts failed",
+                    ),
+                )
         if process.poll() is not None and result["status"] != "passed":
             result["failure"] = _failure_payload(
                 "server_exited_during_probe",
@@ -946,6 +1095,7 @@ def run_probe(
                 selected_port=selected_port,
                 log_path=log_path,
                 match_mode=match_mode,
+                repeat_count=repeat_count,
             )
     return result
 
@@ -1026,6 +1176,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "request; omitted from the request body when unset"
         ),
     )
+    parser.add_argument(
+        "--repeat-count",
+        type=_positive_int,
+        default=1,
+        help=(
+            "number of repeated completion requests to send within one server "
+            "lifecycle; defaults to one"
+        ),
+    )
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
 
@@ -1059,6 +1218,7 @@ def main(argv: list[str] | None = None) -> int:
         expected_answer=args.expected_answer,
         match_mode=args.match_mode,
         stop_sequences=args.stop_sequence,
+        repeat_count=args.repeat_count,
         dry_run=args.dry_run,
     )
     print(json.dumps(result, indent=2, sort_keys=True))

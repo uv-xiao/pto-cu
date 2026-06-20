@@ -1144,6 +1144,57 @@ slice:
 Detailed 256K needle stop-controlled exact-output evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_stop_sequence_probe.md`.
 
+Fresh remote H200 256K needle stop-controlled exact-output repeat evidence
+from this slice:
+
+- The repo-owned needle correctness probe now supports `--repeat-count`,
+  defaulting to `1` so the prior single-request result shape is preserved.
+- For repeat counts greater than one, the probe reuses one local-only vLLM
+  server lifecycle, sends the same bounded `/v1/completions` request
+  repeatedly, runs the existing response-contract and strict exact comparator
+  for every attempt, and fails the aggregate if any attempt fails.
+- A pre-run remote check explicitly confirmed that the preserved prior path
+  `REMOTE_PTO_CU=/tmp/pto-cu-vllm-remote-env-artifact` contained
+  `.venv-vllm-probe/bin/python`, `.venv-vllm-probe/bin/vllm`, and
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash`. The environment
+  reported vLLM 0.23.0, Torch 2.11.0+cu130, CUDA 13.0, and transformers
+  5.12.1.
+- The remote source tree was refreshed with `--sync`, preserving the existing
+  ignored artifact directory and `.venv-vllm-probe`.
+- The selected physical GPUs were again 1 and 7, exposed as exactly two
+  visible devices with `CUDA_VISIBLE_DEVICES=1,7` and
+  `tensor_parallel_size=2`.
+- The passing repeat boundary used `max_model_len=262144`,
+  `dtype=bfloat16`, `quantization=deepseek_v4_fp8`, `kv_cache_dtype=fp8`,
+  `gpu_memory_utilization=0.78`, `enforce_eager=true`,
+  `distributed_executor_backend=mp`, a 120-minute outer timeout, a
+  2700-second readiness timeout, and an 1800-second request timeout.
+- The repeated request used `target_prompt_tokens=255800`,
+  `actual_prompt_tokens=255799`, `max_tokens=64`, `match_mode=exact`,
+  `temperature=0.0`, `top_p=1.0`, `seed=0`, `stream=false`, `echo=false`,
+  `logprobs=false`, and the stop sequence `"\n```"`.
+- The server started on `http://127.0.0.1:28146`, returned HTTP 200 from
+  `/health`, returned `deepseek-ai/DeepSeek-V4-Flash` with
+  `max_model_len=262144` from `/v1/models`, and accepted three repeated
+  `/v1/completions` requests.
+- All three attempts passed strict exact mode with `finish_reason=stop`,
+  generated-text length 33, and usage counts: `prompt_tokens=255799`,
+  `completion_tokens=17`, and `total_tokens=255816`.
+- The repeat summary recorded `repeat_count=3`, `passed_attempts=3`, and
+  `failed_attempts=0`.
+- The repeat aggregate did not record raw prompt text, raw request payloads,
+  raw generated text, token ID arrays, logprob values, generated-text digests,
+  model artifact contents, or symlinks.
+- The probe cleanup passed and reported no remaining process-group PIDs.
+- The run establishes stop-controlled synthetic exact-output repeat evidence
+  only; it is not general generated-text correctness, semantic correctness,
+  latency, throughput, production-readiness, broad determinism, or
+  simpler-nv/vLLM integration evidence.
+
+Detailed 256K needle stop-controlled exact-output repeat evidence is recorded
+in
+`docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_stop_repeat_probe.md`.
+
 ## Serving Readiness State
 
 The current remote state is complete through bounded two-H200 vLLM
@@ -1161,7 +1212,8 @@ bounded 192K long-prompt response-contract probe, plus one bounded 256K
 long-prompt response-contract probe, plus one bounded near-256K synthetic
 needle containment/correctness probe, plus one bounded near-256K synthetic
 exact-output failure gate, plus one bounded near-256K stop-controlled
-synthetic exact-output pass gate:
+synthetic exact-output pass gate, plus one three-request near-256K
+stop-controlled synthetic exact-output repeat pass gate:
 
 ```text
 remote_h200_reachable: yes
@@ -1197,6 +1249,8 @@ local_only_vllm_256k_needle_exact_output: failed under recorded 262144-token
   boundary
 local_only_vllm_256k_needle_exact_stop_sequence: passed under recorded
   262144-token boundary
+local_only_vllm_256k_needle_exact_stop_repeat: passed under recorded
+  262144-token boundary and one server lifecycle
 one_token_inference_smoke: passed under recorded 4096-token boundary
 response_contract_probe: passed under recorded 4096-token boundary
 warmup_shape_probe: passed under recorded same-shape two-request boundary
@@ -1218,7 +1272,8 @@ serving_readiness: bounded local-only response contract and warmup-shape
   response-contract probe, plus one bounded near-256K synthetic needle
   correctness probe, plus one bounded near-256K synthetic exact-output
   failure gate, plus one bounded near-256K stop-controlled synthetic
-  exact-output pass gate; no general correctness claims
+  exact-output pass gate, plus one three-request near-256K stop-controlled
+  synthetic exact-output repeat pass gate; no general correctness claims
 ```
 
 This means the remote H200 environment has passed a local-only vLLM server
@@ -1292,14 +1347,19 @@ server boundary. The probe used `--match-mode exact` and stop sequence
 `"\n```"` and required the normalized synthetic output to exactly equal
 `PTO_NEEDLE_256K_CONTEXT_OK_28143`.
 
+It has now passed three repeated local-only stop-controlled synthetic
+exact-output requests near the same prompt-token budget under one recorded
+262144-token vLLM server lifecycle. Each attempt used the same strict exact
+comparator and stop sequence, and the repeat aggregate recorded only
+review-safe attempt summaries.
+
 ## Next Gate
 
-The next PR-sized gate can stay under the same local-only vLLM boundary and
-choose a follow-up for failure-mode characterization or repeated near-boundary
-response-contract confirmation only after preserving the
-request-plus-completion budget under `max_model_len=262144`, still without
-recording raw prompt text, dumping raw request payloads, or expanding beyond
-synthetic-test-scoped generated output.
+The next PR-sized gate can stay under the same local-only vLLM boundary for
+failure-mode characterization or a narrowly scoped serving-contract follow-up
+only after preserving the request-plus-completion budget under
+`max_model_len=262144`, still without recording raw prompt text, dumping raw
+request payloads, or expanding beyond synthetic-test-scoped generated output.
 
 ## Non-Claims
 
