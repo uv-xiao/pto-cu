@@ -790,7 +790,7 @@ def test_chat_exact_truncated_failure_evidence_is_review_safe():
     assert "expected_answer: PTO_CHAT_EXACT_CANARY_28149" in evidence
     assert "match_mode: exact" in evidence
     assert "HTTP status: 200" in evidence
-    assert "finish_reason:" in evidence
+    assert "finish_reason: length" in evidence
     assert "normalized_output_equals_expected: false" in evidence
     assert "expected_answer_exact: failed" in evidence
     assert "usage.completion_tokens: 1" in evidence
