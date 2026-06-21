@@ -1191,6 +1191,24 @@ def test_generate_gluon_flashattention_writes_causal_mask_source(tmp_path):
     assert "causal," in source
 
 
+def test_generate_gluon_flashattention_writes_decode_causal_mask_source(tmp_path):
+    artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
+        "flashattention_fwd_f32",
+        output_dir=tmp_path,
+        arch="compute_90",
+        tile_shape=(1, 32, 64),
+    )
+
+    source = artifact.source_path.read_text(encoding="utf-8")
+
+    assert "causal_query_offset: gl.constexpr" in source
+    assert "if causal:" in source
+    assert "causal_mask = offs_n <= (offs_m + causal_query_offset)" in source
+    assert 'scores = gl.where(causal_mask, scores, -float("inf"))' in source
+    assert "causal_query_offset = 31" in source
+    assert "causal_query_offset," in source
+
+
 def test_generate_gluon_flashattention_uses_rhs_transposed_storage_for_rectangular_tiles(
     tmp_path,
 ):
@@ -1259,6 +1277,7 @@ def test_gluon_flashattention_example_reports_causal_skip_json_and_relative_arti
 
     assert result["status"] == "skipped"
     assert result["schema_version"] == 1
+    assert result["phase"] == "single_tile"
     assert result["causal"] is True
     assert result["reason"] == "torch.cuda is not available"
     assert result["kernel_name"] == "flashattention_fwd_f32"
@@ -1273,6 +1292,81 @@ def test_gluon_flashattention_example_reports_causal_skip_json_and_relative_arti
     )
     assert result["artifact"]["tile_shape"] == [32, 32, 64]
     assert not Path(result["artifact"]["source_path"]).is_absolute()
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_gluon_flashattention_example_reports_decode_skip_json_and_reference(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_flashattention_correctness(
+        output_dir=Path("flashattention-decode-artifacts"),
+        arch="compute_90",
+        tile_shape=(1, 32, 64),
+        causal=True,
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["schema_version"] == 1
+    assert result["phase"] == "decode"
+    assert result["causal"] is True
+    assert result["reason"] == "torch.cuda is not available"
+    assert result["kernel_name"] == "flashattention_fwd_f32"
+    assert result["shape"] == {"seqlen_q": 1, "seqlen_k": 32, "head_dim": 64}
+    assert result["reference"] == example.FLASHATTENTION_CAUSAL_DECODE_REFERENCE
+    assert result["tolerance"] == {"atol": 0.001, "rtol": 0.01}
+    assert result["artifact"]["source_path"] == (
+        "flashattention-decode-artifacts/flashattention_fwd_f32.gluon.py"
+    )
+    assert result["artifact"]["manifest_path"] == (
+        "flashattention-decode-artifacts/flashattention_fwd_f32.gluon.json"
+    )
+    assert result["artifact"]["tile_shape"] == [1, 32, 64]
+    assert not Path(result["artifact"]["source_path"]).is_absolute()
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_gluon_flashattention_example_reports_structured_decode_runtime_failure(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    artifact = example.build_flashattention_artifact(
+        output_dir=Path("flashattention-decode-artifacts"),
+        arch="compute_90",
+        tile_shape=(1, 32, 64),
+    )
+
+    fake_torch = ModuleType("torch")
+    monkeypatch.setitem(sys.modules, "torch", fake_torch)
+
+    def fail_load(_source_path):
+        raise RuntimeError(f"decode lowering failed under {tmp_path}")
+
+    monkeypatch.setattr(example, "load_generated_module", fail_load)
+
+    result = example.run_flashattention_correctness(
+        output_dir=Path("flashattention-decode-artifacts"),
+        arch="compute_90",
+        tile_shape=(1, 32, 64),
+        causal=True,
+        skip_reason=lambda: None,
+    )
+
+    assert result["status"] == "failed"
+    assert result["phase"] == "decode"
+    assert result["causal"] is True
+    assert result["shape"] == {"seqlen_q": 1, "seqlen_k": 32, "head_dim": 64}
+    assert result["reference"] == example.FLASHATTENTION_CAUSAL_DECODE_REFERENCE
+    assert result["artifact"]["source_path"] == artifact.source_path.as_posix()
+    assert result["error_type"] == "RuntimeError"
+    assert result["error"] == "decode lowering failed under ."
     assert str(tmp_path) not in json.dumps(result)
 
 
@@ -1427,6 +1521,40 @@ def test_gluon_flashattention_example_cli_accepts_causal_boundary_shape(
     assert payload["artifact"]["tile_shape"] == [32, 32, 64]
     assert payload["artifact"]["source_path"] == (
         "flashattention-causal-artifacts/flashattention_fwd_f32.gluon.py"
+    )
+
+
+def test_gluon_flashattention_example_cli_accepts_decode_boundary_shape(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(example, "flashattention_skip_reason", lambda: "missing CUDA")
+
+    code = example.main(
+        [
+            "--output-dir",
+            "flashattention-decode-artifacts",
+            "--tile-shape",
+            "1x32x64",
+            "--causal",
+            "--require-cuda",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "skipped"
+    assert payload["phase"] == "decode"
+    assert payload["causal"] is True
+    assert payload["shape"] == {"seqlen_q": 1, "seqlen_k": 32, "head_dim": 64}
+    assert payload["reference"] == example.FLASHATTENTION_CAUSAL_DECODE_REFERENCE
+    assert payload["tolerance"] == {"atol": 0.001, "rtol": 0.01}
+    assert payload["artifact"]["tile_shape"] == [1, 32, 64]
+    assert payload["artifact"]["source_path"] == (
+        "flashattention-decode-artifacts/flashattention_fwd_f32.gluon.py"
     )
 
 

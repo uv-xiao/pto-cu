@@ -22,6 +22,10 @@ FLASHATTENTION_REFERENCE = "softmax((q @ k.T) * scale) @ v"
 FLASHATTENTION_CAUSAL_REFERENCE = (
     "softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v"
 )
+FLASHATTENTION_CAUSAL_DECODE_REFERENCE = (
+    "softmax(masked_fill((q @ k.T) * scale, "
+    "key_index > query_index + (seqlen_k - seqlen_q), -inf)) @ v"
+)
 FLASHATTENTION_SWEEP_CASES = [
     {
         "name": "existing_32x32x32",
@@ -115,9 +119,11 @@ def run_flashattention_correctness(
         tile_shape=tile_shape,
     )
     seqlen_q, seqlen_k, head_dim = artifact.tile_shape
+    phase = _phase_for(tile_shape=artifact.tile_shape, causal=causal)
     result = {
         "schema_version": 1,
         "kernel_name": "flashattention_fwd_f32",
+        "phase": phase,
         "artifact": _artifact_payload(artifact),
         "shape": {
             "seqlen_q": seqlen_q,
@@ -125,9 +131,7 @@ def run_flashattention_correctness(
             "head_dim": head_dim,
         },
         "causal": causal,
-        "reference": (
-            FLASHATTENTION_CAUSAL_REFERENCE if causal else FLASHATTENTION_REFERENCE
-        ),
+        "reference": _reference_for(phase=phase, causal=causal),
         "tolerance": {"atol": atol, "rtol": rtol},
     }
 
@@ -136,57 +140,67 @@ def run_flashattention_correctness(
     if reason is not None:
         return {**result, "status": "skipped", "reason": _clean_text(reason)}
 
-    import torch
+    try:
+        import torch
 
-    module = load_generated_module(artifact.source_path)
-    generator = torch.Generator(device="cuda")
-    generator.manual_seed(seed)
-    q = torch.randn(
-        (seqlen_q, head_dim),
-        device="cuda",
-        dtype=torch.float32,
-        generator=generator,
-    )
-    k = torch.randn(
-        (seqlen_k, head_dim),
-        device="cuda",
-        dtype=torch.float32,
-        generator=generator,
-    )
-    v = torch.randn(
-        (seqlen_k, head_dim),
-        device="cuda",
-        dtype=torch.float32,
-        generator=generator,
-    )
-    out = torch.empty((seqlen_q, head_dim), device="cuda", dtype=torch.float32)
+        module = load_generated_module(artifact.source_path)
+        generator = torch.Generator(device="cuda")
+        generator.manual_seed(seed)
+        q = torch.randn(
+            (seqlen_q, head_dim),
+            device="cuda",
+            dtype=torch.float32,
+            generator=generator,
+        )
+        k = torch.randn(
+            (seqlen_k, head_dim),
+            device="cuda",
+            dtype=torch.float32,
+            generator=generator,
+        )
+        v = torch.randn(
+            (seqlen_k, head_dim),
+            device="cuda",
+            dtype=torch.float32,
+            generator=generator,
+        )
+        out = torch.empty((seqlen_q, head_dim), device="cuda", dtype=torch.float32)
 
-    scale = head_dim**-0.5
-    module.run_flashattention_fwd_f32(
-        q,
-        k,
-        v,
-        out,
-        scale=scale,
-        causal=causal,
-        num_warps=4,
-    )
-    torch.cuda.synchronize()
+        scale = head_dim**-0.5
+        module.run_flashattention_fwd_f32(
+            q,
+            k,
+            v,
+            out,
+            scale=scale,
+            causal=causal,
+            num_warps=4,
+        )
+        torch.cuda.synchronize()
 
-    scores = (q @ k.T) * scale
-    if causal:
-        query_index = torch.arange(seqlen_q, device="cuda")[:, None]
-        key_index = torch.arange(seqlen_k, device="cuda")[None, :]
-        scores = scores.masked_fill(key_index > query_index, float("-inf"))
-    expected = torch.softmax(scores, dim=-1) @ v
-    torch.cuda.synchronize()
-    max_abs_error = float((out - expected).abs().max().item())
-    passed = bool(torch.allclose(out, expected, atol=atol, rtol=rtol))
-    return {
-        **result,
-        "status": "passed" if passed else "failed",
-        "max_abs_error": max_abs_error,
-    }
+        scores = (q @ k.T) * scale
+        if causal:
+            query_index = torch.arange(seqlen_q, device="cuda")[:, None]
+            key_index = torch.arange(seqlen_k, device="cuda")[None, :]
+            if phase == "decode":
+                query_index = query_index + (seqlen_k - seqlen_q)
+            scores = scores.masked_fill(key_index > query_index, float("-inf"))
+        expected = torch.softmax(scores, dim=-1) @ v
+        torch.cuda.synchronize()
+        max_abs_error = float((out - expected).abs().max().item())
+        passed = bool(torch.allclose(out, expected, atol=atol, rtol=rtol))
+        return {
+            **result,
+            "status": "passed" if passed else "failed",
+            "max_abs_error": max_abs_error,
+        }
+    except Exception as exc:
+        return {
+            **result,
+            "status": "failed",
+            "error_type": type(exc).__name__,
+            "error": _clean_text(str(exc)),
+        }
 
 
 def run_flashattention_sweep(
@@ -361,6 +375,7 @@ def _sweep_case_payload(
         "case_index": index,
         "case_name": case_name,
         "shape": result["shape"],
+        "phase": result["phase"],
         "provenance": provenance,
         "reference": result["reference"],
         "tolerance": result["tolerance"],
@@ -401,6 +416,21 @@ def _parse_tile_shape(raw_tile_shape: str | None) -> tuple[int, int, int]:
     if len(parts) != 3 or any(part <= 0 for part in parts):
         raise ValueError("--tile-shape must use MxNxD positive integers")
     return parts
+
+
+def _phase_for(*, tile_shape: tuple[int, int, int], causal: bool) -> str:
+    seqlen_q, seqlen_k, _head_dim = tile_shape
+    if causal and seqlen_q == 1 and seqlen_k > seqlen_q:
+        return "decode"
+    return "single_tile"
+
+
+def _reference_for(*, phase: str, causal: bool) -> str:
+    if not causal:
+        return FLASHATTENTION_REFERENCE
+    if phase == "decode":
+        return FLASHATTENTION_CAUSAL_DECODE_REFERENCE
+    return FLASHATTENTION_CAUSAL_REFERENCE
 
 
 def _display_command(raw_args: list[str]) -> str:
