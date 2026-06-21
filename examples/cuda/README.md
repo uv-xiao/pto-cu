@@ -398,7 +398,7 @@ PYTHONPATH=$PWD:$PWD/python \
   .venv-vllm-probe/bin/python \
   examples/cuda/vllm_deepseek_v4_model_load_probe.py \
   --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
-  --require-artifacts --require-vllm \
+  --require-artifacts --require-vllm --require-cuda \
   --max-model-len 4096 --tensor-parallel-size 2 \
   --dtype bfloat16 --quantization deepseek_v4_fp8 \
   --kv-cache-dtype fp8 \
@@ -408,7 +408,11 @@ PYTHONPATH=$PWD:$PWD/python \
 
 Run it only under an explicit GPU boundary, for example
 `CUDA_VISIBLE_DEVICES=<two ids>` with a matching `--tensor-parallel-size 2`,
-and an external timeout. The remote H200 evidence is recorded in
+and an external timeout.
+
+Missing artifacts, missing vLLM, or missing CUDA report structured skips by
+default; the matching `--require-*` flags convert those preflight skips into
+failures. The remote H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_model_load_probe.md`: vLLM loaded
 all 46 shards and initialized an `LLMEngine` on two H200 GPUs at
 `max_model_len=4096`. This is model-load and engine-initialization evidence,
