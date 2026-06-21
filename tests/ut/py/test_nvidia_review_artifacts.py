@@ -1713,6 +1713,19 @@ def test_uccl_adapter_artifacts_are_recorded_without_host_runtime_abi_claims():
     assert "uccl_ep_dispatch_combine_adapter.py" in readme_text
 
 
+def test_status_rollup_records_current_deepseek_serving_boundary():
+    status_text = (DOC_ROOT / "status.md").read_text(encoding="utf-8")
+
+    for required in [
+        "docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_repeat_probe.md",
+        "docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_truncated_failure_probe.md",
+        "docs/in_progress/nvidia_backend/pypto_serving_source_contract_h200.md",
+        "not a transport/server failure",
+        "not simpler-nv/vLLM kernel integration evidence",
+    ]:
+        assert required in status_text
+
+
 def test_host_runtime_comm_operation_symbols_are_exported_by_all_producers():
     required_symbols = [
         "comm_all_reduce_f32",

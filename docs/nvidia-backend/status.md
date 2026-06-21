@@ -6,6 +6,63 @@ design work so evaluation results are not mistaken for a complete backend.
 
 ## Implemented And Verified
 
+### DeepSeek Serving Boundary
+
+The current real `deepseek-ai/DeepSeek-V4-Flash` serving path is vLLM. The
+merged remote H200 evidence loaded all 46 shards and initialized vLLM on two
+H200 GPUs, then started a local-only vLLM OpenAI-compatible server and passed
+`/health` and `/v1/models`.
+
+Bounded two-H200 vLLM requests have passed:
+
+- one-token inference smoke;
+- response-contract and request-shape probes;
+- long-prompt response-contract gates through the 256K context boundary;
+- synthetic 256K needle contains and exact gates;
+- chat exact canary;
+- near-256K chat needle exact, repeat, streaming exact, and streaming repeat
+  gates.
+
+The latest truncated streaming gate is the expected strict-comparator failure
+with `max_tokens=1`, not a transport/server failure. It records that server
+readiness, streaming HTTP 200, server-sent event parsing, terminal `[DONE]`,
+and cleanup all completed before the strict comparator rejected the
+intentionally too-short output budget.
+
+`pypto-serving` is not yet the real DeepSeek path. The checked-in synthetic
+simpler-nv adapter now exercises the actual cloned `pypto-serving`
+`create_serving_app` / `ServingServer` route on H200 with a CUDA seed and HTTP
+200, but that is source-route contract evidence for the synthetic adapter, not
+real DeepSeek serving.
+
+Evidence:
+
+- `docs/in_progress/nvidia_backend/vllm_remote_model_load_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_server_health_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_inference_smoke_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_response_contract_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_request_shape_variation_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_256k_long_prompt_response_contract_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_256k_needle_correctness_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_stop_sequence_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_256k_needle_exact_stop_repeat_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_chat_exact_canary_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_exact_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_repeat_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_repeat_probe.md`
+- `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_truncated_failure_probe.md`
+- `docs/in_progress/nvidia_backend/pypto_serving_source_contract_h200.md`
+
+Non-claims:
+
+- This is not production readiness evidence.
+- This is not throughput or latency evidence.
+- This is not broad generated-text or semantic correctness evidence.
+- This is not tokenizer, logprob, stop-trigger, or stop-token semantic
+  correctness evidence.
+- This is not simpler-nv/vLLM kernel integration evidence.
+
 ### Platform And Runtime Discovery
 
 - `cuda` maps to the `cuda/onboard` platform variant.
@@ -161,7 +218,7 @@ Artifacts:
 - `tmp/cuda-backend/stream-pair-working/combined-stream-pool6-a36d137b/`
 - `tmp/cuda-backend/stream-pair-working/index.md`
 
-The validator required machines `hina` and `dasys-h200x8`, baselines
+The validator required local A100 and remote H200 machine rows, baselines
 `pto_stream_serial` and `pto_stream_parallel`, size `2`, two repeats, eight
 total rows, source-paper provenance, command examples, and generated report
 files.
@@ -544,7 +601,7 @@ PTO runtime path.
 The first cuBLAS CUDA Graph paired capture is under
 `tmp/cuda-backend/cublas-graph-compact-working/combined-current-5168f150/`.
 It uses `N=1024`, one repeat, no batch rows, and the default `16x16x16`
-descriptor. The paired runner synced the working tree to `bizhaoh200`,
+descriptor. The paired runner synced the working tree to `<h200-host>`,
 captured A100 and H200 reports, merged `58` rows, and validated report files,
 command examples, source-paper provenance, tensor descriptor metadata, PTO
 dispatch sequences, and zero scheduler errors. The A100 rows measured
@@ -815,7 +872,7 @@ The CUDA scene-test file was also run on the remote H200 checkout after
 pushing this change:
 
 ```bash
-ssh bizhaoh200 \
+ssh <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -830,7 +887,7 @@ The remote H200 real-data Worker smoke was run through the no-torch smoke
 script:
 
 ```bash
-ssh bizhaoh200 \
+ssh <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -847,7 +904,7 @@ After adding persistent-device scene-test plumbing, the CUDA scene-test file
 was rerun on the remote H200 checkout:
 
 ```bash
-ssh bizhaoh200 \
+ssh <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -862,7 +919,7 @@ The remote H200 persistent DAG real-data smoke was run through the no-torch
 smoke script:
 
 ```bash
-ssh bizhaoh200 \
+ssh <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -992,7 +1049,7 @@ The same task-body style persistent DAG smoke was run on the remote H200
 checkout after pushing `6f1497b5`:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && git pull --ff-only >/dev/null && \
    PYTHONPATH=$PWD:$PWD/python \
    python3 .agents/skills/cuda-backend-eval/scripts/cuda_persistent_smoke.py \
@@ -1157,7 +1214,7 @@ The same scheduler-diagnostic slice was verified on the remote H200 checkout
 after pushing this change:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    git fetch origin design/nvidia-backend >/dev/null && \
    git checkout -B design/nvidia-backend FETCH_HEAD >/dev/null && \
@@ -1228,7 +1285,7 @@ The current unreachable-task slice was also checked on H200 through pytest
 after syncing the working tree:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -1294,7 +1351,7 @@ ctypes-backed real-data scene test was checked on remote H200 without requiring
 `torch`:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PTO_ISA_ROOT=<remote-pto-cu>/build/pto-isa \
    PATH=/usr/local/cuda/bin:$PATH PYTHONPATH=$PWD:$PWD/python \
@@ -1334,7 +1391,7 @@ file passed its compile/plumbing cases and skipped the real-data cases because
 the remote Python environment still lacks `torch`:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    git fetch origin design/nvidia-backend >/dev/null && \
    git checkout -B design/nvidia-backend FETCH_HEAD >/dev/null && \
@@ -1348,7 +1405,7 @@ Result: `2 passed, 3 skipped`.
 The no-torch tensor-tile persistent DAG smoke was also run on H200:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -1452,7 +1509,7 @@ The preflight and CUDA scene-test subset was also run on the remote H200
 checkout after pushing this change:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    git fetch origin design/nvidia-backend >/dev/null && \
    git checkout -B design/nvidia-backend FETCH_HEAD >/dev/null && \
@@ -1756,7 +1813,7 @@ The same unary scene-test slice was run on the remote H200 checkout after
 syncing the current local tree:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -1872,7 +1929,7 @@ focused local command passed on A100:
 ```
 
 The same command was run on H200 after syncing the working tree to
-`bizhaoh200`; it passed with `1 passed, 35 deselected`.
+`<h200-host>`; it passed with `1 passed, 35 deselected`.
 
 After promoting generic persistent DAG tensor/scalar argument slots to a
 benchmark baseline, the focused single-baseline path was checked on both GPUs:
@@ -2463,7 +2520,7 @@ ctypes-backed real-data persistent-device graph scene. The same synced
 working tree on H200:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && CUDA_HOME=/usr/local/cuda \
    PATH=/usr/local/cuda/bin:$PATH PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
    PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
@@ -2513,7 +2570,7 @@ ctypes-backed real-data persistent-device graph scenes. The same synced
 working tree on H200:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && CUDA_HOME=/usr/local/cuda \
    PATH=/usr/local/cuda/bin:$PATH PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
    PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
@@ -2545,7 +2602,7 @@ ctypes-backed real-data persistent-device graph scenes. The same synced
 working tree on H200:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && CUDA_HOME=/usr/local/cuda \
    PATH=/usr/local/cuda/bin:$PATH PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
    PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
@@ -2607,7 +2664,7 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
 PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
   tests/ut/py/test_cuda_scene_test.py -q -k tagged_graph --platform cuda
 
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -2674,7 +2731,7 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
   tests/ut/py/test_cuda_scene_test.py -q -k tagged_inout_graph \
   --platform cuda
 
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -2744,7 +2801,7 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
   -k 'compact_role_task_args or compact_role_graph_with_ctypes_data or \
       mixed_cuda_persistent_compact_role_task_arg' --platform cuda
 
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -2960,7 +3017,7 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python -m pytest \
   -k 'host_schedule_elementwise_generic_args_with_ctypes_data' \
   --platform cuda
 
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -3073,7 +3130,7 @@ The mixed explicit/inferred graph path was also run on the remote H200 after
 syncing the working tree:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -3108,7 +3165,7 @@ reported `54 passed`. The same no-torch real-data scene was run on the remote
 H200:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -3219,7 +3276,7 @@ The same no-torch real-data scene passed on remote H200 after syncing the
 working tree:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda-12.8 \
    PATH=/usr/local/cuda-12.8/bin:/usr/local/cuda/bin:$PATH \
@@ -3316,7 +3373,7 @@ PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python -m pytest tests/ut/py/test_cuda_scene_test.py \
     -q -k scalar_scale --platform cuda
 
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -3396,7 +3453,7 @@ The same real-data ctypes graph test was run on the remote H200 after syncing
 the working tree:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -3411,7 +3468,7 @@ The same real-data graph path was then run without an explicit `temporaries`
 map, so `tmp0` and `tmp1` were allocated from task outputs:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -3519,7 +3576,7 @@ The no-torch ctypes tensor-core scene test was also run on H200 after syncing
 the working tree:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -3571,7 +3628,7 @@ The diagnostic and good-graph ctypes tests were also run on H200 after
 syncing the working tree:
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=8 bizhaoh200 \
+ssh -o BatchMode=yes -o ConnectTimeout=8 <h200-host> \
   'cd <remote-pto-cu> && \
    CUDA_HOME=/usr/local/cuda PATH=/usr/local/cuda/bin:$PATH \
    PYTHONPATH=$PWD:$PWD/python \
@@ -4386,7 +4443,7 @@ Result: both selectors reported `1 passed`; the fake runtime received
 `device` and `scheduler` entries and no `host` entry, while the rebuilt CUDA
 `persistent_device` host runtime exported `simpler_init_roles`.
 
-The same source tree was synced to `bizhaoh200` and checked with a paired
+The same source tree was synced to `<h200-host>` and checked with a paired
 real-data persistent graph smoke:
 
 ```bash
