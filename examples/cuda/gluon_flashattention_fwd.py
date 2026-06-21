@@ -19,6 +19,9 @@ from simpler_setup.kernel_compiler import KernelCompiler
 DEFAULT_OUTPUT_DIR = Path("tmp/gluon-flashattention-local")
 FLASHATTENTION_TILE = (32, 32, 32)
 FLASHATTENTION_REFERENCE = "softmax((q @ k.T) * scale) @ v"
+FLASHATTENTION_CAUSAL_REFERENCE = (
+    "softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v"
+)
 FLASHATTENTION_SWEEP_CASES = [
     {
         "name": "existing_32x32x32",
@@ -69,7 +72,7 @@ def flashattention_skip_reason() -> str | None:
     except Exception as exc:  # pragma: no cover - depends on local environment
         return f"triton Gluon import failed: {_clean_text(str(exc))}"
 
-    for required in ("dot_fma", "exp", "max", "sum"):
+    for required in ("dot_fma", "exp", "max", "sum", "where"):
         if not hasattr(gl, required):
             return f"triton Gluon import failed: missing gl.{required}"
 
@@ -99,6 +102,7 @@ def run_flashattention_correctness(
     atol: float = 1e-3,
     rtol: float = 1e-2,
     seed: int = 0,
+    causal: bool = False,
     skip_reason: Callable[[], str | None] | None = None,
 ) -> dict:
     resolved_output_dir = DEFAULT_OUTPUT_DIR if output_dir is None else Path(output_dir)
@@ -120,7 +124,10 @@ def run_flashattention_correctness(
             "seqlen_k": seqlen_k,
             "head_dim": head_dim,
         },
-        "reference": FLASHATTENTION_REFERENCE,
+        "causal": causal,
+        "reference": (
+            FLASHATTENTION_CAUSAL_REFERENCE if causal else FLASHATTENTION_REFERENCE
+        ),
         "tolerance": {"atol": atol, "rtol": rtol},
     }
 
@@ -155,10 +162,23 @@ def run_flashattention_correctness(
     out = torch.empty((seqlen_q, head_dim), device="cuda", dtype=torch.float32)
 
     scale = head_dim**-0.5
-    module.run_flashattention_fwd_f32(q, k, v, out, scale=scale, num_warps=4)
+    module.run_flashattention_fwd_f32(
+        q,
+        k,
+        v,
+        out,
+        scale=scale,
+        causal=causal,
+        num_warps=4,
+    )
     torch.cuda.synchronize()
 
-    expected = torch.softmax((q @ k.T) * scale, dim=-1) @ v
+    scores = (q @ k.T) * scale
+    if causal:
+        query_index = torch.arange(seqlen_q, device="cuda")[:, None]
+        key_index = torch.arange(seqlen_k, device="cuda")[None, :]
+        scores = scores.masked_fill(key_index > query_index, float("-inf"))
+    expected = torch.softmax(scores, dim=-1) @ v
     torch.cuda.synchronize()
     max_abs_error = float((out - expected).abs().max().item())
     passed = bool(torch.allclose(out, expected, atol=atol, rtol=rtol))
@@ -223,6 +243,7 @@ def run_flashattention_sweep(
                         "head_dim": head_dim,
                     },
                     "provenance": provenance,
+                    "causal": False,
                     "reference": FLASHATTENTION_REFERENCE,
                     "tolerance": {"atol": atol, "rtol": rtol},
                     "status": "failed",
@@ -270,6 +291,11 @@ def main(argv: list[str] | None = None) -> int:
             help="run the fixed review sweep instead of the single default case",
         )
         parser.add_argument(
+            "--causal",
+            action="store_true",
+            help="apply a lower-triangular causal mask for the single-case run",
+        )
+        parser.add_argument(
             "--require-cuda",
             action="store_true",
             help="return a non-zero status when dependencies or CUDA are unavailable",
@@ -292,6 +318,7 @@ def main(argv: list[str] | None = None) -> int:
                 atol=args.atol,
                 rtol=args.rtol,
                 seed=args.seed,
+                causal=args.causal,
             )
     except Exception as exc:
         result = {
@@ -337,6 +364,7 @@ def _sweep_case_payload(
         "provenance": provenance,
         "reference": result["reference"],
         "tolerance": result["tolerance"],
+        "causal": result["causal"],
         "status": result["status"],
         "artifact": result["artifact"],
     }

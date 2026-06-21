@@ -420,7 +420,7 @@ def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
 
 
         @gluon.jit
-        def flashattention_fwd_f32_kernel(q_ptr, k_ptr, v_ptr, out_ptr, seqlen_q: gl.constexpr, seqlen_k: gl.constexpr, head_dim: gl.constexpr, scale: gl.constexpr):
+        def flashattention_fwd_f32_kernel(q_ptr, k_ptr, v_ptr, out_ptr, seqlen_q: gl.constexpr, seqlen_k: gl.constexpr, head_dim: gl.constexpr, scale: gl.constexpr, causal: gl.constexpr):
             layout: gl.constexpr = gl.BlockedLayout([1, 1], [32, 1], [gl.num_warps(), 1], [1, 0])
             lhs_layout: gl.constexpr = gl.DotOperandLayout(parent=layout, operand_index=0, k_width=0)
             rhs_layout: gl.constexpr = gl.DotOperandLayout(parent=layout, operand_index=1, k_width=0)
@@ -428,6 +428,9 @@ def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
             offs_m = gl.arange(0, {block_m}, layout=gl.SliceLayout(1, layout))[:, None]
             offs_n = gl.arange(0, {block_n}, layout=gl.SliceLayout(0, layout))[None, :]
 {score_source}
+            if causal:
+                causal_mask = offs_n <= offs_m
+                scores = gl.where(causal_mask, scores, -float("inf"))
 
             row_max = gl.max(scores, axis=1)
             probs = gl.exp(scores - row_max[:, None])
@@ -444,7 +447,7 @@ def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
             gl.store(out_ptr + offs_m * head_dim + offs_d, out)
 
 
-        def run_flashattention_fwd_f32(q, k, v, out, scale=None, num_warps=4):
+        def run_flashattention_fwd_f32(q, k, v, out, scale=None, causal=False, num_warps=4):
             expected_shapes = (({block_m}, {block_d}), ({block_n}, {block_d}), ({block_n}, {block_d}), ({block_m}, {block_d}))
             actual_shapes = (tuple(q.shape), tuple(k.shape), tuple(v.shape), tuple(out.shape))
             if actual_shapes != expected_shapes:
@@ -460,6 +463,7 @@ def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
                 {block_n},
                 {block_d},
                 resolved_scale,
+                causal,
                 num_warps=num_warps,
             )
         """
