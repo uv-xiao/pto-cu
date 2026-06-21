@@ -15,12 +15,29 @@ for a rank-2 input tensor, a rank-1 weight vector, and a rank-1 bias vector.
 ## Harness
 
 The harness is `examples/cuda/gluon_layernorm_f32.py`. It emits structured
-JSON for pass, skip, and fail cases. The payload records:
+JSON for pass, skip, and fail cases. The default command runs one case;
+`--sweep` runs a fixed two-case shape sweep. The aggregate payload records:
 
 - `kernel_name`, `status`, and `schema_version`;
-- generated artifact paths and source digest;
-- `rows`, `hidden`, epsilon, and tolerance;
-- maximum absolute error when correctness is measured.
+- aggregate case counts;
+- each case's shape, epsilon, provenance, status, generated artifact paths,
+  source digest, and tolerance;
+- maximum absolute error for each case when correctness is measured.
+
+The fixed sweep cases are:
+
+- `rows=2, hidden=16, eps=1e-5`, provenance `existing-smoke`;
+- `rows=1, hidden=7168, eps=1e-5`, provenance
+  `DeepSeek-V4-Flash config hidden_size`.
+
+Single-case CLI compatibility is preserved, including
+`--rows 2 --hidden 16 --eps 1e-5`.
+
+The serving-shape boundary provenance is repo-local evidence. The
+`tests/ut/py/test_vllm_deepseek_v4_artifact_probe.py` fixture contains
+`hidden_size: 7168`, and
+`examples/cuda/vllm_deepseek_v4_artifact_probe.py` reads the
+DeepSeek-V4-Flash `hidden_size` config field from the artifact probe.
 
 The default output directory is repo-relative `tmp/gluon-layernorm-local`.
 Absolute `--output-dir` values are rejected so stdout JSON does not leak
@@ -32,18 +49,22 @@ noise during skip checks.
 ```bash
 PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
   examples/cuda/gluon_layernorm_f32.py \
-  --output-dir tmp/gluon-layernorm-local \
-  --rows 2 --hidden 16 --eps 1e-5 --arch compute_90
+  --output-dir tmp/gluon-layernorm-shape-coverage-local \
+  --sweep --arch compute_90
 ```
 
 Local result:
 
 - exit code: `0`;
 - status: passed;
-- shape: `rows=2`, `hidden=16`;
-- epsilon: `1e-5`;
-- tolerance: `atol=1e-5`, `rtol=1e-5`;
-- max absolute error: `2.384185791015625e-07`;
+- case statuses: passed, passed;
+- case count: `2`;
+- passed cases: `2`;
+- failed cases: `0`;
+- skipped cases: `0`;
+- existing-smoke max absolute error: `2.384185791015625e-07`;
+- DeepSeek-V4-Flash hidden-size max absolute error:
+  `2.384185791015625e-06`;
 - source digest:
   `406db63c98a5ad71b76ccff485e3bf5063ade471735aa57eb5c2240fbee94ad9`.
 
@@ -63,13 +84,14 @@ Execution details:
 
 - synced checkout: `<remote-pto-cu>`;
 - python environment: <remote-gluon-venv>;
+- machine class: H200;
 - GPU: NVIDIA H200 NVL;
 - compute capability: `9.0`;
 - driver: `580.126.20`;
 - CUDA toolkit: `<cuda-toolkit>`, CUDA 12.8 compiler build;
-- Torch: `2.8.0+cu128`;
-- Torch CUDA: `12.8`;
-- Triton: `3.7.1`.
+- Torch: `2.11.0+cu130`;
+- Torch CUDA: `13.0`;
+- Triton: `3.6.0`.
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
@@ -77,8 +99,8 @@ REMOTE_PTO_CU=<remote-pto-cu> \
   bash -lc 'PYTHONPATH=$PWD:$PWD/python \
     <remote-gluon-venv>/bin/python \
       examples/cuda/gluon_layernorm_f32.py \
-      --output-dir tmp/gluon-layernorm-h200 \
-      --rows 2 --hidden 16 --eps 1e-5 \
+      --output-dir tmp/gluon-layernorm-shape-coverage-h200 \
+      --sweep \
       --require-cuda --device 0 --arch compute_90'
 ```
 
@@ -86,16 +108,22 @@ H200 result:
 
 - exit code: `0`;
 - status: passed;
-- shape: `rows=2`, `hidden=16`;
-- epsilon: `1e-5`;
-- tolerance: `atol=1e-5`, `rtol=1e-5`;
-- max absolute error: `2.384185791015625e-07`;
+- case statuses: passed, passed;
+- case count: `2`;
+- passed cases: `2`;
+- failed cases: `0`;
+- skipped cases: `0`;
+- `existing_smoke`: `rows=2`, `hidden=16`, `eps=1e-5`, provenance
+  `existing-smoke`, max absolute error `2.384185791015625e-07`;
+- `deepseek_v4_flash_hidden_size`: `rows=1`, `hidden=7168`, `eps=1e-5`,
+  provenance `DeepSeek-V4-Flash config hidden_size`, max absolute error
+  `2.384185791015625e-06`;
 - source digest:
   `406db63c98a5ad71b76ccff485e3bf5063ade471735aa57eb5c2240fbee94ad9`.
 
 ## Limitations
 
-- The evidence covers one bounded FP32 LayerNorm shape.
+- The evidence covers a small fixed FP32 LayerNorm shape sweep.
 - The implementation is correctness-focused, not performance-focused.
 - The remote evidence used tree sync plus a preserved remote Gluon venv rather
   than a venv created inside the fresh synced checkout.
@@ -105,18 +133,19 @@ H200 result:
 - This is not FlashInfer integration evidence.
 - This is not production serving readiness.
 - This is not DeepSeek semantic correctness.
+- This is not performance evidence and not throughput or latency evidence.
 - This is not Gemma-style fused norm coverage.
 - This is not activation coverage.
 - This is not fused attention evidence.
 - This is not KV-cache integration evidence.
 - This is not vLLM/simpler-nv integration evidence.
-- This is not throughput or latency evidence.
+- This is not full normalization coverage.
 
 ## Follow-Up Gaps
 
 - Add broader normalization fixtures only in separate slices, such as
-  serving-shape LayerNorm sweeps, broader RMSNorm shape coverage, or
-  Gemma-style fused norm.
+  additional LayerNorm shapes, RMSNorm shapes, or Gemma-style fused norm
+  shapes.
 - Keep RoPE, SiLU, GELU, gated activation, fused attention, KV-cache mutation,
   paged attention, and serving integration evidence in their own bounded
   branches.

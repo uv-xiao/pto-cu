@@ -18,6 +18,25 @@ from simpler_setup.kernel_compiler import KernelCompiler
 
 
 DEFAULT_OUTPUT_DIR = Path("tmp/gluon-layernorm-local")
+LAYERNORM_REFERENCE = "out = (x - mean) * rsqrt(var + eps) * weight + bias"
+LAYERNORM_SWEEP_CASES = [
+    {
+        "name": "existing_smoke",
+        "rows": 2,
+        "hidden": 16,
+        "eps": 1.0e-5,
+        "seed": 0,
+        "provenance": "existing-smoke",
+    },
+    {
+        "name": "deepseek_v4_flash_hidden_size",
+        "rows": 1,
+        "hidden": 7168,
+        "eps": 1.0e-5,
+        "seed": 0,
+        "provenance": "DeepSeek-V4-Flash config hidden_size",
+    },
+]
 
 
 def build_layernorm_artifact(
@@ -95,6 +114,7 @@ def run_layernorm_correctness(
         "artifact": _artifact_payload(artifact),
         "shape": {"rows": rows, "hidden": hidden},
         "epsilon": eps,
+        "reference": LAYERNORM_REFERENCE,
         "tolerance": {"atol": atol, "rtol": rtol},
     }
 
@@ -132,6 +152,88 @@ def run_layernorm_correctness(
     }
 
 
+def run_layernorm_sweep(
+    *,
+    output_dir: str | Path | None = None,
+    arch: str = "compute_90",
+    atol: float = 1.0e-5,
+    rtol: float = 1.0e-5,
+    device: int = 0,
+    cases: list[dict] | None = None,
+    skip_reason: Callable[[], str | None] | None = None,
+) -> dict:
+    resolved_output_dir = DEFAULT_OUTPUT_DIR if output_dir is None else Path(output_dir)
+    if resolved_output_dir.is_absolute():
+        raise ValueError("--output-dir must be repo-relative")
+
+    case_specs = LAYERNORM_SWEEP_CASES if cases is None else cases
+    case_results = []
+    counts = {"passed": 0, "failed": 0, "skipped": 0}
+
+    for index, case in enumerate(case_specs):
+        case_name = str(case["name"])
+        provenance = str(case["provenance"])
+        rows = int(case["rows"])
+        hidden = int(case["hidden"])
+        eps = float(case["eps"])
+        try:
+            result = run_layernorm_correctness(
+                output_dir=resolved_output_dir / case_name,
+                arch=arch,
+                rows=rows,
+                hidden=hidden,
+                eps=eps,
+                atol=atol,
+                rtol=rtol,
+                seed=int(case["seed"]),
+                device=device,
+                skip_reason=skip_reason,
+            )
+            status = result["status"]
+            counts[status] += 1
+            case_results.append(
+                _sweep_case_payload(
+                    index=index,
+                    case_name=case_name,
+                    provenance=provenance,
+                    result=result,
+                )
+            )
+        except Exception as exc:
+            counts["failed"] += 1
+            case_results.append(
+                {
+                    "case_index": index,
+                    "case_name": case_name,
+                    "shape": {"rows": rows, "hidden": hidden},
+                    "epsilon": eps,
+                    "provenance": provenance,
+                    "reference": LAYERNORM_REFERENCE,
+                    "tolerance": {"atol": atol, "rtol": rtol},
+                    "status": "failed",
+                    "error_type": type(exc).__name__,
+                    "error": _clean_text(str(exc)),
+                }
+            )
+
+    aggregate_status = "passed"
+    if counts["failed"]:
+        aggregate_status = "failed"
+    elif counts["skipped"]:
+        aggregate_status = "skipped"
+
+    return {
+        "schema_version": 1,
+        "kernel_name": "layernorm_f32",
+        "status": aggregate_status,
+        "case_count": len(case_results),
+        "passed_cases": counts["passed"],
+        "failed_cases": counts["failed"],
+        "skipped_cases": counts["skipped"],
+        "cases": case_results,
+    }
+
+
 class JsonArgumentParser(argparse.ArgumentParser):
     def error(self, message: str) -> None:
         raise ValueError(message)
@@ -153,6 +255,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument("--seed", type=int, default=0)
         parser.add_argument("--device", type=int, default=0)
         parser.add_argument(
+            "--sweep",
+            action="store_true",
+            help="run the fixed review sweep instead of the single default case",
+        )
+        parser.add_argument(
             "--require-cuda",
             action="store_true",
             help="return a non-zero status when dependencies or CUDA are unavailable",
@@ -160,17 +267,26 @@ def main(argv: list[str] | None = None) -> int:
         args = parser.parse_args(raw_args)
         require_cuda = args.require_cuda
 
-        result = run_layernorm_correctness(
-            output_dir=args.output_dir,
-            arch=args.arch,
-            rows=args.rows,
-            hidden=args.hidden,
-            eps=args.eps,
-            atol=args.atol,
-            rtol=args.rtol,
-            seed=args.seed,
-            device=args.device,
-        )
+        if args.sweep:
+            result = run_layernorm_sweep(
+                output_dir=args.output_dir,
+                arch=args.arch,
+                atol=args.atol,
+                rtol=args.rtol,
+                device=args.device,
+            )
+        else:
+            result = run_layernorm_correctness(
+                output_dir=args.output_dir,
+                arch=args.arch,
+                rows=args.rows,
+                hidden=args.hidden,
+                eps=args.eps,
+                atol=args.atol,
+                rtol=args.rtol,
+                seed=args.seed,
+                device=args.device,
+            )
     except Exception as exc:
         result = {
             "schema_version": 1,
@@ -199,6 +315,31 @@ def _artifact_payload(artifact: GluonKernelArtifact) -> dict:
         "source_sha256": artifact.source_sha256,
         "tile_shape": list(artifact.tile_shape),
     }
+
+
+def _sweep_case_payload(
+    *,
+    index: int,
+    case_name: str,
+    provenance: str,
+    result: dict,
+) -> dict:
+    payload = {
+        "case_index": index,
+        "case_name": case_name,
+        "shape": result["shape"],
+        "epsilon": result["epsilon"],
+        "provenance": provenance,
+        "reference": result["reference"],
+        "tolerance": result["tolerance"],
+        "status": result["status"],
+        "artifact": result["artifact"],
+    }
+    if "reason" in result:
+        payload["reason"] = result["reason"]
+    if "max_abs_error" in result:
+        payload["max_abs_error"] = result["max_abs_error"]
+    return payload
 
 
 def _relative_path(path: str | Path) -> str:

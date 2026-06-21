@@ -1920,7 +1920,7 @@ def test_status_rollup_records_current_deepseek_serving_boundary():
         "docs/in_progress/nvidia_backend/gluon_gated_silu_h200.md",
         "FlashInfer-derived operator checklist",
         "generated Gluon FP32 RMSNorm shape sweep",
-        "generated Gluon FP32 LayerNorm fixture",
+        "generated Gluon FP32 LayerNorm shape sweep",
         "generated Gluon FP32 SiLU fixture",
         "generated Gluon FP32 GELU fixture",
         "generated Gluon FP32 gated SiLU fixture",
@@ -2102,10 +2102,17 @@ def test_gluon_layernorm_h200_evidence_is_review_safe():
         "mean = average(x)",
         "var = average((x - mean) ** 2)",
         "out = (x - mean) * rsqrt(var + eps) * weight + bias",
+        "--sweep",
         "--rows 2 --hidden 16 --eps 1e-5",
+        "rows=1, hidden=7168, eps=1e-5",
+        "DeepSeek-V4-Flash config hidden_size",
+        "tests/ut/py/test_vllm_deepseek_v4_artifact_probe.py",
+        "examples/cuda/vllm_deepseek_v4_artifact_probe.py",
         "--require-cuda --device 0 --arch compute_90",
         "status: passed",
+        "case statuses: passed, passed",
         "max absolute error:",
+        "machine class: H200",
         "python environment: <remote-gluon-venv>",
         "REMOTE_PTO_CU=<remote-pto-cu>",
         "not FlashInfer integration evidence",
@@ -2125,11 +2132,16 @@ def test_gluon_layernorm_h200_evidence_is_review_safe():
     readme_text = readme.read_text(encoding="utf-8")
     assert "gluon_layernorm_f32.py" in readme_text
     assert "layernorm_f32" in readme_text
+    assert "--sweep" in readme_text
+    assert "hidden=7168" in readme_text
+    assert "DeepSeek-V4-Flash config hidden_size" in readme_text
     assert "gluon_layernorm_h200.md" in readme_text
 
     checklist_text = checklist.read_text(encoding="utf-8")
     assert "gluon_layernorm_h200.md" in checklist_text
     assert "LayerNorm" in checklist_text
+    assert "hidden=7168" in checklist_text
+    assert "DeepSeek-V4-Flash config hidden_size" in checklist_text
     assert "Gemma-style fused norm" in checklist_text
     assert "SiLU" in checklist_text
     assert "GELU" in checklist_text
@@ -2137,7 +2149,9 @@ def test_gluon_layernorm_h200_evidence_is_review_safe():
 
     status_text = status.read_text(encoding="utf-8")
     assert "gluon_layernorm_h200.md" in status_text
-    assert "generated Gluon FP32 LayerNorm fixture" in status_text
+    assert "generated Gluon FP32 LayerNorm shape sweep" in status_text
+    assert "hidden=7168" in status_text
+    assert "DeepSeek-V4-Flash config hidden_size" in status_text
     assert "not FlashInfer integration evidence" in status_text
 
 

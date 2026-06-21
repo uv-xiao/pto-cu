@@ -946,6 +946,50 @@ def test_gluon_layernorm_f32_example_reports_skip_json_and_relative_artifacts(
     assert str(tmp_path) not in json.dumps(result)
 
 
+def test_gluon_layernorm_f32_sweep_reports_fixed_cases_and_provenance(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_layernorm_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_layernorm_sweep(
+        output_dir=Path("tmp/gluon-layernorm-sweep-local"),
+        arch="compute_90",
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["schema_version"] == 1
+    assert result["kernel_name"] == "layernorm_f32"
+    assert result["status"] == "skipped"
+    assert result["case_count"] == 2
+    assert result["passed_cases"] == 0
+    assert result["failed_cases"] == 0
+    assert result["skipped_cases"] == 2
+
+    cases = result["cases"]
+    assert [case["shape"] for case in cases] == [
+        {"rows": 2, "hidden": 16},
+        {"rows": 1, "hidden": 7168},
+    ]
+    assert [case["epsilon"] for case in cases] == [1e-5, 1e-5]
+    assert [case["provenance"] for case in cases] == [
+        "existing-smoke",
+        "DeepSeek-V4-Flash config hidden_size",
+    ]
+    assert [case["reference"] for case in cases] == [
+        "out = (x - mean) * rsqrt(var + eps) * weight + bias",
+        "out = (x - mean) * rsqrt(var + eps) * weight + bias",
+    ]
+    assert {case["status"] for case in cases} == {"skipped"}
+    for case in cases:
+        assert case["artifact"]["source_path"].startswith(
+            "tmp/gluon-layernorm-sweep-local/"
+        )
+        assert not Path(case["artifact"]["source_path"]).is_absolute()
+    assert str(tmp_path) not in json.dumps(result)
+
+
 def test_gluon_rope_f32_example_reports_skip_json_and_relative_artifacts(
     tmp_path,
     monkeypatch,
@@ -1199,6 +1243,37 @@ def test_gluon_layernorm_f32_example_main_requires_cuda_on_skip(
     assert payload["reason"] == "missing CUDA"
 
 
+def test_gluon_layernorm_f32_sweep_main_requires_cuda_on_skip(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    example = _load_gluon_layernorm_example()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(example, "layernorm_skip_reason", lambda: "missing CUDA")
+
+    code = example.main(
+        [
+            "--output-dir",
+            "tmp/gluon-layernorm-sweep-local",
+            "--sweep",
+            "--require-cuda",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert code == 2
+    assert captured.err == ""
+    assert payload["status"] == "skipped"
+    assert payload["case_count"] == 2
+    assert payload["skipped_cases"] == 2
+    assert [case["provenance"] for case in payload["cases"]] == [
+        "existing-smoke",
+        "DeepSeek-V4-Flash config hidden_size",
+    ]
+
+
 def test_gluon_rope_f32_example_main_requires_cuda_on_skip(
     tmp_path,
     capsys,
@@ -1326,7 +1401,7 @@ def test_gluon_rmsnorm_f32_rejects_absolute_output_dir(capsys):
 def test_gluon_layernorm_f32_rejects_absolute_output_dir(capsys):
     example = _load_gluon_layernorm_example()
 
-    code = example.main(["--output-dir", "/tmp/private-output"])
+    code = example.main(["--output-dir", "/tmp/private-output", "--sweep"])
 
     payload = json.loads(capsys.readouterr().out)
     assert code == 1
