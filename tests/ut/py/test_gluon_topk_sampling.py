@@ -100,6 +100,36 @@ def test_gluon_topk_sampling_reports_skip_json_and_relative_artifacts(
     ]
 
 
+def test_gluon_topk_sampling_supports_broader_shape_fixture(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_topk_sampling_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_topk_sampling_correctness(
+        output_dir=Path("tmp/gluon-topk-shape-coverage-local"),
+        arch="compute_90",
+        rows=3,
+        vocab=16,
+        k=5,
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["shape"] == {"rows": 3, "vocab": 16, "k": 5}
+    assert result["cpu_golden"]["values"] == [
+        [2.0, 2.0, 1.5, 1.5, 1.2],
+        [3.0, 3.0, 2.0, 2.0, 1.5],
+        [4.0, 4.0, 3.5, 3.5, 3.5],
+    ]
+    assert result["cpu_golden"]["indices"] == [
+        [7, 11, 2, 3, 9],
+        [5, 7, 6, 9, 11],
+        [3, 4, 6, 7, 15],
+    ]
+
+
 def test_gluon_topk_sampling_reports_passed_validation_with_mock_runner(
     tmp_path,
     monkeypatch,
@@ -119,11 +149,44 @@ def test_gluon_topk_sampling_reports_passed_validation_with_mock_runner(
 
     assert result["status"] == "passed"
     assert result["validation"] == {
+        "values_shape_match": True,
+        "indices_shape_match": True,
         "values_match": True,
         "indices_match": True,
         "max_abs_error": 0.0,
     }
     assert result["gpu_result"] == result["cpu_golden"]
+
+
+def test_gluon_topk_sampling_rejects_truncated_gpu_values_payload(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_topk_sampling_example()
+    monkeypatch.chdir(tmp_path)
+
+    def truncated_values_runner(logits, k, **_):
+        golden = example.compute_topk_cpu_golden(logits, k=k)
+        return {
+            "values": [row[:-1] for row in golden["values"]],
+            "indices": golden["indices"],
+        }
+
+    result = example.run_topk_sampling_correctness(
+        output_dir=Path("tmp/gluon-topk-sampling-local"),
+        arch="compute_90",
+        rows=2,
+        vocab=8,
+        k=3,
+        skip_reason=lambda: None,
+        gpu_runner=truncated_values_runner,
+    )
+
+    assert result["status"] == "failed"
+    assert result["validation"]["values_shape_match"] is False
+    assert result["validation"]["indices_shape_match"] is True
+    assert result["validation"]["values_match"] is False
+    assert result["validation"]["indices_match"] is True
 
 
 def test_gluon_topk_sampling_main_requires_cuda_on_skip(

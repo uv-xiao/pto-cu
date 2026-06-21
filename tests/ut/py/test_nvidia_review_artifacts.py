@@ -2768,11 +2768,14 @@ def test_gluon_topk_sampling_h200_evidence_is_review_safe():
         "values",
         "indices",
         "lower token id first",
-        "--output-dir tmp/gluon-topk-sampling-h200",
+        "default fixture: `rows=2, vocab=8, k=3`",
+        "broader fixture: `rows=3, vocab=16, k=5`",
+        "--output-dir tmp/gluon-topk-shape-coverage-h200",
         "--require-cuda",
         "--arch compute_90",
         "status: passed",
-        "rows=2, vocab=8, k=3",
+        "rows=3, vocab=16, k=5",
+        "values shape, indices shape, values, and indices match",
         "machine class: H200",
         "REMOTE_PTO_CU=<remote-pto-cu>",
         "not FlashInfer integration evidence",
@@ -2789,12 +2792,16 @@ def test_gluon_topk_sampling_h200_evidence_is_review_safe():
     assert "gluon_topk_sampling.py" in readme_text
     assert "topk_sampling_f32" in readme_text
     assert "gluon_topk_sampling_h200.md" in readme_text
+    assert "rows=3, vocab=16, k=5" in readme_text
+    assert "payload shape checks" in readme_text
     assert "not FlashInfer integration evidence" in readme_text
 
     checklist_text = checklist.read_text(encoding="utf-8")
     assert "gluon_topk_sampling_h200.md" in checklist_text
     assert "topk_sampling_f32" in checklist_text
     assert "Top-K" in checklist_text
+    assert "rows=3, vocab=16, k=5" in checklist_text
+    assert "checks result payload shapes before" in checklist_text
     assert "top-p, min-p" not in checklist_text
     assert "min-p" in checklist_text
     assert "not FlashInfer integration evidence" in checklist_text
