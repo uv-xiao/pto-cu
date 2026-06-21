@@ -1175,8 +1175,8 @@ from this slice:
   server lifecycle, sends the same bounded `/v1/completions` request
   repeatedly, runs the existing response-contract and strict exact comparator
   for every attempt, and fails the aggregate if any attempt fails.
-- A pre-run remote check explicitly confirmed that the preserved prior path
-  `REMOTE_PTO_CU=/tmp/pto-cu-vllm-remote-env-artifact` contained
+- A pre-run remote check explicitly confirmed that the preserved remote vLLM
+  probe checkout contained
   `.venv-vllm-probe/bin/python`, `.venv-vllm-probe/bin/vllm`, and
   `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash`. The environment
   reported vLLM 0.23.0, Torch 2.11.0+cu130, CUDA 13.0, and transformers
@@ -1224,8 +1224,8 @@ this slice:
   characterize the failure mode where the strict exact comparator is kept but
   the completion budget is intentionally too small to emit the full synthetic
   answer.
-- A pre-run remote check explicitly confirmed that the preserved prior path
-  `REMOTE_PTO_CU=/tmp/pto-cu-vllm-remote-env-artifact` contained
+- A pre-run remote check explicitly confirmed that the preserved remote vLLM
+  probe checkout contained
   `.venv-vllm-probe/bin/python`, `.venv-vllm-probe/bin/vllm`,
   `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash`, and the repo-owned
   needle probe script. The environment reported vLLM 0.23.0, Torch
@@ -1283,8 +1283,8 @@ evidence from this slice:
   requested positions under one local-only vLLM server lifecycle and fails the
   aggregate if a requested position is missing, duplicated, or fails the
   strict exact comparator.
-- A pre-run remote check explicitly confirmed that the preserved prior path
-  `REMOTE_PTO_CU=/tmp/pto-cu-vllm-remote-env-artifact` contained
+- A pre-run remote check explicitly confirmed that the preserved remote vLLM
+  probe checkout contained
   `.venv-vllm-probe/bin/python`, `.venv-vllm-probe/bin/vllm`, and
   `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash`. The environment
   reported vLLM 0.23.0, Torch 2.11.0+cu130, CUDA 13.0, and transformers
@@ -1404,6 +1404,8 @@ local_only_vllm_chat_256k_needle_exact: passed under recorded 262144-token
 local_only_vllm_chat_256k_needle_repeat: passed under recorded 262144-token
   boundary and one server lifecycle
 local_only_vllm_chat_256k_needle_stream_repeat: passed under recorded
+  262144-token boundary and one server lifecycle
+local_only_vllm_chat_256k_needle_stream_position_sweep: passed under recorded
   262144-token boundary and one server lifecycle
 local_only_vllm_chat_256k_needle_stream_truncated_failure: failed under
   recorded 262144-token boundary with max_tokens=1 as expected
@@ -1650,6 +1652,30 @@ Detailed chat-completions near-256K needle streaming exact-repeat evidence is
 recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_repeat_probe.md`.
 Status marker: `local_only_vllm_chat_256k_needle_stream_repeat: passed`.
+
+It has now also passed one local-only OpenAI-compatible near-256K streaming
+`/v1/chat/completions` synthetic needle position sweep under one recorded
+262144-token vLLM server lifecycle. The run covered early, middle, and late
+needle placements. Each request targeted a 255800-token prompt budget, used
+`max_tokens=64`, `temperature=0.0`, `top_p=1.0`, `seed=0`, expected answer
+`PTO_CHAT_NEEDLE_256K_STREAM_SWEEP_OK_28156`, strict exact match mode, stop
+sequence `"\n```"`, and `stream=true`. The early and middle requests each
+parsed 22 SSE chunk events, the late request parsed 21 SSE chunk events, and
+each position assembled 19 assistant content deltas in memory. Every position
+received terminal `[DONE]`, reported `finish_reason=stop`, returned usage as
+`not_returned`, and narrowly normalized to exactly the expected answer. The
+position-sweep aggregate recorded only review-safe request limits, streaming
+event counters, usage state, exact-match status, position status, and cleanup
+state; it did not record raw prompt text, raw request payload, raw generated
+text, raw streaming chunk content, token ID arrays, logprob values,
+generated-text digests, model artifact contents, non-loopback URLs,
+hostnames, usernames, or private absolute paths.
+
+Detailed chat-completions near-256K needle streaming position-sweep evidence
+is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_position_sweep_probe.md`.
+Status marker:
+`local_only_vllm_chat_256k_needle_stream_position_sweep: passed`.
 
 It has now also recorded one expected local-only OpenAI-compatible near-256K
 streaming `/v1/chat/completions` synthetic needle exact-output failure under
