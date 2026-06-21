@@ -66,6 +66,52 @@ def test_topp_cpu_golden_uses_smallest_prefix_at_probability_boundary():
     }
 
 
+def test_gluon_topp_sampling_supports_broader_shape_fixture(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_topp_sampling_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_topp_sampling_correctness(
+        output_dir=Path("tmp/gluon-topp-sampling-local"),
+        arch="compute_90",
+        rows=3,
+        vocab=16,
+        max_k=6,
+        p=0.80,
+        skip_reason=lambda: None,
+        gpu_runner=lambda probabilities, p, max_k, **_: example.compute_topp_cpu_golden(
+            probabilities,
+            p=p,
+            max_k=max_k,
+        ),
+    )
+
+    assert result["status"] == "passed"
+    assert result["shape"] == {"rows": 3, "vocab": 16, "max_k": 6}
+    assert result["request"]["p"] == 0.80
+    assert result["cpu_golden"] == {
+        "values": [
+            [0.3, 0.25, 0.15, 0.1, 0.0, 0.0],
+            [0.25, 0.2, 0.15, 0.15, 0.05, 0.0],
+            [0.22, 0.18, 0.14, 0.1, 0.09, 0.07],
+        ],
+        "indices": [
+            [0, 2, 3, 1, -1, -1],
+            [5, 1, 2, 3, 0, -1],
+            [8, 0, 4, 2, 5, 1],
+        ],
+        "selected_counts": [4, 5, 6],
+        "cumulative_probabilities": [0.8, 0.8, 0.8],
+    }
+    assert result["gpu_result"] == result["cpu_golden"]
+    assert result["validation"]["values_shape_match"] is True
+    assert result["validation"]["indices_shape_match"] is True
+    assert result["validation"]["selected_counts_shape_match"] is True
+    assert result["validation"]["cumulative_probabilities_shape_match"] is True
+
+
 def test_gluon_topp_sampling_reports_skip_json_and_relative_artifacts(
     tmp_path,
     monkeypatch,
@@ -139,6 +185,10 @@ def test_gluon_topp_sampling_reports_passed_validation_with_mock_runner(
 
     assert result["status"] == "passed"
     assert result["validation"] == {
+        "values_shape_match": True,
+        "indices_shape_match": True,
+        "selected_counts_shape_match": True,
+        "cumulative_probabilities_shape_match": True,
         "values_match": True,
         "indices_match": True,
         "selected_counts_match": True,
@@ -181,6 +231,62 @@ def test_gluon_topp_sampling_validation_rejects_truncated_float_payloads():
     assert row_validation["values_match"] is False
     assert element_validation["values_match"] is False
     assert cumulative_validation["cumulative_probabilities_match"] is False
+
+
+def test_gluon_topp_sampling_validation_reports_all_payload_shape_mismatches():
+    example = _load_gluon_topp_sampling_example()
+    cpu_golden = {
+        "values": [[0.3, 0.2, 0.15, 0.1, 0.0], [0.25, 0.25, 0.15, 0.1, 0.0]],
+        "indices": [[1, 3, 5, 2, -1], [0, 2, 6, 4, -1]],
+        "selected_counts": [4, 4],
+        "cumulative_probabilities": [0.75, 0.75],
+    }
+
+    validation = example._validate_gpu_result(
+        cpu_golden,
+        {
+            "values": [[0.3, 0.2, 0.15, 0.1, 0.0]],
+            "indices": [[1, 3, 5, 2, -1], [0, 2, 6, 4]],
+            "selected_counts": [4],
+            "cumulative_probabilities": [0.75],
+        },
+    )
+
+    assert validation["values_shape_match"] is False
+    assert validation["indices_shape_match"] is False
+    assert validation["selected_counts_shape_match"] is False
+    assert validation["cumulative_probabilities_shape_match"] is False
+    assert validation["values_match"] is False
+    assert validation["indices_match"] is False
+    assert validation["selected_counts_match"] is False
+    assert validation["cumulative_probabilities_match"] is False
+
+
+def test_gluon_topp_sampling_validation_allows_bounded_float_roundoff():
+    example = _load_gluon_topp_sampling_example()
+    cpu_golden = {
+        "values": [[0.3, 0.25, 0.15, 0.1, 0.0, 0.0]],
+        "indices": [[0, 2, 3, 1, -1, -1]],
+        "selected_counts": [4],
+        "cumulative_probabilities": [0.8],
+    }
+
+    validation = example._validate_gpu_result(
+        cpu_golden,
+        {
+            "values": [[0.3000001, 0.25, 0.15, 0.1, 0.0, 0.0]],
+            "indices": [[0, 2, 3, 1, -1, -1]],
+            "selected_counts": [4],
+            "cumulative_probabilities": [0.8000001],
+        },
+    )
+
+    assert validation["values_shape_match"] is True
+    assert validation["cumulative_probabilities_shape_match"] is True
+    assert validation["values_match"] is True
+    assert validation["cumulative_probabilities_match"] is True
+    assert validation["max_abs_error"] > 0.0
+    assert validation["max_cumulative_probability_error"] > 0.0
 
 
 def test_gluon_topp_sampling_main_requires_cuda_on_skip(

@@ -18,10 +18,70 @@ from simpler_setup.kernel_compiler import KernelCompiler
 
 
 DEFAULT_OUTPUT_DIR = Path("tmp/gluon-topp-sampling-local")
+FLOAT_MATCH_TOLERANCE = 1e-6
 DEFAULT_PROBABILITIES = [
     [0.05, 0.30, 0.10, 0.20, 0.05, 0.15, 0.05, 0.10],
     [0.25, 0.05, 0.25, 0.05, 0.10, 0.05, 0.15, 0.10],
 ]
+SHAPE_FIXTURES = {
+    (2, 8): DEFAULT_PROBABILITIES,
+    (3, 16): [
+        [
+            0.30,
+            0.10,
+            0.25,
+            0.15,
+            0.10,
+            0.04,
+            0.02,
+            0.01,
+            0.01,
+            0.005,
+            0.005,
+            0.01,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ],
+        [
+            0.05,
+            0.20,
+            0.15,
+            0.15,
+            0.05,
+            0.25,
+            0.04,
+            0.03,
+            0.02,
+            0.02,
+            0.01,
+            0.01,
+            0.01,
+            0.005,
+            0.005,
+            0.0,
+        ],
+        [
+            0.18,
+            0.07,
+            0.10,
+            0.07,
+            0.14,
+            0.09,
+            0.04,
+            0.03,
+            0.22,
+            0.02,
+            0.01,
+            0.01,
+            0.01,
+            0.005,
+            0.005,
+            0.0,
+        ],
+    ],
+}
 NON_CLAIMS = [
     "not FlashInfer integration evidence",
     "not vLLM or simpler-nv kernel integration evidence",
@@ -194,10 +254,8 @@ def run_topp_sampling_correctness(
     resolved_output_dir = DEFAULT_OUTPUT_DIR if output_dir is None else Path(output_dir)
     if resolved_output_dir.is_absolute():
         raise ValueError("--output-dir must be repo-relative")
-    if rows != 2 or vocab != 8:
-        raise ValueError("this review gate currently supports rows=2 and vocab=8")
 
-    probabilities = [row[:] for row in DEFAULT_PROBABILITIES]
+    probabilities = _probabilities_for_shape(rows=rows, vocab=vocab)
     cpu_golden = compute_topp_cpu_golden(probabilities, p=p, max_k=max_k)
     artifact = build_topp_sampling_artifact(output_dir=resolved_output_dir, arch=arch)
     result = {
@@ -295,52 +353,98 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _validate_gpu_result(cpu_golden: dict, gpu_result: dict) -> dict:
+    values_shape_match = _nested_shape_matches(
+        cpu_golden["values"],
+        gpu_result.get("values"),
+    )
+    indices_shape_match = _nested_shape_matches(
+        cpu_golden["indices"],
+        gpu_result.get("indices"),
+    )
+    selected_counts_shape_match = _list_shape_matches(
+        cpu_golden["selected_counts"],
+        gpu_result.get("selected_counts"),
+    )
+    cumulative_probabilities_shape_match = _list_shape_matches(
+        cpu_golden["cumulative_probabilities"],
+        gpu_result.get("cumulative_probabilities"),
+    )
+
     max_abs_error = 0.0
-    expected_values = cpu_golden["values"]
-    actual_values = gpu_result.get("values", [])
-    if not isinstance(actual_values, list):
-        actual_values = []
-    values_match = _nested_lengths_match(expected_values, actual_values)
-    for expected_row, actual_row in zip(expected_values, actual_values):
-        if not isinstance(actual_row, list):
-            continue
-        for expected, actual in zip(expected_row, actual_row):
-            error = abs(float(actual) - float(expected))
-            max_abs_error = max(max_abs_error, error)
-            if error != 0.0:
-                values_match = False
+    values_match = values_shape_match
+    if values_shape_match:
+        for expected_row, actual_row in zip(cpu_golden["values"], gpu_result["values"]):
+            for expected, actual in zip(expected_row, actual_row):
+                error = abs(float(actual) - float(expected))
+                max_abs_error = max(max_abs_error, error)
+                if error > FLOAT_MATCH_TOLERANCE:
+                    values_match = False
 
     max_cumulative_probability_error = 0.0
-    expected_cumulative = cpu_golden["cumulative_probabilities"]
-    actual_cumulative = gpu_result.get("cumulative_probabilities", [])
-    if not isinstance(actual_cumulative, list):
-        actual_cumulative = []
-    cumulative_probabilities_match = len(actual_cumulative) == len(expected_cumulative)
-    for expected, actual in zip(expected_cumulative, actual_cumulative):
-        error = abs(float(actual) - float(expected))
-        max_cumulative_probability_error = max(max_cumulative_probability_error, error)
-        if error != 0.0:
-            cumulative_probabilities_match = False
+    cumulative_probabilities_match = cumulative_probabilities_shape_match
+    if cumulative_probabilities_shape_match:
+        for expected, actual in zip(
+            cpu_golden["cumulative_probabilities"],
+            gpu_result["cumulative_probabilities"],
+        ):
+            error = abs(float(actual) - float(expected))
+            max_cumulative_probability_error = max(max_cumulative_probability_error, error)
+            if error > FLOAT_MATCH_TOLERANCE:
+                cumulative_probabilities_match = False
+
+    indices_match = (
+        indices_shape_match
+        and gpu_result.get("indices") == cpu_golden["indices"]
+    )
+    selected_counts_match = (
+        selected_counts_shape_match
+        and gpu_result.get("selected_counts") == cpu_golden["selected_counts"]
+    )
 
     return {
+        "values_shape_match": values_shape_match,
+        "indices_shape_match": indices_shape_match,
+        "selected_counts_shape_match": selected_counts_shape_match,
+        "cumulative_probabilities_shape_match": cumulative_probabilities_shape_match,
         "values_match": values_match,
-        "indices_match": gpu_result["indices"] == cpu_golden["indices"],
-        "selected_counts_match": (
-            gpu_result["selected_counts"] == cpu_golden["selected_counts"]
-        ),
+        "indices_match": indices_match,
+        "selected_counts_match": selected_counts_match,
         "cumulative_probabilities_match": cumulative_probabilities_match,
         "max_abs_error": max_abs_error,
         "max_cumulative_probability_error": max_cumulative_probability_error,
     }
 
 
-def _nested_lengths_match(expected: list[list[float]], actual: list[list[float]]) -> bool:
+def _probabilities_for_shape(*, rows: int, vocab: int) -> list[list[float]]:
+    try:
+        probabilities = SHAPE_FIXTURES[(rows, vocab)]
+    except KeyError as exc:
+        supported = ", ".join(
+            f"rows={fixture_rows}, vocab={fixture_vocab}"
+            for fixture_rows, fixture_vocab in sorted(SHAPE_FIXTURES)
+        )
+        raise ValueError(
+            f"unsupported deterministic Top-P fixture rows={rows}, vocab={vocab}; "
+            f"supported fixtures: {supported}"
+        ) from exc
+    return [row[:] for row in probabilities]
+
+
+def _nested_shape_matches(expected: object, actual: object) -> bool:
+    if not isinstance(expected, list) or not isinstance(actual, list):
+        return False
     if len(actual) != len(expected):
         return False
-    return all(
-        isinstance(actual_row, list) and len(actual_row) == len(expected_row)
-        for expected_row, actual_row in zip(expected, actual)
-    )
+    for expected_row, actual_row in zip(expected, actual):
+        if not isinstance(expected_row, list) or not isinstance(actual_row, list):
+            return False
+        if len(actual_row) != len(expected_row):
+            return False
+    return True
+
+
+def _list_shape_matches(expected: object, actual: object) -> bool:
+    return isinstance(expected, list) and isinstance(actual, list) and len(actual) == len(expected)
 
 
 def _artifact_payload(artifact: GluonKernelArtifact) -> dict:
