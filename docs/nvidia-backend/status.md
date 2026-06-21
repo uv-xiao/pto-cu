@@ -92,6 +92,12 @@ not FlashInfer integration evidence, production serving readiness, DeepSeek
 semantic correctness, gated activation coverage, Gemma-style fused norm
 coverage, fused attention, KV-cache integration, throughput, latency, or
 simpler-nv/vLLM integration evidence.
+The checklist also includes a generated Gluon FP32 gated SiLU fixture on H200,
+recorded in `docs/in_progress/nvidia_backend/gluon_gated_silu_h200.md`; this
+is not FlashInfer integration evidence, production serving readiness,
+DeepSeek semantic correctness, Gemma-style fused norm coverage, fused
+attention, KV-cache integration, throughput, latency, or simpler-nv/vLLM
+integration evidence.
 
 Evidence:
 
@@ -117,6 +123,7 @@ Evidence:
 - `docs/in_progress/nvidia_backend/gluon_rope_h200.md`
 - `docs/in_progress/nvidia_backend/gluon_silu_h200.md`
 - `docs/in_progress/nvidia_backend/gluon_gelu_h200.md`
+- `docs/in_progress/nvidia_backend/gluon_gated_silu_h200.md`
 
 Non-claims:
 

@@ -30,6 +30,7 @@ _SUPPORTED_KERNELS = {
     "rope_f32",
     "silu_f32",
     "gelu_f32",
+    "gated_silu_f32",
 }
 
 
@@ -137,6 +138,8 @@ def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
         return _render_silu_f32_source()
     if kernel_name == "gelu_f32":
         return _render_gelu_f32_source()
+    if kernel_name == "gated_silu_f32":
+        return _render_gated_silu_f32_source()
     raise AssertionError(f"unhandled Gluon kernel: {kernel_name}")
 
 
@@ -655,6 +658,39 @@ def _render_gelu_f32_source() -> str:
                 x,
                 out,
                 x.numel(),
+                num_warps=num_warps,
+            )
+        """
+    ).lstrip()
+
+
+def _render_gated_silu_f32_source() -> str:
+    return dedent(
+        """
+        from triton.experimental import gluon
+        from triton.experimental.gluon import language as gl
+
+
+        @gluon.jit
+        def gated_silu_f32_kernel(gate_ptr, value_ptr, out_ptr, n: gl.constexpr):
+            idx = gl.program_id(0)
+            gate = gl.load(gate_ptr + idx)
+            value = gl.load(value_ptr + idx)
+            gl.store(out_ptr + idx, value * gate / (1.0 + gl.exp(-gate)))
+
+
+        def run_gated_silu_f32(gate, value, out, num_warps=4):
+            expected_rank = 1
+            if len(gate.shape) != expected_rank or len(value.shape) != expected_rank or len(out.shape) != expected_rank:
+                raise ValueError(f"expected gate/value/out to be rank-1, got gate={tuple(gate.shape)}, value={tuple(value.shape)}, out={tuple(out.shape)}")
+            if value.numel() != gate.numel() or out.numel() != gate.numel():
+                raise ValueError(f"expected value/out lengths to match gate, got gate={gate.numel()}, value={value.numel()}, out={out.numel()}")
+
+            gated_silu_f32_kernel[(gate.numel(),)](
+                gate,
+                value,
+                out,
+                gate.numel(),
                 num_warps=num_warps,
             )
         """
