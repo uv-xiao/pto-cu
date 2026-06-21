@@ -63,12 +63,14 @@ MoE, FP8/FP4, communication, RoPE, normalization, activation, H200, and
 decode/prefill families to current PTO evidence and next milestones. This is
 not FlashInfer integration evidence and does not change the current serving
 boundary.
-The checklist now includes a generated Gluon FP32 RMSNorm fixture on H200 for
-the normalization sub-slice, recorded in
-`docs/in_progress/nvidia_backend/gluon_rmsnorm_h200.md`; this is not
-FlashInfer integration evidence, production serving readiness, DeepSeek
-semantic correctness, fused-kernel evidence, or simpler-nv/vLLM integration
-evidence.
+The checklist now includes a generated Gluon FP32 RMSNorm shape sweep on H200
+for the normalization sub-slice, recorded in
+`docs/in_progress/nvidia_backend/gluon_rmsnorm_h200.md`. The sweep includes
+the existing smoke case and a `hidden=7168` case with
+`DeepSeek-V4-Flash config hidden_size` provenance; this is not FlashInfer
+integration evidence, production serving readiness, DeepSeek semantic
+correctness, full normalization coverage, fused-kernel evidence, or
+simpler-nv/vLLM integration evidence.
 The checklist also includes a generated Gluon FP32 LayerNorm fixture on H200,
 recorded in `docs/in_progress/nvidia_backend/gluon_layernorm_h200.md`; this
 is not FlashInfer integration evidence, production serving readiness,
