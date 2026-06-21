@@ -181,6 +181,102 @@ def test_cuda_persistent_moe_two_device_baseline_validates_each_device():
     assert "not fused cross-GPU expert-parallel MoE" in result["non_claims"]
 
 
+def test_cuda_persistent_moe_nccl_handoff_ties_moe_and_worker_control_results():
+    example = _load_persistent_moe_dispatch_example()
+
+    def fake_moe_runner(**kwargs):
+        return {
+            "schema_version": 1,
+            "status": "passed",
+            "runtime": "persistent_device",
+            "dag_shape": "graph_descriptor_moe_dispatch_combine",
+            "evidence_scope": "same-node-two-device-baseline",
+            "device_ids": list(kwargs["device_ids"]),
+            "n": kwargs["n"],
+            "arch": kwargs["arch"],
+            "validation": {
+                "all_devices_passed": True,
+                "completed_count_is_5": True,
+                "scheduler_errors_zero": True,
+                "fanin_remaining_zero": True,
+                "source_digests_match": True,
+                "bridge_metadata_match": True,
+            },
+            "source_digests": {
+                "dispatch_source_sha256": "dispatch-digest",
+                "gluon_expert_bridge_sha256": "bridge-digest",
+                "task_body_func12_sha256": "bridge-digest",
+            },
+            "per_device_results": [
+                {
+                    "device": device,
+                    "status": "passed",
+                    "max_abs_error": 0.0,
+                    "device_scheduler_errors": {"count": 0, "code": 0, "task_id": 0},
+                }
+                for device in kwargs["device_ids"]
+            ],
+        }
+
+    def fake_nccl_runner(**kwargs):
+        return {
+            "status": "passed",
+            "backend": "nccl",
+            "transport": "worker_control",
+            "world_size": 2,
+            "device_ids": list(kwargs["device_ids"]),
+            "tensor_numel": kwargs["tensor_numel"],
+            "capability": {"capability_id": "nccl:rank0->cuda6,rank1->cuda7"},
+            "operations": ["all_reduce", "reduce_scatter", "all_gather", "send_recv"],
+            "all_reduce": {"passed": True, "max_abs_error": 0.0},
+            "reduce_scatter": {"passed": True, "max_abs_error": 0.0},
+            "all_gather": {"passed": True, "max_abs_error": 0.0},
+            "send_recv": {"passed": True, "max_abs_error": 0.0},
+        }
+
+    result = example.run_persistent_moe_nccl_handoff(
+        device_ids=(6, 7),
+        n=16,
+        tensor_numel=1024,
+        arch="compute_90",
+        moe_runner=fake_moe_runner,
+        nccl_runner=fake_nccl_runner,
+    )
+
+    assert result["status"] == "passed"
+    assert result["handoff_scope"] == "persistent-moe-plus-nccl-worker-control"
+    assert result["device_ids"] == [6, 7]
+    assert result["tensor_numel"] == 1024
+    assert result["persistent_moe"]["status"] == "passed"
+    assert result["persistent_moe_validation"]["source_digests_match"] is True
+    assert result["persistent_moe_source_digests"]["dispatch_source_sha256"] == "dispatch-digest"
+    assert result["persistent_moe_max_abs_error"] == 0.0
+    assert result["persistent_moe_scheduler_errors"] == [
+        {"device": 6, "errors": {"count": 0, "code": 0, "task_id": 0}},
+        {"device": 7, "errors": {"count": 0, "code": 0, "task_id": 0}},
+    ]
+    assert result["nccl_worker_control"]["status"] == "passed"
+    assert result["nccl_worker_control_validation"] == {
+        "all_reduce_passed": True,
+        "reduce_scatter_passed": True,
+        "all_gather_passed": True,
+        "send_recv_passed": True,
+        "max_abs_error_zero": True,
+    }
+    assert result["nccl_worker_control_max_abs_error"] == 0.0
+    assert result["handoff_validation"] == {
+        "same_device_ids": True,
+        "persistent_moe_passed": True,
+        "nccl_worker_control_passed": True,
+        "persistent_moe_validation_passed": True,
+        "nccl_worker_control_validation_passed": True,
+        "source_digests_present": True,
+        "bridge_digests_match": True,
+    }
+    assert "not fused cross-GPU expert-parallel MoE" in result["non_claims"]
+    assert "no serving, vLLM, DeepSeek, RDMA, multi-node, or performance claim" in result["non_claims"]
+
+
 class CudaHostCallable(ctypes.Structure):
     _fields_ = [
         ("version", ctypes.c_uint32),

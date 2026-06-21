@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+import importlib.util
 import json
 import shlex
 import subprocess
@@ -13,7 +14,7 @@ import tempfile
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 from simpler_setup.cuda_callable_compiler import (
     CudaPersistentDagArgs,
@@ -33,10 +34,16 @@ from simpler_setup.runtime_builder import RuntimeBuilder
 DAG_SHAPE = "graph_descriptor_moe_dispatch_combine"
 DEFAULT_OUTPUT_JSON = None
 TWO_DEVICE_EVIDENCE_SCOPE = "same-node-two-device-baseline"
+HANDOFF_SCOPE = "persistent-moe-plus-nccl-worker-control"
 TWO_DEVICE_EVIDENCE_STATEMENT = (
     "same-node two-device baseline evidence: the existing persistent MoE "
     "dispatch/combine graph ran independently on each requested CUDA device; "
     "this is not fused cross-GPU expert-parallel MoE"
+)
+HANDOFF_EVIDENCE_STATEMENT = (
+    "same-node two-device handoff gate: the existing persistent MoE graph ran "
+    "on both requested devices, then the descriptor-backed NCCL worker-control "
+    "operation path ran on the same device ids"
 )
 CONTEXT_DEFINITION = """
 struct PtoTaskContext {
@@ -413,6 +420,166 @@ def run_two_device_moe_dispatch_combine(
             "no distributed serving, vLLM, DeepSeek, RDMA, or performance claim",
         ],
     }
+
+
+def run_persistent_moe_nccl_handoff(
+    *,
+    device_ids: tuple[int, int] = (6, 7),
+    n: int = 4096,
+    tensor_numel: int = 1024,
+    arch: str = "compute_80",
+    block_dim: int = 256,
+    scheduler_blocks: int = 1,
+    worker_blocks: int = 4,
+    queue_capacity: int = 5,
+    stream_id: int = 0,
+    build: bool = False,
+    moe_runner: Callable[..., dict] | None = None,
+    nccl_runner: Callable[..., dict] | None = None,
+) -> dict:
+    if len(device_ids) != 2:
+        raise ValueError("--device-ids must name exactly two CUDA devices")
+    if len(set(device_ids)) != 2:
+        raise ValueError("--device-ids must name two distinct CUDA devices")
+    if tensor_numel <= 0:
+        raise ValueError("--tensor-numel must be positive")
+
+    run_moe = run_two_device_moe_dispatch_combine if moe_runner is None else moe_runner
+    run_nccl = _run_nccl_worker_control_ops if nccl_runner is None else nccl_runner
+    persistent_moe = run_moe(
+        device_ids=device_ids,
+        n=n,
+        arch=arch,
+        block_dim=block_dim,
+        scheduler_blocks=scheduler_blocks,
+        worker_blocks=worker_blocks,
+        queue_capacity=queue_capacity,
+        stream_id=stream_id,
+    )
+    nccl_worker_control = _review_safe_payload(
+        run_nccl(device_ids=device_ids, tensor_numel=tensor_numel, build=build)
+    )
+
+    persistent_validation = persistent_moe.get("validation") or {}
+    nccl_validation = _validate_nccl_worker_control_result(nccl_worker_control)
+    source_digests = persistent_moe.get("source_digests") or {}
+    handoff_validation = {
+        "same_device_ids": (
+            persistent_moe.get("device_ids") == list(device_ids)
+            and nccl_worker_control.get("device_ids") == list(device_ids)
+        ),
+        "persistent_moe_passed": persistent_moe.get("status") == "passed",
+        "nccl_worker_control_passed": nccl_worker_control.get("status") == "passed",
+        "persistent_moe_validation_passed": bool(persistent_validation)
+        and all(bool(value) for value in persistent_validation.values()),
+        "nccl_worker_control_validation_passed": all(
+            bool(value) for value in nccl_validation.values()
+        ),
+        "source_digests_present": all(
+            source_digests.get(name)
+            for name in (
+                "dispatch_source_sha256",
+                "gluon_expert_bridge_sha256",
+                "task_body_func12_sha256",
+            )
+        ),
+        "bridge_digests_match": (
+            source_digests.get("gluon_expert_bridge_sha256")
+            == source_digests.get("task_body_func12_sha256")
+            and bool(source_digests.get("gluon_expert_bridge_sha256"))
+        ),
+    }
+
+    if all(handoff_validation.values()):
+        status = "passed"
+    elif persistent_moe.get("status") == "skipped" or nccl_worker_control.get("status") == "skipped":
+        status = "skipped"
+    else:
+        status = "failed"
+
+    return {
+        "schema_version": 1,
+        "status": status,
+        "handoff_scope": HANDOFF_SCOPE,
+        "evidence_statement": HANDOFF_EVIDENCE_STATEMENT,
+        "device_ids": list(device_ids),
+        "devices": list(device_ids),
+        "n": n,
+        "tensor_numel": int(tensor_numel),
+        "arch": arch,
+        "block_dim": block_dim,
+        "scheduler_blocks": scheduler_blocks,
+        "worker_blocks": worker_blocks,
+        "queue_capacity": queue_capacity,
+        "stream_id": stream_id,
+        "persistent_moe_validation": persistent_validation,
+        "persistent_moe_source_digests": source_digests,
+        "persistent_moe_max_abs_error": _max_result_error(persistent_moe.get("per_device_results") or []),
+        "persistent_moe_scheduler_errors": _persistent_scheduler_errors(persistent_moe),
+        "nccl_worker_control_validation": nccl_validation,
+        "nccl_worker_control_max_abs_error": _max_nccl_error(nccl_worker_control),
+        "handoff_validation": handoff_validation,
+        "handoff_boundary": {
+            "persistent_moe_scope": persistent_moe.get("evidence_scope"),
+            "nccl_transport": nccl_worker_control.get("transport"),
+            "nccl_capability_id": (nccl_worker_control.get("capability") or {}).get(
+                "capability_id"
+            ),
+            "source_digests": source_digests,
+            "same_device_ids": handoff_validation["same_device_ids"],
+        },
+        "persistent_moe": persistent_moe,
+        "nccl_worker_control": nccl_worker_control,
+        "non_claims": [
+            "composition of existing persistent MoE and NCCL worker-control paths only",
+            "not fused cross-GPU expert-parallel MoE",
+            "no serving, vLLM, DeepSeek, RDMA, multi-node, or performance claim",
+        ],
+    }
+
+
+def _run_nccl_worker_control_ops(**kwargs) -> dict:
+    module_path = Path(__file__).with_name("nccl_worker_control_ops.py")
+    spec = importlib.util.spec_from_file_location("nccl_worker_control_ops_example", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.run_worker_control_ops(**kwargs)
+
+
+def _validate_nccl_worker_control_result(result: dict) -> dict[str, bool]:
+    return {
+        "all_reduce_passed": bool((result.get("all_reduce") or {}).get("passed")),
+        "reduce_scatter_passed": bool((result.get("reduce_scatter") or {}).get("passed")),
+        "all_gather_passed": bool((result.get("all_gather") or {}).get("passed")),
+        "send_recv_passed": bool((result.get("send_recv") or {}).get("passed")),
+        "max_abs_error_zero": _max_nccl_error(result) == 0.0,
+    }
+
+
+def _max_nccl_error(result: dict) -> float:
+    errors = [
+        float((result.get(name) or {}).get("max_abs_error", float("inf")))
+        for name in ("all_reduce", "reduce_scatter", "all_gather", "send_recv")
+    ]
+    return max(errors, default=float("inf"))
+
+
+def _max_result_error(results: list[dict]) -> float:
+    errors = [float(result.get("max_abs_error", float("inf"))) for result in results]
+    return max(errors, default=float("inf"))
+
+
+def _persistent_scheduler_errors(result: dict) -> list[dict]:
+    errors = []
+    for item in result.get("per_device_results") or []:
+        errors.append(
+            {
+                "device": item.get("device"),
+                "errors": item.get("device_scheduler_errors"),
+            }
+        )
+    return errors
 
 
 def _validate_two_device_results(results: list[dict]) -> dict[str, bool]:
@@ -930,6 +1097,17 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument("--worker-blocks", type=int, default=4)
         parser.add_argument("--queue-capacity", type=int, default=5)
         parser.add_argument("--stream-id", type=int, default=0)
+        parser.add_argument("--tensor-numel", type=int, default=1024)
+        parser.add_argument(
+            "--build",
+            action="store_true",
+            help="rebuild CUDA runtime before the NCCL handoff path runs",
+        )
+        parser.add_argument(
+            "--with-nccl-handoff",
+            action="store_true",
+            help="run the two-device MoE baseline and NCCL worker-control path on the same devices",
+        )
         parser.add_argument("--output-json", type=Path)
         parser.add_argument(
             "--require-cuda",
@@ -939,7 +1117,22 @@ def main(argv: list[str] | None = None) -> int:
         args = parser.parse_args(raw_args)
         output_json = args.output_json
         require_cuda = args.require_cuda
-        if args.device_ids is None:
+        if args.with_nccl_handoff:
+            if args.device_ids is None:
+                raise ValueError("--with-nccl-handoff requires --device-ids")
+            result = run_persistent_moe_nccl_handoff(
+                device_ids=args.device_ids,
+                n=args.n,
+                tensor_numel=args.tensor_numel,
+                arch=args.arch,
+                block_dim=args.block_dim,
+                scheduler_blocks=args.scheduler_blocks,
+                worker_blocks=args.worker_blocks,
+                queue_capacity=args.queue_capacity,
+                stream_id=args.stream_id,
+                build=args.build,
+            )
+        elif args.device_ids is None:
             result = run_moe_dispatch_combine(
                 device=args.device,
                 n=args.n,
@@ -1013,6 +1206,19 @@ def _clean_text(text: str) -> str:
     cwd = Path.cwd().as_posix()
     home = Path.home().as_posix()
     return text.replace(cwd, ".").replace(home, "~")
+
+
+def _review_safe_payload(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _relative_path(item) if key == "nccl_library" else _review_safe_payload(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_review_safe_payload(item) for item in value]
+    if isinstance(value, str):
+        return _clean_text(value)
+    return value
 
 
 def _display_command(raw_args: list[str]) -> str:

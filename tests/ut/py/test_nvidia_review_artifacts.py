@@ -333,8 +333,11 @@ def test_persistent_moe_two_device_baseline_is_review_safe():
 
     for required in [
         "run_two_device_moe_dispatch_combine",
+        "run_persistent_moe_nccl_handoff",
         "--device-ids",
+        "--with-nccl-handoff",
         "same-node-two-device-baseline",
+        "persistent-moe-plus-nccl-worker-control",
         "same-node two-device baseline evidence",
         "not fused cross-GPU expert-parallel MoE",
         "source_digests",
@@ -344,7 +347,11 @@ def test_persistent_moe_two_device_baseline_is_review_safe():
 
     for required in [
         "--device-ids 6,7 --n 4096 --arch compute_90 --require-cuda",
+        "--with-nccl-handoff",
+        "--tensor-numel 1024",
+        "--build --require-cuda",
         "same-node two-device baseline evidence",
+        "persistent MoE plus NCCL worker-control handoff",
         "not fused cross-GPU",
         "expert-parallel MoE",
         "output error",
@@ -357,15 +364,22 @@ def test_persistent_moe_two_device_baseline_is_review_safe():
 
     for required in [
         "Two-Device Remote H200 Result",
+        "Communication-Coupled Handoff Gate",
         "REMOTE_PTO_CU=/tmp/pto-cu-codex-restart",
+        "REMOTE_PTO_CU=/tmp/pto-cu-persistent-moe-nccl-handoff",
         "--device-ids 6,7 --n 4096 --arch compute_90 --require-cuda",
+        "--with-nccl-handoff --tensor-numel 1024 --build --require-cuda",
         "status`: `passed`",
+        "handoff_scope`: `persistent-moe-plus-nccl-worker-control`",
         "evidence_scope`: `same-node-two-device-baseline`",
         "device_ids`: `[6, 7]`",
+        "tensor_numel`: `1024`",
         "per_device_count`: `2`",
         "all_devices_passed`: `true`",
         "completed_count_is_5`: `true`",
         "scheduler_errors_zero`: `true`",
+        "same_device_ids`: `true`",
+        "nccl_worker_control_passed`: `true`",
         "source_digests_match`: `true`",
         "bridge_metadata_match`: `true`",
         "c096ede6d4ab5e1a9a33070bc1fcf988b9fb9c405d929a770c962308b396b209",

@@ -182,6 +182,22 @@ completion count, scheduler error state, fan-in state, and source/bridge
 digests. It is same-node two-device baseline evidence, not fused cross-GPU
 expert-parallel MoE, distributed serving, or performance evidence.
 
+For the persistent MoE plus NCCL worker-control handoff gate, use:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/persistent_moe_dispatch_combine.py \
+  --device-ids 6,7 --n 4096 --arch compute_90 \
+  --with-nccl-handoff --tensor-numel 1024 --build --require-cuda
+```
+
+This first validates the same two-device persistent MoE aggregate, then runs
+the descriptor-backed NCCL worker-control operations on the same device ids.
+The JSON exposes persistent MoE validation, NCCL operation validation, tensor
+size, output error, completion count, scheduler error state, and source/bridge
+digests. It is not fused cross-GPU expert-parallel MoE, serving, RDMA,
+multi-node, or performance evidence.
+
 ## Gluon MoE Expert Affine
 
 ```bash

@@ -163,6 +163,15 @@ passed on `NVIDIA H200 NVL` devices `6,7` with `tensor_numel: 1024`. The JSON
 reported `transport: worker_control`, `status: passed`, and `max_abs_error:
 0.0` for `all_reduce`, `reduce_scatter`, `all_gather`, and `send_recv`.
 
+The first communication-coupled persistent MoE handoff gate is recorded in
+`docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`.
+`examples/cuda/persistent_moe_dispatch_combine.py --with-nccl-handoff` now
+runs the existing two-device persistent MoE aggregate, runs the
+descriptor-backed NCCL worker-control operations on the same device ids, and
+emits `handoff_validation` fields tying `same_device_ids`, persistent MoE
+validation, NCCL operation validation, source digests, and bridge digest
+matching into one review-safe JSON result.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, UCCL adapter execution,
