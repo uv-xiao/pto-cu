@@ -35,6 +35,7 @@ _SUPPORTED_KERNELS = {
     "topk_sampling_f32",
     "topp_sampling_f32",
     "minp_sampling_f32",
+    "speculative_accept_f32",
 }
 
 
@@ -152,6 +153,8 @@ def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
         return _render_topp_sampling_f32_source()
     if kernel_name == "minp_sampling_f32":
         return _render_minp_sampling_f32_source()
+    if kernel_name == "speculative_accept_f32":
+        return _render_speculative_accept_f32_source()
     raise AssertionError(f"unhandled Gluon kernel: {kernel_name}")
 
 
@@ -982,6 +985,80 @@ def _render_minp_sampling_f32_source() -> str:
                 probabilities.shape[1],
                 max_k,
                 min_p,
+                num_warps=num_warps,
+            )
+        """
+    ).lstrip()
+
+
+def _render_speculative_accept_f32_source() -> str:
+    return dedent(
+        """
+        from triton.experimental import gluon
+        from triton.experimental.gluon import language as gl
+
+
+        @gluon.jit
+        def speculative_accept_f32_kernel(draft_token_ids_ptr, draft_probabilities_ptr, target_probabilities_ptr, thresholds_ptr, accepted_token_ids_ptr, accept_mask_ptr, accepted_counts_ptr, rows: gl.constexpr, max_draft: gl.constexpr):
+            row = gl.program_id(0)
+            accepting = True
+            accepted_count = 0
+
+            for pos in range(0, max_draft):
+                offset = row * max_draft + pos
+                draft_probability = gl.load(draft_probabilities_ptr + offset)
+                target_probability = gl.load(target_probabilities_ptr + offset)
+                threshold = gl.load(thresholds_ptr + offset)
+                ratio = target_probability / draft_probability
+                accept_probability = ratio
+                if accept_probability > 1.0:
+                    accept_probability = 1.0
+
+                should_accept = accepting and threshold <= accept_probability
+                if should_accept:
+                    token_id = gl.load(draft_token_ids_ptr + offset)
+                    gl.store(accepted_token_ids_ptr + offset, token_id)
+                    gl.store(accept_mask_ptr + offset, 1)
+                    accepted_count += 1
+                else:
+                    gl.store(accepted_token_ids_ptr + offset, -1)
+                    gl.store(accept_mask_ptr + offset, 0)
+                    accepting = False
+
+            gl.store(accepted_counts_ptr + row, accepted_count)
+
+
+        def run_speculative_accept_f32(draft_token_ids, draft_probabilities, target_probabilities, thresholds, accepted_token_ids, accept_mask, accepted_counts, max_draft=4, num_warps=4):
+            expected_rank = 2
+            if len(draft_token_ids.shape) != expected_rank:
+                raise ValueError(f"expected draft_token_ids to be rank-2, got shape {tuple(draft_token_ids.shape)}")
+            if len(draft_probabilities.shape) != expected_rank or len(target_probabilities.shape) != expected_rank or len(thresholds.shape) != expected_rank:
+                raise ValueError(f"expected probability and threshold inputs to be rank-2, got draft_probabilities={tuple(draft_probabilities.shape)}, target_probabilities={tuple(target_probabilities.shape)}, thresholds={tuple(thresholds.shape)}")
+            if len(accepted_token_ids.shape) != expected_rank or len(accept_mask.shape) != expected_rank:
+                raise ValueError(f"expected accepted_token_ids/accept_mask to be rank-2, got accepted_token_ids={tuple(accepted_token_ids.shape)}, accept_mask={tuple(accept_mask.shape)}")
+            if len(accepted_counts.shape) != 1:
+                raise ValueError(f"expected accepted_counts to be rank-1, got accepted_counts={tuple(accepted_counts.shape)}")
+
+            input_shapes = (tuple(draft_token_ids.shape), tuple(draft_probabilities.shape), tuple(target_probabilities.shape), tuple(thresholds.shape))
+            if len(set(input_shapes)) != 1:
+                raise ValueError(f"expected matching input shapes, got {input_shapes}")
+            if tuple(accepted_token_ids.shape) != tuple(draft_token_ids.shape) or tuple(accept_mask.shape) != tuple(draft_token_ids.shape):
+                raise ValueError(f"expected output matrices to match draft_token_ids, got draft_token_ids={tuple(draft_token_ids.shape)}, accepted_token_ids={tuple(accepted_token_ids.shape)}, accept_mask={tuple(accept_mask.shape)}")
+            if accepted_counts.shape[0] != draft_token_ids.shape[0]:
+                raise ValueError(f"expected accepted_counts rows to match inputs, got draft_token_ids={tuple(draft_token_ids.shape)}, accepted_counts={tuple(accepted_counts.shape)}")
+            if max_draft <= 0 or max_draft != draft_token_ids.shape[1]:
+                raise ValueError(f"expected max_draft to match input width and be positive, got max_draft={max_draft}, input_width={draft_token_ids.shape[1]}")
+
+            speculative_accept_f32_kernel[(draft_token_ids.shape[0],)](
+                draft_token_ids,
+                draft_probabilities,
+                target_probabilities,
+                thresholds,
+                accepted_token_ids,
+                accept_mask,
+                accepted_counts,
+                draft_token_ids.shape[0],
+                max_draft,
                 num_warps=num_warps,
             )
         """
