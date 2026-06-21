@@ -52,6 +52,12 @@ PREFERRED_FP8_GL_ATTRS = (
     "float8e5",
     "float8e5b16",
 )
+PREFERRED_FP4_GL_ATTRS = (
+    "float4_e2m1fn_x2",
+    "float4_e2m1fn",
+    "float4e2m1",
+    "fp4_to_fp",
+)
 
 
 def _sanitize_path_text(text: str) -> str:
@@ -218,6 +224,16 @@ def _torch_fp8_attrs(torch_module: Any | None) -> list[str]:
     )
 
 
+def _torch_fp4_attrs(torch_module: Any | None) -> list[str]:
+    if torch_module is None:
+        return []
+    return sorted(
+        name
+        for name in dir(torch_module)
+        if "float4" in name.lower() or "fp4" in name.lower() or "e2m1" in name.lower()
+    )
+
+
 def _gl_fp8_attr_status(gl_module: Any | None) -> dict[str, dict[str, Any]]:
     attr_names = set(PREFERRED_FP8_GL_ATTRS)
     if gl_module is not None:
@@ -234,6 +250,28 @@ def _gl_fp8_attr_status(gl_module: Any | None) -> dict[str, dict[str, Any]]:
             if primitive_bitwidth is not None:
                 status["primitive_bitwidth"] = int(primitive_bitwidth)
             status["repr"] = _sanitize_path_text(repr(dtype))
+        statuses[attr_name] = status
+    return statuses
+
+
+def _gl_fp4_attr_status(gl_module: Any | None) -> dict[str, dict[str, Any]]:
+    attr_names = set(PREFERRED_FP4_GL_ATTRS)
+    if gl_module is not None:
+        attr_names.update(
+            name
+            for name in dir(gl_module)
+            if "float4" in name.lower() or "fp4" in name.lower() or "e2m1" in name.lower()
+        )
+
+    statuses: dict[str, dict[str, Any]] = {}
+    for attr_name in sorted(attr_names):
+        status = _attr_status(gl_module, attr_name)
+        if status["present"] and gl_module is not None:
+            value = getattr(gl_module, attr_name)
+            primitive_bitwidth = getattr(value, "primitive_bitwidth", None)
+            if primitive_bitwidth is not None:
+                status["primitive_bitwidth"] = int(primitive_bitwidth)
+            status["repr"] = _sanitize_path_text(repr(value))
         statuses[attr_name] = status
     return statuses
 
@@ -292,6 +330,7 @@ def collect_preflight(
             missing_required.append(f"gl.{attr_name}")
 
     gl_fp8_attrs = _gl_fp8_attr_status(gl_module)
+    gl_fp4_attrs = _gl_fp4_attr_status(gl_module)
 
     if not triton_status["imported"]:
         missing_required.append("triton")
@@ -319,6 +358,8 @@ def collect_preflight(
         "gl_attrs": gl_attr_status,
         "gl_fp8_attrs": gl_fp8_attrs,
         "torch_fp8_attrs": _torch_fp8_attrs(torch_module),
+        "gl_fp4_attrs": gl_fp4_attrs,
+        "torch_fp4_attrs": _torch_fp4_attrs(torch_module),
         "cuda_required_missing": cuda_missing,
         "missing_required": missing_required,
     }

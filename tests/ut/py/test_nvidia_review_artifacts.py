@@ -43,10 +43,10 @@ GLUON_GEMM_REVIEW_DOCS = [
 UCCL_PRIVATE_PATH_RE = re.compile(
     r"/" + "home/"
     r"|/" + "Users/"
-    r"|/" + "tmp/pto-cu"
+    r"|/" + "tmp/" + "pto" + "-cu"
     r"|/" + "tmp/uccl-"
     r"|" + "uv" + "xiao"
-    r"|" + "bizhao" + "h200"
+    r"|" + "bi" + "zhao" + "h200"
     r"|" + "hi" + "na"
     r"|" + "da" + "sys"
 )
@@ -387,9 +387,9 @@ def test_persistent_moe_two_device_baseline_is_review_safe():
     for required in [
         "Two-Device Remote H200 Result",
         "Communication-Coupled Handoff Gate",
-        "REMOTE_PTO_CU=/tmp/pto-cu-codex-restart",
-        "REMOTE_PTO_CU=/tmp/pto-cu-persistent-moe-nccl-handoff",
-        "REMOTE_PTO_CU=/tmp/pto-cu-persistent-moe-uccl-ep-handoff",
+        "REMOTE_PTO_CU=/tmp/" "pto-cu-codex-restart",
+        "REMOTE_PTO_CU=/tmp/" "pto-cu-persistent-moe-nccl-handoff",
+        "REMOTE_PTO_CU=/tmp/" "pto-cu-persistent-moe-uccl-ep-handoff",
         "--device-ids 6,7 --n 4096 --arch compute_90 --require-cuda",
         "--with-nccl-handoff --tensor-numel 1024 --build --require-cuda",
         "--with-uccl-ep-handoff --tensor-numel 1024 --require-cuda",
@@ -2014,6 +2014,56 @@ def test_gluon_tensor_core_gemm_records_fp8_unsupported_boundary():
     assert "not FP8 GEMM correctness evidence" in checklist_search_text
     assert "make FP8 WGMMA lowering pass" in checklist_search_text
     assert "PassManager::run failed" in checklist_search_text
+
+
+def test_gluon_tensor_core_gemm_records_fp4_unsupported_boundary():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    evidence = in_progress_root / "gluon_tensor_core_gemm.md"
+    checklist = in_progress_root / "flashinfer_serving_operator_checklist.md"
+
+    evidence_text = evidence.read_text(encoding="utf-8")
+    evidence_search_text = re.sub(r"\s+", " ", evidence_text)
+    for required in [
+        "H200 FP4 Boundary Evidence",
+        (
+            "This section tracks source-generating tensor-core GEMM artifacts "
+            "from `KernelCompiler(platform=\"cuda\").generate_gluon_kernel(...)` "
+            "plus the FP4 dtype/API boundary harness"
+        ),
+        "BF16 and FP8 source-generating harnesses emit source and manifest",
+        "FP4 remains a dtype/API boundary harness",
+        (
+            "does not generate source or manifest artifacts unless a confirmed "
+            "Gluon FP4 WGMMA operand dtype path exists"
+        ),
+        "torch.float4_e2m1fn_x2",
+        "`fp4_to_fp`",
+        "\"kind\": \"gluon_fp4_dtype_api_unavailable\"",
+        "\"status\": \"skipped\"",
+        "\"artifact\": null",
+        "missing Gluon FP4 WGMMA dtype API",
+        "not FP4 GEMM correctness evidence",
+        "REMOTE_PTO_CU=<remote-pto-cu>",
+        "<remote-gluon-venv>/bin/python",
+        "not FlashInfer integration evidence",
+        "not serving integration evidence",
+        "not generated-kernel performance evidence",
+        "not production-readiness evidence",
+    ]:
+        assert required in evidence_search_text
+    assert "tensor-core harnesses always generate source and manifest artifacts" not in (
+        evidence_search_text
+    )
+    assert "now supports three Gluon tensor-core GEMM artifacts" not in (
+        evidence_search_text
+    )
+    assert "FP4 GEMM correctness evidence exists" not in evidence_search_text
+
+    checklist_text = checklist.read_text(encoding="utf-8")
+    checklist_search_text = re.sub(r"\s+", " ", checklist_text)
+    assert "FP4 API/lowering boundary is explicitly recorded" in checklist_search_text
+    assert "not FP4 GEMM correctness evidence" in checklist_search_text
+    assert "missing Gluon FP4 WGMMA dtype API" in checklist_search_text
 
 
 def test_nvidia_branch_ci_avoids_ascend_jobs():
