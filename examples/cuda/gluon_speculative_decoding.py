@@ -34,6 +34,26 @@ DEFAULT_THRESHOLDS = [
     [1.00, 0.90, 0.80, 0.70],
     [0.80, 0.30, 0.50, 0.50],
 ]
+BROAD_DRAFT_TOKEN_IDS = [
+    [10, 11, 12, 13, 14, 15],
+    [20, 21, 22, 23, 24, 25],
+    [30, 31, 32, 33, 34, 35],
+]
+BROAD_DRAFT_PROBABILITIES = [
+    [0.50, 0.40, 0.30, 0.20, 0.10, 0.10],
+    [0.50, 0.50, 0.40, 0.20, 0.20, 0.10],
+    [0.60, 0.50, 0.40, 0.30, 0.20, 0.10],
+]
+BROAD_TARGET_PROBABILITIES = [
+    [0.50, 0.40, 0.45, 0.20, 0.05, 0.20],
+    [0.50, 0.10, 0.80, 0.40, 0.20, 0.10],
+    [0.60, 0.45, 0.80, 0.15, 0.20, 0.10],
+]
+BROAD_THRESHOLDS = [
+    [1.00, 0.90, 0.80, 0.95, 0.60, 0.30],
+    [0.80, 0.30, 0.50, 0.50, 0.50, 0.50],
+    [1.00, 0.90, 0.70, 0.50, 1.00, 0.99],
+]
 NON_CLAIMS = [
     "not FlashInfer integration evidence",
     "not vLLM or simpler-nv kernel integration evidence",
@@ -215,13 +235,12 @@ def run_speculative_decoding_correctness(
     resolved_output_dir = DEFAULT_OUTPUT_DIR if output_dir is None else Path(output_dir)
     if resolved_output_dir.is_absolute():
         raise ValueError("--output-dir must be repo-relative")
-    if rows != 2 or max_draft != 4:
-        raise ValueError("this review gate currently supports rows=2 and max_draft=4")
 
-    draft_token_ids = [row[:] for row in DEFAULT_DRAFT_TOKEN_IDS]
-    draft_probabilities = [row[:] for row in DEFAULT_DRAFT_PROBABILITIES]
-    target_probabilities = [row[:] for row in DEFAULT_TARGET_PROBABILITIES]
-    thresholds = [row[:] for row in DEFAULT_THRESHOLDS]
+    fixture = _fixture_for_shape(rows, max_draft)
+    draft_token_ids = [row[:] for row in fixture["draft_token_ids"]]
+    draft_probabilities = [row[:] for row in fixture["draft_probabilities"]]
+    target_probabilities = [row[:] for row in fixture["target_probabilities"]]
+    thresholds = [row[:] for row in fixture["thresholds"]]
     cpu_golden = compute_speculative_accept_cpu_golden(
         draft_token_ids=draft_token_ids,
         draft_probabilities=draft_probabilities,
@@ -275,8 +294,11 @@ def run_speculative_decoding_correctness(
     )
     validation = _validate_gpu_result(cpu_golden, gpu_result)
     passed = (
-        validation["accepted_token_ids_match"]
+        validation["accepted_token_ids_shape_match"]
+        and validation["accepted_token_ids_match"]
+        and validation["accept_mask_shape_match"]
         and validation["accept_mask_match"]
+        and validation["accepted_counts_shape_match"]
         and validation["accepted_counts_match"]
     )
     return {
@@ -341,33 +363,68 @@ def main(argv: list[str] | None = None) -> int:
 def _validate_gpu_result(cpu_golden: dict, gpu_result: dict) -> dict:
     expected_token_ids = cpu_golden["accepted_token_ids"]
     actual_token_ids = gpu_result.get("accepted_token_ids", [])
+    accepted_token_ids_shape_match = isinstance(
+        actual_token_ids,
+        list,
+    ) and _nested_lengths_match(expected_token_ids, actual_token_ids)
     accepted_token_ids_match = (
-        isinstance(actual_token_ids, list)
-        and _nested_lengths_match(expected_token_ids, actual_token_ids)
+        accepted_token_ids_shape_match
         and actual_token_ids == expected_token_ids
     )
 
     expected_mask = cpu_golden["accept_mask"]
     actual_mask = gpu_result.get("accept_mask", [])
+    accept_mask_shape_match = isinstance(actual_mask, list) and _nested_lengths_match(
+        expected_mask,
+        actual_mask,
+    )
     accept_mask_match = (
-        isinstance(actual_mask, list)
-        and _nested_lengths_match(expected_mask, actual_mask)
+        accept_mask_shape_match
         and actual_mask == expected_mask
     )
 
     expected_counts = cpu_golden["accepted_counts"]
     actual_counts = gpu_result.get("accepted_counts", [])
+    accepted_counts_shape_match = isinstance(actual_counts, list) and len(
+        actual_counts
+    ) == len(expected_counts)
     accepted_counts_match = (
-        isinstance(actual_counts, list)
-        and len(actual_counts) == len(expected_counts)
+        accepted_counts_shape_match
         and actual_counts == expected_counts
     )
 
     return {
+        "accepted_token_ids_shape_match": accepted_token_ids_shape_match,
         "accepted_token_ids_match": accepted_token_ids_match,
+        "accept_mask_shape_match": accept_mask_shape_match,
         "accept_mask_match": accept_mask_match,
+        "accepted_counts_shape_match": accepted_counts_shape_match,
         "accepted_counts_match": accepted_counts_match,
     }
+
+
+def _fixture_for_shape(rows: int, max_draft: int) -> dict[str, list[list[int | float]]]:
+    fixtures = {
+        (2, 4): {
+            "draft_token_ids": DEFAULT_DRAFT_TOKEN_IDS,
+            "draft_probabilities": DEFAULT_DRAFT_PROBABILITIES,
+            "target_probabilities": DEFAULT_TARGET_PROBABILITIES,
+            "thresholds": DEFAULT_THRESHOLDS,
+        },
+        (3, 6): {
+            "draft_token_ids": BROAD_DRAFT_TOKEN_IDS,
+            "draft_probabilities": BROAD_DRAFT_PROBABILITIES,
+            "target_probabilities": BROAD_TARGET_PROBABILITIES,
+            "thresholds": BROAD_THRESHOLDS,
+        },
+    }
+    try:
+        return fixtures[(rows, max_draft)]
+    except KeyError as exc:
+        raise ValueError(
+            "this review gate currently supports rows=2/max_draft=4 "
+            "and rows=3/max_draft=6"
+        ) from exc
 
 
 def _validate_fixture_shapes(

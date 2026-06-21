@@ -324,19 +324,20 @@ PYTHONPATH=$PWD:$PWD/python \
 
 This generates the `speculative_accept_f32` Gluon source and checks a
 deterministic speculative-decoding accept/reject boundary over a small FP32
-fixture. The fixed review shape is `rows=2, max_draft=4`. For each row,
-draft token ids, draft probabilities, target probabilities for those same
-draft tokens, and deterministic thresholds are provided directly. The
-operator accepts while
+fixture. The default review shape remains `rows=2, max_draft=4`; the broader
+fixture uses `rows=3, max_draft=6`. For each row, draft token ids, draft
+probabilities, target probabilities for those same draft tokens, and
+deterministic thresholds are provided directly. The operator accepts while
 `threshold <= min(1.0, target_probability / draft_probability)`, stops at
 first reject per row, or put another way: stop at first reject and mask the
 tail. It fills later output ids with `-1` and emits an integer accept mask
 plus accepted counts. The JSON includes shape, dtype, request metadata, CPU
 golden `accepted_token_ids`, `accept_mask`, and
-`accepted_counts`, GPU result fields when CUDA runs, validation flags,
-repo-relative artifact paths, and explicit non-claims. Without CUDA tooling
-or a visible NVIDIA GPU it reports a skip; with `--require-cuda`, skipped
-cases return a non-zero exit status. H200 evidence is recorded in
+`accepted_counts`, GPU result fields when CUDA runs, validation flags
+including payload shape checks, repo-relative artifact paths, and explicit
+non-claims. Without CUDA tooling or a visible NVIDIA GPU it reports a skip;
+with `--require-cuda`, skipped cases return a non-zero exit status. H200
+evidence for the broader fixture is recorded in
 `docs/in_progress/nvidia_backend/gluon_speculative_decoding_h200.md`.
 This is not FlashInfer integration evidence. It is also not vLLM or
 simpler-nv kernel integration evidence, not DeepSeek serving correctness

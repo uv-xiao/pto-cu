@@ -26,6 +26,47 @@ def _expected_cpu_golden():
     }
 
 
+def _broader_fixture():
+    return {
+        "draft_token_ids": [
+            [10, 11, 12, 13, 14, 15],
+            [20, 21, 22, 23, 24, 25],
+            [30, 31, 32, 33, 34, 35],
+        ],
+        "draft_probabilities": [
+            [0.50, 0.40, 0.30, 0.20, 0.10, 0.10],
+            [0.50, 0.50, 0.40, 0.20, 0.20, 0.10],
+            [0.60, 0.50, 0.40, 0.30, 0.20, 0.10],
+        ],
+        "target_probabilities": [
+            [0.50, 0.40, 0.45, 0.20, 0.05, 0.20],
+            [0.50, 0.10, 0.80, 0.40, 0.20, 0.10],
+            [0.60, 0.45, 0.80, 0.15, 0.20, 0.10],
+        ],
+        "thresholds": [
+            [1.00, 0.90, 0.80, 0.95, 0.60, 0.30],
+            [0.80, 0.30, 0.50, 0.50, 0.50, 0.50],
+            [1.00, 0.90, 0.70, 0.50, 1.00, 0.99],
+        ],
+    }
+
+
+def _expected_broader_cpu_golden():
+    return {
+        "accepted_token_ids": [
+            [10, 11, 12, 13, -1, -1],
+            [20, -1, -1, -1, -1, -1],
+            [30, 31, 32, 33, 34, 35],
+        ],
+        "accept_mask": [
+            [1, 1, 1, 1, 0, 0],
+            [1, 0, 0, 0, 0, 0],
+            [1, 1, 1, 1, 1, 1],
+        ],
+        "accepted_counts": [4, 1, 6],
+    }
+
+
 def test_generate_gluon_speculative_accept_writes_source_and_manifest(tmp_path):
     artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
         "speculative_accept_f32",
@@ -80,6 +121,14 @@ def test_speculative_accept_cpu_golden_stops_at_first_reject():
     assert golden == _expected_cpu_golden()
 
 
+def test_speculative_accept_cpu_golden_covers_broader_fixture():
+    example = _load_gluon_speculative_decoding_example()
+
+    golden = example.compute_speculative_accept_cpu_golden(**_broader_fixture())
+
+    assert golden == _expected_broader_cpu_golden()
+
+
 def test_gluon_speculative_decoding_reports_skip_json_and_relative_artifacts(
     tmp_path,
     monkeypatch,
@@ -132,6 +181,45 @@ def test_gluon_speculative_decoding_reports_skip_json_and_relative_artifacts(
     ]
 
 
+def test_gluon_speculative_decoding_reports_broader_shape_with_mock_runner(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_speculative_decoding_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_speculative_decoding_correctness(
+        output_dir=Path("tmp/gluon-speculative-decoding-local"),
+        arch="compute_90",
+        rows=3,
+        max_draft=6,
+        skip_reason=lambda: None,
+        gpu_runner=(
+            lambda draft_token_ids, draft_probabilities, target_probabilities, thresholds, **_: (
+                example.compute_speculative_accept_cpu_golden(
+                    draft_token_ids=draft_token_ids,
+                    draft_probabilities=draft_probabilities,
+                    target_probabilities=target_probabilities,
+                    thresholds=thresholds,
+                )
+            )
+        ),
+    )
+
+    assert result["status"] == "passed"
+    assert result["shape"] == {"rows": 3, "max_draft": 6}
+    assert result["fixture"] == _broader_fixture()
+    assert result["cpu_golden"] == _expected_broader_cpu_golden()
+    assert result["validation"] == {
+        "accepted_token_ids_shape_match": True,
+        "accepted_token_ids_match": True,
+        "accept_mask_shape_match": True,
+        "accept_mask_match": True,
+        "accepted_counts_shape_match": True,
+        "accepted_counts_match": True,
+    }
+
+
 def test_gluon_speculative_decoding_reports_passed_validation_with_mock_runner(
     tmp_path,
     monkeypatch,
@@ -159,8 +247,11 @@ def test_gluon_speculative_decoding_reports_passed_validation_with_mock_runner(
 
     assert result["status"] == "passed"
     assert result["validation"] == {
+        "accepted_token_ids_shape_match": True,
         "accepted_token_ids_match": True,
+        "accept_mask_shape_match": True,
         "accept_mask_match": True,
+        "accepted_counts_shape_match": True,
         "accepted_counts_match": True,
     }
     assert result["gpu_result"] == result["cpu_golden"]
@@ -195,9 +286,13 @@ def test_gluon_speculative_decoding_validation_rejects_truncated_payloads():
     mask_validation = example._validate_gpu_result(cpu_golden, missing_mask_element)
     count_validation = example._validate_gpu_result(cpu_golden, missing_count)
 
+    assert row_validation["accepted_token_ids_shape_match"] is False
     assert row_validation["accepted_token_ids_match"] is False
+    assert element_validation["accepted_token_ids_shape_match"] is False
     assert element_validation["accepted_token_ids_match"] is False
+    assert mask_validation["accept_mask_shape_match"] is False
     assert mask_validation["accept_mask_match"] is False
+    assert count_validation["accepted_counts_shape_match"] is False
     assert count_validation["accepted_counts_match"] is False
 
 

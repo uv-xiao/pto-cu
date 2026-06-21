@@ -2939,7 +2939,7 @@ def test_gluon_minp_sampling_h200_evidence_is_review_safe():
     assert "rows=3, vocab=16, max_k=6, min_p=0.5" in checklist_text
     assert "payload shapes before comparisons" in checklist_text
     assert "Remaining sampling gaps include min-p" not in checklist_text
-    assert "speculative decoding" in checklist_text
+    assert "Speculative Decoding" in checklist_text
     assert "not FlashInfer integration evidence" in checklist_text
 
     guard_text = guard.read_text(encoding="utf-8")
@@ -2972,11 +2972,17 @@ def test_gluon_speculative_decoding_h200_evidence_is_review_safe():
         "accepted_counts",
         "threshold <= min(1.0, target_probability / draft_probability)",
         "stop at first reject per row",
-        "--output-dir tmp/gluon-speculative-decoding-h200",
+        "--output-dir tmp/gluon-speculative-shape-coverage-h200",
         "--require-cuda",
         "--arch compute_90",
         "status: passed",
         "rows=2, max_draft=4",
+        "rows=3, max_draft=6",
+        "payload shape checks",
+        "validation shape checks",
+        "accepted_token_ids_shape_match",
+        "accept_mask_shape_match",
+        "accepted_counts_shape_match",
         "machine class: H200",
         "REMOTE_PTO_CU=<remote-pto-cu>",
         "not FlashInfer integration evidence",
@@ -2994,12 +3000,17 @@ def test_gluon_speculative_decoding_h200_evidence_is_review_safe():
     assert "speculative_accept_f32" in readme_text
     assert "gluon_speculative_decoding_h200.md" in readme_text
     assert "stop at first reject" in readme_text
+    assert "rows=3, max_draft=6" in readme_text
+    assert "payload shape checks" in readme_text
     assert "not FlashInfer integration evidence" in readme_text
 
     checklist_text = checklist.read_text(encoding="utf-8")
     assert "gluon_speculative_decoding_h200.md" in checklist_text
     assert "speculative_accept_f32" in checklist_text
     assert "Speculative Decoding" in checklist_text
+    assert "rows=3, max_draft=6" in checklist_text
+    assert "payload shapes before comparisons" in checklist_text
+    assert "broaden shape coverage for speculative decoding" not in checklist_text
     assert "Remaining sampling gaps include speculative decoding" not in checklist_text
     assert "serving-stack integration" in checklist_text
     assert "not FlashInfer integration evidence" in checklist_text
