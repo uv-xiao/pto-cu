@@ -52,7 +52,7 @@ Execution details:
 - GPU: NVIDIA H200 NVL;
 - compute capability: `9.0`;
 - driver: `580.126.20`;
-- CUDA toolkit: `/usr/local/cuda/bin/nvcc`, CUDA 12.8 compiler build;
+- CUDA toolkit: `<cuda-toolkit>`, CUDA 12.8 compiler build;
 - Torch: `2.11.0+cu130`;
 - Torch CUDA: `13.0`;
 - Triton: `3.6.0`.
