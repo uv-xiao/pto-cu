@@ -12,6 +12,8 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
+import io
 import importlib
 import json
 import re
@@ -58,17 +60,25 @@ def _sanitize_path_text(text: str) -> str:
         "<path>/examples/cuda/",
         sanitized,
     )
+    sanitized = re.sub(
+        r"(?:/[^\s:'\"]+)+/site-packages/",
+        "<path>/site-packages/",
+        sanitized,
+    )
+    sanitized = re.sub(r"/private/home/[^\s:'\"]+", "<path>", sanitized)
     sanitized = re.sub(r"/home/[^\s:'\"]+", "<path>", sanitized)
+    sanitized = re.sub(r"/data/[^\s:'\"]+", "<path>", sanitized)
     return sanitized
 
 
 def _sanitize_command_arg(arg: Any) -> str:
-    text = _sanitize_path_text(str(arg))
+    raw = str(arg)
+    text = _sanitize_path_text(raw)
     marker = "examples/cuda/"
     if marker in text:
         return text[text.index(marker) :]
-    if text.startswith("/"):
-        return f"<path>/{Path(text).name}"
+    if raw.startswith("/"):
+        return f"<path>/{Path(raw).name}"
     return text
 
 
@@ -85,13 +95,29 @@ def _error_payload(exc: BaseException) -> dict[str, str]:
     }
 
 
+def _captured_stderr_payload(stderr_text: str) -> dict[str, str]:
+    sanitized_stderr = _sanitize_path_text(stderr_text).strip()
+    if not sanitized_stderr:
+        return {}
+    return {"stderr": sanitized_stderr}
+
+
 def _import_module_status(module_name: str) -> tuple[dict[str, Any], Any | None]:
+    stderr_capture = io.StringIO()
     try:
-        module = importlib.import_module(module_name)
+        with contextlib.redirect_stderr(stderr_capture):
+            module = importlib.import_module(module_name)
     except BaseException as exc:  # noqa: BLE001 - import probes must not crash.
-        status = {"imported": False, **_error_payload(exc)}
+        status = {
+            "imported": False,
+            **_error_payload(exc),
+            **_captured_stderr_payload(stderr_capture.getvalue()),
+        }
         return status, None
-    return {"imported": True}, module
+    return {
+        "imported": True,
+        **_captured_stderr_payload(stderr_capture.getvalue()),
+    }, module
 
 
 def _import_attr_status(

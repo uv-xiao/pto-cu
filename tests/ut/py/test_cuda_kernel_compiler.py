@@ -660,6 +660,60 @@ def test_gluon_wgmma_api_preflight_sanitizes_errors_and_paths(monkeypatch):
     assert payload["status"] == "skipped"
 
 
+def test_gluon_wgmma_api_preflight_captures_and_sanitizes_import_stderr(
+    capsys, monkeypatch
+):
+    example = _load_gluon_wgmma_preflight_example()
+
+    def noisy_torch_import(name):
+        if name == "torch":
+            print(
+                "Traceback: /data/users/example/venv/lib/python3.11/site-packages/"
+                "torch/_tensor.py emitted NumPy ABI warning",
+                file=sys.stderr,
+            )
+            raise ImportError(
+                "torch failed from /data/users/example/venv/lib/python3.11/"
+                "site-packages/torch/__init__.py"
+            )
+        raise ImportError(f"missing {name}")
+
+    monkeypatch.setattr(example.importlib, "import_module", noisy_torch_import)
+
+    payload = example.collect_preflight(
+        command=["python3", "examples/cuda/gluon_wgmma_api_preflight.py"],
+        require_cuda=False,
+    )
+    captured = capsys.readouterr()
+    encoded = json.dumps(payload)
+
+    assert captured.err == ""
+    assert payload["torch"]["imported"] is False
+    assert "stderr" in payload["torch"]
+    assert "<path>/site-packages/torch/_tensor.py" in payload["torch"]["stderr"]
+    assert "/data/users/example" not in encoded
+    assert "/data/users/example" not in captured.err
+    assert payload["status"] == "skipped"
+
+
+def test_gluon_wgmma_api_preflight_command_sanitizer_preserves_repo_script_path():
+    example = _load_gluon_wgmma_preflight_example()
+
+    command = example._sanitize_command(
+        [
+            "/data/users/example/venv/bin/python3",
+            "/data/users/example/pto-cu/examples/cuda/gluon_wgmma_api_preflight.py",
+            "--require-cuda",
+        ]
+    )
+
+    assert command == [
+        "<path>/python3",
+        "examples/cuda/gluon_wgmma_api_preflight.py",
+        "--require-cuda",
+    ]
+
+
 def test_gluon_wgmma_api_preflight_status_logic(monkeypatch):
     example = _load_gluon_wgmma_preflight_example()
 
