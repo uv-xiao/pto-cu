@@ -7,6 +7,7 @@ import argparse
 import ctypes
 import json
 import shlex
+import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -31,6 +32,12 @@ from simpler_setup.runtime_builder import RuntimeBuilder
 
 DAG_SHAPE = "graph_descriptor_moe_dispatch_combine"
 DEFAULT_OUTPUT_JSON = None
+TWO_DEVICE_EVIDENCE_SCOPE = "same-node-two-device-baseline"
+TWO_DEVICE_EVIDENCE_STATEMENT = (
+    "same-node two-device baseline evidence: the existing persistent MoE "
+    "dispatch/combine graph ran independently on each requested CUDA device; "
+    "this is not fused cross-GPU expert-parallel MoE"
+)
 CONTEXT_DEFINITION = """
 struct PtoTaskContext {
     const PtoCudaPersistentDagTask *task;
@@ -325,6 +332,191 @@ def run_moe_dispatch_combine(
         queue_capacity=queue_capacity,
         stream_id=stream_id,
     )
+
+
+def run_two_device_moe_dispatch_combine(
+    *,
+    device_ids: tuple[int, int] = (6, 7),
+    n: int = 4096,
+    arch: str = "compute_80",
+    block_dim: int = 256,
+    scheduler_blocks: int = 1,
+    worker_blocks: int = 4,
+    queue_capacity: int = 5,
+    stream_id: int = 0,
+    runner: Callable[..., dict] | None = None,
+) -> dict:
+    if len(device_ids) != 2:
+        raise ValueError("--device-ids must name exactly two CUDA devices")
+    if len(set(device_ids)) != 2:
+        raise ValueError("--device-ids must name two distinct CUDA devices")
+
+    run_one = _run_single_device_subprocess if runner is None else runner
+    per_device_results = []
+    for device in device_ids:
+        try:
+            per_device_results.append(
+                run_one(
+                    device=device,
+                    n=n,
+                    arch=arch,
+                    block_dim=block_dim,
+                    scheduler_blocks=scheduler_blocks,
+                    worker_blocks=worker_blocks,
+                    queue_capacity=queue_capacity,
+                    stream_id=stream_id,
+                )
+            )
+        except Exception as exc:
+            per_device_results.append(
+                {
+                    "schema_version": 1,
+                    "status": "failed",
+                    "dag_shape": DAG_SHAPE,
+                    "device": device,
+                    "error_type": type(exc).__name__,
+                    "error": _clean_text(str(exc)),
+                }
+            )
+
+    validation = _validate_two_device_results(per_device_results)
+    if all(validation.values()):
+        status = "passed"
+    elif all(result.get("status") == "skipped" for result in per_device_results):
+        status = "skipped"
+    else:
+        status = "failed"
+
+    return {
+        "schema_version": 1,
+        "status": status,
+        "runtime": "persistent_device",
+        "dag_shape": DAG_SHAPE,
+        "evidence_scope": TWO_DEVICE_EVIDENCE_SCOPE,
+        "evidence_statement": TWO_DEVICE_EVIDENCE_STATEMENT,
+        "device_ids": list(device_ids),
+        "devices": list(device_ids),
+        "n": n,
+        "arch": arch,
+        "block_dim": block_dim,
+        "scheduler_blocks": scheduler_blocks,
+        "worker_blocks": worker_blocks,
+        "queue_capacity": queue_capacity,
+        "stream_id": stream_id,
+        "per_device_count": len(per_device_results),
+        "validation": validation,
+        "source_digests": _two_device_source_digests(per_device_results),
+        "per_device_results": per_device_results,
+        "non_claims": [
+            "same-node independent per-device persistent MoE graph runs only",
+            "not fused cross-GPU expert-parallel MoE",
+            "no distributed serving, vLLM, DeepSeek, RDMA, or performance claim",
+        ],
+    }
+
+
+def _validate_two_device_results(results: list[dict]) -> dict[str, bool]:
+    return {
+        "all_devices_passed": all(result.get("status") == "passed" for result in results),
+        "completed_count_is_5": all(result.get("completed_count") == 5 for result in results),
+        "scheduler_errors_zero": all(
+            result.get("device_scheduler_errors") == {"count": 0, "code": 0, "task_id": 0}
+            for result in results
+        ),
+        "fanin_remaining_zero": all(
+            result.get("fanin_remaining") == [0, 0, 0, 0, 0] for result in results
+        ),
+        "source_digests_match": _matching_source_digests(results),
+        "bridge_metadata_match": _matching_bridge_metadata(results),
+    }
+
+
+def _matching_source_digests(results: list[dict]) -> bool:
+    digests = [_dispatch_source_sha256(result) for result in results]
+    return all(digests) and len(set(digests)) == 1
+
+
+def _matching_bridge_metadata(results: list[dict]) -> bool:
+    bridges = [result.get("gluon_expert_bridge") for result in results]
+    task_body_digests = [_task_body_sha256(result, 12) for result in results]
+    return (
+        all(isinstance(bridge, dict) for bridge in bridges)
+        and len({json.dumps(bridge, sort_keys=True) for bridge in bridges}) == 1
+        and all(task_body_digests)
+        and len(set(task_body_digests)) == 1
+        and bridges[0].get("source_sha256") == task_body_digests[0]
+    )
+
+
+def _two_device_source_digests(results: list[dict]) -> dict[str, str | None]:
+    first = results[0] if results else {}
+    bridge = first.get("gluon_expert_bridge") or {}
+    return {
+        "dispatch_source_sha256": _dispatch_source_sha256(first),
+        "gluon_expert_bridge_sha256": bridge.get("source_sha256"),
+        "task_body_func12_sha256": _task_body_sha256(first, 12),
+    }
+
+
+def _dispatch_source_sha256(result: dict) -> str | None:
+    dispatch_source = result.get("dispatch_source") or {}
+    return dispatch_source.get("source_sha256")
+
+
+def _task_body_sha256(result: dict, func_id: int) -> str | None:
+    for item in result.get("task_bodies") or []:
+        if item.get("func_id") == func_id:
+            return item.get("source_sha256")
+    return None
+
+
+def _run_single_device_subprocess(**kwargs) -> dict:
+    command = [
+        sys.executable,
+        str(Path(__file__).resolve()),
+        "--device",
+        str(kwargs["device"]),
+        "--n",
+        str(kwargs["n"]),
+        "--arch",
+        str(kwargs["arch"]),
+        "--block-dim",
+        str(kwargs["block_dim"]),
+        "--scheduler-blocks",
+        str(kwargs["scheduler_blocks"]),
+        "--worker-blocks",
+        str(kwargs["worker_blocks"]),
+        "--queue-capacity",
+        str(kwargs["queue_capacity"]),
+        "--stream-id",
+        str(kwargs["stream_id"]),
+    ]
+    completed = subprocess.run(
+        command,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        payload = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        return {
+            "schema_version": 1,
+            "status": "failed",
+            "dag_shape": DAG_SHAPE,
+            "device": kwargs["device"],
+            "error_type": "JSONDecodeError",
+            "error": "single-device child did not emit JSON",
+            "child_returncode": completed.returncode,
+            "child_stderr": _clean_text(completed.stderr.strip()),
+        }
+    return {
+        **payload,
+        "device": kwargs["device"],
+        "child_returncode": completed.returncode,
+        "child_stderr": _clean_text(completed.stderr.strip()),
+    }
 
 
 def _run_cuda_graph(
@@ -706,6 +898,19 @@ class JsonArgumentParser(argparse.ArgumentParser):
         raise ValueError(message)
 
 
+def parse_device_ids(value: str) -> tuple[int, int]:
+    parts = value.split(",")
+    if len(parts) != 2:
+        raise argparse.ArgumentTypeError("expected exactly two comma-separated device ids")
+    try:
+        devices = tuple(int(part) for part in parts)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("device ids must be integers") from exc
+    if len(set(devices)) != 2:
+        raise argparse.ArgumentTypeError("device ids must be distinct")
+    return devices
+
+
 def main(argv: list[str] | None = None) -> int:
     raw_args = list(sys.argv[1:] if argv is None else argv)
     output_json = DEFAULT_OUTPUT_JSON
@@ -713,6 +918,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         parser = JsonArgumentParser(description=__doc__)
         parser.add_argument("--device", type=int, default=0)
+        parser.add_argument(
+            "--device-ids",
+            type=parse_device_ids,
+            help="run the same persistent MoE graph independently on two CUDA devices",
+        )
         parser.add_argument("--n", type=int, default=4096)
         parser.add_argument("--arch", default="compute_80")
         parser.add_argument("--block-dim", type=int, default=256)
@@ -729,16 +939,29 @@ def main(argv: list[str] | None = None) -> int:
         args = parser.parse_args(raw_args)
         output_json = args.output_json
         require_cuda = args.require_cuda
-        result = run_moe_dispatch_combine(
-            device=args.device,
-            n=args.n,
-            arch=args.arch,
-            block_dim=args.block_dim,
-            scheduler_blocks=args.scheduler_blocks,
-            worker_blocks=args.worker_blocks,
-            queue_capacity=args.queue_capacity,
-            stream_id=args.stream_id,
-        )
+        if args.device_ids is None:
+            result = run_moe_dispatch_combine(
+                device=args.device,
+                n=args.n,
+                arch=args.arch,
+                block_dim=args.block_dim,
+                scheduler_blocks=args.scheduler_blocks,
+                worker_blocks=args.worker_blocks,
+                queue_capacity=args.queue_capacity,
+                stream_id=args.stream_id,
+            )
+        else:
+            result = run_two_device_moe_dispatch_combine(
+                device_ids=args.device_ids,
+                n=args.n,
+                arch=args.arch,
+                block_dim=args.block_dim,
+                scheduler_blocks=args.scheduler_blocks,
+                worker_blocks=args.worker_blocks,
+                queue_capacity=args.queue_capacity,
+                stream_id=args.stream_id,
+            )
+        result = {**result, "command": _display_command(raw_args)}
     except Exception as exc:
         result = {
             "schema_version": 1,

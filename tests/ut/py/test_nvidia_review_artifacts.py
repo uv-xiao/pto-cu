@@ -318,6 +318,64 @@ def test_uccl_in_progress_docs_omit_private_paths():
     assert offenders == []
 
 
+def test_persistent_moe_two_device_baseline_is_review_safe():
+    doc = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "persistent_moe_dispatch_combine_h200.md"
+    ).read_text(encoding="utf-8")
+    example = (ROOT / "examples" / "cuda" / "persistent_moe_dispatch_combine.py").read_text(
+        encoding="utf-8"
+    )
+    readme = (ROOT / "examples" / "cuda" / "README.md").read_text(encoding="utf-8")
+
+    for required in [
+        "run_two_device_moe_dispatch_combine",
+        "--device-ids",
+        "same-node-two-device-baseline",
+        "same-node two-device baseline evidence",
+        "not fused cross-GPU expert-parallel MoE",
+        "source_digests",
+        "bridge_metadata_match",
+    ]:
+        assert required in example
+
+    for required in [
+        "--device-ids 6,7 --n 4096 --arch compute_90 --require-cuda",
+        "same-node two-device baseline evidence",
+        "not fused cross-GPU",
+        "expert-parallel MoE",
+        "output error",
+        "completion count",
+        "scheduler error state",
+        "source/bridge",
+        "digests",
+    ]:
+        assert required in readme
+
+    for required in [
+        "Two-Device Remote H200 Result",
+        "REMOTE_PTO_CU=/tmp/pto-cu-codex-restart",
+        "--device-ids 6,7 --n 4096 --arch compute_90 --require-cuda",
+        "status`: `passed`",
+        "evidence_scope`: `same-node-two-device-baseline`",
+        "device_ids`: `[6, 7]`",
+        "per_device_count`: `2`",
+        "all_devices_passed`: `true`",
+        "completed_count_is_5`: `true`",
+        "scheduler_errors_zero`: `true`",
+        "source_digests_match`: `true`",
+        "bridge_metadata_match`: `true`",
+        "c096ede6d4ab5e1a9a33070bc1fcf988b9fb9c405d929a770c962308b396b209",
+        "7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f",
+        "not fused cross-GPU expert-parallel MoE",
+        "does not validate distributed expert parallelism",
+    ]:
+        assert required in doc
+
+
 def test_chat_256k_needle_stream_evidence_is_review_safe():
     evidence = (
         ROOT
