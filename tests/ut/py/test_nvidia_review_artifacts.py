@@ -226,6 +226,10 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
     assert (
         in_progress_root
+        / "vllm_remote_chat_256k_needle_stream_usage_contract_probe.md"
+    ).is_file()
+    assert (
+        in_progress_root
         / "vllm_remote_chat_256k_needle_stream_truncated_failure_probe.md"
     ).is_file()
     assert (
@@ -486,6 +490,13 @@ def test_chat_256k_needle_stream_position_sweep_evidence_is_review_safe():
 
 
 def test_chat_256k_needle_stream_usage_contract_docs_are_guarded():
+    evidence = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "vllm_remote_chat_256k_needle_stream_usage_contract_probe.md"
+    ).read_text(encoding="utf-8")
     example = (
         ROOT
         / "examples"
@@ -513,16 +524,47 @@ def test_chat_256k_needle_stream_usage_contract_docs_are_guarded():
     for text in required_text:
         assert text in readme
         assert text in readiness
+        assert text in evidence
     assert "returned streaming usage" in readme
     assert "strict exact output matching" in readme
+    assert "PROBE_EXIT_STATUS=2" in evidence
+    assert "failure_category: chat_needle_stream_choice_shape" in evidence
+    assert "server_port: 28157" in evidence
+    assert "endpoint: /v1/chat/completions" in evidence
+    assert "stream: true" in evidence
+    assert "event_count: 22" in evidence
+    assert "content_chunk_count: 18" in evidence
+    assert "done_seen: false" in evidence
+    assert "finish_reason: null" in evidence
+    assert "usage_presence: returned" in evidence
+    assert "usage_accounting_checks: not_evaluated" in evidence
+    assert "choice_count: 0" in evidence
+    assert "usage_keys: completion_tokens,prompt_tokens,total_tokens" in evidence
+    assert "cleanup.status: passed" in evidence
+    assert "remaining_process_group_pids: []" in evidence
+    assert "normalized_output_equals_expected: not_evaluated" in evidence
+    assert "expected_answer_exact: not_evaluated" in evidence
+    assert "raw prompt text is not recorded" in evidence
+    assert "raw request payload is not recorded" in evidence
+    assert "raw generated text is not recorded" in evidence
+    assert "raw streaming chunk content is not recorded" in evidence
+    assert "token ID arrays are not recorded" in evidence
+    assert "logprob values are not recorded" in evidence
+    assert "generated-text digests are not recorded" in evidence
+    assert "private absolute paths are not recorded" in evidence
+    assert "chat_needle_stream_choice_shape" in readme
     assert (
-        "Fresh remote H200 evidence for this follow-up remains pending"
+        "local_only_vllm_chat_256k_needle_stream_usage_contract: failed"
         in readiness
     )
     assert (
-        "local_only_vllm_chat_256k_needle_stream_usage_contract: pending"
+        "vllm_remote_chat_256k_needle_stream_usage_contract_probe.md"
         in readiness
     )
+    assert "text_" + "sha256" not in evidence
+    assert "token_ids" not in evidence
+    assert "/" + "home/" not in evidence
+    assert "/" + "tmp/pto-cu" not in evidence
 
 
 def test_chat_256k_needle_stream_truncated_failure_evidence_is_review_safe():

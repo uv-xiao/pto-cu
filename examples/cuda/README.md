@@ -682,11 +682,20 @@ usage and strict exact output matching. The narrowly normalized assembled
 assistant content must exactly equal
 `PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28157`, and the returned streaming usage
 object must satisfy the prompt-token, completion-token, and total-token
-contract checks. This command is the review recipe; fresh remote H200 evidence
-for this usage-contract gate remains pending. This is one synthetic streaming
-chat-completions needle usage-contract gate, not general generated-text
-correctness, semantic correctness, throughput, latency, production readiness,
-broad determinism, or simpler-nv/vLLM integration evidence.
+contract checks. The remote H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_usage_contract_probe.md`.
+The completed run returned HTTP 200 from `/health`, `/v1/models`, and
+`/v1/chat/completions`, parsed 22 JSON SSE events, saw 18 assistant content
+deltas, and returned streaming usage keys in a final usage-bearing event.
+The gate still failed with `PROBE_EXIT_STATUS=2` and
+`chat_needle_stream_choice_shape` because that final usage-bearing event had
+zero choices, while the shared streaming parser required exactly one choice
+for every JSON event. Terminal `[DONE]`, final `finish_reason`, strict exact
+output matching, and usage-accounting pass/fail checks are therefore not
+established by this run. This is one synthetic streaming chat-completions
+needle usage-contract attempt, not general generated-text correctness,
+semantic correctness, throughput, latency, production readiness, broad
+determinism, or simpler-nv/vLLM integration evidence.
 
 ## DeepSeek V4 Flash vLLM Chat 256K Needle Streaming Truncated Failure Probe
 
