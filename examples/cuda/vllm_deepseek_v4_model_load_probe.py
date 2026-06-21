@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib
 import importlib.util
+import io
 import json
 import os
 import platform
@@ -18,6 +20,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_ARTIFACT_DIR = (
     ROOT / "tmp" / "model-artifacts" / "deepseek-ai" / "DeepSeek-V4-Flash"
 )
@@ -49,8 +52,29 @@ def _read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _load_sibling_module(name: str):
+    path = SCRIPT_DIR / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"could not load {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _quiet_import_module(name: str):
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+        io.StringIO()
+    ):
+        return importlib.import_module(name)
+
+
 def classify_failure(message: str) -> str:
     lowered = message.lower()
+    if "vllm is not installed" in lowered:
+        return "missing_vllm"
+    if "cuda is not available" in lowered or "cuda unavailable" in lowered:
+        return "cuda_unavailable"
     if "outofmemory" in lowered or "out of memory" in lowered:
         return "cuda_out_of_memory"
     if "nccl" in lowered:
@@ -100,91 +124,63 @@ def build_llm_kwargs(
     return kwargs
 
 
+def _reported_llm_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
+    reported = dict(kwargs)
+    for name in ("model", "tokenizer"):
+        value = reported.get(name)
+        if isinstance(value, str):
+            reported[name] = _display_path(Path(value))
+    return reported
+
+
 def inspect_artifacts(artifact_dir: Path, require_artifacts: bool) -> dict[str, Any]:
-    result: dict[str, Any] = {
-        "artifact_dir": _display_path(artifact_dir),
-        "required_files": {"present": [], "missing": []},
-    }
-    if not artifact_dir.is_dir():
-        result.update(
-            {
-                "status": "failed" if require_artifacts else "skipped",
-                "reason": "artifact directory is missing",
-            }
-        )
-        return result
+    artifact_probe = _load_sibling_module("vllm_deepseek_v4_artifact_probe")
+    return artifact_probe._inspect_artifacts(artifact_dir, require_artifacts)
 
-    present = []
-    missing = []
-    for name in (
-        "config.json",
-        "model.safetensors.index.json",
-        "tokenizer_config.json",
-    ):
-        if (artifact_dir / name).is_file():
-            present.append(name)
-        else:
-            missing.append(name)
-    tokenizer_files = [
-        name
-        for name in ("tokenizer.json", "tokenizer.model")
-        if (artifact_dir / name).is_file()
-    ]
-    if tokenizer_files:
-        present.extend(tokenizer_files)
-    else:
-        missing.append("tokenizer.json or tokenizer.model")
 
-    result["required_files"] = {
-        "present": sorted(present),
-        "missing": sorted(missing),
-    }
-    if missing:
-        result.update(
-            {
-                "status": "failed" if require_artifacts else "skipped",
-                "reason": "required artifact files are missing",
-            }
-        )
-        return result
-
-    index = _read_json(artifact_dir / "model.safetensors.index.json")
-    shard_names = sorted(set(index.get("weight_map", {}).values()))
-    present_shards = [
-        name for name in shard_names if (artifact_dir / name).is_file()
-    ]
-    present_shard_set = set(present_shards)
-    missing_shards = [name for name in shard_names if name not in present_shard_set]
-    result.update(
-        {
-            "indexed_tensors": len(index.get("weight_map", {})),
-            "indexed_shards": len(shard_names),
-            "present_shards": len(present_shards),
-            "missing_shards": len(missing_shards),
-            "present_bytes": sum(
-                (artifact_dir / name).stat().st_size for name in present_shards
-            ),
-            "index_total_size": index.get("metadata", {}).get("total_size"),
-            "missing_examples": missing_shards[:5],
+def check_vllm() -> dict[str, Any]:
+    if importlib.util.find_spec("vllm") is None:
+        return {
+            "status": "skipped",
+            "reason": "vLLM is not installed in the active Python environment.",
         }
-    )
-    if not shard_names:
-        result.update(
-            {
-                "status": "failed" if require_artifacts else "skipped",
-                "reason": "weight index does not list shards",
-            }
-        )
-    elif missing_shards:
-        result.update(
-            {
-                "status": "failed" if require_artifacts else "skipped",
-                "reason": "indexed weight shards are missing",
-            }
-        )
-    else:
-        result["status"] = "passed"
-    return result
+    vllm = _quiet_import_module("vllm")
+    return {"status": "passed", "version": getattr(vllm, "__version__", "unknown")}
+
+
+def check_cuda(tensor_parallel_size: int) -> dict[str, Any]:
+    if importlib.util.find_spec("torch") is None:
+        return {
+            "status": "skipped",
+            "reason": "torch is not installed in the active Python environment.",
+            "device_count": 0,
+            "required_device_count": tensor_parallel_size,
+        }
+    torch = _quiet_import_module("torch")
+    cuda = getattr(torch, "cuda", None)
+    if cuda is None or not cuda.is_available():
+        return {
+            "status": "skipped",
+            "reason": "torch.cuda is not available",
+            "device_count": 0,
+            "required_device_count": tensor_parallel_size,
+        }
+    device_count = cuda.device_count()
+    if device_count < tensor_parallel_size:
+        return {
+            "status": "skipped",
+            "reason": (
+                f"need at least {tensor_parallel_size} visible CUDA devices, "
+                f"found {device_count}"
+            ),
+            "device_count": device_count,
+            "required_device_count": tensor_parallel_size,
+        }
+    return {
+        "status": "passed",
+        "device_count": device_count,
+        "required_device_count": tensor_parallel_size,
+    }
 
 
 def _query_nvidia_smi_memory() -> list[dict[str, str]]:
@@ -228,10 +224,10 @@ def _runtime_versions() -> dict[str, Any]:
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
     }
     if importlib.util.find_spec("vllm") is not None:
-        vllm = importlib.import_module("vllm")
+        vllm = _quiet_import_module("vllm")
         versions["vllm"] = getattr(vllm, "__version__", "unknown")
     if importlib.util.find_spec("torch") is not None:
-        torch = importlib.import_module("torch")
+        torch = _quiet_import_module("torch")
         versions["torch"] = getattr(torch, "__version__", "unknown")
         versions["torch_cuda"] = getattr(getattr(torch, "version", None), "cuda", None)
         versions["torch_cuda_device_count"] = (
@@ -265,8 +261,11 @@ def run_probe(
     dry_run: bool = False,
     require_artifacts: bool = False,
     require_vllm: bool = False,
+    require_cuda: bool = False,
 ) -> dict[str, Any]:
     artifact_probe = inspect_artifacts(artifact_dir, require_artifacts)
+    vllm_probe = check_vllm()
+    cuda_probe = check_cuda(tensor_parallel_size)
     llm_kwargs = build_llm_kwargs(
         artifact_dir=artifact_dir,
         max_model_len=max_model_len,
@@ -282,7 +281,9 @@ def run_probe(
     result: dict[str, Any] = {
         "status": "planned" if dry_run else "skipped",
         "artifact_probe": artifact_probe,
-        "llm_kwargs": llm_kwargs,
+        "vllm_probe": vllm_probe,
+        "cuda_probe": cuda_probe,
+        "llm_kwargs": _reported_llm_kwargs(llm_kwargs),
         "load_attempted": False,
         "runtime_versions": _runtime_versions(),
         "gpu_memory_before": _query_nvidia_smi_memory(),
@@ -294,14 +295,26 @@ def run_probe(
         result["failure"] = _failure_payload(artifact_probe.get("reason", "missing"))
         return result
 
+    if vllm_probe["status"] != "passed" and require_vllm:
+        result["status"] = "failed"
+        result["failure"] = _failure_payload(vllm_probe["reason"])
+        return result
+    if cuda_probe["status"] != "passed" and require_cuda:
+        result["status"] = "failed"
+        result["failure"] = _failure_payload(cuda_probe["reason"])
+        return result
+
     if dry_run:
         return result
 
-    if importlib.util.find_spec("vllm") is None:
-        result["status"] = "failed" if require_vllm else "skipped"
-        result["failure"] = _failure_payload(
-            "vLLM is not installed in the active Python environment."
-        )
+    if vllm_probe["status"] != "passed":
+        result["status"] = "skipped"
+        result["failure"] = _failure_payload(vllm_probe["reason"])
+        return result
+
+    if cuda_probe["status"] != "passed":
+        result["status"] = "skipped"
+        result["failure"] = _failure_payload(cuda_probe["reason"])
         return result
 
     result["load_attempted"] = True
@@ -366,6 +379,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--require-artifacts", action="store_true")
     parser.add_argument("--require-vllm", action="store_true")
+    parser.add_argument("--require-cuda", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -385,6 +399,7 @@ def main(argv: list[str] | None = None) -> int:
         dry_run=args.dry_run,
         require_artifacts=args.require_artifacts,
         require_vllm=args.require_vllm,
+        require_cuda=args.require_cuda,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
     if result["status"] == "failed":

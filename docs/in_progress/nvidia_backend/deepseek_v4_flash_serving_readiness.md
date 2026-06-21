@@ -81,8 +81,12 @@ Detailed artifact-complete evidence is recorded in
 
 Fresh remote H200 model-load evidence from this slice:
 
-- A repo-owned model-load probe script now instantiates `vllm.LLM` with
-  structured output and no serving or generation path.
+- The repo-owned `examples/cuda/vllm_deepseek_v4_model_load_probe.py` script
+  now instantiates `vllm.LLM` with structured output and no serving or
+  generation path.
+- The current probe gate accepts `--require-artifacts --require-vllm
+  --require-cuda` so missing shards, missing vLLM, and missing CUDA are
+  explicit preflight failures when required.
 - The remote source tree was refreshed with `--sync`, preserving the complete
   ignored artifact directory and `.venv-vllm-probe`.
 - The selected physical GPUs were 1 and 7, exposed as exactly two visible
@@ -99,6 +103,8 @@ Fresh remote H200 model-load evidence from this slice:
   an `LLMEngine`, and the probe exited 0 after 605.411 seconds.
 - The passing run loaded weights and completed vLLM engine initialization only;
   it did not start a server or run inference.
+- A missing-shard or missing-vLLM run is not model-load evidence; neither is a
+  missing-CUDA or dry-run output.
 
 Detailed model-load evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_model_load_probe.md`.

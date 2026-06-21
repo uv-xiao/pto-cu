@@ -1905,6 +1905,49 @@ def test_uccl_adapter_artifacts_are_recorded_without_host_runtime_abi_claims():
     assert "uccl_ep_dispatch_combine_adapter.py" in readme_text
 
 
+def test_deepseek_v4_model_load_probe_review_artifacts_are_recorded():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    review_doc = in_progress_root / "vllm_deepseek_v4_model_load_probe.md"
+    readiness_doc = in_progress_root / "deepseek_v4_flash_serving_readiness.md"
+    work_prep = in_progress_root / "work_preparation.md"
+    readme = ROOT / "examples" / "cuda" / "README.md"
+    probe = ROOT / "examples" / "cuda" / "vllm_deepseek_v4_model_load_probe.py"
+    probe_test = ROOT / "tests" / "ut" / "py" / "test_vllm_deepseek_v4_model_load_probe.py"
+
+    for path in (review_doc, readiness_doc, work_prep, readme, probe, probe_test):
+        assert path.is_file(), path
+
+    review_text = review_doc.read_text(encoding="utf-8")
+    for required in [
+        "examples/cuda/vllm_deepseek_v4_model_load_probe.py",
+        "--require-artifacts --require-vllm --require-cuda",
+        "--tensor-parallel-size 2",
+        "--max-model-len 4096",
+        "--kv-cache-dtype fp8",
+        "does not start an HTTP server",
+        "does not run generation",
+        "missing-shard or missing-vLLM run is not model-load evidence",
+        "H200 was not rerun for this child slice",
+        "not simpler-nv/vLLM kernel integration evidence",
+    ]:
+        assert required in review_text
+
+    readme_text = readme.read_text(encoding="utf-8")
+    assert "vllm_deepseek_v4_model_load_probe.py" in readme_text
+    assert "--require-artifacts --require-vllm --require-cuda" in readme_text
+    assert "Missing artifacts, missing vLLM, or missing CUDA report structured skips" in readme_text
+
+    readiness_text = readiness_doc.read_text(encoding="utf-8")
+    assert "vllm_deepseek_v4_model_load_probe.py" in readiness_text
+    assert "--require-cuda" in readiness_text
+    assert "A missing-shard or missing-vLLM run is not model-load evidence" in readiness_text
+
+    work_prep_text = work_prep.read_text(encoding="utf-8")
+    assert "run_model_load_probe" in work_prep_text
+    assert "vllm_deepseek_v4_model_load_probe.py" in work_prep_text
+    assert "--require-artifacts --require-vllm --require-cuda" in work_prep_text
+
+
 def test_status_rollup_records_current_deepseek_serving_boundary():
     status_text = (DOC_ROOT / "status.md").read_text(encoding="utf-8")
 
