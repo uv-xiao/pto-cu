@@ -447,6 +447,32 @@ FlashInfer integration, vLLM/simpler-nv integration, paged/ragged KV-cache
 coverage, full decode, prefill, full append or append KV-cache coverage,
 serving readiness, or performance evidence.
 
+For explicit paged/ragged KV-cache unsupported-boundary evidence, use:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_flashattention_fwd.py \
+  --output-dir tmp/gluon-flashattention-kvcache-paged-unsupported-h200 \
+  --arch compute_90 --tile-shape 32x32x64 --causal \
+  --kv-cache-boundary paged --require-cuda
+```
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_flashattention_fwd.py \
+  --output-dir tmp/gluon-flashattention-kvcache-ragged-unsupported-h200 \
+  --arch compute_90 --tile-shape 32x32x64 --causal \
+  --kv-cache-boundary ragged --require-cuda
+```
+
+These commands emit structured skip JSON before CUDA availability checks. The
+JSON records `schema_version`, `status: skipped`, `phase: prefill`,
+`causal: true`, `kv_cache_boundary`, shape metadata, tolerance, and
+`unsupported_boundary` with stable `kind` values `paged_kv_cache` and
+`ragged_kv_cache`. This is unsupported-boundary evidence only, not
+paged/ragged KV-cache correctness, full prefill/decode/append coverage,
+serving integration, or performance evidence.
+
 ## Gluon FP32 RMSNorm
 
 ```bash
