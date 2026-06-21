@@ -3,11 +3,14 @@
 
 import argparse
 import contextlib
+import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import types as module_types
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -371,8 +374,7 @@ def create_pypto_serving_source_app(
     arch: str = "compute_90",
     kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
 ):
-    with _pypto_serving_source_import_path():
-        from python.core.server import create_serving_app
+    create_serving_app = _load_pypto_serving_source_create_app()
 
     engine = SyntheticPyptoServingEngine(
         device_id=device_id,
@@ -382,6 +384,62 @@ def create_pypto_serving_source_app(
     engine.init_model(model)
     adapter = PyptoServingSourceAsyncEngineAdapter(engine)
     return create_serving_app(adapter, model), adapter
+
+
+def _load_pypto_serving_source_create_app():
+    with _pypto_serving_source_import_path():
+        package_root = PYPTO_SERVING_SOURCE / "python"
+        core_root = package_root / "core"
+        server_path = core_root / "server.py"
+        module_names = [
+            "python",
+            "python.core",
+            "python.core.async_engine",
+            "python.core.types",
+            "python.core.server",
+        ]
+        missing = object()
+        previous_modules = {name: sys.modules.get(name, missing) for name in module_names}
+        try:
+            python_package = module_types.ModuleType("python")
+            python_package.__path__ = [str(package_root)]
+            core_package = module_types.ModuleType("python.core")
+            core_package.__path__ = [str(core_root)]
+            async_engine_module = module_types.ModuleType("python.core.async_engine")
+            async_engine_module.AsyncLLMEngine = type("AsyncLLMEngine", (), {})
+            types_module = module_types.ModuleType("python.core.types")
+            types_module.GenerateConfig = _PyptoServingSourceGenerateConfig
+            sys.modules.update(
+                {
+                    "python": python_package,
+                    "python.core": core_package,
+                    "python.core.async_engine": async_engine_module,
+                    "python.core.types": types_module,
+                }
+            )
+            spec = importlib.util.spec_from_file_location("python.core.server", server_path)
+            if spec is None or spec.loader is None:
+                raise ImportError(f"cannot load {server_path.relative_to(ROOT)}")
+            module = importlib.util.module_from_spec(spec)
+            sys.modules["python.core.server"] = module
+            spec.loader.exec_module(module)
+            return module.create_serving_app
+        finally:
+            for name, previous in previous_modules.items():
+                if previous is missing:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = previous
+
+
+@dataclass(frozen=True)
+class _PyptoServingSourceGenerateConfig:
+    max_new_tokens: int = 256
+    temperature: float = 0.8
+    top_p: float = 0.95
+    top_k: int | None = None
+    stop: tuple[str, ...] = ()
+    stream: bool = False
 
 
 def run_pypto_serving_source_completion_fixture(
@@ -619,7 +677,20 @@ def run_pypto_serving_vllm_compat_fixture(
     arch: str = "compute_90",
     kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    fixture_results = [
+    fixture_results = []
+
+    def finish() -> dict[str, Any]:
+        return {
+            "status": _compat_summary_status(fixture_results),
+            "server": "pypto-serving-source",
+            "comparison_baseline": "vllm-openai-compatible-deepseek",
+            "model": model,
+            "checked_fields": PYPTO_SERVING_VLLM_COMPAT_CHECKED_FIELDS,
+            "fixtures": fixture_results,
+            "non_claims": PYPTO_SERVING_VLLM_COMPAT_NON_CLAIMS,
+        }
+
+    fixture_results.append(
         _compat_non_stream_fixture(
             name="completions",
             result=run_pypto_serving_source_completion_fixture(
@@ -634,7 +705,12 @@ def run_pypto_serving_vllm_compat_fixture(
             expected_object="text_completion",
             model=model,
             chat=False,
-        ),
+        )
+    )
+    if _compat_pto_status({"fixtures": fixture_results}) != "passed":
+        return finish()
+
+    fixture_results.append(
         _compat_non_stream_fixture(
             name="chat_completions",
             result=run_pypto_serving_source_chat_completion_fixture(
@@ -649,7 +725,12 @@ def run_pypto_serving_vllm_compat_fixture(
             expected_object="chat.completion",
             model=model,
             chat=True,
-        ),
+        )
+    )
+    if _compat_pto_status({"fixtures": fixture_results}) != "passed":
+        return finish()
+
+    fixture_results.append(
         _compat_stream_fixture(
             name="stream_completions",
             result=run_pypto_serving_source_stream_completion_fixture(
@@ -662,7 +743,12 @@ def run_pypto_serving_vllm_compat_fixture(
             ),
             expected_route="/v1/completions",
             chat=False,
-        ),
+        )
+    )
+    if _compat_pto_status({"fixtures": fixture_results}) != "passed":
+        return finish()
+
+    fixture_results.append(
         _compat_stream_fixture(
             name="stream_chat_completions",
             result=run_pypto_serving_source_stream_chat_completion_fixture(
@@ -675,25 +761,99 @@ def run_pypto_serving_vllm_compat_fixture(
             ),
             expected_route="/v1/chat/completions",
             chat=True,
+        )
+    )
+
+    return finish()
+
+
+def run_pypto_serving_vllm_compat_subprocess_fixture(
+    *,
+    model: str,
+    prompt: str,
+    max_tokens: int = 2,
+    device_id: int = 0,
+    arch: str = "compute_90",
+    kernel_launcher_name: str,
+    generated_output_dir: Path = DEFAULT_GENERATED_GLUON_OUTPUT_DIR,
+) -> dict[str, Any]:
+    fixture_results = []
+
+    def finish() -> dict[str, Any]:
+        return {
+            "status": _compat_summary_status(fixture_results),
+            "server": "pypto-serving-source",
+            "comparison_baseline": "vllm-openai-compatible-deepseek",
+            "model": model,
+            "checked_fields": PYPTO_SERVING_VLLM_COMPAT_CHECKED_FIELDS,
+            "fixtures": fixture_results,
+            "non_claims": PYPTO_SERVING_VLLM_COMPAT_NON_CLAIMS,
+        }
+
+    route_specs = [
+        (
+            "completions",
+            "--pypto-serving-source",
+            "/v1/completions",
+            False,
+            False,
+        ),
+        (
+            "chat_completions",
+            "--pypto-serving-source-chat",
+            "/v1/chat/completions",
+            True,
+            False,
+        ),
+        (
+            "stream_completions",
+            "--pypto-serving-source-stream",
+            "/v1/completions",
+            False,
+            True,
+        ),
+        (
+            "stream_chat_completions",
+            "--pypto-serving-source-chat-stream",
+            "/v1/chat/completions",
+            True,
+            True,
         ),
     ]
-    statuses = [item["status"] for item in fixture_results]
-    if "failed" in statuses:
-        status = "failed"
-    elif "skipped" in statuses:
-        status = "skipped"
-    else:
-        status = "passed"
+    for name, route_flag, expected_route, chat, stream in route_specs:
+        result = _run_pypto_serving_route_subprocess(
+            route_flag=route_flag,
+            model=model,
+            prompt=prompt,
+            max_tokens=max_tokens,
+            device_id=device_id,
+            arch=arch,
+            kernel_launcher_name=kernel_launcher_name,
+            generated_output_dir=generated_output_dir,
+            expected_route=expected_route,
+            stream=stream,
+        )
+        if stream:
+            fixture = _compat_stream_fixture(
+                name=name,
+                result=result,
+                expected_route=expected_route,
+                chat=chat,
+            )
+        else:
+            fixture = _compat_non_stream_fixture(
+                name=name,
+                result=result,
+                expected_route=expected_route,
+                expected_object="chat.completion" if chat else "text_completion",
+                model=model,
+                chat=chat,
+            )
+        fixture_results.append(fixture)
+        if _compat_pto_status({"fixtures": fixture_results}) != "passed":
+            return finish()
 
-    return {
-        "status": status,
-        "server": "pypto-serving-source",
-        "comparison_baseline": "vllm-openai-compatible-deepseek",
-        "model": model,
-        "checked_fields": PYPTO_SERVING_VLLM_COMPAT_CHECKED_FIELDS,
-        "fixtures": fixture_results,
-        "non_claims": PYPTO_SERVING_VLLM_COMPAT_NON_CLAIMS,
-    }
+    return finish()
 
 
 def create_synthetic_runtime_model() -> RuntimeModel:
@@ -1310,8 +1470,7 @@ def _compat_non_stream_fixture(
             "text_present": text_present,
             "finish_reason": choice.get("finish_reason"),
             "usage_keys": sorted(usage) if isinstance(usage, dict) else [],
-            "pto_status": result.get("pto_status"),
-            "pto_launch_count": result.get("pto_launch_count"),
+            **_compat_pto_observed(result),
         },
     }
 
@@ -1354,8 +1513,7 @@ def _compat_stream_fixture(
             "done_seen": result.get("done_seen"),
             "finish_reason": result.get("finish_reason"),
             observed_text_key: result.get(observed_text_key, ""),
-            "pto_status": result.get("pto_status"),
-            "pto_launch_count": result.get("pto_launch_count"),
+            **_compat_pto_observed(result),
         },
     }
 
@@ -1377,8 +1535,105 @@ def _compat_unavailable_fixture(
         "observed": {
             "reason": result.get("reason", ""),
             "status_code": result.get("status_code"),
+            **_compat_pto_observed(result),
         },
     }
+
+
+def _compat_pto_observed(result: dict[str, Any]) -> dict[str, Any]:
+    observed = {
+        "pto_status": result.get("pto_status"),
+        "pto_launch_count": result.get("pto_launch_count"),
+    }
+    launch_results = result.get("pto_launch_results")
+    if isinstance(launch_results, list):
+        observed["pto_launch_results"] = launch_results
+    return observed
+
+
+def _run_pypto_serving_route_subprocess(
+    *,
+    route_flag: str,
+    model: str,
+    prompt: str,
+    max_tokens: int,
+    device_id: int,
+    arch: str,
+    kernel_launcher_name: str,
+    generated_output_dir: Path,
+    expected_route: str,
+    stream: bool,
+) -> dict[str, Any]:
+    command = [
+        sys.executable,
+        str(Path(__file__).resolve()),
+        route_flag,
+        "--kernel-launcher",
+        kernel_launcher_name,
+        "--model",
+        model,
+        "--prompt",
+        prompt,
+        "--max-new-tokens",
+        str(max_tokens),
+        "--device",
+        str(device_id),
+        "--arch",
+        arch,
+    ]
+    if kernel_launcher_name == "gluon-moe-expert":
+        command.extend(["--generated-output-dir", str(generated_output_dir)])
+    env = dict(os.environ)
+    env["PYTHONFAULTHANDLER"] = env.get("PYTHONFAULTHANDLER", "1")
+    pythonpath = env.get("PYTHONPATH", "")
+    required_pythonpath = f"{ROOT}:{ROOT / 'python'}"
+    env["PYTHONPATH"] = (
+        required_pythonpath if not pythonpath else f"{required_pythonpath}:{pythonpath}"
+    )
+    completed = subprocess.run(
+        command,
+        cwd=ROOT,
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    payload = _json_payload_from_subprocess_stdout(completed.stdout)
+    if payload is not None:
+        return payload
+    return {
+        "status": "failed",
+        "server": "pypto-serving-source",
+        "route": expected_route,
+        "stream": stream,
+        "reason": _clean_error_text(
+            f"route subprocess exited {completed.returncode} before JSON: "
+            f"{completed.stdout.strip()}"
+        ),
+        "subprocess_returncode": completed.returncode,
+    }
+
+
+def _json_payload_from_subprocess_stdout(stdout: str) -> dict[str, Any] | None:
+    start = stdout.find("{")
+    if start < 0:
+        return None
+    try:
+        payload = json.loads(stdout[start:])
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _compat_summary_status(fixture_results: list[dict[str, Any]]) -> str:
+    statuses = [item["status"] for item in fixture_results]
+    pto_status = _compat_pto_status({"fixtures": fixture_results})
+    if "failed" in statuses or pto_status == "failed":
+        return "failed"
+    if "skipped" in statuses or pto_status == "skipped":
+        return "skipped"
+    return "passed"
 
 
 def _compat_status(*, result: dict[str, Any], matches: dict[str, bool]) -> str:
@@ -1523,14 +1778,25 @@ def main(argv: list[str] | None = None) -> int:
     kernel_launcher = _create_kernel_launcher_from_args(args)
 
     if args.pypto_serving_vllm_compat:
-        result = run_pypto_serving_vllm_compat_fixture(
-            model=args.model,
-            prompt=args.prompt,
-            max_tokens=args.max_new_tokens,
-            device_id=args.device,
-            arch=args.arch,
-            kernel_launcher=kernel_launcher,
-        )
+        if args.kernel_launcher == PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND:
+            result = run_pypto_serving_vllm_compat_subprocess_fixture(
+                model=args.model,
+                prompt=args.prompt,
+                max_tokens=args.max_new_tokens,
+                device_id=args.device,
+                arch=args.arch,
+                kernel_launcher_name=args.kernel_launcher,
+                generated_output_dir=args.generated_output_dir,
+            )
+        else:
+            result = run_pypto_serving_vllm_compat_fixture(
+                model=args.model,
+                prompt=args.prompt,
+                max_tokens=args.max_new_tokens,
+                device_id=args.device,
+                arch=args.arch,
+                kernel_launcher=kernel_launcher,
+            )
         status = result["status"]
         if status == "passed":
             status = _compat_pto_status(result)

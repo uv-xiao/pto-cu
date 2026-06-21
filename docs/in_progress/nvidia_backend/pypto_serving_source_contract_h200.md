@@ -679,10 +679,126 @@ assembled_assistant_text: N
 finish_reason: length
 ```
 
-The aggregate `--pypto-serving-vllm-compat` command was attempted with the
-same launcher, but the SSH session ended with exit 255 before emitting JSON,
-so it is not counted as evidence. The individual route commands above are the
-bounded H200 evidence for this slice.
+## H200 Persistent MoE Aggregate Compatibility Evidence
+
+The aggregate `--pypto-serving-vllm-compat` command now runs the four source
+routes as isolated child route processes when
+`--kernel-launcher persistent-moe-dispatch-combine` is selected. This avoids a
+same-process repeated `ctypes.CDLL(...)` runtime binding crash that previously
+ended the SSH session before JSON. The source server fixture also loads the
+cloned `python/core/server.py` directly with minimal server-route stubs, so
+the synthetic adapter contract no longer requires importing the source
+package `python.core.__init__` or its Torch-backed real model engine.
+
+The H200 pass used tree sync rather than a remote Git refresh. The tracked
+working tree was synced with `--sync`; the ignored `pypto-serving` source
+clone was synced explicitly because the generic runner excludes `tmp/`. A
+checkout-local remote virtual environment was created with
+`--system-site-packages`, and `fastapi`/`httpx` were installed into that
+remote venv for the source-route TestClient dependency.
+
+Environment:
+
+```text
+machine: <h200-host>
+gpu: NVIDIA H200 NVL, compute capability 9.0, 143771 MiB
+driver: 580.126.20
+CUDA_HOME: /usr/local/cuda
+nvcc: Build cuda_12.8.r12.8/compiler.35404655_0
+python: 3.12.3
+source sync: --sync plus explicit pypto-serving source clone sync
+stderr caveat: FastAPI TestClient printed a StarletteDeprecationWarning
+```
+
+Command:
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'PYTHONPATH=$PWD:$PWD/python \
+    .venv/bin/python examples/cuda/pypto_serving_nv_shim.py \
+      --pypto-serving-vllm-compat \
+      --kernel-launcher persistent-moe-dispatch-combine \
+      --require-cuda --prompt hello --max-new-tokens 1 \
+      --device 0 --arch compute_90'
+```
+
+Result:
+
+```text
+exit status: 0
+status: passed
+comparison_baseline: vllm-openai-compatible-deepseek
+checked fixtures:
+  completions
+  chat_completions
+  stream_completions
+  stream_chat_completions
+```
+
+Each fixture recorded:
+
+```text
+HTTP status: 200
+pto_status: passed
+pto_launch_count: 1
+launch_kind: persistent-moe-dispatch-combine
+phase: prefill
+dag_shape: graph_descriptor_moe_dispatch_combine
+shape.n: 16
+completed_count: 5
+max_abs_error: 0.0
+scheduler_error_summary: {count: 0, code: 0, task_id: 0}
+gluon_expert_bridge.kernel_name: moe_expert_affine_f32
+gluon_expert_bridge.source_sha256:
+  7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f
+task_body_digest.func_id: 12
+task_body_digest.source_sha256:
+  7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f
+device_scheduler_errors: {count: 0, code: 0, task_id: 0}
+fanin_remaining: [0, 0, 0, 0, 0]
+```
+
+Route-specific compatibility summaries:
+
+```text
+completions:
+  route: /v1/completions
+  object: text_completion
+  text_present: true
+  finish_reason: length
+  usage_keys: []
+
+chat_completions:
+  route: /v1/chat/completions
+  object: chat.completion
+  message_role: assistant
+  message_content: true
+  finish_reason: length
+  usage_keys: []
+
+stream_completions:
+  route: /v1/completions
+  stream: true
+  event_count: 2
+  chunk_count: 1
+  done_seen: true
+  assembled_text: N
+  finish_reason: length
+
+stream_chat_completions:
+  route: /v1/chat/completions
+  stream: true
+  event_count: 2
+  chunk_count: 1
+  done_seen: true
+  assembled_assistant_text: N
+  finish_reason: length
+```
+
+The cloned source still omits non-streaming usage fields, so the compatibility
+summary records `usage: false` / `usage_keys: []` rather than synthesizing
+usage.
 
 This is selected-launcher source-route contract evidence for the synthetic
 adapter. It is not DeepSeek-V4-Flash serving, not real model loading, not

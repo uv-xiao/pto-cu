@@ -575,6 +575,117 @@ def test_persistent_moe_cli_mode_outputs_launch_metadata(monkeypatch, capsys):
     assert launch["task_body_digest"]["source_sha256"] == "bridge123"
 
 
+def test_persistent_moe_vllm_compat_cli_uses_route_subprocesses(monkeypatch, capsys):
+    module = _load_serving_shim_example()
+    route_flags = []
+
+    def unexpected_in_process_aggregate(**_kwargs):
+        raise AssertionError("persistent aggregate must isolate source routes")
+
+    def fake_run(args, **_kwargs):
+        route_flag = next(item for item in args if item.startswith("--pypto-serving-source"))
+        route_flags.append(route_flag)
+        route = (
+            "/v1/chat/completions"
+            if "chat" in route_flag
+            else "/v1/completions"
+        )
+        stream = "stream" in route_flag
+        launch = {
+            "status": "passed",
+            "phase": "prefill",
+            "launch_kind": "persistent-moe-dispatch-combine",
+            "dag_shape": "graph_descriptor_moe_dispatch_combine",
+            "completed_count": 5,
+            "max_abs_error": 0.0,
+            "scheduler_error_summary": {"count": 0, "code": 0, "task_id": 0},
+            "task_body_digest": {"func_id": 12, "source_sha256": "bridge123"},
+        }
+        result = {
+            "status": "passed",
+            "server": "pypto-serving-source",
+            "route": route,
+            "status_code": 200,
+            "pto_status": "passed",
+            "pto_launch_count": 1,
+            "pto_launch_results": [launch],
+        }
+        if stream:
+            result.update(
+                {
+                    "stream": True,
+                    "event_count": 2,
+                    "chunk_count": 1,
+                    "done_seen": True,
+                    "finish_reason": "length",
+                }
+            )
+            if "chat" in route_flag:
+                result["assembled_assistant_text"] = "N"
+            else:
+                result["assembled_text"] = "N"
+        elif "chat" in route_flag:
+            result["response"] = {
+                "object": "chat.completion",
+                "model": "synthetic-simpler-nv",
+                "choices": [
+                    {
+                        "message": {"role": "assistant", "content": "N"},
+                        "finish_reason": "length",
+                    }
+                ],
+            }
+        else:
+            result["response"] = {
+                "object": "text_completion",
+                "model": "synthetic-simpler-nv",
+                "choices": [{"text": "N", "finish_reason": "length"}],
+            }
+        return subprocess.CompletedProcess(
+            args=args,
+            returncode=0,
+            stdout=json.dumps(result),
+        )
+
+    monkeypatch.setattr(
+        module,
+        "run_pypto_serving_vllm_compat_fixture",
+        unexpected_in_process_aggregate,
+    )
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+
+    code = module.main(
+        [
+            "--pypto-serving-vllm-compat",
+            "--kernel-launcher",
+            "persistent-moe-dispatch-combine",
+            "--prompt",
+            "hello",
+            "--max-new-tokens",
+            "1",
+        ]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert route_flags == [
+        "--pypto-serving-source",
+        "--pypto-serving-source-chat",
+        "--pypto-serving-source-stream",
+        "--pypto-serving-source-chat-stream",
+    ]
+    assert output["status"] == "passed"
+    assert [
+        fixture["observed"]["pto_launch_results"][0]["launch_kind"]
+        for fixture in output["fixtures"]
+    ] == [
+        "persistent-moe-dispatch-combine",
+        "persistent-moe-dispatch-combine",
+        "persistent-moe-dispatch-combine",
+        "persistent-moe-dispatch-combine",
+    ]
+
+
 def test_openai_completion_fixture_uses_synthetic_serving_request_shape():
     module = _load_serving_shim_example()
     launches = []
@@ -1019,6 +1130,28 @@ def test_pypto_serving_source_server_contract_uses_real_routes():
     assert [launch.phase for launch in launches] == ["prefill", "decode"]
 
 
+def test_pypto_serving_source_app_does_not_require_torch_for_server_route(monkeypatch):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "torch":
+            raise ImportError("No module named 'torch'")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    app, adapter = module.create_pypto_serving_source_app(
+        kernel_launcher=lambda request: {"status": "passed", "phase": request.phase}
+    )
+
+    assert app.title == "PyPTO Serving"
+    assert adapter.last_pto_status == ""
+
+
 def test_pypto_serving_source_cli_mode_outputs_contract_json(monkeypatch, capsys):
     module = _load_serving_shim_example()
     pytest.importorskip("fastapi.testclient")
@@ -1367,6 +1500,175 @@ def test_generated_launcher_can_run_through_vllm_compat_summary(monkeypatch):
     assert [
         fixture["observed"]["pto_status"] for fixture in summary["fixtures"]
     ] == ["passed", "passed", "passed", "passed"]
+
+
+def test_vllm_compat_summary_preserves_per_route_launch_results(monkeypatch):
+    module = _load_serving_shim_example()
+
+    launch_result = {
+        "status": "passed",
+        "phase": "prefill",
+        "launch_kind": "persistent-moe-dispatch-combine",
+        "dag_shape": "graph_descriptor_moe_dispatch_combine",
+        "shape": {"n": 16},
+        "completed_count": 5,
+        "max_abs_error": 0.0,
+        "scheduler_error_summary": {"count": 0, "code": 0, "task_id": 0},
+        "task_body_digest": {"func_id": 12, "source_sha256": "bridge123"},
+    }
+
+    def non_stream_result(route, response):
+        return {
+            "status": "passed",
+            "server": "pypto-serving-source",
+            "route": route,
+            "status_code": 200,
+            "response": response,
+            "pto_status": "passed",
+            "pto_launch_count": 1,
+            "pto_launch_results": [launch_result],
+        }
+
+    def stream_result(route, text_key):
+        return {
+            "status": "passed",
+            "server": "pypto-serving-source",
+            "route": route,
+            "stream": True,
+            "status_code": 200,
+            "event_count": 2,
+            "chunk_count": 1,
+            "done_seen": True,
+            text_key: "N",
+            "finish_reason": "length",
+            "pto_status": "passed",
+            "pto_launch_count": 1,
+            "pto_launch_results": [launch_result],
+        }
+
+    monkeypatch.setattr(
+        module,
+        "run_pypto_serving_source_completion_fixture",
+        lambda **_kwargs: non_stream_result(
+            "/v1/completions",
+            {
+                "object": "text_completion",
+                "model": "synthetic-simpler-nv",
+                "choices": [{"text": "N", "finish_reason": "length"}],
+            },
+        ),
+    )
+    monkeypatch.setattr(
+        module,
+        "run_pypto_serving_source_chat_completion_fixture",
+        lambda **_kwargs: non_stream_result(
+            "/v1/chat/completions",
+            {
+                "object": "chat.completion",
+                "model": "synthetic-simpler-nv",
+                "choices": [
+                    {
+                        "message": {"role": "assistant", "content": "N"},
+                        "finish_reason": "length",
+                    }
+                ],
+            },
+        ),
+    )
+    monkeypatch.setattr(
+        module,
+        "run_pypto_serving_source_stream_completion_fixture",
+        lambda **_kwargs: stream_result("/v1/completions", "assembled_text"),
+    )
+    monkeypatch.setattr(
+        module,
+        "run_pypto_serving_source_stream_chat_completion_fixture",
+        lambda **_kwargs: stream_result(
+            "/v1/chat/completions",
+            "assembled_assistant_text",
+        ),
+    )
+
+    summary = module.run_pypto_serving_vllm_compat_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+    )
+
+    assert summary["status"] == "passed"
+    for fixture in summary["fixtures"]:
+        observed = fixture["observed"]
+        assert observed["pto_launch_count"] == 1
+        assert observed["pto_launch_results"][0]["launch_kind"] == (
+            "persistent-moe-dispatch-combine"
+        )
+        assert observed["pto_launch_results"][0]["dag_shape"] == (
+            "graph_descriptor_moe_dispatch_combine"
+        )
+        assert observed["pto_launch_results"][0]["completed_count"] == 5
+        assert observed["pto_launch_results"][0]["max_abs_error"] == 0.0
+        assert observed["pto_launch_results"][0]["scheduler_error_summary"] == {
+            "count": 0,
+            "code": 0,
+            "task_id": 0,
+        }
+        assert observed["pto_launch_results"][0]["task_body_digest"] == {
+            "func_id": 12,
+            "source_sha256": "bridge123",
+        }
+
+
+def test_vllm_compat_summary_stops_after_non_passed_pto_launch(monkeypatch):
+    module = _load_serving_shim_example()
+    calls = []
+
+    def failed_completion(**_kwargs):
+        calls.append("completions")
+        return {
+            "status": "passed",
+            "server": "pypto-serving-source",
+            "route": "/v1/completions",
+            "status_code": 200,
+            "response": {
+                "object": "text_completion",
+                "model": "synthetic-simpler-nv",
+                "choices": [{"text": "N", "finish_reason": "length"}],
+            },
+            "pto_status": "failed",
+            "pto_launch_count": 1,
+            "pto_launch_results": [
+                {
+                    "status": "failed",
+                    "phase": "prefill",
+                    "launch_kind": "persistent-moe-dispatch-combine",
+                    "dag_shape": "graph_descriptor_moe_dispatch_combine",
+                    "reason": "prepare_callable failed for persistent MoE graph",
+                }
+            ],
+        }
+
+    def unexpected_route(**_kwargs):
+        calls.append("unexpected")
+        raise AssertionError("aggregate should stop after a non-passed PTO launch")
+
+    monkeypatch.setattr(module, "run_pypto_serving_source_completion_fixture", failed_completion)
+    monkeypatch.setattr(module, "run_pypto_serving_source_chat_completion_fixture", unexpected_route)
+    monkeypatch.setattr(module, "run_pypto_serving_source_stream_completion_fixture", unexpected_route)
+    monkeypatch.setattr(module, "run_pypto_serving_source_stream_chat_completion_fixture", unexpected_route)
+
+    summary = module.run_pypto_serving_vllm_compat_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+    )
+
+    assert calls == ["completions"]
+    assert summary["status"] == "failed"
+    assert len(summary["fixtures"]) == 1
+    assert summary["fixtures"][0]["observed"]["pto_status"] == "failed"
+    assert summary["fixtures"][0]["observed"]["pto_launch_results"][0]["reason"] == (
+        "prepare_callable failed for persistent MoE graph"
+    )
 
 
 def test_pypto_serving_source_chat_cli_mode_outputs_contract_json(monkeypatch, capsys):
