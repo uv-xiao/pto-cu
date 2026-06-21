@@ -88,7 +88,11 @@ CUDA seed launcher. Selecting `--kernel-launcher gluon-moe-expert` routes the
 same synthetic or cloned source-route request through the existing generated
 Gluon MoE expert harness for `moe_expert_affine_f32`, recording launch kind,
 kernel name, phase, status, shape, and generated source digest metadata when
-available. Selecting `--kernel-launcher persistent-moe-dispatch-combine`
+available. Selecting `--kernel-launcher gluon-topk-sampling` routes the same
+request through the generated Gluon Top-K sampling correctness harness for
+`topk_sampling_f32`, recording launch kind, kernel name, phase, shape,
+artifact/source digest metadata, and validation metadata when available.
+Selecting `--kernel-launcher persistent-moe-dispatch-combine`
 routes the same request through the existing persistent-device MoE
 dispatch/combine example via `run_moe_dispatch_combine(...)`, recording launch
 kind, route phase, DAG shape, status, completed count, max absolute error,
