@@ -8,7 +8,7 @@ performance evidence.
 
 This section tracks source-generating tensor-core GEMM artifacts from
 `KernelCompiler(platform="cuda").generate_gluon_kernel(...)` plus the FP4
-dtype/API boundary harness:
+dtype/API and grouped GEMM source/API boundary harnesses:
 
 - `gemm_tensor_core_f16_f32`: one `64x32x32` FP16-input, FP32-output WGMMA
   correctness case.
@@ -26,6 +26,10 @@ dtype/API boundary harness:
   harness for the next low-precision GEMM gate. It records Torch and Gluon
   FP4 attrs and does not generate source when no Gluon FP4 WGMMA operand dtype
   is available.
+- `examples/cuda/gluon_gemm_grouped_tensor_core.py`: a grouped GEMM source/API
+  boundary harness. It records candidate grouped GEMM shapes, probes the
+  current generator and Gluon/Hopper attrs, and does not generate source when
+  no grouped GEMM WGMMA source path is registered.
 
 The source-generating FP16 harnesses emit source and manifest artifacts before
 checking runtime CUDA availability. BF16 and FP8 source-generating harnesses
@@ -39,6 +43,13 @@ Gluon FP4 attrs and does not generate source or manifest artifacts unless a
 confirmed Gluon FP4 WGMMA operand dtype path exists. Its `--require-cuda`
 failure is review-visible unsupported-boundary evidence, not a generation or
 correctness artifact.
+
+Grouped GEMM remains a source/API boundary harness: it records proposed
+multi-group GEMM cases, the current generated-kernel registry, and
+Gluon/Hopper attrs with grouped-related names. It emits `artifact: null` until
+a confirmed grouped GEMM WGMMA source, lowering, and runtime correctness path
+exists. Its `--require-cuda` failure is review-visible unsupported-boundary
+evidence, not grouped GEMM correctness evidence.
 
 `examples/cuda/gluon_wgmma_api_preflight.py` is the repo-owned API gate for
 future BF16, FP8, FP4, and grouped GEMM WGMMA work. It emits structured JSON
@@ -345,6 +356,125 @@ skip at this unsupported dtype API boundary. Distilled JSON stdout:
 This is FP4 API and unsupported-boundary evidence only. It is not FP4 GEMM
 correctness evidence.
 
+## H200 Grouped GEMM Boundary Evidence
+
+The grouped GEMM gate used a synced checkout on the remote H200 host. A direct
+H200 probe for this run reported eight `NVIDIA H200 NVL` GPUs, compute
+capability `9.0`, driver `580.126.20`, and 143771 MiB memory per GPU.
+
+The repo-owned WGMMA preflight was run first in a fresh project-local `.venv`:
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'python3 -m venv --system-site-packages .venv && \
+    PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+      examples/cuda/gluon_wgmma_api_preflight.py --require-cuda'
+```
+
+That preflight returned exit status `2` because the fresh remote `.venv` lacked
+Torch and Triton/Gluon:
+
+```json
+{
+  "status": "failed",
+  "cuda_required_missing": ["torch", "cuda_available", "hopper_device"],
+  "missing_required": [
+    "TensorDescriptor",
+    "warpgroup_mma",
+    "warpgroup_mma_wait",
+    "mbarrier",
+    "tma",
+    "fence_async_shared",
+    "gl.NVMMASharedLayout",
+    "gl.NVMMADistributedLayout",
+    "gl.bfloat16",
+    "triton",
+    "gluon"
+  ]
+}
+```
+
+No usable preserved Gluon-capable Python environment was found on this remote
+host during this run. One discovered non-tool candidate failed during Python
+startup before importing `encodings`, so it was not used for evidence.
+
+The grouped harness still ran on the H200 host in the fresh project-local
+`.venv` because the boundary it tests is the generated-kernel registry and
+source/API availability. No generated grouped GEMM source path is registered in
+the current `KernelCompiler(platform="cuda").generate_gluon_kernel(...)`
+registry. The candidate grouped kernel name was
+`gemm_grouped_tensor_core_f16_f32`. Triton/Gluon were absent in the fresh
+remote `.venv`, so the grouped attr probes also recorded
+`ModuleNotFoundError: No module named 'triton'`.
+
+The committed grouped boundary command was:
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'python3 -m venv --system-site-packages .venv && \
+    PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+      examples/cuda/gluon_gemm_grouped_tensor_core.py \
+      --output-dir tmp/gluon-grouped-tensor-core-h200 \
+      --arch compute_90 --require-cuda'
+```
+
+The command returned exit status `2`, which is expected for a required-CUDA
+skip at this unsupported source/API boundary. Distilled JSON stdout:
+
+```json
+{
+  "kernel_name": "gemm_grouped_tensor_core_f16_f32",
+  "status": "skipped",
+  "artifact": null,
+  "dtype_boundary": {
+    "a": "float16",
+    "b": "float16",
+    "accumulator": "float32",
+    "out": "float32"
+  },
+  "grouped_cases": [
+    {
+      "case_name": "two_group_smoke",
+      "groups": 2,
+      "m": [64, 128],
+      "n": [128, 64],
+      "k": [32, 32]
+    },
+    {
+      "case_name": "linear_style_grouped",
+      "groups": 3,
+      "m": [64, 64, 128],
+      "n": [128, 64, 128],
+      "k": [7168, 7168, 7168]
+    }
+  ],
+  "api_probe": {
+    "status": "failed",
+    "candidate_kernel_name": "gemm_grouped_tensor_core_f16_f32",
+    "reason": "missing grouped GEMM WGMMA source path",
+    "gluon_language_grouped_attrs": [],
+    "gluon_language_grouped_attrs_module": {
+      "imported": false,
+      "error_type": "ModuleNotFoundError",
+      "error": "No module named 'triton'"
+    },
+    "source_generation": {
+      "status": "failed",
+      "error_type": "ValueError"
+    }
+  },
+  "unsupported_boundary": {
+    "kind": "gluon_grouped_gemm_source_path_unavailable",
+    "expected_failure": "No generated Gluon grouped GEMM WGMMA source path is registered"
+  }
+}
+```
+
+This is grouped GEMM API and unsupported-boundary evidence only. It is not
+grouped GEMM correctness evidence.
+
 ## Boundary
 
 This PR does not include flash-attention evidence, MoE or distributed
@@ -358,5 +488,9 @@ not BF16/FP4/grouped GEMM/MoE/FlashAttention/vLLM integration evidence. The
 FP4 boundary is not FlashInfer integration evidence, not serving integration
 evidence, not generated-kernel performance evidence, not production-readiness
 evidence, and not BF16/FP8/grouped GEMM/MoE/FlashAttention/vLLM integration
-evidence. Generated tensor-core source and JSON manifests stay under
-`tmp/gluon-*` when source generation is supported by the dtype/API boundary.
+evidence. The grouped GEMM boundary is not FlashInfer integration evidence,
+not serving integration evidence, not generated-kernel performance evidence,
+not production-readiness evidence, and not BF16/FP8/FP4 GEMM/MoE/
+FlashAttention/vLLM integration evidence. Generated tensor-core source and
+JSON manifests stay under `tmp/gluon-*` when source generation is supported by
+the dtype/API boundary.

@@ -2028,7 +2028,8 @@ def test_gluon_tensor_core_gemm_records_fp4_unsupported_boundary():
         (
             "This section tracks source-generating tensor-core GEMM artifacts "
             "from `KernelCompiler(platform=\"cuda\").generate_gluon_kernel(...)` "
-            "plus the FP4 dtype/API boundary harness"
+            "plus the FP4 dtype/API and grouped GEMM source/API boundary "
+            "harnesses"
         ),
         "BF16 and FP8 source-generating harnesses emit source and manifest",
         "FP4 remains a dtype/API boundary harness",
@@ -2064,6 +2065,54 @@ def test_gluon_tensor_core_gemm_records_fp4_unsupported_boundary():
     assert "FP4 API/lowering boundary is explicitly recorded" in checklist_search_text
     assert "not FP4 GEMM correctness evidence" in checklist_search_text
     assert "missing Gluon FP4 WGMMA dtype API" in checklist_search_text
+
+
+def test_gluon_tensor_core_gemm_records_grouped_gemm_boundary():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    evidence = in_progress_root / "gluon_tensor_core_gemm.md"
+    checklist = in_progress_root / "flashinfer_serving_operator_checklist.md"
+    example = ROOT / "examples" / "cuda" / "gluon_gemm_grouped_tensor_core.py"
+
+    assert example.is_file()
+    example_text = example.read_text(encoding="utf-8")
+    for required in [
+        "run_grouped_tensor_core_boundary",
+        "probe_grouped_gemm_api",
+        "gluon_grouped_gemm_source_path_unavailable",
+        "--require-cuda",
+    ]:
+        assert required in example_text
+
+    evidence_text = evidence.read_text(encoding="utf-8")
+    evidence_search_text = re.sub(r"\s+", " ", evidence_text)
+    for required in [
+        "H200 Grouped GEMM Boundary Evidence",
+        "`examples/cuda/gluon_gemm_grouped_tensor_core.py`",
+        "`gemm_grouped_tensor_core_f16_f32`",
+        "\"kind\": \"gluon_grouped_gemm_source_path_unavailable\"",
+        "\"status\": \"skipped\"",
+        "\"artifact\": null",
+        "fresh remote `.venv` lacked Torch and Triton/Gluon",
+        "two_group_smoke",
+        "linear_style_grouped",
+        "missing grouped GEMM WGMMA source path",
+        "No module named 'triton'",
+        "not grouped GEMM correctness evidence",
+        "REMOTE_PTO_CU=<remote-pto-cu>",
+        "No usable preserved Gluon-capable Python environment was found",
+        "not FlashInfer integration evidence",
+        "not serving integration evidence",
+        "not generated-kernel performance evidence",
+        "not production-readiness evidence",
+    ]:
+        assert required in evidence_search_text
+    assert "grouped GEMM correctness evidence exists" not in evidence_search_text
+
+    checklist_text = checklist.read_text(encoding="utf-8")
+    checklist_search_text = re.sub(r"\s+", " ", checklist_text)
+    assert "Grouped GEMM boundary harness" in checklist_search_text
+    assert "not grouped GEMM correctness evidence" in checklist_search_text
+    assert "missing grouped GEMM WGMMA source path" in checklist_search_text
 
 
 def test_nvidia_branch_ci_avoids_ascend_jobs():
