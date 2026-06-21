@@ -75,13 +75,23 @@ Serving-relevant families verified from the README:
   available. The H200 FP4 gate exits as `status: skipped` with `artifact:
   null`, `unsupported_boundary.kind: gluon_fp4_dtype_api_unavailable`, and
   reason `missing Gluon FP4 WGMMA dtype API`. This is unsupported-boundary
-  evidence only, not FP4 GEMM correctness evidence.
+  evidence only, not FP4 GEMM correctness evidence. The Grouped GEMM boundary
+  harness records proposed grouped shapes, probes the generated-kernel
+  registry plus actual grouped GEMM Gluon/Hopper attrs, and records generic
+  Hopper `warpgroup_mma*` primitives separately from grouped GEMM API/source
+  support. It exits as `status: skipped` with
+  `artifact: null`,
+  `unsupported_boundary.kind: gluon_grouped_gemm_source_path_unavailable`,
+  and reason `missing grouped GEMM WGMMA source path`. This is
+  unsupported-boundary evidence only, not grouped GEMM correctness evidence.
 - **Gap / next PTO milestone:** make FP8 WGMMA lowering pass before promoting
   FP8 GEMM correctness evidence; make a Gluon FP4 WGMMA dtype/lowering path
   available before promoting FP4 GEMM correctness evidence. The FP4
-  API/lowering boundary is explicitly recorded. Add grouped GEMM and broader
-  linear-layer serving-shape fixtures with explicit dtype and shape boundaries
-  before any FlashInfer GEMM coverage claim.
+  API/lowering boundary is explicitly recorded. Add a grouped GEMM source,
+  lowering, and runtime correctness path before promoting grouped GEMM
+  correctness evidence. Add broader linear-layer serving-shape fixtures with
+  explicit dtype and shape boundaries before any FlashInfer GEMM coverage
+  claim.
 - **Explicit non-claim:** this is not generated-kernel performance evidence
   and not proof of FlashInfer GEMM coverage. The BF16 tensor-core GEMM
   correctness evidence is not FlashInfer integration evidence, not
@@ -93,6 +103,10 @@ Serving-relevant families verified from the README:
   FlashInfer integration evidence, not serving integration evidence, not
   generated-kernel performance evidence, not production readiness evidence,
   and not BF16/FP8/grouped GEMM/MoE/FlashAttention/vLLM integration evidence.
+  The grouped GEMM boundary is not FlashInfer integration evidence, not serving
+  integration evidence, not generated-kernel performance evidence, not
+  production readiness evidence, and not BF16/FP8/FP4
+  GEMM/MoE/FlashAttention/vLLM integration evidence.
 
 ### MoE
 
