@@ -1925,6 +1925,10 @@ def test_flashinfer_serving_operator_checklist_is_recorded():
         assert path.is_file(), f"missing {path.relative_to(ROOT)}"
 
     checklist_text = checklist.read_text(encoding="utf-8")
+    assert "| FlashInfer reference family |" not in checklist_text
+    assert "| PTO current evidence |" not in checklist_text
+    assert "| Gap / next PTO milestone |" not in checklist_text
+    assert "| Explicit non-claim |" not in checklist_text
     for required in [
         "# FlashInfer Serving Operator Checklist",
         "tmp/sources/repos/external/flashinfer/README.md",
