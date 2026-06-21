@@ -35,9 +35,10 @@ Serving-relevant families verified from the README:
   KV-Cache; Decode, Prefill, and Append; MLA Attention; Cascade Attention;
   Sparse Attention; POD-Attention.
 - **PTO current evidence:** `gluon_flashattention_h200.md` records a
-  single-tile FP32 FlashAttention forward correctness case. vLLM DeepSeek
-  probes are real vLLM serving evidence and mention fp8 MLA KV-cache behavior,
-  but they do not route through PTO kernels.
+  single-tile FP32 FlashAttention forward correctness case with
+  `schema_version` and repo-relative artifact paths. vLLM DeepSeek probes are
+  real vLLM serving evidence and mention fp8 MLA KV-cache behavior, but they
+  do not route through PTO kernels.
 - **Gap / next PTO milestone:** add PTO-owned decode, prefill, append,
   paged/ragged KV-cache, varlen, MLA, cascade, sparse, and POD attention
   fixtures before any attention-serving claim.

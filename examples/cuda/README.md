@@ -175,6 +175,24 @@ reports skips; with `--require-cuda`, skipped cases return a non-zero exit
 status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_moe_expert_h200.md`.
 
+## Gluon FP32 FlashAttention
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_flashattention_fwd.py \
+  --output-dir tmp/gluon-flashattention-local \
+  --arch compute_90
+```
+
+This generates the `flashattention_fwd_f32` Gluon source and checks
+`softmax((q @ k.T) * scale) @ v` correctness for one bounded
+`32x32x32` single-tile shape. The stdout JSON includes `schema_version`,
+repo-relative artifact paths, and sanitized error text. Without CUDA tooling,
+a visible NVIDIA GPU, or Gluon `gl.dot_fma`, it reports a skip; with
+`--require-cuda`, the same skip returns a non-zero exit status. H200 evidence
+is recorded in
+`docs/in_progress/nvidia_backend/gluon_flashattention_h200.md`.
+
 ## Gluon FP32 RMSNorm
 
 ```bash
