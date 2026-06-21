@@ -43,16 +43,19 @@ Serving-relevant families verified from the README:
   JSON and remains separate from the promoted sweep. The same note now records
   a causal single-tile H200 gate for `--tile-shape 32x32x64 --causal` with
   `causal: true`, the masked PyTorch reference formula, tolerance, status,
-  and repo-relative artifact paths. vLLM DeepSeek probes are real vLLM
-  serving evidence and mention fp8 MLA KV-cache behavior, but they do not
-  route through PTO kernels.
-- **Gap / next PTO milestone:** add PTO-owned decode, prefill, append,
-  paged/ragged KV-cache, varlen, MLA, cascade, sparse, and POD attention
-  fixtures before any attention-serving claim.
+  and repo-relative artifact paths. It also records a bounded single-query
+  decode-shaped H200 gate for `--tile-shape 1x32x64 --causal` with
+  `phase: decode`, `causal: true`, shape, tolerance, the offset masked PyTorch
+  reference formula, status, and repo-relative artifact paths. vLLM DeepSeek
+  probes are real vLLM serving evidence and mention fp8 MLA KV-cache behavior,
+  but they do not route through PTO kernels.
+- **Gap / next PTO milestone:** add PTO-owned prefill, append, paged/ragged
+  KV-cache, varlen, full decode coverage, MLA, cascade, sparse, and POD
+  attention fixtures before any attention-serving claim.
 - **Explicit non-claim:** this is not FlashInfer integration evidence, not
   FlashInfer parity, not simpler-nv/vLLM kernel integration evidence, not
   production serving readiness, not performance/throughput/latency evidence,
-  not paged/ragged KV-cache coverage, not decode, prefill, or append coverage,
+  not paged/ragged KV-cache coverage, not full decode, prefill, or append coverage,
   and not DeepSeek semantic correctness.
 
 ### GEMM And Linear Operations

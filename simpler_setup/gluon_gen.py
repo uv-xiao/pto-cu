@@ -390,6 +390,23 @@ def _render_tiled_tensor_core_gemm_source(
 
 def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
     block_m, block_n, block_d = tile_shape
+    is_decode_shape = block_m == 1 and block_n > block_m
+    kernel_arg_suffix = ", causal_query_offset: gl.constexpr" if is_decode_shape else ""
+    causal_mask_source = (
+        "causal_mask = offs_n <= (offs_m + causal_query_offset)"
+        if is_decode_shape
+        else "causal_mask = offs_n <= offs_m"
+    )
+    wrapper_offset_source = (
+        f"            causal_query_offset = {block_n - block_m}\n"
+        if is_decode_shape
+        else ""
+    )
+    kernel_call_suffix = (
+        "\n                causal_query_offset,"
+        if is_decode_shape
+        else ""
+    )
     if block_n == block_d:
         score_source = f"""
             offs_k_col = gl.arange(0, {block_d}, layout=gl.SliceLayout(0, layout))[None, :]
@@ -420,7 +437,7 @@ def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
 
 
         @gluon.jit
-        def flashattention_fwd_f32_kernel(q_ptr, k_ptr, v_ptr, out_ptr, seqlen_q: gl.constexpr, seqlen_k: gl.constexpr, head_dim: gl.constexpr, scale: gl.constexpr, causal: gl.constexpr):
+        def flashattention_fwd_f32_kernel(q_ptr, k_ptr, v_ptr, out_ptr, seqlen_q: gl.constexpr, seqlen_k: gl.constexpr, head_dim: gl.constexpr, scale: gl.constexpr, causal: gl.constexpr{kernel_arg_suffix}):
             layout: gl.constexpr = gl.BlockedLayout([1, 1], [32, 1], [gl.num_warps(), 1], [1, 0])
             lhs_layout: gl.constexpr = gl.DotOperandLayout(parent=layout, operand_index=0, k_width=0)
             rhs_layout: gl.constexpr = gl.DotOperandLayout(parent=layout, operand_index=1, k_width=0)
@@ -429,7 +446,7 @@ def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
             offs_n = gl.arange(0, {block_n}, layout=gl.SliceLayout(0, layout))[None, :]
 {score_source}
             if causal:
-                causal_mask = offs_n <= offs_m
+                {causal_mask_source}
                 scores = gl.where(causal_mask, scores, -float("inf"))
 
             row_max = gl.max(scores, axis=1)
@@ -454,6 +471,7 @@ def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
                 raise ValueError(f"expected tensor shapes {{expected_shapes}}, got {{actual_shapes}}")
 
             resolved_scale = 1.0 / math.sqrt({block_d}) if scale is None else scale
+{wrapper_offset_source}\
             flashattention_fwd_f32_kernel[(1,)](
                 q,
                 k,
@@ -463,7 +481,7 @@ def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
                 {block_n},
                 {block_d},
                 resolved_scale,
-                causal,
+                causal,{kernel_call_suffix}
                 num_warps=num_warps,
             )
         """
