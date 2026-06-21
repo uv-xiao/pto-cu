@@ -26,7 +26,14 @@ GLUON_GEMM_REVIEW_DOCS = [
     ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_tensor_core_gemm.md",
 ]
 UCCL_PRIVATE_PATH_RE = re.compile(
-    r"/home/|/Users/|/tmp/pto-cu|/tmp/uccl-|uvxiao|bizhaoh200|hina|dasys"
+    r"/" + "home/"
+    r"|/" + "Users/"
+    r"|/" + "tmp/pto-cu"
+    r"|/" + "tmp/uccl-"
+    r"|" + "uv" + "xiao"
+    r"|" + "bizhao" + "h200"
+    r"|" + "hi" + "na"
+    r"|" + "da" + "sys"
 )
 
 
@@ -1734,3 +1741,103 @@ def test_host_runtime_comm_operation_symbols_are_exported_by_all_producers():
             assert re.search(
                 rf'(?:extern "C"\s+)?int\s+{symbol}\s*\(', text
             ), f"{producer} is missing {symbol}"
+
+
+def test_pypto_serving_fixture_review_artifacts_are_recorded():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "target": in_progress_root / "serving_target_selection.md",
+        "design": in_progress_root / "pypto_serving_nv_shim_design.md",
+        "local": in_progress_root / "pypto_serving_nv_shim_local.md",
+        "completion": in_progress_root / "pypto_serving_openai_completion_fixture.md",
+        "engine": in_progress_root / "pypto_serving_engine_fixture.md",
+        "http": in_progress_root / "pypto_serving_http_fixture.md",
+        "source_contract": in_progress_root / "pypto_serving_source_contract_h200.md",
+    }
+    example = ROOT / "examples" / "cuda" / "pypto_serving_nv_shim.py"
+    tests = ROOT / "tests" / "ut" / "py" / "test_pypto_serving_nv_shim.py"
+    readme = ROOT / "examples" / "cuda" / "README.md"
+
+    for path in (*docs.values(), example, tests, readme):
+        assert path.is_file(), f"missing {path.relative_to(ROOT)}"
+
+    target_text = docs["target"].read_text(encoding="utf-8")
+    for required in [
+        "Serving Target Selection",
+        "first PTO-owned integration target",
+        "DeepSeek-V4-Flash compatibility baseline",
+        "ModelExecutor",
+        "PyptoExecutor",
+        "OpenAI-compatible API",
+        "not serving evidence",
+        "not DeepSeek correctness",
+        "not a vLLM plugin implementation",
+    ]:
+        assert required in target_text
+
+    design_text = docs["design"].read_text(encoding="utf-8")
+    for required in [
+        "pypto-serving simpler-nv Shim Design",
+        "SimplerNvExecutor",
+        "SimplerNvModelRunner",
+        "RuntimeConfig",
+        "PrefillBatch",
+        "DecodeBatch",
+        "synthetic model fixture",
+        "no DeepSeek-V4-Flash claim",
+        "no vLLM plugin claim",
+        "REMOTE_PTO_CU=<remote-pto-cu>",
+    ]:
+        assert required in design_text
+
+    for key in ("local", "completion", "engine", "http", "source_contract"):
+        text = docs[key].read_text(encoding="utf-8")
+        assert "not DeepSeek-V4-Flash correctness" in text
+        assert "not vLLM plugin evidence" in text
+        assert "REMOTE_PTO_CU=<remote-pto-cu>" in text
+        assert "/" + "home/" not in text
+        assert "/" + "tmp/pto-cu" not in text
+        assert "git" + "@" not in text
+        assert "ssh" + "://" not in text
+
+    source_contract = docs["source_contract"].read_text(encoding="utf-8")
+    for required in [
+        "pypto-serving Source Contract H200 Evidence",
+        "tmp/sources/repos/hw-native-sys/pypto-serving/python/core/server.py",
+        "create_serving_app",
+        "ServingServer",
+        "PyptoServingSourceAsyncEngineAdapter",
+        "--pypto-serving-source",
+        "server: pypto-serving-source",
+        "pto_status: passed",
+        "pto_launch_count: 2",
+        "<remote-pto-cu>/tmp/sources/repos/hw-native-sys/pypto-serving/",
+    ]:
+        assert required in source_contract
+
+    example_text = example.read_text(encoding="utf-8")
+    for required in [
+        "class SimplerNvExecutor",
+        "class SimplerNvModelRunner",
+        "class SyntheticPyptoServingEngine",
+        "PyptoServingSourceAsyncEngineAdapter",
+        "run_synthetic_serving_request",
+        "run_synthetic_openai_completion",
+        "run_synthetic_http_completion_fixture",
+        "run_pypto_serving_source_completion_fixture",
+        "--pypto-serving-source",
+    ]:
+        assert required in example_text
+
+    test_text = tests.read_text(encoding="utf-8")
+    for required in [
+        "test_synthetic_serving_request_uses_simpler_nv_executor_boundary",
+        "test_synthetic_fastapi_app_serves_health_models_and_completions",
+        "test_pypto_serving_source_server_contract_uses_real_routes",
+        "test_pypto_serving_source_cli_mode_outputs_contract_json",
+    ]:
+        assert required in test_text
+
+    readme_text = readme.read_text(encoding="utf-8")
+    assert "pypto_serving_nv_shim.py" in readme_text
+    assert "pypto_serving_source_contract_h200.md" in readme_text
