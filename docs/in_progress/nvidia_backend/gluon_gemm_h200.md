@@ -12,7 +12,7 @@ The local working tree was synced to a temporary checkout on a remote H200 host
 through the generic CUDA remote runner:
 
 ```bash
-REMOTE_PTO_CU=/tmp/pto-cu-gluon-gemm \
+REMOTE_PTO_CU=<remote-pto-cu> \
   .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
   bash -lc 'python3 -m venv --system-site-packages .venv && \
     PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
@@ -54,4 +54,4 @@ tolerance for the recorded shape.
 The generated `gemm_f32` kernel is deliberately scalar, with one Gluon program
 per output element. This evidence does not prove tensor-core codegen,
 flash-attention coverage, MoE or distributed behavior, serving integration, or
-performance.
+performance. Generated source and JSON manifests stay under `tmp/gluon-*`.

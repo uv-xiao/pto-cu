@@ -20,6 +20,11 @@ ACTIVE_REVIEW_SURFACES = [
     ROOT / "examples" / "cuda" / "persistent_layered_cross.py",
     ROOT / "examples" / "cuda" / "persistent_moe_dispatch_combine.py",
 ]
+GLUON_GEMM_REVIEW_DOCS = [
+    ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_gen_adapter.md",
+    ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_gemm_h200.md",
+    ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_tensor_core_gemm.md",
+]
 UCCL_PRIVATE_PATH_RE = re.compile(
     r"/home/|/Users/|/tmp/pto-cu|/tmp/uccl-|uvxiao|bizhaoh200|hina|dasys"
 )
@@ -1567,6 +1572,14 @@ def test_active_review_surfaces_do_not_reference_removed_eval_scripts():
     for path in ACTIVE_REVIEW_SURFACES:
         text = path.read_text(encoding="utf-8")
         assert REMOVED_EVAL_SCRIPT_RE.search(text) is None, path
+
+
+def test_gluon_gemm_review_docs_use_placeholders_for_remote_paths():
+    for path in GLUON_GEMM_REVIEW_DOCS:
+        assert path.is_file(), path
+        text = path.read_text(encoding="utf-8")
+        assert UCCL_PRIVATE_PATH_RE.search(text) is None, path
+        assert "tmp/gluon-" in text, path
 
 
 def test_nvidia_branch_ci_avoids_ascend_jobs():

@@ -20,8 +20,10 @@ Supported kernel in this PR:
 
 The generated source imports `triton.experimental.gluon`, declares a
 `@gluon.jit` kernel, and writes artifact metadata under the selected output
-directory. Unit tests verify generation and the CUDA-only `KernelCompiler`
-entry point without requiring Triton installation or a GPU.
+directory. Review and H200 commands use `tmp/gluon-*` output directories so
+generated Gluon source and JSON manifests remain uncommitted. Unit tests
+verify generation and the CUDA-only `KernelCompiler` entry point without
+requiring Triton installation or a GPU.
 
 `examples/cuda/gluon_gemm_f32.py` is the first skip-safe correctness harness
 for this boundary. It always generates the reviewable `gemm_f32` artifact and
