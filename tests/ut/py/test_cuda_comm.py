@@ -19,10 +19,15 @@ from simpler_setup.cuda_comm import (
     CudaCommRuntimeRegistry,
     MockCudaCommRuntime,
     TorchNcclCudaCommRuntime,
+    UcclEpDispatchCombineDescriptor,
+    UcclP2PCudaCommRuntime,
+    UcclP2PWriteIpcDescriptor,
     create_cuda_comm_capability,
     create_cuda_comm_host_plan,
     create_cuda_comm_launch_plan,
     create_mock_cuda_comm_capability,
+    create_uccl_ep_dispatch_combine_descriptor,
+    create_uccl_p2p_write_ipc_descriptor,
 )
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -32,6 +37,28 @@ def _load_nccl_worker_control_example():
     example = ROOT / "examples" / "cuda" / "nccl_worker_control_ops.py"
     assert example.is_file(), f"missing {example.relative_to(ROOT)}"
     spec = importlib.util.spec_from_file_location("nccl_worker_control_ops_example", example)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_uccl_p2p_adapter_example():
+    example = ROOT / "examples" / "cuda" / "uccl_p2p_ipc_adapter.py"
+    assert example.is_file(), f"missing {example.relative_to(ROOT)}"
+    spec = importlib.util.spec_from_file_location("uccl_p2p_ipc_adapter_example", example)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_uccl_ep_adapter_example():
+    example = ROOT / "examples" / "cuda" / "uccl_ep_dispatch_combine_adapter.py"
+    assert example.is_file(), f"missing {example.relative_to(ROOT)}"
+    spec = importlib.util.spec_from_file_location("uccl_ep_dispatch_combine_adapter_example", example)
     assert spec is not None
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -49,6 +76,7 @@ def test_cuda_comm_capability_is_internal_and_opaque():
     assert capability.supports("reduce_scatter")
     assert capability.capability_id.startswith("mock:")
     assert "nccl" not in capability.capability_id.lower()
+    assert "uccl" not in capability.capability_id.lower()
     assert not hasattr(simpler, "CudaCommCapability")
 
 
@@ -67,6 +95,25 @@ def test_cuda_comm_capability_supports_nccl_without_transport_objects():
         "operations": ["all_reduce", "reduce_scatter", "all_gather", "send_recv"],
     }
     assert not hasattr(simpler, "TorchNcclCudaCommRuntime")
+
+
+def test_cuda_comm_capability_supports_uccl_p2p_without_transport_objects():
+    capability = create_cuda_comm_capability(backend="uccl", device_ids=(6, 7))
+
+    assert capability.backend == "uccl"
+    assert capability.world_size == 2
+    assert capability.rank_to_device() == {0: 6, 1: 7}
+    assert capability.supports(CudaCommOp.P2P_WRITE_IPC)
+    assert capability.supports(CudaCommOp.EP_DISPATCH_COMBINE)
+    assert not capability.supports(CudaCommOp.ALL_REDUCE)
+    assert capability.as_dict() == {
+        "backend": "uccl",
+        "capability_id": "uccl:rank0->cuda6,rank1->cuda7",
+        "world_size": 2,
+        "rank_to_device": {"0": 6, "1": 7},
+        "operations": ["p2p_write_ipc", "ep_dispatch_combine"],
+    }
+    assert not hasattr(simpler, "UcclP2PCudaCommRuntime")
 
 
 def test_cuda_comm_launch_plan_resolves_local_rank_without_transport_objects():
@@ -89,6 +136,18 @@ def test_cuda_comm_launch_plan_resolves_local_rank_without_transport_objects():
         "world_size": 2,
     }
     assert not hasattr(simpler, "CudaCommLaunchPlan")
+
+
+def test_cuda_comm_launch_plan_resolves_uccl_local_rank_runtime_id():
+    capability = create_cuda_comm_capability(backend="uccl", device_ids=(6, 7))
+    plan = create_cuda_comm_launch_plan(capability, rank=1)
+
+    assert plan.backend == "uccl"
+    assert plan.rank == 1
+    assert plan.device_id == 7
+    assert plan.world_size == 2
+    assert plan.runtime_id == "uccl:rank0->cuda6,rank1->cuda7/local_rank1"
+    assert plan.device_descriptor().as_dict()["backend_code"] == 2
 
 
 def test_cuda_comm_launch_plan_rejects_unknown_rank():
@@ -183,7 +242,7 @@ def test_cuda_comm_capability_rejects_ambiguous_rank_mapping():
         create_mock_cuda_comm_capability(device_ids=())
 
     with pytest.raises(ValueError, match="unsupported"):
-        create_cuda_comm_capability(backend="uccl", device_ids=(0, 1))
+        create_cuda_comm_capability(backend="ray", device_ids=(0, 1))
 
 
 def test_nccl_worker_control_ops_example_is_skip_safe():
@@ -220,6 +279,103 @@ def test_nccl_worker_control_ops_example_respects_explicit_nccl_library(monkeypa
     monkeypatch.setenv(module._NCCL_LIBRARY_ENV, str(explicit))
 
     assert module.configure_nccl_library_env(search_paths=[]) == str(explicit)
+
+
+def test_uccl_p2p_ipc_adapter_example_is_skip_safe():
+    module = _load_uccl_p2p_adapter_example()
+
+    result = module.run_uccl_p2p_ipc_adapter(
+        device_ids=(0, 1),
+        nbytes=1024,
+        skip_reason=lambda: "no test UCCL",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "no test UCCL"
+    assert result["backend"] == "uccl"
+    assert result["transport"] == "p2p_ipc"
+    assert result["operation"] == "p2p_write_ipc"
+    assert result["capability"]["operations"] == ["p2p_write_ipc", "ep_dispatch_combine"]
+    assert result["descriptor"] == {
+        "operation": "p2p_write_ipc",
+        "src_rank": 0,
+        "dst_rank": 1,
+        "nbytes": 1024,
+    }
+
+
+def test_uccl_p2p_ipc_adapter_cli_returns_nonzero_when_cuda_required(monkeypatch, capsys):
+    module = _load_uccl_p2p_adapter_example()
+    monkeypatch.setattr(module, "uccl_p2p_skip_reason", lambda: "no test UCCL")
+
+    assert module.main([]) == 0
+    assert module.main(["--require-cuda"]) == 2
+    captured = capsys.readouterr()
+    assert '"status": "skipped"' in captured.out
+    assert "no test UCCL" in captured.out
+
+
+def test_uccl_ep_dispatch_combine_adapter_example_is_skip_safe():
+    module = _load_uccl_ep_adapter_example()
+
+    result = module.run_uccl_ep_dispatch_combine_adapter(
+        device_ids=(0, 1),
+        num_tokens=64,
+        hidden=128,
+        num_topk=4,
+        num_experts=16,
+        input_dtype="bf16",
+        repeats=3,
+        skip_reason=lambda: "no test UCCL-EP",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "no test UCCL-EP"
+    assert result["backend"] == "uccl"
+    assert result["transport"] == "ep"
+    assert result["operation"] == "ep_dispatch_combine"
+    assert result["repeats"] == 3
+    assert result["capability"]["operations"] == ["p2p_write_ipc", "ep_dispatch_combine"]
+    assert result["descriptor"] == {
+        "operation": "ep_dispatch_combine",
+        "world_size": 2,
+        "num_tokens": 64,
+        "hidden": 128,
+        "num_topk": 4,
+        "num_experts": 16,
+        "experts_per_rank": 8,
+        "input_dtype": "bf16",
+        "include_topk_weights": True,
+        "metadata_shapes": {
+            "topk_idx": [64, 4],
+            "topk_weights": [64, 4],
+            "num_tokens_per_rank": [2],
+            "is_token_in_rank": [64, 2],
+            "num_tokens_per_expert": [16],
+        },
+    }
+
+
+def test_uccl_ep_dispatch_combine_adapter_cli_returns_nonzero_when_cuda_required(monkeypatch, capsys):
+    module = _load_uccl_ep_adapter_example()
+    monkeypatch.setattr(module, "uccl_ep_skip_reason", lambda **_kwargs: "no test UCCL-EP")
+
+    assert module.main([]) == 0
+    assert module.main(["--require-cuda"]) == 2
+    captured = capsys.readouterr()
+    assert '"status": "skipped"' in captured.out
+    assert "no test UCCL-EP" in captured.out
+
+
+def test_uccl_ep_dispatch_combine_adapter_validates_repeats():
+    module = _load_uccl_ep_adapter_example()
+
+    with pytest.raises(ValueError, match="repeats"):
+        module.run_uccl_ep_dispatch_combine_adapter(
+            device_ids=(0, 1),
+            repeats=0,
+            skip_reason=lambda: "no test UCCL-EP",
+        )
 
 
 def test_nccl_worker_control_ops_example_drives_ctrl_comm_op_with_worker_memory():
@@ -367,6 +523,124 @@ def test_mock_cuda_comm_runtime_validates_world_size_and_shapes():
         runtime.send_recv({(0, 2): [1.0]})
 
 
+def test_uccl_p2p_write_ipc_descriptor_validates_rank_and_shape():
+    capability = create_cuda_comm_capability(backend="uccl", device_ids=(6, 7))
+
+    descriptor = create_uccl_p2p_write_ipc_descriptor(
+        capability,
+        src_rank=1,
+        dst_rank=0,
+        nbytes=4096,
+    )
+
+    assert isinstance(descriptor, UcclP2PWriteIpcDescriptor)
+    assert descriptor.as_dict() == {
+        "operation": "p2p_write_ipc",
+        "src_rank": 1,
+        "dst_rank": 0,
+        "nbytes": 4096,
+    }
+
+    with pytest.raises(ValueError, match="uccl"):
+        create_uccl_p2p_write_ipc_descriptor(
+            create_mock_cuda_comm_capability(device_ids=(0, 1)),
+            src_rank=1,
+            dst_rank=0,
+            nbytes=4096,
+        )
+    with pytest.raises(ValueError, match="distinct"):
+        create_uccl_p2p_write_ipc_descriptor(capability, src_rank=0, dst_rank=0, nbytes=4096)
+    with pytest.raises(ValueError, match="nbytes"):
+        create_uccl_p2p_write_ipc_descriptor(capability, src_rank=1, dst_rank=0, nbytes=0)
+    with pytest.raises(ValueError, match="unknown"):
+        create_uccl_p2p_write_ipc_descriptor(capability, src_rank=2, dst_rank=0, nbytes=4096)
+
+
+def test_uccl_ep_dispatch_combine_descriptor_records_moe_metadata():
+    capability = create_cuda_comm_capability(backend="uccl", device_ids=(6, 7))
+
+    descriptor = create_uccl_ep_dispatch_combine_descriptor(
+        capability,
+        num_tokens=4096,
+        hidden=7168,
+        num_topk=8,
+        num_experts=256,
+        input_dtype="bf16",
+    )
+
+    assert isinstance(descriptor, UcclEpDispatchCombineDescriptor)
+    assert descriptor.experts_per_rank == 128
+    assert descriptor.as_dict() == {
+        "operation": "ep_dispatch_combine",
+        "world_size": 2,
+        "num_tokens": 4096,
+        "hidden": 7168,
+        "num_topk": 8,
+        "num_experts": 256,
+        "experts_per_rank": 128,
+        "input_dtype": "bf16",
+        "include_topk_weights": True,
+        "metadata_shapes": {
+            "topk_idx": [4096, 8],
+            "topk_weights": [4096, 8],
+            "num_tokens_per_rank": [2],
+            "is_token_in_rank": [4096, 2],
+            "num_tokens_per_expert": [256],
+        },
+    }
+    assert not hasattr(simpler, "UcclEpDispatchCombineDescriptor")
+
+
+def test_uccl_ep_dispatch_combine_descriptor_validates_shape_and_backend():
+    capability = create_cuda_comm_capability(backend="uccl", device_ids=(6, 7))
+
+    with pytest.raises(ValueError, match="uccl"):
+        create_uccl_ep_dispatch_combine_descriptor(
+            create_mock_cuda_comm_capability(device_ids=(0, 1)),
+            num_tokens=4096,
+            hidden=7168,
+            num_topk=8,
+            num_experts=256,
+            input_dtype="bf16",
+        )
+    with pytest.raises(ValueError, match="positive"):
+        create_uccl_ep_dispatch_combine_descriptor(
+            capability,
+            num_tokens=0,
+            hidden=7168,
+            num_topk=8,
+            num_experts=256,
+            input_dtype="bf16",
+        )
+    with pytest.raises(ValueError, match="divisible"):
+        create_uccl_ep_dispatch_combine_descriptor(
+            capability,
+            num_tokens=4096,
+            hidden=7168,
+            num_topk=8,
+            num_experts=255,
+            input_dtype="bf16",
+        )
+    with pytest.raises(ValueError, match="num_topk"):
+        create_uccl_ep_dispatch_combine_descriptor(
+            capability,
+            num_tokens=4096,
+            hidden=7168,
+            num_topk=257,
+            num_experts=256,
+            input_dtype="bf16",
+        )
+    with pytest.raises(ValueError, match="input_dtype"):
+        create_uccl_ep_dispatch_combine_descriptor(
+            capability,
+            num_tokens=4096,
+            hidden=7168,
+            num_topk=8,
+            num_experts=256,
+            input_dtype="float32",
+        )
+
+
 def test_cuda_comm_runtime_registry_owns_mock_lifecycle():
     registry = CudaCommRuntimeRegistry()
     capability = create_mock_cuda_comm_capability(device_ids=(0, 1))
@@ -428,6 +702,71 @@ def test_cuda_comm_runtime_registry_acquires_nccl_runtime_with_rank_lifecycle():
     assert registry.active_ids() == ()
 
 
+def test_cuda_comm_runtime_registry_acquires_uccl_p2p_runtime_with_rank_lifecycle():
+    registry = CudaCommRuntimeRegistry()
+    capability = create_cuda_comm_capability(backend="uccl", device_ids=(6, 7))
+    fake_p2p = _FakeUcclP2P()
+
+    runtime = registry.acquire(
+        capability,
+        rank=1,
+        uccl_transport="p2p_ipc",
+        p2p_module=fake_p2p,
+    )
+
+    assert isinstance(runtime, UcclP2PCudaCommRuntime)
+    assert runtime.rank == 1
+    assert runtime.device_id == 7
+    assert runtime.runtime_id == "uccl:rank0->cuda6,rank1->cuda7/local_rank1"
+    assert fake_p2p.endpoint_device_ids == [7]
+    assert registry.acquire(
+        capability,
+        rank=1,
+        uccl_transport="p2p_ipc",
+        p2p_module=fake_p2p,
+    ) is runtime
+    assert registry.active_ids() == ("uccl:rank0->cuda6,rank1->cuda7/local_rank1",)
+
+    registry.release(runtime.runtime_id)
+
+    assert fake_p2p.endpoints[0].closed is True
+    assert registry.active_ids() == ()
+
+
+def test_uccl_p2p_runtime_wraps_endpoint_ipc_primitives():
+    capability = create_cuda_comm_capability(backend="uccl", device_ids=(6, 7))
+    descriptor = create_uccl_p2p_write_ipc_descriptor(
+        capability,
+        src_rank=1,
+        dst_rank=0,
+        nbytes=4096,
+    )
+    server_endpoint = _FakeUcclEndpoint(local_gpu_idx=6)
+    server_endpoint.accept_local_result = (True, "0000:be:00.0", 41)
+    client_endpoint = _FakeUcclEndpoint(local_gpu_idx=7)
+    server = UcclP2PCudaCommRuntime(capability, rank=0, endpoint=server_endpoint)
+    client = UcclP2PCudaCommRuntime(capability, rank=1, endpoint=client_endpoint)
+
+    assert server.accept_local(peer_rank=1, peer_address="0000:be:00.0") == 41
+    assert client.connect_local(peer_rank=0, peer_address="0000:bd:00.0") == 106
+    info_blob = server.advertise_write_ipc(descriptor, conn_id=41, dst_ptr=0x2000)
+    client.write_ipc(descriptor, conn_id=106, src_ptr=0x1000, info_blob=info_blob)
+
+    assert server_endpoint.calls == [
+        ("accept_local",),
+        ("advertise_ipc", 41, 0x2000, 4096),
+    ]
+    assert client_endpoint.calls == [
+        ("connect_local", "0000:bd:00.0"),
+        ("write_ipc", 106, 0x1000, 4096, b"ipc-info"),
+    ]
+
+    with pytest.raises(ValueError, match="destination rank"):
+        client.advertise_write_ipc(descriptor, conn_id=106, dst_ptr=0x2000)
+    with pytest.raises(ValueError, match="source rank"):
+        server.write_ipc(descriptor, conn_id=41, src_ptr=0x1000, info_blob=info_blob)
+
+
 def test_cuda_comm_launch_plan_acquires_registry_runtime():
     registry = CudaCommRuntimeRegistry()
     capability = create_cuda_comm_capability(backend="nccl", device_ids=(0, 1))
@@ -479,6 +818,17 @@ def test_nccl_runtime_forwards_collective_operations():
         ("send", tensor, 1),
         ("recv", output, 1),
     ]
+
+
+def test_cuda_comm_runtime_registry_rejects_uccl_without_p2p_transport_selection():
+    registry = CudaCommRuntimeRegistry()
+    capability = create_cuda_comm_capability(backend="uccl", device_ids=(0, 1))
+
+    with pytest.raises(ValueError, match="rank"):
+        registry.acquire(capability, uccl_transport="p2p_ipc")
+
+    with pytest.raises(NotImplementedError, match="p2p_ipc"):
+        registry.acquire(capability, rank=0)
 
 
 class _FakeCuda:
@@ -547,3 +897,46 @@ class _FakeDist:
 class _FakeTensor:
     def __init__(self, name: str) -> None:
         self.name = name
+
+
+class _FakeUcclP2P:
+    def __init__(self) -> None:
+        self.endpoint_device_ids: list[int] = []
+        self.endpoints: list[_FakeUcclEndpoint] = []
+
+    def Endpoint(self, device_id: int):
+        self.endpoint_device_ids.append(device_id)
+        endpoint = _FakeUcclEndpoint(device_id)
+        self.endpoints.append(endpoint)
+        return endpoint
+
+
+class _FakeUcclEndpoint:
+    def __init__(self, local_gpu_idx: int) -> None:
+        self.local_gpu_idx = local_gpu_idx
+        self.calls: list[tuple] = []
+        self.closed = False
+        self.accept_local_result = (True, 6 if local_gpu_idx == 7 else 7, 106)
+
+    def close(self) -> None:
+        self.closed = True
+
+    def get_metadata(self) -> bytes:
+        self.calls.append(("get_metadata",))
+        return f"metadata:{self.local_gpu_idx}".encode("ascii")
+
+    def accept_local(self):
+        self.calls.append(("accept_local",))
+        return self.accept_local_result
+
+    def connect_local(self, peer_target):
+        self.calls.append(("connect_local", peer_target))
+        return True, 106
+
+    def advertise_ipc(self, conn_id: int, dst_ptr: int, nbytes: int):
+        self.calls.append(("advertise_ipc", conn_id, dst_ptr, nbytes))
+        return True, b"ipc-info"
+
+    def write_ipc(self, conn_id: int, src_ptr: int, nbytes: int, info_blob: bytes):
+        self.calls.append(("write_ipc", conn_id, src_ptr, nbytes, info_blob))
+        return True

@@ -1620,6 +1620,60 @@ def test_cuda_comm_descriptor_and_nccl_worker_control_artifacts_are_recorded():
     assert "nccl_worker_control_ops.py" in readme_text
 
 
+def test_uccl_adapter_artifacts_are_recorded_without_host_runtime_abi_claims():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "boundary": in_progress_root / "uccl_adapter_boundary.md",
+        "plan": in_progress_root / "uccl_ep_p2p_probe_plan.md",
+        "probe": in_progress_root / "uccl_ep_p2p_h200.md",
+        "p2p": in_progress_root / "uccl_p2p_adapter_h200.md",
+        "ep": in_progress_root / "uccl_ep_adapter_h200.md",
+        "comparison": in_progress_root / "uccl_ep_nccl_worker_control_comparison.md",
+    }
+    readme = ROOT / "examples" / "cuda" / "README.md"
+
+    for path in (
+        *docs.values(),
+        ROOT / "examples" / "cuda" / "uccl_p2p_ipc_adapter.py",
+        ROOT / "examples" / "cuda" / "uccl_ep_dispatch_combine_adapter.py",
+    ):
+        assert path.is_file(), path
+
+    boundary_text = docs["boundary"].read_text(encoding="utf-8")
+    for required in [
+        "adapter/probe evidence",
+        "simpler_setup/cuda_comm.py",
+        "UcclP2PWriteIpcDescriptor",
+        "UcclEpDispatchCombineDescriptor",
+        "UcclP2PCudaCommRuntime",
+        "TaskArgs",
+        "CallConfig",
+        "No CUDA host-runtime UCCL ABI is added",
+        "RDMA is not proven",
+        "multi-node is not proven",
+        "serving integration is not proven",
+    ]:
+        assert required in boundary_text
+
+    for key in ("probe", "p2p", "ep", "comparison"):
+        text = docs[key].read_text(encoding="utf-8")
+        assert "historical restart context" in text
+        assert "Fresh PR evidence" in text
+        assert "not RDMA evidence" in text
+        assert "not multi-node evidence" in text
+        assert "not serving evidence" in text
+        assert "/" + "home/" not in text
+
+    plan_text = docs["plan"].read_text(encoding="utf-8")
+    assert "descriptor/adapter-preparation" in plan_text
+    assert "examples/cuda/uccl_ep_dispatch_combine_adapter.py --require-cuda" in plan_text
+    assert "no CUDA host-runtime UCCL ABI" in plan_text
+
+    readme_text = readme.read_text(encoding="utf-8")
+    assert "uccl_p2p_ipc_adapter.py" in readme_text
+    assert "uccl_ep_dispatch_combine_adapter.py" in readme_text
+
+
 def test_host_runtime_comm_operation_symbols_are_exported_by_all_producers():
     required_symbols = [
         "comm_all_reduce_f32",

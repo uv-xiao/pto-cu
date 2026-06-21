@@ -44,6 +44,33 @@ host-runtime NCCL handles and the private `CTRL_COMM_OP` worker transport.
 H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/nccl_worker_control_h200.md`.
 
+## UCCL P2P IPC Adapter
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/uccl_p2p_ipc_adapter.py \
+  --device-ids 0,1 --nbytes 1024 --require-cuda
+```
+
+This skip-safe probe maps a private `UcclP2PWriteIpcDescriptor` into the
+Python-side `uccl.p2p` endpoint API when optional UCCL dependencies, CUDA, and
+`torchrun` are available. It is adapter/probe evidence only, not CUDA
+host-runtime UCCL dispatch, RDMA, multi-node, serving, or DeepSeek evidence.
+
+## UCCL EP Dispatch/Combine Adapter
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/uccl_ep_dispatch_combine_adapter.py \
+  --device-ids 0,1 --num-tokens 64 --hidden 128 \
+  --num-topk 4 --num-experts 16 --input-dtype bf16 --require-cuda
+```
+
+This skip-safe probe maps `UcclEpDispatchCombineDescriptor` metadata into the
+installed `uccl.ep` benchmark buffer when optional dependencies and
+`UCCL_EP_BENCH_DIR` are available. It keeps UCCL-EP as Python-side
+adapter/probe evidence and does not add a CUDA host-runtime UCCL ABI.
+
 ## Persistent Layered-Cross Graph
 
 ```bash
