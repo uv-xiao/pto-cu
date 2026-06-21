@@ -254,6 +254,22 @@ reports a skip; with `--require-cuda`, the same skip returns a non-zero exit
 status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_gelu_h200.md`.
 
+## Gluon FP32 Gated SiLU
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_gated_silu_f32.py \
+  --output-dir tmp/gluon-gated-silu-local \
+  --n 32 --arch compute_90
+```
+
+This generates the `gated_silu_f32` Gluon source and checks FP32
+`out = value * gate / (1.0 + exp(-gate))` correctness for one bounded vector
+shape. Without CUDA tooling, a visible NVIDIA GPU, or Gluon `gl.exp`, it
+reports a skip; with `--require-cuda`, the same skip returns a non-zero exit
+status. H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/gluon_gated_silu_h200.md`.
+
 ## DeepSeek V4 Flash Weight Manifest
 
 ```bash
