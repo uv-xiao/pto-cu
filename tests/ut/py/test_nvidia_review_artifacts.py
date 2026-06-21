@@ -2486,8 +2486,12 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "flashattention_fwd_f32",
         "softmax((q @ k.T) * scale) @ v",
         "--output-dir tmp/gluon-flashattention-shape-coverage-h200",
+        "--output-dir tmp/gluon-flashattention-causal-boundary-h200",
         "--require-cuda --arch compute_90",
+        "--tile-shape 32x32x64 --causal --require-cuda",
         "schema_version: 1",
+        "causal: true",
+        "softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v",
         "artifact paths are repo-relative",
         "private absolute paths are not recorded",
         "status: passed",
@@ -2498,7 +2502,9 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "32x32x64 failed H200 correctness",
         "--tile-shape 32x32x64",
         "max_abs_error: 3.5762786865234375e-07",
+        "max_abs_error: 4.172325134277344e-07",
         "source_sha256: c611666d3b527e615f2d8e4658b57f10865f1547fd370e8bb45639353682a06e",
+        "source_sha256: f9f0ff900d33023c462579063be9aa8560a82c63d43aae2bd851369cfcfb58a4",
         "remains separate from the two-case promoted sweep",
         "case_count: 2",
         "per-case artifact paths are repo-relative",
@@ -2510,6 +2516,8 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "not FlashInfer integration evidence",
         "not DeepSeek semantic correctness",
         "not performance, throughput, or latency evidence",
+        "not paged/ragged KV-cache coverage",
+        "not decode, prefill, or append coverage",
         "not multi-tile attention coverage",
         "not fused attention integration",
         "not KV-cache integration",
@@ -2523,8 +2531,10 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "gluon_flashattention_fwd.py" in readme_text
     assert "flashattention_fwd_f32" in readme_text
     assert "--sweep" in readme_text
+    assert "--causal" in readme_text
     assert "head_dim=64" in readme_text
     assert "32x32x64 failed H200 correctness" in readme_text
+    assert "causal: true" in readme_text
     assert "aggregate structured JSON" in readme_text
     assert "schema_version" in readme_text
     assert "repo-relative artifact paths" in readme_text
@@ -2534,14 +2544,19 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     normalized_checklist_text = " ".join(checklist_text.split())
     assert "gluon_flashattention_h200.md" in checklist_text
     assert "small FP32 FlashAttention shape sweep" in normalized_checklist_text
+    assert "causal single-tile" in normalized_checklist_text
+    assert "causal: true" in checklist_text
     assert "head_dim=64" in checklist_text
     assert "--tile-shape 32x32x64" in checklist_text
+    assert "--causal" in checklist_text
     assert "32x32x64 failed H200 correctness" in normalized_checklist_text
     assert "now passes with structured JSON" in normalized_checklist_text
     assert "remains separate from the promoted sweep" in checklist_text
     assert "repo-relative artifact paths" in checklist_text
     assert "schema_version" in checklist_text
     assert "not FlashInfer integration evidence" in checklist_text
+    assert "not paged/ragged KV-cache coverage" in checklist_text
+    assert "not decode, prefill, or append coverage" in checklist_text
 
     status_text = status.read_text(encoding="utf-8")
     normalized_status_text = " ".join(status_text.split())

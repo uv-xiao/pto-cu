@@ -395,6 +395,22 @@ a visible NVIDIA GPU, or Gluon `gl.dot_fma`, it reports skips; with
 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_flashattention_h200.md`.
 
+For the bounded causal single-tile gate, use:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_flashattention_fwd.py \
+  --output-dir tmp/gluon-flashattention-causal-boundary-h200 \
+  --arch compute_90 --tile-shape 32x32x64 --causal --require-cuda
+```
+
+The causal JSON records `causal: true`, shape, tolerance, repo-relative
+artifact paths, and the PyTorch reference formula
+`softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v`.
+It is a single-tile correctness gate only, not FlashInfer integration,
+vLLM/simpler-nv integration, paged/ragged KV-cache coverage, decode, prefill,
+append coverage, serving readiness, or performance evidence.
+
 ## Gluon FP32 RMSNorm
 
 ```bash

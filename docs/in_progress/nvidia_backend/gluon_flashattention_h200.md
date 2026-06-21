@@ -19,18 +19,21 @@ correctly:
 - softmax normalization over the key dimension
 - value accumulation: `softmax(q @ k.T * scale) @ v`
 - PyTorch reference expression: `softmax((q @ k.T) * scale) @ v`
+- optional causal gate: `causal: true` applies a lower-triangular
+  key-index/query-index mask before softmax, with PyTorch reference
+  `softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v`
 
 The harness at `examples/cuda/gluon_flashattention_fwd.py` builds the generated
 artifact, loads it, and runs FP32 correctness cases against PyTorch when CUDA
 and a Gluon build with `dot_fma` support are available. The default path still
 runs one `32x32x32` single-tile case. The single-case path also accepts
-`--tile-shape MxNxD` for bounded repros such as `32x32x64`. The `--sweep` path
-emits aggregate
+`--tile-shape MxNxD` for bounded repros such as `32x32x64` and `--causal` for
+the bounded causal single-tile gate. The `--sweep` path emits aggregate
 structured JSON with `schema_version: 1`, aggregate status and case counts,
-and per-case shape, provenance, artifact metadata, status, and max error when
-run. Artifact paths are repo-relative, absolute `--output-dir` values are
-rejected, and exception text is sanitized so private absolute paths are not
-recorded.
+and per-case shape, provenance, artifact metadata, status, causal flag, and
+max error when run. Artifact paths are repo-relative, absolute `--output-dir`
+values are rejected, and exception text is sanitized so private absolute paths
+are not recorded.
 
 The sweep includes:
 
@@ -128,12 +131,55 @@ The fix is bounded to the generated single-kernel correctness case. The
 rectangular score path avoids the current Gluon `dot_fma` RHS-layout boundary
 for row-major K storage; the value accumulation path still uses `dot_fma`.
 
+## Causal Single-Tile Gate
+
+On 2026-06-22, the causal single-tile gate generated and launched on the same
+H200 class machine and passed correctness against the masked PyTorch
+reference. The remote run used tree sync into `<remote-pto-cu>` through the
+generic CUDA runner, and the preserved remote Gluon Python environment because
+the remote default Python lacked Torch and Triton/Gluon.
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'PYTHONPATH=$PWD:$PWD/python \
+    <remote-gluon-venv>/bin/python \
+      examples/cuda/gluon_flashattention_fwd.py \
+      --output-dir tmp/gluon-flashattention-causal-boundary-h200 \
+      --arch compute_90 --tile-shape 32x32x64 --causal --require-cuda'
+```
+
+Distilled passed result:
+
+```text
+schema_version: 1
+status: passed
+causal: true
+shape: seqlen_q=32, seqlen_k=32, head_dim=64
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+max_abs_error: 4.172325134277344e-07
+artifact: arch=compute_90, compiler_role=pto-isa-replacement
+source_sha256: f9f0ff900d33023c462579063be9aa8560a82c63d43aae2bd851369cfcfb58a4
+tile_shape: 32x32x64
+artifact paths are repo-relative
+machine class: H200
+private absolute paths are not recorded
+```
+
+This result is a bounded correctness gate for one generated single-tile FP32
+causal FlashAttention source. It is not FlashInfer integration evidence, not
+vLLM/simpler-nv integration evidence, not production serving readiness, not
+performance, throughput, or latency evidence, not paged/ragged KV-cache
+coverage, not decode, prefill, or append coverage, and not DeepSeek semantic
+correctness.
+
 ## Boundary
 
 This milestone covers a small single-tile FlashAttention correctness sweep
-only. It is not benchmark evidence and does not cover block streaming, causal
-masking, varlen/page tables, persistent scheduling, MoE, distributed
-communication, serving, or DeepSeek integration.
+and a bounded causal single-tile gate only. It is not benchmark evidence and
+does not cover block streaming, varlen/page tables, persistent scheduling,
+MoE, distributed communication, serving, or DeepSeek integration.
 
 Non-claims:
 
@@ -141,6 +187,8 @@ Non-claims:
 - not FlashInfer integration evidence
 - not DeepSeek semantic correctness
 - not performance, throughput, or latency evidence
+- not paged/ragged KV-cache coverage
+- not decode, prefill, or append coverage
 - not multi-tile attention coverage
 - not fused attention integration
 - not KV-cache integration
