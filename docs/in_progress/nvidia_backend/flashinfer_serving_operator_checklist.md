@@ -60,8 +60,9 @@ Serving-relevant families verified from the README:
   accumulator/output for a smoke tile and a bounded
   `m=64,k=7168,n=128` linear-style shape using
   `DeepSeek-V4-Flash config hidden_size=7168` provenance. That BF16 fixture
-  skipped on the current H200 Gluon stack because `warpgroup_mma` and
-  `NVMMADistributedLayout` were unavailable.
+  is guarded by `examples/cuda/gluon_wgmma_api_preflight.py`, which fails
+  fast with structured JSON when the current H200 Gluon stack lacks APIs such
+  as `warpgroup_mma` or `NVMMADistributedLayout`.
 - **Gap / next PTO milestone:** make the BF16 tensor-core fixture pass on an
   H200 Gluon WGMMA stack, then add FP8, FP4, grouped GEMM, and broader
   linear-layer serving-shape fixtures with explicit dtype and shape

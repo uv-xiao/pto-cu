@@ -22,6 +22,14 @@ runtime CUDA availability. They emit structured JSON in pass, skip, and
 generation-failure paths. `--require-cuda` returns non-zero when CUDA, PyTorch,
 Triton/Gluon Hopper WGMMA APIs, generation, or correctness are unavailable.
 
+`examples/cuda/gluon_wgmma_api_preflight.py` is the repo-owned API gate for
+future BF16, FP8, FP4, and grouped GEMM WGMMA work. It emits structured JSON
+covering Torch import and CUDA/Hopper visibility, Triton version, Gluon import
+status, `TensorDescriptor`, the Hopper WGMMA primitive imports, and the Gluon
+layout/dtype attributes used by generated tensor-core source. With
+`--require-cuda`, missing CUDA/Hopper or missing WGMMA APIs return non-zero
+before a kernel harness attempts runtime correctness.
+
 The generated source uses Hopper Gluon APIs:
 
 - `TensorDescriptor` for tensor descriptors.
@@ -82,10 +90,23 @@ Distilled result:
 }
 ```
 
-The BF16 serving-shape fixture is generated and skip-safe, but the current
-remote H200 Gluon stack did not expose the Hopper WGMMA APIs needed to run it.
-The command below was run through `--sync` against the remote checkout with a
-project-local `.venv`.
+The BF16 serving-shape fixture is generated and skip-safe. The WGMMA API
+preflight gate should run before interpreting BF16 harness output, because the
+current remote H200 Gluon stack did not expose the Hopper WGMMA APIs needed to
+run it. The command below was run through `--sync` against the remote checkout
+with a project-local `.venv`.
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'python3 -m venv --system-site-packages .venv && \
+    PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+      examples/cuda/gluon_wgmma_api_preflight.py --require-cuda'
+```
+
+That preflight is expected to return non-zero until the H200 Python
+environment exposes CUDA, Torch, Triton/Gluon, and every required WGMMA API.
+The BF16 harness command remains:
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
