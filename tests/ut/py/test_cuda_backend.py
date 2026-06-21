@@ -277,6 +277,126 @@ def test_cuda_persistent_moe_nccl_handoff_ties_moe_and_worker_control_results():
     assert "no serving, vLLM, DeepSeek, RDMA, multi-node, or performance claim" in result["non_claims"]
 
 
+def test_cuda_persistent_moe_uccl_ep_handoff_ties_moe_and_adapter_results():
+    example = _load_persistent_moe_dispatch_example()
+
+    def fake_moe_runner(**kwargs):
+        return {
+            "schema_version": 1,
+            "status": "passed",
+            "runtime": "persistent_device",
+            "dag_shape": "graph_descriptor_moe_dispatch_combine",
+            "evidence_scope": "same-node-two-device-baseline",
+            "device_ids": list(kwargs["device_ids"]),
+            "n": kwargs["n"],
+            "arch": kwargs["arch"],
+            "validation": {
+                "all_devices_passed": True,
+                "completed_count_is_5": True,
+                "scheduler_errors_zero": True,
+                "fanin_remaining_zero": True,
+                "source_digests_match": True,
+                "bridge_metadata_match": True,
+            },
+            "source_digests": {
+                "dispatch_source_sha256": "dispatch-digest",
+                "gluon_expert_bridge_sha256": "bridge-digest",
+                "task_body_func12_sha256": "bridge-digest",
+            },
+            "per_device_results": [
+                {
+                    "device": device,
+                    "status": "passed",
+                    "max_abs_error": 0.0,
+                    "device_scheduler_errors": {"count": 0, "code": 0, "task_id": 0},
+                }
+                for device in kwargs["device_ids"]
+            ],
+        }
+
+    def fake_uccl_ep_runner(**kwargs):
+        return {
+            "status": "passed",
+            "backend": "uccl",
+            "transport": "ep",
+            "operation": "ep_dispatch_combine",
+            "world_size": 2,
+            "device_ids": list(kwargs["device_ids"]),
+            "uccl_ep_bench_dir": "/home/tester/private/uccl/ep/bench",
+            "child_stderr": "/tmp/pto-cu-codex-restart/.venv/lib/python3.12/site-packages",
+            "descriptor": {
+                "operation": "ep_dispatch_combine",
+                "num_tokens": kwargs["num_tokens"],
+                "hidden": kwargs["hidden"],
+                "num_topk": kwargs["num_topk"],
+                "num_experts": kwargs["num_experts"],
+                "input_dtype": kwargs["input_dtype"],
+            },
+            "rank_results": [
+                {
+                    "rank": 0,
+                    "device_id": 6,
+                    "passed": True,
+                    "max_abs_error": 0.0,
+                    "topk_weight_error": 0.0,
+                },
+                {
+                    "rank": 1,
+                    "device_id": 7,
+                    "passed": True,
+                    "max_abs_error": 0.0,
+                    "topk_weight_error": 0.0,
+                },
+            ],
+        }
+
+    result = example.run_persistent_moe_uccl_ep_handoff(
+        device_ids=(6, 7),
+        n=16,
+        tensor_numel=1024,
+        arch="compute_90",
+        moe_runner=fake_moe_runner,
+        uccl_ep_runner=fake_uccl_ep_runner,
+    )
+
+    assert result["status"] == "passed"
+    assert result["handoff_scope"] == "persistent-moe-plus-uccl-ep-adapter"
+    assert result["device_ids"] == [6, 7]
+    assert result["tensor_numel"] == 1024
+    assert result["persistent_moe"]["status"] == "passed"
+    assert result["persistent_moe_source_digests"]["dispatch_source_sha256"] == "dispatch-digest"
+    assert result["persistent_moe_max_abs_error"] == 0.0
+    assert result["uccl_ep_adapter"]["status"] == "passed"
+    assert result["uccl_ep_adapter"]["uccl_ep_bench_dir"] == "<sanitized>"
+    assert result["uccl_ep_adapter"]["child_stderr"] == "<tmp-checkout>/.venv/lib/python3.12/site-packages"
+    assert result["uccl_ep_adapter_validation"] == {
+        "adapter_passed": True,
+        "transport_is_ep": True,
+        "operation_is_dispatch_combine": True,
+        "descriptor_metadata_present": True,
+        "all_ranks_passed": True,
+        "max_abs_error_zero": True,
+        "topk_weight_error_zero": True,
+    }
+    assert result["uccl_ep_adapter_max_abs_error"] == 0.0
+    assert result["uccl_ep_adapter_topk_weight_error"] == 0.0
+    assert result["handoff_validation"] == {
+        "same_device_ids": True,
+        "persistent_moe_passed": True,
+        "uccl_ep_adapter_passed": True,
+        "persistent_moe_validation_passed": True,
+        "uccl_ep_adapter_validation_passed": True,
+        "source_digests_present": True,
+        "bridge_digests_match": True,
+        "adapter_descriptor_metadata_present": True,
+        "max_errors_zero": True,
+    }
+    assert result["handoff_boundary"]["uccl_operation"] == "ep_dispatch_combine"
+    assert result["handoff_boundary"]["uccl_transport"] == "ep"
+    assert "not CUDA host-runtime UCCL dispatch" in result["non_claims"]
+    assert "no serving, vLLM, DeepSeek, RDMA, multi-node, or performance claim" in result["non_claims"]
+
+
 class CudaHostCallable(ctypes.Structure):
     _fields_ = [
         ("version", ctypes.c_uint32),

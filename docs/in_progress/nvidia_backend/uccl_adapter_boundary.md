@@ -47,9 +47,18 @@ The restart/control checkout contains historical restart context for UCCL
 package and adapter runs. Those runs are useful context, but they are not fresh
 PR evidence for this branch unless rerun and recorded by this PR.
 
-Fresh PR evidence now covers same-node H200 UCCL-P2P IPC adapter execution and
+Fresh PR evidence now covers same-node H200 UCCL-P2P IPC adapter execution,
 reduced-shape H200 UCCL-EP dispatch/combine adapter execution through the
-Python-side examples. The direct EP command without `UCCL_EP_BENCH_DIR`
-correctly returned structured skip JSON with `--require-cuda`; the
-dependency-qualified command passed after pointing at the external UCCL bench
-helper.
+Python-side examples, and an opt-in persistent MoE plus UCCL-EP adapter
+handoff gate. The direct EP command without `UCCL_EP_BENCH_DIR` correctly
+returned structured skip JSON with `--require-cuda`; the dependency-qualified
+commands passed after pointing at the external UCCL bench helper.
+
+`examples/cuda/persistent_moe_dispatch_combine.py --with-uccl-ep-handoff`
+first validates the same two-device persistent MoE aggregate, then runs the
+Python-side UCCL-EP dispatch/combine adapter on the same device ids. The
+handoff JSON records same-device validation, persistent MoE pass state,
+UCCL-EP pass state, descriptor metadata, source digests, bridge digest
+matching, and zero max errors. It does not add CUDA host-runtime UCCL
+dispatch, public Python UCCL handles, `TaskArgs` fields, or `CallConfig`
+fields.

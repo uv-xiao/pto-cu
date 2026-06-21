@@ -172,9 +172,22 @@ emits `handoff_validation` fields tying `same_device_ids`, persistent MoE
 validation, NCCL operation validation, source digests, and bridge digest
 matching into one review-safe JSON result.
 
+The first UCCL-EP adapter handoff gate is also recorded in
+`docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`.
+`examples/cuda/persistent_moe_dispatch_combine.py --with-uccl-ep-handoff`
+runs the same two-device persistent MoE aggregate, launches the existing
+Python-side UCCL-EP dispatch/combine adapter on the same device ids, and emits
+`handoff_validation` fields tying `same_device_ids`, persistent MoE pass
+state, UCCL-EP pass state, descriptor metadata, source digests, bridge digest
+matching, and zero max errors into one review-safe JSON result. This path is
+separate from the NCCL host-runtime worker-control path and does not add CUDA
+host-runtime UCCL dispatch.
+
 ## Non-Claims
 
-This slice does not claim UCCL host-runtime dispatch, UCCL adapter execution,
-RDMA, multi-node transport, serving integration, vLLM integration, or
-DeepSeek model correctness. Later slices must add fresh implementation,
-evidence, and docs before making any of those claims.
+This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node
+transport, serving integration, vLLM integration, or DeepSeek model
+correctness. The UCCL-EP handoff is adapter/probe evidence only. Later slices
+must add fresh implementation, evidence, and docs before making broader
+communication or serving claims.
+DeepSeek model correctness remains out of scope.

@@ -9,7 +9,7 @@ restart. It is a planning boundary, not performance evidence.
 | ------ | ------------------- | ---------------- |
 | Ray | Process and serving orchestration | Keep as an orchestration option outside the compiled CUDA scheduler and worker path. |
 | NCCL | Baseline collectives | Use as the first baseline for all-reduce, all-gather, reduce-scatter, broadcast, and send/receive comparisons on NVIDIA GPUs. |
-| UCCL | EP/P2P research path | Keep as a later experimental direction. Do not include UCCL host-runtime dispatch or adapter execution in this NCCL worker-control slice. |
+| UCCL | EP/P2P research path | Keep as an opt-in experimental adapter direction. Do not include UCCL host-runtime dispatch in the NCCL worker-control slice. |
 
 ## Implications
 
@@ -19,8 +19,9 @@ restart. It is a planning boundary, not performance evidence.
 - NCCL is the default measurement baseline because it is the standard NVIDIA
   GPU collective library and covers both single-node and multi-node
   collectives.
-- UCCL remains a later research path for expert-parallel and P2P work. It is
-  not part of this PR's implementation or execution evidence.
+- UCCL remains an opt-in research path for expert-parallel and P2P work. It
+  can be composed with existing gates as Python-side adapter evidence, but it
+  is not a CUDA host-runtime dispatch claim.
 - Ray can matter later for `pto-serving`, vLLM integration, and cluster
   lifecycle, but the 2 H200 first milestone should prove local communication
   behavior before adding a Ray dependency.
@@ -35,8 +36,8 @@ restart. It is a planning boundary, not performance evidence.
    single-host tests first; avoid baking NCCL types into public Python APIs.
 3. Land descriptor-backed CUDA host-runtime NCCL communicator setup and
    worker-control operation dispatch.
-4. Compare UCCL P2P or expert-parallel paths in later slices after the NCCL
-   worker-control baseline is accepted.
+4. Compare UCCL P2P or expert-parallel paths as separate opt-in slices after
+   the NCCL worker-control baseline is accepted.
 5. Evaluate Ray only after serving needs multi-process orchestration,
    autoscaling, placement, or request routing.
 
@@ -84,9 +85,17 @@ restart. It is a planning boundary, not performance evidence.
   `NVIDIA H200 NVL` devices `6,7`, `examples/cuda/nccl_worker_control_ops.py`
   passed `all_reduce`, `reduce_scatter`, `all_gather`, and `send_recv`
   through `CTRL_COMM_OP` with `max_abs_error: 0.0`.
+- UCCL-EP adapter handoff evidence exists in
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`:
+  on `NVIDIA H200 NVL` devices `6,7`, the opt-in
+  `--with-uccl-ep-handoff` path passed by composing the existing two-device
+  persistent MoE aggregate with the Python-side UCCL-EP dispatch/combine
+  adapter on the same device ids.
 
 ## Non-Claims
 
-UCCL PTO host-runtime dispatch, UCCL adapter execution, RDMA evidence,
-multi-node evidence, serving-level communication evidence, and DeepSeek model
-correctness remain pending.
+UCCL PTO host-runtime dispatch, RDMA evidence, multi-node evidence,
+serving-level communication evidence, and DeepSeek model correctness remain
+pending. The UCCL-EP handoff evidence is adapter/probe evidence only.
+UCCL adapter execution is limited to opt-in Python-side probes and handoff
+gates.
