@@ -1905,11 +1905,74 @@ def test_status_rollup_records_current_deepseek_serving_boundary():
         "docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_repeat_probe.md",
         "docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_truncated_failure_probe.md",
         "docs/in_progress/nvidia_backend/pypto_serving_source_contract_h200.md",
+        "docs/in_progress/nvidia_backend/flashinfer_serving_operator_checklist.md",
+        "FlashInfer-derived operator checklist",
+        "not FlashInfer integration evidence",
         "not a transport/server failure",
         "not simpler-nv/vLLM kernel integration evidence",
         "source-route `stream=true`",
     ]:
         assert required in status_text
+
+
+def test_flashinfer_serving_operator_checklist_is_recorded():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    checklist = in_progress_root / "flashinfer_serving_operator_checklist.md"
+    target = in_progress_root / "serving_target_selection.md"
+    readme = ROOT / "examples" / "cuda" / "README.md"
+
+    for path in (checklist, target, readme):
+        assert path.is_file(), f"missing {path.relative_to(ROOT)}"
+
+    checklist_text = checklist.read_text(encoding="utf-8")
+    assert "| FlashInfer reference family |" not in checklist_text
+    assert "| PTO current evidence |" not in checklist_text
+    assert "| Gap / next PTO milestone |" not in checklist_text
+    assert "| Explicit non-claim |" not in checklist_text
+    for required in [
+        "# FlashInfer Serving Operator Checklist",
+        "tmp/sources/repos/external/flashinfer/README.md",
+        "FlashInfer reference family",
+        "PTO current evidence",
+        "Gap / next PTO milestone",
+        "Explicit non-claim",
+        "attention kernels",
+        "Paged and Ragged KV-Cache",
+        "Decode, Prefill, and Append",
+        "MLA Attention",
+        "Cascade Attention",
+        "Sparse Attention",
+        "POD-Attention",
+        "BF16 GEMM",
+        "FP8 GEMM",
+        "FP4 GEMM",
+        "Grouped GEMM",
+        "Fused MoE Kernels",
+        "Multiple Routing Methods",
+        "Quantized MoE",
+        "Sorting-Free Sampling",
+        "Speculative Decoding",
+        "AllReduce",
+        "Multi-Node NVLink",
+        "NVSHMEM Integration",
+        "RoPE",
+        "Normalization",
+        "Activations",
+        "Hopper SM 9.0 includes H100 and H200",
+        "not FlashInfer integration evidence",
+        "not DeepSeek serving through pypto-serving",
+        "not generated-kernel performance evidence",
+        "not production readiness evidence",
+    ]:
+        assert required in checklist_text
+
+    target_text = target.read_text(encoding="utf-8")
+    assert "flashinfer_serving_operator_checklist.md" in target_text
+    assert "Use the FlashInfer checklist" in target_text
+
+    readme_text = readme.read_text(encoding="utf-8")
+    assert "FlashInfer serving operator checklist" in readme_text
+    assert "flashinfer_serving_operator_checklist.md" in readme_text
 
 
 def test_host_runtime_comm_operation_symbols_are_exported_by_all_producers():
