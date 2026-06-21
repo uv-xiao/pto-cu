@@ -40,8 +40,8 @@ The generated source uses Hopper Gluon APIs:
 ## H200 Correctness Evidence
 
 The commands below passed on a remote H200 host through the generic tree-sync
-CUDA runner. The remote temporary checkout used a project-local `.venv` with
-Torch, CUDA, Triton, and Gluon Hopper WGMMA APIs available.
+CUDA runner. The FP16 checks used a project-local `.venv` with Torch, CUDA,
+Triton, and Gluon Hopper WGMMA APIs available.
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
@@ -90,11 +90,10 @@ Distilled result:
 }
 ```
 
-The BF16 serving-shape fixture is generated and skip-safe. The WGMMA API
-preflight gate should run before interpreting BF16 harness output, because the
-current remote H200 Gluon stack did not expose the Hopper WGMMA APIs needed to
-run it. The command below was run through `--sync` against the remote checkout
-with a project-local `.venv`.
+The BF16 correctness check first ran the WGMMA preflight gate in a fresh
+project-local `.venv`. The fresh project-local `.venv` preflight failed
+because Torch and Triton were not installed in that environment, so the result
+is environment-missing evidence only:
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
@@ -104,29 +103,82 @@ REMOTE_PTO_CU=<remote-pto-cu> \
       examples/cuda/gluon_wgmma_api_preflight.py --require-cuda'
 ```
 
-That preflight is expected to return non-zero until the H200 Python
-environment exposes CUDA, Torch, Triton/Gluon, and every required WGMMA API.
-The BF16 harness command remains:
+Distilled fresh-venv result:
+
+```json
+{
+  "status": "failed",
+  "cuda_required_missing": ["torch", "cuda_available", "hopper_device"],
+  "missing_required": [
+    "TensorDescriptor",
+    "warpgroup_mma",
+    "warpgroup_mma_wait",
+    "mbarrier",
+    "tma",
+    "fence_async_shared",
+    "gl.NVMMASharedLayout",
+    "gl.NVMMADistributedLayout",
+    "gl.bfloat16",
+    "triton",
+    "gluon"
+  ]
+}
+```
+
+The same synced checkout then used the preserved Gluon environment from the
+previous WGMMA API-gate work:
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
   .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
-  bash -lc 'python3 -m venv --system-site-packages .venv && \
-    PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
-      examples/cuda/gluon_gemm_tensor_core_bf16.py \
-      --output-dir tmp/gluon-tensor-core-bf16-h200 \
-      --arch compute_90 --sweep --require-cuda'
+  <remote-gluon-venv>/bin/python \
+    examples/cuda/gluon_wgmma_api_preflight.py --require-cuda
 ```
 
-Distilled result:
+Distilled preserved-env preflight result:
+
+```json
+{
+  "status": "passed",
+  "reason": "all required WGMMA APIs are available",
+  "cuda": {
+    "device_count": 8,
+    "selected_device": {
+      "index": 0,
+      "name": "NVIDIA H200 NVL",
+      "capability": [9, 0]
+    }
+  },
+  "triton": {"imported": true, "version": "3.7.1"},
+  "missing_required": [],
+  "cuda_required_missing": []
+}
+```
+
+The preserved Gluon environment preflight passed with Triton `3.7.1`. Its
+Python environment is recorded as
+`python environment: <remote-gluon-venv>/bin/python`; concrete remote paths are
+intentionally omitted. After that API gate passed, the BF16 sweep command was:
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  <remote-gluon-venv>/bin/python \
+    examples/cuda/gluon_gemm_tensor_core_bf16.py \
+    --output-dir tmp/gluon-tensor-core-bf16-h200 \
+    --arch compute_90 --sweep --require-cuda
+```
+
+Distilled BF16 sweep result:
 
 ```json
 {
   "kernel_name": "gemm_tensor_core_tiled_bf16_f32",
-  "status": "skipped",
+  "status": "passed",
   "case_count": 2,
-  "passed_cases": 0,
-  "skipped_cases": 2,
+  "passed_cases": 2,
+  "failed_cases": 0,
+  "skipped_cases": 0,
   "cases": [
     {
       "case_name": "smoke_tile",
@@ -137,7 +189,8 @@ Distilled result:
         "accumulator": "float32",
         "out": "float32"
       },
-      "reason": "missing warpgroup_mma and NVMMADistributedLayout"
+      "status": "passed",
+      "max_abs_error": 3.814697265625e-06
     },
     {
       "case_name": "deepseek_v4_flash_hidden_size",
@@ -149,22 +202,23 @@ Distilled result:
         "accumulator": "float32",
         "out": "float32"
       },
-      "reason": "missing warpgroup_mma and NVMMADistributedLayout"
+      "status": "passed",
+      "max_abs_error": 0.002899169921875
     }
   ]
 }
 ```
 
-The direct H200 probe reported `NVIDIA H200 NVL`, compute capability `9.0`,
-driver `580.126.20`, Triton `3.4.0`, `gl.bfloat16` present, but
-`gl.NVMMADistributedLayout` absent and
-`triton.experimental.gluon.language.nvidia.hopper.warpgroup_mma` unavailable.
-This is unsupported-API evidence, not BF16 runtime correctness evidence.
+The BF16 case statuses were `passed, passed`. The largest absolute error was
+`0.002899169921875` on the `m=64,n=128,k=7168` linear-style case. The direct
+H200 probe for this run reported `NVIDIA H200 NVL`, compute capability `9.0`,
+driver `580.126.20`, and 143771 MiB memory per GPU.
 
 ## Boundary
 
 This PR does not include flash-attention evidence, MoE or distributed
 evidence, serving evidence, vLLM/simpler-nv integration, or a performance
-claim. The BF16 fixture is not a FlashInfer integration claim and not a
-production-readiness claim. Generated tensor-core source and JSON manifests
-stay under `tmp/gluon-*`.
+claim. The BF16 fixture is not FlashInfer integration evidence, not
+generated-kernel performance evidence, not vLLM/simpler-nv serving integration
+evidence, and not production-readiness evidence. Generated tensor-core source
+and JSON manifests stay under `tmp/gluon-*`.

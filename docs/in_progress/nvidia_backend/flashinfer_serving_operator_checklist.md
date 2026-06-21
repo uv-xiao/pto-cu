@@ -55,22 +55,23 @@ Serving-relevant families verified from the README:
   FP8 GEMM; FP4 GEMM; Grouped GEMM.
 - **PTO current evidence:** `gluon_gemm_h200.md` covers scalar FP32 GEMM
   correctness. `gluon_tensor_core_gemm.md` covers FP16-input tensor-core GEMM
-  correctness on H200. It also records a generated, skip-safe
-  `gemm_tensor_core_tiled_bf16_f32` fixture with BF16 inputs and FP32
-  accumulator/output for a smoke tile and a bounded
-  `m=64,k=7168,n=128` linear-style shape using
-  `DeepSeek-V4-Flash config hidden_size=7168` provenance. That BF16 fixture
-  is guarded by `examples/cuda/gluon_wgmma_api_preflight.py`, which fails
-  fast with structured JSON when the current H200 Gluon stack lacks APIs such
-  as `warpgroup_mma` or `NVMMADistributedLayout`.
-- **Gap / next PTO milestone:** make the BF16 tensor-core fixture pass on an
-  H200 Gluon WGMMA stack, then add FP8, FP4, grouped GEMM, and broader
+  correctness on H200. It also records BF16 tensor-core GEMM correctness on
+  H200 for `gemm_tensor_core_tiled_bf16_f32` with BF16 inputs and FP32
+  accumulator/output. The BF16 sweep is guarded by
+  `examples/cuda/gluon_wgmma_api_preflight.py`; the fresh project-local
+  `.venv` preflight failed because Torch and Triton were absent, while the
+  preserved Gluon environment preflight passed before the BF16 run. The BF16
+  sweep covered a smoke tile and a bounded `m=64,k=7168,n=128` linear-style
+  shape using `DeepSeek-V4-Flash config hidden_size=7168` provenance; case
+  statuses: passed, passed; largest max absolute error:
+  `0.002899169921875`.
+- **Gap / next PTO milestone:** add FP8, FP4, grouped GEMM, and broader
   linear-layer serving-shape fixtures with explicit dtype and shape
-  boundaries.
+  boundaries before any FlashInfer GEMM coverage claim.
 - **Explicit non-claim:** this is not generated-kernel performance evidence
-  and not proof of FlashInfer GEMM coverage. The BF16 fixture is not
-  FlashInfer integration evidence, not vLLM/simpler-nv serving integration,
-  and not production readiness evidence.
+  and not proof of FlashInfer GEMM coverage. The BF16 tensor-core GEMM
+  correctness evidence is not FlashInfer integration evidence, not
+  vLLM/simpler-nv serving integration, and not production readiness evidence.
 
 ### MoE
 

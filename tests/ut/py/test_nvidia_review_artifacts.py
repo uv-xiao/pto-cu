@@ -1933,6 +1933,45 @@ def test_gluon_gemm_review_docs_use_placeholders_for_remote_paths():
         assert "tmp/gluon-" in text, path
 
 
+def test_gluon_tensor_core_gemm_records_bf16_h200_correctness():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    evidence = in_progress_root / "gluon_tensor_core_gemm.md"
+    checklist = in_progress_root / "flashinfer_serving_operator_checklist.md"
+
+    evidence_text = evidence.read_text(encoding="utf-8")
+    evidence_search_text = re.sub(r"\s+", " ", evidence_text)
+    for required in [
+        "fresh project-local `.venv` preflight failed because Torch and Triton",
+        "preserved Gluon environment preflight passed",
+        "Triton `3.7.1`",
+        "`gemm_tensor_core_tiled_bf16_f32`",
+        "\"status\": \"passed\"",
+        "\"passed_cases\": 2",
+        "\"skipped_cases\": 0",
+        "\"max_abs_error\": 0.002899169921875",
+        "python environment: <remote-gluon-venv>",
+        "REMOTE_PTO_CU=<remote-pto-cu>",
+        "not FlashInfer integration evidence",
+        "not generated-kernel performance evidence",
+        "not production-readiness evidence",
+    ]:
+        assert required in evidence_search_text
+    assert (
+        "The BF16 serving-shape fixture is generated and skip-safe"
+        not in evidence_text
+    )
+    assert (
+        "This is unsupported-API evidence, not BF16 runtime correctness evidence"
+        not in evidence_text
+    )
+
+    checklist_text = checklist.read_text(encoding="utf-8")
+    checklist_search_text = re.sub(r"\s+", " ", checklist_text)
+    assert "BF16 tensor-core GEMM correctness on H200" in checklist_search_text
+    assert "case statuses: passed, passed" in checklist_search_text
+    assert "make the BF16 tensor-core fixture pass" not in checklist_search_text
+
+
 def test_nvidia_branch_ci_avoids_ascend_jobs():
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
         encoding="utf-8"
