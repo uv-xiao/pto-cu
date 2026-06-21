@@ -87,7 +87,7 @@ rsync -a --delete --exclude=.git \
   <h200-host>:<remote-pto-cu>/tmp/sources/repos/hw-native-sys/pypto-serving/
 ```
 
-## H200 Evidence
+## H200 Completion Evidence
 
 Environment:
 
@@ -100,6 +100,34 @@ nvcc: Build cuda_12.8.r12.8/compiler.35404655_0
 source sync: local working tree synced with --sync; pypto-serving source
   checkout synced explicitly because tmp/ is excluded by the generic runner
 ```
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'source .venv/bin/activate && \
+    PYTHONPATH=$PWD:$PWD/python \
+    .venv/bin/python examples/cuda/pypto_serving_nv_shim.py \
+      --pypto-serving-source-chat --require-cuda \
+      --prompt hello --max-new-tokens 2 \
+      --device 0 --arch compute_90'
+```
+
+Result:
+
+```text
+server: pypto-serving-source
+route: /v1/completions
+status: passed
+status_code: 200
+object: text_completion
+text: NV
+finish_reason: length
+pto_status: passed
+pto_token_ids: [1, 2]
+pto_launch_count: 2
+```
+
+## H200 Chat Evidence
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
@@ -129,13 +157,12 @@ pto_launch_count: 2
 
 ## Interpretation
 
-This proves the actual `pypto-serving` `create_serving_app`/`ServingServer`
-contract can be driven by a simpler-nv adapter on H200, including a CUDA seed
-launch behind the request path. It is stronger than the local in-repo FastAPI
-lookalike because it imports and executes the cloned source server route. The
-current source-contract evidence covers both `/v1/completions` and
-`/v1/chat/completions`; the chat evidence uses the bounded non-streaming
-OpenAI-compatible message shape.
+Together, these runs prove the actual `pypto-serving`
+`create_serving_app`/`ServingServer` completion and chat routes can be driven
+by a simpler-nv adapter on H200, including CUDA seed launches behind the
+request path. They are stronger than the local in-repo FastAPI lookalike
+because they import and execute the cloned source server routes. The chat
+evidence uses the bounded non-streaming OpenAI-compatible message shape.
 
 This is not DeepSeek-V4-Flash correctness. It is not vLLM plugin evidence. It
 is not real model loading, tokenizer semantics, streaming, throughput,
