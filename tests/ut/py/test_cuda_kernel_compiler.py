@@ -610,6 +610,65 @@ def test_gluon_wgmma_api_preflight_reports_payload_shape(monkeypatch):
     assert payload["missing_required"] == []
 
 
+def test_gluon_wgmma_api_preflight_zero_devices_reports_one_hopper_marker(
+    monkeypatch,
+):
+    example = _load_gluon_wgmma_preflight_example()
+
+    class FakeCuda:
+        @staticmethod
+        def is_available():
+            return True
+
+        @staticmethod
+        def device_count():
+            return 0
+
+        @staticmethod
+        def current_device():
+            raise AssertionError("zero-device path must not select a device")
+
+    fake_torch = SimpleNamespace(cuda=FakeCuda())
+    fake_triton = SimpleNamespace(__version__="3.4.0")
+    fake_gl = SimpleNamespace(
+        NVMMASharedLayout=object(),
+        NVMMADistributedLayout=object(),
+        bfloat16=object(),
+    )
+    fake_modules = {
+        "torch": fake_torch,
+        "triton": fake_triton,
+        "triton.experimental.gluon": SimpleNamespace(),
+        "triton.experimental.gluon.language": fake_gl,
+        "triton.experimental.gluon.nvidia.hopper": SimpleNamespace(
+            TensorDescriptor=object()
+        ),
+        "triton.experimental.gluon.language.nvidia.hopper": SimpleNamespace(
+            warpgroup_mma=object(),
+            warpgroup_mma_wait=object(),
+            mbarrier=object(),
+            tma=object(),
+            fence_async_shared=object(),
+        ),
+    }
+
+    monkeypatch.setattr(
+        example.importlib,
+        "import_module",
+        lambda name: fake_modules[name],
+    )
+
+    payload = example.collect_preflight(
+        command=["python3", "examples/cuda/gluon_wgmma_api_preflight.py"],
+        require_cuda=True,
+    )
+
+    assert payload["status"] == "failed"
+    assert payload["cuda"]["device_count"] == 0
+    assert payload["cuda_required_missing"] == ["hopper_device"]
+    assert payload["cuda_required_missing"].count("hopper_device") == 1
+
+
 def test_gluon_wgmma_api_preflight_requires_cuda_fails_for_missing_apis(
     capsys, monkeypatch
 ):

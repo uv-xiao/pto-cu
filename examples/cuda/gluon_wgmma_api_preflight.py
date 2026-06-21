@@ -150,8 +150,13 @@ def _torch_status() -> tuple[dict[str, Any], dict[str, Any], list[str]]:
     cuda_status: dict[str, Any] = {"device_count": 0, "selected_device": None}
     missing: list[str] = []
 
+    def mark_missing(*markers: str) -> None:
+        for marker in markers:
+            if marker not in missing:
+                missing.append(marker)
+
     if not torch_status["imported"]:
-        missing.extend(["torch", "cuda_available", "hopper_device"])
+        mark_missing("torch", "cuda_available", "hopper_device")
         torch_status["cuda_available"] = False
         return torch_status, cuda_status, missing
 
@@ -160,24 +165,24 @@ def _torch_status() -> tuple[dict[str, Any], dict[str, Any], list[str]]:
     except BaseException as exc:  # noqa: BLE001 - CUDA probes must emit JSON.
         torch_status["cuda_available"] = False
         torch_status["cuda_error"] = _error_payload(exc)
-        missing.extend(["cuda_available", "hopper_device"])
+        mark_missing("cuda_available", "hopper_device")
         return torch_status, cuda_status, missing
 
     torch_status["cuda_available"] = cuda_available
     if not cuda_available:
-        missing.extend(["cuda_available", "hopper_device"])
+        mark_missing("cuda_available", "hopper_device")
         return torch_status, cuda_status, missing
 
     try:
         device_count = int(torch_module.cuda.device_count())
     except BaseException as exc:  # noqa: BLE001 - CUDA probes must emit JSON.
         cuda_status["device_count_error"] = _error_payload(exc)
-        missing.append("hopper_device")
+        mark_missing("hopper_device")
         return torch_status, cuda_status, missing
 
     cuda_status["device_count"] = device_count
     if device_count <= 0:
-        missing.append("hopper_device")
+        mark_missing("hopper_device")
         return torch_status, cuda_status, missing
 
     try:
@@ -190,10 +195,10 @@ def _torch_status() -> tuple[dict[str, Any], dict[str, Any], list[str]]:
             "capability": capability,
         }
         if not capability or int(capability[0]) < HOPPER_COMPUTE_MAJOR:
-            missing.append("hopper_device")
+            mark_missing("hopper_device")
     except BaseException as exc:  # noqa: BLE001 - CUDA probes must emit JSON.
         cuda_status["selected_device_error"] = _error_payload(exc)
-        missing.append("hopper_device")
+        mark_missing("hopper_device")
 
     return torch_status, cuda_status, missing
 
