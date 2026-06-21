@@ -125,7 +125,8 @@ review-safe SSE event counts, chunk counts, terminal `[DONE]`, assembled text
 or assistant deltas, finish reason, PTO token IDs, launch count, and selected
 kernel-launch metadata. Generated Gluon launch mode records
 `launch_kind: gluon-moe-expert`, `kernel_name: moe_expert_affine_f32`, phase,
-status, shape, and generated artifact/source digest metadata when available.
+status, shape, generated artifact/source digest metadata, and numerical
+max-error metadata when available.
 It is not DeepSeek-V4-Flash serving, not vLLM plugin integration, not
 FlashInfer integration, not production readiness, not throughput or latency,
 not distributed serving, and not fused MoE dispatch/combine serving readiness.

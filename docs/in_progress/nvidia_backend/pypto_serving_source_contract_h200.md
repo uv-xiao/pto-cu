@@ -296,8 +296,33 @@ source_sha256: 38bb58f3f019a6eefb4016ff180b988f0b1532e5eee4bade5e49d7f57038b842
 
 Local unit coverage proves the completion, chat, streaming completion, and
 streaming chat source fixtures can all receive this generated launcher hook.
-No H200 generated-launch command was run for this update. The handoff command
-for the next remote pass is:
+
+## H200 Generated Gluon MoE Source-Route Evidence
+
+The H200 pass used tree sync rather than a remote Git refresh. The tracked
+working tree was synced with `--sync`; the ignored `pypto-serving` source
+clone was synced explicitly because the generic runner excludes `tmp/`.
+
+Commit tested:
+
+```text
+pto-cu: d50fc1b8
+pypto-serving source clone: 0b0d8a0
+remote Git refresh: not used
+```
+
+Environment:
+
+```text
+machine: <h200-host>
+gpu: NVIDIA H200 NVL, compute capability 9.0, 143771 MiB
+driver: 580.126.20
+CUDA_HOME: /usr/local/cuda
+nvcc: Build cuda_12.8.r12.8/compiler.35404655_0
+stderr caveat: no Torch/NumPy compatibility warning was printed
+```
+
+Command shape:
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
@@ -308,6 +333,27 @@ REMOTE_PTO_CU=<remote-pto-cu> \
       --pypto-serving-source --kernel-launcher gluon-moe-expert \
       --require-cuda --prompt hello --max-new-tokens 1 \
       --device 0 --arch compute_90'
+```
+
+Result:
+
+```text
+server: pypto-serving-source
+route: /v1/completions
+status: passed
+status_code: 200
+object: text_completion
+text: N
+finish_reason: length
+pto_status: passed
+pto_token_ids: [1]
+pto_launch_count: 1
+launch_kind: gluon-moe-expert
+kernel_name: moe_expert_affine_f32
+phase: prefill
+shape.n: 16
+source_sha256: 38bb58f3f019a6eefb4016ff180b988f0b1532e5eee4bade5e49d7f57038b842
+max_abs_error: 1.1920928955078125e-07
 ```
 
 This is generated-kernel source-route contract evidence for the synthetic
@@ -388,9 +434,9 @@ because they import and execute the cloned source server routes. The chat
 evidence uses the bounded non-streaming OpenAI-compatible message shape.
 The streaming fixtures additionally prove the cloned source SSE routes emit
 token deltas and terminal `[DONE]` for the synthetic adapter on H200.
-The generated Gluon launcher selection is covered locally and shares the same
-source-route fixture surfaces; it still needs a remote H200 generated-kernel
-run before it becomes H200 evidence.
+The generated Gluon launcher selection now has a bounded H200 source-route
+pass through the same cloned completion route, with generated
+`moe_expert_affine_f32` metadata and numerical correctness evidence.
 
 This is not DeepSeek-V4-Flash correctness. It is not vLLM plugin evidence. It
 is not real model loading, tokenizer semantics, throughput, latency, or

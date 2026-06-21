@@ -42,8 +42,12 @@ The same shim now has an explicit generated-kernel launcher mode,
 source-route requests through the existing generated Gluon MoE expert
 correctness harness for `moe_expert_affine_f32`. Its launch metadata records
 the launch kind, kernel name, phase, shape, status, and generated artifact
-source digest when available. This is local source-route generated-kernel
-contract evidence until a remote H200 generated-launch command is recorded.
+source digest when available. A bounded H200 source-route completion run now
+passes with HTTP 200, `pto_status: passed`, `launch_kind: gluon-moe-expert`,
+`kernel_name: moe_expert_affine_f32`, `phase: prefill`, `shape.n: 16`, source
+digest `38bb58f3f019a6eefb4016ff180b988f0b1532e5eee4bade5e49d7f57038b842`,
+and max absolute error `1.1920928955078125e-07`. This remains synthetic
+adapter source-route evidence, not real DeepSeek serving.
 The local compatibility-contract CLI also compares the four source-route
 fixtures against the vLLM OpenAI-compatible structural field set: route, HTTP
 200, object/model or stream shape, text/message/delta presence, finish reason,
