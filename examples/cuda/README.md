@@ -255,15 +255,19 @@ skipped cases return a non-zero exit status. H200 evidence is recorded in
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/gluon_rope_f32.py \
-  --output-dir tmp/gluon-rope-local \
-  --batch 1 --seq 2 --head-dim 8 --arch compute_90
+  --output-dir tmp/gluon-rope-shape-coverage-local \
+  --arch compute_90 --sweep
 ```
 
 This generates the `rope_f32` Gluon source and checks FP32 rotary position
-embedding math over adjacent even/odd feature pairs for one bounded rank-3
-shape. It uses precomputed cosine and sine tensors. Without CUDA tooling or a
-visible NVIDIA GPU it reports a skip; with `--require-cuda`, the same skip
-returns a non-zero exit status. H200 evidence is recorded in
+embedding math over adjacent even/odd feature pairs. The default command still
+runs one case and accepts `--batch 1 --seq 2 --head-dim 8`; `--sweep` runs
+aggregate structured JSON covering the existing smoke case and a bounded
+`batch=1, seq=4, head_dim=64` case with
+`tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`
+`rope_head_dim: 64` provenance. Without CUDA tooling or a visible NVIDIA GPU
+it reports skips; with `--require-cuda`, skipped or failed cases return a
+non-zero exit status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_rope_h200.md`.
 
 ## Gluon FP32 SiLU

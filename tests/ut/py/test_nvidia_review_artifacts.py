@@ -2259,10 +2259,21 @@ def test_gluon_rope_h200_evidence_is_review_safe():
         "rope_f32",
         "out_even = x_even * cos - x_odd * sin",
         "out_odd = x_even * sin + x_odd * cos",
+        "--output-dir tmp/gluon-rope-shape-coverage-h200",
+        "--sweep",
         "--batch 1 --seq 2 --head-dim 8",
+        "batch=1, seq=4, head_dim=64",
+        "tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json",
+        "rope_head_dim: 64",
         "--require-cuda --device 0 --arch compute_90",
+        "schema_version: 1",
         "status: passed",
+        "case_count: 2",
+        "case statuses: passed, passed",
+        "artifact paths are repo-relative",
+        "private absolute paths are not recorded",
         "max absolute error:",
+        "machine class: H200",
         "python environment: <remote-gluon-venv>",
         "REMOTE_PTO_CU=<remote-pto-cu>",
         "not FlashInfer integration evidence",
@@ -2280,11 +2291,18 @@ def test_gluon_rope_h200_evidence_is_review_safe():
     readme_text = readme.read_text(encoding="utf-8")
     assert "gluon_rope_f32.py" in readme_text
     assert "rope_f32" in readme_text
+    assert "--sweep" in readme_text
+    assert "head_dim=64" in readme_text
+    assert "rope_head_dim: 64" in readme_text
+    assert "aggregate structured JSON" in readme_text
     assert "gluon_rope_h200.md" in readme_text
 
     checklist_text = checklist.read_text(encoding="utf-8")
     assert "gluon_rope_h200.md" in checklist_text
     assert "RoPE" in checklist_text
+    assert "shape sweep" in checklist_text
+    assert "head_dim=64" in checklist_text
+    assert "rope_head_dim: 64" in checklist_text
     assert "gluon_layernorm_h200.md" in checklist_text
     assert "LayerNorm" in checklist_text
     assert "SiLU" in checklist_text
@@ -2292,7 +2310,9 @@ def test_gluon_rope_h200_evidence_is_review_safe():
 
     status_text = status.read_text(encoding="utf-8")
     assert "gluon_rope_h200.md" in status_text
-    assert "generated Gluon FP32 RoPE fixture" in status_text
+    assert "generated Gluon FP32 RoPE shape sweep" in status_text
+    assert "head_dim=64" in status_text
+    assert "rope_head_dim: 64" in status_text
     assert "not FlashInfer integration evidence" in status_text
 
 

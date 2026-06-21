@@ -91,11 +91,14 @@ integration evidence, production serving readiness, DeepSeek semantic
 correctness, Gemma-style fused norm coverage, activation coverage, fused
 attention, KV-cache integration, throughput, latency, or simpler-nv/vLLM
 integration evidence.
-The checklist also includes a generated Gluon FP32 RoPE fixture on H200,
-recorded in `docs/in_progress/nvidia_backend/gluon_rope_h200.md`; this is
-not FlashInfer integration evidence, production serving readiness, DeepSeek
-semantic correctness, fused attention, KV-cache integration, throughput,
-latency, or simpler-nv/vLLM integration evidence.
+The checklist also includes a generated Gluon FP32 RoPE shape sweep on H200,
+recorded in `docs/in_progress/nvidia_backend/gluon_rope_h200.md`. The sweep
+includes the existing smoke case and a bounded `head_dim=64` case with
+`tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`
+`rope_head_dim: 64` provenance; this is not FlashInfer integration evidence,
+production serving readiness, DeepSeek semantic correctness, fused attention,
+KV-cache integration, throughput, latency, or simpler-nv/vLLM integration
+evidence.
 The checklist also includes a generated Gluon FP32 SiLU fixture on H200,
 recorded in `docs/in_progress/nvidia_backend/gluon_silu_h200.md`; this is
 not FlashInfer integration evidence, production serving readiness, DeepSeek

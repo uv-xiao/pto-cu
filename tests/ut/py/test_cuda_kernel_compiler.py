@@ -1161,6 +1161,54 @@ def test_gluon_rope_f32_example_reports_skip_json_and_relative_artifacts(
     assert str(tmp_path) not in json.dumps(result)
 
 
+def test_gluon_rope_f32_sweep_reports_fixed_cases_and_provenance(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_rope_example()
+    monkeypatch.chdir(tmp_path)
+
+    assert hasattr(example, "run_rope_sweep")
+
+    result = example.run_rope_sweep(
+        output_dir=Path("tmp/gluon-rope-shape-coverage-local"),
+        arch="compute_90",
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["schema_version"] == 1
+    assert result["kernel_name"] == "rope_f32"
+    assert result["status"] == "skipped"
+    assert result["case_count"] == len(example.ROPE_SWEEP_CASES)
+    assert result["passed_cases"] == 0
+    assert result["failed_cases"] == 0
+    assert result["skipped_cases"] == len(example.ROPE_SWEEP_CASES)
+
+    cases = result["cases"]
+    assert [case["shape"] for case in cases] == [
+        {"batch": 1, "seq": 2, "head_dim": 8},
+        {"batch": 1, "seq": 4, "head_dim": 64},
+    ]
+    assert [case["provenance"] for case in cases] == [
+        "existing smoke correctness fixture",
+        (
+            "tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/"
+            "inference/config.json rope_head_dim: 64"
+        ),
+    ]
+    assert {case["status"] for case in cases} == {"skipped"}
+    for index, case in enumerate(cases):
+        assert case["case_index"] == index
+        assert case["case_name"]
+        assert case["reason"] == "torch.cuda is not available"
+        assert case["artifact"]["source_sha256"]
+        assert case["artifact"]["source_path"].startswith(
+            "tmp/gluon-rope-shape-coverage-local/"
+        )
+        assert not Path(case["artifact"]["source_path"]).is_absolute()
+    assert str(tmp_path) not in json.dumps(result)
+
+
 def test_gluon_silu_f32_example_reports_skip_json_and_relative_artifacts(
     tmp_path,
     monkeypatch,
@@ -1527,6 +1575,40 @@ def test_gluon_gated_silu_f32_example_main_requires_cuda_on_skip(
     assert payload["reason"] == "missing CUDA"
 
 
+def test_gluon_rope_f32_sweep_main_requires_cuda_on_skip(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    example = _load_gluon_rope_example()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(example, "rope_skip_reason", lambda: "missing CUDA")
+
+    code = example.main(
+        [
+            "--output-dir",
+            "tmp/gluon-rope-shape-coverage-local",
+            "--sweep",
+            "--require-cuda",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert code == 2
+    assert captured.err == ""
+    assert payload["status"] == "skipped"
+    assert payload["case_count"] == 2
+    assert payload["skipped_cases"] == 2
+    assert [case["provenance"] for case in payload["cases"]] == [
+        "existing smoke correctness fixture",
+        (
+            "tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/"
+            "inference/config.json rope_head_dim: 64"
+        ),
+    ]
+
+
 def test_gluon_rmsnorm_f32_rejects_absolute_output_dir(capsys):
     example = _load_gluon_rmsnorm_example()
 
@@ -1560,6 +1642,32 @@ def test_gluon_rope_f32_rejects_absolute_output_dir(capsys):
     assert code == 1
     assert payload["status"] == "failed"
     assert payload["error"] == "--output-dir must be repo-relative"
+    assert "/tmp/private-output" not in json.dumps(payload)
+
+
+def test_gluon_rope_f32_sweep_rejects_absolute_output_dir(capsys):
+    example = _load_gluon_rope_example()
+
+    code = example.main(["--output-dir", "/tmp/private-output", "--sweep"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == "failed"
+    assert payload["error"] == "--output-dir must be repo-relative"
+    assert "/tmp/private-output" not in json.dumps(payload)
+
+
+def test_gluon_rope_f32_sanitizes_equals_form_absolute_output_dir(capsys):
+    example = _load_gluon_rope_example()
+
+    code = example.main(["--output-dir=/tmp/private-output"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == "failed"
+    assert payload["command"] == (
+        "examples/cuda/gluon_rope_f32.py --output-dir=private-output"
+    )
     assert "/tmp/private-output" not in json.dumps(payload)
 
 

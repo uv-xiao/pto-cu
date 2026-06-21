@@ -9,24 +9,13 @@ out_even = x_even * cos - x_odd * sin
 out_odd = x_even * sin + x_odd * cos
 ```
 
-for a bounded rank-3 input tensor.
+for bounded rank-3 input tensors.
 
 ## Harness
 
 The harness is `examples/cuda/gluon_rope_f32.py`. It emits structured JSON for
-pass, skip, and fail cases. The payload records:
-
-- `kernel_name`, `status`, and `schema_version`;
-- generated artifact paths and source digest;
-- `batch`, `seq`, `head_dim`, and tolerance;
-- maximum absolute error when correctness is measured.
-
-The default output directory is repo-relative `tmp/gluon-rope-local`.
-Absolute `--output-dir` values are rejected so stdout JSON does not leak
-private local paths. The harness suppresses local PyTorch NumPy ABI warning
-noise during skip checks.
-
-## Local Command
+pass, skip, and fail cases. The default path preserves the existing single
+case CLI behavior:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
@@ -35,22 +24,18 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
   --batch 1 --seq 2 --head-dim 8 --arch compute_90
 ```
 
-Local result:
+The sweep path emits aggregate JSON with `schema_version: 1`, aggregate
+status and counts, and per-case shape, provenance, artifact metadata, status,
+and max-error fields when correctness is measured. Artifact paths are
+repo-relative, and private absolute paths are not recorded. Absolute
+`--output-dir` values are rejected for both paths.
 
-- exit code: `0`;
-- status: passed;
-- shape: `batch=1`, `seq=2`, `head_dim=8`;
-- tolerance: `atol=1e-5`, `rtol=1e-5`;
-- max absolute error: `2.384185791015625e-07`;
-- source digest:
-  `6cd4d800c0e8cb943a8e12f8f5f93f2d7df024b7f70df433a5b7d3f4616b0d53`.
+Sweep cases:
 
-Local GPU metadata:
-
-- GPU: NVIDIA A100 family;
-- compute capability: `8.0`;
-- driver: `595.71.05`;
-- CUDA toolkit: `nvcc` from CUDA 12.8.
+- existing smoke: `batch=1, seq=2, head_dim=8`;
+- DeepSeek-V4-Flash RoPE representative: `batch=1, seq=4, head_dim=64`, with
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`
+  `rope_head_dim: 64` provenance.
 
 ## H200 Command
 
@@ -61,13 +46,7 @@ Execution details:
 
 - synced checkout: `<remote-pto-cu>`;
 - python environment: <remote-gluon-venv>;
-- GPU: NVIDIA H200 NVL;
-- compute capability: `9.0`;
-- driver: `580.126.20`;
-- CUDA toolkit: `<cuda-toolkit>`, CUDA 12.8 compiler build;
-- Torch: `2.8.0+cu128`;
-- Torch CUDA: `12.8`;
-- Triton: `3.7.1`.
+- machine class: H200.
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
@@ -75,24 +54,37 @@ REMOTE_PTO_CU=<remote-pto-cu> \
   bash -lc 'PYTHONPATH=$PWD:$PWD/python \
     <remote-gluon-venv>/bin/python \
       examples/cuda/gluon_rope_f32.py \
-      --output-dir tmp/gluon-rope-h200 \
-      --batch 1 --seq 2 --head-dim 8 \
-      --require-cuda --device 0 --arch compute_90'
+      --output-dir tmp/gluon-rope-shape-coverage-h200 \
+      --sweep --require-cuda --device 0 --arch compute_90'
 ```
 
-H200 result:
+H200 result from stdout JSON:
 
-- exit code: `0`;
+- schema_version: 1;
 - status: passed;
-- shape: `batch=1`, `seq=2`, `head_dim=8`;
-- tolerance: `atol=1e-5`, `rtol=1e-5`;
-- max absolute error: `2.384185791015625e-07`;
-- source digest:
+- case_count: 2;
+- passed_cases: 2;
+- failed_cases: 0;
+- skipped_cases: 0;
+- case statuses: passed, passed;
+- artifact paths are repo-relative;
+- private absolute paths are not recorded;
+- source digest for both cases:
   `6cd4d800c0e8cb943a8e12f8f5f93f2d7df024b7f70df433a5b7d3f4616b0d53`.
+
+Per-case results:
+
+- `existing_smoke`: shape `batch=1, seq=2, head_dim=8`, provenance
+  `existing smoke correctness fixture`, max absolute error:
+  `2.384185791015625e-07`;
+- `deepseek_v4_flash_rope_head_dim64`: shape
+  `batch=1, seq=4, head_dim=64`, provenance
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`
+  `rope_head_dim: 64`, max absolute error: `2.384185791015625e-07`.
 
 ## Limitations
 
-- The evidence covers one bounded FP32 RoPE shape.
+- The evidence covers a small FP32 RoPE shape sweep only.
 - The implementation is correctness-focused, not performance-focused.
 - The remote evidence used tree sync plus a preserved remote Gluon venv rather
   than a venv created inside the fresh synced checkout.
@@ -104,12 +96,12 @@ H200 result:
 - This is not DeepSeek semantic correctness.
 - This is not fused attention evidence.
 - This is not KV-cache integration evidence.
+- This is not batched decode or prefill integration evidence.
 - This is not vLLM/simpler-nv integration evidence.
 - This is not throughput or latency evidence.
 
 ## Follow-Up Gaps
 
-- Add broader RoPE fixtures with model-shape provenance in separate slices.
 - Keep fused attention, KV-cache mutation, paged attention, and serving
   integration evidence in their own bounded branches.
 - Keep LayerNorm, SiLU, GELU, gated activation, and fused normalization
