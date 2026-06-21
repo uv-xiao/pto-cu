@@ -7,13 +7,15 @@ When creating a new ultimate goal, start from
 umbrella goal file, dispatch log, worker prompt, child PR lifecycle, and
 completion pattern.
 
-## Default Operating Pattern
+## Required Operating Pattern
 
-Ultimate-goal work defaults to a dispatcher/worker split:
+Ultimate-goal work must use a dispatcher/worker split:
 
 - the current long-running `/goal` session is the dispatcher and repository
   monitor;
-- implementation happens in child Codex sessions or bounded worker agents;
+- the dispatcher coordinates, monitors, records, reviews, and merges;
+- real implementation happens in child Codex sessions or bounded worker
+  agents;
 - every child launch, branch, scope change, verification result, PR, merge, and
   handoff is recorded in the dispatch log;
 - each child slice uses one PR-sized branch unless the dispatcher records a
@@ -24,11 +26,17 @@ Ultimate-goal work defaults to a dispatcher/worker split:
   `--repo uv-xiao/pto-cu --base main --head <branch>`;
 - the dispatcher does not perform direct long-running implementation work.
 
-Dispatcher-owned work should be limited to state audits, dispatch-log updates,
+Dispatcher-owned work is limited to state audits, dispatch-log updates,
 worker prompts, shared contracts, review, merge decisions, progress reports,
-and short emergency stabilization. Emergency stabilization means a small,
-bounded change needed to unblock or preserve the dispatch system itself; record
-the reason, diff scope, and verification in the dispatch log.
+and recorded emergency stabilization. Emergency stabilization means a small,
+bounded change needed to unblock or preserve the dispatch system itself. Record
+the reason, diff scope, verification, and PR or handoff location in the dispatch
+log before treating it as progress.
+
+Progress is durable only when it is visible through a PR, dispatch-log entry,
+worker handoff, verification record, or merge decision. The dispatcher must not
+claim goal progress from private terminal scrollback, unstated session memory,
+or unmerged local changes.
 
 ## Modes
 
@@ -37,9 +45,9 @@ the reason, diff scope, and verification in the dispatch log.
   decomposition, worker dispatch, logs, cross-PR sequencing, review decisions,
   and final promotion into stable docs. It does not own direct feature
   implementation except for recorded emergency stabilization.
-- `worker`: Owns one child slice. A worker may open and merge its own PR when
-  verification and review requirements are satisfied, but it must not dispatch
-  nested workers.
+- `worker`: Owns one child slice. A worker may open or update its own PR when
+  verification requirements are satisfied, but the dispatcher owns the merge
+  decision. Workers must not dispatch nested workers.
 - `dependency-pr`: A small unblocking PR for reusable framework behavior,
   shared contracts, or tooling needed by one or more workers.
 
@@ -61,6 +69,9 @@ The dispatcher must:
   steer is required;
 - avoid taking over a child slice directly. If a child stalls, record the
   blocker, steer or stop the worker, and dispatch a new PR-sized child slice;
+- avoid private implementation state. Parent-session changes must be
+  dispatcher artifacts, reviewed dependency PRs, or recorded emergency
+  stabilization of the dispatch system;
 - launch only one mutable worker at a time unless the dispatch log records an
   explicit isolation strategy.
 

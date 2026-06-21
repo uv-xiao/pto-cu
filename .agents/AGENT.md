@@ -28,6 +28,16 @@ This repository keeps Codex-facing project guidance under `.agents/`.
 7. Run `.agents/checks/check_nvidia_review_ready.py` before claiming that the
    NVIDIA backend branch is ready for human review.
 
+## Long-Running Goals
+
+For ultimate-goal work, the parent `/goal` session is the dispatcher and
+monitor. Real implementation belongs in child worker sessions, PR-sized
+branches, and PRs. Parent progress must be visible through dispatch-log
+entries, worker handoffs, PR descriptions, review decisions, and recorded
+verification; do not treat private scrollback or unmerged local changes as
+goal progress. Direct parent edits are limited to dispatcher artifacts or
+recorded emergency stabilization of the dispatch system.
+
 ## Repository Purpose
 
 This branch explores a CUDA/NVIDIA backend for PTO runtime as a personal

@@ -73,6 +73,8 @@ tail -n 80 ~/.codex/sessions/**/rollout-*.jsonl
   `tmux capture-pane` only for inspection.
 - Do not edit the target repository, target transcript, or target tmux pane
   while auditing.
+- If the target is the parent dispatcher, treat direct implementation as drift
+  unless it is recorded emergency stabilization of the dispatch system.
 - No raw `tmux send-keys` from the agent. The only allowed injection path is
   `scripts/inject-codex-steer.sh` after `verify-target`.
 - Every steer requires human approval unless it only reinforces a previously
@@ -100,6 +102,7 @@ tail -n 80 ~/.codex/sessions/**/rollout-*.jsonl
    - worker doing dispatcher-owned decomposition or launching nested workers;
    - direct long-running implementation in the dispatcher session;
    - child work not recorded in the dispatch log;
+   - progress claimed from private scrollback or unmerged local changes;
    - branch, PR, or allowed-scope mismatch;
    - fabricated data or unsupported performance claims;
    - fake/stub implementation described as working;
@@ -128,6 +131,8 @@ Steer only when the evidence shows one of these conditions:
 - the worker ignores newer human or dispatcher constraints;
 - the dispatcher session starts direct implementation instead of recording and
   dispatching a PR-sized child slice;
+- the dispatcher claims goal progress without a PR, dispatch-log entry,
+  handoff, verification record, or merge decision;
 - the worker needs a narrow reminder to update the dispatch log, PR
   description, or handoff file before stopping.
 
