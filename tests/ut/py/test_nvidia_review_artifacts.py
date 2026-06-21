@@ -20,6 +20,9 @@ ACTIVE_REVIEW_SURFACES = [
     ROOT / "examples" / "cuda" / "persistent_layered_cross.py",
     ROOT / "examples" / "cuda" / "persistent_moe_dispatch_combine.py",
 ]
+UCCL_PRIVATE_PATH_RE = re.compile(
+    r"/home/|/Users/|/tmp/pto-cu|/tmp/uccl-|uvxiao|bizhaoh200|hina|dasys"
+)
 
 
 def test_nvidia_review_guard_passes():
@@ -262,6 +265,22 @@ def test_review_policy_changelog_and_examples_exist():
         example_root
         / "vllm_deepseek_v4_chat_256k_needle_stream_repeat_probe.py"
     ).is_file()
+
+
+def test_uccl_in_progress_docs_omit_private_paths():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    uccl_docs = sorted(in_progress_root.glob("uccl_*.md"))
+    assert uccl_docs
+
+    offenders = []
+    for path in uccl_docs:
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8").splitlines(), start=1
+        ):
+            if UCCL_PRIVATE_PATH_RE.search(line):
+                offenders.append(f"{path.relative_to(ROOT)}:{line_number}: {line}")
+
+    assert offenders == []
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():
@@ -1618,6 +1637,60 @@ def test_cuda_comm_descriptor_and_nccl_worker_control_artifacts_are_recorded():
     readme_text = readme.read_text(encoding="utf-8")
     assert "nccl_two_gpu_baseline.py" in readme_text
     assert "nccl_worker_control_ops.py" in readme_text
+
+
+def test_uccl_adapter_artifacts_are_recorded_without_host_runtime_abi_claims():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "boundary": in_progress_root / "uccl_adapter_boundary.md",
+        "plan": in_progress_root / "uccl_ep_p2p_probe_plan.md",
+        "probe": in_progress_root / "uccl_ep_p2p_h200.md",
+        "p2p": in_progress_root / "uccl_p2p_adapter_h200.md",
+        "ep": in_progress_root / "uccl_ep_adapter_h200.md",
+        "comparison": in_progress_root / "uccl_ep_nccl_worker_control_comparison.md",
+    }
+    readme = ROOT / "examples" / "cuda" / "README.md"
+
+    for path in (
+        *docs.values(),
+        ROOT / "examples" / "cuda" / "uccl_p2p_ipc_adapter.py",
+        ROOT / "examples" / "cuda" / "uccl_ep_dispatch_combine_adapter.py",
+    ):
+        assert path.is_file(), path
+
+    boundary_text = docs["boundary"].read_text(encoding="utf-8")
+    for required in [
+        "adapter/probe evidence",
+        "simpler_setup/cuda_comm.py",
+        "UcclP2PWriteIpcDescriptor",
+        "UcclEpDispatchCombineDescriptor",
+        "UcclP2PCudaCommRuntime",
+        "TaskArgs",
+        "CallConfig",
+        "No CUDA host-runtime UCCL ABI is added",
+        "RDMA is not proven",
+        "multi-node is not proven",
+        "serving integration is not proven",
+    ]:
+        assert required in boundary_text
+
+    for key in ("probe", "p2p", "ep", "comparison"):
+        text = docs[key].read_text(encoding="utf-8")
+        assert "historical restart context" in text
+        assert "Fresh PR evidence" in text
+        assert "not RDMA evidence" in text
+        assert "not multi-node evidence" in text
+        assert "not serving evidence" in text
+        assert "/" + "home/" not in text
+
+    plan_text = docs["plan"].read_text(encoding="utf-8")
+    assert "descriptor/adapter-preparation" in plan_text
+    assert "examples/cuda/uccl_ep_dispatch_combine_adapter.py --require-cuda" in plan_text
+    assert "no CUDA host-runtime UCCL ABI" in plan_text
+
+    readme_text = readme.read_text(encoding="utf-8")
+    assert "uccl_p2p_ipc_adapter.py" in readme_text
+    assert "uccl_ep_dispatch_combine_adapter.py" in readme_text
 
 
 def test_host_runtime_comm_operation_symbols_are_exported_by_all_producers():

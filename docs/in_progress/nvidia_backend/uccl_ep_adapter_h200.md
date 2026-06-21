@@ -1,0 +1,69 @@
+# UCCL EP Adapter H200 Evidence
+
+This note tracks PTO's private UCCL-EP dispatch/combine descriptor probe. It
+is adapter/probe evidence only: not RDMA evidence, not multi-node evidence,
+not serving evidence, and not DeepSeek correctness evidence.
+
+Boundary phrases: not RDMA evidence; not multi-node evidence; not serving evidence.
+
+## Harness
+
+- Example: `examples/cuda/uccl_ep_dispatch_combine_adapter.py`
+- Private PTO operation name: `ep_dispatch_combine`
+- Descriptor: `UcclEpDispatchCombineDescriptor`
+- Capability: `CudaCommCapability(backend="uccl")`
+- Optional external helper: UCCL EP bench `Buffer` from `UCCL_EP_BENCH_DIR`
+
+The descriptor records MoE routing metadata and shape constraints. The harness
+maps that descriptor into installed `uccl.ep` only when optional dependencies,
+CUDA, `torch.distributed`, and the external bench helper are available.
+
+## Historical Restart Context
+
+The restart/control checkout recorded historical restart context for reduced
+H200 BF16 and FP8 UCCL-EP adapter smokes. Those results motivate this PR but
+are not fresh PR evidence for this branch.
+
+## Fresh PR Evidence
+
+Fresh PR evidence came from a synced remote tree of branch
+`cuda-uccl-adapter-evidence` on 2026-06-21.
+
+The required direct command returned structured skip JSON because the synced
+checkout does not include the external UCCL EP bench helper:
+
+```text
+status: skipped
+reason: UCCL-EP bench buffer.py unavailable; set
+  UCCL_EP_BENCH_DIR=/path/to/uccl/ep/bench
+exit status: 2
+```
+
+After pointing `UCCL_EP_BENCH_DIR` at the existing remote UCCL bench checkout,
+the adapter passed on H200 devices `6,7`:
+
+```text
+status: passed
+transport: ep
+operation: ep_dispatch_combine
+input_dtype: bf16
+world_size: 2
+num_tokens: 64
+hidden: 128
+num_topk: 4
+num_experts: 16
+rank 0 recv_tokens: [88]
+rank 0 max_abs_error: 0.0
+rank 0 topk_weight_error: 0.0
+rank 1 recv_tokens: [88]
+rank 1 max_abs_error: 0.0
+rank 1 topk_weight_error: 0.0
+```
+
+This is reduced-shape intranode UCCL-EP adapter evidence. It is not a
+performance claim and does not prove serving integration.
+
+## Non-Claims
+
+No CUDA host-runtime UCCL ABI is added. No serving integration is proven.
+No multi-node or RDMA behavior is proven.
