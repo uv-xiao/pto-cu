@@ -296,8 +296,14 @@ def main(argv: list[str] | None = None) -> int:
 
 def _validate_gpu_result(cpu_golden: dict, gpu_result: dict) -> dict:
     max_abs_error = 0.0
-    values_match = True
-    for expected_row, actual_row in zip(cpu_golden["values"], gpu_result["values"]):
+    expected_values = cpu_golden["values"]
+    actual_values = gpu_result.get("values", [])
+    if not isinstance(actual_values, list):
+        actual_values = []
+    values_match = _nested_lengths_match(expected_values, actual_values)
+    for expected_row, actual_row in zip(expected_values, actual_values):
+        if not isinstance(actual_row, list):
+            continue
         for expected, actual in zip(expected_row, actual_row):
             error = abs(float(actual) - float(expected))
             max_abs_error = max(max_abs_error, error)
@@ -305,11 +311,12 @@ def _validate_gpu_result(cpu_golden: dict, gpu_result: dict) -> dict:
                 values_match = False
 
     max_cumulative_probability_error = 0.0
-    cumulative_probabilities_match = True
-    for expected, actual in zip(
-        cpu_golden["cumulative_probabilities"],
-        gpu_result["cumulative_probabilities"],
-    ):
+    expected_cumulative = cpu_golden["cumulative_probabilities"]
+    actual_cumulative = gpu_result.get("cumulative_probabilities", [])
+    if not isinstance(actual_cumulative, list):
+        actual_cumulative = []
+    cumulative_probabilities_match = len(actual_cumulative) == len(expected_cumulative)
+    for expected, actual in zip(expected_cumulative, actual_cumulative):
         error = abs(float(actual) - float(expected))
         max_cumulative_probability_error = max(max_cumulative_probability_error, error)
         if error != 0.0:
@@ -325,6 +332,15 @@ def _validate_gpu_result(cpu_golden: dict, gpu_result: dict) -> dict:
         "max_abs_error": max_abs_error,
         "max_cumulative_probability_error": max_cumulative_probability_error,
     }
+
+
+def _nested_lengths_match(expected: list[list[float]], actual: list[list[float]]) -> bool:
+    if len(actual) != len(expected):
+        return False
+    return all(
+        isinstance(actual_row, list) and len(actual_row) == len(expected_row)
+        for expected_row, actual_row in zip(expected, actual)
+    )
 
 
 def _artifact_payload(artifact: GluonKernelArtifact) -> dict:

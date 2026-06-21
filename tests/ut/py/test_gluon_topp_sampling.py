@@ -149,6 +149,40 @@ def test_gluon_topp_sampling_reports_passed_validation_with_mock_runner(
     assert result["gpu_result"] == result["cpu_golden"]
 
 
+def test_gluon_topp_sampling_validation_rejects_truncated_float_payloads():
+    example = _load_gluon_topp_sampling_example()
+    cpu_golden = {
+        "values": [[0.3, 0.2, 0.15, 0.1, 0.0], [0.25, 0.25, 0.15, 0.1, 0.0]],
+        "indices": [[1, 3, 5, 2, -1], [0, 2, 6, 4, -1]],
+        "selected_counts": [4, 4],
+        "cumulative_probabilities": [0.75, 0.75],
+    }
+
+    missing_value_row = {
+        **cpu_golden,
+        "values": [[0.3, 0.2, 0.15, 0.1, 0.0]],
+    }
+    missing_value_element = {
+        **cpu_golden,
+        "values": [[0.3, 0.2, 0.15, 0.1], [0.25, 0.25, 0.15, 0.1, 0.0]],
+    }
+    missing_cumulative_probability = {
+        **cpu_golden,
+        "cumulative_probabilities": [0.75],
+    }
+
+    row_validation = example._validate_gpu_result(cpu_golden, missing_value_row)
+    element_validation = example._validate_gpu_result(cpu_golden, missing_value_element)
+    cumulative_validation = example._validate_gpu_result(
+        cpu_golden,
+        missing_cumulative_probability,
+    )
+
+    assert row_validation["values_match"] is False
+    assert element_validation["values_match"] is False
+    assert cumulative_validation["cumulative_probabilities_match"] is False
+
+
 def test_gluon_topp_sampling_main_requires_cuda_on_skip(
     tmp_path,
     capsys,
