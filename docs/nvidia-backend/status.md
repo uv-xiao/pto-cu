@@ -56,6 +56,25 @@ fixtures against the vLLM OpenAI-compatible structural field set: route, HTTP
 non-streaming usage presence, and streaming terminal `[DONE]` presence. The
 cloned source still omits non-streaming usage fields, so the summary records
 that gap rather than synthesizing usage.
+The same shim now also accepts
+`--kernel-launcher persistent-moe-dispatch-combine`, which routes synthetic
+and cloned source-route requests through the existing persistent-device MoE
+dispatch/combine graph via `run_moe_dispatch_combine(...)`. The shim records
+bounded launch metadata: `launch_kind: persistent-moe-dispatch-combine`,
+`dag_shape: graph_descriptor_moe_dispatch_combine`, route phase, status,
+shape, completed count, max absolute error, scheduler error summary, and the
+Gluon expert bridge/task-body digest when present. Local unit coverage proves
+that completion, chat, streaming completion, and streaming chat source
+fixtures can pass the selected launcher through completion. This is synthetic
+adapter source-route launch evidence, not real DeepSeek serving. A bounded
+H200 individual-route matrix now passes for completion, chat, streaming
+completion, and streaming chat with this launcher: HTTP 200, `pto_status:
+passed`, `launch_kind: persistent-moe-dispatch-combine`,
+`dag_shape: graph_descriptor_moe_dispatch_combine`, `completed_count: 5`,
+`max_abs_error: 0.0`, scheduler error count 0, and Gluon expert task-body
+digest
+`7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f` on
+each route.
 
 PTO now has a FlashInfer-derived operator checklist for future serving review
 gates. It maps the FlashInfer README's attention, KV cache, sampling, GEMM,
@@ -174,7 +193,8 @@ Non-claims:
 - This is not real DeepSeek weight evidence.
 - This is not simpler-nv/vLLM kernel integration evidence.
 - This is not FlashInfer integration evidence.
-- This is not fused MoE dispatch/combine serving readiness evidence.
+- This is not production fused MoE dispatch/combine serving readiness
+  evidence.
 
 ### Platform And Runtime Discovery
 
