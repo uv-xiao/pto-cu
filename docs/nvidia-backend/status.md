@@ -37,6 +37,10 @@ completion and chat fixtures on H200, validating SSE chunk counts, terminal
 `[DONE]`, mapped finish reason, PTO token IDs, and launch count. That is
 source-route contract evidence for the synthetic adapter, not real DeepSeek
 serving.
+The local compatibility-contract CLI also compares the four source-route
+fixtures against the vLLM OpenAI-compatible structural field set: route, HTTP
+200, object/model or stream shape, text/message/delta presence, finish reason,
+non-streaming usage presence, and streaming terminal `[DONE]` presence.
 
 Evidence:
 
@@ -64,6 +68,7 @@ Non-claims:
 - This is not broad generated-text or semantic correctness evidence.
 - This is not tokenizer, logprob, stop-trigger, or stop-token semantic
   correctness evidence.
+- This is not real DeepSeek weight evidence.
 - This is not simpler-nv/vLLM kernel integration evidence.
 
 ### Platform And Runtime Discovery

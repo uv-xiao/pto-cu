@@ -2026,6 +2026,7 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "--pypto-serving-source-chat",
         "--pypto-serving-source-stream",
         "--pypto-serving-source-chat-stream",
+        "--pypto-serving-vllm-compat",
         "assistant_message: {role: assistant, content: NV}",
         "Source Streaming Contract",
         "stream: true",
@@ -2039,6 +2040,13 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "--pypto-serving-source-stream --require-cuda",
         "H200 Streaming Chat Evidence",
         "--pypto-serving-source-chat-stream --require-cuda",
+        "vLLM Compatibility Contract",
+        "route, HTTP 200, object/model shape, text or assistant delta",
+        "usage presence for non-streaming responses",
+        "terminal `[DONE]` presence for streaming responses",
+        "not tokenizer semantics",
+        "not real DeepSeek weights",
+        "not simpler-nv/vLLM kernel integration evidence",
     ]:
         assert required in source_contract
 
@@ -2063,6 +2071,8 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "--pypto-serving-source-chat",
         "--pypto-serving-source-stream",
         "--pypto-serving-source-chat-stream",
+        "--pypto-serving-vllm-compat",
+        "run_pypto_serving_vllm_compat_fixture",
     ]:
         assert required in example_text
 
@@ -2080,6 +2090,8 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "test_pypto_serving_source_stream_chat_fixture_uses_real_chat_route",
         "test_pypto_serving_source_stream_chat_cli_outputs_summary_json",
         "test_pypto_serving_source_chat_route_fixture_is_documented",
+        "test_pypto_serving_vllm_compat_summary_records_structural_fields",
+        "test_pypto_serving_vllm_compat_cli_outputs_summary_json",
         "test_pypto_serving_source_server_contract_uses_real_routes",
         "test_pypto_serving_source_cli_mode_outputs_contract_json",
     ]:
@@ -2092,4 +2104,6 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
     assert "--pypto-serving-source-chat" in readme_text
     assert "--pypto-serving-source-stream" in readme_text
     assert "--pypto-serving-source-chat-stream" in readme_text
+    assert "--pypto-serving-vllm-compat" in readme_text
+    assert "OpenAI-compatible structural fields" in readme_text
     assert "/v1/chat/completions" in readme_text

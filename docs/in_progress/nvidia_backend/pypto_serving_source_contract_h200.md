@@ -36,6 +36,7 @@ The tracked entry points are:
 - CLI flag: `--pypto-serving-source-chat`
 - CLI flag: `--pypto-serving-source-stream`
 - CLI flag: `--pypto-serving-source-chat-stream`
+- CLI flag: `--pypto-serving-vllm-compat`
 
 ## Source Chat Contract
 
@@ -208,6 +209,25 @@ pto_status: passed
 pto_token_ids: [1, 2]
 pto_launch_count: 2
 ```
+
+## vLLM Compatibility Contract
+
+`--pypto-serving-vllm-compat` emits a local JSON summary that compares the
+four source-route fixtures against the structural OpenAI-compatible fields
+already exercised by the vLLM DeepSeek serving probes. It covers:
+
+- route, HTTP 200, object/model shape, text or assistant delta;
+- finish reason availability;
+- usage presence for non-streaming responses;
+- terminal `[DONE]` presence for streaming responses.
+
+The summary is intentionally a source-route compatibility gate for the
+synthetic adapter. It records non-claims explicitly: not tokenizer semantics,
+not logprob values, not stop-token semantics, not production readiness,
+not throughput, not latency, not real DeepSeek weights, and
+not simpler-nv/vLLM kernel integration evidence.
+The current cloned source routes do not return non-streaming `usage`, so the
+summary records usage presence as a comparison gap rather than synthesizing it.
 
 ## H200 Streaming Completion Evidence
 
