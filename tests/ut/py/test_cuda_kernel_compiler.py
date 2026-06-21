@@ -456,6 +456,7 @@ def test_gluon_flashattention_example_reports_skip_json_and_relative_artifacts(
     )
 
     assert result["status"] == "skipped"
+    assert result["schema_version"] == 1
     assert result["reason"] == "torch.cuda is not available"
     assert result["kernel_name"] == "flashattention_fwd_f32"
     assert result["shape"] == {"seqlen_q": 32, "seqlen_k": 32, "head_dim": 32}
@@ -466,6 +467,31 @@ def test_gluon_flashattention_example_reports_skip_json_and_relative_artifacts(
         "flashattention-artifacts/flashattention_fwd_f32.gluon.json"
     )
     assert result["artifact"]["tile_shape"] == [32, 32, 32]
+    assert not Path(result["artifact"]["source_path"]).is_absolute()
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_gluon_flashattention_example_uses_repo_relative_default_output_dir(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_flashattention_correctness(
+        arch="compute_90",
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["schema_version"] == 1
+    assert result["artifact"]["source_path"] == (
+        "tmp/gluon-flashattention-local/flashattention_fwd_f32.gluon.py"
+    )
+    assert result["artifact"]["manifest_path"] == (
+        "tmp/gluon-flashattention-local/flashattention_fwd_f32.gluon.json"
+    )
+    assert str(tmp_path) not in json.dumps(result)
 
 
 def test_gluon_flashattention_example_main_requires_cuda_on_skip(
@@ -474,25 +500,68 @@ def test_gluon_flashattention_example_main_requires_cuda_on_skip(
     monkeypatch,
 ):
     example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(
         example,
         "flashattention_skip_reason",
         lambda: "triton Gluon import failed: missing gl.dot_fma",
     )
 
-    code = example.main(["--output-dir", str(tmp_path), "--require-cuda"])
+    code = example.main(["--output-dir", "flashattention-artifacts", "--require-cuda"])
 
     payload = json.loads(capsys.readouterr().out)
     assert code == 2
+    assert payload["schema_version"] == 1
     assert payload["status"] == "skipped"
     assert payload["reason"] == "triton Gluon import failed: missing gl.dot_fma"
 
 
-def test_gluon_flashattention_example_main_reports_generation_failure(capsys, monkeypatch):
+def test_gluon_flashattention_example_main_rejects_absolute_output_dir(capsys):
     example = _load_gluon_flashattention_example()
 
+    code = example.main(["--output-dir", "/tmp/private-flashattention-output"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["schema_version"] == 1
+    assert payload["kernel_name"] == "flashattention_fwd_f32"
+    assert payload["status"] == "failed"
+    assert payload["command"] == (
+        "examples/cuda/gluon_flashattention_fwd.py --output-dir "
+        "private-flashattention-output"
+    )
+    assert payload["error_type"] == "ValueError"
+    assert payload["error"] == "--output-dir must be repo-relative"
+    assert "/tmp/private-flashattention-output" not in json.dumps(payload)
+
+
+def test_gluon_flashattention_example_sanitizes_equals_form_absolute_output_dir(
+    capsys,
+):
+    example = _load_gluon_flashattention_example()
+
+    code = example.main(["--output-dir=/tmp/private-flashattention-output"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == "failed"
+    assert payload["command"] == (
+        "examples/cuda/gluon_flashattention_fwd.py "
+        "--output-dir=private-flashattention-output"
+    )
+    assert "/tmp/private-flashattention-output" not in json.dumps(payload)
+
+
+def test_gluon_flashattention_example_main_reports_sanitized_generation_failure(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
     def fail_generation(**_kwargs):
-        raise RuntimeError("flashattention generation failed")
+        raise RuntimeError(f"flashattention generation failed under {tmp_path}")
 
     monkeypatch.setattr(example, "build_flashattention_artifact", fail_generation)
 
@@ -500,10 +569,13 @@ def test_gluon_flashattention_example_main_reports_generation_failure(capsys, mo
 
     payload = json.loads(capsys.readouterr().out)
     assert code == 1
+    assert payload["schema_version"] == 1
     assert payload["kernel_name"] == "flashattention_fwd_f32"
     assert payload["status"] == "failed"
+    assert payload["command"] == "examples/cuda/gluon_flashattention_fwd.py --require-cuda"
     assert payload["error_type"] == "RuntimeError"
-    assert payload["error"] == "flashattention generation failed"
+    assert payload["error"] == "flashattention generation failed under ."
+    assert str(tmp_path) not in json.dumps(payload)
 
 
 def test_gluon_flashattention_skip_reason_checks_required_gluon_apis(monkeypatch):

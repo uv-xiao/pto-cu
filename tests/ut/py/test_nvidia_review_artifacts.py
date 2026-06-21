@@ -2079,6 +2079,73 @@ def test_gluon_rmsnorm_h200_evidence_is_review_safe():
     assert "DeepSeek-V4-Flash config hidden_size" in status_text
 
 
+def test_gluon_flashattention_h200_evidence_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    evidence = in_progress_root / "gluon_flashattention_h200.md"
+    readme = ROOT / "examples" / "cuda" / "README.md"
+    checklist = in_progress_root / "flashinfer_serving_operator_checklist.md"
+    status = DOC_ROOT / "status.md"
+
+    for path in (
+        evidence,
+        readme,
+        checklist,
+        status,
+        ROOT / "examples" / "cuda" / "gluon_flashattention_fwd.py",
+    ):
+        assert path.is_file(), path
+
+    evidence_text = evidence.read_text(encoding="utf-8")
+    for required in [
+        "# Gluon FlashAttention H200 Correctness",
+        "flashattention_fwd_f32",
+        "softmax((q @ k.T) * scale) @ v",
+        "--output-dir tmp/gluon-flashattention-review-hygiene-h200",
+        "--require-cuda --arch compute_90",
+        "schema_version: 1",
+        "artifact paths are repo-relative",
+        "private absolute paths are not recorded",
+        "status: passed",
+        "shape: seqlen_q=32, seqlen_k=32, head_dim=32",
+        "max_abs_error: 2.384185791015625e-07",
+        "source_sha256:",
+        "machine class: H200",
+        "REMOTE_PTO_CU=<remote-pto-cu>",
+        "not production serving readiness",
+        "not FlashInfer integration evidence",
+        "not DeepSeek semantic correctness",
+        "not performance, throughput, or latency evidence",
+        "not multi-tile attention coverage",
+        "not fused attention integration",
+        "not KV-cache integration",
+        "not vLLM/simpler-nv integration evidence",
+    ]:
+        assert required in evidence_text
+    assert UCCL_PRIVATE_PATH_RE.search(evidence_text) is None
+    assert "/" + "home/" not in evidence_text
+
+    readme_text = readme.read_text(encoding="utf-8")
+    assert "gluon_flashattention_fwd.py" in readme_text
+    assert "flashattention_fwd_f32" in readme_text
+    assert "schema_version" in readme_text
+    assert "repo-relative artifact paths" in readme_text
+    assert "gluon_flashattention_h200.md" in readme_text
+
+    checklist_text = checklist.read_text(encoding="utf-8")
+    assert "gluon_flashattention_h200.md" in checklist_text
+    assert "single-tile FP32 FlashAttention forward correctness" in checklist_text
+    assert "repo-relative artifact paths" in checklist_text
+    assert "schema_version" in checklist_text
+    assert "not FlashInfer integration evidence" in checklist_text
+
+    status_text = status.read_text(encoding="utf-8")
+    assert "gluon_flashattention_h200.md" in status_text
+    assert "generated Gluon FlashAttention correctness harness" in status_text
+    assert "schema_version" in status_text
+    assert "repo-relative artifact paths" in status_text
+    assert "not FlashInfer integration evidence" in status_text
+
+
 def test_gluon_layernorm_h200_evidence_is_review_safe():
     in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
     evidence = in_progress_root / "gluon_layernorm_h200.md"
