@@ -728,8 +728,9 @@ def test_gluon_grouped_tensor_core_boundary_reports_api_skip_json():
             "status": "failed",
             "reason": "missing grouped GEMM WGMMA source path",
             "available_kernel_names": ["gemm_tensor_core_tiled_bf16_f32"],
-            "gluon_language_grouped_attrs": [],
-            "hopper_grouped_attrs": [],
+            "gluon_language_grouped_gemm_attrs": [],
+            "hopper_grouped_gemm_attrs": [],
+            "hopper_warpgroup_attrs": [],
             "source_generation": {
                 "status": "failed",
                 "error_type": "ValueError",
@@ -773,6 +774,43 @@ def test_gluon_grouped_tensor_core_boundary_reports_api_skip_json():
     )
 
 
+def test_gluon_grouped_tensor_core_api_probe_keeps_warpgroup_attrs_separate(
+    monkeypatch, tmp_path
+):
+    example = _load_gluon_grouped_tensor_core_example()
+
+    def import_module(module_name):
+        if module_name == "triton.experimental.gluon.language":
+            return SimpleNamespace(grouped_gemm=object(), dot=object())
+        if module_name == "triton.experimental.gluon.language.nvidia.hopper":
+            return SimpleNamespace(
+                warpgroup_mma=object(),
+                warpgroup_mma_wait=object(),
+                grouped_gemm=object(),
+            )
+        raise AssertionError(f"unexpected module import: {module_name}")
+
+    monkeypatch.setattr(example.importlib, "import_module", import_module)
+    monkeypatch.setattr(
+        example.KernelCompiler,
+        "generate_gluon_kernel",
+        lambda self, *args, **kwargs: (_ for _ in ()).throw(
+            ValueError("unsupported Gluon kernel 'gemm_grouped_tensor_core_f16_f32'")
+        ),
+    )
+
+    payload = example.probe_grouped_gemm_api(tmp_path, "compute_90")
+
+    assert payload["gluon_language_grouped_gemm_attrs"] == ["grouped_gemm"]
+    assert payload["hopper_grouped_gemm_attrs"] == ["grouped_gemm"]
+    assert payload["hopper_warpgroup_attrs"] == [
+        "warpgroup_mma",
+        "warpgroup_mma_wait",
+    ]
+    assert "warpgroup_mma" not in payload["hopper_grouped_gemm_attrs"]
+    assert "warpgroup_mma_wait" not in payload["hopper_grouped_gemm_attrs"]
+
+
 def test_gluon_grouped_tensor_core_boundary_main_requires_cuda_on_skip(
     capsys, monkeypatch
 ):
@@ -784,8 +822,9 @@ def test_gluon_grouped_tensor_core_boundary_main_requires_cuda_on_skip(
             "status": "failed",
             "reason": "missing grouped GEMM WGMMA source path",
             "available_kernel_names": [],
-            "gluon_language_grouped_attrs": [],
-            "hopper_grouped_attrs": [],
+            "gluon_language_grouped_gemm_attrs": [],
+            "hopper_grouped_gemm_attrs": [],
+            "hopper_warpgroup_attrs": [],
             "source_generation": {
                 "status": "failed",
                 "error_type": "ValueError",

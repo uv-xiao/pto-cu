@@ -28,8 +28,9 @@ dtype/API and grouped GEMM source/API boundary harnesses:
   is available.
 - `examples/cuda/gluon_gemm_grouped_tensor_core.py`: a grouped GEMM source/API
   boundary harness. It records candidate grouped GEMM shapes, probes the
-  current generator and Gluon/Hopper attrs, and does not generate source when
-  no grouped GEMM WGMMA source path is registered.
+  current generator plus actual grouped GEMM Gluon/Hopper attrs, records
+  generic Hopper `warpgroup_mma*` primitives separately, and does not generate
+  source when no grouped GEMM WGMMA source path is registered.
 
 The source-generating FP16 harnesses emit source and manifest artifacts before
 checking runtime CUDA availability. BF16 and FP8 source-generating harnesses
@@ -46,10 +47,13 @@ correctness artifact.
 
 Grouped GEMM remains a source/API boundary harness: it records proposed
 multi-group GEMM cases, the current generated-kernel registry, and
-Gluon/Hopper attrs with grouped-related names. It emits `artifact: null` until
-a confirmed grouped GEMM WGMMA source, lowering, and runtime correctness path
-exists. Its `--require-cuda` failure is review-visible unsupported-boundary
-evidence, not grouped GEMM correctness evidence.
+actual grouped GEMM Gluon/Hopper attrs. Generic Hopper WGMMA warpgroup
+primitives such as `warpgroup_mma` and `warpgroup_mma_wait` are reported only
+under `hopper_warpgroup_attrs`; they are not grouped GEMM API/source support.
+The grouped harness emits `artifact: null` until a confirmed grouped GEMM
+WGMMA source, lowering, and runtime correctness path exists. Its
+`--require-cuda` failure is review-visible unsupported-boundary evidence, not
+grouped GEMM correctness evidence.
 
 `examples/cuda/gluon_wgmma_api_preflight.py` is the repo-owned API gate for
 future BF16, FP8, FP4, and grouped GEMM WGMMA work. It emits structured JSON
@@ -70,6 +74,10 @@ The generated source uses Hopper Gluon APIs:
 - `NVMMASharedLayout` for shared-memory operand tiles.
 - `NVMMADistributedLayout` for the accumulator layout.
 - `warpgroup_mma` and `warpgroup_mma_wait` for WGMMA tensor-core execution.
+
+These `warpgroup_mma*` names are generic Hopper WGMMA primitive APIs. Their
+presence does not imply grouped GEMM source generation, lowering, runtime
+correctness, or serving integration support.
 
 ## H200 Correctness Evidence
 
@@ -454,12 +462,14 @@ skip at this unsupported source/API boundary. Distilled JSON stdout:
     "status": "failed",
     "candidate_kernel_name": "gemm_grouped_tensor_core_f16_f32",
     "reason": "missing grouped GEMM WGMMA source path",
-    "gluon_language_grouped_attrs": [],
-    "gluon_language_grouped_attrs_module": {
+    "gluon_language_grouped_gemm_attrs": [],
+    "gluon_language_grouped_gemm_attrs_module": {
       "imported": false,
       "error_type": "ModuleNotFoundError",
       "error": "No module named 'triton'"
     },
+    "hopper_grouped_gemm_attrs": [],
+    "hopper_warpgroup_attrs": [],
     "source_generation": {
       "status": "failed",
       "error_type": "ValueError"

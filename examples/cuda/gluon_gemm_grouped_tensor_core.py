@@ -55,24 +55,32 @@ def probe_grouped_gemm_api(output_dir: str | Path, arch: str) -> dict[str, Any]:
         "reason": "missing grouped GEMM WGMMA source path",
         "candidate_kernel_name": KERNEL_NAME,
         "available_kernel_names": sorted(_SUPPORTED_KERNELS),
-        "gluon_language_grouped_attrs": [],
-        "hopper_grouped_attrs": [],
+        "gluon_language_grouped_gemm_attrs": [],
+        "hopper_grouped_gemm_attrs": [],
+        "hopper_warpgroup_attrs": [],
     }
 
-    for module_name, key in [
-        (
-            "triton.experimental.gluon.language",
-            "gluon_language_grouped_attrs",
-        ),
-        (
-            "triton.experimental.gluon.language.nvidia.hopper",
-            "hopper_grouped_attrs",
-        ),
-    ]:
-        status, module = _import_module_status(module_name)
-        result[f"{key}_module"] = status
-        if module is not None:
-            result[key] = sorted(name for name in dir(module) if _is_grouped_name(name))
+    language_status, language_module = _import_module_status(
+        "triton.experimental.gluon.language"
+    )
+    result["gluon_language_grouped_gemm_attrs_module"] = language_status
+    if language_module is not None:
+        result["gluon_language_grouped_gemm_attrs"] = sorted(
+            name for name in dir(language_module) if _is_grouped_gemm_name(name)
+        )
+
+    hopper_status, hopper_module = _import_module_status(
+        "triton.experimental.gluon.language.nvidia.hopper"
+    )
+    result["hopper_grouped_gemm_attrs_module"] = hopper_status
+    result["hopper_warpgroup_attrs_module"] = hopper_status
+    if hopper_module is not None:
+        result["hopper_grouped_gemm_attrs"] = sorted(
+            name for name in dir(hopper_module) if _is_grouped_gemm_name(name)
+        )
+        result["hopper_warpgroup_attrs"] = sorted(
+            name for name in dir(hopper_module) if _is_hopper_warpgroup_name(name)
+        )
 
     try:
         artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
@@ -225,9 +233,19 @@ def _captured_stderr_payload(stderr_text: str) -> dict[str, str]:
     return {"stderr": sanitized_stderr}
 
 
-def _is_grouped_name(name: str) -> bool:
-    lowered = name.lower()
-    return "group" in lowered or "grouped" in lowered
+def _is_grouped_gemm_name(name: str) -> bool:
+    tokens = _identifier_tokens(name)
+    return ("grouped" in tokens or "group" in tokens) and (
+        "gemm" in tokens or "matmul" in tokens
+    )
+
+
+def _is_hopper_warpgroup_name(name: str) -> bool:
+    return name in {"warpgroup_mma", "warpgroup_mma_wait"}
+
+
+def _identifier_tokens(name: str) -> set[str]:
+    return {token for token in name.lower().replace("-", "_").split("_") if token}
 
 
 def _relative_path(path: str | Path) -> str:

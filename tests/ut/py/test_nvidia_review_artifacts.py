@@ -2097,6 +2097,11 @@ def test_gluon_tensor_core_gemm_records_grouped_gemm_boundary():
         "linear_style_grouped",
         "missing grouped GEMM WGMMA source path",
         "No module named 'triton'",
+        "Generic Hopper WGMMA warpgroup primitives",
+        "`hopper_warpgroup_attrs`",
+        "\"gluon_language_grouped_gemm_attrs\": []",
+        "\"hopper_grouped_gemm_attrs\": []",
+        "\"hopper_warpgroup_attrs\": []",
         "not grouped GEMM correctness evidence",
         "REMOTE_PTO_CU=<remote-pto-cu>",
         "No usable preserved Gluon-capable Python environment was found",
@@ -2111,6 +2116,9 @@ def test_gluon_tensor_core_gemm_records_grouped_gemm_boundary():
     checklist_text = checklist.read_text(encoding="utf-8")
     checklist_search_text = re.sub(r"\s+", " ", checklist_text)
     assert "Grouped GEMM boundary harness" in checklist_search_text
+    assert "records generic Hopper `warpgroup_mma*` primitives separately" in (
+        checklist_search_text
+    )
     assert "not grouped GEMM correctness evidence" in checklist_search_text
     assert "missing grouped GEMM WGMMA source path" in checklist_search_text
 

@@ -77,7 +77,9 @@ Serving-relevant families verified from the README:
   reason `missing Gluon FP4 WGMMA dtype API`. This is unsupported-boundary
   evidence only, not FP4 GEMM correctness evidence. The Grouped GEMM boundary
   harness records proposed grouped shapes, probes the generated-kernel
-  registry and Gluon/Hopper attrs, and exits as `status: skipped` with
+  registry plus actual grouped GEMM Gluon/Hopper attrs, and records generic
+  Hopper `warpgroup_mma*` primitives separately from grouped GEMM API/source
+  support. It exits as `status: skipped` with
   `artifact: null`,
   `unsupported_boundary.kind: gluon_grouped_gemm_source_path_unavailable`,
   and reason `missing grouped GEMM WGMMA source path`. This is
