@@ -204,7 +204,7 @@ For the persistent MoE plus UCCL-EP adapter handoff gate, use:
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/persistent_moe_dispatch_combine.py \
   --device-ids 6,7 --n 4096 --arch compute_90 \
-  --with-uccl-ep-handoff --tensor-numel 1024 --build --require-cuda
+  --with-uccl-ep-handoff --tensor-numel 1024 --require-cuda
 ```
 
 This first validates the same two-device persistent MoE aggregate, then runs

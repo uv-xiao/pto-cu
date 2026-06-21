@@ -377,7 +377,7 @@ def test_persistent_moe_two_device_baseline_is_review_safe():
         "REMOTE_PTO_CU=/tmp/pto-cu-persistent-moe-uccl-ep-handoff",
         "--device-ids 6,7 --n 4096 --arch compute_90 --require-cuda",
         "--with-nccl-handoff --tensor-numel 1024 --build --require-cuda",
-        "--with-uccl-ep-handoff --tensor-numel 1024 --build --require-cuda",
+        "--with-uccl-ep-handoff --tensor-numel 1024 --require-cuda",
         "status`: `passed`",
         "handoff_scope`: `persistent-moe-plus-nccl-worker-control`",
         "handoff_scope`: `persistent-moe-plus-uccl-ep-adapter`",
@@ -402,6 +402,8 @@ def test_persistent_moe_two_device_baseline_is_review_safe():
         "does not validate CUDA host-runtime UCCL dispatch",
     ]:
         assert required in doc
+    assert "--with-uccl-ep-handoff --tensor-numel 1024 --build --require-cuda" not in doc
+    assert "--with-uccl-ep-handoff --tensor-numel 1024 --build --require-cuda" not in readme
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():

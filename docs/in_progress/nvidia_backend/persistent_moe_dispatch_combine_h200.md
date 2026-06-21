@@ -296,7 +296,7 @@ REMOTE_PTO_CU=/tmp/pto-cu-persistent-moe-uccl-ep-handoff \
     PYTHONPATH=$PWD:$PWD/python:<uccl-python-site-packages> \
     .venv/bin/python examples/cuda/persistent_moe_dispatch_combine.py \
       --device-ids 6,7 --n 4096 --arch compute_90 \
-      --with-uccl-ep-handoff --tensor-numel 1024 --build --require-cuda'
+      --with-uccl-ep-handoff --tensor-numel 1024 --require-cuda'
 ```
 
 Result: pass. The command exited with status `0`.
