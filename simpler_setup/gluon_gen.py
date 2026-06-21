@@ -355,6 +355,27 @@ def _render_tiled_tensor_core_gemm_source(tile_shape: tuple[int, int, int]) -> s
 
 def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
     block_m, block_n, block_d = tile_shape
+    if block_n == block_d:
+        score_source = f"""
+            offs_k_col = gl.arange(0, {block_d}, layout=gl.SliceLayout(0, layout))[None, :]
+            offs_k_row = gl.arange(0, {block_d}, layout=gl.SliceLayout(1, layout))[:, None]
+
+            q = gl.load(q_ptr + offs_m * head_dim + offs_k_col)
+            k_t = gl.load(k_ptr + offs_k_row * head_dim + offs_n)
+            q = gl.convert_layout(q, lhs_layout)
+            k_t = gl.convert_layout(k_t, rhs_layout)
+            score_acc = gl.full(({block_m}, {block_n}), 0.0, gl.float32, layout=layout)
+            scores = gl.dot_fma(q, k_t, score_acc) * scale
+"""
+    else:
+        score_source = f"""
+            score_acc = gl.full(({block_m}, {block_n}), 0.0, gl.float32, layout=layout)
+            for k_offset in gl.static_range(0, {block_d}):
+                q_value = gl.load(q_ptr + offs_m * head_dim + k_offset)
+                k_value = gl.load(k_ptr + offs_n * head_dim + k_offset)
+                score_acc += q_value * k_value
+            scores = score_acc * scale
+"""
     return dedent(
         f"""
         import math
@@ -371,15 +392,7 @@ def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
 
             offs_m = gl.arange(0, {block_m}, layout=gl.SliceLayout(1, layout))[:, None]
             offs_n = gl.arange(0, {block_n}, layout=gl.SliceLayout(0, layout))[None, :]
-            offs_k_col = gl.arange(0, {block_d}, layout=gl.SliceLayout(0, layout))[None, :]
-            offs_k_row = gl.arange(0, {block_d}, layout=gl.SliceLayout(1, layout))[:, None]
-
-            q = gl.load(q_ptr + offs_m * head_dim + offs_k_col)
-            k_t = gl.load(k_ptr + offs_k_row * head_dim + offs_n)
-            q = gl.convert_layout(q, lhs_layout)
-            k_t = gl.convert_layout(k_t, rhs_layout)
-            score_acc = gl.full(({block_m}, {block_n}), 0.0, gl.float32, layout=layout)
-            scores = gl.dot_fma(q, k_t, score_acc) * scale
+{score_source}
 
             row_max = gl.max(scores, axis=1)
             probs = gl.exp(scores - row_max[:, None])
@@ -389,7 +402,7 @@ def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
             offs_d = gl.arange(0, {block_d}, layout=gl.SliceLayout(0, layout))[None, :]
             offs_vn = gl.arange(0, {block_n}, layout=gl.SliceLayout(1, layout))[:, None]
             probs = gl.convert_layout(probs, lhs_layout)
-            v = gl.load(v_ptr + offs_d * head_dim + offs_vn)
+            v = gl.load(v_ptr + offs_d * seqlen_k + offs_vn)
             v = gl.convert_layout(v, rhs_layout)
             out_acc = gl.full(({block_m}, {block_d}), 0.0, gl.float32, layout=layout)
             out = gl.dot_fma(probs, v, out_acc)

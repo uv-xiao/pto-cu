@@ -2149,16 +2149,15 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "artifact paths are repo-relative",
         "private absolute paths are not recorded",
         "status: passed",
-        "status: failed",
         "shape: seqlen_q=32, seqlen_k=32, head_dim=32",
         "shape: seqlen_q=32, seqlen_k=32, head_dim=64",
         "shape: seqlen_q=16, seqlen_k=64, head_dim=64",
         "common serving attention head dimension",
         "32x32x64 failed H200 correctness",
         "--tile-shape 32x32x64",
-        "max_abs_error: 1.362005591392517",
-        "source_sha256: 475e4c60be3bd660db8a8b4483889ceda87df4e0c20349bcd644d2e72255435c",
-        "not promoted as passing evidence",
+        "max_abs_error: 3.5762786865234375e-07",
+        "source_sha256: c611666d3b527e615f2d8e4658b57f10865f1547fd370e8bb45639353682a06e",
+        "remains separate from the two-case promoted sweep",
         "case_count: 2",
         "per-case artifact paths are repo-relative",
         "max_abs_error: 2.384185791015625e-07",
@@ -2196,7 +2195,8 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "head_dim=64" in checklist_text
     assert "--tile-shape 32x32x64" in checklist_text
     assert "32x32x64 failed H200 correctness" in normalized_checklist_text
-    assert "not promoted as passing evidence" in checklist_text
+    assert "now passes with structured JSON" in normalized_checklist_text
+    assert "remains separate from the promoted sweep" in checklist_text
     assert "repo-relative artifact paths" in checklist_text
     assert "schema_version" in checklist_text
     assert "not FlashInfer integration evidence" in checklist_text
@@ -2208,7 +2208,8 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "head_dim=64" in status_text
     assert "--tile-shape 32x32x64" in status_text
     assert "32x32x64 failed H200 correctness" in normalized_status_text
-    assert "not promoted as passing evidence" in normalized_status_text
+    assert "now passes with structured JSON" in normalized_status_text
+    assert "remains separate from the promoted sweep" in normalized_status_text
     assert "schema_version" in status_text
     assert "repo-relative artifact paths" in status_text
     assert "not FlashInfer integration evidence" in status_text

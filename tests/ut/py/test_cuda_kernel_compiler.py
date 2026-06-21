@@ -434,12 +434,35 @@ def test_generate_gluon_flashattention_writes_dot_fma_source_and_manifest(tmp_pa
     assert "v_ptr" in source
     assert "out_ptr" in source
     assert "gl.DotOperandLayout" in source
+    assert "k_width=0" in source
     assert "gl.dot_fma(q, k_t, score_acc)" in source
     assert "k_ptr + offs_k_row * head_dim + offs_n" in source
-    assert "v_ptr + offs_d * head_dim + offs_vn" in source
+    assert "v_ptr + offs_d * seqlen_k + offs_vn" in source
     assert "gl.softmax" not in source
     assert "gl.dot(" not in source
     assert "def run_flashattention_fwd_f32" in source
+
+
+def test_generate_gluon_flashattention_uses_rhs_transposed_storage_for_rectangular_tiles(
+    tmp_path,
+):
+    artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
+        "flashattention_fwd_f32",
+        output_dir=tmp_path,
+        arch="compute_90",
+        tile_shape=(32, 32, 64),
+    )
+
+    source = artifact.source_path.read_text(encoding="utf-8")
+
+    assert "for k_offset in gl.static_range(0, 64):" in source
+    assert "q_value = gl.load(q_ptr + offs_m * head_dim + k_offset)" in source
+    assert "k_value = gl.load(k_ptr + offs_n * head_dim + k_offset)" in source
+    assert "gl.dot_fma(q, k_t, score_acc)" not in source
+    assert "k_ptr + offs_k_row * head_dim + offs_n" not in source
+    assert "v_ptr + offs_d * seqlen_k + offs_vn" in source
+    assert "v_ptr + offs_d * head_dim + offs_vn" not in source
+    assert "v_ptr + offs_vn * head_dim + offs_d" not in source
 
 
 def test_gluon_flashattention_example_reports_skip_json_and_relative_artifacts(
