@@ -238,16 +238,19 @@ status. H200 evidence is recorded in
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/gluon_topk_sampling.py \
   --output-dir tmp/gluon-topk-sampling-local \
-  --arch compute_90
+  --arch compute_90 --rows 3 --vocab 16 --k 5
 ```
 
 This generates the `topk_sampling_f32` Gluon source and checks deterministic
-top-k selection over a small FP32 logits fixture. The JSON includes shape,
-dtype, request metadata, CPU golden `values` and `indices`, GPU result
-`values` and `indices` when CUDA runs, validation flags, repo-relative
-artifact paths, and explicit non-claims. Without CUDA tooling or a visible
-NVIDIA GPU it reports a skip; with `--require-cuda`, skipped cases return a
-non-zero exit status. H200 evidence is recorded in
+top-k selection over FP32 logits fixtures. The default review fixture remains
+`rows=2, vocab=8, k=3`; the broader fixture uses
+`rows=3, vocab=16, k=5` with tied and negative logits. The JSON includes
+shape, dtype, request metadata, CPU golden `values` and `indices`, GPU result
+`values` and `indices` when CUDA runs, strict validation flags including
+payload shape checks, repo-relative artifact paths, and explicit non-claims.
+Without CUDA tooling or a visible NVIDIA GPU it reports a skip; with
+`--require-cuda`, skipped cases return a non-zero exit status. H200 evidence
+for the broader fixture is recorded in
 `docs/in_progress/nvidia_backend/gluon_topk_sampling_h200.md`.
 This is not FlashInfer integration evidence. It is also not vLLM or
 simpler-nv kernel integration evidence, not DeepSeek serving correctness

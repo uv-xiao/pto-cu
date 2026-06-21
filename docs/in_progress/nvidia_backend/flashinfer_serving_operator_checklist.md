@@ -79,11 +79,13 @@ Serving-relevant families verified from the README:
 
 - **FlashInfer reference family:** sampling and decoding: Sorting-Free
   Sampling; Top-K; Top-P; Min-P; Speculative Decoding.
-- **PTO current evidence:** `gluon_topk_sampling_h200.md` records one
-  generated `topk_sampling_f32` top-k correctness gate on H200 for
-  `rows=2, vocab=8, k=3`. It validates deterministic CPU golden versus GPU
-  result for both `values` and `indices`, with lower token id first for tied
-  logits. `gluon_topp_sampling_h200.md` records one generated
+- **PTO current evidence:** `gluon_topk_sampling_h200.md` records generated
+  `topk_sampling_f32` Top-K correctness gates, preserving the default
+  `rows=2, vocab=8, k=3` fixture and adding H200 evidence for
+  `rows=3, vocab=16, k=5`. It validates deterministic CPU golden versus GPU
+  result for both `values` and `indices`, checks result payload shapes before
+  comparisons, and orders tied logits by lower token id first.
+  `gluon_topp_sampling_h200.md` records one generated
   `topp_sampling_f32` Top-P correctness gate on H200 for
   `rows=2, vocab=8, max_k=5, p=0.75`. It consumes probabilities that already
   sum to one, selects the smallest descending-probability prefix whose
