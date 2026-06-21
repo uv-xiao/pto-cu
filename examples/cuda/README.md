@@ -295,16 +295,18 @@ PYTHONPATH=$PWD:$PWD/python \
 
 This generates the `minp_sampling_f32` Gluon source and checks deterministic
 min-p selection over a small FP32 probability fixture whose rows already sum
-to one. The fixed review shape is `rows=2, vocab=8, max_k=5, min_p=0.5`.
-The operator selects candidates whose probability is at least `min_p` times
-the row maximum, sorts selected candidates by probability descending with
-lower token id first for ties, and fills unused output slots with `0.0`
-values and `-1` indices. The JSON includes shape, dtype, request metadata,
-CPU golden `values`, `indices`, `selected_counts`, GPU result fields when
-CUDA runs, validation flags, repo-relative artifact paths, and explicit
-non-claims. Without CUDA tooling or a visible NVIDIA GPU it reports a skip;
-with `--require-cuda`, skipped cases return a non-zero exit status. H200
-evidence is recorded in
+to one. The default review shape remains
+`rows=2, vocab=8, max_k=5, min_p=0.5`; the broader fixture uses
+`rows=3, vocab=16, max_k=6, min_p=0.5` to cover varied selected counts
+and ties. The operator selects candidates whose probability is at least
+`min_p` times the row maximum, sorts selected candidates by probability
+descending with lower token id first for ties, and fills unused output slots
+with `0.0` values and `-1` indices. The JSON includes shape, dtype, request
+metadata, CPU golden `values`, `indices`, `selected_counts`, GPU result
+fields when CUDA runs, validation flags including payload shape checks,
+repo-relative artifact paths, and explicit non-claims. Without CUDA tooling
+or a visible NVIDIA GPU it reports a skip; with `--require-cuda`, skipped
+cases return a non-zero exit status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_minp_sampling_h200.md`.
 This is not FlashInfer integration evidence. It is also not vLLM or
 simpler-nv kernel integration evidence, not DeepSeek serving correctness

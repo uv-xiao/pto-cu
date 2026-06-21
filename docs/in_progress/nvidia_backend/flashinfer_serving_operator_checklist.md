@@ -95,13 +95,15 @@ Serving-relevant families verified from the README:
   `selected_counts`, and `cumulative_probabilities`, and checks result
   payload shapes before comparisons.
   `gluon_minp_sampling_h200.md` records one generated `minp_sampling_f32`
-  Min-P (min-p) correctness gate on H200 for
-  `rows=2, vocab=8, max_k=5, min_p=0.5`.
+  Min-P (min-p) correctness gate on H200 while preserving the default
+  `rows=2, vocab=8, max_k=5, min_p=0.5` fixture and adding H200 evidence for
+  `rows=3, vocab=16, max_k=6, min_p=0.5`.
   It consumes probabilities that already sum to one, selects tokens whose
   probability is at least `min_p * row_max_probability`, sorts by probability
   descending with lower token id first for ties, fills unused output slots
-  with `0.0` values and `-1` indices, and validates `values`, `indices`, and
-  `selected_counts`. `gluon_speculative_decoding_h200.md` records one
+  with `0.0` values and `-1` indices, validates `values`, `indices`, and
+  `selected_counts`, and checks result payload shapes before comparisons.
+  `gluon_speculative_decoding_h200.md` records one
   generated `speculative_accept_f32` Speculative Decoding accept/reject
   correctness gate on H200 for `rows=2, max_draft=4`. It consumes draft token
   ids, draft probabilities, target probabilities for those same draft tokens,
@@ -111,9 +113,9 @@ Serving-relevant families verified from the README:
   `accepted_token_ids`, `accept_mask`, and `accepted_counts`. vLLM probes use
   bounded sampler settings for real DeepSeek API requests, but those sampler
   settings do not route through PTO kernels.
-- **Gap / next PTO milestone:** broaden shape coverage for Min-P and
-  speculative decoding before connecting sampling to a serving stack.
-  Remaining sampling gaps include serving-stack integration.
+- **Gap / next PTO milestone:** broaden shape coverage for speculative decoding
+  before connecting sampling to a serving stack. Remaining sampling gaps
+  include serving-stack integration.
 - **Explicit non-claim:** this is not FlashInfer integration evidence, not
   vLLM or simpler-nv kernel integration evidence, not tokenizer semantics,
   not generated-text correctness, and not DeepSeek serving through
