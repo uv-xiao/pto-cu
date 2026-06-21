@@ -92,7 +92,10 @@ source-contract evidence is recorded in
 The default launcher is the existing CUDA seed path. Use
 `--kernel-launcher gluon-moe-expert` to route the same synthetic or cloned
 source request through the generated Gluon MoE expert correctness harness for
-`moe_expert_affine_f32`.
+`moe_expert_affine_f32`. Use
+`--kernel-launcher persistent-moe-dispatch-combine` to route the same request
+through the existing persistent-device MoE dispatch/combine example via
+`run_moe_dispatch_combine(...)`.
 
 Use `--openai-completion` to emit a synthetic `/v1/completions` response
 shape, `--openai-chat-completion` to emit a synthetic
@@ -126,10 +129,15 @@ or assistant deltas, finish reason, PTO token IDs, launch count, and selected
 kernel-launch metadata. Generated Gluon launch mode records
 `launch_kind: gluon-moe-expert`, `kernel_name: moe_expert_affine_f32`, phase,
 status, shape, generated artifact/source digest metadata, and numerical
-max-error metadata when available.
+max-error metadata when available. Persistent MoE launch mode records
+`launch_kind: persistent-moe-dispatch-combine`,
+`dag_shape: graph_descriptor_moe_dispatch_combine`, phase, status, shape,
+completed count, max absolute error, scheduler error summary, and the Gluon
+expert bridge/task-body digest when available.
 It is not DeepSeek-V4-Flash serving, not vLLM plugin integration, not
 FlashInfer integration, not production readiness, not throughput or latency,
-not distributed serving, and not fused MoE dispatch/combine serving readiness.
+not distributed serving, and not production fused MoE dispatch/combine serving
+readiness.
 
 ## Persistent Layered-Cross Graph
 

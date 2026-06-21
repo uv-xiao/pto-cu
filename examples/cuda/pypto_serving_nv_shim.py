@@ -17,6 +17,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 PYPTO_SERVING_SOURCE = ROOT / "tmp" / "sources" / "repos" / "hw-native-sys" / "pypto-serving"
 DEFAULT_GENERATED_GLUON_OUTPUT_DIR = Path("tmp/pypto-serving-gluon-moe-expert")
+PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND = "persistent-moe-dispatch-combine"
 
 
 @dataclass(frozen=True)
@@ -113,8 +114,6 @@ class SimplerNvModelRunner:
         launcher = default_cuda_seed_launcher if self.kernel_launcher is None else self.kernel_launcher
         result = launcher(request)
         self.launch_results.append(result)
-        if result.get("status") == "failed":
-            raise RuntimeError(f"CUDA seed launch failed during {phase}: {result}")
 
 
 class SimplerNvExecutor:
@@ -231,7 +230,12 @@ class SyntheticPyptoServingEngine:
 
         runner = self.executor.runner_for(model_id)
         launch_statuses = [item.get("status") for item in runner.launch_results]
-        status = "passed" if all(item == "passed" for item in launch_statuses) else "skipped"
+        if "failed" in launch_statuses:
+            status = "failed"
+        elif all(item == "passed" for item in launch_statuses):
+            status = "passed"
+        else:
+            status = "skipped"
         return {
             "engine": type(self).__name__,
             "status": status,
@@ -999,10 +1003,86 @@ def create_generated_gluon_moe_launcher(
     return launch
 
 
+def create_persistent_moe_dispatch_combine_launcher(
+    *,
+    scheduler_blocks: int = 1,
+    worker_blocks: int = 4,
+    queue_capacity: int = 5,
+    stream_id: int = 0,
+) -> Callable[[KernelLaunchRequest], dict[str, Any]]:
+    def launch(request: KernelLaunchRequest) -> dict[str, Any]:
+        try:
+            result = run_moe_dispatch_combine(
+                device=request.device_id,
+                n=request.n,
+                arch=request.arch,
+                block_dim=request.block_dim,
+                scheduler_blocks=scheduler_blocks,
+                worker_blocks=worker_blocks,
+                queue_capacity=queue_capacity,
+                stream_id=stream_id,
+            )
+        except Exception as exc:
+            result = {
+                "status": "failed",
+                "dag_shape": "graph_descriptor_moe_dispatch_combine",
+                "n": request.n,
+                "error_type": type(exc).__name__,
+                "reason": _clean_error_text(str(exc)),
+            }
+        return _persistent_moe_dispatch_combine_launch_result(request, result)
+
+    return launch
+
+
+def _persistent_moe_dispatch_combine_launch_result(
+    request: KernelLaunchRequest,
+    result: dict[str, Any],
+) -> dict[str, Any]:
+    launch = {
+        "status": result.get("status", "failed"),
+        "phase": request.phase,
+        "op": request.op,
+        "launch_kind": PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND,
+        "dag_shape": result.get("dag_shape", ""),
+        "shape": {"n": result.get("n", request.n)},
+        "completed_count": result.get("completed_count"),
+        "max_abs_error": result.get("max_abs_error"),
+        "scheduler_error_summary": result.get("device_scheduler_errors"),
+        "gluon_expert_bridge": result.get("gluon_expert_bridge"),
+        "task_body_digest": _persistent_moe_task_body_digest(result),
+        "error_type": result.get("error_type", ""),
+        "persistent_moe": result,
+    }
+    if "reason" in result:
+        launch["reason"] = result["reason"]
+    return launch
+
+
+def _persistent_moe_task_body_digest(result: dict[str, Any]) -> dict[str, Any]:
+    for task_body in result.get("task_bodies", []):
+        if isinstance(task_body, dict) and task_body.get("func_id") == 12:
+            return {
+                "func_id": task_body.get("func_id"),
+                "source_sha256": task_body.get("source_sha256", ""),
+            }
+    return {}
+
+
+def _clean_error_text(text: str) -> str:
+    return text.replace(ROOT.as_posix(), ".").replace(Path.home().as_posix(), "~")
+
+
 def run_moe_expert_correctness(**kwargs) -> dict[str, Any]:
     from examples.cuda.gluon_moe_expert_affine import run_moe_expert_correctness
 
     return run_moe_expert_correctness(**kwargs)
+
+
+def run_moe_dispatch_combine(**kwargs) -> dict[str, Any]:
+    from examples.cuda.persistent_moe_dispatch_combine import run_moe_dispatch_combine
+
+    return run_moe_dispatch_combine(**kwargs)
 
 
 def default_cuda_seed_launcher(request: KernelLaunchRequest) -> dict[str, Any]:
@@ -1420,7 +1500,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--kernel-launcher",
-        choices=("cuda-seed", "gluon-moe-expert"),
+        choices=(
+            "cuda-seed",
+            "gluon-moe-expert",
+            PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND,
+        ),
         default="cuda-seed",
         help="select the simpler-nv kernel launch path used by synthetic and source fixtures",
     )
@@ -1581,6 +1665,8 @@ def _create_kernel_launcher_from_args(args) -> Callable[[KernelLaunchRequest], d
         return None
     if args.kernel_launcher == "gluon-moe-expert":
         return create_generated_gluon_moe_launcher(output_dir=args.generated_output_dir)
+    if args.kernel_launcher == PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND:
+        return create_persistent_moe_dispatch_combine_launcher()
     raise ValueError(f"unsupported kernel launcher: {args.kernel_launcher}")
 
 

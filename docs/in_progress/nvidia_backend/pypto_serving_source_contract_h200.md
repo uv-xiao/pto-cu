@@ -37,7 +37,8 @@ The tracked entry points are:
 - CLI flag: `--pypto-serving-source-stream`
 - CLI flag: `--pypto-serving-source-chat-stream`
 - CLI flag: `--pypto-serving-vllm-compat`
-- CLI flag: `--kernel-launcher {cuda-seed,gluon-moe-expert}`
+- CLI flag:
+  `--kernel-launcher {cuda-seed,gluon-moe-expert,persistent-moe-dispatch-combine}`
 
 ## Source Chat Contract
 
@@ -526,6 +527,168 @@ This is generated-kernel source-route contract evidence for the synthetic
 adapter. It is not DeepSeek-V4-Flash serving, not vLLM plugin integration, not
 FlashInfer integration, not production readiness, not throughput or latency,
 not distributed serving, and not fused MoE dispatch/combine serving readiness.
+
+## Persistent MoE Dispatch/Combine Launch Contract
+
+The source-route launcher selection also accepts
+`--kernel-launcher persistent-moe-dispatch-combine`. That mode routes the same
+synthetic `pypto-serving` request through
+`examples/cuda/persistent_moe_dispatch_combine.py::run_moe_dispatch_combine(...)`.
+The shim does not duplicate the persistent-device graph logic; it only adapts
+the existing example's structured result into `pto_launch_results`.
+
+The launch result records bounded review-safe metadata:
+
+```text
+launch_kind: persistent-moe-dispatch-combine
+phase: prefill
+status: passed|skipped|failed
+dag_shape: graph_descriptor_moe_dispatch_combine
+shape.n: 16
+completed_count: <completed-count-when-present>
+max_abs_error: <max-absolute-error-when-present>
+scheduler_error_summary: <device-scheduler-errors-when-present>
+gluon_expert_bridge.source_sha256: <bridge-digest-when-present>
+task_body_digest.func_id: 12
+task_body_digest.source_sha256: <task-body-digest-when-present>
+```
+
+Local unit coverage proves the completion, chat, streaming completion, and
+streaming chat source fixtures can all receive this persistent launcher hook.
+The launcher remains skip-safe when CUDA, runtime build, or device
+prerequisites are missing; with `--require-cuda`, a selected-launcher skip
+returns non-zero through the existing CLI status handling.
+
+Local focused verification:
+
+```bash
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python -m pytest tests/ut/py/test_pypto_serving_nv_shim.py \
+    -q -k 'persistent_moe_dispatch_combine_launcher or \
+persistent_launcher_can_run_through_source_route_fixtures or \
+persistent_moe_cli_mode_outputs_launch_metadata'
+```
+
+Result:
+
+```text
+3 passed, 34 deselected
+```
+
+This is source-route launch contract evidence for the synthetic adapter. It is
+not DeepSeek-V4-Flash serving, not real model loading, not tokenizer
+semantics, not vLLM plugin integration, not throughput or latency evidence,
+not distributed expert parallelism, and not production serving readiness.
+
+## H200 Persistent MoE Source-Route Matrix
+
+The H200 pass used tree sync rather than a remote Git refresh. The tracked
+working tree was synced with `--sync`; the ignored `pypto-serving` source
+clone was synced explicitly because the generic runner excludes `tmp/`. A
+checkout-local remote virtual environment was created with
+`--system-site-packages` for source-route dependencies.
+
+Environment:
+
+```text
+machine: <h200-host>
+gpu: NVIDIA H200 NVL, compute capability 9.0, 143771 MiB
+driver: 580.126.20
+CUDA_HOME: /usr/local/cuda
+python: 3.12.3
+torch: 2.12.1
+triton: 3.7.1
+remote Git refresh: not used
+source sync: --sync plus explicit pypto-serving source clone sync
+stderr caveat: FastAPI TestClient printed a StarletteDeprecationWarning
+```
+
+The per-route commands used this shape with one route flag substituted:
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh -- \
+  bash -lc 'PYTHONPATH=$PWD:$PWD/python \
+    .venv/bin/python examples/cuda/pypto_serving_nv_shim.py \
+      <source-route-flag> \
+      --kernel-launcher persistent-moe-dispatch-combine \
+      --require-cuda --prompt hello --max-new-tokens 1 \
+      --device 0 --arch compute_90'
+```
+
+The route flags were:
+
+- `--pypto-serving-source`
+- `--pypto-serving-source-chat`
+- `--pypto-serving-source-stream`
+- `--pypto-serving-source-chat-stream`
+
+Each route produced:
+
+```text
+status: passed
+status_code: 200
+pto_status: passed
+pto_token_ids: [1]
+pto_launch_count: 1
+launch_kind: persistent-moe-dispatch-combine
+phase: prefill
+dag_shape: graph_descriptor_moe_dispatch_combine
+shape.n: 16
+completed_count: 5
+max_abs_error: 0.0
+scheduler_error_summary: {count: 0, code: 0, task_id: 0}
+gluon_expert_bridge.kernel_name: moe_expert_affine_f32
+gluon_expert_bridge.source_sha256:
+  7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f
+task_body_digest.func_id: 12
+task_body_digest.source_sha256:
+  7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f
+device_scheduler_errors: {count: 0, code: 0, task_id: 0}
+fanin_remaining: [0, 0, 0, 0, 0]
+```
+
+Route-specific response summaries:
+
+```text
+route: /v1/completions
+object: text_completion
+text: N
+finish_reason: length
+
+route: /v1/chat/completions
+object: chat.completion
+assistant_message: {role: assistant, content: N}
+finish_reason: length
+
+route: /v1/completions
+stream: true
+event_count: 2
+chunk_count: 1
+done_seen: true
+assembled_text: N
+finish_reason: length
+
+route: /v1/chat/completions
+stream: true
+event_count: 2
+chunk_count: 1
+done_seen: true
+assistant_deltas: [N]
+assembled_assistant_text: N
+finish_reason: length
+```
+
+The aggregate `--pypto-serving-vllm-compat` command was attempted with the
+same launcher, but the SSH session ended with exit 255 before emitting JSON,
+so it is not counted as evidence. The individual route commands above are the
+bounded H200 evidence for this slice.
+
+This is selected-launcher source-route contract evidence for the synthetic
+adapter. It is not DeepSeek-V4-Flash serving, not real model loading, not
+tokenizer semantics, not vLLM plugin integration, not throughput or latency
+evidence, not distributed expert parallelism, and not production serving
+readiness.
 
 ## H200 Streaming Completion Evidence
 

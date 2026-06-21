@@ -2713,7 +2713,10 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "--pypto-serving-source-chat-stream",
         "--pypto-serving-vllm-compat",
         "--kernel-launcher gluon-moe-expert",
+        "--kernel-launcher persistent-moe-dispatch-combine",
         "Generated Gluon MoE Expert Launch Contract",
+        "Persistent MoE Dispatch/Combine Launch Contract",
+        "H200 Persistent MoE Source-Route Matrix",
         "H200 Generated Gluon MoE Source-Route Matrix",
         "pto-cu: b66e1ece",
         "pypto-serving source clone: 0b0d8a0",
@@ -2735,10 +2738,20 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "pto_token_ids: [1]",
         "kernel_name: moe_expert_affine_f32",
         "launch_kind: gluon-moe-expert",
+        "launch_kind: persistent-moe-dispatch-combine",
         "phase: prefill",
+        "dag_shape: graph_descriptor_moe_dispatch_combine",
         "shape.n: 16",
+        "completed_count: 5",
+        "max_abs_error: 0.0",
+        "scheduler_error_summary: {count: 0, code: 0, task_id: 0}",
+        "device_scheduler_errors: {count: 0, code: 0, task_id: 0}",
+        "fanin_remaining: [0, 0, 0, 0, 0]",
+        "task_body_digest.source_sha256",
+        "7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f",
         "source_sha256",
         "max_abs_error: 1.1920928955078125e-07",
+        "SSH session ended with exit 255 before emitting JSON",
         "not fused MoE dispatch/combine serving readiness",
         "assistant_message: {role: assistant, content: N}",
         "assistant_message: {role: assistant, content: NV}",
@@ -2793,8 +2806,11 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "--pypto-serving-vllm-compat",
         "run_pypto_serving_vllm_compat_fixture",
         "create_generated_gluon_moe_launcher",
+        "create_persistent_moe_dispatch_combine_launcher",
+        "run_moe_dispatch_combine",
         "--kernel-launcher",
         "gluon-moe-expert",
+        "persistent-moe-dispatch-combine",
         "moe_expert_affine_f32",
     ]:
         assert required in example_text
@@ -2819,7 +2835,10 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "test_pypto_serving_source_cli_mode_outputs_contract_json",
         "test_generated_gluon_moe_launcher_records_review_safe_metadata",
         "test_generated_launcher_can_run_through_source_route_fixtures",
+        "test_persistent_moe_dispatch_combine_launcher_records_review_safe_metadata",
+        "test_persistent_launcher_can_run_through_source_route_fixtures",
         "test_generated_kernel_cli_mode_outputs_launch_metadata",
+        "test_persistent_moe_cli_mode_outputs_launch_metadata",
         "test_generated_launcher_can_run_through_vllm_compat_summary",
         "test_default_launcher_selection_uses_cuda_seed_and_add_op",
     ]:
@@ -2834,7 +2853,8 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
     assert "--pypto-serving-source-chat-stream" in readme_text
     assert "--pypto-serving-vllm-compat" in readme_text
     assert "--kernel-launcher gluon-moe-expert" in readme_text
+    assert "--kernel-launcher persistent-moe-dispatch-combine" in readme_text
     assert "moe_expert_affine_f32" in readme_text
-    assert "not fused MoE dispatch/combine serving readiness" in readme_text
+    assert "not production fused MoE dispatch/combine serving" in readme_text
     assert "OpenAI-compatible structural fields" in readme_text
     assert "/v1/chat/completions" in readme_text

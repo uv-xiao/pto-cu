@@ -90,6 +90,29 @@ def test_simpler_nv_executor_registers_runner_and_generates_logits():
     ]
 
 
+def test_synthetic_serving_request_reports_failed_launcher_without_raising():
+    module = _load_serving_shim_example()
+
+    def failed_launcher(request):
+        return {
+            "status": "failed",
+            "phase": request.phase,
+            "launch_kind": "unit-failure",
+            "reason": "prepare_callable failed",
+        }
+
+    result = module.run_synthetic_serving_request(
+        prompt="hello",
+        max_new_tokens=1,
+        kernel_launcher=failed_launcher,
+    )
+
+    assert result["status"] == "failed"
+    assert result["text"] == "N"
+    assert result["launch_count"] == 1
+    assert result["launch_results"][0]["reason"] == "prepare_callable failed"
+
+
 def test_default_cuda_seed_launcher_is_skip_safe_when_smoke_fails(monkeypatch):
     module = _load_serving_shim_example()
 
@@ -223,6 +246,105 @@ def test_generated_gluon_moe_launcher_records_review_safe_metadata(monkeypatch):
     assert result["generated_kernel"]["reason"] == "torch.cuda is not available"
 
 
+def test_persistent_moe_dispatch_combine_launcher_records_review_safe_metadata(monkeypatch):
+    module = _load_serving_shim_example()
+
+    def fake_dispatch_combine(**kwargs):
+        return {
+            "status": "passed",
+            "dag_shape": "graph_descriptor_moe_dispatch_combine",
+            "completed_count": 5,
+            "max_abs_error": 0.0,
+            "device_scheduler_errors": {"count": 0, "code": 0, "task_id": 0},
+            "gluon_expert_bridge": {
+                "func_id": 12,
+                "kernel_name": "moe_expert_affine_f32",
+                "task_name": "gluon_moe_expert_affine_f32",
+                "source_kind": "gluon-persistent-task-body-bridge",
+                "source_sha256": "bridge123",
+            },
+            "task_bodies": [
+                {
+                    "func_id": 12,
+                    "name": "gluon_moe_expert_affine_f32",
+                    "source_kind": "gluon-persistent-task-body-bridge",
+                    "source_sha256": "bridge123",
+                }
+            ],
+            "artifact": {"source_kind": "generated-dispatch"},
+        }
+
+    monkeypatch.setattr(
+        module,
+        "run_moe_dispatch_combine",
+        fake_dispatch_combine,
+        raising=False,
+    )
+
+    launcher = module.create_persistent_moe_dispatch_combine_launcher()
+    result = launcher(
+        module.KernelLaunchRequest(
+            phase="prefill",
+            platform="cuda",
+            runtime="host_schedule",
+            device_id=0,
+            op="add",
+            n=31,
+            block_dim=16,
+            arch="compute_90",
+        )
+    )
+
+    assert result["status"] == "passed"
+    assert result["launch_kind"] == "persistent-moe-dispatch-combine"
+    assert result["phase"] == "prefill"
+    assert result["dag_shape"] == "graph_descriptor_moe_dispatch_combine"
+    assert result["shape"] == {"n": 31}
+    assert result["completed_count"] == 5
+    assert result["max_abs_error"] == 0.0
+    assert result["scheduler_error_summary"] == {"count": 0, "code": 0, "task_id": 0}
+    assert result["gluon_expert_bridge"]["source_sha256"] == "bridge123"
+    assert result["task_body_digest"] == {
+        "func_id": 12,
+        "source_sha256": "bridge123",
+    }
+    assert result["persistent_moe"]["artifact"]["source_kind"] == "generated-dispatch"
+
+
+def test_persistent_moe_dispatch_combine_launcher_reports_api_exceptions(monkeypatch):
+    module = _load_serving_shim_example()
+
+    def fake_dispatch_combine(**_kwargs):
+        raise RuntimeError("prepare_callable failed for persistent MoE graph")
+
+    monkeypatch.setattr(
+        module,
+        "run_moe_dispatch_combine",
+        fake_dispatch_combine,
+        raising=False,
+    )
+
+    launcher = module.create_persistent_moe_dispatch_combine_launcher()
+    result = launcher(
+        module.KernelLaunchRequest(
+            phase="prefill",
+            platform="cuda",
+            runtime="host_schedule",
+            device_id=0,
+            op="add",
+            n=16,
+            block_dim=16,
+            arch="compute_90",
+        )
+    )
+
+    assert result["status"] == "failed"
+    assert result["launch_kind"] == "persistent-moe-dispatch-combine"
+    assert result["dag_shape"] == "graph_descriptor_moe_dispatch_combine"
+    assert result["error_type"] == "RuntimeError"
+    assert result["reason"] == "prepare_callable failed for persistent MoE graph"
+
+
 def test_generated_launcher_can_run_through_source_route_fixtures(monkeypatch):
     module = _load_serving_shim_example()
     pytest.importorskip("fastapi.testclient")
@@ -279,6 +401,90 @@ def test_generated_launcher_can_run_through_source_route_fixtures(monkeypatch):
     ]
 
 
+def test_persistent_launcher_can_run_through_source_route_fixtures(monkeypatch):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+    launches = []
+
+    def fake_dispatch_combine(**kwargs):
+        launches.append(kwargs)
+        return {
+            "status": "passed",
+            "dag_shape": "graph_descriptor_moe_dispatch_combine",
+            "completed_count": 5,
+            "max_abs_error": 0.0,
+            "device_scheduler_errors": {"count": 0, "code": 0, "task_id": 0},
+            "gluon_expert_bridge": {
+                "func_id": 12,
+                "kernel_name": "moe_expert_affine_f32",
+                "task_name": "gluon_moe_expert_affine_f32",
+                "source_kind": "gluon-persistent-task-body-bridge",
+                "source_sha256": "bridge123",
+            },
+            "task_bodies": [
+                {
+                    "func_id": 12,
+                    "name": "gluon_moe_expert_affine_f32",
+                    "source_kind": "gluon-persistent-task-body-bridge",
+                    "source_sha256": "bridge123",
+                }
+            ],
+        }
+
+    monkeypatch.setattr(
+        module,
+        "run_moe_dispatch_combine",
+        fake_dispatch_combine,
+        raising=False,
+    )
+    launcher = module.create_persistent_moe_dispatch_combine_launcher()
+
+    completion = module.run_pypto_serving_source_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=launcher,
+    )
+    chat = module.run_pypto_serving_source_chat_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=launcher,
+    )
+    stream = module.run_pypto_serving_source_stream_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=launcher,
+    )
+    chat_stream = module.run_pypto_serving_source_stream_chat_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=launcher,
+    )
+
+    results = [completion, chat, stream, chat_stream]
+    assert [item["pto_status"] for item in results] == [
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+    ]
+    assert len(launches) == 4
+    assert {item["n"] for item in launches} == {16}
+    assert [
+        result["pto_launch_results"][0]["launch_kind"] for result in results
+    ] == [
+        "persistent-moe-dispatch-combine",
+        "persistent-moe-dispatch-combine",
+        "persistent-moe-dispatch-combine",
+        "persistent-moe-dispatch-combine",
+    ]
+
+
 def test_generated_kernel_cli_mode_outputs_launch_metadata(monkeypatch, capsys):
     module = _load_serving_shim_example()
 
@@ -317,6 +523,56 @@ def test_generated_kernel_cli_mode_outputs_launch_metadata(monkeypatch, capsys):
     assert launch["kernel_name"] == "moe_expert_affine_f32"
     assert launch["shape"] == {"n": 16}
     assert launch["artifact"]["source_sha256"] == "abc123"
+
+
+def test_persistent_moe_cli_mode_outputs_launch_metadata(monkeypatch, capsys):
+    module = _load_serving_shim_example()
+
+    def fake_persistent_launcher(**_kwargs):
+        def launcher(request):
+            return {
+                "status": "passed",
+                "phase": request.phase,
+                "launch_kind": "persistent-moe-dispatch-combine",
+                "dag_shape": "graph_descriptor_moe_dispatch_combine",
+                "shape": {"n": request.n},
+                "completed_count": 5,
+                "max_abs_error": 0.0,
+                "scheduler_error_summary": {"count": 0, "code": 0, "task_id": 0},
+                "gluon_expert_bridge": {"source_sha256": "bridge123"},
+                "task_body_digest": {"func_id": 12, "source_sha256": "bridge123"},
+            }
+
+        return launcher
+
+    monkeypatch.setattr(
+        module,
+        "create_persistent_moe_dispatch_combine_launcher",
+        fake_persistent_launcher,
+        raising=False,
+    )
+
+    code = module.main(
+        [
+            "--kernel-launcher",
+            "persistent-moe-dispatch-combine",
+            "--pypto-serving-source",
+            "--prompt",
+            "hello",
+            "--max-new-tokens",
+            "1",
+        ]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert output["pto_status"] == "passed"
+    launch = output["pto_launch_results"][0]
+    assert launch["launch_kind"] == "persistent-moe-dispatch-combine"
+    assert launch["dag_shape"] == "graph_descriptor_moe_dispatch_combine"
+    assert launch["shape"] == {"n": 16}
+    assert launch["completed_count"] == 5
+    assert launch["task_body_digest"]["source_sha256"] == "bridge123"
 
 
 def test_openai_completion_fixture_uses_synthetic_serving_request_shape():
@@ -1163,8 +1419,12 @@ def test_pypto_serving_source_chat_route_fixture_is_documented():
     assert "--pypto-serving-source-chat" in source_contract
     assert "--pypto-serving-source-stream" in source_contract
     assert "--pypto-serving-source-chat-stream" in source_contract
+    assert "--kernel-launcher persistent-moe-dispatch-combine" in source_contract
+    assert "Persistent MoE Dispatch/Combine Launch Contract" in source_contract
+    assert "run_moe_dispatch_combine(...)" in source_contract
     assert "/v1/chat/completions" in source_contract
     assert "Current Chat Source Limitation" not in source_contract
     assert hasattr(module, "run_pypto_serving_source_chat_completion_fixture")
     assert hasattr(module, "run_pypto_serving_source_stream_completion_fixture")
     assert hasattr(module, "run_pypto_serving_source_stream_chat_completion_fixture")
+    assert hasattr(module, "create_persistent_moe_dispatch_combine_launcher")
