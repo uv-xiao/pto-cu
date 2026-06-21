@@ -31,6 +31,9 @@ same serving boundaries as the source `pypto-serving` contracts.
   `--kernel-launcher gluon-topp-sampling` mode calls the generated Gluon
   Top-P sampling correctness harness for `topp_sampling_f32` and records
   artifact/source digest plus validation metadata in `launch_results`. The
+  `--kernel-launcher gluon-minp-sampling` mode calls the generated Gluon
+  Min-P sampling correctness harness for `minp_sampling_f32` and records
+  artifact/source digest plus validation metadata in `launch_results`. The
   `--kernel-launcher persistent-moe-dispatch-combine` mode calls the existing
   persistent-device dispatch/combine graph example through
   `run_moe_dispatch_combine(...)` and records bounded DAG metadata in
@@ -138,6 +141,19 @@ validation.max_abs_error: <max-absolute-error-when-present>
 validation.max_cumulative_probability_error: <max-error-when-present>
 ```
 
+Generated Min-P sampling launch mode is skip-safe on machines without CUDA,
+torch CUDA, or Triton Gluon. Its local JSON metadata records:
+
+```text
+launch_kind: gluon-minp-sampling
+kernel_name: minp_sampling_f32
+phase: prefill|decode
+shape: {rows: 3, vocab: 16, max_k: 6}
+min_p: 0.50
+source_sha256: <generated-source-digest-when-available>
+validation.max_abs_error: <max-absolute-error-when-present>
+```
+
 Persistent MoE dispatch/combine launch mode is skip-safe on machines without
 CUDA, runtime build prerequisites, or a visible NVIDIA GPU. Its local JSON
 metadata records:
@@ -172,6 +188,8 @@ contract note. Top-K sampling launcher H200 evidence is recorded separately in
 `docs/in_progress/nvidia_backend/pypto_serving_topk_sampling_launcher_h200.md`.
 Top-P sampling launcher H200 evidence is recorded separately in
 `docs/in_progress/nvidia_backend/pypto_serving_topp_sampling_launcher_h200.md`.
+Min-P sampling launcher H200 evidence is recorded separately in
+`docs/in_progress/nvidia_backend/pypto_serving_minp_sampling_launcher_h200.md`.
 
 This is not serving evidence. It is not DeepSeek-V4-Flash correctness. It is
 not vLLM plugin evidence. It is not a throughput, latency, UCCL serving, or

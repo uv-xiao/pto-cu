@@ -41,6 +41,7 @@ The tracked entry points are:
 - CLI flag: `--kernel-launcher gluon-moe-expert`
 - CLI flag: `--kernel-launcher gluon-topk-sampling`
 - CLI flag: `--kernel-launcher gluon-topp-sampling`
+- CLI flag: `--kernel-launcher gluon-minp-sampling`
 - CLI flag: `--kernel-launcher persistent-moe-dispatch-combine`
 
 ## Source Chat Contract
@@ -330,6 +331,23 @@ present, and the same non-claim boundary as the standalone Top-P harness.
 H200 evidence for this selected launcher is recorded in
 `pypto_serving_topp_sampling_launcher_h200.md`. It is a serving-route
 launcher/probe for a generated Top-P sampling correctness gate, not
+FlashInfer integration, tokenizer semantics, generated text correctness,
+DeepSeek serving readiness, or production serving evidence.
+
+## Generated Gluon Min-P Sampling Launch Contract
+
+Passing `--kernel-launcher gluon-minp-sampling` routes the same synthetic
+`pypto-serving` request through
+`examples/cuda/gluon_minp_sampling.py::run_minp_sampling_correctness(...)`.
+The source-route launcher records `launch_kind: gluon-minp-sampling`,
+`kernel_name: minp_sampling_f32`, phase, status, shape, sampling request
+metadata including `min_p`, generated artifact/source digest metadata,
+validation metadata when present, and the same non-claim boundary as the
+standalone Min-P harness.
+
+H200 evidence for this selected launcher is recorded in
+`pypto_serving_minp_sampling_launcher_h200.md`. It is a serving-route
+launcher/probe for a generated Min-P sampling correctness gate, not
 FlashInfer integration, tokenizer semantics, generated text correctness,
 DeepSeek serving readiness, or production serving evidence.
 
