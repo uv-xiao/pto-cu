@@ -32,6 +32,7 @@ GLUON_GEMM_REVIEW_DOCS = [
     ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_gated_silu_h200.md",
     ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_gemma_fused_rmsnorm_h200.md",
     ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_topk_sampling_h200.md",
+    ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_topp_sampling_h200.md",
 ]
 UCCL_PRIVATE_PATH_RE = re.compile(
     r"/" + "home/"
@@ -2788,7 +2789,65 @@ def test_gluon_topk_sampling_h200_evidence_is_review_safe():
     assert "gluon_topk_sampling_h200.md" in checklist_text
     assert "topk_sampling_f32" in checklist_text
     assert "Top-K" in checklist_text
-    assert "top-p, min-p" in checklist_text
+    assert "top-p, min-p" not in checklist_text
+    assert "min-p" in checklist_text
+    assert "not FlashInfer integration evidence" in checklist_text
+
+
+def test_gluon_topp_sampling_h200_evidence_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    evidence = in_progress_root / "gluon_topp_sampling_h200.md"
+    readme = ROOT / "examples" / "cuda" / "README.md"
+    checklist = in_progress_root / "flashinfer_serving_operator_checklist.md"
+
+    for path in (
+        evidence,
+        readme,
+        checklist,
+        ROOT / "examples" / "cuda" / "gluon_topp_sampling.py",
+    ):
+        assert path.is_file(), path
+
+    evidence_text = evidence.read_text(encoding="utf-8")
+    for required in [
+        "# Gluon Top-P Sampling H200 Correctness",
+        "topp_sampling_f32",
+        "values",
+        "indices",
+        "selected_counts",
+        "cumulative_probabilities",
+        "probabilities already sum to one",
+        "lower token id first",
+        "--output-dir tmp/gluon-topp-sampling-h200",
+        "--require-cuda",
+        "--arch compute_90",
+        "status: passed",
+        "rows=2, vocab=8, max_k=5, p=0.75",
+        "machine class: H200",
+        "REMOTE_PTO_CU=<remote-pto-cu>",
+        "not FlashInfer integration evidence",
+        "not vLLM or simpler-nv kernel integration evidence",
+        "not DeepSeek serving correctness evidence",
+        "not generated-text or tokenizer-semantics evidence",
+        "not throughput or latency evidence",
+    ]:
+        assert required in evidence_text
+    assert UCCL_PRIVATE_PATH_RE.search(evidence_text) is None
+    assert "/" + "home/" not in evidence_text
+
+    readme_text = readme.read_text(encoding="utf-8")
+    assert "gluon_topp_sampling.py" in readme_text
+    assert "topp_sampling_f32" in readme_text
+    assert "gluon_topp_sampling_h200.md" in readme_text
+    assert "cumulative probability boundary" in readme_text
+    assert "not FlashInfer integration evidence" in readme_text
+
+    checklist_text = checklist.read_text(encoding="utf-8")
+    assert "gluon_topp_sampling_h200.md" in checklist_text
+    assert "topp_sampling_f32" in checklist_text
+    assert "Top-P" in checklist_text
+    assert "top-p, min-p" not in checklist_text
+    assert "min-p" in checklist_text
     assert "not FlashInfer integration evidence" in checklist_text
 
 
