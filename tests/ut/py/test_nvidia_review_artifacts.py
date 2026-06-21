@@ -2902,11 +2902,15 @@ def test_gluon_minp_sampling_h200_evidence_is_review_safe():
         "probabilities already sum to one",
         "probability >= min_p * row_max_probability",
         "lower token id first",
-        "--output-dir tmp/gluon-minp-sampling-h200",
+        "--output-dir tmp/gluon-minp-shape-coverage-h200",
         "--require-cuda",
         "--arch compute_90",
         "status: passed",
         "rows=2, vocab=8, max_k=5, min_p=0.5",
+        "rows=3, vocab=16, max_k=6, min_p=0.5",
+        "values_shape_match",
+        "indices_shape_match",
+        "selected_counts_shape_match",
         "machine class: H200",
         "REMOTE_PTO_CU=<remote-pto-cu>",
         "not FlashInfer integration evidence",
@@ -2924,12 +2928,16 @@ def test_gluon_minp_sampling_h200_evidence_is_review_safe():
     assert "minp_sampling_f32" in readme_text
     assert "gluon_minp_sampling_h200.md" in readme_text
     assert "row maximum" in readme_text
+    assert "rows=3, vocab=16, max_k=6, min_p=0.5" in readme_text
+    assert "payload shape checks" in readme_text
     assert "not FlashInfer integration evidence" in readme_text
 
     checklist_text = checklist.read_text(encoding="utf-8")
     assert "gluon_minp_sampling_h200.md" in checklist_text
     assert "minp_sampling_f32" in checklist_text
     assert "Min-P" in checklist_text
+    assert "rows=3, vocab=16, max_k=6, min_p=0.5" in checklist_text
+    assert "payload shapes before comparisons" in checklist_text
     assert "Remaining sampling gaps include min-p" not in checklist_text
     assert "speculative decoding" in checklist_text
     assert "not FlashInfer integration evidence" in checklist_text

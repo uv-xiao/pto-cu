@@ -64,6 +64,50 @@ def test_minp_cpu_golden_selects_values_above_scaled_row_max():
     }
 
 
+def test_gluon_minp_sampling_reports_broader_shape_with_mock_runner(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_minp_sampling_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_minp_sampling_correctness(
+        output_dir=Path("tmp/gluon-minp-sampling-local"),
+        arch="compute_90",
+        rows=3,
+        vocab=16,
+        max_k=6,
+        min_p=0.50,
+        skip_reason=lambda: None,
+        gpu_runner=lambda probabilities, min_p, max_k, **_: example.compute_minp_cpu_golden(
+            probabilities,
+            min_p=min_p,
+            max_k=max_k,
+        ),
+    )
+
+    assert result["status"] == "passed"
+    assert result["shape"] == {"rows": 3, "vocab": 16, "max_k": 6}
+    assert result["request"]["min_p"] == 0.50
+    assert result["cpu_golden"] == {
+        "values": [
+            [0.3, 0.25, 0.15, 0.15, 0.0, 0.0],
+            [0.25, 0.2, 0.15, 0.15, 0.13, 0.0],
+            [0.22, 0.18, 0.14, 0.12, 0.11, 0.11],
+        ],
+        "indices": [
+            [0, 2, 1, 3, -1, -1],
+            [5, 1, 2, 3, 0, -1],
+            [8, 0, 4, 2, 1, 5],
+        ],
+        "selected_counts": [4, 5, 6],
+    }
+    assert result["gpu_result"] == result["cpu_golden"]
+    assert result["validation"]["values_shape_match"] is True
+    assert result["validation"]["indices_shape_match"] is True
+    assert result["validation"]["selected_counts_shape_match"] is True
+
+
 def test_gluon_minp_sampling_reports_skip_json_and_relative_artifacts(
     tmp_path,
     monkeypatch,
@@ -137,6 +181,9 @@ def test_gluon_minp_sampling_reports_passed_validation_with_mock_runner(
 
     assert result["status"] == "passed"
     assert result["validation"] == {
+        "values_shape_match": True,
+        "indices_shape_match": True,
+        "selected_counts_shape_match": True,
         "values_match": True,
         "indices_match": True,
         "selected_counts_match": True,
@@ -179,6 +226,31 @@ def test_gluon_minp_sampling_validation_rejects_truncated_payloads():
     assert element_validation["values_match"] is False
     assert index_validation["indices_match"] is False
     assert count_validation["selected_counts_match"] is False
+
+
+def test_gluon_minp_sampling_validation_reports_all_payload_shape_mismatches():
+    example = _load_gluon_minp_sampling_example()
+    cpu_golden = {
+        "values": [[0.3, 0.2, 0.15, 0.0, 0.0], [0.25, 0.25, 0.15, 0.0, 0.0]],
+        "indices": [[1, 3, 5, -1, -1], [0, 2, 6, -1, -1]],
+        "selected_counts": [3, 3],
+    }
+
+    validation = example._validate_gpu_result(
+        cpu_golden,
+        {
+            "values": [[0.3, 0.2, 0.15, 0.0, 0.0]],
+            "indices": [[1, 3, 5, -1, -1], [0, 2, 6, -1]],
+            "selected_counts": [3],
+        },
+    )
+
+    assert validation["values_shape_match"] is False
+    assert validation["indices_shape_match"] is False
+    assert validation["selected_counts_shape_match"] is False
+    assert validation["values_match"] is False
+    assert validation["indices_match"] is False
+    assert validation["selected_counts_match"] is False
 
 
 def test_gluon_minp_sampling_main_requires_cuda_on_skip(
