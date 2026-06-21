@@ -391,6 +391,83 @@ def test_generated_gluon_topp_sampling_launcher_records_review_safe_metadata(mon
     assert result["generated_kernel"]["validation"]["selected_counts_match"] is True
 
 
+def test_generated_gluon_minp_sampling_launcher_records_review_safe_metadata(monkeypatch):
+    module = _load_serving_shim_example()
+
+    def fake_correctness(**kwargs):
+        return {
+            "schema_version": 1,
+            "kernel_name": "minp_sampling_f32",
+            "artifact": {
+                "source_path": "tmp/gluon-minp-sampling-local/minp_sampling_f32.py",
+                "source_sha256": "minp123",
+                "manifest_path": "tmp/gluon-minp-sampling-local/manifest.json",
+            },
+            "shape": {
+                "rows": kwargs["rows"],
+                "vocab": kwargs["vocab"],
+                "max_k": kwargs["max_k"],
+            },
+            "request": {
+                "sampling_operator": "min-p",
+                "min_p": kwargs["min_p"],
+            },
+            "status": "passed",
+            "validation": {
+                "values_shape_match": True,
+                "indices_shape_match": True,
+                "selected_counts_shape_match": True,
+                "values_match": True,
+                "indices_match": True,
+                "selected_counts_match": True,
+                "max_abs_error": 0.0,
+            },
+            "non_claims": [
+                "not FlashInfer integration evidence",
+                "not generated-text or tokenizer-semantics evidence",
+            ],
+        }
+
+    monkeypatch.setattr(
+        module,
+        "run_minp_sampling_correctness",
+        fake_correctness,
+        raising=False,
+    )
+
+    launcher = module.create_generated_gluon_minp_sampling_launcher(
+        output_dir=Path("tmp/unit-gluon-minp"),
+        rows=3,
+        vocab=16,
+        max_k=6,
+        min_p=0.50,
+    )
+    result = launcher(
+        module.KernelLaunchRequest(
+            phase="prefill",
+            platform="cuda",
+            runtime="host_schedule",
+            device_id=0,
+            op="add",
+            n=31,
+            block_dim=16,
+            arch="compute_90",
+        )
+    )
+
+    assert result["status"] == "passed"
+    assert result["launch_kind"] == "gluon-minp-sampling"
+    assert result["kernel_name"] == "minp_sampling_f32"
+    assert result["phase"] == "prefill"
+    assert result["shape"] == {"rows": 3, "vocab": 16, "max_k": 6}
+    assert result["request"]["min_p"] == 0.50
+    assert result["artifact"]["source_sha256"] == "minp123"
+    assert result["source_sha256"] == "minp123"
+    assert result["validation"]["max_abs_error"] == 0.0
+    assert "not FlashInfer integration evidence" in result["non_claims"]
+    assert result["generated_kernel"]["validation"]["selected_counts_match"] is True
+
+
 def test_persistent_moe_dispatch_combine_launcher_records_review_safe_metadata(monkeypatch):
     module = _load_serving_shim_example()
 
@@ -701,6 +778,87 @@ def test_topp_sampling_launcher_can_run_through_source_route_fixtures(monkeypatc
     ]
 
 
+def test_minp_sampling_launcher_can_run_through_source_route_fixtures(monkeypatch):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+    launches = []
+
+    def fake_minp_correctness(**kwargs):
+        launches.append(kwargs)
+        return {
+            "status": "passed",
+            "kernel_name": "minp_sampling_f32",
+            "shape": {
+                "rows": kwargs["rows"],
+                "vocab": kwargs["vocab"],
+                "max_k": kwargs["max_k"],
+            },
+            "request": {"min_p": kwargs["min_p"]},
+            "artifact": {"source_sha256": "minp123"},
+            "validation": {"max_abs_error": 0.0},
+            "non_claims": ["not FlashInfer integration evidence"],
+        }
+
+    monkeypatch.setattr(
+        module,
+        "run_minp_sampling_correctness",
+        fake_minp_correctness,
+        raising=False,
+    )
+    launcher = module.create_generated_gluon_minp_sampling_launcher(
+        rows=3,
+        vocab=16,
+        max_k=6,
+        min_p=0.50,
+    )
+
+    completion = module.run_pypto_serving_source_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=launcher,
+    )
+    chat = module.run_pypto_serving_source_chat_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=launcher,
+    )
+    stream = module.run_pypto_serving_source_stream_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=launcher,
+    )
+    chat_stream = module.run_pypto_serving_source_stream_chat_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=launcher,
+    )
+
+    results = [completion, chat, stream, chat_stream]
+    assert [item["pto_status"] for item in results] == [
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+    ]
+    assert len(launches) == 4
+    assert {item["rows"] for item in launches} == {3}
+    assert {item["min_p"] for item in launches} == {0.50}
+    assert [
+        result["pto_launch_results"][0]["launch_kind"] for result in results
+    ] == [
+        "gluon-minp-sampling",
+        "gluon-minp-sampling",
+        "gluon-minp-sampling",
+        "gluon-minp-sampling",
+    ]
+
+
 def test_persistent_launcher_can_run_through_source_route_fixtures(monkeypatch):
     module = _load_serving_shim_example()
     pytest.importorskip("fastapi.testclient")
@@ -925,6 +1083,57 @@ def test_topp_sampling_cli_mode_outputs_launch_metadata(monkeypatch, capsys):
     assert launch["request"]["p"] == 0.80
     assert launch["artifact"]["source_sha256"] == "topp123"
     assert launch["validation"]["max_cumulative_probability_error"] == 0.0
+
+
+def test_minp_sampling_cli_mode_outputs_launch_metadata(monkeypatch, capsys):
+    module = _load_serving_shim_example()
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+
+    def fake_minp_launcher(**_kwargs):
+        def launcher(request):
+            return {
+                "status": "passed",
+                "phase": request.phase,
+                "launch_kind": "gluon-minp-sampling",
+                "kernel_name": "minp_sampling_f32",
+                "shape": {"rows": 3, "vocab": 16, "max_k": 6},
+                "request": {"min_p": 0.50},
+                "artifact": {"source_sha256": "minp123"},
+                "validation": {"max_abs_error": 0.0},
+            }
+
+        return launcher
+
+    monkeypatch.setattr(
+        module,
+        "create_generated_gluon_minp_sampling_launcher",
+        fake_minp_launcher,
+        raising=False,
+    )
+
+    code = module.main(
+        [
+            "--kernel-launcher",
+            "gluon-minp-sampling",
+            "--pypto-serving-source",
+            "--prompt",
+            "hello",
+            "--max-new-tokens",
+            "1",
+        ]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert output["pto_status"] == "passed"
+    launch = output["pto_launch_results"][0]
+    assert launch["launch_kind"] == "gluon-minp-sampling"
+    assert launch["kernel_name"] == "minp_sampling_f32"
+    assert launch["shape"] == {"rows": 3, "vocab": 16, "max_k": 6}
+    assert launch["request"]["min_p"] == 0.50
+    assert launch["artifact"]["source_sha256"] == "minp123"
+    assert launch["validation"]["max_abs_error"] == 0.0
 
 
 def test_persistent_moe_cli_mode_outputs_launch_metadata(monkeypatch, capsys):
@@ -1990,6 +2199,50 @@ def test_topp_sampling_launcher_can_run_through_vllm_compat_summary(monkeypatch)
         "gluon-topp-sampling",
         "gluon-topp-sampling",
         "gluon-topp-sampling",
+    ]
+
+
+def test_minp_sampling_launcher_can_run_through_vllm_compat_summary(monkeypatch):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+    launches = []
+
+    def minp_launcher(request):
+        launches.append(request)
+        return {
+            "status": "passed",
+            "phase": request.phase,
+            "launch_kind": "gluon-minp-sampling",
+            "kernel_name": "minp_sampling_f32",
+            "shape": {"rows": 3, "vocab": 16, "max_k": 6},
+            "request": {"min_p": 0.50},
+            "validation": {"max_abs_error": 0.0},
+        }
+
+    summary = module.run_pypto_serving_vllm_compat_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=minp_launcher,
+    )
+
+    assert summary["status"] == "passed"
+    assert [launch.phase for launch in launches] == [
+        "prefill",
+        "prefill",
+        "prefill",
+        "prefill",
+    ]
+    assert [
+        fixture["observed"]["pto_launch_results"][0]["launch_kind"]
+        for fixture in summary["fixtures"]
+    ] == [
+        "gluon-minp-sampling",
+        "gluon-minp-sampling",
+        "gluon-minp-sampling",
+        "gluon-minp-sampling",
     ]
 
 
