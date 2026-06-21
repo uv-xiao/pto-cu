@@ -92,7 +92,9 @@ synthetic `LLMEngine`-shaped fixture, `--http-fixture` to exercise the local
 FastAPI fixture, or `--pypto-serving-source` to exercise the actual cloned
 `pypto-serving` `create_serving_app` `/v1/completions` route with the
 synthetic simpler-nv adapter. Use `--pypto-serving-source-chat` for the cloned
-source `/v1/chat/completions` route.
+source `/v1/chat/completions` route. Use `--pypto-serving-source-stream` and
+`--pypto-serving-source-chat-stream` for the cloned source `stream=true`
+completion and chat routes.
 
 The local FastAPI fixture exposes `/v1/completions` and
 `/v1/chat/completions`. The chat fixture accepts a bounded non-streaming
@@ -100,7 +102,9 @@ OpenAI-style `messages` list with at least one user content entry and returns
 a deterministic assistant message. The source-route chat fixture uses the
 actual cloned `pypto-serving` server route with the same bounded message
 shape and records review-safe route, status, assistant-message, `pto_status`,
-and `pto_launch_count` fields.
+and `pto_launch_count` fields. The source-route streaming fixtures summarize
+review-safe SSE event counts, chunk counts, terminal `[DONE]`, assembled text
+or assistant deltas, finish reason, PTO token IDs, and launch count.
 
 ## Persistent Layered-Cross Graph
 

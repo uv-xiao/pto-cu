@@ -30,8 +30,12 @@ The tracked entry points are:
 - `create_pypto_serving_source_app(...)`
 - `run_pypto_serving_source_completion_fixture(...)`
 - `run_pypto_serving_source_chat_completion_fixture(...)`
+- `run_pypto_serving_source_stream_completion_fixture(...)`
+- `run_pypto_serving_source_stream_chat_completion_fixture(...)`
 - CLI flag: `--pypto-serving-source`
 - CLI flag: `--pypto-serving-source-chat`
+- CLI flag: `--pypto-serving-source-stream`
+- CLI flag: `--pypto-serving-source-chat-stream`
 
 ## Source Chat Contract
 
@@ -46,6 +50,56 @@ route, HTTP status code, top-level `object`, assistant message role/content
 shape, mapped finish reason, `pto_status`, generated PTO token IDs, and
 `pto_launch_count`.
 
+## Source Streaming Contract
+
+`run_pypto_serving_source_stream_completion_fixture(...)` and
+`run_pypto_serving_source_stream_chat_completion_fixture(...)` post the same
+bounded source-route requests with `stream: true`. The synthetic adapter
+yields cumulative text per generated PTO token, so the real source server's
+SSE delta slicing is exercised:
+
+- completion route `/v1/completions`: cumulative adapter outputs `N`, `NV`
+  produce streamed text chunks `N`, `V`;
+- chat route `/v1/chat/completions`: cumulative adapter outputs `N`, `NV`
+  produce assistant delta chunks `N`, `V`;
+- both routes emit the terminal `[DONE]` event after the final chunk.
+
+The streaming fixtures record review-safe summaries: route, HTTP status code,
+`stream: true`, `event_count`, `chunk_count`, terminal `[DONE]` presence,
+assembled completion text or assistant deltas, mapped finish reason,
+`pto_status`, generated PTO token IDs, and `pto_launch_count`.
+
+Local source streaming result shape:
+
+```text
+server: pypto-serving-source
+route: /v1/completions
+stream: true
+status_code: 200
+event_count: 3
+chunk_count: 2
+done_seen: true
+assembled_text: NV
+finish_reason: length
+pto_status: passed
+pto_token_ids: [1, 2]
+pto_launch_count: 2
+
+server: pypto-serving-source
+route: /v1/chat/completions
+stream: true
+status_code: 200
+event_count: 3
+chunk_count: 2
+done_seen: true
+assistant_deltas: [N, V]
+assembled_assistant_text: NV
+finish_reason: length
+pto_status: passed
+pto_token_ids: [1, 2]
+pto_launch_count: 2
+```
+
 ## Local Verification
 
 Focused source-contract tests:
@@ -59,7 +113,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
 Result:
 
 ```text
-5 passed, 18 deselected
+9 passed, 18 deselected
 ```
 
 Full shim tests:
@@ -72,7 +126,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
 Result:
 
 ```text
-23 passed
+27 passed
 ```
 
 ## H200 Source Sync
@@ -107,7 +161,7 @@ REMOTE_PTO_CU=<remote-pto-cu> \
   bash -lc 'source .venv/bin/activate && \
     PYTHONPATH=$PWD:$PWD/python \
     .venv/bin/python examples/cuda/pypto_serving_nv_shim.py \
-      --pypto-serving-source-chat --require-cuda \
+      --pypto-serving-source --require-cuda \
       --prompt hello --max-new-tokens 2 \
       --device 0 --arch compute_90'
 ```
@@ -155,6 +209,69 @@ pto_token_ids: [1, 2]
 pto_launch_count: 2
 ```
 
+## H200 Streaming Completion Evidence
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'source .venv/bin/activate && \
+    PYTHONPATH=$PWD:$PWD/python \
+    .venv/bin/python examples/cuda/pypto_serving_nv_shim.py \
+      --pypto-serving-source-stream --require-cuda \
+      --prompt hello --max-new-tokens 2 \
+      --device 0 --arch compute_90'
+```
+
+Result:
+
+```text
+server: pypto-serving-source
+route: /v1/completions
+stream: true
+status: passed
+status_code: 200
+event_count: 3
+chunk_count: 2
+done_seen: true
+assembled_text: NV
+finish_reason: length
+pto_status: passed
+pto_token_ids: [1, 2]
+pto_launch_count: 2
+```
+
+## H200 Streaming Chat Evidence
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'source .venv/bin/activate && \
+    PYTHONPATH=$PWD:$PWD/python \
+    .venv/bin/python examples/cuda/pypto_serving_nv_shim.py \
+      --pypto-serving-source-chat-stream --require-cuda \
+      --prompt hello --max-new-tokens 2 \
+      --device 0 --arch compute_90'
+```
+
+Result:
+
+```text
+server: pypto-serving-source
+route: /v1/chat/completions
+stream: true
+status: passed
+status_code: 200
+event_count: 3
+chunk_count: 2
+done_seen: true
+assistant_deltas: [N, V]
+assembled_assistant_text: NV
+finish_reason: length
+pto_status: passed
+pto_token_ids: [1, 2]
+pto_launch_count: 2
+```
+
 ## Interpretation
 
 Together, these runs prove the actual `pypto-serving`
@@ -163,7 +280,9 @@ by a simpler-nv adapter on H200, including CUDA seed launches behind the
 request path. They are stronger than the local in-repo FastAPI lookalike
 because they import and execute the cloned source server routes. The chat
 evidence uses the bounded non-streaming OpenAI-compatible message shape.
+The streaming fixtures additionally prove the cloned source SSE routes emit
+token deltas and terminal `[DONE]` for the synthetic adapter on H200.
 
 This is not DeepSeek-V4-Flash correctness. It is not vLLM plugin evidence. It
-is not real model loading, tokenizer semantics, streaming, throughput,
-latency, or multi-node evidence.
+is not real model loading, tokenizer semantics, throughput, latency, or
+multi-node evidence.

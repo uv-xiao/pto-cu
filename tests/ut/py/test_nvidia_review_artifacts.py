@@ -1907,6 +1907,7 @@ def test_status_rollup_records_current_deepseek_serving_boundary():
         "docs/in_progress/nvidia_backend/pypto_serving_source_contract_h200.md",
         "not a transport/server failure",
         "not simpler-nv/vLLM kernel integration evidence",
+        "source-route `stream=true`",
     ]:
         assert required in status_text
 
@@ -2020,8 +2021,24 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "<remote-pto-cu>/tmp/sources/repos/hw-native-sys/pypto-serving/",
         "Source Chat Contract",
         "run_pypto_serving_source_chat_completion_fixture",
+        "run_pypto_serving_source_stream_completion_fixture",
+        "run_pypto_serving_source_stream_chat_completion_fixture",
         "--pypto-serving-source-chat",
+        "--pypto-serving-source-stream",
+        "--pypto-serving-source-chat-stream",
         "assistant_message: {role: assistant, content: NV}",
+        "Source Streaming Contract",
+        "stream: true",
+        "event_count: 3",
+        "chunk_count: 2",
+        "done_seen: true",
+        "assembled_text: NV",
+        "assistant_deltas: [N, V]",
+        "terminal `[DONE]`",
+        "H200 Streaming Completion Evidence",
+        "--pypto-serving-source-stream --require-cuda",
+        "H200 Streaming Chat Evidence",
+        "--pypto-serving-source-chat-stream --require-cuda",
     ]:
         assert required in source_contract
 
@@ -2037,11 +2054,15 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "run_synthetic_http_completion_fixture",
         "run_pypto_serving_source_completion_fixture",
         "run_pypto_serving_source_chat_completion_fixture",
+        "run_pypto_serving_source_stream_completion_fixture",
+        "run_pypto_serving_source_stream_chat_completion_fixture",
         "create_openai_chat_completion",
         "--openai-chat-completion",
         "/v1/chat/completions",
         "--pypto-serving-source",
         "--pypto-serving-source-chat",
+        "--pypto-serving-source-stream",
+        "--pypto-serving-source-chat-stream",
     ]:
         assert required in example_text
 
@@ -2054,6 +2075,10 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "test_openai_chat_completion_cli_mode_outputs_chat_json",
         "test_pypto_serving_source_chat_fixture_uses_real_chat_route",
         "test_pypto_serving_source_chat_cli_mode_outputs_contract_json",
+        "test_pypto_serving_source_stream_fixture_uses_real_completion_route",
+        "test_pypto_serving_source_stream_completion_cli_outputs_summary_json",
+        "test_pypto_serving_source_stream_chat_fixture_uses_real_chat_route",
+        "test_pypto_serving_source_stream_chat_cli_outputs_summary_json",
         "test_pypto_serving_source_chat_route_fixture_is_documented",
         "test_pypto_serving_source_server_contract_uses_real_routes",
         "test_pypto_serving_source_cli_mode_outputs_contract_json",
@@ -2065,4 +2090,6 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
     assert "pypto_serving_source_contract_h200.md" in readme_text
     assert "--openai-chat-completion" in readme_text
     assert "--pypto-serving-source-chat" in readme_text
+    assert "--pypto-serving-source-stream" in readme_text
+    assert "--pypto-serving-source-chat-stream" in readme_text
     assert "/v1/chat/completions" in readme_text
