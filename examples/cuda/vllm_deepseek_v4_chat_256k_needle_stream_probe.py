@@ -189,6 +189,14 @@ def _chunk_shape(payload: Any) -> dict[str, Any]:
     }
 
 
+def _review_safe_usage(usage: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: usage[key]
+        for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+        if key in usage
+    }
+
+
 def parse_streaming_chat_completion_response(response: Any) -> dict[str, Any]:
     assembled_parts: list[str] = []
     chunk_shapes: list[dict[str, Any]] = []
@@ -198,11 +206,24 @@ def parse_streaming_chat_completion_response(response: Any) -> dict[str, Any]:
     usage: dict[str, Any] | str = "not_returned"
     model = None
     done_seen = False
+    zero_choice_usage_seen = False
 
     for event in _read_sse_events(response):
         if event == "[DONE]":
             done_seen = True
             continue
+        if zero_choice_usage_seen:
+            return {
+                "status": "failed",
+                "failure": _failure_payload(
+                    "chat_needle_stream_choice_shape",
+                    "usage-only zero-choice chunk must be the final data event",
+                ),
+                "event_count": event_count,
+                "content_chunk_count": content_chunk_count,
+                "done_seen": done_seen,
+                "chunk_shapes": chunk_shapes,
+            }
         event_count += 1
         try:
             payload = json.loads(event)
@@ -233,7 +254,23 @@ def parse_streaming_chat_completion_response(response: Any) -> dict[str, Any]:
         if model is None and isinstance(payload.get("model"), str):
             model = payload["model"]
         choices = payload.get("choices")
-        if not isinstance(choices, list) or len(choices) != 1:
+        if not isinstance(choices, list):
+            return {
+                "status": "failed",
+                "failure": _failure_payload(
+                    "chat_needle_stream_choice_shape",
+                    "streaming chunk must contain exactly one choice",
+                ),
+                "event_count": event_count,
+                "content_chunk_count": content_chunk_count,
+                "done_seen": done_seen,
+                "chunk_shapes": chunk_shapes,
+            }
+        if len(choices) == 0 and isinstance(payload.get("usage"), dict):
+            usage = _review_safe_usage(payload["usage"])
+            zero_choice_usage_seen = True
+            continue
+        if len(choices) != 1:
             return {
                 "status": "failed",
                 "failure": _failure_payload(
@@ -267,11 +304,7 @@ def parse_streaming_chat_completion_response(response: Any) -> dict[str, Any]:
                 assembled_parts.append(content)
                 content_chunk_count += 1
         if isinstance(payload.get("usage"), dict):
-            usage = {
-                key: payload["usage"][key]
-                for key in ("prompt_tokens", "completion_tokens", "total_tokens")
-                if key in payload["usage"]
-            }
+            usage = _review_safe_usage(payload["usage"])
 
     return {
         "status": "passed",

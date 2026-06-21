@@ -90,6 +90,25 @@ def streaming_response(*, usage):
     )
 
 
+def streaming_response_with_final_zero_choice_usage(*, usage):
+    return FakeStreamingResponse(
+        200,
+        [
+            chunk(),
+            chunk(EXPECTED[:18]),
+            chunk(EXPECTED[18:], finish_reason="stop"),
+            {
+                "id": "chatcmpl-stream-usage-contract-needle-test",
+                "object": "chat.completion.chunk",
+                "model": "deepseek-ai/DeepSeek-V4-Flash",
+                "choices": [],
+                "usage": usage,
+            },
+            "[DONE]",
+        ],
+    )
+
+
 def planned_request_with_payload(probe):
     return {
         **probe.build_planned_chat_needle_stream_usage_contract_request(
@@ -239,6 +258,82 @@ def test_usage_contract_passes_with_consistent_usage_accounting():
     assert result["observation"]["usage_total_tokens"] == "passed"
     assert result["observation"]["exact_match"] is True
     assert "assembled_content" not in json.dumps(result)
+
+
+def test_usage_contract_accepts_final_zero_choice_usage_chunk():
+    probe = load_probe_module()
+    request = planned_request_with_payload(probe)
+    request["limits"]["actual_prompt_tokens"] = 255800
+    sender = CapturingHttpPost(
+        streaming_response_with_final_zero_choice_usage(
+            usage={
+                "prompt_tokens": 255800,
+                "completion_tokens": 18,
+                "total_tokens": 255818,
+            }
+        )
+    )
+
+    result = probe.send_chat_needle_stream_usage_contract_request(
+        port=28157,
+        request=request,
+        expected_answer=EXPECTED,
+        http_post=sender,
+    )
+
+    assert result["status"] == "passed"
+    assert result["observation"]["usage"] == {
+        "prompt_tokens": 255800,
+        "completion_tokens": 18,
+        "total_tokens": 255818,
+    }
+    assert result["validation"]["chunk_shapes"][-1]["choice_count"] == 0
+    assert result["observation"]["usage_shape"] == "passed"
+    assert result["observation"]["exact_match"] is True
+    assert "assembled_content" not in json.dumps(result)
+
+
+def test_usage_contract_rejects_zero_choice_chunk_without_usage():
+    probe = load_probe_module()
+    response = FakeStreamingResponse(
+        200,
+        [
+            chunk(EXPECTED, finish_reason="stop"),
+            {
+                "id": "chatcmpl-stream-usage-contract-needle-test",
+                "object": "chat.completion.chunk",
+                "model": "deepseek-ai/DeepSeek-V4-Flash",
+                "choices": [],
+            },
+            "[DONE]",
+        ],
+    )
+
+    parsed = probe.parse_streaming_chat_completion_response(response)
+
+    assert parsed["status"] == "failed"
+    assert parsed["failure"]["category"] == "chat_needle_stream_choice_shape"
+
+
+def test_usage_contract_rejects_non_object_choice():
+    probe = load_probe_module()
+    response = FakeStreamingResponse(
+        200,
+        [
+            {
+                "id": "chatcmpl-stream-usage-contract-needle-test",
+                "object": "chat.completion.chunk",
+                "model": "deepseek-ai/DeepSeek-V4-Flash",
+                "choices": ["not-an-object"],
+            },
+            "[DONE]",
+        ],
+    )
+
+    parsed = probe.parse_streaming_chat_completion_response(response)
+
+    assert parsed["status"] == "failed"
+    assert parsed["failure"]["category"] == "chat_needle_stream_choice_shape"
 
 
 def test_stream_usage_contract_dry_run_cli_output_is_review_safe():
