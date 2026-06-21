@@ -261,6 +261,10 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument("--rtol", type=float, default=1e-2)
         parser.add_argument("--seed", type=int, default=0)
         parser.add_argument(
+            "--tile-shape",
+            help="single-case tile shape as MxNxD, for example 32x32x64",
+        )
+        parser.add_argument(
             "--sweep",
             action="store_true",
             help="run the fixed review sweep instead of the single default case",
@@ -284,6 +288,7 @@ def main(argv: list[str] | None = None) -> int:
             result = run_flashattention_correctness(
                 output_dir=args.output_dir,
                 arch=args.arch,
+                tile_shape=_parse_tile_shape(args.tile_shape),
                 atol=args.atol,
                 rtol=args.rtol,
                 seed=args.seed,
@@ -356,6 +361,18 @@ def _clean_text(text: str) -> str:
     cwd = Path.cwd().as_posix()
     home = Path.home().as_posix()
     return text.replace(cwd, ".").replace(home, "~")
+
+
+def _parse_tile_shape(raw_tile_shape: str | None) -> tuple[int, int, int]:
+    if raw_tile_shape is None:
+        return FLASHATTENTION_TILE
+    try:
+        parts = tuple(int(part) for part in raw_tile_shape.lower().split("x"))
+    except ValueError as exc:
+        raise ValueError("--tile-shape must use MxNxD positive integers") from exc
+    if len(parts) != 3 or any(part <= 0 for part in parts):
+        raise ValueError("--tile-shape must use MxNxD positive integers")
+    return parts
 
 
 def _display_command(raw_args: list[str]) -> str:

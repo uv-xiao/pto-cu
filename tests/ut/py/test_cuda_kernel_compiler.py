@@ -563,6 +563,47 @@ def test_gluon_flashattention_sweep_cli_requires_cuda_on_aggregate_skip(
     assert payload["skipped_cases"] == len(example.FLASHATTENTION_SWEEP_CASES)
 
 
+def test_gluon_flashattention_example_cli_accepts_rectangular_tile_shape(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(example, "flashattention_skip_reason", lambda: "missing CUDA")
+
+    code = example.main(
+        [
+            "--output-dir",
+            "flashattention-rectangular-artifacts",
+            "--tile-shape",
+            "32x32x64",
+            "--require-cuda",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "skipped"
+    assert payload["shape"] == {"seqlen_q": 32, "seqlen_k": 32, "head_dim": 64}
+    assert payload["artifact"]["tile_shape"] == [32, 32, 64]
+    assert payload["artifact"]["source_path"] == (
+        "flashattention-rectangular-artifacts/flashattention_fwd_f32.gluon.py"
+    )
+
+
+def test_gluon_flashattention_example_cli_rejects_bad_tile_shape(capsys):
+    example = _load_gluon_flashattention_example()
+
+    code = example.main(["--tile-shape", "32,32,64"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == "failed"
+    assert payload["error_type"] == "ValueError"
+    assert payload["error"] == "--tile-shape must use MxNxD positive integers"
+
+
 def test_gluon_flashattention_example_main_requires_cuda_on_skip(
     tmp_path,
     capsys,
