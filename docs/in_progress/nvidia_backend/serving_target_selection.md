@@ -83,6 +83,13 @@ fields already covered by the fixtures and vLLM probes: route, HTTP 200,
 object/model or stream shape, text/message/delta presence, finish reason,
 non-streaming usage presence, and streaming terminal `[DONE]` presence.
 
+The shim also has an explicit launcher selection. The default remains the
+CUDA seed launcher. Selecting `--kernel-launcher gluon-moe-expert` routes the
+same synthetic or cloned source-route request through the existing generated
+Gluon MoE expert harness for `moe_expert_affine_f32`, recording launch kind,
+kernel name, phase, status, shape, and generated source digest metadata when
+available.
+
 ## Non-Claims
 
 - This is not serving evidence.
@@ -94,6 +101,7 @@ non-streaming usage presence, and streaming terminal `[DONE]` presence.
   correctness, or DeepSeek streaming evidence.
 - This is not logprob-value, stop-token semantic, throughput, latency, real
   DeepSeek weight, or simpler-nv/vLLM kernel integration evidence.
+- This is not fused MoE dispatch/combine serving readiness.
 
 ## Follow-Up Gates
 

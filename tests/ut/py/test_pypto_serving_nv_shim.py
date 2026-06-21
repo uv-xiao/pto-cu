@@ -151,6 +151,174 @@ def test_default_cuda_seed_launcher_normalizes_cuda_seed_pass_status(monkeypatch
     assert [item["status"] for item in result["launch_results"]] == ["passed", "passed"]
 
 
+def test_default_launcher_selection_uses_cuda_seed_and_add_op(monkeypatch, capsys):
+    module = _load_serving_shim_example()
+    launches = []
+
+    def fake_seed_launcher(request):
+        launches.append(request)
+        return {
+            "status": "passed",
+            "phase": request.phase,
+            "op": request.op,
+            "launch_kind": "cuda-seed",
+        }
+
+    monkeypatch.setattr(module, "default_cuda_seed_launcher", fake_seed_launcher)
+
+    code = module.main(["--prompt", "hello", "--max-new-tokens", "1"])
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert output["status"] == "passed"
+    assert [launch.op for launch in launches] == ["add"]
+    assert output["launch_results"][0]["launch_kind"] == "cuda-seed"
+
+
+def test_generated_gluon_moe_launcher_records_review_safe_metadata(monkeypatch):
+    module = _load_serving_shim_example()
+
+    def fake_correctness(**kwargs):
+        return {
+            "schema_version": 1,
+            "kernel_name": "moe_expert_affine_f32",
+            "artifact": {
+                "source_path": "tmp/gluon-moe-expert-local/moe_expert_affine_f32.py",
+                "source_sha256": "abc123",
+                "manifest_path": "tmp/gluon-moe-expert-local/manifest.json",
+            },
+            "shape": {"n": kwargs["n"]},
+            "scalars": {"scale_a": kwargs["scale_a"], "scale_b": kwargs["scale_b"]},
+            "status": "skipped",
+            "reason": "torch.cuda is not available",
+        }
+
+    monkeypatch.setattr(
+        module,
+        "run_moe_expert_correctness",
+        fake_correctness,
+        raising=False,
+    )
+
+    launcher = module.create_generated_gluon_moe_launcher(output_dir=Path("tmp/unit-gluon"))
+    result = launcher(
+        module.KernelLaunchRequest(
+            phase="prefill",
+            platform="cuda",
+            runtime="host_schedule",
+            device_id=0,
+            op="add",
+            n=31,
+            block_dim=16,
+            arch="compute_90",
+        )
+    )
+
+    assert result["status"] == "skipped"
+    assert result["launch_kind"] == "gluon-moe-expert"
+    assert result["kernel_name"] == "moe_expert_affine_f32"
+    assert result["phase"] == "prefill"
+    assert result["shape"] == {"n": 31}
+    assert result["artifact"]["source_sha256"] == "abc123"
+    assert result["generated_kernel"]["reason"] == "torch.cuda is not available"
+
+
+def test_generated_launcher_can_run_through_source_route_fixtures(monkeypatch):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+    launches = []
+
+    def generated_launcher(request):
+        launches.append(request)
+        return {
+            "status": "passed",
+            "phase": request.phase,
+            "launch_kind": "gluon-moe-expert",
+            "kernel_name": "moe_expert_affine_f32",
+            "shape": {"n": request.n},
+        }
+
+    completion = module.run_pypto_serving_source_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=generated_launcher,
+    )
+    chat = module.run_pypto_serving_source_chat_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=generated_launcher,
+    )
+    stream = module.run_pypto_serving_source_stream_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=generated_launcher,
+    )
+    chat_stream = module.run_pypto_serving_source_stream_chat_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=generated_launcher,
+    )
+
+    assert [item["pto_status"] for item in [completion, chat, stream, chat_stream]] == [
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+    ]
+    assert [launch.phase for launch in launches] == [
+        "prefill",
+        "prefill",
+        "prefill",
+        "prefill",
+    ]
+
+
+def test_generated_kernel_cli_mode_outputs_launch_metadata(monkeypatch, capsys):
+    module = _load_serving_shim_example()
+
+    def fake_generated_launcher(**_kwargs):
+        def launcher(request):
+            return {
+                "status": "passed",
+                "phase": request.phase,
+                "launch_kind": "gluon-moe-expert",
+                "kernel_name": "moe_expert_affine_f32",
+                "shape": {"n": request.n},
+                "artifact": {"source_sha256": "abc123"},
+            }
+
+        return launcher
+
+    monkeypatch.setattr(module, "create_generated_gluon_moe_launcher", fake_generated_launcher)
+
+    code = module.main(
+        [
+            "--kernel-launcher",
+            "gluon-moe-expert",
+            "--pypto-serving-source",
+            "--prompt",
+            "hello",
+            "--max-new-tokens",
+            "1",
+        ]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert output["pto_status"] == "passed"
+    launch = output["pto_launch_results"][0]
+    assert launch["launch_kind"] == "gluon-moe-expert"
+    assert launch["kernel_name"] == "moe_expert_affine_f32"
+    assert launch["shape"] == {"n": 16}
+    assert launch["artifact"]["source_sha256"] == "abc123"
+
+
 def test_openai_completion_fixture_uses_synthetic_serving_request_shape():
     module = _load_serving_shim_example()
     launches = []

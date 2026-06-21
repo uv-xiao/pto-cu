@@ -16,6 +16,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 PYPTO_SERVING_SOURCE = ROOT / "tmp" / "sources" / "repos" / "hw-native-sys" / "pypto-serving"
+DEFAULT_GENERATED_GLUON_OUTPUT_DIR = Path("tmp/pypto-serving-gluon-moe-expert")
 
 
 @dataclass(frozen=True)
@@ -303,6 +304,7 @@ class PyptoServingSourceAsyncEngineAdapter:
         self.last_pto_status = ""
         self.last_token_ids: list[int] = []
         self.last_launch_count = 0
+        self.last_launch_results: list[dict[str, Any]] = []
 
     async def add_request(self, request_id: str, prompt: str, config):
         result = self.engine.generate(
@@ -313,6 +315,7 @@ class PyptoServingSourceAsyncEngineAdapter:
         self.last_pto_status = result["status"]
         self.last_token_ids = list(result["token_ids"])
         self.last_launch_count = int(result["launch_count"])
+        self.last_launch_results = list(result["launch_results"])
         for token_index in range(len(self.last_token_ids)):
             finished = token_index == len(self.last_token_ids) - 1
             yield PyptoServingSourceTokenOutput(
@@ -384,6 +387,7 @@ def run_pypto_serving_source_completion_fixture(
     max_tokens: int = 2,
     device_id: int = 0,
     arch: str = "compute_90",
+    kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     try:
         from fastapi.testclient import TestClient
@@ -399,6 +403,7 @@ def run_pypto_serving_source_completion_fixture(
             model=model,
             device_id=device_id,
             arch=arch,
+            kernel_launcher=kernel_launcher,
         )
     except (ImportError, RuntimeError, FileNotFoundError) as exc:
         return {
@@ -421,6 +426,7 @@ def run_pypto_serving_source_completion_fixture(
         "pto_status": adapter.last_pto_status,
         "pto_token_ids": adapter.last_token_ids,
         "pto_launch_count": adapter.last_launch_count,
+        "pto_launch_results": adapter.last_launch_results,
     }
 
 
@@ -431,6 +437,7 @@ def run_pypto_serving_source_chat_completion_fixture(
     max_tokens: int = 2,
     device_id: int = 0,
     arch: str = "compute_90",
+    kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     try:
         from fastapi.testclient import TestClient
@@ -446,6 +453,7 @@ def run_pypto_serving_source_chat_completion_fixture(
             model=model,
             device_id=device_id,
             arch=arch,
+            kernel_launcher=kernel_launcher,
         )
     except (ImportError, RuntimeError, FileNotFoundError) as exc:
         return {
@@ -472,6 +480,7 @@ def run_pypto_serving_source_chat_completion_fixture(
         "pto_status": adapter.last_pto_status,
         "pto_token_ids": adapter.last_token_ids,
         "pto_launch_count": adapter.last_launch_count,
+        "pto_launch_results": adapter.last_launch_results,
     }
 
 
@@ -482,6 +491,7 @@ def run_pypto_serving_source_stream_completion_fixture(
     max_tokens: int = 2,
     device_id: int = 0,
     arch: str = "compute_90",
+    kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     try:
         from fastapi.testclient import TestClient
@@ -498,6 +508,7 @@ def run_pypto_serving_source_stream_completion_fixture(
             model=model,
             device_id=device_id,
             arch=arch,
+            kernel_launcher=kernel_launcher,
         )
     except (ImportError, RuntimeError, FileNotFoundError) as exc:
         return {
@@ -530,6 +541,7 @@ def run_pypto_serving_source_stream_completion_fixture(
         "pto_status": adapter.last_pto_status,
         "pto_token_ids": adapter.last_token_ids,
         "pto_launch_count": adapter.last_launch_count,
+        "pto_launch_results": adapter.last_launch_results,
     }
 
 
@@ -540,6 +552,7 @@ def run_pypto_serving_source_stream_chat_completion_fixture(
     max_tokens: int = 2,
     device_id: int = 0,
     arch: str = "compute_90",
+    kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     try:
         from fastapi.testclient import TestClient
@@ -556,6 +569,7 @@ def run_pypto_serving_source_stream_chat_completion_fixture(
             model=model,
             device_id=device_id,
             arch=arch,
+            kernel_launcher=kernel_launcher,
         )
     except (ImportError, RuntimeError, FileNotFoundError) as exc:
         return {
@@ -588,6 +602,7 @@ def run_pypto_serving_source_stream_chat_completion_fixture(
         "pto_status": adapter.last_pto_status,
         "pto_token_ids": adapter.last_token_ids,
         "pto_launch_count": adapter.last_launch_count,
+        "pto_launch_results": adapter.last_launch_results,
     }
 
 
@@ -598,6 +613,7 @@ def run_pypto_serving_vllm_compat_fixture(
     max_tokens: int = 2,
     device_id: int = 0,
     arch: str = "compute_90",
+    kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     fixture_results = [
         _compat_non_stream_fixture(
@@ -608,6 +624,7 @@ def run_pypto_serving_vllm_compat_fixture(
                 max_tokens=max_tokens,
                 device_id=device_id,
                 arch=arch,
+                kernel_launcher=kernel_launcher,
             ),
             expected_route="/v1/completions",
             expected_object="text_completion",
@@ -622,6 +639,7 @@ def run_pypto_serving_vllm_compat_fixture(
                 max_tokens=max_tokens,
                 device_id=device_id,
                 arch=arch,
+                kernel_launcher=kernel_launcher,
             ),
             expected_route="/v1/chat/completions",
             expected_object="chat.completion",
@@ -636,6 +654,7 @@ def run_pypto_serving_vllm_compat_fixture(
                 max_tokens=max_tokens,
                 device_id=device_id,
                 arch=arch,
+                kernel_launcher=kernel_launcher,
             ),
             expected_route="/v1/completions",
             chat=False,
@@ -648,6 +667,7 @@ def run_pypto_serving_vllm_compat_fixture(
                 max_tokens=max_tokens,
                 device_id=device_id,
                 arch=arch,
+                kernel_launcher=kernel_launcher,
             ),
             expected_route="/v1/chat/completions",
             chat=True,
@@ -836,6 +856,7 @@ def run_synthetic_http_completion_fixture(
     device_id: int = 0,
     arch: str = "compute_90",
     chat: bool = False,
+    kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     try:
         from fastapi.testclient import TestClient
@@ -846,7 +867,12 @@ def run_synthetic_http_completion_fixture(
             "route": "/v1/chat/completions" if chat else "/v1/completions",
         }
 
-    app = create_synthetic_openai_app(model=model, device_id=device_id, arch=arch)
+    app = create_synthetic_openai_app(
+        model=model,
+        device_id=device_id,
+        arch=arch,
+        kernel_launcher=kernel_launcher,
+    )
     client = TestClient(app)
     if chat:
         route = "/v1/chat/completions"
@@ -933,6 +959,50 @@ def _openai_chat_completion_from_result(
     if extra:
         response.update(extra)
     return response
+
+
+def create_generated_gluon_moe_launcher(
+    *,
+    output_dir: Path = DEFAULT_GENERATED_GLUON_OUTPUT_DIR,
+    scale_a: float = 1.25,
+    scale_b: float = 0.5,
+    atol: float = 1e-6,
+    rtol: float = 1e-6,
+    seed: int = 0,
+) -> Callable[[KernelLaunchRequest], dict[str, Any]]:
+    def launch(request: KernelLaunchRequest) -> dict[str, Any]:
+        result = run_moe_expert_correctness(
+            output_dir=output_dir / request.phase,
+            arch=request.arch,
+            n=request.n,
+            scale_a=scale_a,
+            scale_b=scale_b,
+            atol=atol,
+            rtol=rtol,
+            seed=seed,
+        )
+        artifact = result.get("artifact", {})
+        if not isinstance(artifact, dict):
+            artifact = {}
+        return {
+            "status": result.get("status", "failed"),
+            "phase": request.phase,
+            "op": request.op,
+            "launch_kind": "gluon-moe-expert",
+            "kernel_name": result.get("kernel_name", "moe_expert_affine_f32"),
+            "shape": result.get("shape", {"n": request.n}),
+            "artifact": artifact,
+            "source_sha256": artifact.get("source_sha256", ""),
+            "generated_kernel": result,
+        }
+
+    return launch
+
+
+def run_moe_expert_correctness(**kwargs) -> dict[str, Any]:
+    from examples.cuda.gluon_moe_expert_affine import run_moe_expert_correctness
+
+    return run_moe_expert_correctness(**kwargs)
 
 
 def default_cuda_seed_launcher(request: KernelLaunchRequest) -> dict[str, Any]:
@@ -1349,11 +1419,24 @@ def main(argv: list[str] | None = None) -> int:
         help="emit source-route structural compatibility against vLLM OpenAI fields",
     )
     parser.add_argument(
+        "--kernel-launcher",
+        choices=("cuda-seed", "gluon-moe-expert"),
+        default="cuda-seed",
+        help="select the simpler-nv kernel launch path used by synthetic and source fixtures",
+    )
+    parser.add_argument(
+        "--generated-output-dir",
+        type=Path,
+        default=DEFAULT_GENERATED_GLUON_OUTPUT_DIR,
+        help="repo-relative output directory for generated Gluon kernel artifacts",
+    )
+    parser.add_argument(
         "--require-cuda",
         action="store_true",
-        help="return non-zero when the CUDA seed launch is skipped",
+        help="return non-zero when the selected kernel launch is skipped",
     )
     args = parser.parse_args(argv)
+    kernel_launcher = _create_kernel_launcher_from_args(args)
 
     if args.pypto_serving_vllm_compat:
         result = run_pypto_serving_vllm_compat_fixture(
@@ -1362,6 +1445,7 @@ def main(argv: list[str] | None = None) -> int:
             max_tokens=args.max_new_tokens,
             device_id=args.device,
             arch=args.arch,
+            kernel_launcher=kernel_launcher,
         )
         status = result["status"]
         if status == "passed":
@@ -1373,6 +1457,7 @@ def main(argv: list[str] | None = None) -> int:
             max_tokens=args.max_new_tokens,
             device_id=args.device,
             arch=args.arch,
+            kernel_launcher=kernel_launcher,
         )
         status = result["status"]
         if status == "passed":
@@ -1384,6 +1469,7 @@ def main(argv: list[str] | None = None) -> int:
             max_tokens=args.max_new_tokens,
             device_id=args.device,
             arch=args.arch,
+            kernel_launcher=kernel_launcher,
         )
         status = result["status"]
         if status == "passed":
@@ -1395,6 +1481,7 @@ def main(argv: list[str] | None = None) -> int:
             max_tokens=args.max_new_tokens,
             device_id=args.device,
             arch=args.arch,
+            kernel_launcher=kernel_launcher,
         )
         status = result["status"]
         if status == "passed":
@@ -1406,6 +1493,7 @@ def main(argv: list[str] | None = None) -> int:
             max_tokens=args.max_new_tokens,
             device_id=args.device,
             arch=args.arch,
+            kernel_launcher=kernel_launcher,
         )
         status = result["status"]
         if status == "passed":
@@ -1418,12 +1506,17 @@ def main(argv: list[str] | None = None) -> int:
             device_id=args.device,
             arch=args.arch,
             chat=args.openai_chat_completion,
+            kernel_launcher=kernel_launcher,
         )
         status = result["status"]
         if status == "passed" and isinstance(result.get("response"), dict):
             status = result["response"].get("pto_status", status)
     elif args.engine:
-        engine = SyntheticPyptoServingEngine(device_id=args.device, arch=args.arch)
+        engine = SyntheticPyptoServingEngine(
+            device_id=args.device,
+            arch=args.arch,
+            kernel_launcher=kernel_launcher,
+        )
         engine.init_model(args.model)
         if args.openai_chat_completion:
             result = engine.create_openai_chat_completion(
@@ -1453,6 +1546,7 @@ def main(argv: list[str] | None = None) -> int:
             max_tokens=args.max_new_tokens,
             device_id=args.device,
             arch=args.arch,
+            kernel_launcher=kernel_launcher,
         )
         status = result["pto_status"]
     elif args.openai_completion:
@@ -1462,6 +1556,7 @@ def main(argv: list[str] | None = None) -> int:
             max_tokens=args.max_new_tokens,
             device_id=args.device,
             arch=args.arch,
+            kernel_launcher=kernel_launcher,
         )
         status = result["pto_status"]
     else:
@@ -1470,6 +1565,7 @@ def main(argv: list[str] | None = None) -> int:
             max_new_tokens=args.max_new_tokens,
             device_id=args.device,
             arch=args.arch,
+            kernel_launcher=kernel_launcher,
         )
         status = result["status"]
     print(json.dumps(result, indent=2, sort_keys=True))
@@ -1478,6 +1574,14 @@ def main(argv: list[str] | None = None) -> int:
     if status == "skipped" and args.require_cuda:
         return 2
     return 0
+
+
+def _create_kernel_launcher_from_args(args) -> Callable[[KernelLaunchRequest], dict[str, Any]] | None:
+    if args.kernel_launcher == "cuda-seed":
+        return None
+    if args.kernel_launcher == "gluon-moe-expert":
+        return create_generated_gluon_moe_launcher(output_dir=args.generated_output_dir)
+    raise ValueError(f"unsupported kernel launcher: {args.kernel_launcher}")
 
 
 def _compat_pto_status(result: dict[str, Any]) -> str:
