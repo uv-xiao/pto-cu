@@ -191,6 +191,22 @@ visible NVIDIA GPU it reports a skip; with `--require-cuda`, the same skip
 returns a non-zero exit status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_rmsnorm_h200.md`.
 
+## Gluon FP32 Gemma Fused RMSNorm
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_gemma_fused_rmsnorm_f32.py \
+  --output-dir tmp/gluon-gemma-fused-rmsnorm-local \
+  --rows 2 --hidden 16 --eps 1e-5 --arch compute_90
+```
+
+This generates the `gemma_fused_rmsnorm_f32` Gluon source and checks FP32
+`out[row, col] = x[row, col] * rsqrt(mean(x[row, :]^2) + eps) * (1.0 + weight[col])`
+correctness for one bounded Gemma-style fused normalization shape. Without
+CUDA tooling or a visible NVIDIA GPU it reports a skip; with `--require-cuda`,
+the same skip returns a non-zero exit status. H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/gluon_gemma_fused_rmsnorm_h200.md`.
+
 ## Gluon FP32 LayerNorm
 
 ```bash

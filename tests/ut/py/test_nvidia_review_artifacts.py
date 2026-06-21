@@ -30,6 +30,7 @@ GLUON_GEMM_REVIEW_DOCS = [
     ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_silu_h200.md",
     ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_gelu_h200.md",
     ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_gated_silu_h200.md",
+    ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_gemma_fused_rmsnorm_h200.md",
 ]
 UCCL_PRIVATE_PATH_RE = re.compile(
     r"/" + "home/"
@@ -2360,6 +2361,70 @@ def test_gluon_gated_silu_h200_evidence_is_review_safe():
     status_text = status.read_text(encoding="utf-8")
     assert "gluon_gated_silu_h200.md" in status_text
     assert "generated Gluon FP32 gated SiLU fixture" in status_text
+    assert "not FlashInfer integration evidence" in status_text
+
+
+def test_gluon_gemma_fused_rmsnorm_h200_evidence_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    evidence = in_progress_root / "gluon_gemma_fused_rmsnorm_h200.md"
+    readme = ROOT / "examples" / "cuda" / "README.md"
+    checklist = in_progress_root / "flashinfer_serving_operator_checklist.md"
+    status = DOC_ROOT / "status.md"
+
+    for path in (
+        evidence,
+        readme,
+        checklist,
+        status,
+        ROOT / "examples" / "cuda" / "gluon_gemma_fused_rmsnorm_f32.py",
+    ):
+        assert path.is_file(), path
+
+    reference = (
+        "out[row, col] = x[row, col] * rsqrt(mean(x[row, :]^2) + eps) "
+        "* (1.0 + weight[col])"
+    )
+    evidence_text = evidence.read_text(encoding="utf-8")
+    for required in [
+        "# Gluon Gemma Fused RMSNorm FP32 H200 Correctness",
+        "gemma_fused_rmsnorm_f32",
+        reference,
+        "--rows 2 --hidden 16 --eps 1e-5",
+        "--require-cuda --device 0 --arch compute_90",
+        "status: passed",
+        "max absolute error:",
+        "python environment: <remote-gluon-venv>",
+        "REMOTE_PTO_CU=<remote-pto-cu>",
+        "not FlashInfer integration evidence",
+        "not production serving readiness",
+        "not DeepSeek semantic correctness",
+        "not broader normalization coverage",
+        "not activation coverage",
+        "not fused attention evidence",
+        "not KV-cache integration evidence",
+        "not throughput or latency evidence",
+        "not vLLM/simpler-nv integration evidence",
+    ]:
+        assert required in evidence_text
+    assert UCCL_PRIVATE_PATH_RE.search(evidence_text) is None
+    assert "/" + "home/" not in evidence_text
+
+    readme_text = readme.read_text(encoding="utf-8")
+    assert "gluon_gemma_fused_rmsnorm_f32.py" in readme_text
+    assert "gemma_fused_rmsnorm_f32" in readme_text
+    assert "gluon_gemma_fused_rmsnorm_h200.md" in readme_text
+
+    checklist_text = checklist.read_text(encoding="utf-8")
+    assert "gluon_gemma_fused_rmsnorm_h200.md" in checklist_text
+    assert "gemma_fused_rmsnorm_f32" in checklist_text
+    assert "Gemma-style fused norm" in checklist_text
+    assert "Remaining normalization gaps include Gemma-style fused norm" not in checklist_text
+    assert "plus Gemma-style fused norm" not in checklist_text
+    assert "broader RMSNorm and LayerNorm shape coverage" in checklist_text
+
+    status_text = status.read_text(encoding="utf-8")
+    assert "gluon_gemma_fused_rmsnorm_h200.md" in status_text
+    assert "generated Gluon FP32 Gemma-style fused RMSNorm fixture" in status_text
     assert "not FlashInfer integration evidence" in status_text
 
 
