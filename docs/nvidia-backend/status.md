@@ -42,16 +42,20 @@ The same shim now has an explicit generated-kernel launcher mode,
 source-route requests through the existing generated Gluon MoE expert
 correctness harness for `moe_expert_affine_f32`. Its launch metadata records
 the launch kind, kernel name, phase, shape, status, and generated artifact
-source digest when available. A bounded H200 source-route completion run now
-passes with HTTP 200, `pto_status: passed`, `launch_kind: gluon-moe-expert`,
+source digest when available. A bounded H200 source-route matrix now passes
+with that launcher across `/v1/completions`, `/v1/chat/completions`,
+streaming `/v1/completions`, and streaming `/v1/chat/completions`, with HTTP
+200, `pto_status: passed`, `launch_kind: gluon-moe-expert`,
 `kernel_name: moe_expert_affine_f32`, `phase: prefill`, `shape.n: 16`, source
 digest `38bb58f3f019a6eefb4016ff180b988f0b1532e5eee4bade5e49d7f57038b842`,
-and max absolute error `1.1920928955078125e-07`. This remains synthetic
-adapter source-route evidence, not real DeepSeek serving.
-The local compatibility-contract CLI also compares the four source-route
+and max absolute error `1.1920928955078125e-07` on each route. This remains
+synthetic adapter source-route evidence, not real DeepSeek serving.
+The compatibility-contract CLI also passes on H200 for the four source-route
 fixtures against the vLLM OpenAI-compatible structural field set: route, HTTP
 200, object/model or stream shape, text/message/delta presence, finish reason,
-non-streaming usage presence, and streaming terminal `[DONE]` presence.
+non-streaming usage presence, and streaming terminal `[DONE]` presence. The
+cloned source still omits non-streaming usage fields, so the summary records
+that gap rather than synthesizing usage.
 
 PTO now has a FlashInfer-derived operator checklist for future serving review
 gates. It maps the FlashInfer README's attention, KV cache, sampling, GEMM,
