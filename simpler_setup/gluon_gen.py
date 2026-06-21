@@ -33,6 +33,7 @@ _SUPPORTED_KERNELS = {
     "gelu_f32",
     "gated_silu_f32",
     "topk_sampling_f32",
+    "topp_sampling_f32",
 }
 
 
@@ -146,6 +147,8 @@ def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
         return _render_gated_silu_f32_source()
     if kernel_name == "topk_sampling_f32":
         return _render_topk_sampling_f32_source()
+    if kernel_name == "topp_sampling_f32":
+        return _render_topp_sampling_f32_source()
     raise AssertionError(f"unhandled Gluon kernel: {kernel_name}")
 
 
@@ -810,6 +813,85 @@ def _render_topk_sampling_f32_source() -> str:
                 logits.shape[0],
                 logits.shape[1],
                 k,
+                num_warps=num_warps,
+            )
+        """
+    ).lstrip()
+
+
+def _render_topp_sampling_f32_source() -> str:
+    return dedent(
+        """
+        from triton.experimental import gluon
+        from triton.experimental.gluon import language as gl
+
+
+        @gluon.jit
+        def topp_sampling_f32_kernel(probabilities_ptr, top_values_ptr, top_indices_ptr, selected_counts_ptr, cumulative_probs_ptr, rows: gl.constexpr, vocab: gl.constexpr, max_k: gl.constexpr, p: gl.constexpr):
+            row = gl.program_id(0)
+            cumulative = 0.0
+            selected_count = 0
+            done = False
+
+            for rank in range(0, max_k):
+                if done:
+                    gl.store(top_values_ptr + row * max_k + rank, 0.0)
+                    gl.store(top_indices_ptr + row * max_k + rank, -1)
+                else:
+                    best_value = -3.4028234663852886e38
+                    best_index = vocab
+                    for col in range(0, vocab):
+                        already_selected = False
+                        for previous_rank in range(0, rank):
+                            previous_index = gl.load(top_indices_ptr + row * max_k + previous_rank)
+                            already_selected = already_selected or previous_index == col
+
+                        value = gl.load(probabilities_ptr + row * vocab + col)
+                        better_value = value > best_value
+                        tie_lower_index = value == best_value and col < best_index
+                        if (not already_selected) and (better_value or tie_lower_index):
+                            best_value = value
+                            best_index = col
+
+                    cumulative += best_value
+                    selected_count += 1
+                    gl.store(top_values_ptr + row * max_k + rank, best_value)
+                    gl.store(top_indices_ptr + row * max_k + rank, best_index)
+                    done = cumulative >= p
+
+            gl.store(selected_counts_ptr + row, selected_count)
+            gl.store(cumulative_probs_ptr + row, cumulative)
+
+
+        def run_topp_sampling_f32(probabilities, top_values, top_indices, selected_counts, cumulative_probs, p=0.75, max_k=5, num_warps=4):
+            expected_rank = 2
+            if len(probabilities.shape) != expected_rank:
+                raise ValueError(f"expected probabilities to be rank-2, got shape {tuple(probabilities.shape)}")
+            if len(top_values.shape) != expected_rank or len(top_indices.shape) != expected_rank:
+                raise ValueError(f"expected top_values/top_indices to be rank-2, got top_values={tuple(top_values.shape)}, top_indices={tuple(top_indices.shape)}")
+            if len(selected_counts.shape) != 1 or len(cumulative_probs.shape) != 1:
+                raise ValueError(f"expected selected_counts/cumulative_probs to be rank-1, got selected_counts={tuple(selected_counts.shape)}, cumulative_probs={tuple(cumulative_probs.shape)}")
+            if probabilities.shape[0] != top_values.shape[0] or probabilities.shape[0] != top_indices.shape[0]:
+                raise ValueError(f"expected matching row counts, got probabilities={tuple(probabilities.shape)}, top_values={tuple(top_values.shape)}, top_indices={tuple(top_indices.shape)}")
+            if probabilities.shape[0] != selected_counts.shape[0] or probabilities.shape[0] != cumulative_probs.shape[0]:
+                raise ValueError(f"expected matching metadata row counts, got probabilities={tuple(probabilities.shape)}, selected_counts={tuple(selected_counts.shape)}, cumulative_probs={tuple(cumulative_probs.shape)}")
+            if top_values.shape[1] != max_k or top_indices.shape[1] != max_k:
+                raise ValueError(f"expected top-p output width {max_k}, got top_values={tuple(top_values.shape)}, top_indices={tuple(top_indices.shape)}")
+            if max_k <= 0 or max_k > probabilities.shape[1]:
+                raise ValueError(f"expected 0 < max_k <= vocab, got max_k={max_k}, vocab={probabilities.shape[1]}")
+            if p <= 0.0 or p > 1.0:
+                raise ValueError(f"expected 0 < p <= 1, got p={p}")
+
+            topp_sampling_f32_kernel[(probabilities.shape[0],)](
+                probabilities,
+                top_values,
+                top_indices,
+                selected_counts,
+                cumulative_probs,
+                probabilities.shape[0],
+                probabilities.shape[1],
+                max_k,
+                p,
                 num_warps=num_warps,
             )
         """

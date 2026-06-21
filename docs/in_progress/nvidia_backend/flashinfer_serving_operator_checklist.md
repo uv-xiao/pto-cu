@@ -83,12 +83,19 @@ Serving-relevant families verified from the README:
   generated `topk_sampling_f32` top-k correctness gate on H200 for
   `rows=2, vocab=8, k=3`. It validates deterministic CPU golden versus GPU
   result for both `values` and `indices`, with lower token id first for tied
-  logits. vLLM probes use bounded sampler settings for real DeepSeek API
-  requests, but those sampler settings do not route through PTO kernels.
-- **Gap / next PTO milestone:** add PTO sampling-kernel fixtures for top-p and
-  min-p, broaden top-k vocabulary and shape coverage, and add a separate
+  logits. `gluon_topp_sampling_h200.md` records one generated
+  `topp_sampling_f32` Top-P correctness gate on H200 for
+  `rows=2, vocab=8, max_k=5, p=0.75`. It consumes probabilities that already
+  sum to one, selects the smallest descending-probability prefix whose
+  cumulative probability is at least `p`, fills unused output slots with
+  `0.0` values and `-1` indices, and validates `values`, `indices`,
+  `selected_counts`, and `cumulative_probabilities`. vLLM probes use bounded
+  sampler settings for real DeepSeek API requests, but those sampler settings
+  do not route through PTO kernels.
+- **Gap / next PTO milestone:** add a PTO sampling-kernel fixture for min-p,
+  broaden top-k and top-p vocabulary and shape coverage, and add a separate
   speculative decoding boundary before connecting sampling to a serving stack.
-  Remaining sampling gaps include top-p, min-p, speculative decoding, and
+  Remaining sampling gaps include min-p, speculative decoding, and
   serving-stack integration.
 - **Explicit non-claim:** this is not FlashInfer integration evidence, not
   vLLM or simpler-nv kernel integration evidence, not tokenizer semantics,

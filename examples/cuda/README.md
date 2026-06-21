@@ -254,6 +254,30 @@ simpler-nv kernel integration evidence, not DeepSeek serving correctness
 evidence, not generated-text or tokenizer-semantics evidence, and not
 throughput or latency evidence.
 
+## Gluon Top-P Sampling
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_topp_sampling.py \
+  --output-dir tmp/gluon-topp-sampling-local \
+  --arch compute_90
+```
+
+This generates the `topp_sampling_f32` Gluon source and checks deterministic
+top-p selection over a small FP32 probability fixture whose rows already sum
+to one. The fixed review shape is `rows=2, vocab=8, max_k=5, p=0.75`. The
+JSON includes shape, dtype, request metadata, CPU golden `values`, `indices`,
+`selected_counts`, the effective cumulative probability boundary, GPU result
+fields when CUDA runs, validation flags, repo-relative artifact paths, and
+explicit non-claims. Without CUDA tooling or a visible NVIDIA GPU it reports a
+skip; with `--require-cuda`, skipped cases return a non-zero exit status. H200
+evidence is recorded in
+`docs/in_progress/nvidia_backend/gluon_topp_sampling_h200.md`.
+This is not FlashInfer integration evidence. It is also not vLLM or
+simpler-nv kernel integration evidence, not DeepSeek serving correctness
+evidence, not generated-text or tokenizer-semantics evidence, and not
+throughput or latency evidence.
+
 ## Gluon FP32 FlashAttention
 
 ```bash
