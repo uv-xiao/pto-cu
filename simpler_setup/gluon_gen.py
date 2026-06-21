@@ -26,6 +26,7 @@ _SUPPORTED_KERNELS = {
     "flashattention_fwd_f32",
     "moe_expert_affine_f32",
     "rmsnorm_f32",
+    "rope_f32",
 }
 
 
@@ -125,6 +126,8 @@ def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
         return _render_moe_expert_affine_source()
     if kernel_name == "rmsnorm_f32":
         return _render_rmsnorm_f32_source()
+    if kernel_name == "rope_f32":
+        return _render_rope_f32_source()
     raise AssertionError(f"unhandled Gluon kernel: {kernel_name}")
 
 
@@ -474,6 +477,59 @@ def _render_rmsnorm_f32_source() -> str:
                 x.shape[0],
                 x.shape[1],
                 eps,
+                num_warps=num_warps,
+            )
+        """
+    ).lstrip()
+
+
+def _render_rope_f32_source() -> str:
+    return dedent(
+        """
+        from triton.experimental import gluon
+        from triton.experimental.gluon import language as gl
+
+
+        @gluon.jit
+        def rope_f32_kernel(x_ptr, cos_ptr, sin_ptr, out_ptr, batch: gl.constexpr, seq: gl.constexpr, head_dim: gl.constexpr):
+            pid = gl.program_id(0)
+            half_dim: gl.constexpr = head_dim // 2
+            pair = pid % half_dim
+            token = (pid // half_dim) % seq
+            batch_idx = pid // (seq * half_dim)
+            base = batch_idx * seq * head_dim + token * head_dim + pair * 2
+            trig_base = token * half_dim + pair
+            x_even = gl.load(x_ptr + base)
+            x_odd = gl.load(x_ptr + base + 1)
+            cos = gl.load(cos_ptr + trig_base)
+            sin = gl.load(sin_ptr + trig_base)
+            out_even = x_even * cos - x_odd * sin
+            out_odd = x_even * sin + x_odd * cos
+            gl.store(out_ptr + base, out_even)
+            gl.store(out_ptr + base + 1, out_odd)
+
+
+        def run_rope_f32(x, cos, sin, out, num_warps=4):
+            expected_rank = 3
+            if len(x.shape) != expected_rank or len(out.shape) != expected_rank:
+                raise ValueError(f"expected x/out to be rank-3, got x={tuple(x.shape)}, out={tuple(out.shape)}")
+            if out.shape != x.shape:
+                raise ValueError(f"expected out shape to match x, got x={tuple(x.shape)}, out={tuple(out.shape)}")
+            if x.shape[2] % 2 != 0:
+                raise ValueError(f"expected even head_dim, got {x.shape[2]}")
+            expected_trig_shape = (x.shape[1], x.shape[2] // 2)
+            if tuple(cos.shape) != expected_trig_shape or tuple(sin.shape) != expected_trig_shape:
+                raise ValueError(f"expected cos/sin shape {expected_trig_shape}, got cos={tuple(cos.shape)}, sin={tuple(sin.shape)}")
+
+            total_pairs = x.shape[0] * x.shape[1] * (x.shape[2] // 2)
+            rope_f32_kernel[(total_pairs,)](
+                x,
+                cos,
+                sin,
+                out,
+                x.shape[0],
+                x.shape[1],
+                x.shape[2],
                 num_warps=num_warps,
             )
         """

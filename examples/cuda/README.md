@@ -191,6 +191,22 @@ visible NVIDIA GPU it reports a skip; with `--require-cuda`, the same skip
 returns a non-zero exit status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_rmsnorm_h200.md`.
 
+## Gluon FP32 RoPE
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_rope_f32.py \
+  --output-dir tmp/gluon-rope-local \
+  --batch 1 --seq 2 --head-dim 8 --arch compute_90
+```
+
+This generates the `rope_f32` Gluon source and checks FP32 rotary position
+embedding math over adjacent even/odd feature pairs for one bounded rank-3
+shape. It uses precomputed cosine and sine tensors. Without CUDA tooling or a
+visible NVIDIA GPU it reports a skip; with `--require-cuda`, the same skip
+returns a non-zero exit status. H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/gluon_rope_h200.md`.
+
 ## DeepSeek V4 Flash Weight Manifest
 
 ```bash
