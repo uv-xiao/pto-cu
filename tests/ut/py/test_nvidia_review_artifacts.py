@@ -1972,6 +1972,50 @@ def test_gluon_tensor_core_gemm_records_bf16_h200_correctness():
     assert "make the BF16 tensor-core fixture pass" not in checklist_search_text
 
 
+def test_gluon_tensor_core_gemm_records_fp8_unsupported_boundary():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    evidence = in_progress_root / "gluon_tensor_core_gemm.md"
+    checklist = in_progress_root / "flashinfer_serving_operator_checklist.md"
+
+    evidence_text = evidence.read_text(encoding="utf-8")
+    evidence_search_text = re.sub(r"\s+", " ", evidence_text)
+    opener_claim = (
+        "It is correctness and unsupported-boundary evidence only, "
+        "not performance evidence."
+    )
+    assert opener_claim in evidence_search_text
+    assert "It is correctness evidence only, not performance evidence." not in (
+        evidence_search_text
+    )
+    for required in [
+        "`gemm_tensor_core_tiled_fp8e4nv_f32`",
+        "torch.float8_e4m3fn",
+        "gl.float8e4nv",
+        "float8e4b15",
+        "float8e5b16",
+        "\"kind\": \"gluon_fp8_wgmma_compile\"",
+        "\"error\": \"PassManager::run failed\"",
+        "WGMMA type or shape is not supported",
+        "not FP8 GEMM correctness evidence",
+        "REMOTE_PTO_CU=<remote-pto-cu>",
+        "<remote-gluon-venv>/bin/python",
+        "not FlashInfer integration evidence",
+        "not serving integration evidence",
+        "not generated-kernel performance evidence",
+        "not production-readiness evidence",
+        "not BF16/FP4/grouped GEMM/MoE/FlashAttention/vLLM integration evidence",
+    ]:
+        assert required in evidence_search_text
+    assert "\"status\": \"passed\"" in evidence_search_text
+    assert "This is unsupported-boundary evidence only" not in evidence_text
+
+    checklist_text = checklist.read_text(encoding="utf-8")
+    checklist_search_text = re.sub(r"\s+", " ", checklist_text)
+    assert "not FP8 GEMM correctness evidence" in checklist_search_text
+    assert "make FP8 WGMMA lowering pass" in checklist_search_text
+    assert "PassManager::run failed" in checklist_search_text
+
+
 def test_nvidia_branch_ci_avoids_ascend_jobs():
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
         encoding="utf-8"
