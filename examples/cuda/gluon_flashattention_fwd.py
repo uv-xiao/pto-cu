@@ -182,7 +182,7 @@ def run_flashattention_correctness(
         if causal:
             query_index = torch.arange(seqlen_q, device="cuda")[:, None]
             key_index = torch.arange(seqlen_k, device="cuda")[None, :]
-            if phase == "decode":
+            if phase in ("decode", "append"):
                 query_index = query_index + (seqlen_k - seqlen_q)
             scores = scores.masked_fill(key_index > query_index, float("-inf"))
         expected = torch.softmax(scores, dim=-1) @ v
@@ -420,15 +420,19 @@ def _parse_tile_shape(raw_tile_shape: str | None) -> tuple[int, int, int]:
 
 def _phase_for(*, tile_shape: tuple[int, int, int], causal: bool) -> str:
     seqlen_q, seqlen_k, _head_dim = tile_shape
-    if causal and seqlen_q == 1 and seqlen_k > seqlen_q:
+    if not causal:
+        return "single_tile"
+    if seqlen_q == 1 and seqlen_k > seqlen_q:
         return "decode"
+    if 1 < seqlen_q < seqlen_k:
+        return "append"
     return "single_tile"
 
 
 def _reference_for(*, phase: str, causal: bool) -> str:
     if not causal:
         return FLASHATTENTION_REFERENCE
-    if phase == "decode":
+    if phase in ("decode", "append"):
         return FLASHATTENTION_CAUSAL_DECODE_REFERENCE
     return FLASHATTENTION_CAUSAL_REFERENCE
 

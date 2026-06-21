@@ -426,6 +426,23 @@ It is single-query decode-shaped correctness evidence only, not FlashInfer
 integration, vLLM/simpler-nv integration, paged/ragged KV-cache coverage, full
 decode, prefill, append coverage, serving readiness, or performance evidence.
 
+For the bounded small multi-query append-shaped causal gate, use:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_flashattention_fwd.py \
+  --output-dir tmp/gluon-flashattention-append-boundary-h200 \
+  --arch compute_90 --tile-shape 4x32x64 --causal --require-cuda
+```
+
+The append-shaped JSON records `phase: append`, `causal: true`,
+`seqlen_q=4`, `seqlen_k=32`, `head_dim=64`, repo-relative artifact paths, and
+the same shifted PyTorch reference formula used by the decode-shaped gate.
+It is small multi-query append-shaped correctness evidence only, not
+FlashInfer integration, vLLM/simpler-nv integration, paged/ragged KV-cache
+coverage, full decode, prefill, full append or append KV-cache coverage,
+serving readiness, or performance evidence.
+
 ## Gluon FP32 RMSNorm
 
 ```bash

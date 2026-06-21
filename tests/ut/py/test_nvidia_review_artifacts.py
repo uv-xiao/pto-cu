@@ -2488,11 +2488,14 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "--output-dir tmp/gluon-flashattention-shape-coverage-h200",
         "--output-dir tmp/gluon-flashattention-causal-boundary-h200",
         "--output-dir tmp/gluon-flashattention-decode-boundary-h200",
+        "--output-dir tmp/gluon-flashattention-append-boundary-h200",
         "--require-cuda --arch compute_90",
         "--tile-shape 32x32x64 --causal --require-cuda",
         "--tile-shape 1x32x64 --causal --require-cuda",
+        "--tile-shape 4x32x64 --causal --require-cuda",
         "schema_version: 1",
         "phase: decode",
+        "phase: append",
         "causal: true",
         "softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v",
         (
@@ -2503,10 +2506,13 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "private absolute paths are not recorded",
         "status: passed",
         "single-query decode-shaped",
+        "small multi-query append-shaped",
         "shape: seqlen_q=32, seqlen_k=32, head_dim=32",
         "shape: seqlen_q=32, seqlen_k=32, head_dim=64",
         "shape: seqlen_q=16, seqlen_k=64, head_dim=64",
         "shape: seqlen_q=1, seqlen_k=32, head_dim=64",
+        "shape: seqlen_q=4, seqlen_k=32, head_dim=64",
+        "causal_query_offset: 28",
         "common serving attention head dimension",
         "32x32x64 failed H200 correctness",
         "--tile-shape 32x32x64",
@@ -2545,8 +2551,11 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "32x32x64 failed H200 correctness" in readme_text
     assert "causal: true" in readme_text
     assert "phase: decode" in readme_text
+    assert "phase: append" in readme_text
     assert "--tile-shape 1x32x64 --causal" in readme_text
+    assert "--tile-shape 4x32x64 --causal" in readme_text
     assert "single-query decode-shaped" in readme_text
+    assert "small multi-query append-shaped" in readme_text
     assert "aggregate structured JSON" in readme_text
     assert "schema_version" in readme_text
     assert "repo-relative artifact paths" in readme_text
@@ -2558,10 +2567,13 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "small FP32 FlashAttention shape sweep" in normalized_checklist_text
     assert "causal single-tile" in normalized_checklist_text
     assert "single-query decode-shaped" in normalized_checklist_text
+    assert "small multi-query append-shaped" in normalized_checklist_text
     assert "causal: true" in checklist_text
     assert "phase: decode" in checklist_text
+    assert "phase: append" in checklist_text
     assert "head_dim=64" in checklist_text
     assert "--tile-shape 1x32x64" in checklist_text
+    assert "--tile-shape 4x32x64" in checklist_text
     assert "--tile-shape 32x32x64" in checklist_text
     assert "--causal" in checklist_text
     assert "32x32x64 failed H200 correctness" in normalized_checklist_text
@@ -2571,7 +2583,10 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "schema_version" in checklist_text
     assert "not FlashInfer integration evidence" in checklist_text
     assert "not paged/ragged KV-cache coverage" in checklist_text
-    assert "not full decode, prefill, or append coverage" in checklist_text
+    assert (
+        "not full decode, prefill, full append, or append KV-cache coverage"
+        in normalized_checklist_text
+    )
 
     status_text = status.read_text(encoding="utf-8")
     normalized_status_text = " ".join(status_text.split())
