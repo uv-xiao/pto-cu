@@ -168,3 +168,91 @@ matching func id `12` `task_bodies` digest on both devices. This remains a
 same-node independent two-device baseline. It does not validate distributed
 expert parallelism, fused cross-GPU MoE dispatch/combine, NCCL or UCCL
 transport, serving, DeepSeek inference, or performance.
+
+## Communication-Coupled Handoff Gate
+
+Run method: generic remote runner with `--sync` into a temporary remote
+checkout. The synced checkout did not initially have `.venv`, so the command
+creates the project-local venv and installs the build dependencies before the
+editable package install.
+
+Environment:
+
+```text
+machine class: NVIDIA H200 host
+devices: 6,7
+gpu: NVIDIA H200 NVL, compute capability 9.0, 143771 MiB
+driver: 580.126.20
+CUDA_HOME: /usr/local/cuda
+nvcc: Build cuda_12.8.r12.8/compiler.35404655_0
+python: 3.12.3
+source sync: --sync into /tmp/pto-cu-persistent-moe-nccl-handoff
+```
+
+Command:
+
+```bash
+REMOTE_PTO_CU=/tmp/pto-cu-persistent-moe-nccl-handoff \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'python3 -m venv --system-site-packages .venv && \
+    source .venv/bin/activate && \
+    pip install scikit-build-core nanobind cmake ninja nvidia-nccl-cu12 \
+      >/tmp/pto-cu-build-deps-install.log && \
+    pip install --no-build-isolation -e . >/tmp/pto-cu-pip-install.log && \
+    NCCL_DEBUG=WARN PYTHONPATH=$PWD:$PWD/python \
+    .venv/bin/python examples/cuda/persistent_moe_dispatch_combine.py \
+      --device-ids 6,7 --n 4096 --arch compute_90 \
+      --with-nccl-handoff --tensor-numel 1024 --build --require-cuda'
+```
+
+Result: pass. The command exited with status `0`.
+
+- `status`: `passed`
+- `handoff_scope`: `persistent-moe-plus-nccl-worker-control`
+- `device_ids`: `[6, 7]`
+- `tensor_numel`: `1024`
+- `persistent_moe.status`: `passed`
+- `persistent_moe.evidence_scope`: `same-node-two-device-baseline`
+- `persistent_moe.per_device_count`: `2`
+- `persistent_moe_max_abs_error`: `0.0`
+- `persistent_moe_validation.all_devices_passed`: `true`
+- `persistent_moe_validation.completed_count_is_5`: `true`
+- `persistent_moe_validation.scheduler_errors_zero`: `true`
+- `persistent_moe_validation.fanin_remaining_zero`: `true`
+- `persistent_moe_validation.source_digests_match`: `true`
+- `persistent_moe_validation.bridge_metadata_match`: `true`
+- `persistent_moe_source_digests.dispatch_source_sha256`:
+  `c096ede6d4ab5e1a9a33070bc1fcf988b9fb9c405d929a770c962308b396b209`
+- `persistent_moe_source_digests.gluon_expert_bridge_sha256`:
+  `7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f`
+- `persistent_moe_source_digests.task_body_func12_sha256`:
+  `7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f`
+- `nccl_worker_control.status`: `passed`
+- `nccl_worker_control.transport`: `worker_control`
+- `nccl_worker_control.backend`: `nccl`
+- `nccl_worker_control.world_size`: `2`
+- `nccl_worker_control.operations`:
+  `[all_reduce, reduce_scatter, all_gather, send_recv]`
+- `nccl_worker_control_max_abs_error`: `0.0`
+- `nccl_worker_control_validation.all_reduce_passed`: `true`
+- `nccl_worker_control_validation.reduce_scatter_passed`: `true`
+- `nccl_worker_control_validation.all_gather_passed`: `true`
+- `nccl_worker_control_validation.send_recv_passed`: `true`
+- `nccl_worker_control_validation.max_abs_error_zero`: `true`
+- `handoff_validation.same_device_ids`: `true`
+- `handoff_validation.persistent_moe_passed`: `true`
+- `handoff_validation.nccl_worker_control_passed`: `true`
+- `handoff_validation.persistent_moe_validation_passed`: `true`
+- `handoff_validation.nccl_worker_control_validation_passed`: `true`
+- `handoff_validation.source_digests_present`: `true`
+- `handoff_validation.bridge_digests_match`: `true`
+- `handoff_boundary.nccl_capability_id`:
+  `nccl:rank0->cuda6,rank1->cuda7`
+
+This is a communication-coupled review gate that composes two existing paths
+on the same H200 device pair. It proves that one command validates the
+persistent MoE graph on both devices, validates descriptor-backed NCCL
+worker-control operations on the same devices, and reports an explicit
+handoff boundary tying the results together. It is not fused cross-GPU
+expert-parallel MoE, serving, DeepSeek/vLLM integration, UCCL/RDMA,
+multi-node evidence, or a performance claim.
