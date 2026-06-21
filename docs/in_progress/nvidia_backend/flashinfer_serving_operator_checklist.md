@@ -89,14 +89,20 @@ Serving-relevant families verified from the README:
   sum to one, selects the smallest descending-probability prefix whose
   cumulative probability is at least `p`, fills unused output slots with
   `0.0` values and `-1` indices, and validates `values`, `indices`,
-  `selected_counts`, and `cumulative_probabilities`. vLLM probes use bounded
-  sampler settings for real DeepSeek API requests, but those sampler settings
-  do not route through PTO kernels.
-- **Gap / next PTO milestone:** add a PTO sampling-kernel fixture for min-p,
-  broaden top-k and top-p vocabulary and shape coverage, and add a separate
-  speculative decoding boundary before connecting sampling to a serving stack.
-  Remaining sampling gaps include min-p, speculative decoding, and
-  serving-stack integration.
+  `selected_counts`, and `cumulative_probabilities`.
+  `gluon_minp_sampling_h200.md` records one generated `minp_sampling_f32`
+  Min-P correctness gate on H200 for `rows=2, vocab=8, max_k=5, min_p=0.5`.
+  It consumes probabilities that already sum to one, selects tokens whose
+  probability is at least `min_p * row_max_probability`, sorts by probability
+  descending with lower token id first for ties, fills unused output slots
+  with `0.0` values and `-1` indices, and validates `values`, `indices`, and
+  `selected_counts`. vLLM probes use bounded sampler settings for real
+  DeepSeek API requests, but those sampler settings do not route through PTO
+  kernels.
+- **Gap / next PTO milestone:** broaden top-k, top-p, and min-p vocabulary
+  and shape coverage, and add a separate speculative decoding boundary before
+  connecting sampling to a serving stack. Remaining sampling gaps include
+  speculative decoding and serving-stack integration.
 - **Explicit non-claim:** this is not FlashInfer integration evidence, not
   vLLM or simpler-nv kernel integration evidence, not tokenizer semantics,
   not generated-text correctness, and not DeepSeek serving through
