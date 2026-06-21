@@ -221,8 +221,13 @@ def _clean_text(text: str) -> str:
 def _display_command(raw_args: list[str]) -> str:
     safe_args = []
     for arg in raw_args:
-        path = Path(arg)
-        safe_args.append(path.name if path.is_absolute() else arg)
+        if "=" in arg:
+            option, value = arg.split("=", 1)
+            path = Path(value)
+            safe_args.append(f"{option}={path.name}" if path.is_absolute() else arg)
+        else:
+            path = Path(arg)
+            safe_args.append(path.name if path.is_absolute() else arg)
     command = "examples/cuda/gluon_flashattention_fwd.py"
     if safe_args:
         command = f"{command} {shlex.join(safe_args)}"

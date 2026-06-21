@@ -535,6 +535,23 @@ def test_gluon_flashattention_example_main_rejects_absolute_output_dir(capsys):
     assert "/tmp/private-flashattention-output" not in json.dumps(payload)
 
 
+def test_gluon_flashattention_example_sanitizes_equals_form_absolute_output_dir(
+    capsys,
+):
+    example = _load_gluon_flashattention_example()
+
+    code = example.main(["--output-dir=/tmp/private-flashattention-output"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == "failed"
+    assert payload["command"] == (
+        "examples/cuda/gluon_flashattention_fwd.py "
+        "--output-dir=private-flashattention-output"
+    )
+    assert "/tmp/private-flashattention-output" not in json.dumps(payload)
+
+
 def test_gluon_flashattention_example_main_reports_sanitized_generation_failure(
     tmp_path,
     capsys,
