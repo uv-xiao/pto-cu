@@ -2414,7 +2414,11 @@ def test_gluon_gelu_h200_evidence_is_review_safe():
         "# Gluon GELU FP32 H200 Correctness",
         "gelu_f32",
         "0.5 * x * (1.0 + erf(x / sqrt(2.0)))",
+        "--sweep",
         "--n 32",
+        "n=2048",
+        "moe_inter_dim: 2048",
+        "swiglu_limit: 10.0",
         "--require-cuda --device 0 --arch compute_90",
         "status: passed",
         "max absolute error:",
@@ -2423,7 +2427,9 @@ def test_gluon_gelu_h200_evidence_is_review_safe():
         "not FlashInfer integration evidence",
         "not production serving readiness",
         "not DeepSeek semantic correctness",
+        "not SiLU coverage",
         "not gated activation coverage",
+        "not broader activation coverage",
         "not Gemma-style fused norm coverage",
         "not fused attention evidence",
         "not KV-cache integration evidence",
@@ -2450,7 +2456,9 @@ def test_gluon_gelu_h200_evidence_is_review_safe():
 
     status_text = status.read_text(encoding="utf-8")
     assert "gluon_gelu_h200.md" in status_text
-    assert "generated Gluon FP32 GELU fixture" in status_text
+    assert "generated Gluon FP32 GELU fixture shape sweep" in status_text
+    assert "moe_inter_dim: 2048" in status_text
+    assert "swiglu_limit: 10.0" in status_text
     assert "not FlashInfer integration evidence" in status_text
 
 

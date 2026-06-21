@@ -109,12 +109,16 @@ integration evidence, production serving readiness, DeepSeek semantic
 correctness, GELU coverage, gated activation coverage, broader activation
 coverage, Gemma-style fused norm coverage, fused attention, KV-cache
 integration, throughput, latency, or simpler-nv/vLLM integration evidence.
-The checklist also includes a generated Gluon FP32 GELU fixture on H200,
-recorded in `docs/in_progress/nvidia_backend/gluon_gelu_h200.md`; this is
-not FlashInfer integration evidence, production serving readiness, DeepSeek
-semantic correctness, gated activation coverage, Gemma-style fused norm
-coverage, fused attention, KV-cache integration, throughput, latency, or
-simpler-nv/vLLM integration evidence.
+The checklist also includes a generated Gluon FP32 GELU fixture shape sweep on
+H200, recorded in `docs/in_progress/nvidia_backend/gluon_gelu_h200.md`. The
+sweep includes the existing smoke shape and `moe_inter_dim: 2048` with
+`swiglu_limit: 10.0` provenance from
+`tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json` as
+standalone GELU activation-width evidence; this is not FlashInfer integration
+evidence, production serving readiness, DeepSeek semantic correctness, SiLU
+coverage, gated activation coverage, broader activation coverage, Gemma-style
+fused norm coverage, fused attention, KV-cache integration, throughput,
+latency, or simpler-nv/vLLM integration evidence.
 The checklist also includes a generated Gluon FP32 gated SiLU fixture sweep on
 H200, recorded in `docs/in_progress/nvidia_backend/gluon_gated_silu_h200.md`;
 it includes the existing smoke shape and `moe_inter_dim: 2048` with
