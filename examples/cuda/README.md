@@ -223,6 +223,21 @@ visible NVIDIA GPU it reports a skip; with `--require-cuda`, the same skip
 returns a non-zero exit status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_rope_h200.md`.
 
+## Gluon FP32 SiLU
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_silu_f32.py \
+  --output-dir tmp/gluon-silu-local \
+  --n 32 --arch compute_90
+```
+
+This generates the `silu_f32` Gluon source and checks FP32
+`out = x * sigmoid(x)` correctness for one bounded vector shape. Without CUDA
+tooling or a visible NVIDIA GPU it reports a skip; with `--require-cuda`, the
+same skip returns a non-zero exit status. H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/gluon_silu_h200.md`.
+
 ## DeepSeek V4 Flash Weight Manifest
 
 ```bash

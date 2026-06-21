@@ -106,17 +106,24 @@ Serving-relevant families verified from the README:
   `gluon_layernorm_h200.md` records one generated `layernorm_f32` FP32
   LayerNorm correctness fixture on H200.
   `gluon_rope_h200.md` records one generated `rope_f32` FP32 RoPE
-  correctness fixture on H200. Remaining gaps include Gemma-style fused norm,
-  SiLU, GELU, and gated activation serving evidence.
+  correctness fixture on H200. `gluon_silu_h200.md` records one generated
+  `silu_f32` FP32 SiLU correctness fixture on H200. Remaining normalization
+  gaps include Gemma-style fused norm.
+  Remaining activation gaps include GELU and gated activation serving
+  evidence.
 - **Gap / next PTO milestone:** add broader RoPE, normalization, and
   activation fixtures with model-shape provenance before treating the family
   as covered serving operators. The next normalization gaps are broader
-  RMSNorm and LayerNorm shape coverage plus Gemma-style fused norm.
+  RMSNorm and LayerNorm shape coverage plus Gemma-style fused norm. The next
+  activation gaps are GELU and gated activations.
 - **Explicit non-claim:** this is not production readiness evidence and not
   model semantic correctness. The RMSNorm, LayerNorm, and RoPE fixtures are
   not FlashInfer integration evidence, fused attention evidence, KV-cache
   integration evidence, activation coverage, or Gemma-style fused norm
-  coverage.
+  coverage. The SiLU fixture is not FlashInfer integration evidence, GELU
+  coverage, gated activation coverage, fused attention evidence, KV-cache
+  integration evidence, throughput, latency, or vLLM/simpler-nv integration
+  evidence.
 
 ### H200 / Hopper Target
 
