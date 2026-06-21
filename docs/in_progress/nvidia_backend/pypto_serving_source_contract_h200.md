@@ -297,16 +297,17 @@ source_sha256: 38bb58f3f019a6eefb4016ff180b988f0b1532e5eee4bade5e49d7f57038b842
 Local unit coverage proves the completion, chat, streaming completion, and
 streaming chat source fixtures can all receive this generated launcher hook.
 
-## H200 Generated Gluon MoE Source-Route Evidence
+## H200 Generated Gluon MoE Source-Route Matrix
 
 The H200 pass used tree sync rather than a remote Git refresh. The tracked
 working tree was synced with `--sync`; the ignored `pypto-serving` source
-clone was synced explicitly because the generic runner excludes `tmp/`.
+clone was synced explicitly because the generic runner excludes `tmp/`. The
+route commands then reused the synced checkout and the same source clone.
 
 Commit tested:
 
 ```text
-pto-cu: d50fc1b8
+pto-cu: b66e1ece
 pypto-serving source clone: 0b0d8a0
 remote Git refresh: not used
 ```
@@ -319,23 +320,118 @@ gpu: NVIDIA H200 NVL, compute capability 9.0, 143771 MiB
 driver: 580.126.20
 CUDA_HOME: /usr/local/cuda
 nvcc: Build cuda_12.8.r12.8/compiler.35404655_0
+python environment: <remote-gluon-venv>
+torch: 2.8.0+cu128
+torch CUDA: 12.8
+triton: 3.7.1
 stderr caveat: no Torch/NumPy compatibility warning was printed
 ```
 
-Command shape:
+Compact route-matrix command shape:
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
   .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
-  bash -lc 'source .venv/bin/activate && \
-    PYTHONPATH=$PWD:$PWD/python \
-    .venv/bin/python examples/cuda/pypto_serving_nv_shim.py \
-      --pypto-serving-source --kernel-launcher gluon-moe-expert \
+  bash -lc 'PYTHONPATH=$PWD:$PWD/python \
+    <remote-gluon-venv>/bin/python \
+      examples/cuda/pypto_serving_nv_shim.py \
+      --pypto-serving-vllm-compat --kernel-launcher gluon-moe-expert \
       --require-cuda --prompt hello --max-new-tokens 1 \
       --device 0 --arch compute_90'
 ```
 
-Result:
+Compatibility summary result:
+
+```text
+server: pypto-serving-source
+status: passed
+comparison_baseline: vllm-openai-compatible-deepseek
+checked_fields:
+  route
+  http_status_200
+  model_or_stream_object_shape
+  choice_text_or_message_delta_presence
+  finish_reason
+  usage_presence_when_non_streaming
+  sse_done_presence_when_streaming
+
+fixture: completions
+route: /v1/completions
+stream: false
+status: passed
+status_code: 200
+object: text_completion
+text_present: true
+finish_reason: length
+usage_keys: []
+pto_status: passed
+pto_launch_count: 1
+
+fixture: chat_completions
+route: /v1/chat/completions
+stream: false
+status: passed
+status_code: 200
+object: chat.completion
+message_role: assistant
+message_content: true
+finish_reason: length
+usage_keys: []
+pto_status: passed
+pto_launch_count: 1
+
+fixture: stream_completions
+route: /v1/completions
+stream: true
+status: passed
+status_code: 200
+event_count: 2
+chunk_count: 1
+done_seen: true
+assembled_text: N
+finish_reason: length
+pto_status: passed
+pto_launch_count: 1
+
+fixture: stream_chat_completions
+route: /v1/chat/completions
+stream: true
+status: passed
+status_code: 200
+event_count: 2
+chunk_count: 1
+done_seen: true
+assembled_assistant_text: N
+finish_reason: length
+pto_status: passed
+pto_launch_count: 1
+```
+
+The structural summary intentionally records the non-streaming source-route
+`usage` gap instead of synthesizing usage fields.
+
+The per-route commands below recorded generated-kernel launch metadata. Each
+used the same command shape with one route flag substituted:
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh -- \
+  bash -lc 'PYTHONPATH=$PWD:$PWD/python \
+    <remote-gluon-venv>/bin/python \
+      examples/cuda/pypto_serving_nv_shim.py \
+      <source-route-flag> --kernel-launcher gluon-moe-expert \
+      --require-cuda --prompt hello --max-new-tokens 1 \
+      --device 0 --arch compute_90'
+```
+
+The route flags were:
+
+- `--pypto-serving-source`
+- `--pypto-serving-source-chat`
+- `--pypto-serving-source-stream`
+- `--pypto-serving-source-chat-stream`
+
+### `/v1/completions`
 
 ```text
 server: pypto-serving-source
@@ -344,6 +440,76 @@ status: passed
 status_code: 200
 object: text_completion
 text: N
+finish_reason: length
+pto_status: passed
+pto_token_ids: [1]
+pto_launch_count: 1
+launch_kind: gluon-moe-expert
+kernel_name: moe_expert_affine_f32
+phase: prefill
+shape.n: 16
+source_sha256: 38bb58f3f019a6eefb4016ff180b988f0b1532e5eee4bade5e49d7f57038b842
+max_abs_error: 1.1920928955078125e-07
+```
+
+### `/v1/chat/completions`
+
+```text
+server: pypto-serving-source
+route: /v1/chat/completions
+status: passed
+status_code: 200
+object: chat.completion
+assistant_message: {role: assistant, content: N}
+finish_reason: length
+pto_status: passed
+pto_token_ids: [1]
+pto_launch_count: 1
+launch_kind: gluon-moe-expert
+kernel_name: moe_expert_affine_f32
+phase: prefill
+shape.n: 16
+source_sha256: 38bb58f3f019a6eefb4016ff180b988f0b1532e5eee4bade5e49d7f57038b842
+max_abs_error: 1.1920928955078125e-07
+```
+
+### Streaming `/v1/completions`
+
+```text
+server: pypto-serving-source
+route: /v1/completions
+stream: true
+status: passed
+status_code: 200
+event_count: 2
+chunk_count: 1
+done_seen: true
+assembled_text: N
+finish_reason: length
+pto_status: passed
+pto_token_ids: [1]
+pto_launch_count: 1
+launch_kind: gluon-moe-expert
+kernel_name: moe_expert_affine_f32
+phase: prefill
+shape.n: 16
+source_sha256: 38bb58f3f019a6eefb4016ff180b988f0b1532e5eee4bade5e49d7f57038b842
+max_abs_error: 1.1920928955078125e-07
+```
+
+### Streaming `/v1/chat/completions`
+
+```text
+server: pypto-serving-source
+route: /v1/chat/completions
+stream: true
+status: passed
+status_code: 200
+event_count: 2
+chunk_count: 1
+done_seen: true
+assistant_deltas: [N]
+assembled_assistant_text: N
 finish_reason: length
 pto_status: passed
 pto_token_ids: [1]

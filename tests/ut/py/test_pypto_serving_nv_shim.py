@@ -1074,6 +1074,45 @@ def test_pypto_serving_vllm_compat_cli_outputs_summary_json(monkeypatch, capsys)
     assert "real DeepSeek weights" in output["non_claims"]
 
 
+def test_generated_launcher_can_run_through_vllm_compat_summary(monkeypatch):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+    launches = []
+
+    def generated_launcher(request):
+        launches.append(request)
+        return {
+            "status": "passed",
+            "phase": request.phase,
+            "launch_kind": "gluon-moe-expert",
+            "kernel_name": "moe_expert_affine_f32",
+            "shape": {"n": request.n},
+        }
+
+    summary = module.run_pypto_serving_vllm_compat_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=generated_launcher,
+    )
+
+    assert summary["status"] == "passed"
+    assert [launch.phase for launch in launches] == [
+        "prefill",
+        "prefill",
+        "prefill",
+        "prefill",
+    ]
+    assert [
+        fixture["observed"]["pto_launch_count"] for fixture in summary["fixtures"]
+    ] == [1, 1, 1, 1]
+    assert [
+        fixture["observed"]["pto_status"] for fixture in summary["fixtures"]
+    ] == ["passed", "passed", "passed", "passed"]
+
+
 def test_pypto_serving_source_chat_cli_mode_outputs_contract_json(monkeypatch, capsys):
     module = _load_serving_shim_example()
     pytest.importorskip("fastapi.testclient")
