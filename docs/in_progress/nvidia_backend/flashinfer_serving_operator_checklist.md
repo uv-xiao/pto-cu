@@ -102,16 +102,18 @@ Serving-relevant families verified from the README:
   Normalization; Activations.
 - **PTO current evidence:** CUDA vector and generated-kernel examples cover
   small arithmetic kernels. `gluon_rmsnorm_h200.md` records one generated
-  `rmsnorm_f32` FP32 RMSNorm correctness fixture on H200. There is still no
-  RoPE, LayerNorm, Gemma-style fused norm, SiLU, GELU, or gated activation
-  serving evidence.
-- **Gap / next PTO milestone:** add explicit RoPE, normalization, and
+  `rmsnorm_f32` FP32 RMSNorm correctness fixture on H200.
+  `gluon_rope_h200.md` records one generated `rope_f32` FP32 RoPE
+  correctness fixture on H200. There is still no LayerNorm, Gemma-style fused
+  norm, SiLU, GELU, or gated activation serving evidence.
+- **Gap / next PTO milestone:** add broader RoPE, normalization, and
   activation fixtures with model-shape provenance before treating the family
   as covered serving operators. The next normalization gaps are broader
   RMSNorm shape coverage, LayerNorm, and Gemma-style fused norm.
 - **Explicit non-claim:** this is not production readiness evidence and not
-  model semantic correctness. The RMSNorm fixture is not FlashInfer
-  integration evidence and not fused normalization evidence.
+  model semantic correctness. The RMSNorm and RoPE fixtures are not
+  FlashInfer integration evidence, fused attention evidence, KV-cache
+  integration evidence, or fused normalization evidence.
 
 ### H200 / Hopper Target
 
