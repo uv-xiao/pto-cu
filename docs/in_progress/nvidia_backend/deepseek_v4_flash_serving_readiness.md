@@ -57,6 +57,31 @@ Fresh local weight-acquisition preflight evidence from this slice:
 Detailed local preflight evidence is recorded in the
 `deepseek_v4_flash_weight_manifest_preflight.md` note.
 
+Fresh H200 weight-acquisition preflight evidence from this slice:
+
+- A dedicated dry-run acquisition preflight script now reports
+  `can_attempt_download` separately from `can_attempt_model_load`.
+- The command uses
+  `examples/cuda/deepseek_v4_flash_weight_acquisition_preflight.py` with
+  `--require-capacity`.
+- The script reads `model.safetensors.index.json` when present, optionally
+  reads Hugging Face metadata, estimates remaining bytes, applies a reserve
+  and capacity multiplier, and checks the selected filesystem free bytes.
+- The remote H200 checkout had no weight artifact directory or index. A small
+  repo-relative metadata JSON supplied `metadata_storage_bytes: 159641337663`
+  without downloading shards.
+- The selected remote `tmp` filesystem reported
+  `filesystem_free_bytes: 39163822080` against
+  `required_capacity_bytes: 186342889670`, so `--require-capacity`
+  intentionally exited nonzero with
+  `preflight_status: blocked_storage_capacity`,
+  `can_attempt_download: false`, and `can_attempt_model_load: false`.
+- The acquisition preflight is not serving evidence, not model-load evidence,
+  and not DeepSeek correctness evidence.
+
+Detailed acquisition preflight evidence is recorded in
+`docs/in_progress/nvidia_backend/deepseek_v4_flash_weight_acquisition_preflight_h200.md`.
+
 Fresh remote H200 artifact evidence from this slice:
 
 - The complete `deepseek-ai/DeepSeek-V4-Flash` artifact directory was copied
@@ -1368,6 +1393,8 @@ remote_repo_relative_artifacts: complete for indexed shard presence
 weight_free_require_vllm_probes: passed
 artifact_require_probe: passed
 weight_manifest_gate: complete
+weight_acquisition_preflight: dry-run gate records can_attempt_download and
+  can_attempt_model_load without shard download or model load
 two_h200_vllm_model_load: passed under recorded 4096-token boundary
 local_only_vllm_server_health: passed under recorded 4096-token boundary
 local_only_vllm_64k_server_health: passed under recorded 65536-token boundary

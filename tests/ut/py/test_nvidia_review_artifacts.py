@@ -253,6 +253,10 @@ def test_review_policy_changelog_and_examples_exist():
     assert (
         in_progress_root / "deepseek_v4_flash_weight_manifest_preflight.md"
     ).is_file()
+    assert (
+        in_progress_root
+        / "deepseek_v4_flash_weight_acquisition_preflight_h200.md"
+    ).is_file()
 
     assert (ROOT / "tools" / "check_nvidia_review_ready.py").is_file()
 
@@ -307,6 +311,9 @@ def test_review_policy_changelog_and_examples_exist():
     assert (
         example_root
         / "vllm_deepseek_v4_chat_256k_needle_stream_usage_contract_probe.py"
+    ).is_file()
+    assert (
+        example_root / "deepseek_v4_flash_weight_acquisition_preflight.py"
     ).is_file()
 
 
@@ -783,6 +790,55 @@ def test_deepseek_v4_weight_manifest_preflight_omits_local_free_bytes():
     ).read_text(encoding="utf-8")
 
     assert not re.search(r"storage_free_bytes: [0-9]+", evidence)
+
+
+def test_deepseek_v4_weight_acquisition_preflight_artifacts_are_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    evidence = (
+        in_progress_root
+        / "deepseek_v4_flash_weight_acquisition_preflight_h200.md"
+    ).read_text(encoding="utf-8")
+    readiness = (
+        in_progress_root / "deepseek_v4_flash_serving_readiness.md"
+    ).read_text(encoding="utf-8")
+    work_prep = (in_progress_root / "work_preparation.md").read_text(
+        encoding="utf-8"
+    )
+    readme = (ROOT / "examples" / "cuda" / "README.md").read_text(
+        encoding="utf-8"
+    )
+
+    for text in (evidence, readiness, work_prep, readme):
+        assert "deepseek_v4_flash_weight_acquisition_preflight.py" in text
+        assert "--require-capacity" in text
+        assert "can_attempt_download" in text
+        assert "can_attempt_model_load" in text
+        assert "not serving evidence" in text
+        assert "not model-load evidence" in text
+        assert "not DeepSeek correctness" in text
+
+    for required in [
+        "PROBE_EXIT_STATUS=",
+        "model_id: deepseek-ai/DeepSeek-V4-Flash",
+        "artifact_dir: tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash",
+        "indexed_shard_count:",
+        "present_shard_count:",
+        "missing_shard_count:",
+        "indexed_bytes:",
+        "metadata_storage_bytes:",
+        "estimated_required_bytes_remaining:",
+        "filesystem_free_bytes:",
+        "required_capacity_bytes:",
+        "has_required_capacity:",
+        "no shard download was attempted",
+        "no model load was attempted",
+        "no vLLM server was started",
+        "no generated text was produced",
+    ]:
+        assert required in evidence
+
+    assert "/" + "home/" not in evidence
+    assert "/" + "tmp/pto-cu" not in evidence
 
 
 def test_64k_long_prompt_response_contract_evidence_is_review_safe():
