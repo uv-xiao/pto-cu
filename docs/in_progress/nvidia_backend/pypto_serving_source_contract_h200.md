@@ -42,6 +42,7 @@ The tracked entry points are:
 - CLI flag: `--kernel-launcher gluon-topk-sampling`
 - CLI flag: `--kernel-launcher gluon-topp-sampling`
 - CLI flag: `--kernel-launcher gluon-minp-sampling`
+- CLI flag: `--kernel-launcher gluon-speculative-decoding`
 - CLI flag: `--kernel-launcher persistent-moe-dispatch-combine`
 
 ## Source Chat Contract
@@ -350,6 +351,23 @@ H200 evidence for this selected launcher is recorded in
 launcher/probe for a generated Min-P sampling correctness gate, not
 FlashInfer integration, tokenizer semantics, generated text correctness,
 DeepSeek serving readiness, or production serving evidence.
+
+## Generated Gluon Speculative Decoding Launch Contract
+
+Passing `--kernel-launcher gluon-speculative-decoding` routes the same
+synthetic `pypto-serving` request through
+`examples/cuda/gluon_speculative_decoding.py::run_speculative_decoding_correctness(...)`.
+The source-route launcher records
+`launch_kind: gluon-speculative-decoding`,
+`kernel_name: speculative_accept_f32`, phase, status, shape, sampling request
+metadata, generated artifact/source digest metadata, and validation metadata
+when present.
+
+H200 evidence for this selected launcher is recorded in
+`pypto_serving_speculative_decoding_launcher_h200.md`. It is a serving-route
+launcher/probe for a generated speculative decoding accept/reject correctness
+gate, not FlashInfer integration, tokenizer semantics, generated text
+correctness, DeepSeek serving readiness, or production serving evidence.
 
 ## H200 Generated Gluon MoE Source-Route Matrix
 

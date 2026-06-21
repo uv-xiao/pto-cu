@@ -102,6 +102,12 @@ through the generated Gluon Min-P sampling correctness harness for
 `minp_sampling_f32`, recording launch kind, kernel name, phase, shape,
 sampling request metadata including `min_p`, artifact/source digest metadata,
 and validation metadata when available.
+Selecting `--kernel-launcher gluon-speculative-decoding` routes the same
+request through the generated Gluon speculative decoding accept/reject
+correctness harness for `speculative_accept_f32`, recording launch kind,
+kernel name, phase, shape, sampling request metadata, artifact/source digest
+metadata, and accepted-token, accept-mask, and accepted-count validation
+metadata when available.
 Selecting `--kernel-launcher persistent-moe-dispatch-combine`
 routes the same request through the existing persistent-device MoE
 dispatch/combine example via `run_moe_dispatch_combine(...)`, recording launch

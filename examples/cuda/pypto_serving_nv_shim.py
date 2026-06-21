@@ -24,9 +24,13 @@ PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND = "persistent-moe-dispatch-combine"
 GLUON_TOPK_SAMPLING_LAUNCH_KIND = "gluon-topk-sampling"
 GLUON_TOPP_SAMPLING_LAUNCH_KIND = "gluon-topp-sampling"
 GLUON_MINP_SAMPLING_LAUNCH_KIND = "gluon-minp-sampling"
+GLUON_SPECULATIVE_DECODING_LAUNCH_KIND = "gluon-speculative-decoding"
 DEFAULT_GENERATED_GLUON_TOPK_OUTPUT_DIR = Path("tmp/pypto-serving-gluon-topk-sampling")
 DEFAULT_GENERATED_GLUON_TOPP_OUTPUT_DIR = Path("tmp/pypto-serving-gluon-topp-sampling")
 DEFAULT_GENERATED_GLUON_MINP_OUTPUT_DIR = Path("tmp/pypto-serving-gluon-minp-sampling")
+DEFAULT_GENERATED_GLUON_SPECULATIVE_DECODING_OUTPUT_DIR = Path(
+    "tmp/pypto-serving-gluon-speculative-decoding"
+)
 
 
 @dataclass(frozen=True)
@@ -1326,6 +1330,63 @@ def create_generated_gluon_minp_sampling_launcher(
     return launch
 
 
+def create_generated_gluon_speculative_decoding_launcher(
+    *,
+    output_dir: Path = DEFAULT_GENERATED_GLUON_SPECULATIVE_DECODING_OUTPUT_DIR,
+    rows: int = 3,
+    max_draft: int = 6,
+) -> Callable[[KernelLaunchRequest], dict[str, Any]]:
+    def launch(request: KernelLaunchRequest) -> dict[str, Any]:
+        result = run_speculative_decoding_correctness(
+            output_dir=output_dir / request.phase,
+            arch=request.arch,
+            rows=rows,
+            max_draft=max_draft,
+            device=request.device_id,
+        )
+        artifact = result.get("artifact", {})
+        if not isinstance(artifact, dict):
+            artifact = {}
+        validation = result.get("validation", {})
+        if not isinstance(validation, dict):
+            validation = {}
+        non_claims = result.get("non_claims", [])
+        if not isinstance(non_claims, list):
+            non_claims = []
+        request_metadata = result.get("request", {})
+        if not isinstance(request_metadata, dict):
+            request_metadata = {
+                "sampling_operator": "speculative-decoding-accept-reject",
+            }
+        elif "sampling_operator" not in request_metadata:
+            request_metadata = {
+                **request_metadata,
+                "sampling_operator": "speculative-decoding-accept-reject",
+            }
+        launch_result = {
+            "status": result.get("status", "failed"),
+            "phase": request.phase,
+            "op": request.op,
+            "launch_kind": GLUON_SPECULATIVE_DECODING_LAUNCH_KIND,
+            "kernel_name": result.get("kernel_name", "speculative_accept_f32"),
+            "shape": result.get(
+                "shape",
+                {"rows": rows, "max_draft": max_draft},
+            ),
+            "request": request_metadata,
+            "artifact": artifact,
+            "source_sha256": artifact.get("source_sha256", ""),
+            "validation": validation,
+            "non_claims": non_claims,
+            "generated_kernel": result,
+        }
+        if "reason" in result:
+            launch_result["reason"] = result["reason"]
+        return launch_result
+
+    return launch
+
+
 def create_persistent_moe_dispatch_combine_launcher(
     *,
     scheduler_blocks: int = 1,
@@ -1418,6 +1479,14 @@ def run_minp_sampling_correctness(**kwargs) -> dict[str, Any]:
     from examples.cuda.gluon_minp_sampling import run_minp_sampling_correctness
 
     return run_minp_sampling_correctness(**kwargs)
+
+
+def run_speculative_decoding_correctness(**kwargs) -> dict[str, Any]:
+    from examples.cuda.gluon_speculative_decoding import (
+        run_speculative_decoding_correctness,
+    )
+
+    return run_speculative_decoding_correctness(**kwargs)
 
 
 def run_moe_dispatch_combine(**kwargs) -> dict[str, Any]:
@@ -1942,6 +2011,7 @@ def main(argv: list[str] | None = None) -> int:
             GLUON_TOPK_SAMPLING_LAUNCH_KIND,
             GLUON_TOPP_SAMPLING_LAUNCH_KIND,
             GLUON_MINP_SAMPLING_LAUNCH_KIND,
+            GLUON_SPECULATIVE_DECODING_LAUNCH_KIND,
             PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND,
         ),
         default="cuda-seed",
@@ -2126,6 +2196,10 @@ def _create_kernel_launcher_from_args(args) -> Callable[[KernelLaunchRequest], d
     if args.kernel_launcher == GLUON_MINP_SAMPLING_LAUNCH_KIND:
         return create_generated_gluon_minp_sampling_launcher(
             output_dir=DEFAULT_GENERATED_GLUON_MINP_OUTPUT_DIR
+        )
+    if args.kernel_launcher == GLUON_SPECULATIVE_DECODING_LAUNCH_KIND:
+        return create_generated_gluon_speculative_decoding_launcher(
+            output_dir=DEFAULT_GENERATED_GLUON_SPECULATIVE_DECODING_OUTPUT_DIR
         )
     if args.kernel_launcher == PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND:
         return create_persistent_moe_dispatch_combine_launcher()

@@ -99,6 +99,9 @@ to route the same request through the generated Gluon Top-P sampling
 correctness harness for `topp_sampling_f32`. Use
 `--kernel-launcher gluon-minp-sampling` to route the same request through the
 generated Gluon Min-P sampling correctness harness for `minp_sampling_f32`.
+Use `--kernel-launcher gluon-speculative-decoding` to route the same request
+through the generated Gluon speculative decoding accept/reject correctness
+harness for `speculative_accept_f32`.
 Use
 `--kernel-launcher persistent-moe-dispatch-combine` to route the same request
 through the existing persistent-device MoE dispatch/combine example via
@@ -148,7 +151,13 @@ digest metadata, and validation metadata when available. The Min-P sampling
 launch mode records `launch_kind: gluon-minp-sampling`,
 `kernel_name: minp_sampling_f32`, phase, status,
 `rows=3, vocab=16, max_k=6, min_p=0.50`, generated artifact/source digest
-metadata, and validation metadata when available. Persistent MoE
+metadata, and validation metadata when available. The speculative decoding
+launch mode records
+`launch_kind: gluon-speculative-decoding`,
+`kernel_name: speculative_accept_f32`, phase, status,
+`rows=3, max_draft=6`, generated artifact/source digest metadata, request
+metadata, and accepted-token, accept-mask, and accepted-count validation
+metadata when available. Persistent MoE
 launch mode records
 `launch_kind: persistent-moe-dispatch-combine`,
 `dag_shape: graph_descriptor_moe_dispatch_combine`, phase, status, shape,
@@ -159,7 +168,8 @@ FlashInfer integration, not production readiness, not throughput or latency,
 not distributed serving, and not production fused MoE dispatch/combine serving
 readiness. The Top-K launch mode is also not tokenizer semantics, generated
 text correctness, DeepSeek serving readiness, or production serving evidence.
-The Top-P and Min-P launch modes carry the same non-claim boundary.
+The Top-P, Min-P, and speculative decoding launch modes carry the same
+non-claim boundary.
 
 ## Persistent Layered-Cross Graph
 
