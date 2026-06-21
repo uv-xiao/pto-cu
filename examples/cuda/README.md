@@ -232,6 +232,28 @@ reports skips; with `--require-cuda`, skipped cases return a non-zero exit
 status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_moe_expert_h200.md`.
 
+## Gluon Top-K Sampling
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_topk_sampling.py \
+  --output-dir tmp/gluon-topk-sampling-local \
+  --arch compute_90
+```
+
+This generates the `topk_sampling_f32` Gluon source and checks deterministic
+top-k selection over a small FP32 logits fixture. The JSON includes shape,
+dtype, request metadata, CPU golden `values` and `indices`, GPU result
+`values` and `indices` when CUDA runs, validation flags, repo-relative
+artifact paths, and explicit non-claims. Without CUDA tooling or a visible
+NVIDIA GPU it reports a skip; with `--require-cuda`, skipped cases return a
+non-zero exit status. H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/gluon_topk_sampling_h200.md`.
+This is not FlashInfer integration evidence. It is also not vLLM or
+simpler-nv kernel integration evidence, not DeepSeek serving correctness
+evidence, not generated-text or tokenizer-semantics evidence, and not
+throughput or latency evidence.
+
 ## Gluon FP32 FlashAttention
 
 ```bash
