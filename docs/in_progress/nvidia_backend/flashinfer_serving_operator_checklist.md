@@ -69,9 +69,17 @@ Serving-relevant families verified from the README:
   preserved H200 Gluon environment, then fails at WGMMA lowering with
   `PassManager::run failed` and the compiler assertion
   `WGMMA type or shape is not supported`. This is unsupported-boundary
-  evidence only, not FP8 GEMM correctness evidence.
+  evidence only, not FP8 GEMM correctness evidence. The FP4 boundary harness
+  records that `torch.float4_e2m1fn_x2` is visible, but the only Gluon
+  FP4-related attr found is `fp4_to_fp`; no Gluon FP4 WGMMA dtype is
+  available. The H200 FP4 gate exits as `status: skipped` with `artifact:
+  null`, `unsupported_boundary.kind: gluon_fp4_dtype_api_unavailable`, and
+  reason `missing Gluon FP4 WGMMA dtype API`. This is unsupported-boundary
+  evidence only, not FP4 GEMM correctness evidence.
 - **Gap / next PTO milestone:** make FP8 WGMMA lowering pass before promoting
-  FP8 GEMM correctness evidence; add FP4, grouped GEMM, and broader
+  FP8 GEMM correctness evidence; make a Gluon FP4 WGMMA dtype/lowering path
+  available before promoting FP4 GEMM correctness evidence. The FP4
+  API/lowering boundary is explicitly recorded. Add grouped GEMM and broader
   linear-layer serving-shape fixtures with explicit dtype and shape boundaries
   before any FlashInfer GEMM coverage claim.
 - **Explicit non-claim:** this is not generated-kernel performance evidence
@@ -81,7 +89,10 @@ Serving-relevant families verified from the README:
   The FP8 boundary is not FlashInfer integration evidence, not serving
   integration evidence, not generated-kernel performance evidence, not
   production readiness evidence, and not BF16/FP4/grouped
-  GEMM/MoE/FlashAttention/vLLM integration evidence.
+  GEMM/MoE/FlashAttention/vLLM integration evidence. The FP4 boundary is not
+  FlashInfer integration evidence, not serving integration evidence, not
+  generated-kernel performance evidence, not production readiness evidence,
+  and not BF16/FP8/grouped GEMM/MoE/FlashAttention/vLLM integration evidence.
 
 ### MoE
 

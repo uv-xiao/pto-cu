@@ -66,6 +66,15 @@ def _load_gluon_tensor_core_fp8_example():
     return module
 
 
+def _load_gluon_tensor_core_fp4_example():
+    module_path = "examples/cuda/gluon_gemm_tensor_core_fp4.py"
+    spec = importlib.util.spec_from_file_location("gluon_gemm_tensor_core_fp4_example", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_gluon_wgmma_preflight_example():
     module_path = "examples/cuda/gluon_wgmma_api_preflight.py"
     spec = importlib.util.spec_from_file_location(
@@ -642,6 +651,63 @@ def test_gluon_fp8_tensor_core_boundary_main_reports_runtime_unsupported(
     assert "WGMMA type or shape is not supported" in payload["error"]
 
 
+def test_gluon_fp4_tensor_core_boundary_reports_api_skip_json(tmp_path):
+    example = _load_gluon_tensor_core_fp4_example()
+
+    result = example.run_fp4_tensor_core_boundary(
+        output_dir=Path("tmp/gluon-fp4-local"),
+        dtype_probe=lambda: {
+            "status": "failed",
+            "reason": "missing Gluon FP4 WGMMA dtype API",
+            "gl_fp4_attrs": ["fp4_to_fp"],
+            "torch_fp4_attrs": ["float4_e2m1fn_x2"],
+        },
+    )
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "missing Gluon FP4 WGMMA dtype API"
+    assert result["kernel_name"] == "gemm_tensor_core_tiled_fp4_f32"
+    assert result["artifact"] is None
+    assert result["shape"] == {"m": 64, "n": 128, "k": 32}
+    assert result["dtype_boundary"] == {
+        "a": "torch.float4_e2m1fn_x2 / Gluon FP4 WGMMA dtype unavailable",
+        "b": "torch.float4_e2m1fn_x2 / Gluon FP4 WGMMA dtype unavailable",
+        "accumulator": "float32",
+        "out": "float32",
+    }
+    assert result["fp4_dtype_probe"]["torch_fp4_attrs"] == ["float4_e2m1fn_x2"]
+    assert result["fp4_dtype_probe"]["gl_fp4_attrs"] == ["fp4_to_fp"]
+    assert result["unsupported_boundary"]["kind"] == "gluon_fp4_dtype_api_unavailable"
+
+
+def test_gluon_fp4_tensor_core_boundary_main_requires_cuda_on_skip(
+    capsys, monkeypatch
+):
+    example = _load_gluon_tensor_core_fp4_example()
+    monkeypatch.setattr(
+        example,
+        "probe_fp4_dtypes",
+        lambda: {
+            "status": "failed",
+            "reason": "missing Gluon FP4 WGMMA dtype API",
+            "gl_fp4_attrs": ["fp4_to_fp"],
+            "torch_fp4_attrs": ["float4_e2m1fn_x2"],
+        },
+    )
+
+    code = example.main(
+        ["--output-dir", "tmp/gluon-fp4-local", "--require-cuda"]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "skipped"
+    assert payload["artifact"] is None
+    assert payload["reason"] == "missing Gluon FP4 WGMMA dtype API"
+    assert payload["fp4_dtype_probe"]["torch_fp4_attrs"] == ["float4_e2m1fn_x2"]
+    assert payload["unsupported_boundary"]["kind"] == "gluon_fp4_dtype_api_unavailable"
+
+
 def test_gluon_wgmma_api_preflight_reports_payload_shape(monkeypatch):
     example = _load_gluon_wgmma_preflight_example()
 
@@ -669,12 +735,14 @@ def test_gluon_wgmma_api_preflight_reports_payload_shape(monkeypatch):
             return (9, 0)
 
     fake_torch = SimpleNamespace(cuda=FakeCuda())
+    fake_torch.float4_e2m1fn_x2 = object()
     fake_triton = SimpleNamespace(__version__="3.4.0")
     fake_gl = SimpleNamespace(
         NVMMASharedLayout=object(),
         NVMMADistributedLayout=object(),
         bfloat16=object(),
         float8e4nv=SimpleNamespace(primitive_bitwidth=8),
+        fp4_to_fp=lambda value: value,
     )
     fake_modules = {
         "torch": fake_torch,
@@ -730,6 +798,8 @@ def test_gluon_wgmma_api_preflight_reports_payload_shape(monkeypatch):
     assert payload["gl_attrs"]["bfloat16"]["present"] is True
     assert payload["gl_fp8_attrs"]["float8e4nv"]["present"] is True
     assert payload["gl_fp8_attrs"]["float8e4nv"]["primitive_bitwidth"] == 8
+    assert payload["torch_fp4_attrs"] == ["float4_e2m1fn_x2"]
+    assert payload["gl_fp4_attrs"]["fp4_to_fp"]["present"] is True
     assert payload["missing_required"] == []
 
 

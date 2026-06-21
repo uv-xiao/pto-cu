@@ -21,6 +21,10 @@ three Gluon tensor-core GEMM artifacts:
   `torch.float8_e4m3fn` inputs mapped to Gluon `gl.float8e4nv` operands and
   FP32 accumulator/output. This is a boundary harness only because H200
   lowering currently rejects the generated FP8 WGMMA type/shape.
+- `examples/cuda/gluon_gemm_tensor_core_fp4.py`: an FP4 dtype API boundary
+  harness for the next low-precision GEMM gate. It records Torch and Gluon
+  FP4 attrs and does not generate source when no Gluon FP4 WGMMA operand dtype
+  is available.
 
 The tensor-core harnesses always generate source and manifest artifacts before
 checking runtime CUDA availability. They emit structured JSON in pass, skip,
@@ -36,10 +40,10 @@ layout/dtype attributes used by generated tensor-core source. With
 `--require-cuda`, missing CUDA/Hopper or missing WGMMA APIs return non-zero
 before a kernel harness attempts runtime correctness.
 
-The preflight payload also reports discovered Torch and Gluon FP8 dtype
-attributes. The FP8 harness records that dtype probe in its JSON before
-attempting WGMMA lowering, so missing or ambiguous FP8 dtype support is a
-review-visible boundary instead of a fake correctness pass.
+The preflight payload also reports discovered Torch and Gluon FP8 and FP4
+dtype/API attributes. The FP8 and FP4 harnesses record those dtype probes in
+JSON before attempting WGMMA lowering, so missing or ambiguous low-precision
+dtype support is a review-visible boundary instead of a fake correctness pass.
 
 The generated source uses Hopper Gluon APIs:
 
@@ -280,6 +284,59 @@ then failed in `ConvertNVGPUToLLVM` with the assertion
 `WGMMA type or shape is not supported`. This is FP8 API and unsupported
 lowering evidence only. It is not FP8 GEMM correctness evidence.
 
+## H200 FP4 Boundary Evidence
+
+The next FP4 gate used the same synced checkout and preserved Gluon
+environment. The general WGMMA preflight still passed on H200 with Triton
+`3.7.1`. It found Torch FP4 dtype `torch.float4_e2m1fn_x2`. On the Gluon side,
+the only FP4-related attr found was the helper `fp4_to_fp`; candidate dtype
+attrs `float4_e2m1fn`, `float4_e2m1fn_x2`, and `float4e2m1` were absent, so
+there is no confirmed Gluon FP4 WGMMA operand dtype.
+
+The committed FP4 boundary command was:
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  <remote-gluon-venv>/bin/python \
+    examples/cuda/gluon_gemm_tensor_core_fp4.py \
+    --output-dir tmp/gluon-tensor-core-fp4-h200 \
+    --arch compute_90 --require-cuda
+```
+
+The command returned exit status `2`, which is expected for a required-CUDA
+skip at this unsupported dtype API boundary. Distilled JSON stdout:
+
+```json
+{
+  "kernel_name": "gemm_tensor_core_tiled_fp4_f32",
+  "status": "skipped",
+  "artifact": null,
+  "shape": {"m": 64, "n": 128, "k": 32},
+  "dtype_boundary": {
+    "a": "torch.float4_e2m1fn_x2 / Gluon FP4 WGMMA dtype unavailable",
+    "b": "torch.float4_e2m1fn_x2 / Gluon FP4 WGMMA dtype unavailable",
+    "accumulator": "float32",
+    "out": "float32"
+  },
+  "fp4_dtype_probe": {
+    "status": "failed",
+    "torch_dtype": "float4_e2m1fn_x2",
+    "torch_fp4_attrs": ["float4_e2m1fn_x2"],
+    "gl_dtype": null,
+    "gl_fp4_attrs": ["fp4_to_fp"],
+    "reason": "missing Gluon FP4 WGMMA dtype API"
+  },
+  "unsupported_boundary": {
+    "kind": "gluon_fp4_dtype_api_unavailable",
+    "expected_failure": "Torch exposes packed FP4, but no Gluon FP4 WGMMA dtype is available"
+  }
+}
+```
+
+This is FP4 API and unsupported-boundary evidence only. It is not FP4 GEMM
+correctness evidence.
+
 ## Boundary
 
 This PR does not include flash-attention evidence, MoE or distributed
@@ -289,5 +346,9 @@ generated-kernel performance evidence, not vLLM/simpler-nv serving integration
 evidence, and not production-readiness evidence. The FP8 boundary is not
 FlashInfer integration evidence, not serving integration evidence, not
 generated-kernel performance evidence, not production-readiness evidence, and
-not BF16/FP4/grouped GEMM/MoE/FlashAttention/vLLM integration evidence.
-Generated tensor-core source and JSON manifests stay under `tmp/gluon-*`.
+not BF16/FP4/grouped GEMM/MoE/FlashAttention/vLLM integration evidence. The
+FP4 boundary is not FlashInfer integration evidence, not serving integration
+evidence, not generated-kernel performance evidence, not production-readiness
+evidence, and not BF16/FP8/grouped GEMM/MoE/FlashAttention/vLLM integration
+evidence. Generated tensor-core source and JSON manifests stay under
+`tmp/gluon-*` when source generation is supported by the dtype/API boundary.

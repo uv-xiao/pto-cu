@@ -2016,6 +2016,39 @@ def test_gluon_tensor_core_gemm_records_fp8_unsupported_boundary():
     assert "PassManager::run failed" in checklist_search_text
 
 
+def test_gluon_tensor_core_gemm_records_fp4_unsupported_boundary():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    evidence = in_progress_root / "gluon_tensor_core_gemm.md"
+    checklist = in_progress_root / "flashinfer_serving_operator_checklist.md"
+
+    evidence_text = evidence.read_text(encoding="utf-8")
+    evidence_search_text = re.sub(r"\s+", " ", evidence_text)
+    for required in [
+        "H200 FP4 Boundary Evidence",
+        "torch.float4_e2m1fn_x2",
+        "`fp4_to_fp`",
+        "\"kind\": \"gluon_fp4_dtype_api_unavailable\"",
+        "\"status\": \"skipped\"",
+        "\"artifact\": null",
+        "missing Gluon FP4 WGMMA dtype API",
+        "not FP4 GEMM correctness evidence",
+        "REMOTE_PTO_CU=<remote-pto-cu>",
+        "<remote-gluon-venv>/bin/python",
+        "not FlashInfer integration evidence",
+        "not serving integration evidence",
+        "not generated-kernel performance evidence",
+        "not production-readiness evidence",
+    ]:
+        assert required in evidence_search_text
+    assert "FP4 GEMM correctness evidence exists" not in evidence_search_text
+
+    checklist_text = checklist.read_text(encoding="utf-8")
+    checklist_search_text = re.sub(r"\s+", " ", checklist_text)
+    assert "FP4 API/lowering boundary is explicitly recorded" in checklist_search_text
+    assert "not FP4 GEMM correctness evidence" in checklist_search_text
+    assert "missing Gluon FP4 WGMMA dtype API" in checklist_search_text
+
+
 def test_nvidia_branch_ci_avoids_ascend_jobs():
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
         encoding="utf-8"
