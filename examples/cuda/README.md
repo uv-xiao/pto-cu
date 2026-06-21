@@ -168,6 +168,20 @@ for `moe_expert_affine_f32` as func id `12`; the JSON includes
 CUDA tooling or a visible NVIDIA GPU it reports a skip; with `--require-cuda`,
 the same skip returns a non-zero exit status.
 
+For a bounded same-node two-device baseline, use:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/persistent_moe_dispatch_combine.py \
+  --device-ids 6,7 --n 4096 --arch compute_90 --require-cuda
+```
+
+This runs the same persistent MoE graph independently on each requested CUDA
+device in isolated child processes and aggregates validation for output error,
+completion count, scheduler error state, fan-in state, and source/bridge
+digests. It is same-node two-device baseline evidence, not fused cross-GPU
+expert-parallel MoE, distributed serving, or performance evidence.
+
 ## Gluon MoE Expert Affine
 
 ```bash

@@ -111,6 +111,76 @@ def test_cuda_persistent_moe_dispatch_example_skips_with_structured_json():
     assert "no distributed expert parallelism or communication path" in result["non_claims"]
 
 
+def test_cuda_persistent_moe_two_device_baseline_validates_each_device():
+    example = _load_persistent_moe_dispatch_example()
+
+    def fake_runner(**kwargs):
+        device = kwargs["device"]
+        return {
+            "schema_version": 1,
+            "status": "passed",
+            "dag_shape": "graph_descriptor_moe_dispatch_combine",
+            "device": device,
+            "n": kwargs["n"],
+            "arch": kwargs["arch"],
+            "completed_count": 5,
+            "max_abs_error": 0.0,
+            "device_scheduler_errors": {"count": 0, "code": 0, "task_id": 0},
+            "fanin_remaining": [0, 0, 0, 0, 0],
+            "dispatch_source": {
+                "source_kind": "generated-dispatch",
+                "source_sha256": "dispatch-digest",
+            },
+            "gluon_expert_bridge": {
+                "func_id": 12,
+                "kernel_name": "moe_expert_affine_f32",
+                "task_name": "gluon_moe_expert_affine_f32",
+                "source_kind": "gluon-persistent-task-body-bridge",
+                "source_sha256": "bridge-digest",
+            },
+            "task_bodies": [
+                {
+                    "func_id": 12,
+                    "name": "gluon_moe_expert_affine_f32",
+                    "source_kind": "gluon-persistent-task-body-bridge",
+                    "source_sha256": "bridge-digest",
+                }
+            ],
+            "timing": {"host_wall_ns": 10 + device, "device_wall_ns": 5 + device},
+        }
+
+    result = example.run_two_device_moe_dispatch_combine(
+        device_ids=(6, 7),
+        n=16,
+        arch="compute_90",
+        runner=fake_runner,
+    )
+
+    assert result["status"] == "passed"
+    assert result["evidence_scope"] == "same-node-two-device-baseline"
+    assert result["device_ids"] == [6, 7]
+    assert result["devices"] == [6, 7]
+    assert result["per_device_count"] == 2
+    assert result["validation"] == {
+        "all_devices_passed": True,
+        "completed_count_is_5": True,
+        "scheduler_errors_zero": True,
+        "fanin_remaining_zero": True,
+        "source_digests_match": True,
+        "bridge_metadata_match": True,
+    }
+    assert [item["device"] for item in result["per_device_results"]] == [6, 7]
+    assert result["per_device_results"][0]["timing"]["host_wall_ns"] == 16
+    assert result["source_digests"] == {
+        "dispatch_source_sha256": "dispatch-digest",
+        "gluon_expert_bridge_sha256": "bridge-digest",
+        "task_body_func12_sha256": "bridge-digest",
+    }
+    assert "same-node two-device baseline evidence" in result["evidence_statement"]
+    assert "not fused cross-GPU expert-parallel MoE" in result["evidence_statement"]
+    assert "not fused cross-GPU expert-parallel MoE" in result["non_claims"]
+
+
 class CudaHostCallable(ctypes.Structure):
     _fields_ = [
         ("version", ctypes.c_uint32),
