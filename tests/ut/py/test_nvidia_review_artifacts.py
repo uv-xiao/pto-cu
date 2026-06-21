@@ -1979,6 +1979,14 @@ def test_gluon_tensor_core_gemm_records_fp8_unsupported_boundary():
 
     evidence_text = evidence.read_text(encoding="utf-8")
     evidence_search_text = re.sub(r"\s+", " ", evidence_text)
+    opener_claim = (
+        "It is correctness and unsupported-boundary evidence only, "
+        "not performance evidence."
+    )
+    assert opener_claim in evidence_search_text
+    assert "It is correctness evidence only, not performance evidence." not in (
+        evidence_search_text
+    )
     for required in [
         "`gemm_tensor_core_tiled_fp8e4nv_f32`",
         "torch.float8_e4m3fn",

@@ -1,7 +1,8 @@
 # Gluon Tensor-Core GEMM
 
 This note tracks the tensor-core `gluon-gen` milestone after scalar GEMM
-correctness. It is correctness evidence only, not performance evidence.
+correctness. It is correctness and unsupported-boundary evidence only, not
+performance evidence.
 
 ## Current Contract
 
