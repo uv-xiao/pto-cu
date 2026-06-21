@@ -118,7 +118,9 @@ Serving-relevant families verified from the README:
   `silu_f32` FP32 SiLU correctness fixture on H200. `gluon_gelu_h200.md`
   records one generated `gelu_f32` FP32 GELU correctness fixture on H200.
   `gluon_gated_silu_h200.md` records one generated `gated_silu_f32` FP32
-  gated SiLU correctness fixture on H200.
+  gated SiLU correctness sweep on H200, including the existing smoke shape
+  and `moe_inter_dim: 2048` with `swiglu_limit: 10.0` provenance from
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`.
   `gluon_gemma_fused_rmsnorm_h200.md` records one generated
   `gemma_fused_rmsnorm_f32` FP32 Gemma-style fused norm correctness fixture on
   H200.

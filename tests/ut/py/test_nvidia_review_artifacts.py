@@ -2460,6 +2460,15 @@ def test_gluon_gated_silu_h200_evidence_is_review_safe():
         "gated_silu_f32",
         "out = value * gate / (1.0 + exp(-gate))",
         "--n 32",
+        "--sweep",
+        "case count: `2`",
+        "shape: `n=2048`",
+        (
+            "tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/"
+            "inference/config.json"
+        ),
+        "`moe_inter_dim: 2048`",
+        "`swiglu_limit: 10.0`",
         "--require-cuda --device 0 --arch compute_90",
         "status: passed",
         "max absolute error:",
@@ -2481,17 +2490,21 @@ def test_gluon_gated_silu_h200_evidence_is_review_safe():
     readme_text = readme.read_text(encoding="utf-8")
     assert "gluon_gated_silu_f32.py" in readme_text
     assert "gated_silu_f32" in readme_text
+    assert "--sweep" in readme_text
+    assert "moe_inter_dim: 2048" in readme_text
     assert "gluon_gated_silu_h200.md" in readme_text
 
     checklist_text = checklist.read_text(encoding="utf-8")
     assert "gluon_gated_silu_h200.md" in checklist_text
     assert "gated_silu_f32" in checklist_text
     assert "gated activation" in checklist_text
+    assert "moe_inter_dim: 2048" in checklist_text
     assert "Remaining activation gaps include gated activation" not in checklist_text
 
     status_text = status.read_text(encoding="utf-8")
     assert "gluon_gated_silu_h200.md" in status_text
     assert "generated Gluon FP32 gated SiLU fixture" in status_text
+    assert "moe_inter_dim: 2048" in status_text
     assert "not FlashInfer integration evidence" in status_text
 
 

@@ -1575,6 +1575,100 @@ def test_gluon_gated_silu_f32_example_main_requires_cuda_on_skip(
     assert payload["reason"] == "missing CUDA"
 
 
+def test_gluon_gated_silu_f32_sweep_reports_shape_provenance_and_reference(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_gated_silu_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_gated_silu_sweep(
+        output_dir=Path("tmp/gluon-gated-silu-shape-coverage-local"),
+        arch="compute_90",
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["schema_version"] == 1
+    assert result["kernel_name"] == "gated_silu_f32"
+    assert result["status"] == "skipped"
+    assert result["case_count"] == 2
+    assert result["passed_cases"] == 0
+    assert result["failed_cases"] == 0
+    assert result["skipped_cases"] == 2
+    assert [case["shape"] for case in result["cases"]] == [{"n": 32}, {"n": 2048}]
+    assert [case["provenance"] for case in result["cases"]] == [
+        "existing smoke correctness fixture",
+        (
+            "tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/"
+            "inference/config.json moe_inter_dim: 2048, swiglu_limit: 10.0"
+        ),
+    ]
+    assert {
+        case["reference"] for case in result["cases"]
+    } == {"out = value * gate / (1.0 + exp(-gate))"}
+    assert [case["status"] for case in result["cases"]] == ["skipped", "skipped"]
+    assert all(case["reason"] == "torch.cuda is not available" for case in result["cases"])
+    assert all("artifact" in case for case in result["cases"])
+    assert not any(
+        Path(case["artifact"]["source_path"]).is_absolute() for case in result["cases"]
+    )
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_gluon_gated_silu_f32_sweep_main_requires_cuda_on_skip(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    example = _load_gluon_gated_silu_example()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(example, "gated_silu_skip_reason", lambda: "missing CUDA")
+
+    code = example.main(
+        [
+            "--output-dir",
+            "tmp/gluon-gated-silu-shape-coverage-local",
+            "--sweep",
+            "--require-cuda",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert code == 2
+    assert captured.err == ""
+    assert payload["status"] == "skipped"
+    assert payload["case_count"] == 2
+    assert payload["skipped_cases"] == 2
+    assert [case["shape"] for case in payload["cases"]] == [{"n": 32}, {"n": 2048}]
+
+
+def test_gluon_gated_silu_f32_sweep_rejects_absolute_output_dir(capsys):
+    example = _load_gluon_gated_silu_example()
+
+    code = example.main(["--output-dir", "/tmp/private-output", "--sweep"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == "failed"
+    assert payload["error"] == "--output-dir must be repo-relative"
+    assert "/tmp/private-output" not in json.dumps(payload)
+
+
+def test_gluon_gated_silu_f32_sanitizes_equals_form_absolute_output_dir(capsys):
+    example = _load_gluon_gated_silu_example()
+
+    code = example.main(["--output-dir=/tmp/private-output"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == "failed"
+    assert payload["command"] == (
+        "examples/cuda/gluon_gated_silu_f32.py --output-dir=private-output"
+    )
+    assert "/tmp/private-output" not in json.dumps(payload)
+
+
 def test_gluon_rope_f32_sweep_main_requires_cuda_on_skip(
     tmp_path,
     capsys,

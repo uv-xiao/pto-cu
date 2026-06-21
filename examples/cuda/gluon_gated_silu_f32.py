@@ -19,6 +19,21 @@ from simpler_setup.kernel_compiler import KernelCompiler
 
 DEFAULT_OUTPUT_DIR = Path("tmp/gluon-gated-silu-local")
 GATED_SILU_REFERENCE = "out = value * gate / (1.0 + exp(-gate))"
+GATED_SILU_SWEEP_CASES = [
+    {
+        "name": "existing_smoke",
+        "n": 32,
+        "provenance": "existing smoke correctness fixture",
+    },
+    {
+        "name": "deepseek_v4_flash_moe_inter_dim",
+        "n": 2048,
+        "provenance": (
+            "tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/"
+            "inference/config.json moe_inter_dim: 2048, swiglu_limit: 10.0"
+        ),
+    },
+]
 
 
 def build_gated_silu_artifact(
@@ -125,6 +140,82 @@ def run_gated_silu_correctness(
     }
 
 
+def run_gated_silu_sweep(
+    *,
+    output_dir: str | Path | None = None,
+    arch: str = "compute_90",
+    atol: float = 1.0e-5,
+    rtol: float = 1.0e-5,
+    device: int = 0,
+    cases: list[dict] | None = None,
+    skip_reason: Callable[[], str | None] | None = None,
+) -> dict:
+    resolved_output_dir = DEFAULT_OUTPUT_DIR if output_dir is None else Path(output_dir)
+    if resolved_output_dir.is_absolute():
+        raise ValueError("--output-dir must be repo-relative")
+
+    case_specs = GATED_SILU_SWEEP_CASES if cases is None else cases
+    case_results = []
+    counts = {"passed": 0, "failed": 0, "skipped": 0}
+
+    for index, case in enumerate(case_specs):
+        case_name = str(case["name"])
+        n = int(case["n"])
+        provenance = str(case["provenance"])
+        try:
+            result = run_gated_silu_correctness(
+                output_dir=resolved_output_dir / case_name,
+                arch=arch,
+                n=n,
+                atol=atol,
+                rtol=rtol,
+                device=device,
+                skip_reason=skip_reason,
+            )
+            status = result["status"]
+            counts[status] += 1
+            case_results.append(
+                _sweep_case_payload(
+                    index=index,
+                    case_name=case_name,
+                    provenance=provenance,
+                    result=result,
+                )
+            )
+        except Exception as exc:
+            counts["failed"] += 1
+            case_results.append(
+                {
+                    "case_index": index,
+                    "case_name": case_name,
+                    "shape": {"n": n},
+                    "provenance": provenance,
+                    "reference": GATED_SILU_REFERENCE,
+                    "tolerance": {"atol": atol, "rtol": rtol},
+                    "status": "failed",
+                    "error_type": type(exc).__name__,
+                    "error": _clean_text(str(exc)),
+                }
+            )
+
+    aggregate_status = "passed"
+    if counts["failed"]:
+        aggregate_status = "failed"
+    elif counts["skipped"]:
+        aggregate_status = "skipped"
+
+    return {
+        "schema_version": 1,
+        "kernel_name": "gated_silu_f32",
+        "status": aggregate_status,
+        "case_count": len(case_results),
+        "passed_cases": counts["passed"],
+        "failed_cases": counts["failed"],
+        "skipped_cases": counts["skipped"],
+        "cases": case_results,
+    }
+
+
 class JsonArgumentParser(argparse.ArgumentParser):
     def error(self, message: str) -> None:
         raise ValueError(message)
@@ -143,6 +234,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument("--rtol", type=float, default=1.0e-5)
         parser.add_argument("--device", type=int, default=0)
         parser.add_argument(
+            "--sweep",
+            action="store_true",
+            help="run the fixed review sweep instead of the single default case",
+        )
+        parser.add_argument(
             "--require-cuda",
             action="store_true",
             help="return a non-zero status when dependencies or CUDA are unavailable",
@@ -150,14 +246,23 @@ def main(argv: list[str] | None = None) -> int:
         args = parser.parse_args(raw_args)
         require_cuda = args.require_cuda
 
-        result = run_gated_silu_correctness(
-            output_dir=args.output_dir,
-            arch=args.arch,
-            n=args.n,
-            atol=args.atol,
-            rtol=args.rtol,
-            device=args.device,
-        )
+        if args.sweep:
+            result = run_gated_silu_sweep(
+                output_dir=args.output_dir,
+                arch=args.arch,
+                atol=args.atol,
+                rtol=args.rtol,
+                device=args.device,
+            )
+        else:
+            result = run_gated_silu_correctness(
+                output_dir=args.output_dir,
+                arch=args.arch,
+                n=args.n,
+                atol=args.atol,
+                rtol=args.rtol,
+                device=args.device,
+            )
     except Exception as exc:
         result = {
             "schema_version": 1,
@@ -188,6 +293,30 @@ def _artifact_payload(artifact: GluonKernelArtifact) -> dict:
     }
 
 
+def _sweep_case_payload(
+    *,
+    index: int,
+    case_name: str,
+    provenance: str,
+    result: dict,
+) -> dict:
+    payload = {
+        "case_index": index,
+        "case_name": case_name,
+        "shape": result["shape"],
+        "provenance": provenance,
+        "reference": result["reference"],
+        "tolerance": result["tolerance"],
+        "status": result["status"],
+        "artifact": result["artifact"],
+    }
+    if "reason" in result:
+        payload["reason"] = result["reason"]
+    if "max_abs_error" in result:
+        payload["max_abs_error"] = result["max_abs_error"]
+    return payload
+
+
 def _relative_path(path: str | Path) -> str:
     path = Path(path)
     if path.is_absolute():
@@ -207,8 +336,13 @@ def _clean_text(text: str) -> str:
 def _display_command(raw_args: list[str]) -> str:
     safe_args = []
     for arg in raw_args:
-        path = Path(arg)
-        safe_args.append(path.name if path.is_absolute() else arg)
+        if "=" in arg:
+            option, value = arg.split("=", 1)
+            path = Path(value)
+            safe_args.append(f"{option}={path.name}" if path.is_absolute() else arg)
+        else:
+            path = Path(arg)
+            safe_args.append(path.name if path.is_absolute() else arg)
     command = "examples/cuda/gluon_gated_silu_f32.py"
     if safe_args:
         command = f"{command} {shlex.join(safe_args)}"

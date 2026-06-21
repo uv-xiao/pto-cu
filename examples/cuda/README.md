@@ -317,6 +317,18 @@ reports a skip; with `--require-cuda`, the same skip returns a non-zero exit
 status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_gated_silu_h200.md`.
 
+The review sweep keeps the default single-case behavior available while adding
+the existing `n=32` smoke case and a bounded `n=2048` case with
+`tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`
+`moe_inter_dim: 2048` and `swiglu_limit: 10.0` provenance:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_gated_silu_f32.py \
+  --output-dir tmp/gluon-gated-silu-shape-coverage-local \
+  --sweep --arch compute_90
+```
+
 ## DeepSeek V4 Flash Weight Manifest
 
 ```bash
