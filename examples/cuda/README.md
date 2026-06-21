@@ -191,6 +191,22 @@ visible NVIDIA GPU it reports a skip; with `--require-cuda`, the same skip
 returns a non-zero exit status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_rmsnorm_h200.md`.
 
+## Gluon FP32 LayerNorm
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_layernorm_f32.py \
+  --output-dir tmp/gluon-layernorm-local \
+  --rows 2 --hidden 16 --eps 1e-5 --arch compute_90
+```
+
+This generates the `layernorm_f32` Gluon source and checks FP32
+`(x - mean) * torch.rsqrt(var + eps) * weight + bias` correctness for one
+bounded normalization shape with per-hidden weight and bias. Without CUDA
+tooling or a visible NVIDIA GPU it reports a skip; with `--require-cuda`, the
+same skip returns a non-zero exit status. H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/gluon_layernorm_h200.md`.
+
 ## Gluon FP32 RoPE
 
 ```bash

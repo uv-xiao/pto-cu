@@ -69,6 +69,12 @@ the normalization sub-slice, recorded in
 FlashInfer integration evidence, production serving readiness, DeepSeek
 semantic correctness, fused-kernel evidence, or simpler-nv/vLLM integration
 evidence.
+The checklist also includes a generated Gluon FP32 LayerNorm fixture on H200,
+recorded in `docs/in_progress/nvidia_backend/gluon_layernorm_h200.md`; this
+is not FlashInfer integration evidence, production serving readiness,
+DeepSeek semantic correctness, Gemma-style fused norm coverage, activation
+coverage, fused attention, KV-cache integration, throughput, latency, or
+simpler-nv/vLLM integration evidence.
 The checklist also includes a generated Gluon FP32 RoPE fixture on H200,
 recorded in `docs/in_progress/nvidia_backend/gluon_rope_h200.md`; this is
 not FlashInfer integration evidence, production serving readiness, DeepSeek
@@ -95,6 +101,7 @@ Evidence:
 - `docs/in_progress/nvidia_backend/pypto_serving_source_contract_h200.md`
 - `docs/in_progress/nvidia_backend/flashinfer_serving_operator_checklist.md`
 - `docs/in_progress/nvidia_backend/gluon_rmsnorm_h200.md`
+- `docs/in_progress/nvidia_backend/gluon_layernorm_h200.md`
 - `docs/in_progress/nvidia_backend/gluon_rope_h200.md`
 
 Non-claims:
