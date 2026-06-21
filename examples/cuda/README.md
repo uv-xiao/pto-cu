@@ -92,7 +92,9 @@ source-contract evidence is recorded in
 The default launcher is the existing CUDA seed path. Use
 `--kernel-launcher gluon-moe-expert` to route the same synthetic or cloned
 source request through the generated Gluon MoE expert correctness harness for
-`moe_expert_affine_f32`. Use
+`moe_expert_affine_f32`. Use `--kernel-launcher gluon-topk-sampling` to route
+the same request through the generated Gluon Top-K sampling correctness
+harness for `topk_sampling_f32`. Use
 `--kernel-launcher persistent-moe-dispatch-combine` to route the same request
 through the existing persistent-device MoE dispatch/combine example via
 `run_moe_dispatch_combine(...)`.
@@ -131,7 +133,10 @@ or assistant deltas, finish reason, PTO token IDs, launch count, and selected
 kernel-launch metadata. Generated Gluon launch mode records
 `launch_kind: gluon-moe-expert`, `kernel_name: moe_expert_affine_f32`, phase,
 status, shape, generated artifact/source digest metadata, and numerical
-max-error metadata when available. Persistent MoE launch mode records
+max-error metadata when available. The Top-K sampling launch mode records
+`launch_kind: gluon-topk-sampling`, `kernel_name: topk_sampling_f32`, phase,
+status, `rows=3, vocab=16, k=5`, generated artifact/source digest metadata,
+and validation metadata when available. Persistent MoE launch mode records
 `launch_kind: persistent-moe-dispatch-combine`,
 `dag_shape: graph_descriptor_moe_dispatch_combine`, phase, status, shape,
 completed count, max absolute error, scheduler error summary, and the Gluon
@@ -139,7 +144,8 @@ expert bridge/task-body digest when available.
 It is not DeepSeek-V4-Flash serving, not vLLM plugin integration, not
 FlashInfer integration, not production readiness, not throughput or latency,
 not distributed serving, and not production fused MoE dispatch/combine serving
-readiness.
+readiness. The Top-K launch mode is also not tokenizer semantics, generated
+text correctness, DeepSeek serving readiness, or production serving evidence.
 
 ## Persistent Layered-Cross Graph
 

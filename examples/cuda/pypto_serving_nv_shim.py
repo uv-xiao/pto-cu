@@ -21,6 +21,8 @@ ROOT = Path(__file__).resolve().parents[2]
 PYPTO_SERVING_SOURCE = ROOT / "tmp" / "sources" / "repos" / "hw-native-sys" / "pypto-serving"
 DEFAULT_GENERATED_GLUON_OUTPUT_DIR = Path("tmp/pypto-serving-gluon-moe-expert")
 PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND = "persistent-moe-dispatch-combine"
+GLUON_TOPK_SAMPLING_LAUNCH_KIND = "gluon-topk-sampling"
+DEFAULT_GENERATED_GLUON_TOPK_OUTPUT_DIR = Path("tmp/pypto-serving-gluon-topk-sampling")
 
 
 @dataclass(frozen=True)
@@ -1163,6 +1165,51 @@ def create_generated_gluon_moe_launcher(
     return launch
 
 
+def create_generated_gluon_topk_sampling_launcher(
+    *,
+    output_dir: Path = DEFAULT_GENERATED_GLUON_TOPK_OUTPUT_DIR,
+    rows: int = 3,
+    vocab: int = 16,
+    k: int = 5,
+) -> Callable[[KernelLaunchRequest], dict[str, Any]]:
+    def launch(request: KernelLaunchRequest) -> dict[str, Any]:
+        result = run_topk_sampling_correctness(
+            output_dir=output_dir / request.phase,
+            arch=request.arch,
+            rows=rows,
+            vocab=vocab,
+            k=k,
+            device=request.device_id,
+        )
+        artifact = result.get("artifact", {})
+        if not isinstance(artifact, dict):
+            artifact = {}
+        validation = result.get("validation", {})
+        if not isinstance(validation, dict):
+            validation = {}
+        non_claims = result.get("non_claims", [])
+        if not isinstance(non_claims, list):
+            non_claims = []
+        launch_result = {
+            "status": result.get("status", "failed"),
+            "phase": request.phase,
+            "op": request.op,
+            "launch_kind": GLUON_TOPK_SAMPLING_LAUNCH_KIND,
+            "kernel_name": result.get("kernel_name", "topk_sampling_f32"),
+            "shape": result.get("shape", {"rows": rows, "vocab": vocab, "k": k}),
+            "artifact": artifact,
+            "source_sha256": artifact.get("source_sha256", ""),
+            "validation": validation,
+            "non_claims": non_claims,
+            "generated_kernel": result,
+        }
+        if "reason" in result:
+            launch_result["reason"] = result["reason"]
+        return launch_result
+
+    return launch
+
+
 def create_persistent_moe_dispatch_combine_launcher(
     *,
     scheduler_blocks: int = 1,
@@ -1237,6 +1284,12 @@ def run_moe_expert_correctness(**kwargs) -> dict[str, Any]:
     from examples.cuda.gluon_moe_expert_affine import run_moe_expert_correctness
 
     return run_moe_expert_correctness(**kwargs)
+
+
+def run_topk_sampling_correctness(**kwargs) -> dict[str, Any]:
+    from examples.cuda.gluon_topk_sampling import run_topk_sampling_correctness
+
+    return run_topk_sampling_correctness(**kwargs)
 
 
 def run_moe_dispatch_combine(**kwargs) -> dict[str, Any]:
@@ -1758,6 +1811,7 @@ def main(argv: list[str] | None = None) -> int:
         choices=(
             "cuda-seed",
             "gluon-moe-expert",
+            GLUON_TOPK_SAMPLING_LAUNCH_KIND,
             PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND,
         ),
         default="cuda-seed",
@@ -1931,6 +1985,10 @@ def _create_kernel_launcher_from_args(args) -> Callable[[KernelLaunchRequest], d
         return None
     if args.kernel_launcher == "gluon-moe-expert":
         return create_generated_gluon_moe_launcher(output_dir=args.generated_output_dir)
+    if args.kernel_launcher == GLUON_TOPK_SAMPLING_LAUNCH_KIND:
+        return create_generated_gluon_topk_sampling_launcher(
+            output_dir=DEFAULT_GENERATED_GLUON_TOPK_OUTPUT_DIR
+        )
     if args.kernel_launcher == PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND:
         return create_persistent_moe_dispatch_combine_launcher()
     raise ValueError(f"unsupported kernel launcher: {args.kernel_launcher}")

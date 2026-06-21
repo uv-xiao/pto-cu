@@ -38,7 +38,7 @@ The tracked entry points are:
 - CLI flag: `--pypto-serving-source-chat-stream`
 - CLI flag: `--pypto-serving-vllm-compat`
 - CLI flag:
-  `--kernel-launcher {cuda-seed,gluon-moe-expert,persistent-moe-dispatch-combine}`
+  `--kernel-launcher {cuda-seed,gluon-moe-expert,gluon-topk-sampling,persistent-moe-dispatch-combine}`
 
 ## Source Chat Contract
 
@@ -297,6 +297,22 @@ source_sha256: 38bb58f3f019a6eefb4016ff180b988f0b1532e5eee4bade5e49d7f57038b842
 
 Local unit coverage proves the completion, chat, streaming completion, and
 streaming chat source fixtures can all receive this generated launcher hook.
+
+## Generated Gluon Top-K Sampling Launch Contract
+
+Passing `--kernel-launcher gluon-topk-sampling` routes the same synthetic
+`pypto-serving` request through
+`examples/cuda/gluon_topk_sampling.py::run_topk_sampling_correctness(...)`.
+The source-route launcher records `launch_kind: gluon-topk-sampling`,
+`kernel_name: topk_sampling_f32`, phase, status, shape, generated
+artifact/source digest metadata, validation metadata when present, and the
+same non-claim boundary as the standalone Top-K harness.
+
+H200 evidence for this selected launcher is recorded in
+`pypto_serving_topk_sampling_launcher_h200.md`. It is a serving-route
+launcher/probe for a generated Top-K sampling correctness gate, not
+FlashInfer integration, tokenizer semantics, generated text correctness,
+DeepSeek serving readiness, or production serving evidence.
 
 ## H200 Generated Gluon MoE Source-Route Matrix
 

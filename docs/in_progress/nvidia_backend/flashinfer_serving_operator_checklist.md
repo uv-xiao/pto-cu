@@ -115,6 +115,13 @@ Serving-relevant families verified from the README:
   payload shapes before comparisons. vLLM probes use bounded sampler settings
   for real DeepSeek API requests, but those sampler settings do not route
   through PTO kernels.
+  `pypto_serving_topk_sampling_launcher_h200.md` records a
+  serving-route launcher/probe for the existing generated
+  `topk_sampling_f32` Top-K correctness gate through the synthetic
+  pypto-serving/simpler-nv source route. It preserves
+  `launch_kind: gluon-topk-sampling`, shape
+  `rows=3, vocab=16, k=5`, artifact/source digest metadata, and validation
+  metadata.
 - **Gap / next PTO milestone:** connect sampling to a serving stack. Remaining
   sampling gaps include serving-stack integration.
 - **Explicit non-claim:** this is not FlashInfer integration evidence, not
