@@ -468,6 +468,80 @@ def test_generated_gluon_minp_sampling_launcher_records_review_safe_metadata(mon
     assert result["generated_kernel"]["validation"]["selected_counts_match"] is True
 
 
+def test_generated_gluon_speculative_decoding_launcher_records_review_safe_metadata(monkeypatch):
+    module = _load_serving_shim_example()
+
+    def fake_correctness(**kwargs):
+        return {
+            "schema_version": 1,
+            "kernel_name": "speculative_accept_f32",
+            "artifact": {
+                "source_path": "tmp/gluon-speculative-local/speculative_accept_f32.py",
+                "source_sha256": "spec123",
+                "manifest_path": "tmp/gluon-speculative-local/manifest.json",
+            },
+            "shape": {
+                "rows": kwargs["rows"],
+                "max_draft": kwargs["max_draft"],
+            },
+            "request": {
+                "sampling_operator": "speculative-decoding-accept-reject",
+            },
+            "status": "passed",
+            "validation": {
+                "accepted_token_ids_shape_match": True,
+                "accepted_token_ids_match": True,
+                "accept_mask_shape_match": True,
+                "accept_mask_match": True,
+                "accepted_counts_shape_match": True,
+                "accepted_counts_match": True,
+            },
+            "non_claims": [
+                "not FlashInfer integration evidence",
+                "not generated-text or tokenizer-semantics evidence",
+            ],
+        }
+
+    monkeypatch.setattr(
+        module,
+        "run_speculative_decoding_correctness",
+        fake_correctness,
+        raising=False,
+    )
+
+    launcher = module.create_generated_gluon_speculative_decoding_launcher(
+        output_dir=Path("tmp/unit-gluon-speculative-decoding"),
+        rows=3,
+        max_draft=6,
+    )
+    result = launcher(
+        module.KernelLaunchRequest(
+            phase="prefill",
+            platform="cuda",
+            runtime="host_schedule",
+            device_id=0,
+            op="add",
+            n=31,
+            block_dim=16,
+            arch="compute_90",
+        )
+    )
+
+    assert result["status"] == "passed"
+    assert result["launch_kind"] == "gluon-speculative-decoding"
+    assert result["kernel_name"] == "speculative_accept_f32"
+    assert result["phase"] == "prefill"
+    assert result["shape"] == {"rows": 3, "max_draft": 6}
+    assert result["request"]["sampling_operator"] == "speculative-decoding-accept-reject"
+    assert result["artifact"]["source_sha256"] == "spec123"
+    assert result["source_sha256"] == "spec123"
+    assert result["validation"]["accepted_token_ids_match"] is True
+    assert result["validation"]["accept_mask_match"] is True
+    assert result["validation"]["accepted_counts_match"] is True
+    assert "not FlashInfer integration evidence" in result["non_claims"]
+    assert result["generated_kernel"]["validation"]["accepted_counts_match"] is True
+
+
 def test_persistent_moe_dispatch_combine_launcher_records_review_safe_metadata(monkeypatch):
     module = _load_serving_shim_example()
 
@@ -859,6 +933,85 @@ def test_minp_sampling_launcher_can_run_through_source_route_fixtures(monkeypatc
     ]
 
 
+def test_speculative_decoding_launcher_can_run_through_source_route_fixtures(monkeypatch):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+    launches = []
+
+    def fake_speculative_correctness(**kwargs):
+        launches.append(kwargs)
+        return {
+            "status": "passed",
+            "kernel_name": "speculative_accept_f32",
+            "shape": {"rows": kwargs["rows"], "max_draft": kwargs["max_draft"]},
+            "request": {"sampling_operator": "speculative-decoding-accept-reject"},
+            "artifact": {"source_sha256": "spec123"},
+            "validation": {
+                "accepted_token_ids_match": True,
+                "accept_mask_match": True,
+                "accepted_counts_match": True,
+            },
+            "non_claims": ["not FlashInfer integration evidence"],
+        }
+
+    monkeypatch.setattr(
+        module,
+        "run_speculative_decoding_correctness",
+        fake_speculative_correctness,
+        raising=False,
+    )
+    launcher = module.create_generated_gluon_speculative_decoding_launcher(
+        rows=3,
+        max_draft=6,
+    )
+
+    completion = module.run_pypto_serving_source_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=launcher,
+    )
+    chat = module.run_pypto_serving_source_chat_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=launcher,
+    )
+    stream = module.run_pypto_serving_source_stream_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=launcher,
+    )
+    chat_stream = module.run_pypto_serving_source_stream_chat_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=launcher,
+    )
+
+    results = [completion, chat, stream, chat_stream]
+    assert [item["pto_status"] for item in results] == [
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+    ]
+    assert len(launches) == 4
+    assert {item["rows"] for item in launches} == {3}
+    assert {item["max_draft"] for item in launches} == {6}
+    assert [
+        result["pto_launch_results"][0]["launch_kind"] for result in results
+    ] == [
+        "gluon-speculative-decoding",
+        "gluon-speculative-decoding",
+        "gluon-speculative-decoding",
+        "gluon-speculative-decoding",
+    ]
+
+
 def test_persistent_launcher_can_run_through_source_route_fixtures(monkeypatch):
     module = _load_serving_shim_example()
     pytest.importorskip("fastapi.testclient")
@@ -1134,6 +1287,63 @@ def test_minp_sampling_cli_mode_outputs_launch_metadata(monkeypatch, capsys):
     assert launch["request"]["min_p"] == 0.50
     assert launch["artifact"]["source_sha256"] == "minp123"
     assert launch["validation"]["max_abs_error"] == 0.0
+
+
+def test_speculative_decoding_cli_mode_outputs_launch_metadata(monkeypatch, capsys):
+    module = _load_serving_shim_example()
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+
+    def fake_speculative_launcher(**_kwargs):
+        def launcher(request):
+            return {
+                "status": "passed",
+                "phase": request.phase,
+                "launch_kind": "gluon-speculative-decoding",
+                "kernel_name": "speculative_accept_f32",
+                "shape": {"rows": 3, "max_draft": 6},
+                "request": {"sampling_operator": "speculative-decoding-accept-reject"},
+                "artifact": {"source_sha256": "spec123"},
+                "validation": {
+                    "accepted_token_ids_match": True,
+                    "accept_mask_match": True,
+                    "accepted_counts_match": True,
+                },
+            }
+
+        return launcher
+
+    monkeypatch.setattr(
+        module,
+        "create_generated_gluon_speculative_decoding_launcher",
+        fake_speculative_launcher,
+        raising=False,
+    )
+
+    code = module.main(
+        [
+            "--kernel-launcher",
+            "gluon-speculative-decoding",
+            "--pypto-serving-source",
+            "--prompt",
+            "hello",
+            "--max-new-tokens",
+            "1",
+        ]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert output["pto_status"] == "passed"
+    launch = output["pto_launch_results"][0]
+    assert launch["launch_kind"] == "gluon-speculative-decoding"
+    assert launch["kernel_name"] == "speculative_accept_f32"
+    assert launch["shape"] == {"rows": 3, "max_draft": 6}
+    assert launch["request"]["sampling_operator"] == "speculative-decoding-accept-reject"
+    assert launch["artifact"]["source_sha256"] == "spec123"
+    assert launch["validation"]["accepted_token_ids_match"] is True
+    assert launch["validation"]["accept_mask_match"] is True
+    assert launch["validation"]["accepted_counts_match"] is True
 
 
 def test_persistent_moe_cli_mode_outputs_launch_metadata(monkeypatch, capsys):
@@ -2243,6 +2453,54 @@ def test_minp_sampling_launcher_can_run_through_vllm_compat_summary(monkeypatch)
         "gluon-minp-sampling",
         "gluon-minp-sampling",
         "gluon-minp-sampling",
+    ]
+
+
+def test_speculative_decoding_launcher_can_run_through_vllm_compat_summary(monkeypatch):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+    launches = []
+
+    def speculative_launcher(request):
+        launches.append(request)
+        return {
+            "status": "passed",
+            "phase": request.phase,
+            "launch_kind": "gluon-speculative-decoding",
+            "kernel_name": "speculative_accept_f32",
+            "shape": {"rows": 3, "max_draft": 6},
+            "request": {"sampling_operator": "speculative-decoding-accept-reject"},
+            "validation": {
+                "accepted_token_ids_match": True,
+                "accept_mask_match": True,
+                "accepted_counts_match": True,
+            },
+        }
+
+    summary = module.run_pypto_serving_vllm_compat_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=1,
+        kernel_launcher=speculative_launcher,
+    )
+
+    assert summary["status"] == "passed"
+    assert [launch.phase for launch in launches] == [
+        "prefill",
+        "prefill",
+        "prefill",
+        "prefill",
+    ]
+    assert [
+        fixture["observed"]["pto_launch_results"][0]["launch_kind"]
+        for fixture in summary["fixtures"]
+    ] == [
+        "gluon-speculative-decoding",
+        "gluon-speculative-decoding",
+        "gluon-speculative-decoding",
+        "gluon-speculative-decoding",
     ]
 
 

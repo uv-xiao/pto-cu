@@ -136,6 +136,13 @@ Serving-relevant families verified from the README:
   `launch_kind: gluon-minp-sampling`, shape
   `rows=3, vocab=16, max_k=6, min_p=0.5`, artifact/source digest metadata,
   and validation metadata.
+  `pypto_serving_speculative_decoding_launcher_h200.md` records a
+  serving-route launcher/probe for the existing generated
+  `speculative_accept_f32` speculative decoding accept/reject correctness
+  gate through the synthetic pypto-serving/simpler-nv source route. It
+  preserves `launch_kind: gluon-speculative-decoding`, shape
+  `rows=3, max_draft=6`, artifact/source digest metadata, and accepted-token,
+  accept-mask, and accepted-count validation metadata.
 - **Gap / next PTO milestone:** connect sampling to a serving stack. Remaining
   sampling gaps include serving-stack integration.
 - **Explicit non-claim:** this is not FlashInfer integration evidence, not

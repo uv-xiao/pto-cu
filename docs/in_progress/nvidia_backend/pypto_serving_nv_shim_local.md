@@ -34,6 +34,10 @@ same serving boundaries as the source `pypto-serving` contracts.
   `--kernel-launcher gluon-minp-sampling` mode calls the generated Gluon
   Min-P sampling correctness harness for `minp_sampling_f32` and records
   artifact/source digest plus validation metadata in `launch_results`. The
+  `--kernel-launcher gluon-speculative-decoding` mode calls the generated
+  Gluon speculative decoding accept/reject correctness harness for
+  `speculative_accept_f32` and records artifact/source digest plus validation
+  metadata in `launch_results`. The
   `--kernel-launcher persistent-moe-dispatch-combine` mode calls the existing
   persistent-device dispatch/combine graph example through
   `run_moe_dispatch_combine(...)` and records bounded DAG metadata in
@@ -154,6 +158,21 @@ source_sha256: <generated-source-digest-when-available>
 validation.max_abs_error: <max-absolute-error-when-present>
 ```
 
+Generated speculative decoding launch mode is skip-safe on machines without
+CUDA, torch CUDA, or Triton Gluon. Its local JSON metadata records:
+
+```text
+launch_kind: gluon-speculative-decoding
+kernel_name: speculative_accept_f32
+phase: prefill|decode
+shape: {rows: 3, max_draft: 6}
+sampling_operator: speculative-decoding-accept-reject
+source_sha256: <generated-source-digest-when-available>
+validation.accepted_token_ids_match: <bool-when-present>
+validation.accept_mask_match: <bool-when-present>
+validation.accepted_counts_match: <bool-when-present>
+```
+
 Persistent MoE dispatch/combine launch mode is skip-safe on machines without
 CUDA, runtime build prerequisites, or a visible NVIDIA GPU. Its local JSON
 metadata records:
@@ -190,6 +209,8 @@ Top-P sampling launcher H200 evidence is recorded separately in
 `docs/in_progress/nvidia_backend/pypto_serving_topp_sampling_launcher_h200.md`.
 Min-P sampling launcher H200 evidence is recorded separately in
 `docs/in_progress/nvidia_backend/pypto_serving_minp_sampling_launcher_h200.md`.
+Speculative decoding launcher H200 evidence is recorded separately in
+`docs/in_progress/nvidia_backend/pypto_serving_speculative_decoding_launcher_h200.md`.
 
 This is not serving evidence. It is not DeepSeek-V4-Flash correctness. It is
 not vLLM plugin evidence. It is not a throughput, latency, UCCL serving, or
