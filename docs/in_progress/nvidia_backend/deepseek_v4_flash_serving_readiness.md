@@ -1407,6 +1407,9 @@ local_only_vllm_chat_256k_needle_stream_repeat: passed under recorded
   262144-token boundary and one server lifecycle
 local_only_vllm_chat_256k_needle_stream_position_sweep: passed under recorded
   262144-token boundary and one server lifecycle
+local_only_vllm_chat_256k_needle_stream_usage_contract: pending remote H200
+  evidence for port 28157 with stream_options.include_usage=true and strict
+  exact expected answer PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28157
 local_only_vllm_chat_256k_needle_stream_truncated_failure: failed under
   recorded 262144-token boundary with max_tokens=1 as expected
 one_token_inference_smoke: passed under recorded 4096-token boundary
@@ -1703,11 +1706,19 @@ Status marker:
 
 ## Next Gate
 
-The next PR-sized gate can stay under the same local-only vLLM boundary for
-another narrowly scoped failure-mode characterization or serving-contract
-follow-up only after preserving the request-plus-completion budget under
-`max_model_len=262144`, still without recording raw prompt text, dumping raw
-request payloads, or expanding beyond synthetic-test-scoped generated output.
+The next PR-sized gate is the pending OpenAI-compatible near-256K streaming
+`/v1/chat/completions` usage-contract follow-up:
+`examples/cuda/vllm_deepseek_v4_chat_256k_needle_stream_usage_contract_probe.py`.
+The review recipe uses port `28157`, `stream_options.include_usage=true`,
+expected answer `PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28157`,
+`max_model_len=262144`, `tensor_parallel_size=2`, target prompt budget
+`255800`, `max_tokens=64`, `temperature=0.0`, `top_p=1.0`, and `seed=0`.
+It must require returned streaming usage in addition to strict exact output
+matching. Fresh remote H200 evidence for this follow-up remains pending; no
+passed marker is recorded here. The same review-safety constraints still
+apply: do not record raw prompt text, dump raw request payloads, record raw
+streaming chunks, expose token IDs/logprobs, or expand beyond
+synthetic-test-scoped generated output.
 
 ## Non-Claims
 
