@@ -26,20 +26,27 @@ correctly:
   as `phase: decode` and offsets the causal query index by
   `seqlen_k - seqlen_q`, with PyTorch reference
   `softmax(masked_fill((q @ k.T) * scale, key_index > query_index + (seqlen_k - seqlen_q), -inf)) @ v`
+- append-shaped causal gate: multiple queries over a longer KV prefix are
+  marked as `phase: append` and use the same `seqlen_k - seqlen_q` causal
+  query offset. The bounded `4x32x64` gate records
+  `causal_query_offset: 28` and uses the same shifted PyTorch reference
+  formula as the decode-shaped gate.
 
 The harness at `examples/cuda/gluon_flashattention_fwd.py` builds the generated
 artifact, loads it, and runs FP32 correctness cases against PyTorch when CUDA
 and a Gluon build with `dot_fma` support are available. The default path still
 runs one `32x32x32` single-tile case. The single-case path also accepts
-`--tile-shape MxNxD` for bounded repros such as `32x32x64` and `--causal` for
-the bounded causal single-tile gate. A causal `1x32x64` single-case run is
-reported as `phase: decode` to distinguish single-query decode-shaped
-evidence from the older same-length causal tile. The `--sweep` path emits
-aggregate structured JSON with `schema_version: 1`, aggregate status and case
-counts, and per-case shape, provenance, artifact metadata, status, phase,
-causal flag, and max error when run. Artifact paths are repo-relative,
-absolute `--output-dir` values are rejected, and exception text is sanitized
-so private absolute paths are not recorded.
+`--tile-shape MxNxD` for bounded repros such as `32x32x64`, `1x32x64`, and
+`4x32x64`, with `--causal` for bounded causal gates. A causal `1x32x64`
+single-case run is reported as `phase: decode` to distinguish single-query
+decode-shaped evidence from the older same-length causal tile. A causal
+`4x32x64` single-case run is reported as `phase: append` to distinguish
+small multi-query append-shaped evidence from full append KV-cache coverage.
+The `--sweep` path emits aggregate structured JSON with `schema_version: 1`,
+aggregate status and case counts, and per-case shape, provenance, artifact
+metadata, status, phase, causal flag, and max error when run. Artifact paths
+are repo-relative, absolute `--output-dir` values are rejected, and exception
+text is sanitized so private absolute paths are not recorded.
 
 The sweep includes:
 
@@ -226,13 +233,61 @@ evidence, not paged/ragged KV-cache coverage, not full decode, prefill, or
 append coverage, not MLA/cascade/sparse/POD attention coverage, and not
 DeepSeek semantic correctness.
 
+## Append-Shaped Multi-Query Gate
+
+On 2026-06-22, the small multi-query append-shaped causal gate generated and
+launched on the same H200 class machine and passed correctness against the
+offset masked PyTorch reference. The remote run used tree sync into
+`<remote-pto-cu>` through the generic CUDA runner, and the preserved remote
+Gluon Python environment because the remote default Python lacked Torch and
+Triton/Gluon.
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'PYTHONPATH=$PWD:$PWD/python \
+    <remote-gluon-venv>/bin/python \
+      examples/cuda/gluon_flashattention_fwd.py \
+      --output-dir tmp/gluon-flashattention-append-boundary-h200 \
+      --arch compute_90 --tile-shape 4x32x64 --causal --require-cuda'
+```
+
+Distilled passed result:
+
+```text
+schema_version: 1
+status: passed
+phase: append
+causal: true
+shape: seqlen_q=4, seqlen_k=32, head_dim=64
+causal_query_offset: 28
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index + (seqlen_k - seqlen_q), -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+max_abs_error: 1.7881393432617188e-07
+artifact: arch=compute_90, compiler_role=pto-isa-replacement
+source_sha256: 953f398978a0b8241e56273ca138912f02a6363e4ef27529037d4a5ec5e5632a
+tile_shape: 4x32x64
+artifact paths are repo-relative
+machine class: H200
+private absolute paths are not recorded
+```
+
+This result is bounded append-shaped evidence for one generated small
+multi-query FP32 causal FlashAttention source. It is not FlashInfer
+integration evidence, not FlashInfer parity, not vLLM/simpler-nv integration
+evidence, not production serving readiness, not performance, throughput, or
+latency evidence, not paged/ragged KV-cache coverage, not full decode,
+prefill, full append, or append KV-cache coverage, not
+MLA/cascade/sparse/POD attention coverage, and not DeepSeek semantic
+correctness.
+
 ## Boundary
 
 This milestone covers a small single-tile FlashAttention correctness sweep
-and bounded causal single-tile plus single-query decode-shaped gates only. It
-is not benchmark evidence and does not cover block streaming, varlen/page
-tables, persistent scheduling, MoE, distributed communication, serving, or
-DeepSeek integration.
+and bounded causal single-tile, single-query decode-shaped, and small
+multi-query append-shaped gates only. It is not benchmark evidence and does
+not cover block streaming, varlen/page tables, persistent scheduling, MoE,
+distributed communication, serving, or DeepSeek integration.
 
 Non-claims:
 
@@ -242,6 +297,7 @@ Non-claims:
 - not performance, throughput, or latency evidence
 - not paged/ragged KV-cache coverage
 - not full decode, prefill, or append coverage
+- not full append or append KV-cache coverage
 - not multi-tile attention coverage
 - not fused attention integration
 - not KV-cache integration

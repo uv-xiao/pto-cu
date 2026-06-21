@@ -390,21 +390,23 @@ def _render_tiled_tensor_core_gemm_source(
 
 def _render_flashattention_source(tile_shape: tuple[int, int, int]) -> str:
     block_m, block_n, block_d = tile_shape
-    is_decode_shape = block_m == 1 and block_n > block_m
-    kernel_arg_suffix = ", causal_query_offset: gl.constexpr" if is_decode_shape else ""
+    uses_causal_query_offset = block_m < block_n
+    kernel_arg_suffix = (
+        ", causal_query_offset: gl.constexpr" if uses_causal_query_offset else ""
+    )
     causal_mask_source = (
         "causal_mask = offs_n <= (offs_m + causal_query_offset)"
-        if is_decode_shape
+        if uses_causal_query_offset
         else "causal_mask = offs_n <= offs_m"
     )
     wrapper_offset_source = (
         f"            causal_query_offset = {block_n - block_m}\n"
-        if is_decode_shape
+        if uses_causal_query_offset
         else ""
     )
     kernel_call_suffix = (
         "\n                causal_query_offset,"
-        if is_decode_shape
+        if uses_causal_query_offset
         else ""
     )
     if block_n == block_d:
