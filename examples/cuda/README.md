@@ -86,10 +86,20 @@ source-contract evidence is recorded in
 `docs/in_progress/nvidia_backend/pypto_serving_source_contract_h200.md`.
 
 Use `--openai-completion` to emit a synthetic `/v1/completions` response
-shape, `--engine` to route through the synthetic `LLMEngine`-shaped fixture,
-`--http-fixture` to exercise the local FastAPI `/v1/completions` fixture, or
-`--pypto-serving-source` to exercise the actual cloned `pypto-serving`
-`create_serving_app` route with the synthetic simpler-nv adapter.
+shape, `--openai-chat-completion` to emit a synthetic
+`/v1/chat/completions` response shape, `--engine` to route through the
+synthetic `LLMEngine`-shaped fixture, `--http-fixture` to exercise the local
+FastAPI fixture, or `--pypto-serving-source` to exercise the actual cloned
+`pypto-serving` `create_serving_app` `/v1/completions` route with the
+synthetic simpler-nv adapter.
+
+The local FastAPI fixture exposes `/v1/completions` and
+`/v1/chat/completions`. The chat fixture accepts a bounded non-streaming
+OpenAI-style `messages` list with at least one user content entry and returns
+a deterministic assistant message. The source-route fixture remains
+`/v1/completions`-only in this worktree because the cloned
+`tmp/sources/repos/hw-native-sys/pypto-serving` checkout is unavailable for
+chat route inspection.
 
 ## Persistent Layered-Cross Graph
 

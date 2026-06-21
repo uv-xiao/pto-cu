@@ -30,6 +30,20 @@ The tracked entry points are:
 - `run_pypto_serving_source_completion_fixture(...)`
 - CLI flag: `--pypto-serving-source`
 
+## Current Chat Source Limitation
+
+The local synthetic shim now has `/v1/chat/completions` coverage through
+`SyntheticPyptoServingEngine` and the in-repo FastAPI fixture. The actual
+cloned source route is unchanged in this slice: in this worktree,
+`tmp/sources/repos/hw-native-sys/pypto-serving is absent`, so
+`/v1/chat/completions` support in the cloned `pypto-serving` source cannot be
+inspected or exercised here.
+
+Because the source checkout is unavailable, this slice records the limitation
+instead of adding a source-route chat fixture. The source-contract fixture
+continues to cover only `/v1/completions` until a worker with the cloned source
+present verifies whether the real source server exposes `/v1/chat/completions`.
+
 ## Local Verification
 
 Focused source-contract tests:
@@ -65,7 +79,7 @@ The generic remote runner excludes `tmp/`, so the `pypto-serving` source clone
 was synced explicitly before the H200 run:
 
 ```bash
-ssh <h200-host> 'mkdir -p <remote-pto-cu>/tmp/sources/repos/hw-native-sys'
+<remote-shell> <h200-host> 'mkdir -p <remote-pto-cu>/tmp/sources/repos/hw-native-sys'
 rsync -a --delete --exclude=.git \
   tmp/sources/repos/hw-native-sys/pypto-serving/ \
   <h200-host>:<remote-pto-cu>/tmp/sources/repos/hw-native-sys/pypto-serving/
@@ -107,5 +121,5 @@ launch behind the request path. It is stronger than the local in-repo FastAPI
 lookalike because it imports and executes the cloned source server route.
 
 This is not DeepSeek-V4-Flash correctness. It is not vLLM plugin evidence. It
-is not real model loading, tokenizer, streaming, chat-completion, throughput,
-latency, or multi-node evidence.
+is not real model loading, tokenizer semantics, streaming, source-route
+chat-completion, throughput, latency, or multi-node evidence.

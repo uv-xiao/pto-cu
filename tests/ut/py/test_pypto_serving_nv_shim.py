@@ -265,6 +265,64 @@ def test_engine_completion_uses_initialized_model_and_openai_shape():
     assert response["pto_engine"] == "SyntheticPyptoServingEngine"
 
 
+def test_engine_chat_completion_uses_messages_and_openai_shape():
+    module = _load_serving_shim_example()
+    launches = []
+
+    def record_launch(request):
+        launches.append(request)
+        return {"status": "passed", "phase": request.phase, "op": request.op}
+
+    engine = module.SyntheticPyptoServingEngine(kernel_launcher=record_launch)
+    engine.init_model("synthetic-simpler-nv", model_dir="synthetic://simpler-nv")
+
+    response = engine.create_openai_chat_completion(
+        model="synthetic-simpler-nv",
+        messages=[
+            {"role": "system", "content": "Answer briefly."},
+            {"role": "user", "content": "hello"},
+        ],
+        max_tokens=2,
+    )
+
+    assert response["id"] == "chatcmpl-synthetic-0"
+    assert response["object"] == "chat.completion"
+    assert response["created"] == 0
+    assert response["model"] == "synthetic-simpler-nv"
+    assert response["choices"] == [
+        {
+            "index": 0,
+            "message": {"role": "assistant", "content": "NV"},
+            "finish_reason": "length",
+        }
+    ]
+    assert response["usage"] == {
+        "prompt_tokens": 1,
+        "completion_tokens": 2,
+        "total_tokens": 3,
+    }
+    assert response["pto_backend"] == "simpler-nv"
+    assert response["pto_status"] == "passed"
+    assert response["pto_launch_count"] == 2
+    assert response["pto_engine"] == "SyntheticPyptoServingEngine"
+    assert [launch.phase for launch in launches] == ["prefill", "decode"]
+
+
+def test_engine_chat_completion_requires_user_content_message():
+    module = _load_serving_shim_example()
+    engine = module.SyntheticPyptoServingEngine(
+        kernel_launcher=lambda request: {"status": "passed", "phase": request.phase}
+    )
+    engine.init_model("synthetic-simpler-nv")
+
+    with pytest.raises(ValueError, match="at least one user message"):
+        engine.create_openai_chat_completion(
+            model="synthetic-simpler-nv",
+            messages=[{"role": "assistant", "content": "hello"}],
+            max_tokens=1,
+        )
+
+
 def test_engine_cli_mode_outputs_engine_result(monkeypatch, capsys):
     module = _load_serving_shim_example()
 
@@ -288,6 +346,33 @@ def test_engine_cli_mode_outputs_engine_result(monkeypatch, capsys):
     assert output["engine"] == "SyntheticPyptoServingEngine"
     assert output["text"] == "N"
     assert output["status"] == "passed"
+
+
+def test_openai_chat_completion_cli_mode_outputs_chat_json(monkeypatch, capsys):
+    module = _load_serving_shim_example()
+
+    def fake_launcher(request):
+        return {"status": "passed", "phase": request.phase, "op": request.op}
+
+    monkeypatch.setattr(module, "default_cuda_seed_launcher", fake_launcher)
+
+    code = module.main(
+        [
+            "--openai-chat-completion",
+            "--model",
+            "synthetic-simpler-nv",
+            "--prompt",
+            "hello",
+            "--max-new-tokens",
+            "1",
+        ]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert output["object"] == "chat.completion"
+    assert output["choices"][0]["message"] == {"role": "assistant", "content": "N"}
+    assert output["pto_status"] == "passed"
 
 
 def test_synthetic_fastapi_app_serves_health_models_and_completions():
@@ -332,6 +417,39 @@ def test_synthetic_fastapi_app_serves_health_models_and_completions():
     assert [launch.phase for launch in launches] == ["prefill", "decode"]
 
 
+def test_synthetic_fastapi_app_serves_chat_completions():
+    module = _load_serving_shim_example()
+    fastapi_testclient = pytest.importorskip("fastapi.testclient")
+    launches = []
+
+    def record_launch(request):
+        launches.append(request)
+        return {"status": "passed", "phase": request.phase, "op": request.op}
+
+    app = module.create_synthetic_openai_app(kernel_launcher=record_launch)
+    client = fastapi_testclient.TestClient(app)
+
+    response = client.post(
+        "/v1/chat/completions",
+        json={
+            "model": "synthetic-simpler-nv",
+            "messages": [
+                {"role": "system", "content": "Answer briefly."},
+                {"role": "user", "content": "hello"},
+            ],
+            "max_tokens": 2,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["object"] == "chat.completion"
+    assert body["choices"][0]["message"] == {"role": "assistant", "content": "NV"}
+    assert body["pto_engine"] == "SyntheticPyptoServingEngine"
+    assert body["pto_status"] == "passed"
+    assert [launch.phase for launch in launches] == ["prefill", "decode"]
+
+
 def test_http_fixture_cli_mode_outputs_completion_json(monkeypatch, capsys):
     module = _load_serving_shim_example()
     pytest.importorskip("fastapi.testclient")
@@ -356,6 +474,37 @@ def test_http_fixture_cli_mode_outputs_completion_json(monkeypatch, capsys):
     assert output["route"] == "/v1/completions"
     assert output["response"]["object"] == "text_completion"
     assert output["response"]["choices"][0]["text"] == "N"
+    assert output["response"]["pto_status"] == "passed"
+
+
+def test_http_fixture_cli_mode_outputs_chat_completion_json(monkeypatch, capsys):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+
+    def fake_launcher(request):
+        return {"status": "passed", "phase": request.phase, "op": request.op}
+
+    monkeypatch.setattr(module, "default_cuda_seed_launcher", fake_launcher)
+
+    code = module.main(
+        [
+            "--http-fixture",
+            "--openai-chat-completion",
+            "--prompt",
+            "hello",
+            "--max-new-tokens",
+            "1",
+        ]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert output["route"] == "/v1/chat/completions"
+    assert output["response"]["object"] == "chat.completion"
+    assert output["response"]["choices"][0]["message"] == {
+        "role": "assistant",
+        "content": "N",
+    }
     assert output["response"]["pto_status"] == "passed"
 
 
@@ -474,3 +623,21 @@ def test_pypto_serving_source_cli_mode_outputs_contract_json(monkeypatch, capsys
     assert output["response"]["object"] == "text_completion"
     assert output["response"]["choices"][0]["text"] == "N"
     assert output["pto_status"] == "passed"
+
+
+def test_pypto_serving_source_chat_route_limitation_is_documented():
+    module = _load_serving_shim_example()
+    if module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip("source checkout is present; inspect source chat support in that checkout")
+
+    source_contract = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "pypto_serving_source_contract_h200.md"
+    ).read_text(encoding="utf-8")
+
+    assert "tmp/sources/repos/hw-native-sys/pypto-serving is absent" in source_contract
+    assert "/v1/chat/completions" in source_contract
+    assert not hasattr(module, "run_pypto_serving_source_chat_completion_fixture")
