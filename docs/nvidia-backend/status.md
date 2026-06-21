@@ -37,6 +37,13 @@ completion and chat fixtures on H200, validating SSE chunk counts, terminal
 `[DONE]`, mapped finish reason, PTO token IDs, and launch count. That is
 source-route contract evidence for the synthetic adapter, not real DeepSeek
 serving.
+The same shim now has an explicit generated-kernel launcher mode,
+`--kernel-launcher gluon-moe-expert`, which routes synthetic and cloned
+source-route requests through the existing generated Gluon MoE expert
+correctness harness for `moe_expert_affine_f32`. Its launch metadata records
+the launch kind, kernel name, phase, shape, status, and generated artifact
+source digest when available. This is local source-route generated-kernel
+contract evidence until a remote H200 generated-launch command is recorded.
 The local compatibility-contract CLI also compares the four source-route
 fixtures against the vLLM OpenAI-compatible structural field set: route, HTTP
 200, object/model or stream shape, text/message/delta presence, finish reason,
@@ -79,6 +86,7 @@ Non-claims:
 - This is not real DeepSeek weight evidence.
 - This is not simpler-nv/vLLM kernel integration evidence.
 - This is not FlashInfer integration evidence.
+- This is not fused MoE dispatch/combine serving readiness evidence.
 
 ### Platform And Runtime Discovery
 

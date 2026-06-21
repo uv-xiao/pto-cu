@@ -89,6 +89,10 @@ This runs a synthetic `pypto-serving`-style `SimplerNvExecutor` and
 deterministic `NV` tokens and skip-safe CUDA seed-launch evidence. H200
 source-contract evidence is recorded in
 `docs/in_progress/nvidia_backend/pypto_serving_source_contract_h200.md`.
+The default launcher is the existing CUDA seed path. Use
+`--kernel-launcher gluon-moe-expert` to route the same synthetic or cloned
+source request through the generated Gluon MoE expert correctness harness for
+`moe_expert_affine_f32`.
 
 Use `--openai-completion` to emit a synthetic `/v1/completions` response
 shape, `--openai-chat-completion` to emit a synthetic
@@ -118,7 +122,13 @@ actual cloned `pypto-serving` server route with the same bounded message
 shape and records review-safe route, status, assistant-message, `pto_status`,
 and `pto_launch_count` fields. The source-route streaming fixtures summarize
 review-safe SSE event counts, chunk counts, terminal `[DONE]`, assembled text
-or assistant deltas, finish reason, PTO token IDs, and launch count.
+or assistant deltas, finish reason, PTO token IDs, launch count, and selected
+kernel-launch metadata. Generated Gluon launch mode records
+`launch_kind: gluon-moe-expert`, `kernel_name: moe_expert_affine_f32`, phase,
+status, shape, and generated artifact/source digest metadata when available.
+It is not DeepSeek-V4-Flash serving, not vLLM plugin integration, not
+FlashInfer integration, not production readiness, not throughput or latency,
+not distributed serving, and not fused MoE dispatch/combine serving readiness.
 
 ## Persistent Layered-Cross Graph
 

@@ -19,7 +19,12 @@ same serving boundaries as the source `pypto-serving` contracts.
   `SimplerNvModelRunner` follows the `ModelRunner` shape.
 - Launch contract:
   `KernelLaunchRequest` records phase, platform, runtime, device, op, launch
-  size, and PTX arch before calling the CUDA seed launcher.
+  size, and PTX arch before calling the selected launcher.
+- Launcher selection:
+  Use `--kernel-launcher cuda-seed` by default. The
+  `--kernel-launcher gluon-moe-expert` mode calls the generated Gluon MoE
+  expert correctness harness for `moe_expert_affine_f32` and records
+  generated-kernel metadata in `launch_results`.
 
 The public smoke entry point is `run_synthetic_serving_request(...)`. It
 returns deterministic logits for one request and produces:
@@ -79,12 +84,25 @@ The launcher normalizes the owned CUDA seed's raw `status: pass` into shim
 launch `status: passed` while preserving the raw CUDA seed payload in the JSON
 result.
 
+Generated Gluon launch mode is skip-safe on machines without CUDA, torch CUDA,
+or Triton Gluon. Its local JSON metadata records:
+
+```text
+launch_kind: gluon-moe-expert
+kernel_name: moe_expert_affine_f32
+phase: prefill|decode
+shape.n: 16
+source_sha256: <generated-source-digest-when-available>
+```
+
 ## Interpretation
 
 This is local and H200 synthetic shim evidence. It proves the repository has a
 small `ModelExecutor`/`ModelRunner`-shaped simpler-nv boundary that can call a
-known CUDA seed on H200 and return deterministic token output.
+known CUDA seed on H200 and return deterministic token output. The generated
+Gluon launch mode is local contract evidence until an H200 generated-kernel
+run is recorded.
 
 This is not serving evidence. It is not DeepSeek-V4-Flash correctness. It is
 not vLLM plugin evidence. It is not a throughput, latency, UCCL serving, or
-multi-node claim.
+multi-node claim. It is not fused MoE dispatch/combine serving readiness.

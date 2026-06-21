@@ -2090,6 +2090,12 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "--pypto-serving-source-stream",
         "--pypto-serving-source-chat-stream",
         "--pypto-serving-vllm-compat",
+        "--kernel-launcher gluon-moe-expert",
+        "Generated Gluon MoE Expert Launch Contract",
+        "kernel_name: moe_expert_affine_f32",
+        "launch_kind: gluon-moe-expert",
+        "source_sha256",
+        "not fused MoE dispatch/combine serving readiness",
         "assistant_message: {role: assistant, content: NV}",
         "Source Streaming Contract",
         "stream: true",
@@ -2136,6 +2142,10 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "--pypto-serving-source-chat-stream",
         "--pypto-serving-vllm-compat",
         "run_pypto_serving_vllm_compat_fixture",
+        "create_generated_gluon_moe_launcher",
+        "--kernel-launcher",
+        "gluon-moe-expert",
+        "moe_expert_affine_f32",
     ]:
         assert required in example_text
 
@@ -2157,6 +2167,10 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "test_pypto_serving_vllm_compat_cli_outputs_summary_json",
         "test_pypto_serving_source_server_contract_uses_real_routes",
         "test_pypto_serving_source_cli_mode_outputs_contract_json",
+        "test_generated_gluon_moe_launcher_records_review_safe_metadata",
+        "test_generated_launcher_can_run_through_source_route_fixtures",
+        "test_generated_kernel_cli_mode_outputs_launch_metadata",
+        "test_default_launcher_selection_uses_cuda_seed_and_add_op",
     ]:
         assert required in test_text
 
@@ -2168,5 +2182,8 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
     assert "--pypto-serving-source-stream" in readme_text
     assert "--pypto-serving-source-chat-stream" in readme_text
     assert "--pypto-serving-vllm-compat" in readme_text
+    assert "--kernel-launcher gluon-moe-expert" in readme_text
+    assert "moe_expert_affine_f32" in readme_text
+    assert "not fused MoE dispatch/combine serving readiness" in readme_text
     assert "OpenAI-compatible structural fields" in readme_text
     assert "/v1/chat/completions" in readme_text

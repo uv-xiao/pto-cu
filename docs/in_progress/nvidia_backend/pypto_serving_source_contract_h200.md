@@ -37,6 +37,7 @@ The tracked entry points are:
 - CLI flag: `--pypto-serving-source-stream`
 - CLI flag: `--pypto-serving-source-chat-stream`
 - CLI flag: `--pypto-serving-vllm-compat`
+- CLI flag: `--kernel-launcher {cuda-seed,gluon-moe-expert}`
 
 ## Source Chat Contract
 
@@ -229,6 +230,91 @@ not simpler-nv/vLLM kernel integration evidence.
 The current cloned source routes do not return non-streaming `usage`, so the
 summary records usage presence as a comparison gap rather than synthesizing it.
 
+## Generated Gluon MoE Expert Launch Contract
+
+The source-route fixtures now accept an explicit launcher selection. The
+default remains the CUDA seed launch path, which emits `op: add` and preserves
+the previous skip-safe behavior. Passing
+`--kernel-launcher gluon-moe-expert` routes the same synthetic
+`pypto-serving` request through the existing generated Gluon MoE expert
+correctness harness:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/pypto_serving_nv_shim.py \
+    --pypto-serving-source --kernel-launcher gluon-moe-expert \
+    --prompt hello --max-new-tokens 1 --device 0 --arch compute_90
+```
+
+The launch result records review-safe generated-kernel metadata under
+`pto_launch_results`, including:
+
+```text
+launch_kind: gluon-moe-expert
+kernel_name: moe_expert_affine_f32
+phase: prefill
+status: passed|skipped|failed
+shape.n: 16
+source_sha256: <generated-source-digest-when-available>
+artifact.source_path: tmp/...
+artifact.manifest_path: tmp/...
+```
+
+The generated launch mode calls
+`examples/cuda/gluon_moe_expert_affine.py::run_moe_expert_correctness(...)`.
+Without local CUDA, torch CUDA, or Triton Gluon availability, that harness
+returns a structured skip; with `--require-cuda`, the CLI returns non-zero for
+that skip. The generated artifacts stay under ignored repo-relative `tmp/`
+directories.
+
+Local generated source-route verification:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/pypto_serving_nv_shim.py \
+    --pypto-serving-source --kernel-launcher gluon-moe-expert \
+    --require-cuda --prompt hello --max-new-tokens 1 \
+    --device 0 --arch compute_90
+```
+
+Result:
+
+```text
+server: pypto-serving-source
+route: /v1/completions
+status: passed
+status_code: 200
+text: N
+pto_status: passed
+pto_launch_count: 1
+launch_kind: gluon-moe-expert
+kernel_name: moe_expert_affine_f32
+phase: prefill
+shape.n: 16
+source_sha256: 38bb58f3f019a6eefb4016ff180b988f0b1532e5eee4bade5e49d7f57038b842
+```
+
+Local unit coverage proves the completion, chat, streaming completion, and
+streaming chat source fixtures can all receive this generated launcher hook.
+No H200 generated-launch command was run for this update. The handoff command
+for the next remote pass is:
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'source .venv/bin/activate && \
+    PYTHONPATH=$PWD:$PWD/python \
+    .venv/bin/python examples/cuda/pypto_serving_nv_shim.py \
+      --pypto-serving-source --kernel-launcher gluon-moe-expert \
+      --require-cuda --prompt hello --max-new-tokens 1 \
+      --device 0 --arch compute_90'
+```
+
+This is generated-kernel source-route contract evidence for the synthetic
+adapter. It is not DeepSeek-V4-Flash serving, not vLLM plugin integration, not
+FlashInfer integration, not production readiness, not throughput or latency,
+not distributed serving, and not fused MoE dispatch/combine serving readiness.
+
 ## H200 Streaming Completion Evidence
 
 ```bash
@@ -302,7 +388,10 @@ because they import and execute the cloned source server routes. The chat
 evidence uses the bounded non-streaming OpenAI-compatible message shape.
 The streaming fixtures additionally prove the cloned source SSE routes emit
 token deltas and terminal `[DONE]` for the synthetic adapter on H200.
+The generated Gluon launcher selection is covered locally and shares the same
+source-route fixture surfaces; it still needs a remote H200 generated-kernel
+run before it becomes H200 evidence.
 
 This is not DeepSeek-V4-Flash correctness. It is not vLLM plugin evidence. It
 is not real model loading, tokenizer semantics, throughput, latency, or
-multi-node evidence.
+multi-node evidence. It is not fused MoE dispatch/combine serving readiness.
