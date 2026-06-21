@@ -6,8 +6,9 @@ performance evidence.
 
 ## Current Contract
 
-`KernelCompiler(platform="cuda").generate_gluon_kernel(...)` now supports
-three Gluon tensor-core GEMM artifacts:
+This section tracks source-generating tensor-core GEMM artifacts from
+`KernelCompiler(platform="cuda").generate_gluon_kernel(...)` plus the FP4
+dtype/API boundary harness:
 
 - `gemm_tensor_core_f16_f32`: one `64x32x32` FP16-input, FP32-output WGMMA
   correctness case.

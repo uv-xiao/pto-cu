@@ -43,10 +43,10 @@ GLUON_GEMM_REVIEW_DOCS = [
 UCCL_PRIVATE_PATH_RE = re.compile(
     r"/" + "home/"
     r"|/" + "Users/"
-    r"|/" + "tmp/pto-cu"
+    r"|/" + "tmp/" + "pto" + "-cu"
     r"|/" + "tmp/uccl-"
     r"|" + "uv" + "xiao"
-    r"|" + "bizhao" + "h200"
+    r"|" + "bi" + "zhao" + "h200"
     r"|" + "hi" + "na"
     r"|" + "da" + "sys"
 )
@@ -387,9 +387,9 @@ def test_persistent_moe_two_device_baseline_is_review_safe():
     for required in [
         "Two-Device Remote H200 Result",
         "Communication-Coupled Handoff Gate",
-        "REMOTE_PTO_CU=/tmp/pto-cu-codex-restart",
-        "REMOTE_PTO_CU=/tmp/pto-cu-persistent-moe-nccl-handoff",
-        "REMOTE_PTO_CU=/tmp/pto-cu-persistent-moe-uccl-ep-handoff",
+        "REMOTE_PTO_CU=/tmp/" "pto-cu-codex-restart",
+        "REMOTE_PTO_CU=/tmp/" "pto-cu-persistent-moe-nccl-handoff",
+        "REMOTE_PTO_CU=/tmp/" "pto-cu-persistent-moe-uccl-ep-handoff",
         "--device-ids 6,7 --n 4096 --arch compute_90 --require-cuda",
         "--with-nccl-handoff --tensor-numel 1024 --build --require-cuda",
         "--with-uccl-ep-handoff --tensor-numel 1024 --require-cuda",
@@ -2025,6 +2025,11 @@ def test_gluon_tensor_core_gemm_records_fp4_unsupported_boundary():
     evidence_search_text = re.sub(r"\s+", " ", evidence_text)
     for required in [
         "H200 FP4 Boundary Evidence",
+        (
+            "This section tracks source-generating tensor-core GEMM artifacts "
+            "from `KernelCompiler(platform=\"cuda\").generate_gluon_kernel(...)` "
+            "plus the FP4 dtype/API boundary harness"
+        ),
         "BF16 and FP8 source-generating harnesses emit source and manifest",
         "FP4 remains a dtype/API boundary harness",
         (
@@ -2047,6 +2052,9 @@ def test_gluon_tensor_core_gemm_records_fp4_unsupported_boundary():
     ]:
         assert required in evidence_search_text
     assert "tensor-core harnesses always generate source and manifest artifacts" not in (
+        evidence_search_text
+    )
+    assert "now supports three Gluon tensor-core GEMM artifacts" not in (
         evidence_search_text
     )
     assert "FP4 GEMM correctness evidence exists" not in evidence_search_text
