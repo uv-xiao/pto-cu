@@ -266,6 +266,27 @@ class SyntheticPyptoServingEngine:
             extra={"pto_engine": result["engine"]},
         )
 
+    def create_openai_chat_completion(
+        self,
+        *,
+        model: str,
+        messages: list[dict[str, Any]],
+        max_tokens: int = 2,
+    ) -> dict[str, Any]:
+        prompt = _prompt_from_chat_messages(messages)
+        result = self.generate(
+            model_id=model,
+            prompt=prompt,
+            max_new_tokens=max_tokens,
+        )
+        prompt_tokens = _encode_prompt(prompt)
+        return _openai_chat_completion_from_result(
+            model=model,
+            result=result,
+            prompt_token_count=len(prompt_tokens),
+            extra={"pto_engine": result["engine"]},
+        )
+
 
 @dataclass(frozen=True)
 class PyptoServingSourceTokenOutput:
@@ -440,6 +461,34 @@ def run_synthetic_openai_completion(
     )
 
 
+def run_synthetic_openai_chat_completion(
+    *,
+    model: str,
+    messages: list[dict[str, Any]],
+    max_tokens: int = 2,
+    device_id: int = 0,
+    arch: str = "compute_90",
+    kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    if model != "synthetic-simpler-nv":
+        raise ValueError("only the synthetic-simpler-nv model is available")
+
+    prompt = _prompt_from_chat_messages(messages)
+    result = run_synthetic_serving_request(
+        prompt=prompt,
+        max_new_tokens=max_tokens,
+        device_id=device_id,
+        arch=arch,
+        kernel_launcher=kernel_launcher,
+    )
+    prompt_tokens = _encode_prompt(prompt)
+    return _openai_chat_completion_from_result(
+        model=model,
+        result=result,
+        prompt_token_count=len(prompt_tokens),
+    )
+
+
 def create_synthetic_openai_app(
     *,
     model: str = "synthetic-simpler-nv",
@@ -449,13 +498,18 @@ def create_synthetic_openai_app(
 ):
     try:
         from fastapi import FastAPI
-        from pydantic import BaseModel
+        from pydantic import BaseModel, Field
     except ImportError as exc:
         raise RuntimeError("FastAPI and Pydantic are required for the HTTP fixture") from exc
 
     class CompletionRequest(BaseModel):
         model: str = ""
         prompt: str = ""
+        max_tokens: int = 2
+
+    class ChatCompletionRequest(BaseModel):
+        model: str = ""
+        messages: list[dict[str, Any]] = Field(default_factory=list)
         max_tokens: int = 2
 
     app = FastAPI(title="Synthetic PyPTO Serving")
@@ -485,6 +539,20 @@ def create_synthetic_openai_app(
             max_tokens=request.max_tokens,
         )
 
+    @app.post("/v1/chat/completions")
+    def chat_completions(request: ChatCompletionRequest) -> dict[str, Any]:
+        engine = SyntheticPyptoServingEngine(
+            device_id=device_id,
+            arch=arch,
+            kernel_launcher=kernel_launcher,
+        )
+        engine.init_model(model)
+        return engine.create_openai_chat_completion(
+            model=request.model or model,
+            messages=request.messages,
+            max_tokens=request.max_tokens,
+        )
+
     return app
 
 
@@ -495,6 +563,7 @@ def run_synthetic_http_completion_fixture(
     max_tokens: int = 2,
     device_id: int = 0,
     arch: str = "compute_90",
+    chat: bool = False,
 ) -> dict[str, Any]:
     try:
         from fastapi.testclient import TestClient
@@ -502,18 +571,25 @@ def run_synthetic_http_completion_fixture(
         return {
             "status": "skipped",
             "reason": f"missing FastAPI TestClient: {exc}",
-            "route": "/v1/completions",
+            "route": "/v1/chat/completions" if chat else "/v1/completions",
         }
 
     app = create_synthetic_openai_app(model=model, device_id=device_id, arch=arch)
     client = TestClient(app)
-    response = client.post(
-        "/v1/completions",
-        json={"model": model, "prompt": prompt, "max_tokens": max_tokens},
-    )
+    if chat:
+        route = "/v1/chat/completions"
+        payload: dict[str, Any] = {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+        }
+    else:
+        route = "/v1/completions"
+        payload = {"model": model, "prompt": prompt, "max_tokens": max_tokens}
+    response = client.post(route, json=payload)
     return {
         "status": "passed" if response.status_code == 200 else "failed",
-        "route": "/v1/completions",
+        "route": route,
         "status_code": response.status_code,
         "response": response.json(),
     }
@@ -536,6 +612,40 @@ def _openai_completion_from_result(
             {
                 "index": 0,
                 "text": result["text"],
+                "finish_reason": result["finish_reason"],
+            }
+        ],
+        "usage": {
+            "prompt_tokens": prompt_token_count,
+            "completion_tokens": len(completion_tokens),
+            "total_tokens": prompt_token_count + len(completion_tokens),
+        },
+        "pto_backend": result["backend"],
+        "pto_status": result["status"],
+        "pto_launch_count": result["launch_count"],
+    }
+    if extra:
+        response.update(extra)
+    return response
+
+
+def _openai_chat_completion_from_result(
+    *,
+    model: str,
+    result: dict[str, Any],
+    prompt_token_count: int,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    completion_tokens = result["token_ids"]
+    response = {
+        "id": "chatcmpl-synthetic-0",
+        "object": "chat.completion",
+        "created": 0,
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": result["text"]},
                 "finish_reason": result["finish_reason"],
             }
         ],
@@ -678,6 +788,33 @@ def _encode_prompt(prompt: str) -> list[int]:
     return [0] if prompt else [0]
 
 
+def _prompt_from_chat_messages(messages: list[dict[str, Any]]) -> str:
+    lines = []
+    has_user_content = False
+    for message in messages:
+        role = str(message.get("role", ""))
+        content = _chat_message_content_text(message.get("content"))
+        if role == "user" and content.strip():
+            has_user_content = True
+        if content:
+            lines.append(f"{role}: {content}" if role else content)
+    if not has_user_content:
+        raise ValueError("chat completion requires at least one user message with content")
+    return "\n".join(lines)
+
+
+def _chat_message_content_text(content: Any) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict) and isinstance(item.get("text"), str):
+                parts.append(item["text"])
+        return "\n".join(parts)
+    return ""
+
+
 def _decode_tokens(token_ids: list[int]) -> str:
     vocab = {1: "N", 2: "V"}
     return "".join(vocab.get(token_id, "") for token_id in token_ids)
@@ -698,6 +835,11 @@ def main(argv: list[str] | None = None) -> int:
         "--openai-completion",
         action="store_true",
         help="emit a synthetic OpenAI-compatible /v1/completions response",
+    )
+    parser.add_argument(
+        "--openai-chat-completion",
+        action="store_true",
+        help="emit a synthetic OpenAI-compatible /v1/chat/completions response",
     )
     parser.add_argument(
         "--engine",
@@ -739,6 +881,7 @@ def main(argv: list[str] | None = None) -> int:
             max_tokens=args.max_new_tokens,
             device_id=args.device,
             arch=args.arch,
+            chat=args.openai_chat_completion,
         )
         status = result["status"]
         if status == "passed" and isinstance(result.get("response"), dict):
@@ -746,7 +889,14 @@ def main(argv: list[str] | None = None) -> int:
     elif args.engine:
         engine = SyntheticPyptoServingEngine(device_id=args.device, arch=args.arch)
         engine.init_model(args.model)
-        if args.openai_completion:
+        if args.openai_chat_completion:
+            result = engine.create_openai_chat_completion(
+                model=args.model,
+                messages=[{"role": "user", "content": args.prompt}],
+                max_tokens=args.max_new_tokens,
+            )
+            status = result["pto_status"]
+        elif args.openai_completion:
             result = engine.create_openai_completion(
                 model=args.model,
                 prompt=args.prompt,
@@ -760,6 +910,15 @@ def main(argv: list[str] | None = None) -> int:
                 max_new_tokens=args.max_new_tokens,
             )
             status = result["status"]
+    elif args.openai_chat_completion:
+        result = run_synthetic_openai_chat_completion(
+            model=args.model,
+            messages=[{"role": "user", "content": args.prompt}],
+            max_tokens=args.max_new_tokens,
+            device_id=args.device,
+            arch=args.arch,
+        )
+        status = result["pto_status"]
     elif args.openai_completion:
         result = run_synthetic_openai_completion(
             model=args.model,

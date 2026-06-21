@@ -65,6 +65,14 @@ The first serving child slice should add a local simpler-nv executor shim for
 4. Add a local skip-safe test for CLI/config wiring and a remote H200 command
    only after the local serving loop can launch the simpler CUDA kernel.
 
+The next PR-sized synthetic serving step is to extend that shim from
+`/v1/completions` to local `/v1/chat/completions` request/response coverage.
+That chat fixture should reuse the same synthetic simpler-nv engine, accept a
+bounded `messages` list with at least one user content entry, and return a
+chat-completions-shaped assistant message with PTO debug fields. This remains
+synthetic local fixture evidence unless the actual cloned `pypto-serving`
+source route is present and inspected.
+
 ## Non-Claims
 
 - This is not serving evidence.
@@ -72,6 +80,8 @@ The first serving child slice should add a local simpler-nv executor shim for
 - This is not a vLLM plugin implementation.
 - This is not a claim that `pypto-serving` can run DeepSeek-V4-Flash today.
 - This is not a claim that FlashInfer kernels have been integrated into PTO.
+- This is not tokenizer semantics, streaming, production serving, or generated
+  text correctness evidence.
 
 ## Follow-Up Gates
 
