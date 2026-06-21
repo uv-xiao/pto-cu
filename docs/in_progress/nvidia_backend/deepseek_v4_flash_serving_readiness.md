@@ -1407,11 +1407,9 @@ local_only_vllm_chat_256k_needle_stream_repeat: passed under recorded
   262144-token boundary and one server lifecycle
 local_only_vllm_chat_256k_needle_stream_position_sweep: passed under recorded
   262144-token boundary and one server lifecycle
-local_only_vllm_chat_256k_needle_stream_usage_contract: failed under recorded
-  262144-token boundary with stream_options.include_usage=true; final
-  zero-choice usage chunk accepted and exact output passed, but usage
-  accounting failed because usage_prompt_tokens_match was not_available
-  (chat_needle_stream_prompt_token_mismatch)
+local_only_vllm_chat_256k_needle_stream_usage_contract: passed under recorded
+  262144-token boundary with stream_options.include_usage=true and
+  server-side /tokenize prompt-token accounting
 local_only_vllm_chat_256k_needle_stream_truncated_failure: failed under
   recorded 262144-token boundary with max_tokens=1 as expected
 one_token_inference_smoke: passed under recorded 4096-token boundary
@@ -1706,45 +1704,37 @@ failure evidence is recorded in
 Status marker:
 `local_only_vllm_chat_256k_needle_stream_truncated_failure: failed`.
 
-It has now also recorded local-only OpenAI-compatible near-256K streaming
-`/v1/chat/completions` synthetic needle usage-contract attempts under the same
+It has now also recorded a local-only OpenAI-compatible near-256K streaming
+`/v1/chat/completions` synthetic needle usage-contract pass under the same
 recorded 262144-token vLLM server boundary through
 `examples/cuda/vllm_deepseek_v4_chat_256k_needle_stream_usage_contract_probe.py`.
-The latest parser-contract rerun targeted a 255800-token prompt budget, used
-`max_tokens=64`,
-`temperature=0.0`, `top_p=1.0`, `seed=0`, expected answer
-`PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28158`, strict exact match mode, stop
-sequence `"\n```"`, `stream=true`, and
-`stream_options.include_usage=true`. The streaming path returned HTTP 200,
-parsed 22 JSON SSE events, assembled 18 assistant content deltas in memory,
-received terminal `[DONE]`, recorded `finish_reason=stop`, passed strict
-exact output matching, and saw streaming usage keys on a final usage-bearing
-event with `choice_count=0`. The probe exited with `PROBE_EXIT_STATUS=2` and
-failed with `chat_needle_stream_prompt_token_mismatch` because
-`usage_prompt_tokens_match` was `not_available`: the response reported
-`prompt_tokens=255797`, but measured chat prompt tokens were not available in
-the request limits for that run. The probe recorded only review-safe request
-limits, streaming event counters, usage-key presence, exact-match status,
-failure category, and cleanup state; it did not record raw prompt text, raw
-request payload, raw generated text, raw streaming chunk content, token ID
-arrays, logprob values, generated-text digests, model artifact contents,
-non-loopback URLs, hostnames, usernames, or private absolute paths. This is a
-completed usage-contract failure-mode characterization, not generated-text
-correctness evidence and not a usage-accounting pass.
+The latest server-tokenize accounting rerun targeted a 255800-token prompt
+budget, used `max_tokens=64`, `temperature=0.0`, `top_p=1.0`, `seed=0`,
+expected answer `PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28159`, strict exact
+match mode, stop sequence `"\n```"`, `stream=true`, and
+`stream_options.include_usage=true`. Before the streaming request, the probe
+called the running server's `/tokenize` endpoint for the same chat messages;
+that returned HTTP 200 and measured `prompt_tokens=255797`. The streaming path
+returned HTTP 200, parsed 22 JSON SSE events, assembled 18 assistant content
+deltas in memory, received terminal `[DONE]`, recorded `finish_reason=stop`,
+passed strict exact output matching, and saw streaming usage keys on a final
+usage-bearing event with `choice_count=0`. The probe exited with
+`PROBE_EXIT_STATUS=0`: `usage.prompt_tokens=255797` matched the server-side
+`/tokenize` count, `usage.completion_tokens=20` was within `max_tokens=64`,
+and `usage.total_tokens=255817` passed the total-token bound. The probe
+recorded only review-safe request limits, streaming event counters,
+usage-key presence, exact-match status, integer token counts, endpoint status,
+and cleanup state; it did not record raw prompt text, raw request payload,
+raw generated text, raw streaming chunk content, token ID arrays, logprob
+values, generated-text digests, model artifact contents, non-loopback URLs,
+hostnames, usernames, or private absolute paths. This is a completed
+usage-contract pass, not general generated-text correctness evidence.
 
 Detailed chat-completions near-256K needle streaming usage-contract evidence
 is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_usage_contract_probe.md`.
 Status marker:
-`local_only_vllm_chat_256k_needle_stream_usage_contract: failed`.
-
-## Next Gate
-
-The next PR-sized gate is to decide how the chat usage-contract probe should
-measure or tolerate prompt-token accounting when `actual_prompt_tokens` is not
-available, then rerun the same usage-contract command. Do not claim a
-usage-accounting pass for port `28158` until a future structured result
-records that check as passed.
+`local_only_vllm_chat_256k_needle_stream_usage_contract: passed`.
 
 ## Non-Claims
 
