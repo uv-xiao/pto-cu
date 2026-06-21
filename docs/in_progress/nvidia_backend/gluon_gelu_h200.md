@@ -130,6 +130,6 @@ Artifact paths were repo-relative under
 
 ## Follow-Up Gaps
 
-- Keep SiLU, gated activation fixtures, broader activation fixtures,
-  Gemma-style fused norm, fused attention, KV-cache mutation, paged attention,
-  and serving integration evidence in their own bounded branches.
+- Broader activation fixtures, fused attention, KV-cache mutation, paged
+  attention, serving integration, and throughput or latency evidence remain
+  separate from this bounded GELU correctness slice.
