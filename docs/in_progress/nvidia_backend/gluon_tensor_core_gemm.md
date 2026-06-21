@@ -26,11 +26,18 @@ three Gluon tensor-core GEMM artifacts:
   FP4 attrs and does not generate source when no Gluon FP4 WGMMA operand dtype
   is available.
 
-The tensor-core harnesses always generate source and manifest artifacts before
-checking runtime CUDA availability. They emit structured JSON in pass, skip,
-and generation-failure paths. `--require-cuda` returns non-zero when CUDA,
-PyTorch, Triton/Gluon Hopper WGMMA APIs, generation, or correctness are
-unavailable.
+The source-generating FP16 harnesses emit source and manifest artifacts before
+checking runtime CUDA availability. BF16 and FP8 source-generating harnesses
+emit source and manifest artifacts before their runtime or lowering checks.
+They emit structured JSON in pass, skip, and generation-failure paths.
+`--require-cuda` returns non-zero when CUDA, PyTorch, Triton/Gluon Hopper WGMMA
+APIs, generation, or correctness are unavailable.
+
+FP4 remains a dtype/API boundary harness: it records the discovered Torch and
+Gluon FP4 attrs and does not generate source or manifest artifacts unless a
+confirmed Gluon FP4 WGMMA operand dtype path exists. Its `--require-cuda`
+failure is review-visible unsupported-boundary evidence, not a generation or
+correctness artifact.
 
 `examples/cuda/gluon_wgmma_api_preflight.py` is the repo-owned API gate for
 future BF16, FP8, FP4, and grouped GEMM WGMMA work. It emits structured JSON

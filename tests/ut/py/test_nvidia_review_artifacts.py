@@ -2025,6 +2025,12 @@ def test_gluon_tensor_core_gemm_records_fp4_unsupported_boundary():
     evidence_search_text = re.sub(r"\s+", " ", evidence_text)
     for required in [
         "H200 FP4 Boundary Evidence",
+        "BF16 and FP8 source-generating harnesses emit source and manifest",
+        "FP4 remains a dtype/API boundary harness",
+        (
+            "does not generate source or manifest artifacts unless a confirmed "
+            "Gluon FP4 WGMMA operand dtype path exists"
+        ),
         "torch.float4_e2m1fn_x2",
         "`fp4_to_fp`",
         "\"kind\": \"gluon_fp4_dtype_api_unavailable\"",
@@ -2040,6 +2046,9 @@ def test_gluon_tensor_core_gemm_records_fp4_unsupported_boundary():
         "not production-readiness evidence",
     ]:
         assert required in evidence_search_text
+    assert "tensor-core harnesses always generate source and manifest artifacts" not in (
+        evidence_search_text
+    )
     assert "FP4 GEMM correctness evidence exists" not in evidence_search_text
 
     checklist_text = checklist.read_text(encoding="utf-8")
