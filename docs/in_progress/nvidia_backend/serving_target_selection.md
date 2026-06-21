@@ -102,5 +102,6 @@ non-streaming usage presence, and streaming terminal `[DONE]` presence.
   kernel.
 - Compare the request path against vLLM's DeepSeek-compatible behavior before
   attempting DeepSeek-V4-Flash.
-- Use FlashInfer as the operator checklist for attention, KV cache, sampling,
-  GEMM, MoE, FP8/FP4, and decode/prefill coverage.
+- Use the FlashInfer checklist in
+  `flashinfer_serving_operator_checklist.md` for attention, KV cache,
+  sampling, GEMM, MoE, FP8/FP4, and decode/prefill coverage.

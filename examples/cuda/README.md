@@ -5,6 +5,11 @@ skip-safe probes for current work. Historical benchmark rows do not run fresh
 CUDA hardware checks; their A100/H200 measurements remain the `743709f3`
 capture documented under `docs/nvidia-backend/history/`.
 
+The FlashInfer serving operator checklist is recorded in
+`docs/in_progress/nvidia_backend/flashinfer_serving_operator_checklist.md`.
+It is a review guard for future attention, KV cache, sampling, GEMM, MoE,
+FP8/FP4, and decode/prefill coverage, not integration evidence.
+
 ## Host-Schedule Vector Ops
 
 ```bash

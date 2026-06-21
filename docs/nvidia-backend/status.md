@@ -42,6 +42,13 @@ fixtures against the vLLM OpenAI-compatible structural field set: route, HTTP
 200, object/model or stream shape, text/message/delta presence, finish reason,
 non-streaming usage presence, and streaming terminal `[DONE]` presence.
 
+PTO now has a FlashInfer-derived operator checklist for future serving review
+gates. It maps the FlashInfer README's attention, KV cache, sampling, GEMM,
+MoE, FP8/FP4, communication, RoPE, normalization, activation, H200, and
+decode/prefill families to current PTO evidence and next milestones. This is
+not FlashInfer integration evidence and does not change the current serving
+boundary.
+
 Evidence:
 
 - `docs/in_progress/nvidia_backend/vllm_remote_model_load_probe.md`
@@ -60,6 +67,7 @@ Evidence:
 - `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_repeat_probe.md`
 - `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_truncated_failure_probe.md`
 - `docs/in_progress/nvidia_backend/pypto_serving_source_contract_h200.md`
+- `docs/in_progress/nvidia_backend/flashinfer_serving_operator_checklist.md`
 
 Non-claims:
 
@@ -70,6 +78,7 @@ Non-claims:
   correctness evidence.
 - This is not real DeepSeek weight evidence.
 - This is not simpler-nv/vLLM kernel integration evidence.
+- This is not FlashInfer integration evidence.
 
 ### Platform And Runtime Discovery
 
