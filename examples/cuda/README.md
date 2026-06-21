@@ -473,6 +473,24 @@ JSON records `schema_version`, `status: skipped`, `phase: prefill`,
 paged/ragged KV-cache correctness, full prefill/decode/append coverage,
 serving integration, or performance evidence.
 
+For explicit varlen sequence-boundary unsupported evidence, use:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_flashattention_fwd.py \
+  --output-dir tmp/gluon-flashattention-varlen-unsupported-h200 \
+  --arch compute_90 --tile-shape 32x32x64 --causal \
+  --sequence-boundary varlen --require-cuda
+```
+
+This command emits structured skip JSON before CUDA availability checks. The
+JSON records `schema_version`, `status: skipped`, `phase: prefill`,
+`causal: true`, `sequence_boundary: varlen`, shape metadata, tolerance, and
+`unsupported_boundary` with stable `kind: varlen_attention`. This is
+unsupported-boundary evidence only, not varlen attention correctness,
+paged/ragged KV-cache correctness, full prefill/decode/append coverage,
+serving integration, or performance evidence.
+
 ## Gluon FP32 RMSNorm
 
 ```bash

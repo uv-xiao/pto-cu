@@ -107,13 +107,25 @@ def run_flashattention_correctness(
     rtol: float = 1e-2,
     seed: int = 0,
     causal: bool = False,
+    sequence_boundary: str = "fixed",
     kv_cache_boundary: str = "none",
     skip_reason: Callable[[], str | None] | None = None,
 ) -> dict:
     resolved_output_dir = DEFAULT_OUTPUT_DIR if output_dir is None else Path(output_dir)
     if resolved_output_dir.is_absolute():
         raise ValueError("--output-dir must be repo-relative")
+    _validate_sequence_boundary(sequence_boundary)
     _validate_kv_cache_boundary(kv_cache_boundary)
+
+    if sequence_boundary != "fixed":
+        return _unsupported_sequence_boundary_result(
+            arch=arch,
+            tile_shape=tile_shape,
+            atol=atol,
+            rtol=rtol,
+            causal=causal,
+            sequence_boundary=sequence_boundary,
+        )
 
     if kv_cache_boundary != "none":
         return _unsupported_kv_cache_boundary_result(
@@ -331,6 +343,15 @@ def main(argv: list[str] | None = None) -> int:
             ),
         )
         parser.add_argument(
+            "--sequence-boundary",
+            choices=("fixed", "varlen"),
+            default="fixed",
+            help=(
+                "report an explicit unsupported sequence boundary for the "
+                "single-case run"
+            ),
+        )
+        parser.add_argument(
             "--require-cuda",
             action="store_true",
             help="return a non-zero status when dependencies or CUDA are unavailable",
@@ -341,6 +362,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.sweep:
             if args.kv_cache_boundary != "none":
                 raise ValueError("--kv-cache-boundary is only supported without --sweep")
+            if args.sequence_boundary != "fixed":
+                raise ValueError("--sequence-boundary is only supported without --sweep")
             result = run_flashattention_sweep(
                 output_dir=args.output_dir,
                 arch=args.arch,
@@ -356,6 +379,7 @@ def main(argv: list[str] | None = None) -> int:
                 rtol=args.rtol,
                 seed=args.seed,
                 causal=args.causal,
+                sequence_boundary=args.sequence_boundary,
                 kv_cache_boundary=args.kv_cache_boundary,
             )
     except Exception as exc:
@@ -445,6 +469,50 @@ def _parse_tile_shape(raw_tile_shape: str | None) -> tuple[int, int, int]:
 def _validate_kv_cache_boundary(kv_cache_boundary: str) -> None:
     if kv_cache_boundary not in ("none", "paged", "ragged"):
         raise ValueError("--kv-cache-boundary must be one of: none, paged, ragged")
+
+
+def _validate_sequence_boundary(sequence_boundary: str) -> None:
+    if sequence_boundary not in ("fixed", "varlen"):
+        raise ValueError("--sequence-boundary must be one of: fixed, varlen")
+
+
+def _unsupported_sequence_boundary_result(
+    *,
+    arch: str,
+    tile_shape: tuple[int, int, int],
+    atol: float,
+    rtol: float,
+    causal: bool,
+    sequence_boundary: str,
+) -> dict:
+    seqlen_q, seqlen_k, head_dim = tile_shape
+    phase = _phase_for(tile_shape=tile_shape, causal=causal)
+    return {
+        "schema_version": 1,
+        "kernel_name": "flashattention_fwd_f32",
+        "status": "skipped",
+        "phase": phase,
+        "arch": arch,
+        "shape": {
+            "seqlen_q": seqlen_q,
+            "seqlen_k": seqlen_k,
+            "head_dim": head_dim,
+        },
+        "causal": causal,
+        "sequence_boundary": sequence_boundary,
+        "reference": _reference_for(phase=phase, causal=causal),
+        "tolerance": {"atol": atol, "rtol": rtol},
+        "unsupported_boundary": {
+            "kind": "varlen_attention",
+            "operator": "flashattention_fwd_f32",
+            "boundary": sequence_boundary,
+            "status": "unsupported",
+        },
+        "reason": (
+            "Gluon FlashAttention varlen attention boundary is unsupported; "
+            "this is unsupported-boundary evidence only"
+        ),
+    }
 
 
 def _unsupported_kv_cache_boundary_result(
