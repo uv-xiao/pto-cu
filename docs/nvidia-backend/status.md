@@ -65,16 +65,24 @@ bounded launch metadata: `launch_kind: persistent-moe-dispatch-combine`,
 shape, completed count, max absolute error, scheduler error summary, and the
 Gluon expert bridge/task-body digest when present. Local unit coverage proves
 that completion, chat, streaming completion, and streaming chat source
-fixtures can pass the selected launcher through completion. This is synthetic
-adapter source-route launch evidence, not real DeepSeek serving. A bounded
-H200 individual-route matrix now passes for completion, chat, streaming
-completion, and streaming chat with this launcher: HTTP 200, `pto_status:
-passed`, `launch_kind: persistent-moe-dispatch-combine`,
+fixtures can pass the selected launcher through completion. The aggregate
+`--pypto-serving-vllm-compat` CLI isolates persistent source-route checks in
+child processes and preserves per-route `pto_launch_results` metadata under
+the fixture observations. This is synthetic adapter source-route launch
+evidence, not real DeepSeek serving. A bounded H200 individual-route matrix
+now passes for completion, chat, streaming completion, and streaming chat
+with this launcher: HTTP 200, `pto_status: passed`, `launch_kind:
+persistent-moe-dispatch-combine`,
 `dag_shape: graph_descriptor_moe_dispatch_combine`, `completed_count: 5`,
 `max_abs_error: 0.0`, scheduler error count 0, and Gluon expert task-body
 digest
 `7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f` on
-each route.
+each route. The H200 aggregate compatibility command now also passes for the
+same four source routes with the persistent launcher, HTTP 200, `pto_status:
+passed`, `completed_count: 5`, `max_abs_error: 0.0`, scheduler error count 0,
+and the same Gluon expert task-body digest on every fixture. The cloned source
+still omits non-streaming usage fields, so the compatibility summary records
+that gap rather than synthesizing usage.
 
 PTO now has a FlashInfer-derived operator checklist for future serving review
 gates. It maps the FlashInfer README's attention, KV cache, sampling, GEMM,

@@ -28,7 +28,14 @@ same serving boundaries as the source `pypto-serving` contracts.
   `--kernel-launcher persistent-moe-dispatch-combine` mode calls the existing
   persistent-device dispatch/combine graph example through
   `run_moe_dispatch_combine(...)` and records bounded DAG metadata in
-  `launch_results`.
+  `launch_results`. The aggregate `--pypto-serving-vllm-compat` CLI isolates
+  persistent source-route checks in child processes so repeated route checks do
+  not rebind the persistent runtime through `ctypes` in one TestClient process.
+- Source-route loading:
+  The shim loads the cloned `pypto-serving` `python/core/server.py` route file
+  directly with minimal server-route stubs for the synthetic adapter. This
+  keeps the source HTTP route contract real while avoiding an unnecessary
+  import of the Torch-backed real model engine for these synthetic tests.
 
 The public smoke entry point is `run_synthetic_serving_request(...)`. It
 returns deterministic logits for one request and produces:
@@ -113,6 +120,14 @@ max_abs_error: <max-absolute-error-when-present>
 scheduler_error_summary: <device-scheduler-errors-when-present>
 task_body_digest.source_sha256: <Gluon expert task-body digest when present>
 ```
+
+When the aggregate compatibility command selects the persistent launcher, each
+fixture summary also preserves per-route `pto_launch_results` metadata under
+`fixtures[*].observed`, including launch kind, route phase, DAG shape, status,
+completed count, max absolute error, scheduler error summary, and task-body
+digest when available. If a selected launcher fails or skips locally, the
+aggregate stops after the first non-passed PTO launch and returns structured
+JSON instead of continuing into later routes.
 
 ## Interpretation
 

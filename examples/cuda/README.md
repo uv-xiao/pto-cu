@@ -115,7 +115,9 @@ text/message/delta presence, finish reason, non-streaming usage presence, and
 streaming terminal `[DONE]` presence. It explicitly does not claim tokenizer
 semantics, logprob values, stop-token semantics, production readiness,
 throughput, latency, real DeepSeek weights, or simpler-nv/vLLM kernel
-integration.
+integration. With `--kernel-launcher persistent-moe-dispatch-combine`, the
+aggregate command runs each source route in an isolated child process while
+preserving per-route `pto_launch_results` metadata in the fixture summary.
 
 The local FastAPI fixture exposes `/v1/completions` and
 `/v1/chat/completions`. The chat fixture accepts a bounded non-streaming
