@@ -25,6 +25,7 @@ _SUPPORTED_KERNELS = {
     "gemm_tensor_core_tiled_f16_f32",
     "flashattention_fwd_f32",
     "moe_expert_affine_f32",
+    "rmsnorm_f32",
 }
 
 
@@ -122,6 +123,8 @@ def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
         return _render_flashattention_source(tile_shape)
     if kernel_name == "moe_expert_affine_f32":
         return _render_moe_expert_affine_source()
+    if kernel_name == "rmsnorm_f32":
+        return _render_rmsnorm_f32_source()
     raise AssertionError(f"unhandled Gluon kernel: {kernel_name}")
 
 
@@ -427,6 +430,50 @@ def _render_moe_expert_affine_source() -> str:
                 a.numel(),
                 scale_a,
                 scale_b,
+                num_warps=num_warps,
+            )
+        """
+    ).lstrip()
+
+
+def _render_rmsnorm_f32_source() -> str:
+    return dedent(
+        """
+        from triton.experimental import gluon
+        from triton.experimental.gluon import language as gl
+
+
+        @gluon.jit
+        def rmsnorm_f32_kernel(x_ptr, weight_ptr, out_ptr, rows: gl.constexpr, hidden: gl.constexpr, eps: gl.constexpr):
+            row = gl.program_id(0)
+            sum_sq = 0.0
+            for col in range(0, hidden):
+                x = gl.load(x_ptr + row * hidden + col)
+                sum_sq += x * x
+            mean_sq = sum_sq / hidden
+            inv_rms = gl.rsqrt(mean_sq + eps)
+            for col in range(0, hidden):
+                x = gl.load(x_ptr + row * hidden + col)
+                weight = gl.load(weight_ptr + col)
+                gl.store(out_ptr + row * hidden + col, x * inv_rms * weight)
+
+
+        def run_rmsnorm_f32(x, weight, out, eps=1.0e-5, num_warps=4):
+            expected_rank = 2
+            if len(x.shape) != expected_rank or len(out.shape) != expected_rank:
+                raise ValueError(f"expected x/out to be rank-2, got x={tuple(x.shape)}, out={tuple(out.shape)}")
+            if len(weight.shape) != 1:
+                raise ValueError(f"expected weight to be rank-1, got shape {tuple(weight.shape)}")
+            if out.shape != x.shape or weight.numel() != x.shape[1]:
+                raise ValueError(f"expected out shape to match x and weight length to match hidden, got x={tuple(x.shape)}, weight={tuple(weight.shape)}, out={tuple(out.shape)}")
+
+            rmsnorm_f32_kernel[(x.shape[0],)](
+                x,
+                weight,
+                out,
+                x.shape[0],
+                x.shape[1],
+                eps,
                 num_warps=num_warps,
             )
         """
