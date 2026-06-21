@@ -107,6 +107,7 @@ def run_flashattention_correctness(
     rtol: float = 1e-2,
     seed: int = 0,
     causal: bool = False,
+    attention_variant: str = "standard",
     sequence_boundary: str = "fixed",
     kv_cache_boundary: str = "none",
     skip_reason: Callable[[], str | None] | None = None,
@@ -114,8 +115,19 @@ def run_flashattention_correctness(
     resolved_output_dir = DEFAULT_OUTPUT_DIR if output_dir is None else Path(output_dir)
     if resolved_output_dir.is_absolute():
         raise ValueError("--output-dir must be repo-relative")
+    _validate_attention_variant(attention_variant)
     _validate_sequence_boundary(sequence_boundary)
     _validate_kv_cache_boundary(kv_cache_boundary)
+
+    if attention_variant != "standard":
+        return _unsupported_attention_variant_result(
+            arch=arch,
+            tile_shape=tile_shape,
+            atol=atol,
+            rtol=rtol,
+            causal=causal,
+            attention_variant=attention_variant,
+        )
 
     if sequence_boundary != "fixed":
         return _unsupported_sequence_boundary_result(
@@ -352,6 +364,15 @@ def main(argv: list[str] | None = None) -> int:
             ),
         )
         parser.add_argument(
+            "--attention-variant",
+            choices=("standard", "mla"),
+            default="standard",
+            help=(
+                "report an explicit unsupported attention variant boundary "
+                "for the single-case run"
+            ),
+        )
+        parser.add_argument(
             "--require-cuda",
             action="store_true",
             help="return a non-zero status when dependencies or CUDA are unavailable",
@@ -364,6 +385,8 @@ def main(argv: list[str] | None = None) -> int:
                 raise ValueError("--kv-cache-boundary is only supported without --sweep")
             if args.sequence_boundary != "fixed":
                 raise ValueError("--sequence-boundary is only supported without --sweep")
+            if args.attention_variant != "standard":
+                raise ValueError("--attention-variant is only supported without --sweep")
             result = run_flashattention_sweep(
                 output_dir=args.output_dir,
                 arch=args.arch,
@@ -379,6 +402,7 @@ def main(argv: list[str] | None = None) -> int:
                 rtol=args.rtol,
                 seed=args.seed,
                 causal=args.causal,
+                attention_variant=args.attention_variant,
                 sequence_boundary=args.sequence_boundary,
                 kv_cache_boundary=args.kv_cache_boundary,
             )
@@ -474,6 +498,50 @@ def _validate_kv_cache_boundary(kv_cache_boundary: str) -> None:
 def _validate_sequence_boundary(sequence_boundary: str) -> None:
     if sequence_boundary not in ("fixed", "varlen"):
         raise ValueError("--sequence-boundary must be one of: fixed, varlen")
+
+
+def _validate_attention_variant(attention_variant: str) -> None:
+    if attention_variant not in ("standard", "mla"):
+        raise ValueError("--attention-variant must be one of: standard, mla")
+
+
+def _unsupported_attention_variant_result(
+    *,
+    arch: str,
+    tile_shape: tuple[int, int, int],
+    atol: float,
+    rtol: float,
+    causal: bool,
+    attention_variant: str,
+) -> dict:
+    seqlen_q, seqlen_k, head_dim = tile_shape
+    phase = _phase_for(tile_shape=tile_shape, causal=causal)
+    return {
+        "schema_version": 1,
+        "kernel_name": "flashattention_fwd_f32",
+        "status": "skipped",
+        "phase": phase,
+        "arch": arch,
+        "shape": {
+            "seqlen_q": seqlen_q,
+            "seqlen_k": seqlen_k,
+            "head_dim": head_dim,
+        },
+        "causal": causal,
+        "attention_variant": attention_variant,
+        "reference": _reference_for(phase=phase, causal=causal),
+        "tolerance": {"atol": atol, "rtol": rtol},
+        "unsupported_boundary": {
+            "kind": "mla_attention",
+            "operator": "flashattention_fwd_f32",
+            "boundary": attention_variant,
+            "status": "unsupported",
+        },
+        "reason": (
+            "Gluon FlashAttention MLA attention boundary is unsupported; "
+            "this is unsupported-boundary evidence only"
+        ),
+    }
 
 
 def _unsupported_sequence_boundary_result(

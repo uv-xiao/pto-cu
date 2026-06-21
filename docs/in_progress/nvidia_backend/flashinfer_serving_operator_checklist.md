@@ -62,6 +62,11 @@ Serving-relevant families verified from the README:
   `--tile-shape 32x32x64 --causal --sequence-boundary varlen`, with
   `status: skipped`, `sequence_boundary: varlen`,
   `unsupported_boundary.kind: varlen_attention`, shape metadata, and
+  repo-relative, private-path-safe commands. It also records explicit MLA
+  unsupported-boundary evidence for
+  `--tile-shape 32x32x64 --causal --attention-variant mla`, with
+  `status: skipped`, `attention_variant: mla`,
+  `unsupported_boundary.kind: mla_attention`, shape metadata, and
   repo-relative, private-path-safe commands. This is unsupported-boundary
   evidence only. vLLM DeepSeek probes are real vLLM serving evidence and
   mention fp8 MLA KV-cache behavior, but they do not route through PTO
@@ -70,9 +75,10 @@ Serving-relevant families verified from the README:
   paged/ragged KV-cache correctness, varlen, full decode coverage, MLA,
   cascade, sparse, and POD attention fixtures before any attention-serving
   claim.
-- **Explicit non-claim:** this is not FlashInfer integration evidence, not
-  FlashInfer parity, not simpler-nv/vLLM kernel integration evidence, not
-  production serving readiness, not performance/throughput/latency evidence,
+- **Explicit non-claim:** this is not MLA attention correctness, not
+  FlashInfer integration evidence, not FlashInfer parity, not
+  simpler-nv/vLLM kernel integration evidence, not production serving
+  readiness, not performance/throughput/latency evidence,
   not paged/ragged KV-cache correctness, not full prefill, full decode, full
   append, or append KV-cache coverage, not varlen attention correctness, and
   not DeepSeek semantic correctness.
