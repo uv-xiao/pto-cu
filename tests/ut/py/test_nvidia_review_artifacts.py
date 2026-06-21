@@ -285,6 +285,10 @@ def test_review_policy_changelog_and_examples_exist():
         example_root
         / "vllm_deepseek_v4_chat_256k_needle_stream_position_sweep_probe.py"
     ).is_file()
+    assert (
+        example_root
+        / "vllm_deepseek_v4_chat_256k_needle_stream_usage_contract_probe.py"
+    ).is_file()
 
 
 def test_uccl_in_progress_docs_omit_private_paths():
@@ -479,6 +483,46 @@ def test_chat_256k_needle_stream_position_sweep_evidence_is_review_safe():
     assert "text_" + "sha256" not in evidence
     assert "token_ids" not in evidence
     assert "/" + "home/" not in evidence
+
+
+def test_chat_256k_needle_stream_usage_contract_docs_are_guarded():
+    example = (
+        ROOT
+        / "examples"
+        / "cuda"
+        / "vllm_deepseek_v4_chat_256k_needle_stream_usage_contract_probe.py"
+    )
+    readme = (ROOT / "examples" / "cuda" / "README.md").read_text(
+        encoding="utf-8"
+    )
+    readiness = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "deepseek_v4_flash_serving_readiness.md"
+    ).read_text(encoding="utf-8")
+    required_text = [
+        "vllm_deepseek_v4_chat_256k_needle_stream_usage_contract_probe.py",
+        "28157",
+        "stream_options.include_usage=true",
+        "PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28157",
+    ]
+
+    assert example.is_file()
+    for text in required_text:
+        assert text in readme
+        assert text in readiness
+    assert "returned streaming usage" in readme
+    assert "strict exact output matching" in readme
+    assert (
+        "Fresh remote H200 evidence for this follow-up remains pending"
+        in readiness
+    )
+    assert (
+        "local_only_vllm_chat_256k_needle_stream_usage_contract: pending"
+        in readiness
+    )
 
 
 def test_chat_256k_needle_stream_truncated_failure_evidence_is_review_safe():
