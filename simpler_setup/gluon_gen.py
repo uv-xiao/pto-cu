@@ -32,6 +32,7 @@ _SUPPORTED_KERNELS = {
     "silu_f32",
     "gelu_f32",
     "gated_silu_f32",
+    "topk_sampling_f32",
 }
 
 
@@ -143,6 +144,8 @@ def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
         return _render_gelu_f32_source()
     if kernel_name == "gated_silu_f32":
         return _render_gated_silu_f32_source()
+    if kernel_name == "topk_sampling_f32":
+        return _render_topk_sampling_f32_source()
     raise AssertionError(f"unhandled Gluon kernel: {kernel_name}")
 
 
@@ -751,6 +754,62 @@ def _render_gated_silu_f32_source() -> str:
                 value,
                 out,
                 gate.numel(),
+                num_warps=num_warps,
+            )
+        """
+    ).lstrip()
+
+
+def _render_topk_sampling_f32_source() -> str:
+    return dedent(
+        """
+        from triton.experimental import gluon
+        from triton.experimental.gluon import language as gl
+
+
+        @gluon.jit
+        def topk_sampling_f32_kernel(logits_ptr, top_values_ptr, top_indices_ptr, rows: gl.constexpr, vocab: gl.constexpr, k: gl.constexpr):
+            row = gl.program_id(0)
+            for rank in range(0, k):
+                best_value = -3.4028234663852886e38
+                best_index = vocab
+                for col in range(0, vocab):
+                    already_selected = False
+                    for previous_rank in range(0, rank):
+                        previous_index = gl.load(top_indices_ptr + row * k + previous_rank)
+                        already_selected = already_selected or previous_index == col
+
+                    value = gl.load(logits_ptr + row * vocab + col)
+                    better_value = value > best_value
+                    tie_lower_index = value == best_value and col < best_index
+                    if (not already_selected) and (better_value or tie_lower_index):
+                        best_value = value
+                        best_index = col
+
+                gl.store(top_values_ptr + row * k + rank, best_value)
+                gl.store(top_indices_ptr + row * k + rank, best_index)
+
+
+        def run_topk_sampling_f32(logits, top_values, top_indices, k=3, num_warps=4):
+            expected_rank = 2
+            if len(logits.shape) != expected_rank:
+                raise ValueError(f"expected logits to be rank-2, got shape {tuple(logits.shape)}")
+            if len(top_values.shape) != expected_rank or len(top_indices.shape) != expected_rank:
+                raise ValueError(f"expected top_values/top_indices to be rank-2, got top_values={tuple(top_values.shape)}, top_indices={tuple(top_indices.shape)}")
+            if logits.shape[0] != top_values.shape[0] or logits.shape[0] != top_indices.shape[0]:
+                raise ValueError(f"expected matching row counts, got logits={tuple(logits.shape)}, top_values={tuple(top_values.shape)}, top_indices={tuple(top_indices.shape)}")
+            if top_values.shape[1] != k or top_indices.shape[1] != k:
+                raise ValueError(f"expected top-k output width {k}, got top_values={tuple(top_values.shape)}, top_indices={tuple(top_indices.shape)}")
+            if k <= 0 or k > logits.shape[1]:
+                raise ValueError(f"expected 0 < k <= vocab, got k={k}, vocab={logits.shape[1]}")
+
+            topk_sampling_f32_kernel[(logits.shape[0],)](
+                logits,
+                top_values,
+                top_indices,
+                logits.shape[0],
+                logits.shape[1],
+                k,
                 num_warps=num_warps,
             )
         """

@@ -79,14 +79,21 @@ Serving-relevant families verified from the README:
 
 - **FlashInfer reference family:** sampling and decoding: Sorting-Free
   Sampling; Top-K; Top-P; Min-P; Speculative Decoding.
-- **PTO current evidence:** vLLM probes use bounded sampler settings for real
-  DeepSeek API requests. PTO has no checked-in sampling kernel or speculative
-  decode operator evidence.
-- **Gap / next PTO milestone:** add PTO sampling-kernel fixtures for top-k,
-  top-p, min-p, and a separate speculative decoding boundary before connecting
-  sampling to a serving stack.
-- **Explicit non-claim:** this is not tokenizer semantics, generated-text
-  correctness, or DeepSeek serving through pypto-serving.
+- **PTO current evidence:** `gluon_topk_sampling_h200.md` records one
+  generated `topk_sampling_f32` top-k correctness gate on H200 for
+  `rows=2, vocab=8, k=3`. It validates deterministic CPU golden versus GPU
+  result for both `values` and `indices`, with lower token id first for tied
+  logits. vLLM probes use bounded sampler settings for real DeepSeek API
+  requests, but those sampler settings do not route through PTO kernels.
+- **Gap / next PTO milestone:** add PTO sampling-kernel fixtures for top-p and
+  min-p, broaden top-k vocabulary and shape coverage, and add a separate
+  speculative decoding boundary before connecting sampling to a serving stack.
+  Remaining sampling gaps include top-p, min-p, speculative decoding, and
+  serving-stack integration.
+- **Explicit non-claim:** this is not FlashInfer integration evidence, not
+  vLLM or simpler-nv kernel integration evidence, not tokenizer semantics,
+  not generated-text correctness, and not DeepSeek serving through
+  pypto-serving.
 
 ### Communication
 
