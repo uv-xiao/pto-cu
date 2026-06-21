@@ -36,9 +36,11 @@ Serving-relevant families verified from the README:
   Sparse Attention; POD-Attention.
 - **PTO current evidence:** `gluon_flashattention_h200.md` records a small
   FP32 FlashAttention shape sweep. It includes `schema_version`, aggregate
-  status, per-case provenance, and repo-relative artifact paths. The sweep
-  keeps the existing `32x32x32` case and adds a bounded `head_dim=64` case
-  selected after `32x32x64 failed H200 correctness`. vLLM DeepSeek probes are
+  status, per-case provenance, repo-relative artifact paths, and an explicit
+  `--tile-shape 32x32x64` H200 blocker repro. The sweep keeps the existing
+  `32x32x32` case and a bounded `head_dim=64` case selected after `32x32x64
+  failed H200 correctness`; the `32x32x64` repro still fails with structured
+  JSON and is not promoted as passing evidence. vLLM DeepSeek probes are
   real vLLM serving evidence and mention fp8 MLA KV-cache behavior, but they
   do not route through PTO kernels.
 - **Gap / next PTO milestone:** add PTO-owned decode, prefill, append,
