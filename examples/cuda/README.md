@@ -215,15 +215,18 @@ the same skip returns a non-zero exit status. H200 evidence is recorded in
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/gluon_layernorm_f32.py \
-  --output-dir tmp/gluon-layernorm-local \
-  --rows 2 --hidden 16 --eps 1e-5 --arch compute_90
+  --output-dir tmp/gluon-layernorm-shape-coverage-local \
+  --arch compute_90 --sweep
 ```
 
 This generates the `layernorm_f32` Gluon source and checks FP32
-`(x - mean) * torch.rsqrt(var + eps) * weight + bias` correctness for one
-bounded normalization shape with per-hidden weight and bias. Without CUDA
-tooling or a visible NVIDIA GPU it reports a skip; with `--require-cuda`, the
-same skip returns a non-zero exit status. H200 evidence is recorded in
+`out = (x - mean) * rsqrt(var + eps) * weight + bias` correctness with
+per-hidden weight and bias. The default command still runs one case and
+accepts `--rows 2 --hidden 16 --eps 1e-5`; `--sweep` runs a fixed two-case
+shape sweep covering `hidden=16` from the existing smoke case and
+`hidden=7168` from `DeepSeek-V4-Flash config hidden_size` provenance. Without
+CUDA tooling or a visible NVIDIA GPU it reports skips; with `--require-cuda`,
+skipped cases return a non-zero exit status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_layernorm_h200.md`.
 
 ## Gluon FP32 RoPE

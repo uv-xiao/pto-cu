@@ -106,7 +106,8 @@ Serving-relevant families verified from the README:
   smoke shape and `hidden=7168` with
   `DeepSeek-V4-Flash config hidden_size` provenance.
   `gluon_layernorm_h200.md` records one generated `layernorm_f32` FP32
-  LayerNorm correctness fixture on H200.
+  LayerNorm shape sweep on H200, including the existing smoke shape and
+  `hidden=7168` with `DeepSeek-V4-Flash config hidden_size` provenance.
   `gluon_rope_h200.md` records one generated `rope_f32` FP32 RoPE
   correctness fixture on H200. `gluon_silu_h200.md` records one generated
   `silu_f32` FP32 SiLU correctness fixture on H200. `gluon_gelu_h200.md`
@@ -118,9 +119,8 @@ Serving-relevant families verified from the README:
   H200.
 - **Gap / next PTO milestone:** add broader RoPE, normalization, and
   activation fixtures with model-shape provenance before treating the family
-  as covered serving operators. The next normalization gaps are broader
-  LayerNorm coverage, including broader LayerNorm shape coverage and
-  additional non-RMSNorm normalization variants.
+  as covered serving operators. Remaining gap: broader LayerNorm shape coverage
+  beyond this sweep; additional non-RMSNorm normalization variants remain.
 - **Explicit non-claim:** this is not production readiness evidence and not
   model semantic correctness. The RMSNorm, LayerNorm, and RoPE fixtures are
   not FlashInfer integration evidence, fused attention evidence, KV-cache

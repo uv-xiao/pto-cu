@@ -71,12 +71,15 @@ the existing smoke case and a `hidden=7168` case with
 integration evidence, production serving readiness, DeepSeek semantic
 correctness, full normalization coverage, fused-kernel evidence, or
 simpler-nv/vLLM integration evidence.
-The checklist also includes a generated Gluon FP32 LayerNorm fixture on H200,
-recorded in `docs/in_progress/nvidia_backend/gluon_layernorm_h200.md`; this
-is not FlashInfer integration evidence, production serving readiness,
-DeepSeek semantic correctness, Gemma-style fused norm coverage, activation
-coverage, fused attention, KV-cache integration, throughput, latency, or
-simpler-nv/vLLM integration evidence.
+The checklist also includes a generated Gluon FP32 LayerNorm shape sweep on
+H200, recorded in
+`docs/in_progress/nvidia_backend/gluon_layernorm_h200.md`. The sweep includes
+the existing smoke case and a `hidden=7168` case with
+`DeepSeek-V4-Flash config hidden_size` provenance; this is not FlashInfer
+integration evidence, production serving readiness, DeepSeek semantic
+correctness, Gemma-style fused norm coverage, activation coverage, fused
+attention, KV-cache integration, throughput, latency, or simpler-nv/vLLM
+integration evidence.
 The checklist also includes a generated Gluon FP32 RoPE fixture on H200,
 recorded in `docs/in_progress/nvidia_backend/gluon_rope_h200.md`; this is
 not FlashInfer integration evidence, production serving readiness, DeepSeek
