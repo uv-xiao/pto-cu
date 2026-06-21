@@ -3063,6 +3063,7 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "http": in_progress_root / "pypto_serving_http_fixture.md",
         "source_contract": in_progress_root / "pypto_serving_source_contract_h200.md",
         "topk_launcher": in_progress_root / "pypto_serving_topk_sampling_launcher_h200.md",
+        "topp_launcher": in_progress_root / "pypto_serving_topp_sampling_launcher_h200.md",
     }
     example = ROOT / "examples" / "cuda" / "pypto_serving_nv_shim.py"
     tests = ROOT / "tests" / "ut" / "py" / "test_pypto_serving_nv_shim.py"
@@ -3249,6 +3250,48 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
     assert UCCL_PRIVATE_PATH_RE.search(topk_launcher) is None
     assert "/" + "home/" not in topk_launcher
 
+    topp_launcher = docs["topp_launcher"].read_text(encoding="utf-8")
+    for required in [
+        "pypto-serving Top-P Sampling Launcher H200 Evidence",
+        "serving-route launcher/probe for a generated Top-P sampling correctness gate",
+        "examples/cuda/pypto_serving_nv_shim.py",
+        "examples/cuda/gluon_topp_sampling.py",
+        "run_topp_sampling_correctness",
+        "create_generated_gluon_topp_sampling_launcher",
+        "--kernel-launcher gluon-topp-sampling",
+        "--pypto-serving-source",
+        "--require-cuda",
+        "kernel_name: topp_sampling_f32",
+        "launch_kind: gluon-topp-sampling",
+        "shape: {rows: 3, vocab: 16, max_k: 6}",
+        "p: 0.80",
+        "validation.max_abs_error",
+        "validation.max_cumulative_probability_error",
+        "validation.values_match: true",
+        "validation.indices_match: true",
+        "validation.selected_counts_match: true",
+        "validation.cumulative_probabilities_match: true",
+        "source_sha256",
+        "artifact.source_path",
+        "artifact.manifest_path",
+        "H200 Source-Route Evidence",
+        "server: pypto-serving-source",
+        "route: /v1/completions",
+        "status: passed",
+        "pto_status: passed",
+        "pto_launch_count: 1",
+        "REMOTE_PTO_CU=<remote-pto-cu>",
+        "remote Git refresh: not required",
+        "not FlashInfer integration",
+        "not tokenizer semantics",
+        "not generated text correctness",
+        "not DeepSeek serving readiness",
+        "not production serving evidence",
+    ]:
+        assert required in topp_launcher
+    assert UCCL_PRIVATE_PATH_RE.search(topp_launcher) is None
+    assert "/" + "home/" not in topp_launcher
+
     example_text = example.read_text(encoding="utf-8")
     for required in [
         "class SimplerNvExecutor",
@@ -3274,15 +3317,19 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "run_pypto_serving_vllm_compat_fixture",
         "create_generated_gluon_moe_launcher",
         "create_generated_gluon_topk_sampling_launcher",
+        "create_generated_gluon_topp_sampling_launcher",
         "create_persistent_moe_dispatch_combine_launcher",
         "run_topk_sampling_correctness",
+        "run_topp_sampling_correctness",
         "run_moe_dispatch_combine",
         "--kernel-launcher",
         "gluon-moe-expert",
         "gluon-topk-sampling",
+        "gluon-topp-sampling",
         "persistent-moe-dispatch-combine",
         "moe_expert_affine_f32",
         "topk_sampling_f32",
+        "topp_sampling_f32",
     ]:
         assert required in example_text
 
@@ -3306,15 +3353,19 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "test_pypto_serving_source_cli_mode_outputs_contract_json",
         "test_generated_gluon_moe_launcher_records_review_safe_metadata",
         "test_generated_gluon_topk_sampling_launcher_records_review_safe_metadata",
+        "test_generated_gluon_topp_sampling_launcher_records_review_safe_metadata",
         "test_generated_launcher_can_run_through_source_route_fixtures",
         "test_topk_sampling_launcher_can_run_through_source_route_fixtures",
+        "test_topp_sampling_launcher_can_run_through_source_route_fixtures",
         "test_persistent_moe_dispatch_combine_launcher_records_review_safe_metadata",
         "test_persistent_launcher_can_run_through_source_route_fixtures",
         "test_generated_kernel_cli_mode_outputs_launch_metadata",
         "test_topk_sampling_cli_mode_outputs_launch_metadata",
+        "test_topp_sampling_cli_mode_outputs_launch_metadata",
         "test_persistent_moe_cli_mode_outputs_launch_metadata",
         "test_generated_launcher_can_run_through_vllm_compat_summary",
         "test_topk_sampling_launcher_can_run_through_vllm_compat_summary",
+        "test_topp_sampling_launcher_can_run_through_vllm_compat_summary",
         "test_default_launcher_selection_uses_cuda_seed_and_add_op",
     ]:
         assert required in test_text
@@ -3329,9 +3380,11 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
     assert "--pypto-serving-vllm-compat" in readme_text
     assert "--kernel-launcher gluon-moe-expert" in readme_text
     assert "--kernel-launcher gluon-topk-sampling" in readme_text
+    assert "--kernel-launcher gluon-topp-sampling" in readme_text
     assert "--kernel-launcher persistent-moe-dispatch-combine" in readme_text
     assert "moe_expert_affine_f32" in readme_text
     assert "topk_sampling_f32" in readme_text
+    assert "topp_sampling_f32" in readme_text
     assert "not production fused MoE dispatch/combine serving" in readme_text
     assert "OpenAI-compatible structural fields" in readme_text
     assert "/v1/chat/completions" in readme_text

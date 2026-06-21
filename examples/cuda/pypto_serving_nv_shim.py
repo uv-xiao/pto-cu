@@ -22,7 +22,9 @@ PYPTO_SERVING_SOURCE = ROOT / "tmp" / "sources" / "repos" / "hw-native-sys" / "p
 DEFAULT_GENERATED_GLUON_OUTPUT_DIR = Path("tmp/pypto-serving-gluon-moe-expert")
 PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND = "persistent-moe-dispatch-combine"
 GLUON_TOPK_SAMPLING_LAUNCH_KIND = "gluon-topk-sampling"
+GLUON_TOPP_SAMPLING_LAUNCH_KIND = "gluon-topp-sampling"
 DEFAULT_GENERATED_GLUON_TOPK_OUTPUT_DIR = Path("tmp/pypto-serving-gluon-topk-sampling")
+DEFAULT_GENERATED_GLUON_TOPP_OUTPUT_DIR = Path("tmp/pypto-serving-gluon-topp-sampling")
 
 
 @dataclass(frozen=True)
@@ -1210,6 +1212,62 @@ def create_generated_gluon_topk_sampling_launcher(
     return launch
 
 
+def create_generated_gluon_topp_sampling_launcher(
+    *,
+    output_dir: Path = DEFAULT_GENERATED_GLUON_TOPP_OUTPUT_DIR,
+    rows: int = 3,
+    vocab: int = 16,
+    max_k: int = 6,
+    p: float = 0.80,
+) -> Callable[[KernelLaunchRequest], dict[str, Any]]:
+    def launch(request: KernelLaunchRequest) -> dict[str, Any]:
+        result = run_topp_sampling_correctness(
+            output_dir=output_dir / request.phase,
+            arch=request.arch,
+            rows=rows,
+            vocab=vocab,
+            max_k=max_k,
+            p=p,
+            device=request.device_id,
+        )
+        artifact = result.get("artifact", {})
+        if not isinstance(artifact, dict):
+            artifact = {}
+        validation = result.get("validation", {})
+        if not isinstance(validation, dict):
+            validation = {}
+        non_claims = result.get("non_claims", [])
+        if not isinstance(non_claims, list):
+            non_claims = []
+        request_metadata = result.get("request", {})
+        if not isinstance(request_metadata, dict):
+            request_metadata = {"p": p}
+        elif "p" not in request_metadata:
+            request_metadata = {**request_metadata, "p": p}
+        launch_result = {
+            "status": result.get("status", "failed"),
+            "phase": request.phase,
+            "op": request.op,
+            "launch_kind": GLUON_TOPP_SAMPLING_LAUNCH_KIND,
+            "kernel_name": result.get("kernel_name", "topp_sampling_f32"),
+            "shape": result.get(
+                "shape",
+                {"rows": rows, "vocab": vocab, "max_k": max_k},
+            ),
+            "request": request_metadata,
+            "artifact": artifact,
+            "source_sha256": artifact.get("source_sha256", ""),
+            "validation": validation,
+            "non_claims": non_claims,
+            "generated_kernel": result,
+        }
+        if "reason" in result:
+            launch_result["reason"] = result["reason"]
+        return launch_result
+
+    return launch
+
+
 def create_persistent_moe_dispatch_combine_launcher(
     *,
     scheduler_blocks: int = 1,
@@ -1290,6 +1348,12 @@ def run_topk_sampling_correctness(**kwargs) -> dict[str, Any]:
     from examples.cuda.gluon_topk_sampling import run_topk_sampling_correctness
 
     return run_topk_sampling_correctness(**kwargs)
+
+
+def run_topp_sampling_correctness(**kwargs) -> dict[str, Any]:
+    from examples.cuda.gluon_topp_sampling import run_topp_sampling_correctness
+
+    return run_topp_sampling_correctness(**kwargs)
 
 
 def run_moe_dispatch_combine(**kwargs) -> dict[str, Any]:
@@ -1812,6 +1876,7 @@ def main(argv: list[str] | None = None) -> int:
             "cuda-seed",
             "gluon-moe-expert",
             GLUON_TOPK_SAMPLING_LAUNCH_KIND,
+            GLUON_TOPP_SAMPLING_LAUNCH_KIND,
             PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND,
         ),
         default="cuda-seed",
@@ -1988,6 +2053,10 @@ def _create_kernel_launcher_from_args(args) -> Callable[[KernelLaunchRequest], d
     if args.kernel_launcher == GLUON_TOPK_SAMPLING_LAUNCH_KIND:
         return create_generated_gluon_topk_sampling_launcher(
             output_dir=DEFAULT_GENERATED_GLUON_TOPK_OUTPUT_DIR
+        )
+    if args.kernel_launcher == GLUON_TOPP_SAMPLING_LAUNCH_KIND:
+        return create_generated_gluon_topp_sampling_launcher(
+            output_dir=DEFAULT_GENERATED_GLUON_TOPP_OUTPUT_DIR
         )
     if args.kernel_launcher == PERSISTENT_MOE_DISPATCH_COMBINE_LAUNCH_KIND:
         return create_persistent_moe_dispatch_combine_launcher()

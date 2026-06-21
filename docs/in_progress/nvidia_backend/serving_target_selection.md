@@ -92,6 +92,11 @@ available. Selecting `--kernel-launcher gluon-topk-sampling` routes the same
 request through the generated Gluon Top-K sampling correctness harness for
 `topk_sampling_f32`, recording launch kind, kernel name, phase, shape,
 artifact/source digest metadata, and validation metadata when available.
+Selecting `--kernel-launcher gluon-topp-sampling` routes the same request
+through the generated Gluon Top-P sampling correctness harness for
+`topp_sampling_f32`, recording launch kind, kernel name, phase, shape,
+sampling request metadata, artifact/source digest metadata, and validation
+metadata when available.
 Selecting `--kernel-launcher persistent-moe-dispatch-combine`
 routes the same request through the existing persistent-device MoE
 dispatch/combine example via `run_moe_dispatch_combine(...)`, recording launch
