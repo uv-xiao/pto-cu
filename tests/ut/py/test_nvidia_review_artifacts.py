@@ -1919,7 +1919,7 @@ def test_status_rollup_records_current_deepseek_serving_boundary():
         "docs/in_progress/nvidia_backend/gluon_gelu_h200.md",
         "docs/in_progress/nvidia_backend/gluon_gated_silu_h200.md",
         "FlashInfer-derived operator checklist",
-        "generated Gluon FP32 RMSNorm fixture",
+        "generated Gluon FP32 RMSNorm shape sweep",
         "generated Gluon FP32 LayerNorm fixture",
         "generated Gluon FP32 SiLU fixture",
         "generated Gluon FP32 GELU fixture",
@@ -2032,15 +2032,23 @@ def test_gluon_rmsnorm_h200_evidence_is_review_safe():
         "# Gluon RMSNorm FP32 H200 Correctness",
         "rmsnorm_f32",
         "x * torch.rsqrt(x.pow(2).mean(dim=-1, keepdim=True) + eps) * weight",
+        "--sweep",
         "--rows 2 --hidden 16 --eps 1e-5",
+        "rows=1, hidden=7168, eps=1e-5",
+        "DeepSeek-V4-Flash config hidden_size",
+        "tests/ut/py/test_vllm_deepseek_v4_artifact_probe.py",
+        "examples/cuda/vllm_deepseek_v4_artifact_probe.py",
         "--require-cuda --device 0 --arch compute_90",
         "status: passed",
+        "case statuses: passed, passed",
         "max absolute error:",
+        "machine class: H200",
         "python environment: <remote-gluon-venv>",
         "REMOTE_PTO_CU=<remote-pto-cu>",
         "not FlashInfer integration evidence",
         "not production serving readiness",
         "not DeepSeek semantic correctness",
+        "not performance, throughput, or latency evidence",
         "not fused normalization or fused activation evidence",
         "not vLLM/simpler-nv integration evidence",
     ]:
@@ -2051,17 +2059,24 @@ def test_gluon_rmsnorm_h200_evidence_is_review_safe():
     readme_text = readme.read_text(encoding="utf-8")
     assert "gluon_rmsnorm_f32.py" in readme_text
     assert "rmsnorm_f32" in readme_text
+    assert "--sweep" in readme_text
+    assert "hidden=7168" in readme_text
+    assert "DeepSeek-V4-Flash config hidden_size" in readme_text
     assert "gluon_rmsnorm_h200.md" in readme_text
 
     checklist_text = checklist.read_text(encoding="utf-8")
     assert "gluon_rmsnorm_h200.md" in checklist_text
     assert "RMSNorm" in checklist_text
+    assert "hidden=7168" in checklist_text
+    assert "DeepSeek-V4-Flash config hidden_size" in checklist_text
     assert "LayerNorm" in checklist_text
     assert "Gemma-style fused norm" in checklist_text
 
     status_text = status.read_text(encoding="utf-8")
     assert "gluon_rmsnorm_h200.md" in status_text
-    assert "generated Gluon FP32 RMSNorm fixture" in status_text
+    assert "generated Gluon FP32 RMSNorm shape sweep" in status_text
+    assert "hidden=7168" in status_text
+    assert "DeepSeek-V4-Flash config hidden_size" in status_text
 
 
 def test_gluon_layernorm_h200_evidence_is_review_safe():
@@ -2420,7 +2435,8 @@ def test_gluon_gemma_fused_rmsnorm_h200_evidence_is_review_safe():
     assert "Gemma-style fused norm" in checklist_text
     assert "Remaining normalization gaps include Gemma-style fused norm" not in checklist_text
     assert "plus Gemma-style fused norm" not in checklist_text
-    assert "broader RMSNorm and LayerNorm shape coverage" in checklist_text
+    assert "broader LayerNorm shape coverage" in checklist_text
+    assert "additional non-RMSNorm normalization variants" in checklist_text
 
     status_text = status.read_text(encoding="utf-8")
     assert "gluon_gemma_fused_rmsnorm_h200.md" in status_text
