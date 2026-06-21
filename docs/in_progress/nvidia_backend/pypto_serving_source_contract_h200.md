@@ -18,6 +18,7 @@ source tree and uses the real `ServingServer` routes:
 - `/health`
 - `/v1/models`
 - `/v1/completions`
+- `/v1/chat/completions`
 
 `PyptoServingSourceAsyncEngineAdapter` adapts the synthetic simpler-nv engine
 to the server's async `add_request(...)` contract. The adapter returns the
@@ -28,21 +29,22 @@ The tracked entry points are:
 
 - `create_pypto_serving_source_app(...)`
 - `run_pypto_serving_source_completion_fixture(...)`
+- `run_pypto_serving_source_chat_completion_fixture(...)`
 - CLI flag: `--pypto-serving-source`
+- CLI flag: `--pypto-serving-source-chat`
 
-## Current Chat Source Limitation
+## Source Chat Contract
 
-The local synthetic shim now has `/v1/chat/completions` coverage through
-`SyntheticPyptoServingEngine` and the in-repo FastAPI fixture. The actual
-cloned source route is unchanged in this slice: in this worktree,
-`tmp/sources/repos/hw-native-sys/pypto-serving is absent`, so
-`/v1/chat/completions` support in the cloned `pypto-serving` source cannot be
-inspected or exercised here.
+`run_pypto_serving_source_chat_completion_fixture(...)` imports the same
+cloned source `create_serving_app(...)` and posts a bounded non-streaming
+OpenAI-style `messages` list to `/v1/chat/completions`. The request includes
+one small user message and `max_tokens=2`; no raw private paths or model
+artifacts are recorded.
 
-Because the source checkout is unavailable, this slice records the limitation
-instead of adding a source-route chat fixture. The source-contract fixture
-continues to cover only `/v1/completions` until a worker with the cloned source
-present verifies whether the real source server exposes `/v1/chat/completions`.
+The fixture records review-safe response shape rather than raw serving logs:
+route, HTTP status code, top-level `object`, assistant message role/content
+shape, mapped finish reason, `pto_status`, generated PTO token IDs, and
+`pto_launch_count`.
 
 ## Local Verification
 
@@ -57,7 +59,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
 Result:
 
 ```text
-2 passed, 13 deselected
+5 passed, 18 deselected
 ```
 
 Full shim tests:
@@ -70,7 +72,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
 Result:
 
 ```text
-15 passed
+23 passed
 ```
 
 ## H200 Source Sync
@@ -87,13 +89,25 @@ rsync -a --delete --exclude=.git \
 
 ## H200 Evidence
 
+Environment:
+
+```text
+machine: <h200-host>
+gpu: NVIDIA H200 NVL, compute capability 9.0, 143771 MiB
+driver: 580.126.20
+CUDA_HOME: /usr/local/cuda
+nvcc: Build cuda_12.8.r12.8/compiler.35404655_0
+source sync: local working tree synced with --sync; pypto-serving source
+  checkout synced explicitly because tmp/ is excluded by the generic runner
+```
+
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
   .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
   bash -lc 'source .venv/bin/activate && \
     PYTHONPATH=$PWD:$PWD/python \
     .venv/bin/python examples/cuda/pypto_serving_nv_shim.py \
-      --pypto-serving-source --require-cuda \
+      --pypto-serving-source-chat --require-cuda \
       --prompt hello --max-new-tokens 2 \
       --device 0 --arch compute_90'
 ```
@@ -102,11 +116,11 @@ Result:
 
 ```text
 server: pypto-serving-source
-route: /v1/completions
+route: /v1/chat/completions
 status: passed
 status_code: 200
-object: text_completion
-text: NV
+object: chat.completion
+assistant_message: {role: assistant, content: NV}
 finish_reason: length
 pto_status: passed
 pto_token_ids: [1, 2]
@@ -118,8 +132,11 @@ pto_launch_count: 2
 This proves the actual `pypto-serving` `create_serving_app`/`ServingServer`
 contract can be driven by a simpler-nv adapter on H200, including a CUDA seed
 launch behind the request path. It is stronger than the local in-repo FastAPI
-lookalike because it imports and executes the cloned source server route.
+lookalike because it imports and executes the cloned source server route. The
+current source-contract evidence covers both `/v1/completions` and
+`/v1/chat/completions`; the chat evidence uses the bounded non-streaming
+OpenAI-compatible message shape.
 
 This is not DeepSeek-V4-Flash correctness. It is not vLLM plugin evidence. It
-is not real model loading, tokenizer semantics, streaming, source-route
-chat-completion, throughput, latency, or multi-node evidence.
+is not real model loading, tokenizer semantics, streaming, throughput,
+latency, or multi-node evidence.

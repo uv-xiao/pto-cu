@@ -400,6 +400,57 @@ def run_pypto_serving_source_completion_fixture(
     }
 
 
+def run_pypto_serving_source_chat_completion_fixture(
+    *,
+    model: str,
+    prompt: str,
+    max_tokens: int = 2,
+    device_id: int = 0,
+    arch: str = "compute_90",
+) -> dict[str, Any]:
+    try:
+        from fastapi.testclient import TestClient
+    except (ImportError, RuntimeError) as exc:
+        return {
+            "status": "skipped",
+            "reason": f"missing FastAPI TestClient: {exc}",
+            "server": "pypto-serving-source",
+            "route": "/v1/chat/completions",
+        }
+    try:
+        app, adapter = create_pypto_serving_source_app(
+            model=model,
+            device_id=device_id,
+            arch=arch,
+        )
+    except (ImportError, RuntimeError, FileNotFoundError) as exc:
+        return {
+            "status": "skipped",
+            "reason": str(exc),
+            "server": "pypto-serving-source",
+            "route": "/v1/chat/completions",
+        }
+
+    response = TestClient(app).post(
+        "/v1/chat/completions",
+        json={
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+        },
+    )
+    return {
+        "status": "passed" if response.status_code == 200 else "failed",
+        "server": "pypto-serving-source",
+        "route": "/v1/chat/completions",
+        "status_code": response.status_code,
+        "response": response.json(),
+        "pto_status": adapter.last_pto_status,
+        "pto_token_ids": adapter.last_token_ids,
+        "pto_launch_count": adapter.last_launch_count,
+    }
+
+
 def create_synthetic_runtime_model() -> RuntimeModel:
     return RuntimeModel(
         model_id="synthetic-simpler-nv",
@@ -857,13 +908,29 @@ def main(argv: list[str] | None = None) -> int:
         help="exercise the actual pypto-serving source server contract in process",
     )
     parser.add_argument(
+        "--pypto-serving-source-chat",
+        action="store_true",
+        help="exercise the actual pypto-serving source /v1/chat/completions route in process",
+    )
+    parser.add_argument(
         "--require-cuda",
         action="store_true",
         help="return non-zero when the CUDA seed launch is skipped",
     )
     args = parser.parse_args(argv)
 
-    if args.pypto_serving_source:
+    if args.pypto_serving_source_chat:
+        result = run_pypto_serving_source_chat_completion_fixture(
+            model=args.model,
+            prompt=args.prompt,
+            max_tokens=args.max_new_tokens,
+            device_id=args.device,
+            arch=args.arch,
+        )
+        status = result["status"]
+        if status == "passed":
+            status = result.get("pto_status", status)
+    elif args.pypto_serving_source:
         result = run_pypto_serving_source_completion_fixture(
             model=args.model,
             prompt=args.prompt,

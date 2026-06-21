@@ -2011,10 +2011,11 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "pto_status: passed",
         "pto_launch_count: 2",
         "<remote-pto-cu>/tmp/sources/repos/hw-native-sys/pypto-serving/",
-        "Current Chat Source Limitation",
-        "tmp/sources/repos/hw-native-sys/pypto-serving is absent",
+        "Source Chat Contract",
+        "run_pypto_serving_source_chat_completion_fixture",
+        "--pypto-serving-source-chat",
         "/v1/chat/completions",
-        "source-route chat fixture",
+        "assistant_message: {role: assistant, content: NV}",
     ]:
         assert required in source_contract
 
@@ -2029,10 +2030,12 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "run_synthetic_openai_chat_completion",
         "run_synthetic_http_completion_fixture",
         "run_pypto_serving_source_completion_fixture",
+        "run_pypto_serving_source_chat_completion_fixture",
         "create_openai_chat_completion",
         "--openai-chat-completion",
         "/v1/chat/completions",
         "--pypto-serving-source",
+        "--pypto-serving-source-chat",
     ]:
         assert required in example_text
 
@@ -2043,7 +2046,9 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
         "test_synthetic_fastapi_app_serves_health_models_and_completions",
         "test_synthetic_fastapi_app_serves_chat_completions",
         "test_openai_chat_completion_cli_mode_outputs_chat_json",
-        "test_pypto_serving_source_chat_route_limitation_is_documented",
+        "test_pypto_serving_source_chat_fixture_uses_real_chat_route",
+        "test_pypto_serving_source_chat_cli_mode_outputs_contract_json",
+        "test_pypto_serving_source_chat_route_fixture_is_documented",
         "test_pypto_serving_source_server_contract_uses_real_routes",
         "test_pypto_serving_source_cli_mode_outputs_contract_json",
     ]:
@@ -2053,4 +2058,5 @@ def test_pypto_serving_fixture_review_artifacts_are_recorded():
     assert "pypto_serving_nv_shim.py" in readme_text
     assert "pypto_serving_source_contract_h200.md" in readme_text
     assert "--openai-chat-completion" in readme_text
+    assert "--pypto-serving-source-chat" in readme_text
     assert "/v1/chat/completions" in readme_text
