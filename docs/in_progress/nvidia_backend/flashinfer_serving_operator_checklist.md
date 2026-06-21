@@ -122,6 +122,13 @@ Serving-relevant families verified from the README:
   `launch_kind: gluon-topk-sampling`, shape
   `rows=3, vocab=16, k=5`, artifact/source digest metadata, and validation
   metadata.
+  `pypto_serving_topp_sampling_launcher_h200.md` records a
+  serving-route launcher/probe for the existing generated
+  `topp_sampling_f32` Top-P correctness gate through the synthetic
+  pypto-serving/simpler-nv source route. It preserves
+  `launch_kind: gluon-topp-sampling`, shape
+  `rows=3, vocab=16, max_k=6, p=0.80`, artifact/source digest metadata, and
+  validation metadata.
 - **Gap / next PTO milestone:** connect sampling to a serving stack. Remaining
   sampling gaps include serving-stack integration.
 - **Explicit non-claim:** this is not FlashInfer integration evidence, not

@@ -94,7 +94,9 @@ The default launcher is the existing CUDA seed path. Use
 source request through the generated Gluon MoE expert correctness harness for
 `moe_expert_affine_f32`. Use `--kernel-launcher gluon-topk-sampling` to route
 the same request through the generated Gluon Top-K sampling correctness
-harness for `topk_sampling_f32`. Use
+harness for `topk_sampling_f32`. Use `--kernel-launcher gluon-topp-sampling`
+to route the same request through the generated Gluon Top-P sampling
+correctness harness for `topp_sampling_f32`. Use
 `--kernel-launcher persistent-moe-dispatch-combine` to route the same request
 through the existing persistent-device MoE dispatch/combine example via
 `run_moe_dispatch_combine(...)`.
@@ -136,7 +138,11 @@ status, shape, generated artifact/source digest metadata, and numerical
 max-error metadata when available. The Top-K sampling launch mode records
 `launch_kind: gluon-topk-sampling`, `kernel_name: topk_sampling_f32`, phase,
 status, `rows=3, vocab=16, k=5`, generated artifact/source digest metadata,
-and validation metadata when available. Persistent MoE launch mode records
+and validation metadata when available. The Top-P sampling launch mode records
+`launch_kind: gluon-topp-sampling`, `kernel_name: topp_sampling_f32`, phase,
+status, `rows=3, vocab=16, max_k=6, p=0.80`, generated artifact/source
+digest metadata, and validation metadata when available. Persistent MoE
+launch mode records
 `launch_kind: persistent-moe-dispatch-combine`,
 `dag_shape: graph_descriptor_moe_dispatch_combine`, phase, status, shape,
 completed count, max absolute error, scheduler error summary, and the Gluon
@@ -146,6 +152,7 @@ FlashInfer integration, not production readiness, not throughput or latency,
 not distributed serving, and not production fused MoE dispatch/combine serving
 readiness. The Top-K launch mode is also not tokenizer semantics, generated
 text correctness, DeepSeek serving readiness, or production serving evidence.
+The Top-P launch mode carries the same non-claim boundary.
 
 ## Persistent Layered-Cross Graph
 
