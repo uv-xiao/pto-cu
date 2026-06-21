@@ -560,6 +560,33 @@ The completed local artifact evidence is recorded in
 `docs/in_progress/nvidia_backend/deepseek_v4_flash_weight_manifest_complete.md`.
 It is not model-load or serving evidence.
 
+## DeepSeek V4 Flash Weight Acquisition Preflight
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python \
+  examples/cuda/deepseek_v4_flash_weight_acquisition_preflight.py \
+  --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
+  --metadata tmp/sources/model-metadata/deepseek-ai-DeepSeek-V4-Flash.json \
+  --download-root tmp \
+  --reserve-bytes 10737418240 \
+  --capacity-multiplier 1.1 \
+  --require-capacity
+```
+
+This is the dry-run gate before shard acquisition. It reads the safetensors
+index when present, optionally reads Hugging Face metadata, reports indexed,
+present, and missing shard counts, estimates remaining bytes, checks selected
+filesystem capacity, and emits explicit `can_attempt_download` and
+`can_attempt_model_load` booleans. `can_attempt_model_load` is true only when
+the indexed manifest is complete. This is not serving evidence.
+This is not model-load evidence. This is not DeepSeek correctness evidence.
+Use `--fetch-hf-metadata` only when the host has outbound Hugging Face access;
+otherwise pass a review-safe metadata JSON with `--metadata`.
+
+Evidence is recorded in
+`docs/in_progress/nvidia_backend/deepseek_v4_flash_weight_acquisition_preflight_h200.md`.
+
 ## DeepSeek V4 Flash Artifact Probe
 
 ```bash
