@@ -661,8 +661,8 @@ timeout --foreground 80m \
   examples/cuda/vllm_deepseek_v4_chat_256k_needle_stream_usage_contract_probe.py \
   --artifact-dir tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash \
   --vllm-bin .venv-vllm-probe/bin/vllm \
-  --port 28158 \
-  --server-log tmp/vllm-chat-256k-needle-stream-usage-contract-zero-choice/server-28158.log \
+  --port 28159 \
+  --server-log tmp/vllm-chat-256k-needle-stream-usage-token-accounting/server-28159.log \
   --max-model-len 262144 --tensor-parallel-size 2 \
   --dtype bfloat16 --quantization deepseek_v4_fp8 \
   --kv-cache-dtype fp8 --gpu-memory-utilization 0.78 \
@@ -671,31 +671,33 @@ timeout --foreground 80m \
   --request-timeout-seconds 180 --terminate-timeout-seconds 60 \
   --target-prompt-tokens 255800 --max-tokens 64 \
   --temperature 0.0 --top-p 1.0 --seed 0 \
-  --expected-answer PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28158
+  --expected-answer PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28159
 ````
 
 This starts the same local-only two-H200 vLLM server boundary, checks
-`/health` and `/v1/models`, sends one bounded streaming
-`/v1/chat/completions` request with
+`/health` and `/v1/models`, calls `/tokenize` for the same chat messages,
+sends one bounded streaming `/v1/chat/completions` request with
 `stream_options.include_usage=true`, and requires both returned streaming
 usage and strict exact output matching. The narrowly normalized assembled
 assistant content must exactly equal
-`PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28158`, and the returned streaming usage
+`PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28159`, and the returned streaming usage
 object must satisfy the prompt-token, completion-token, and total-token
-contract checks. The remote H200 evidence is recorded in
+contract checks against the server-side `/tokenize` count. The remote H200
+evidence is recorded in
 `docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_usage_contract_probe.md`.
-The parser-contract rerun returned HTTP 200 from `/health`, `/v1/models`, and
-`/v1/chat/completions`, parsed 22 JSON SSE events, saw 18 assistant content
-deltas, received terminal `[DONE]`, recorded `finish_reason=stop`, passed
-strict exact output matching, and returned streaming usage keys in a final
-usage-bearing event with `choice_count=0`. The gate still failed with
-`PROBE_EXIT_STATUS=2` and `chat_needle_stream_prompt_token_mismatch` because
-`usage_prompt_tokens_match` was `not_available`: the response reported
-`prompt_tokens=255797`, but measured chat prompt tokens were not available in
-the request limits for that run. This is one synthetic streaming
-chat-completions needle usage-contract attempt, not general generated-text
-correctness, semantic correctness, throughput, latency, production readiness,
-broad determinism, or simpler-nv/vLLM integration evidence.
+The server-tokenize accounting rerun returned HTTP 200 from `/health`,
+`/v1/models`, `/tokenize`, and `/v1/chat/completions`, parsed 22 JSON SSE
+events, saw 18 assistant content deltas, received terminal `[DONE]`, recorded
+`finish_reason=stop`, passed strict exact output matching, and returned
+streaming usage keys in a final usage-bearing event with `choice_count=0`.
+The gate passed with `PROBE_EXIT_STATUS=0`: `/tokenize` measured
+`prompt_tokens=255797`, streaming usage reported `usage.prompt_tokens=255797`,
+`usage.completion_tokens=20` was within `max_tokens=64`, and
+`usage.total_tokens=255817` passed the total-token bound. This is one
+synthetic streaming chat-completions needle usage-contract pass, not general
+generated-text correctness, semantic correctness, throughput, latency,
+production readiness, broad determinism, or simpler-nv/vLLM integration
+evidence.
 
 ## DeepSeek V4 Flash vLLM Chat 256K Needle Streaming Truncated Failure Probe
 

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import urllib.error
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,8 @@ STREAM_PROBE_PATH = (
 )
 DEFAULT_PORT = 28_157
 DEFAULT_EXPECTED_ANSWER = "PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28157"
+TOKENIZE_ENDPOINT = "/tokenize"
+TOKENIZE_MEASUREMENT_SOURCE = "vllm_server_tokenize_chat_count"
 
 
 def _load_stream_probe():
@@ -53,6 +56,8 @@ NON_CLAIMS = stream_probe.NON_CLAIMS
 CONTRACT_CHECKS = [
     *stream_probe.CONTRACT_CHECKS,
     "stream_options.include_usage=true is sent with the request",
+    "HTTP 200 from /tokenize for the same chat messages",
+    "usage.prompt_tokens is compared with the server-side /tokenize count",
     "streaming usage object is returned",
     "usage.prompt_tokens matches measured prompt tokens",
     "usage.completion_tokens is within max_tokens",
@@ -72,6 +77,130 @@ _raw_send_chat_needle_stream_request = stream_probe.send_chat_needle_stream_requ
 
 def _failure_payload(category: str, message: str) -> dict[str, str]:
     return {"category": category, "message": message}
+
+
+def _tokenize_chat_payload(request: dict[str, Any]) -> dict[str, Any]:
+    payload = request.get("payload")
+    if not isinstance(payload, dict):
+        raise ValueError("chat request payload is unavailable")
+    model = payload.get("model")
+    messages = payload.get("messages")
+    if not isinstance(model, str) or not isinstance(messages, list):
+        raise ValueError("chat request payload must include model and messages")
+    return {
+        "model": model,
+        "messages": messages,
+        "add_generation_prompt": True,
+        "return_token_strs": False,
+    }
+
+
+def _measurement_failure(category: str, message: str) -> dict[str, Any]:
+    return {
+        "status": "failed",
+        "endpoint": TOKENIZE_ENDPOINT,
+        "source": TOKENIZE_MEASUREMENT_SOURCE,
+        "failure": _failure_payload(category, message),
+    }
+
+
+def measure_server_chat_prompt_tokens(
+    *,
+    port: int,
+    request: dict[str, Any],
+    timeout_seconds: float,
+    http_post,
+) -> dict[str, Any]:
+    try:
+        payload = _tokenize_chat_payload(request)
+    except ValueError as exc:
+        return _measurement_failure(
+            "chat_needle_stream_prompt_token_measurement_request",
+            str(exc),
+        )
+
+    url = f"http://{health_probe.LOCAL_HOST}:{port}{TOKENIZE_ENDPOINT}"
+    try:
+        with http_post(url, payload, timeout_seconds) as response:
+            status = int(getattr(response, "status", 0))
+            if status != 200:
+                result = _measurement_failure(
+                    "chat_needle_stream_prompt_token_measurement_http_status",
+                    f"tokenize endpoint returned HTTP {status}",
+                )
+                result["http_status"] = status
+                return result
+            response_payload = base_probe._read_json_response(response)
+    except urllib.error.HTTPError as exc:
+        result = _measurement_failure(
+            "chat_needle_stream_prompt_token_measurement_http_error",
+            stream_probe._exception_summary(exc),
+        )
+        result["http_status"] = exc.code
+        return result
+    except TimeoutError as exc:
+        return _measurement_failure(
+            "chat_needle_stream_prompt_token_measurement_timeout",
+            stream_probe._exception_summary(exc),
+        )
+    except Exception as exc:
+        return _measurement_failure(
+            "chat_needle_stream_prompt_token_measurement_error",
+            stream_probe._exception_summary(exc),
+        )
+
+    if not isinstance(response_payload, dict):
+        return _measurement_failure(
+            "chat_needle_stream_prompt_token_measurement_shape",
+            "tokenize response payload is not an object",
+        )
+    count = response_payload.get("count")
+    if not isinstance(count, int):
+        return _measurement_failure(
+            "chat_needle_stream_prompt_token_measurement_shape",
+            "tokenize response count must be an integer",
+        )
+    tokens = response_payload.get("tokens")
+    if tokens is not None:
+        if not isinstance(tokens, list):
+            return _measurement_failure(
+                "chat_needle_stream_prompt_token_measurement_shape",
+                "tokenize response tokens field must be an array when returned",
+            )
+        if len(tokens) != count:
+            return _measurement_failure(
+                "chat_needle_stream_prompt_token_measurement_shape",
+                "tokenize response count must match the returned token array length",
+            )
+
+    result: dict[str, Any] = {
+        "status": "passed",
+        "endpoint": TOKENIZE_ENDPOINT,
+        "source": TOKENIZE_MEASUREMENT_SOURCE,
+        "http_status": 200,
+        "prompt_tokens": count,
+    }
+    max_model_len = response_payload.get("max_model_len")
+    if isinstance(max_model_len, int):
+        result["max_model_len"] = max_model_len
+    return result
+
+
+def _request_with_server_prompt_token_measurement(
+    request: dict[str, Any],
+    measurement: dict[str, Any],
+) -> dict[str, Any]:
+    updated = dict(request)
+    updated["limits"] = dict(request["limits"])
+    if measurement.get("status") == "passed":
+        updated["limits"]["actual_prompt_tokens"] = measurement["prompt_tokens"]
+        updated["limits"]["tokenizer_accounting"] = "vLLM server /tokenize chat count"
+    else:
+        updated["limits"]["actual_prompt_tokens"] = None
+        updated["limits"][
+            "tokenizer_accounting"
+        ] = "vLLM server /tokenize chat count unavailable"
+    return updated
 
 
 def _with_usage_contract(request: dict[str, Any]) -> dict[str, Any]:
@@ -150,6 +279,11 @@ def _enforce_usage_contract(result: dict[str, Any]) -> dict[str, Any]:
     }
     for check_name, category in required_passed_checks.items():
         if checks.get(check_name) != "passed":
+            if (
+                check_name == "usage_prompt_tokens_match"
+                and checks.get(check_name) == "not_available"
+            ):
+                category = "chat_needle_stream_prompt_token_measurement_unavailable"
             return _fail_usage_contract(
                 result,
                 validation,
@@ -175,6 +309,13 @@ def send_chat_needle_stream_usage_contract_request(
     http_post=stream_probe._http_post,
 ) -> dict[str, Any]:
     request = _with_usage_contract(request)
+    measurement = measure_server_chat_prompt_tokens(
+        port=port,
+        request=request,
+        timeout_seconds=timeout_seconds,
+        http_post=http_post,
+    )
+    request = _request_with_server_prompt_token_measurement(request, measurement)
     result = _raw_send_chat_needle_stream_request(
         port=port,
         request=request,
@@ -182,6 +323,7 @@ def send_chat_needle_stream_usage_contract_request(
         timeout_seconds=timeout_seconds,
         http_post=http_post,
     )
+    result["prompt_token_measurement"] = measurement
     return _enforce_usage_contract(result)
 
 

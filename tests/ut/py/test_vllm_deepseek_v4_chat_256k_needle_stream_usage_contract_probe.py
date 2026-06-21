@@ -52,14 +52,29 @@ class FakeStreamingResponse:
         return line
 
 
+class FakeJsonResponse:
+    def __init__(self, status, payload):
+        self.status = status
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self):
+        return json.dumps(self.payload).encode()
+
+
 class CapturingHttpPost:
-    def __init__(self, response):
-        self.response = response
+    def __init__(self, *responses):
+        self.responses = list(responses)
         self.calls = []
 
     def __call__(self, url, payload, timeout):
         self.calls.append((url, payload, timeout))
-        return self.response
+        return self.responses.pop(0)
 
 
 def chunk(content=None, *, finish_reason=None, usage=None):
@@ -209,7 +224,10 @@ def test_usage_contract_request_includes_openai_stream_usage_option(monkeypatch)
 def test_usage_contract_fails_when_usage_is_not_returned():
     probe = load_probe_module()
     request = planned_request_with_payload(probe)
-    sender = CapturingHttpPost(streaming_response(usage=None))
+    sender = CapturingHttpPost(
+        FakeJsonResponse(200, {"count": 255800, "max_model_len": 262144}),
+        streaming_response(usage=None),
+    )
 
     result = probe.send_chat_needle_stream_usage_contract_request(
         port=28157,
@@ -222,14 +240,17 @@ def test_usage_contract_fails_when_usage_is_not_returned():
     assert result["failure"]["category"] == "chat_needle_stream_usage_not_returned"
     assert result["stream_events_received"] is True
     assert result["validation"]["checks"]["usage_presence"] == "failed"
-    assert sender.calls[0][1]["stream_options"] == {"include_usage": True}
+    assert sender.calls[0][0].endswith("/tokenize")
+    assert sender.calls[1][1]["stream_options"] == {"include_usage": True}
 
 
-def test_usage_contract_passes_with_consistent_usage_accounting():
+def test_usage_contract_passes_with_server_tokenize_accounting():
     probe = load_probe_module()
     request = planned_request_with_payload(probe)
-    request["limits"]["actual_prompt_tokens"] = 255800
+    request["limits"]["actual_prompt_tokens"] = None
+    request["limits"]["tokenizer_accounting"] = "transformers fallback estimate"
     sender = CapturingHttpPost(
+        FakeJsonResponse(200, {"count": 255800, "max_model_len": 262144}),
         streaming_response(
             usage={
                 "prompt_tokens": 255800,
@@ -247,6 +268,19 @@ def test_usage_contract_passes_with_consistent_usage_accounting():
     )
 
     assert result["status"] == "passed"
+    assert result["prompt_token_measurement"] == {
+        "status": "passed",
+        "endpoint": "/tokenize",
+        "source": "vllm_server_tokenize_chat_count",
+        "http_status": 200,
+        "prompt_tokens": 255800,
+        "max_model_len": 262144,
+    }
+    assert result["request_limits"]["actual_prompt_tokens"] == 255800
+    assert (
+        result["request_limits"]["tokenizer_accounting"]
+        == "vLLM server /tokenize chat count"
+    )
     assert result["observation"]["usage"] == {
         "prompt_tokens": 255800,
         "completion_tokens": 18,
@@ -260,11 +294,89 @@ def test_usage_contract_passes_with_consistent_usage_accounting():
     assert "assembled_content" not in json.dumps(result)
 
 
+def test_usage_contract_fails_on_server_tokenize_prompt_token_mismatch():
+    probe = load_probe_module()
+    request = planned_request_with_payload(probe)
+    request["limits"]["actual_prompt_tokens"] = None
+    request["limits"]["tokenizer_accounting"] = "transformers fallback estimate"
+    sender = CapturingHttpPost(
+        FakeJsonResponse(200, {"count": 255797, "max_model_len": 262144}),
+        streaming_response_with_final_zero_choice_usage(
+            usage={
+                "prompt_tokens": 255800,
+                "completion_tokens": 18,
+                "total_tokens": 255818,
+            }
+        ),
+    )
+
+    result = probe.send_chat_needle_stream_usage_contract_request(
+        port=28157,
+        request=request,
+        expected_answer=EXPECTED,
+        http_post=sender,
+    )
+
+    assert result["status"] == "failed"
+    assert result["failure"]["category"] == "chat_needle_stream_prompt_token_mismatch"
+    assert result["prompt_token_measurement"]["prompt_tokens"] == 255797
+    assert result["validation"]["checks"]["usage_prompt_tokens_match"] == "failed"
+    assert "not_available" not in json.dumps(result["validation"]["checks"])
+    assert sender.calls[0][0].endswith("/tokenize")
+    assert sender.calls[0][1] == {
+        "model": "deepseek-ai/DeepSeek-V4-Flash",
+        "messages": [{"role": "user", "content": "NEEDLE_ANSWER: " + EXPECTED}],
+        "add_generation_prompt": True,
+        "return_token_strs": False,
+    }
+    assert "stream_options" not in sender.calls[0][1]
+    assert sender.calls[1][1]["stream_options"] == {"include_usage": True}
+
+
+def test_usage_contract_fails_when_server_tokenize_measurement_is_unavailable():
+    probe = load_probe_module()
+    request = planned_request_with_payload(probe)
+    request["limits"]["actual_prompt_tokens"] = 255800
+    request["limits"]["tokenizer_accounting"] = "local tokenizer count"
+    sender = CapturingHttpPost(
+        FakeJsonResponse(404, {"error": "not found"}),
+        streaming_response_with_final_zero_choice_usage(
+            usage={
+                "prompt_tokens": 255800,
+                "completion_tokens": 18,
+                "total_tokens": 255818,
+            }
+        ),
+    )
+
+    result = probe.send_chat_needle_stream_usage_contract_request(
+        port=28157,
+        request=request,
+        expected_answer=EXPECTED,
+        http_post=sender,
+    )
+
+    assert result["status"] == "failed"
+    assert (
+        result["failure"]["category"]
+        == "chat_needle_stream_prompt_token_measurement_unavailable"
+    )
+    assert result["prompt_token_measurement"]["status"] == "failed"
+    assert result["prompt_token_measurement"]["http_status"] == 404
+    assert result["validation"]["checks"]["usage_prompt_tokens_match"] == "not_available"
+    assert result["request_limits"]["actual_prompt_tokens"] is None
+    assert (
+        result["request_limits"]["tokenizer_accounting"]
+        == "vLLM server /tokenize chat count unavailable"
+    )
+
+
 def test_usage_contract_accepts_final_zero_choice_usage_chunk():
     probe = load_probe_module()
     request = planned_request_with_payload(probe)
     request["limits"]["actual_prompt_tokens"] = 255800
     sender = CapturingHttpPost(
+        FakeJsonResponse(200, {"count": 255800, "max_model_len": 262144}),
         streaming_response_with_final_zero_choice_usage(
             usage={
                 "prompt_tokens": 255800,
