@@ -198,6 +198,23 @@ size, output error, completion count, scheduler error state, and source/bridge
 digests. It is not fused cross-GPU expert-parallel MoE, serving, RDMA,
 multi-node, or performance evidence.
 
+For the persistent MoE plus UCCL-EP adapter handoff gate, use:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/persistent_moe_dispatch_combine.py \
+  --device-ids 6,7 --n 4096 --arch compute_90 \
+  --with-uccl-ep-handoff --tensor-numel 1024 --require-cuda
+```
+
+This first validates the same two-device persistent MoE aggregate, then runs
+the Python-side UCCL-EP dispatch/combine adapter on the same device ids. The
+JSON exposes persistent MoE validation, UCCL-EP descriptor metadata, adapter
+rank validation, tensor size, output error, completion count, scheduler error
+state, and source/bridge digests. It is not fused cross-GPU expert-parallel
+MoE, not CUDA host-runtime UCCL dispatch, and not serving, RDMA, multi-node,
+or performance evidence.
+
 ## Gluon MoE Expert Affine
 
 ```bash

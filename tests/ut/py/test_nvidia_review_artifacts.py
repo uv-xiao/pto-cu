@@ -334,12 +334,16 @@ def test_persistent_moe_two_device_baseline_is_review_safe():
     for required in [
         "run_two_device_moe_dispatch_combine",
         "run_persistent_moe_nccl_handoff",
+        "run_persistent_moe_uccl_ep_handoff",
         "--device-ids",
         "--with-nccl-handoff",
+        "--with-uccl-ep-handoff",
         "same-node-two-device-baseline",
         "persistent-moe-plus-nccl-worker-control",
+        "persistent-moe-plus-uccl-ep-adapter",
         "same-node two-device baseline evidence",
         "not fused cross-GPU expert-parallel MoE",
+        "not CUDA host-runtime UCCL dispatch",
         "source_digests",
         "bridge_metadata_match",
     ]:
@@ -348,12 +352,15 @@ def test_persistent_moe_two_device_baseline_is_review_safe():
     for required in [
         "--device-ids 6,7 --n 4096 --arch compute_90 --require-cuda",
         "--with-nccl-handoff",
+        "--with-uccl-ep-handoff",
         "--tensor-numel 1024",
         "--build --require-cuda",
         "same-node two-device baseline evidence",
         "persistent MoE plus NCCL worker-control handoff",
+        "persistent MoE plus UCCL-EP adapter handoff",
         "not fused cross-GPU",
         "expert-parallel MoE",
+        "not CUDA host-runtime UCCL dispatch",
         "output error",
         "completion count",
         "scheduler error state",
@@ -367,10 +374,13 @@ def test_persistent_moe_two_device_baseline_is_review_safe():
         "Communication-Coupled Handoff Gate",
         "REMOTE_PTO_CU=/tmp/pto-cu-codex-restart",
         "REMOTE_PTO_CU=/tmp/pto-cu-persistent-moe-nccl-handoff",
+        "REMOTE_PTO_CU=/tmp/pto-cu-persistent-moe-uccl-ep-handoff",
         "--device-ids 6,7 --n 4096 --arch compute_90 --require-cuda",
         "--with-nccl-handoff --tensor-numel 1024 --build --require-cuda",
+        "--with-uccl-ep-handoff --tensor-numel 1024 --require-cuda",
         "status`: `passed`",
         "handoff_scope`: `persistent-moe-plus-nccl-worker-control`",
+        "handoff_scope`: `persistent-moe-plus-uccl-ep-adapter`",
         "evidence_scope`: `same-node-two-device-baseline`",
         "device_ids`: `[6, 7]`",
         "tensor_numel`: `1024`",
@@ -380,14 +390,20 @@ def test_persistent_moe_two_device_baseline_is_review_safe():
         "scheduler_errors_zero`: `true`",
         "same_device_ids`: `true`",
         "nccl_worker_control_passed`: `true`",
+        "uccl_ep_adapter_passed`: `true`",
+        "adapter_descriptor_metadata_present`: `true`",
+        "max_errors_zero`: `true`",
         "source_digests_match`: `true`",
         "bridge_metadata_match`: `true`",
         "c096ede6d4ab5e1a9a33070bc1fcf988b9fb9c405d929a770c962308b396b209",
         "7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f",
         "not fused cross-GPU expert-parallel MoE",
         "does not validate distributed expert parallelism",
+        "does not validate CUDA host-runtime UCCL dispatch",
     ]:
         assert required in doc
+    assert "--with-uccl-ep-handoff --tensor-numel 1024 --build --require-cuda" not in doc
+    assert "--with-uccl-ep-handoff --tensor-numel 1024 --build --require-cuda" not in readme
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():

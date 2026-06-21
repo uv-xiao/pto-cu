@@ -7,6 +7,7 @@ import argparse
 import ctypes
 import importlib.util
 import json
+import re
 import shlex
 import subprocess
 import sys
@@ -35,6 +36,7 @@ DAG_SHAPE = "graph_descriptor_moe_dispatch_combine"
 DEFAULT_OUTPUT_JSON = None
 TWO_DEVICE_EVIDENCE_SCOPE = "same-node-two-device-baseline"
 HANDOFF_SCOPE = "persistent-moe-plus-nccl-worker-control"
+UCCL_EP_HANDOFF_SCOPE = "persistent-moe-plus-uccl-ep-adapter"
 TWO_DEVICE_EVIDENCE_STATEMENT = (
     "same-node two-device baseline evidence: the existing persistent MoE "
     "dispatch/combine graph ran independently on each requested CUDA device; "
@@ -44,6 +46,11 @@ HANDOFF_EVIDENCE_STATEMENT = (
     "same-node two-device handoff gate: the existing persistent MoE graph ran "
     "on both requested devices, then the descriptor-backed NCCL worker-control "
     "operation path ran on the same device ids"
+)
+UCCL_EP_HANDOFF_EVIDENCE_STATEMENT = (
+    "same-node two-device UCCL-EP handoff gate: the existing persistent MoE "
+    "graph ran on both requested devices, then the Python-side UCCL-EP "
+    "dispatch/combine adapter ran on the same device ids"
 )
 CONTEXT_DEFINITION = """
 struct PtoTaskContext {
@@ -538,6 +545,155 @@ def run_persistent_moe_nccl_handoff(
     }
 
 
+def run_persistent_moe_uccl_ep_handoff(
+    *,
+    device_ids: tuple[int, int] = (6, 7),
+    n: int = 4096,
+    tensor_numel: int = 1024,
+    arch: str = "compute_80",
+    block_dim: int = 256,
+    scheduler_blocks: int = 1,
+    worker_blocks: int = 4,
+    queue_capacity: int = 5,
+    stream_id: int = 0,
+    num_tokens: int = 64,
+    num_topk: int = 4,
+    num_experts: int = 16,
+    input_dtype: str = "bf16",
+    repeats: int = 1,
+    uccl_ep_bench_dir: str | None = None,
+    moe_runner: Callable[..., dict] | None = None,
+    uccl_ep_runner: Callable[..., dict] | None = None,
+) -> dict:
+    if len(device_ids) != 2:
+        raise ValueError("--device-ids must name exactly two CUDA devices")
+    if len(set(device_ids)) != 2:
+        raise ValueError("--device-ids must name two distinct CUDA devices")
+    if tensor_numel <= 0:
+        raise ValueError("--tensor-numel must be positive")
+
+    run_moe = run_two_device_moe_dispatch_combine if moe_runner is None else moe_runner
+    run_uccl_ep = _run_uccl_ep_dispatch_combine_adapter if uccl_ep_runner is None else uccl_ep_runner
+    persistent_moe = run_moe(
+        device_ids=device_ids,
+        n=n,
+        arch=arch,
+        block_dim=block_dim,
+        scheduler_blocks=scheduler_blocks,
+        worker_blocks=worker_blocks,
+        queue_capacity=queue_capacity,
+        stream_id=stream_id,
+    )
+    uccl_ep_adapter = _review_safe_payload(
+        run_uccl_ep(
+            device_ids=device_ids,
+            num_tokens=num_tokens,
+            hidden=tensor_numel,
+            num_topk=num_topk,
+            num_experts=num_experts,
+            input_dtype=input_dtype,
+            repeats=repeats,
+            bench_dir=uccl_ep_bench_dir,
+        )
+    )
+
+    persistent_validation = persistent_moe.get("validation") or {}
+    uccl_ep_validation = _validate_uccl_ep_adapter_result(uccl_ep_adapter)
+    source_digests = persistent_moe.get("source_digests") or {}
+    max_abs_error = _max_uccl_ep_error(uccl_ep_adapter, "max_abs_error")
+    topk_weight_error = _max_uccl_ep_error(uccl_ep_adapter, "topk_weight_error")
+    handoff_validation = {
+        "same_device_ids": (
+            persistent_moe.get("device_ids") == list(device_ids)
+            and uccl_ep_adapter.get("device_ids") == list(device_ids)
+        ),
+        "persistent_moe_passed": persistent_moe.get("status") == "passed",
+        "uccl_ep_adapter_passed": uccl_ep_adapter.get("status") == "passed",
+        "persistent_moe_validation_passed": bool(persistent_validation)
+        and all(bool(value) for value in persistent_validation.values()),
+        "uccl_ep_adapter_validation_passed": all(
+            bool(value) for value in uccl_ep_validation.values()
+        ),
+        "source_digests_present": all(
+            source_digests.get(name)
+            for name in (
+                "dispatch_source_sha256",
+                "gluon_expert_bridge_sha256",
+                "task_body_func12_sha256",
+            )
+        ),
+        "bridge_digests_match": (
+            source_digests.get("gluon_expert_bridge_sha256")
+            == source_digests.get("task_body_func12_sha256")
+            and bool(source_digests.get("gluon_expert_bridge_sha256"))
+        ),
+        "adapter_descriptor_metadata_present": uccl_ep_validation[
+            "descriptor_metadata_present"
+        ],
+        "max_errors_zero": max_abs_error == 0.0 and topk_weight_error == 0.0,
+    }
+
+    if all(handoff_validation.values()):
+        status = "passed"
+    elif persistent_moe.get("status") == "skipped" or uccl_ep_adapter.get("status") == "skipped":
+        status = "skipped"
+    else:
+        status = "failed"
+
+    return {
+        "schema_version": 1,
+        "status": status,
+        "handoff_scope": UCCL_EP_HANDOFF_SCOPE,
+        "evidence_statement": UCCL_EP_HANDOFF_EVIDENCE_STATEMENT,
+        "device_ids": list(device_ids),
+        "devices": list(device_ids),
+        "n": n,
+        "tensor_numel": int(tensor_numel),
+        "arch": arch,
+        "block_dim": block_dim,
+        "scheduler_blocks": scheduler_blocks,
+        "worker_blocks": worker_blocks,
+        "queue_capacity": queue_capacity,
+        "stream_id": stream_id,
+        "uccl_ep_adapter_shape": {
+            "num_tokens": int(num_tokens),
+            "hidden": int(tensor_numel),
+            "num_topk": int(num_topk),
+            "num_experts": int(num_experts),
+            "input_dtype": input_dtype,
+            "repeats": int(repeats),
+        },
+        "persistent_moe_validation": persistent_validation,
+        "persistent_moe_source_digests": source_digests,
+        "persistent_moe_max_abs_error": _max_result_error(persistent_moe.get("per_device_results") or []),
+        "persistent_moe_scheduler_errors": _persistent_scheduler_errors(persistent_moe),
+        "uccl_ep_adapter_validation": uccl_ep_validation,
+        "uccl_ep_adapter_max_abs_error": max_abs_error,
+        "uccl_ep_adapter_topk_weight_error": topk_weight_error,
+        "handoff_validation": handoff_validation,
+        "handoff_boundary": {
+            "persistent_moe_scope": persistent_moe.get("evidence_scope"),
+            "uccl_backend": uccl_ep_adapter.get("backend"),
+            "uccl_transport": uccl_ep_adapter.get("transport"),
+            "uccl_operation": uccl_ep_adapter.get("operation"),
+            "uccl_capability_id": (uccl_ep_adapter.get("capability") or {}).get(
+                "capability_id"
+            ),
+            "uccl_descriptor": uccl_ep_adapter.get("descriptor"),
+            "source_digests": source_digests,
+            "same_device_ids": handoff_validation["same_device_ids"],
+        },
+        "persistent_moe": persistent_moe,
+        "uccl_ep_adapter": uccl_ep_adapter,
+        "non_claims": [
+            "composition of existing persistent MoE and UCCL-EP adapter paths only",
+            "not fused cross-GPU expert-parallel MoE",
+            "not CUDA host-runtime UCCL dispatch",
+            "no serving, vLLM, DeepSeek, RDMA, multi-node, or performance claim",
+        ],
+    }
+
+
 def _run_nccl_worker_control_ops(**kwargs) -> dict:
     module_path = Path(__file__).with_name("nccl_worker_control_ops.py")
     spec = importlib.util.spec_from_file_location("nccl_worker_control_ops_example", module_path)
@@ -545,6 +701,60 @@ def _run_nccl_worker_control_ops(**kwargs) -> dict:
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module.run_worker_control_ops(**kwargs)
+
+
+def _run_uccl_ep_dispatch_combine_adapter(**kwargs) -> dict:
+    module_path = Path(__file__).with_name("uccl_ep_dispatch_combine_adapter.py")
+    command = [
+        sys.executable,
+        "-m",
+        "torch.distributed.run",
+        "--standalone",
+        "--nproc_per_node=2",
+        str(module_path),
+        "--device-ids",
+        ",".join(str(device) for device in kwargs["device_ids"]),
+        "--num-tokens",
+        str(kwargs["num_tokens"]),
+        "--hidden",
+        str(kwargs["hidden"]),
+        "--num-topk",
+        str(kwargs["num_topk"]),
+        "--num-experts",
+        str(kwargs["num_experts"]),
+        "--input-dtype",
+        str(kwargs["input_dtype"]),
+        "--repeats",
+        str(kwargs["repeats"]),
+        "--require-cuda",
+    ]
+    if kwargs.get("bench_dir"):
+        command.extend(["--uccl-ep-bench-dir", str(kwargs["bench_dir"])])
+    completed = subprocess.run(
+        command,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    payload = _last_json_object(completed.stdout)
+    if payload is None:
+        return {
+            "status": "failed",
+            "backend": "uccl",
+            "transport": "ep",
+            "operation": "ep_dispatch_combine",
+            "device_ids": list(kwargs["device_ids"]),
+            "error_type": "JSONDecodeError",
+            "error": "UCCL-EP adapter child did not emit JSON",
+            "child_returncode": completed.returncode,
+            "child_stderr": _clean_text(completed.stderr.strip()),
+        }
+    return {
+        **payload,
+        "child_returncode": completed.returncode,
+        "child_stderr": _clean_text(completed.stderr.strip()),
+    }
 
 
 def _validate_nccl_worker_control_result(result: dict) -> dict[str, bool]:
@@ -557,11 +767,34 @@ def _validate_nccl_worker_control_result(result: dict) -> dict[str, bool]:
     }
 
 
+def _validate_uccl_ep_adapter_result(result: dict) -> dict[str, bool]:
+    descriptor = result.get("descriptor") or {}
+    rank_results = result.get("rank_results") or []
+    return {
+        "adapter_passed": result.get("status") == "passed",
+        "transport_is_ep": result.get("transport") == "ep",
+        "operation_is_dispatch_combine": result.get("operation") == "ep_dispatch_combine",
+        "descriptor_metadata_present": all(
+            descriptor.get(name)
+            for name in ("num_tokens", "hidden", "num_topk", "num_experts", "input_dtype")
+        ),
+        "all_ranks_passed": bool(rank_results)
+        and all(bool(item.get("passed")) for item in rank_results),
+        "max_abs_error_zero": _max_uccl_ep_error(result, "max_abs_error") == 0.0,
+        "topk_weight_error_zero": _max_uccl_ep_error(result, "topk_weight_error") == 0.0,
+    }
+
+
 def _max_nccl_error(result: dict) -> float:
     errors = [
         float((result.get(name) or {}).get("max_abs_error", float("inf")))
         for name in ("all_reduce", "reduce_scatter", "all_gather", "send_recv")
     ]
+    return max(errors, default=float("inf"))
+
+
+def _max_uccl_ep_error(result: dict, key: str) -> float:
+    errors = [float(item.get(key, float("inf"))) for item in result.get("rank_results") or []]
     return max(errors, default=float("inf"))
 
 
@@ -1108,6 +1341,17 @@ def main(argv: list[str] | None = None) -> int:
             action="store_true",
             help="run the two-device MoE baseline and NCCL worker-control path on the same devices",
         )
+        parser.add_argument(
+            "--with-uccl-ep-handoff",
+            action="store_true",
+            help="run the two-device MoE baseline and UCCL-EP adapter on the same devices",
+        )
+        parser.add_argument("--uccl-ep-num-tokens", type=int, default=64)
+        parser.add_argument("--uccl-ep-num-topk", type=int, default=4)
+        parser.add_argument("--uccl-ep-num-experts", type=int, default=16)
+        parser.add_argument("--uccl-ep-input-dtype", choices=("bf16", "fp8"), default="bf16")
+        parser.add_argument("--uccl-ep-repeats", type=int, default=1)
+        parser.add_argument("--uccl-ep-bench-dir")
         parser.add_argument("--output-json", type=Path)
         parser.add_argument(
             "--require-cuda",
@@ -1131,6 +1375,26 @@ def main(argv: list[str] | None = None) -> int:
                 queue_capacity=args.queue_capacity,
                 stream_id=args.stream_id,
                 build=args.build,
+            )
+        elif args.with_uccl_ep_handoff:
+            if args.device_ids is None:
+                raise ValueError("--with-uccl-ep-handoff requires --device-ids")
+            result = run_persistent_moe_uccl_ep_handoff(
+                device_ids=args.device_ids,
+                n=args.n,
+                tensor_numel=args.tensor_numel,
+                arch=args.arch,
+                block_dim=args.block_dim,
+                scheduler_blocks=args.scheduler_blocks,
+                worker_blocks=args.worker_blocks,
+                queue_capacity=args.queue_capacity,
+                stream_id=args.stream_id,
+                num_tokens=args.uccl_ep_num_tokens,
+                num_topk=args.uccl_ep_num_topk,
+                num_experts=args.uccl_ep_num_experts,
+                input_dtype=args.uccl_ep_input_dtype,
+                repeats=args.uccl_ep_repeats,
+                uccl_ep_bench_dir=args.uccl_ep_bench_dir,
             )
         elif args.device_ids is None:
             result = run_moe_dispatch_combine(
@@ -1205,13 +1469,18 @@ def _relative_path(path: str | Path) -> str:
 def _clean_text(text: str) -> str:
     cwd = Path.cwd().as_posix()
     home = Path.home().as_posix()
-    return text.replace(cwd, ".").replace(home, "~")
+    text = text.replace(cwd, ".").replace(home, "~")
+    return re.sub(r"/tmp/pto-cu[-A-Za-z0-9_]*", "<tmp-checkout>", text)
 
 
 def _review_safe_payload(value: Any) -> Any:
     if isinstance(value, dict):
         return {
-            key: _relative_path(item) if key == "nccl_library" else _review_safe_payload(item)
+            key: "<sanitized>"
+            if key in {"uccl_ep_bench_dir"} and item
+            else _relative_path(item)
+            if key == "nccl_library"
+            else _review_safe_payload(item)
             for key, item in value.items()
         }
     if isinstance(value, list):
@@ -1230,6 +1499,25 @@ def _display_command(raw_args: list[str]) -> str:
     if safe_args:
         command = f"{command} {shlex.join(safe_args)}"
     return command
+
+
+def _last_json_object(text: str) -> dict | None:
+    decoder = json.JSONDecoder()
+    payloads = []
+    index = 0
+    while index < len(text):
+        start = text.find("{", index)
+        if start == -1:
+            break
+        try:
+            payload, end = decoder.raw_decode(text[start:])
+        except json.JSONDecodeError:
+            index = start + 1
+            continue
+        if isinstance(payload, dict):
+            payloads.append(payload)
+        index = start + end
+    return payloads[-1] if payloads else None
 
 
 if __name__ == "__main__":
