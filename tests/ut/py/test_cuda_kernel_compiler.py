@@ -57,6 +57,15 @@ def _load_gluon_tensor_core_bf16_example():
     return module
 
 
+def _load_gluon_tensor_core_fp8_example():
+    module_path = "examples/cuda/gluon_gemm_tensor_core_fp8.py"
+    spec = importlib.util.spec_from_file_location("gluon_gemm_tensor_core_fp8_example", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_gluon_wgmma_preflight_example():
     module_path = "examples/cuda/gluon_wgmma_api_preflight.py"
     spec = importlib.util.spec_from_file_location(
@@ -292,6 +301,27 @@ def test_generate_gluon_tiled_tensor_core_bf16_gemm_writes_bf16_source(tmp_path)
     assert "TensorDescriptor.from_tensor(a, [64, 32], a_layout)" in source
 
 
+def test_generate_gluon_tiled_tensor_core_fp8_gemm_writes_fp8_source(tmp_path):
+    artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
+        "gemm_tensor_core_tiled_fp8e4nv_f32",
+        output_dir=tmp_path,
+        arch="compute_90",
+        tile_shape=(64, 128, 32),
+    )
+
+    source = artifact.source_path.read_text()
+    manifest = json.loads(artifact.manifest_path.read_text())
+
+    assert artifact.kernel_name == "gemm_tensor_core_tiled_fp8e4nv_f32"
+    assert artifact.source_path.name == "gemm_tensor_core_tiled_fp8e4nv_f32.gluon.py"
+    assert manifest["kernel_name"] == "gemm_tensor_core_tiled_fp8e4nv_f32"
+    assert manifest["tile_shape"] == [64, 128, 32]
+    assert "gl.float8e4nv" in source
+    assert "def gemm_tensor_core_tiled_fp8e4nv_f32_kernel" in source
+    assert "def run_gemm_tensor_core_tiled_fp8e4nv_f32" in source
+    assert "TensorDescriptor.from_tensor(a, [64, 32], a_layout)" in source
+
+
 def test_gluon_gemm_example_reports_skip_json_and_relative_artifacts(tmp_path, monkeypatch):
     example = _load_gluon_gemm_example()
     monkeypatch.chdir(tmp_path)
@@ -522,6 +552,96 @@ def test_gluon_bf16_tensor_core_sweep_main_requires_cuda_on_skip(
     assert payload["cases"][0]["reason"] == "missing WGMMA APIs"
 
 
+def test_gluon_fp8_tensor_core_boundary_reports_skip_json_and_dtype_probe(tmp_path):
+    example = _load_gluon_tensor_core_fp8_example()
+
+    result = example.run_fp8_tensor_core_boundary(
+        output_dir=Path("tmp/gluon-fp8-local"),
+        skip_reason=lambda: "torch.cuda is not available",
+        dtype_probe=lambda: {
+            "status": "passed",
+            "gl_dtype": "float8e4nv",
+            "torch_dtype": "float8_e4m3fn",
+            "gl_fp8_attrs": ["float8e4nv"],
+            "torch_fp8_attrs": ["float8_e4m3fn"],
+        },
+    )
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "torch.cuda is not available"
+    assert result["kernel_name"] == "gemm_tensor_core_tiled_fp8e4nv_f32"
+    assert result["shape"] == {"m": 64, "n": 128, "k": 32}
+    assert result["dtype_boundary"] == {
+        "a": "torch.float8_e4m3fn / gl.float8e4nv",
+        "b": "torch.float8_e4m3fn / gl.float8e4nv",
+        "accumulator": "float32",
+        "out": "float32",
+    }
+    assert result["fp8_dtype_probe"]["gl_fp8_attrs"] == ["float8e4nv"]
+    assert result["artifact"]["source_path"] == (
+        "tmp/gluon-fp8-local/gemm_tensor_core_tiled_fp8e4nv_f32.gluon.py"
+    )
+
+
+def test_gluon_fp8_tensor_core_boundary_main_requires_cuda_on_skip(
+    capsys, monkeypatch
+):
+    example = _load_gluon_tensor_core_fp8_example()
+    monkeypatch.setattr(example, "tensor_core_skip_reason", lambda: "missing FP8 APIs")
+    monkeypatch.setattr(
+        example,
+        "probe_fp8_dtypes",
+        lambda: {
+            "status": "failed",
+            "reason": "missing gl.float8e4nv",
+            "gl_fp8_attrs": [],
+            "torch_fp8_attrs": [],
+        },
+    )
+
+    code = example.main(
+        ["--output-dir", "tmp/gluon-fp8-local", "--require-cuda"]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "skipped"
+    assert payload["reason"] == "missing FP8 APIs"
+    assert payload["fp8_dtype_probe"]["reason"] == "missing gl.float8e4nv"
+
+
+def test_gluon_fp8_tensor_core_boundary_main_reports_runtime_unsupported(
+    capsys, monkeypatch
+):
+    example = _load_gluon_tensor_core_fp8_example()
+    monkeypatch.setattr(example, "tensor_core_skip_reason", lambda: None)
+    monkeypatch.setattr(
+        example,
+        "probe_fp8_dtypes",
+        lambda: {
+            "status": "passed",
+            "gl_dtype": "float8e4nv",
+            "torch_dtype": "float8_e4m3fn",
+            "gl_fp8_attrs": ["float8e4nv"],
+            "torch_fp8_attrs": ["float8_e4m3fn"],
+        },
+    )
+
+    def fail_load(_source_path):
+        raise RuntimeError("WGMMA type or shape is not supported")
+
+    monkeypatch.setattr(example, "load_generated_module", fail_load)
+
+    code = example.main(["--output-dir", "tmp/gluon-fp8-local", "--require-cuda"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == "failed"
+    assert payload["error_type"] == "RuntimeError"
+    assert payload["unsupported_boundary"]["kind"] == "gluon_fp8_wgmma_compile"
+    assert "WGMMA type or shape is not supported" in payload["error"]
+
+
 def test_gluon_wgmma_api_preflight_reports_payload_shape(monkeypatch):
     example = _load_gluon_wgmma_preflight_example()
 
@@ -554,6 +674,7 @@ def test_gluon_wgmma_api_preflight_reports_payload_shape(monkeypatch):
         NVMMASharedLayout=object(),
         NVMMADistributedLayout=object(),
         bfloat16=object(),
+        float8e4nv=SimpleNamespace(primitive_bitwidth=8),
     )
     fake_modules = {
         "torch": fake_torch,
@@ -607,6 +728,8 @@ def test_gluon_wgmma_api_preflight_reports_payload_shape(monkeypatch):
     assert payload["hopper"]["tma"]["imported"] is True
     assert payload["gl_attrs"]["NVMMADistributedLayout"]["present"] is True
     assert payload["gl_attrs"]["bfloat16"]["present"] is True
+    assert payload["gl_fp8_attrs"]["float8e4nv"]["present"] is True
+    assert payload["gl_fp8_attrs"]["float8e4nv"]["primitive_bitwidth"] == 8
     assert payload["missing_required"] == []
 
 

@@ -64,14 +64,24 @@ Serving-relevant families verified from the README:
   sweep covered a smoke tile and a bounded `m=64,k=7168,n=128` linear-style
   shape using `DeepSeek-V4-Flash config hidden_size=7168` provenance; case
   statuses: passed, passed; largest max absolute error:
-  `0.002899169921875`.
-- **Gap / next PTO milestone:** add FP8, FP4, grouped GEMM, and broader
-  linear-layer serving-shape fixtures with explicit dtype and shape
-  boundaries before any FlashInfer GEMM coverage claim.
+  `0.002899169921875`. The FP8 boundary harness records that
+  `torch.float8_e4m3fn` and Gluon `gl.float8e4nv` are visible in the
+  preserved H200 Gluon environment, then fails at WGMMA lowering with
+  `PassManager::run failed` and the compiler assertion
+  `WGMMA type or shape is not supported`. This is unsupported-boundary
+  evidence only, not FP8 GEMM correctness evidence.
+- **Gap / next PTO milestone:** make FP8 WGMMA lowering pass before promoting
+  FP8 GEMM correctness evidence; add FP4, grouped GEMM, and broader
+  linear-layer serving-shape fixtures with explicit dtype and shape boundaries
+  before any FlashInfer GEMM coverage claim.
 - **Explicit non-claim:** this is not generated-kernel performance evidence
   and not proof of FlashInfer GEMM coverage. The BF16 tensor-core GEMM
   correctness evidence is not FlashInfer integration evidence, not
   vLLM/simpler-nv serving integration, and not production readiness evidence.
+  The FP8 boundary is not FlashInfer integration evidence, not serving
+  integration evidence, not generated-kernel performance evidence, not
+  production readiness evidence, and not BF16/FP4/grouped
+  GEMM/MoE/FlashAttention/vLLM integration evidence.
 
 ### MoE
 

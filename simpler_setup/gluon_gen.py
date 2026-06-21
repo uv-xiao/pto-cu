@@ -24,6 +24,7 @@ _SUPPORTED_KERNELS = {
     "gemm_tensor_core_f16_f32",
     "gemm_tensor_core_tiled_f16_f32",
     "gemm_tensor_core_tiled_bf16_f32",
+    "gemm_tensor_core_tiled_fp8e4nv_f32",
     "flashattention_fwd_f32",
     "moe_expert_affine_f32",
     "rmsnorm_f32",
@@ -139,6 +140,12 @@ def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
             tile_shape,
             kernel_name="gemm_tensor_core_tiled_bf16_f32",
             input_gl_dtype="bfloat16",
+        )
+    if kernel_name == "gemm_tensor_core_tiled_fp8e4nv_f32":
+        return _render_tiled_tensor_core_gemm_source(
+            tile_shape,
+            kernel_name="gemm_tensor_core_tiled_fp8e4nv_f32",
+            input_gl_dtype="float8e4nv",
         )
     if kernel_name == "flashattention_fwd_f32":
         return _render_flashattention_source(tile_shape)

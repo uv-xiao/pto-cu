@@ -45,6 +45,13 @@ REQUIRED_HOPPER_IMPORTS = {
 }
 REQUIRED_GL_ATTRS = ("NVMMASharedLayout", "NVMMADistributedLayout", "bfloat16")
 HOPPER_COMPUTE_MAJOR = 9
+PREFERRED_FP8_GL_ATTRS = (
+    "float8e4nv",
+    "float8e4b15",
+    "float8e4b8",
+    "float8e5",
+    "float8e5b16",
+)
 
 
 def _sanitize_path_text(text: str) -> str:
@@ -203,6 +210,34 @@ def _torch_status() -> tuple[dict[str, Any], dict[str, Any], list[str]]:
     return torch_status, cuda_status, missing
 
 
+def _torch_fp8_attrs(torch_module: Any | None) -> list[str]:
+    if torch_module is None:
+        return []
+    return sorted(
+        name for name in dir(torch_module) if "float8" in name.lower() or "fp8" in name.lower()
+    )
+
+
+def _gl_fp8_attr_status(gl_module: Any | None) -> dict[str, dict[str, Any]]:
+    attr_names = set(PREFERRED_FP8_GL_ATTRS)
+    if gl_module is not None:
+        attr_names.update(
+            name for name in dir(gl_module) if "float8" in name.lower() or "fp8" in name.lower()
+        )
+
+    statuses: dict[str, dict[str, Any]] = {}
+    for attr_name in sorted(attr_names):
+        status = _attr_status(gl_module, attr_name)
+        if status["present"] and gl_module is not None:
+            dtype = getattr(gl_module, attr_name)
+            primitive_bitwidth = getattr(dtype, "primitive_bitwidth", None)
+            if primitive_bitwidth is not None:
+                status["primitive_bitwidth"] = int(primitive_bitwidth)
+            status["repr"] = _sanitize_path_text(repr(dtype))
+        statuses[attr_name] = status
+    return statuses
+
+
 def _aggregate_status(
     *,
     require_cuda: bool,
@@ -229,6 +264,9 @@ def collect_preflight(
 ) -> dict[str, Any]:
     runtime_errors: list[str] = []
     torch_status, cuda_status, cuda_missing = _torch_status()
+    torch_module = None
+    if torch_status["imported"]:
+        _, torch_module = _import_module_status("torch")
 
     triton_status, _triton = _import_module_status("triton")
     if triton_status["imported"]:
@@ -252,6 +290,8 @@ def collect_preflight(
         gl_attr_status[attr_name] = status
         if not status["present"]:
             missing_required.append(f"gl.{attr_name}")
+
+    gl_fp8_attrs = _gl_fp8_attr_status(gl_module)
 
     if not triton_status["imported"]:
         missing_required.append("triton")
@@ -277,6 +317,8 @@ def collect_preflight(
         "gl_language": gl_status,
         "hopper": hopper_status,
         "gl_attrs": gl_attr_status,
+        "gl_fp8_attrs": gl_fp8_attrs,
+        "torch_fp8_attrs": _torch_fp8_attrs(torch_module),
         "cuda_required_missing": cuda_missing,
         "missing_required": missing_required,
     }
