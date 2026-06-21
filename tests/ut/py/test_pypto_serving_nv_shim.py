@@ -787,6 +787,125 @@ def test_pypto_serving_source_stream_chat_cli_outputs_summary_json(
     assert output["pto_status"] == "passed"
 
 
+def test_pypto_serving_vllm_compat_summary_records_structural_fields(monkeypatch):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+
+    def fake_launcher(request):
+        return {"status": "passed", "phase": request.phase, "op": request.op}
+
+    monkeypatch.setattr(module, "default_cuda_seed_launcher", fake_launcher)
+
+    summary = module.run_pypto_serving_vllm_compat_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=2,
+    )
+
+    assert summary["status"] == "passed"
+    assert summary["server"] == "pypto-serving-source"
+    assert summary["comparison_baseline"] == "vllm-openai-compatible-deepseek"
+    assert summary["checked_fields"] == [
+        "route",
+        "http_status_200",
+        "model_or_stream_object_shape",
+        "choice_text_or_message_delta_presence",
+        "finish_reason",
+        "usage_presence_when_non_streaming",
+        "sse_done_presence_when_streaming",
+    ]
+    assert summary["non_claims"] == [
+        "tokenizer semantics",
+        "logprob values",
+        "stop-token semantics",
+        "production readiness",
+        "throughput",
+        "latency",
+        "real DeepSeek weights",
+        "simpler-nv/vLLM kernel integration",
+    ]
+
+    by_name = {item["name"]: item for item in summary["fixtures"]}
+    assert set(by_name) == {
+        "completions",
+        "chat_completions",
+        "stream_completions",
+        "stream_chat_completions",
+    }
+    assert by_name["completions"]["matches"] == {
+        "route": True,
+        "http_status_200": True,
+        "object": True,
+        "model": True,
+        "choice_text": True,
+        "finish_reason": True,
+        "usage": False,
+    }
+    assert by_name["chat_completions"]["matches"] == {
+        "route": True,
+        "http_status_200": True,
+        "object": True,
+        "model": True,
+        "message_role": True,
+        "message_content": True,
+        "finish_reason": True,
+        "usage": False,
+    }
+    assert by_name["stream_completions"]["matches"] == {
+        "route": True,
+        "http_status_200": True,
+        "stream": True,
+        "choice_text_delta": True,
+        "finish_reason": True,
+        "sse_done": True,
+    }
+    assert by_name["stream_chat_completions"]["matches"] == {
+        "route": True,
+        "http_status_200": True,
+        "stream": True,
+        "assistant_delta": True,
+        "finish_reason": True,
+        "sse_done": True,
+    }
+    assert by_name["completions"]["observed"]["usage_keys"] == []
+    assert by_name["stream_chat_completions"]["observed"][
+        "assembled_assistant_text"
+    ] == "NV"
+
+
+def test_pypto_serving_vllm_compat_cli_outputs_summary_json(monkeypatch, capsys):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+
+    def fake_launcher(request):
+        return {"status": "passed", "phase": request.phase, "op": request.op}
+
+    monkeypatch.setattr(module, "default_cuda_seed_launcher", fake_launcher)
+
+    code = module.main(
+        [
+            "--pypto-serving-vllm-compat",
+            "--prompt",
+            "hello",
+            "--max-new-tokens",
+            "1",
+        ]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert output["status"] == "passed"
+    assert output["fixtures"][0]["name"] == "completions"
+    assert output["fixtures"][0]["matches"]["usage"] is False
+    assert output["fixtures"][2]["name"] == "stream_completions"
+    assert output["fixtures"][2]["matches"]["sse_done"] is True
+    assert "real DeepSeek weights" in output["non_claims"]
+
+
 def test_pypto_serving_source_chat_cli_mode_outputs_contract_json(monkeypatch, capsys):
     module = _load_serving_shim_example()
     pytest.importorskip("fastapi.testclient")

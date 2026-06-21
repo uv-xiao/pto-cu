@@ -96,6 +96,15 @@ source `/v1/chat/completions` route. Use `--pypto-serving-source-stream` and
 `--pypto-serving-source-chat-stream` for the cloned source `stream=true`
 completion and chat routes.
 
+Use `--pypto-serving-vllm-compat` to emit a JSON compatibility summary for
+the four cloned source-route fixtures. The OpenAI-compatible structural fields
+are: route, HTTP 200, object/model or stream shape,
+text/message/delta presence, finish reason, non-streaming usage presence, and
+streaming terminal `[DONE]` presence. It explicitly does not claim tokenizer
+semantics, logprob values, stop-token semantics, production readiness,
+throughput, latency, real DeepSeek weights, or simpler-nv/vLLM kernel
+integration.
+
 The local FastAPI fixture exposes `/v1/completions` and
 `/v1/chat/completions`. The chat fixture accepts a bounded non-streaming
 OpenAI-style `messages` list with at least one user content entry and returns

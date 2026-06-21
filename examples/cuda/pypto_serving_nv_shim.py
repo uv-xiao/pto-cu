@@ -322,6 +322,28 @@ class PyptoServingSourceAsyncEngineAdapter:
             )
 
 
+PYPTO_SERVING_VLLM_COMPAT_CHECKED_FIELDS = [
+    "route",
+    "http_status_200",
+    "model_or_stream_object_shape",
+    "choice_text_or_message_delta_presence",
+    "finish_reason",
+    "usage_presence_when_non_streaming",
+    "sse_done_presence_when_streaming",
+]
+
+PYPTO_SERVING_VLLM_COMPAT_NON_CLAIMS = [
+    "tokenizer semantics",
+    "logprob values",
+    "stop-token semantics",
+    "production readiness",
+    "throughput",
+    "latency",
+    "real DeepSeek weights",
+    "simpler-nv/vLLM kernel integration",
+]
+
+
 @contextlib.contextmanager
 def _pypto_serving_source_import_path():
     if not PYPTO_SERVING_SOURCE.is_dir():
@@ -566,6 +588,87 @@ def run_pypto_serving_source_stream_chat_completion_fixture(
         "pto_status": adapter.last_pto_status,
         "pto_token_ids": adapter.last_token_ids,
         "pto_launch_count": adapter.last_launch_count,
+    }
+
+
+def run_pypto_serving_vllm_compat_fixture(
+    *,
+    model: str,
+    prompt: str,
+    max_tokens: int = 2,
+    device_id: int = 0,
+    arch: str = "compute_90",
+) -> dict[str, Any]:
+    fixture_results = [
+        _compat_non_stream_fixture(
+            name="completions",
+            result=run_pypto_serving_source_completion_fixture(
+                model=model,
+                prompt=prompt,
+                max_tokens=max_tokens,
+                device_id=device_id,
+                arch=arch,
+            ),
+            expected_route="/v1/completions",
+            expected_object="text_completion",
+            model=model,
+            chat=False,
+        ),
+        _compat_non_stream_fixture(
+            name="chat_completions",
+            result=run_pypto_serving_source_chat_completion_fixture(
+                model=model,
+                prompt=prompt,
+                max_tokens=max_tokens,
+                device_id=device_id,
+                arch=arch,
+            ),
+            expected_route="/v1/chat/completions",
+            expected_object="chat.completion",
+            model=model,
+            chat=True,
+        ),
+        _compat_stream_fixture(
+            name="stream_completions",
+            result=run_pypto_serving_source_stream_completion_fixture(
+                model=model,
+                prompt=prompt,
+                max_tokens=max_tokens,
+                device_id=device_id,
+                arch=arch,
+            ),
+            expected_route="/v1/completions",
+            chat=False,
+        ),
+        _compat_stream_fixture(
+            name="stream_chat_completions",
+            result=run_pypto_serving_source_stream_chat_completion_fixture(
+                model=model,
+                prompt=prompt,
+                max_tokens=max_tokens,
+                device_id=device_id,
+                arch=arch,
+            ),
+            expected_route="/v1/chat/completions",
+            chat=True,
+        ),
+    ]
+    statuses = [item["status"] for item in fixture_results]
+    if "failed" in statuses:
+        status = "failed"
+    elif "skipped" in statuses:
+        status = "skipped"
+    else:
+        status = "passed"
+
+    return {
+        "status": status,
+        "server": "pypto-serving-source",
+        "comparison_baseline": "vllm-openai-compatible-deepseek",
+        "model": model,
+        "checked_fields": PYPTO_SERVING_VLLM_COMPAT_CHECKED_FIELDS,
+        "fixtures": fixture_results,
+        "non_claims": PYPTO_SERVING_VLLM_COMPAT_NON_CLAIMS,
     }
 
 
@@ -1000,6 +1103,151 @@ def _summarize_pypto_serving_source_stream(response, *, chat: bool) -> dict[str,
     }
 
 
+def _compat_non_stream_fixture(
+    *,
+    name: str,
+    result: dict[str, Any],
+    expected_route: str,
+    expected_object: str,
+    model: str,
+    chat: bool,
+) -> dict[str, Any]:
+    response = result.get("response")
+    if not isinstance(response, dict):
+        return _compat_unavailable_fixture(name=name, result=result)
+
+    choices = response.get("choices", [])
+    choice = choices[0] if choices and isinstance(choices[0], dict) else {}
+    usage = response.get("usage")
+    matches = {
+        "route": result.get("route") == expected_route,
+        "http_status_200": result.get("status_code") == 200,
+        "object": response.get("object") == expected_object,
+        "model": response.get("model") == model,
+    }
+    if chat:
+        message = choice.get("message") if isinstance(choice, dict) else None
+        if not isinstance(message, dict):
+            message = {}
+        matches.update(
+            {
+                "message_role": message.get("role") == "assistant",
+                "message_content": bool(message.get("content")),
+            }
+        )
+        text_present = bool(message.get("content"))
+    else:
+        matches["choice_text"] = bool(choice.get("text"))
+        text_present = bool(choice.get("text"))
+
+    matches.update(
+        {
+            "finish_reason": choice.get("finish_reason") is not None,
+            "usage": _has_openai_usage_shape(usage),
+        }
+    )
+    return {
+        "name": name,
+        "status": _compat_status(result=result, matches=matches),
+        "route": result.get("route"),
+        "stream": False,
+        "matches": matches,
+        "observed": {
+            "status_code": result.get("status_code"),
+            "object": response.get("object"),
+            "model": response.get("model"),
+            "choice_count": len(choices) if isinstance(choices, list) else 0,
+            "text_present": text_present,
+            "finish_reason": choice.get("finish_reason"),
+            "usage_keys": sorted(usage) if isinstance(usage, dict) else [],
+            "pto_status": result.get("pto_status"),
+            "pto_launch_count": result.get("pto_launch_count"),
+        },
+    }
+
+
+def _compat_stream_fixture(
+    *,
+    name: str,
+    result: dict[str, Any],
+    expected_route: str,
+    chat: bool,
+) -> dict[str, Any]:
+    matches = {
+        "route": result.get("route") == expected_route,
+        "http_status_200": result.get("status_code") == 200,
+        "stream": result.get("stream") is True,
+    }
+    if chat:
+        matches["assistant_delta"] = bool(result.get("assembled_assistant_text"))
+        observed_text_key = "assembled_assistant_text"
+    else:
+        matches["choice_text_delta"] = bool(result.get("assembled_text"))
+        observed_text_key = "assembled_text"
+
+    matches.update(
+        {
+            "finish_reason": result.get("finish_reason") is not None,
+            "sse_done": result.get("done_seen") is True,
+        }
+    )
+    return {
+        "name": name,
+        "status": _compat_status(result=result, matches=matches),
+        "route": result.get("route"),
+        "stream": True,
+        "matches": matches,
+        "observed": {
+            "status_code": result.get("status_code"),
+            "event_count": result.get("event_count"),
+            "chunk_count": result.get("chunk_count"),
+            "done_seen": result.get("done_seen"),
+            "finish_reason": result.get("finish_reason"),
+            observed_text_key: result.get(observed_text_key, ""),
+            "pto_status": result.get("pto_status"),
+            "pto_launch_count": result.get("pto_launch_count"),
+        },
+    }
+
+
+def _compat_unavailable_fixture(
+    *,
+    name: str,
+    result: dict[str, Any],
+) -> dict[str, Any]:
+    status = result.get("status")
+    if status not in {"passed", "failed", "skipped"}:
+        status = "failed"
+    return {
+        "name": name,
+        "status": status,
+        "route": result.get("route"),
+        "stream": bool(result.get("stream", False)),
+        "matches": {},
+        "observed": {
+            "reason": result.get("reason", ""),
+            "status_code": result.get("status_code"),
+        },
+    }
+
+
+def _compat_status(*, result: dict[str, Any], matches: dict[str, bool]) -> str:
+    result_status = result.get("status")
+    if result_status == "skipped":
+        return "skipped"
+    if result_status == "failed":
+        return "failed"
+    return "passed"
+
+
+def _has_openai_usage_shape(usage: Any) -> bool:
+    return isinstance(usage, dict) and {
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+    } <= usage.keys()
+
+
 def _pypto_serving_source_sse_data(text: str) -> list[str]:
     data_items = []
     for line in text.splitlines():
@@ -1096,13 +1344,29 @@ def main(argv: list[str] | None = None) -> int:
         help="exercise the actual pypto-serving source /v1/chat/completions stream route in process",
     )
     parser.add_argument(
+        "--pypto-serving-vllm-compat",
+        action="store_true",
+        help="emit source-route structural compatibility against vLLM OpenAI fields",
+    )
+    parser.add_argument(
         "--require-cuda",
         action="store_true",
         help="return non-zero when the CUDA seed launch is skipped",
     )
     args = parser.parse_args(argv)
 
-    if args.pypto_serving_source_chat_stream:
+    if args.pypto_serving_vllm_compat:
+        result = run_pypto_serving_vllm_compat_fixture(
+            model=args.model,
+            prompt=args.prompt,
+            max_tokens=args.max_new_tokens,
+            device_id=args.device,
+            arch=args.arch,
+        )
+        status = result["status"]
+        if status == "passed":
+            status = _compat_pto_status(result)
+    elif args.pypto_serving_source_chat_stream:
         result = run_pypto_serving_source_stream_chat_completion_fixture(
             model=args.model,
             prompt=args.prompt,
@@ -1214,6 +1478,19 @@ def main(argv: list[str] | None = None) -> int:
     if status == "skipped" and args.require_cuda:
         return 2
     return 0
+
+
+def _compat_pto_status(result: dict[str, Any]) -> str:
+    for fixture in result.get("fixtures", []):
+        if not isinstance(fixture, dict):
+            continue
+        observed = fixture.get("observed", {})
+        if not isinstance(observed, dict):
+            continue
+        pto_status = observed.get("pto_status")
+        if pto_status in {"failed", "skipped"}:
+            return str(pto_status)
+    return "passed"
 
 
 if __name__ == "__main__":

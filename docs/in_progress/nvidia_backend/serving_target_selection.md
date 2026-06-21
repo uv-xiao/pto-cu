@@ -77,6 +77,12 @@ cumulative synthetic text into the source server and recording review-safe
 event/chunk summaries. This is still synthetic adapter contract evidence, not
 DeepSeek serving evidence.
 
+The review gate now includes a local vLLM compatibility-contract summary for
+the four source-route fixtures. It compares only OpenAI-compatible structural
+fields already covered by the fixtures and vLLM probes: route, HTTP 200,
+object/model or stream shape, text/message/delta presence, finish reason,
+non-streaming usage presence, and streaming terminal `[DONE]` presence.
+
 ## Non-Claims
 
 - This is not serving evidence.
@@ -86,6 +92,8 @@ DeepSeek serving evidence.
 - This is not a claim that FlashInfer kernels have been integrated into PTO.
 - This is not tokenizer semantics, production serving, generated text
   correctness, or DeepSeek streaming evidence.
+- This is not logprob-value, stop-token semantic, throughput, latency, real
+  DeepSeek weight, or simpler-nv/vLLM kernel integration evidence.
 
 ## Follow-Up Gates
 
