@@ -313,11 +313,13 @@ class PyptoServingSourceAsyncEngineAdapter:
         self.last_pto_status = result["status"]
         self.last_token_ids = list(result["token_ids"])
         self.last_launch_count = int(result["launch_count"])
-        yield PyptoServingSourceTokenOutput(
-            text=result["text"],
-            finished=True,
-            finish_reason="FINISHED_LENGTH",
-        )
+        for token_index in range(len(self.last_token_ids)):
+            finished = token_index == len(self.last_token_ids) - 1
+            yield PyptoServingSourceTokenOutput(
+                text=_decode_tokens(self.last_token_ids[: token_index + 1]),
+                finished=finished,
+                finish_reason="FINISHED_LENGTH" if finished else "",
+            )
 
 
 @contextlib.contextmanager
@@ -445,6 +447,122 @@ def run_pypto_serving_source_chat_completion_fixture(
         "route": "/v1/chat/completions",
         "status_code": response.status_code,
         "response": response.json(),
+        "pto_status": adapter.last_pto_status,
+        "pto_token_ids": adapter.last_token_ids,
+        "pto_launch_count": adapter.last_launch_count,
+    }
+
+
+def run_pypto_serving_source_stream_completion_fixture(
+    *,
+    model: str,
+    prompt: str,
+    max_tokens: int = 2,
+    device_id: int = 0,
+    arch: str = "compute_90",
+) -> dict[str, Any]:
+    try:
+        from fastapi.testclient import TestClient
+    except (ImportError, RuntimeError) as exc:
+        return {
+            "status": "skipped",
+            "reason": f"missing FastAPI TestClient: {exc}",
+            "server": "pypto-serving-source",
+            "route": "/v1/completions",
+            "stream": True,
+        }
+    try:
+        app, adapter = create_pypto_serving_source_app(
+            model=model,
+            device_id=device_id,
+            arch=arch,
+        )
+    except (ImportError, RuntimeError, FileNotFoundError) as exc:
+        return {
+            "status": "skipped",
+            "reason": str(exc),
+            "server": "pypto-serving-source",
+            "route": "/v1/completions",
+            "stream": True,
+        }
+
+    response = TestClient(app).post(
+        "/v1/completions",
+        json={
+            "model": model,
+            "prompt": prompt,
+            "max_tokens": max_tokens,
+            "stream": True,
+        },
+    )
+    summary = _summarize_pypto_serving_source_stream(response, chat=False)
+    return {
+        "status": "passed"
+        if response.status_code == 200 and summary["done_seen"]
+        else "failed",
+        "server": "pypto-serving-source",
+        "route": "/v1/completions",
+        "stream": True,
+        "status_code": response.status_code,
+        **summary,
+        "pto_status": adapter.last_pto_status,
+        "pto_token_ids": adapter.last_token_ids,
+        "pto_launch_count": adapter.last_launch_count,
+    }
+
+
+def run_pypto_serving_source_stream_chat_completion_fixture(
+    *,
+    model: str,
+    prompt: str,
+    max_tokens: int = 2,
+    device_id: int = 0,
+    arch: str = "compute_90",
+) -> dict[str, Any]:
+    try:
+        from fastapi.testclient import TestClient
+    except (ImportError, RuntimeError) as exc:
+        return {
+            "status": "skipped",
+            "reason": f"missing FastAPI TestClient: {exc}",
+            "server": "pypto-serving-source",
+            "route": "/v1/chat/completions",
+            "stream": True,
+        }
+    try:
+        app, adapter = create_pypto_serving_source_app(
+            model=model,
+            device_id=device_id,
+            arch=arch,
+        )
+    except (ImportError, RuntimeError, FileNotFoundError) as exc:
+        return {
+            "status": "skipped",
+            "reason": str(exc),
+            "server": "pypto-serving-source",
+            "route": "/v1/chat/completions",
+            "stream": True,
+        }
+
+    response = TestClient(app).post(
+        "/v1/chat/completions",
+        json={
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+            "stream": True,
+        },
+    )
+    summary = _summarize_pypto_serving_source_stream(response, chat=True)
+    return {
+        "status": "passed"
+        if response.status_code == 200 and summary["done_seen"]
+        else "failed",
+        "server": "pypto-serving-source",
+        "route": "/v1/chat/completions",
+        "stream": True,
+        "status_code": response.status_code,
+        **summary,
         "pto_status": adapter.last_pto_status,
         "pto_token_ids": adapter.last_token_ids,
         "pto_launch_count": adapter.last_launch_count,
@@ -835,6 +953,61 @@ int main(int argc, char **argv) {{
 """
 
 
+def _summarize_pypto_serving_source_stream(response, *, chat: bool) -> dict[str, Any]:
+    data_items = _pypto_serving_source_sse_data(response.text)
+    chunks: list[dict[str, Any]] = []
+    done_seen = False
+    finish_reason = None
+
+    for item in data_items:
+        if item == "[DONE]":
+            done_seen = True
+            continue
+        chunk = json.loads(item)
+        chunks.append(chunk)
+        choices = chunk.get("choices", [])
+        if choices:
+            choice_finish_reason = choices[0].get("finish_reason")
+            if choice_finish_reason is not None:
+                finish_reason = choice_finish_reason
+
+    if chat:
+        deltas = [
+            str((chunk["choices"][0].get("delta") or {}).get("content", ""))
+            for chunk in chunks
+            if chunk.get("choices")
+        ]
+        return {
+            "event_count": len(data_items),
+            "chunk_count": len(chunks),
+            "done_seen": done_seen,
+            "assistant_deltas": deltas,
+            "assembled_assistant_text": "".join(deltas),
+            "finish_reason": finish_reason,
+        }
+
+    text_chunks = [
+        str(chunk["choices"][0].get("text", ""))
+        for chunk in chunks
+        if chunk.get("choices")
+    ]
+    return {
+        "event_count": len(data_items),
+        "chunk_count": len(chunks),
+        "done_seen": done_seen,
+        "assembled_text": "".join(text_chunks),
+        "finish_reason": finish_reason,
+    }
+
+
+def _pypto_serving_source_sse_data(text: str) -> list[str]:
+    data_items = []
+    for line in text.splitlines():
+        if line.startswith("data:"):
+            data_items.append(line.removeprefix("data:").strip())
+    return data_items
+
+
 def _encode_prompt(prompt: str) -> list[int]:
     return [0] if prompt else [0]
 
@@ -908,9 +1081,19 @@ def main(argv: list[str] | None = None) -> int:
         help="exercise the actual pypto-serving source server contract in process",
     )
     parser.add_argument(
+        "--pypto-serving-source-stream",
+        action="store_true",
+        help="exercise the actual pypto-serving source /v1/completions stream route in process",
+    )
+    parser.add_argument(
         "--pypto-serving-source-chat",
         action="store_true",
         help="exercise the actual pypto-serving source /v1/chat/completions route in process",
+    )
+    parser.add_argument(
+        "--pypto-serving-source-chat-stream",
+        action="store_true",
+        help="exercise the actual pypto-serving source /v1/chat/completions stream route in process",
     )
     parser.add_argument(
         "--require-cuda",
@@ -919,7 +1102,29 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    if args.pypto_serving_source_chat:
+    if args.pypto_serving_source_chat_stream:
+        result = run_pypto_serving_source_stream_chat_completion_fixture(
+            model=args.model,
+            prompt=args.prompt,
+            max_tokens=args.max_new_tokens,
+            device_id=args.device,
+            arch=args.arch,
+        )
+        status = result["status"]
+        if status == "passed":
+            status = result.get("pto_status", status)
+    elif args.pypto_serving_source_stream:
+        result = run_pypto_serving_source_stream_completion_fixture(
+            model=args.model,
+            prompt=args.prompt,
+            max_tokens=args.max_new_tokens,
+            device_id=args.device,
+            arch=args.arch,
+        )
+        status = result["status"]
+        if status == "passed":
+            status = result.get("pto_status", status)
+    elif args.pypto_serving_source_chat:
         result = run_pypto_serving_source_chat_completion_fixture(
             model=args.model,
             prompt=args.prompt,

@@ -625,6 +625,72 @@ def test_pypto_serving_source_cli_mode_outputs_contract_json(monkeypatch, capsys
     assert output["pto_status"] == "passed"
 
 
+def test_pypto_serving_source_stream_fixture_uses_real_completion_route(monkeypatch):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+
+    def fake_launcher(request):
+        return {"status": "passed", "phase": request.phase, "op": request.op}
+
+    monkeypatch.setattr(module, "default_cuda_seed_launcher", fake_launcher)
+
+    result = module.run_pypto_serving_source_stream_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=2,
+    )
+
+    assert result["server"] == "pypto-serving-source"
+    assert result["route"] == "/v1/completions"
+    assert result["stream"] is True
+    assert result["status_code"] == 200
+    assert result["event_count"] == 3
+    assert result["chunk_count"] == 2
+    assert result["done_seen"] is True
+    assert result["assembled_text"] == "NV"
+    assert result["finish_reason"] == "length"
+    assert result["pto_status"] == "passed"
+    assert result["pto_token_ids"] == [1, 2]
+    assert result["pto_launch_count"] == 2
+
+
+def test_pypto_serving_source_stream_completion_cli_outputs_summary_json(
+    monkeypatch, capsys
+):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+
+    def fake_launcher(request):
+        return {"status": "passed", "phase": request.phase, "op": request.op}
+
+    monkeypatch.setattr(module, "default_cuda_seed_launcher", fake_launcher)
+
+    code = module.main(
+        [
+            "--pypto-serving-source-stream",
+            "--prompt",
+            "hello",
+            "--max-new-tokens",
+            "1",
+        ]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert output["server"] == "pypto-serving-source"
+    assert output["route"] == "/v1/completions"
+    assert output["stream"] is True
+    assert output["chunk_count"] == 1
+    assert output["done_seen"] is True
+    assert output["assembled_text"] == "N"
+    assert output["finish_reason"] == "length"
+    assert output["pto_status"] == "passed"
+
+
 def test_pypto_serving_source_chat_fixture_uses_real_chat_route(monkeypatch):
     module = _load_serving_shim_example()
     pytest.importorskip("fastapi.testclient")
@@ -651,6 +717,74 @@ def test_pypto_serving_source_chat_fixture_uses_real_chat_route(monkeypatch):
     assert choice["finish_reason"] == "length"
     assert result["pto_status"] == "passed"
     assert result["pto_launch_count"] == 2
+
+
+def test_pypto_serving_source_stream_chat_fixture_uses_real_chat_route(monkeypatch):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+
+    def fake_launcher(request):
+        return {"status": "passed", "phase": request.phase, "op": request.op}
+
+    monkeypatch.setattr(module, "default_cuda_seed_launcher", fake_launcher)
+
+    result = module.run_pypto_serving_source_stream_chat_completion_fixture(
+        model="synthetic-simpler-nv",
+        prompt="hello",
+        max_tokens=2,
+    )
+
+    assert result["server"] == "pypto-serving-source"
+    assert result["route"] == "/v1/chat/completions"
+    assert result["stream"] is True
+    assert result["status_code"] == 200
+    assert result["event_count"] == 3
+    assert result["chunk_count"] == 2
+    assert result["done_seen"] is True
+    assert result["assistant_deltas"] == ["N", "V"]
+    assert result["assembled_assistant_text"] == "NV"
+    assert result["finish_reason"] == "length"
+    assert result["pto_status"] == "passed"
+    assert result["pto_token_ids"] == [1, 2]
+    assert result["pto_launch_count"] == 2
+
+
+def test_pypto_serving_source_stream_chat_cli_outputs_summary_json(
+    monkeypatch, capsys
+):
+    module = _load_serving_shim_example()
+    pytest.importorskip("fastapi.testclient")
+    if not module.PYPTO_SERVING_SOURCE.is_dir():
+        pytest.skip(f"missing {module.PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+
+    def fake_launcher(request):
+        return {"status": "passed", "phase": request.phase, "op": request.op}
+
+    monkeypatch.setattr(module, "default_cuda_seed_launcher", fake_launcher)
+
+    code = module.main(
+        [
+            "--pypto-serving-source-chat-stream",
+            "--prompt",
+            "hello",
+            "--max-new-tokens",
+            "1",
+        ]
+    )
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert output["server"] == "pypto-serving-source"
+    assert output["route"] == "/v1/chat/completions"
+    assert output["stream"] is True
+    assert output["chunk_count"] == 1
+    assert output["done_seen"] is True
+    assert output["assistant_deltas"] == ["N"]
+    assert output["assembled_assistant_text"] == "N"
+    assert output["finish_reason"] == "length"
+    assert output["pto_status"] == "passed"
 
 
 def test_pypto_serving_source_chat_cli_mode_outputs_contract_json(monkeypatch, capsys):
@@ -698,7 +832,13 @@ def test_pypto_serving_source_chat_route_fixture_is_documented():
 
     assert "Source Chat Contract" in source_contract
     assert "run_pypto_serving_source_chat_completion_fixture(...)" in source_contract
+    assert "run_pypto_serving_source_stream_completion_fixture(...)" in source_contract
+    assert "run_pypto_serving_source_stream_chat_completion_fixture(...)" in source_contract
     assert "--pypto-serving-source-chat" in source_contract
+    assert "--pypto-serving-source-stream" in source_contract
+    assert "--pypto-serving-source-chat-stream" in source_contract
     assert "/v1/chat/completions" in source_contract
     assert "Current Chat Source Limitation" not in source_contract
     assert hasattr(module, "run_pypto_serving_source_chat_completion_fixture")
+    assert hasattr(module, "run_pypto_serving_source_stream_completion_fixture")
+    assert hasattr(module, "run_pypto_serving_source_stream_chat_completion_fixture")

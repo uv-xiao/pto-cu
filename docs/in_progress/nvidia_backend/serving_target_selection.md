@@ -71,8 +71,11 @@ same synthetic simpler-nv engine, accepts a bounded `messages` list with at
 least one user content entry, and returns a chat-completions-shaped assistant
 message with PTO debug fields. When the cloned `pypto-serving` checkout is
 present, the source-route fixture imports the actual `create_serving_app(...)`
-and exercises the real `/v1/chat/completions` route; this is still synthetic
-adapter contract evidence, not DeepSeek serving evidence.
+and exercises the real `/v1/chat/completions` route. The source-route fixture
+also covers `stream=true` completion and chat SSE routes by yielding
+cumulative synthetic text into the source server and recording review-safe
+event/chunk summaries. This is still synthetic adapter contract evidence, not
+DeepSeek serving evidence.
 
 ## Non-Claims
 
@@ -81,8 +84,8 @@ adapter contract evidence, not DeepSeek serving evidence.
 - This is not a vLLM plugin implementation.
 - This is not a claim that `pypto-serving` can run DeepSeek-V4-Flash today.
 - This is not a claim that FlashInfer kernels have been integrated into PTO.
-- This is not tokenizer semantics, streaming, production serving, or generated
-  text correctness evidence.
+- This is not tokenizer semantics, production serving, generated text
+  correctness, or DeepSeek streaming evidence.
 
 ## Follow-Up Gates
 
