@@ -13,20 +13,29 @@ for rank-1 `gate` and `value` tensors.
 ## Harness
 
 The harness is `examples/cuda/gluon_gated_silu_f32.py`. It emits structured
-JSON for pass, skip, and fail cases. The payload records:
+JSON for pass, skip, and fail cases. The default path remains a single
+`--n 32` correctness check. The optional `--sweep` path emits aggregate JSON
+with `schema_version: 1`, aggregate status, case counts, and per-case shape,
+provenance, artifact metadata, reference formula, status, and maximum
+absolute error when correctness is measured.
 
-- `kernel_name`, `status`, and `schema_version`;
-- generated artifact paths and source digest;
-- vector length, reference expression, and tolerance;
-- maximum absolute error when correctness is measured.
+The sweep cases are:
+
+- existing smoke fixture, shape: `n=32`;
+- DeepSeek-V4-Flash representative gated activation width, shape: `n=2048`,
+  with provenance from
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`
+  fields `moe_inter_dim: 2048` and `swiglu_limit: 10.0`.
 
 The default output directory is repo-relative `tmp/gluon-gated-silu-local`.
-Absolute `--output-dir` values are rejected so stdout JSON does not leak
-private local paths. The harness checks that Gluon exposes `gl.exp`; if it is
-missing, the harness reports a structured skip instead of using an
-approximation.
+Absolute `--output-dir` values are rejected in both the default and sweep
+paths so stdout JSON does not leak private local paths. The harness checks
+that Gluon exposes `gl.exp`; if it is missing, the harness reports a
+structured skip instead of using an approximation.
 
 ## Local Command
+
+Single-case default path:
 
 ```bash
 PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
@@ -35,7 +44,16 @@ PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
   --n 32 --arch compute_90
 ```
 
-Local result:
+Shape sweep path:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+  examples/cuda/gluon_gated_silu_f32.py \
+  --output-dir tmp/gluon-gated-silu-shape-coverage-local \
+  --sweep --arch compute_90
+```
+
+Local result from the pre-existing single case:
 
 - exit code: `0`;
 - status: passed;
@@ -69,6 +87,7 @@ Execution details:
 - python environment: <remote-gluon-venv>;
 - GPU: NVIDIA H200 NVL;
 - compute capability: `9.0`;
+- memory: `143771 MiB`;
 - driver: `580.126.20`;
 - CUDA toolkit: `<cuda-toolkit>`, CUDA 12.8 compiler build;
 - Torch: `2.11.0+cu130`;
@@ -82,25 +101,36 @@ REMOTE_PTO_CU=<remote-pto-cu> \
   bash -lc 'PYTHONPATH=$PWD:$PWD/python \
     <remote-gluon-venv>/bin/python \
       examples/cuda/gluon_gated_silu_f32.py \
-      --output-dir tmp/gluon-gated-silu-h200 \
-      --n 32 \
-      --require-cuda --device 0 --arch compute_90'
+      --output-dir tmp/gluon-gated-silu-shape-coverage-h200 \
+      --sweep --require-cuda --device 0 --arch compute_90'
 ```
 
 H200 result:
 
 - exit code: `0`;
 - status: passed;
-- shape: `n=32`;
+- case count: `2`;
+- passed cases: `2`;
+- failed cases: `0`;
+- skipped cases: `0`;
 - reference: `out = value * gate / (1.0 + exp(-gate))`;
 - tolerance: `atol=1e-5`, `rtol=1e-5`;
-- max absolute error: `4.76837158203125e-07`;
 - source digest:
   `5217e47b2c2db4a67ecb81ba690cc069e32956f048b6061457409a2b77b032de`.
 
+Per-case result:
+
+- `existing_smoke`: shape: `n=32`, status: passed, max absolute error:
+  `4.76837158203125e-07`.
+- `deepseek_v4_flash_moe_inter_dim`: shape: `n=2048`, status: passed,
+  provenance:
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`
+  `moe_inter_dim: 2048`, `swiglu_limit: 10.0`, max absolute error:
+  `9.5367431640625e-07`.
+
 ## Limitations
 
-- The evidence covers one bounded FP32 gated SiLU vector shape.
+- The evidence covers a small bounded FP32 gated SiLU vector shape sweep.
 - The implementation is correctness-focused, not performance-focused.
 - The remote evidence used tree sync plus a preserved remote Python
   environment rather than a venv created inside the fresh synced checkout.
@@ -111,6 +141,7 @@ H200 result:
 - This is not production serving readiness.
 - This is not DeepSeek semantic correctness.
 - This is not Gemma-style fused norm coverage.
+- This is not broader activation coverage.
 - This is not fused attention evidence.
 - This is not KV-cache integration evidence.
 - This is not vLLM/simpler-nv integration evidence.
@@ -118,7 +149,6 @@ H200 result:
 
 ## Follow-Up Gaps
 
-- Add broader activation fixtures with model-shape provenance in separate
-  slices.
-- Keep Gemma-style fused norm, fused attention, KV-cache mutation, paged
-  attention, and serving integration evidence in their own bounded branches.
+- Keep FlashInfer integration, serving readiness, fused attention, KV-cache
+  mutation, paged attention, broader activation coverage, and serving
+  integration evidence in their own bounded branches.
