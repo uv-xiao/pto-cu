@@ -43,7 +43,7 @@ Write it with these properties:
 - **Ownership boundaries:** explain which artifacts belong to the dispatcher, shared contracts,
   dependency PRs, and workers.
 - **Dispatcher freedom:** allow the dispatcher to discover missing preparation as first-class goal
-  progress.
+  progress when it is recorded in a dispatch log or PR.
 - **Worker constraints:** state that workers may own child PRs but must not dispatch nested workers.
 - **Durable logs:** require dispatch commands, child PRs, verification, merges, handoffs, and scope
   cuts to be recorded.
@@ -100,22 +100,34 @@ visible.
 This file is an ultimate-goal umbrella note, not a single-PR contract. Work proceeds through
 dispatcher-managed child PRs:
 
-- The dispatcher owns this umbrella note, child-PR sequencing, dispatch log, progress reports,
-  shared-contract coordination, and final promotion into stable docs.
+- The dispatcher owns this umbrella note, child-PR sequencing, dispatch log,
+  progress reports, shared-contract coordination, review, merge decisions, and
+  final promotion into stable docs.
+- Real implementation belongs in child worker sessions, PR-sized branches, and
+  PRs. The dispatcher does not take over implementation work in the parent
+  session.
 - Each child PR owns one coherent slice with its own branch, PR description, local verification, and
   merge decision.
-- Workers may open and merge their own child PRs when their scope is satisfied and verification is
-  recorded.
+- Workers may open and update their own child PRs when their scope is
+  satisfied and verification is recorded. The dispatcher owns the merge
+  decision.
 - Workers must not dispatch nested workers; they propose new child slices back to the dispatcher.
 - Dependency PRs are required before adding reusable framework behavior or shared machinery that is
   not local to one child slice.
 - Every dispatch, branch, PR, merge decision, scope change, and handoff is recorded in
   `docs/in_progress/<goal_slug>/dispatch_log.md`.
+- Progress is not complete because it exists in private scrollback or unmerged
+  local changes; it must be visible in PRs, dispatch-log entries, worker
+  handoffs, or verification records.
 
 The dispatcher is expected to discover missing preparation while running the goal. Missing child
 backlog entries, worker prompt templates, verification matrices, stale references, or current-state
 audits are not blockers to starting `/goal`; they are valid first child PRs when they reduce risk
 for the parent goal.
+
+Direct parent implementation is allowed only for recorded emergency
+stabilization of the dispatch system. Record the reason, diff scope,
+verification, and PR or handoff before treating it as goal progress.
 
 ## Work Preparation And Operating Rules
 
@@ -177,7 +189,8 @@ The dispatcher repeats this loop until acceptance is met:
 1. Audit current state.
 2. Choose the next smallest child PR, worker, dependency PR, progress report, or scope cut.
 3. Record the plan in the dispatch log.
-4. Run local work or launch a worker.
+4. Update dispatcher artifacts or launch a worker. Implementation work happens
+   in child slices.
 5. Review the result, run verification, and merge when appropriate.
 6. Update docs, dispatch log, and progress reports.
 7. Re-audit before choosing the next step.
@@ -300,10 +313,10 @@ Completion:
 Each child PR should follow this lifecycle:
 
 1. Dispatcher records the intended child slice in the dispatch log.
-2. Dispatcher or worker creates a `feat-xxx` branch from updated `main`.
-3. Implementation stays inside the allowed scope.
+2. Worker creates a PR-sized branch from updated `main`.
+3. Implementation stays inside the allowed worker scope.
 4. Verification is run and recorded in the PR description and dispatch log.
-5. PR is reviewed and merged when its slice is complete.
+5. Dispatcher reviews and merges the PR when its slice is complete.
 6. Dispatcher records merge decision and remaining gaps.
 7. Dispatcher re-audits before launching or opening the next child slice.
 
