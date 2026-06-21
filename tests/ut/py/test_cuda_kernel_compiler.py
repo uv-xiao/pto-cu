@@ -1295,12 +1295,13 @@ def test_gluon_flashattention_example_reports_causal_skip_json_and_relative_arti
 
     assert result["status"] == "skipped"
     assert result["schema_version"] == 1
-    assert result["phase"] == "single_tile"
+    assert result["phase"] == "prefill"
     assert result["causal"] is True
     assert result["reason"] == "torch.cuda is not available"
     assert result["kernel_name"] == "flashattention_fwd_f32"
     assert result["shape"] == {"seqlen_q": 32, "seqlen_k": 32, "head_dim": 64}
     assert result["reference"] == example.FLASHATTENTION_CAUSAL_REFERENCE
+    assert result["reference"] != example.FLASHATTENTION_CAUSAL_DECODE_REFERENCE
     assert result["tolerance"] == {"atol": 0.001, "rtol": 0.01}
     assert result["artifact"]["source_path"] == (
         "flashattention-causal-artifacts/flashattention_fwd_f32.gluon.py"
@@ -1607,9 +1608,11 @@ def test_gluon_flashattention_example_cli_accepts_causal_boundary_shape(
     payload = json.loads(capsys.readouterr().out)
     assert code == 2
     assert payload["status"] == "skipped"
+    assert payload["phase"] == "prefill"
     assert payload["causal"] is True
     assert payload["shape"] == {"seqlen_q": 32, "seqlen_k": 32, "head_dim": 64}
     assert payload["reference"] == example.FLASHATTENTION_CAUSAL_REFERENCE
+    assert payload["reference"] != example.FLASHATTENTION_CAUSAL_DECODE_REFERENCE
     assert payload["tolerance"] == {"atol": 0.001, "rtol": 0.01}
     assert payload["artifact"]["tile_shape"] == [32, 32, 64]
     assert payload["artifact"]["source_path"] == (

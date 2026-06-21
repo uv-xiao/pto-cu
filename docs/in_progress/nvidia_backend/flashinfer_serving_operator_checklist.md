@@ -41,26 +41,27 @@ Serving-relevant families verified from the README:
   `32x32x32` case and a bounded `head_dim=64` case selected after `32x32x64
   failed H200 correctness`; the `32x32x64` repro now passes with structured
   JSON and remains separate from the promoted sweep. The same note now records
-  a causal single-tile H200 gate for `--tile-shape 32x32x64 --causal` with
-  `causal: true`, the masked PyTorch reference formula, tolerance, status,
-  and repo-relative artifact paths. It also records a bounded single-query
-  decode-shaped H200 gate for `--tile-shape 1x32x64 --causal` with
-  `phase: decode`, `causal: true`, shape, tolerance, the offset masked PyTorch
-  reference formula, status, and repo-relative artifact paths. It also records
-  a small multi-query append-shaped H200 gate for
+  a bounded same-length multi-query prefill-shaped H200 gate for
+  `--tile-shape 32x32x64 --causal` with `phase: prefill`, `causal: true`,
+  shape, tolerance, the lower-triangular masked PyTorch reference formula,
+  status, and repo-relative artifact paths. It also records a bounded
+  single-query decode-shaped H200 gate for `--tile-shape 1x32x64 --causal`
+  with `phase: decode`, `causal: true`, shape, tolerance, the offset masked
+  PyTorch reference formula, status, and repo-relative artifact paths. It also
+  records a small multi-query append-shaped H200 gate for
   `--tile-shape 4x32x64 --causal` with `phase: append`, `causal: true`,
   shape, tolerance, the offset masked PyTorch reference formula, status, and
   repo-relative artifact paths. vLLM DeepSeek probes are real vLLM serving
   evidence and mention fp8 MLA KV-cache behavior, but they do not route
   through PTO kernels.
-- **Gap / next PTO milestone:** add PTO-owned prefill, append, paged/ragged
+- **Gap / next PTO milestone:** add PTO-owned full prefill, append, paged/ragged
   KV-cache, varlen, full decode coverage, MLA, cascade, sparse, and POD
   attention fixtures before any attention-serving claim.
 - **Explicit non-claim:** this is not FlashInfer integration evidence, not
   FlashInfer parity, not simpler-nv/vLLM kernel integration evidence, not
   production serving readiness, not performance/throughput/latency evidence,
-  not paged/ragged KV-cache coverage, not full decode, prefill, full append,
-  or append KV-cache coverage, and not DeepSeek semantic correctness.
+  not paged/ragged KV-cache coverage, not full prefill, full decode, full
+  append, or append KV-cache coverage, and not DeepSeek semantic correctness.
 
 ### GEMM And Linear Operations
 
