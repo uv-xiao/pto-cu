@@ -23,6 +23,7 @@ _SUPPORTED_KERNELS = {
     "gemm_f32",
     "gemm_tensor_core_f16_f32",
     "gemm_tensor_core_tiled_f16_f32",
+    "gemm_tensor_core_tiled_bf16_f32",
     "flashattention_fwd_f32",
     "moe_expert_affine_f32",
     "rmsnorm_f32",
@@ -128,7 +129,17 @@ def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
     if kernel_name == "gemm_tensor_core_f16_f32":
         return _render_tensor_core_gemm_source(tile_shape)
     if kernel_name == "gemm_tensor_core_tiled_f16_f32":
-        return _render_tiled_tensor_core_gemm_source(tile_shape)
+        return _render_tiled_tensor_core_gemm_source(
+            tile_shape,
+            kernel_name="gemm_tensor_core_tiled_f16_f32",
+            input_gl_dtype="float16",
+        )
+    if kernel_name == "gemm_tensor_core_tiled_bf16_f32":
+        return _render_tiled_tensor_core_gemm_source(
+            tile_shape,
+            kernel_name="gemm_tensor_core_tiled_bf16_f32",
+            input_gl_dtype="bfloat16",
+        )
     if kernel_name == "flashattention_fwd_f32":
         return _render_flashattention_source(tile_shape)
     if kernel_name == "moe_expert_affine_f32":
@@ -265,7 +276,12 @@ def _render_tensor_core_gemm_source(tile_shape: tuple[int, int, int]) -> str:
     ).lstrip()
 
 
-def _render_tiled_tensor_core_gemm_source(tile_shape: tuple[int, int, int]) -> str:
+def _render_tiled_tensor_core_gemm_source(
+    tile_shape: tuple[int, int, int],
+    *,
+    kernel_name: str,
+    input_gl_dtype: str,
+) -> str:
     block_m, block_n, block_k = tile_shape
     return dedent(
         f"""
@@ -284,7 +300,7 @@ def _render_tiled_tensor_core_gemm_source(tile_shape: tuple[int, int, int]) -> s
 
 
         @gluon.jit
-        def gemm_tensor_core_tiled_f16_f32_kernel(a_desc, b_desc, c_desc, d_desc, instr_shape_n: gl.constexpr, num_warps: gl.constexpr):
+        def {kernel_name}_kernel(a_desc, b_desc, c_desc, d_desc, instr_shape_n: gl.constexpr, num_warps: gl.constexpr):
             pid_m = gl.program_id(axis=0)
             pid_n = gl.program_id(axis=1)
             off_m = pid_m * {block_m}
@@ -333,7 +349,7 @@ def _render_tiled_tensor_core_gemm_source(tile_shape: tuple[int, int, int]) -> s
             tma.store_wait(pendings=0)
 
 
-        def run_gemm_tensor_core_tiled_f16_f32(a, b, c, d, instr_shape_n=16, num_warps=4):
+        def run_{kernel_name}(a, b, c, d, instr_shape_n=16, num_warps=4):
             expected_rank = 2
             for name, tensor in [("a", a), ("b", b), ("c", c), ("d", d)]:
                 if len(tensor.shape) != expected_rank:
@@ -345,15 +361,15 @@ def _render_tiled_tensor_core_gemm_source(tile_shape: tuple[int, int, int]) -> s
             if c.shape[0] % {block_m} != 0 or c.shape[1] % {block_n} != 0:
                 raise ValueError(f"expected output shape divisible by tile ({block_m}, {block_n}), got {{tuple(c.shape)}}")
 
-            a_layout = gl.NVMMASharedLayout.get_default_for([{block_m}, {block_k}], gl.float16)
-            b_layout = gl.NVMMASharedLayout.get_default_for([{block_k}, {block_n}], gl.float16)
+            a_layout = gl.NVMMASharedLayout.get_default_for([{block_m}, {block_k}], gl.{input_gl_dtype})
+            b_layout = gl.NVMMASharedLayout.get_default_for([{block_k}, {block_n}], gl.{input_gl_dtype})
             cd_layout = gl.NVMMASharedLayout.get_default_for([{block_m}, {block_n}], gl.float32)
             a_desc = TensorDescriptor.from_tensor(a, [{block_m}, {block_k}], a_layout)
             b_desc = TensorDescriptor.from_tensor(b, [{block_k}, {block_n}], b_layout)
             c_desc = TensorDescriptor.from_tensor(c, [{block_m}, {block_n}], cd_layout)
             d_desc = TensorDescriptor.from_tensor(d, [{block_m}, {block_n}], cd_layout)
             grid = (triton.cdiv(c.shape[0], {block_m}), triton.cdiv(c.shape[1], {block_n}))
-            gemm_tensor_core_tiled_f16_f32_kernel[grid](
+            {kernel_name}_kernel[grid](
                 a_desc,
                 b_desc,
                 c_desc,
