@@ -18,6 +18,31 @@ from simpler_setup.kernel_compiler import KernelCompiler
 
 
 DEFAULT_OUTPUT_DIR = Path("tmp/gluon-rope-local")
+ROPE_REFERENCE = (
+    "out_even = x_even * cos - x_odd * sin; "
+    "out_odd = x_even * sin + x_odd * cos"
+)
+ROPE_SWEEP_CASES = [
+    {
+        "name": "existing_smoke",
+        "batch": 1,
+        "seq": 2,
+        "head_dim": 8,
+        "seed": 0,
+        "provenance": "existing smoke correctness fixture",
+    },
+    {
+        "name": "deepseek_v4_flash_rope_head_dim64",
+        "batch": 1,
+        "seq": 4,
+        "head_dim": 64,
+        "seed": 1,
+        "provenance": (
+            "tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/"
+            "inference/config.json rope_head_dim: 64"
+        ),
+    },
+]
 
 
 def build_rope_artifact(
@@ -93,6 +118,7 @@ def run_rope_correctness(
         "kernel_name": "rope_f32",
         "artifact": _artifact_payload(artifact),
         "shape": {"batch": batch, "seq": seq, "head_dim": head_dim},
+        "reference": ROPE_REFERENCE,
         "tolerance": {"atol": atol, "rtol": rtol},
     }
 
@@ -139,6 +165,87 @@ def run_rope_correctness(
     }
 
 
+def run_rope_sweep(
+    *,
+    output_dir: str | Path | None = None,
+    arch: str = "compute_90",
+    atol: float = 1.0e-5,
+    rtol: float = 1.0e-5,
+    device: int = 0,
+    cases: list[dict] | None = None,
+    skip_reason: Callable[[], str | None] | None = None,
+) -> dict:
+    resolved_output_dir = DEFAULT_OUTPUT_DIR if output_dir is None else Path(output_dir)
+    if resolved_output_dir.is_absolute():
+        raise ValueError("--output-dir must be repo-relative")
+
+    case_specs = ROPE_SWEEP_CASES if cases is None else cases
+    case_results = []
+    counts = {"passed": 0, "failed": 0, "skipped": 0}
+
+    for index, case in enumerate(case_specs):
+        case_name = str(case["name"])
+        batch = int(case["batch"])
+        seq = int(case["seq"])
+        head_dim = int(case["head_dim"])
+        provenance = str(case["provenance"])
+        try:
+            result = run_rope_correctness(
+                output_dir=resolved_output_dir / case_name,
+                arch=arch,
+                batch=batch,
+                seq=seq,
+                head_dim=head_dim,
+                atol=atol,
+                rtol=rtol,
+                seed=int(case["seed"]),
+                device=device,
+                skip_reason=skip_reason,
+            )
+            status = result["status"]
+            counts[status] += 1
+            case_results.append(
+                _sweep_case_payload(
+                    index=index,
+                    case_name=case_name,
+                    provenance=provenance,
+                    result=result,
+                )
+            )
+        except Exception as exc:
+            counts["failed"] += 1
+            case_results.append(
+                {
+                    "case_index": index,
+                    "case_name": case_name,
+                    "shape": {"batch": batch, "seq": seq, "head_dim": head_dim},
+                    "provenance": provenance,
+                    "reference": ROPE_REFERENCE,
+                    "tolerance": {"atol": atol, "rtol": rtol},
+                    "status": "failed",
+                    "error_type": type(exc).__name__,
+                    "error": _clean_text(str(exc)),
+                }
+            )
+
+    aggregate_status = "passed"
+    if counts["failed"]:
+        aggregate_status = "failed"
+    elif counts["skipped"]:
+        aggregate_status = "skipped"
+
+    return {
+        "schema_version": 1,
+        "kernel_name": "rope_f32",
+        "status": aggregate_status,
+        "case_count": len(case_results),
+        "passed_cases": counts["passed"],
+        "failed_cases": counts["failed"],
+        "skipped_cases": counts["skipped"],
+        "cases": case_results,
+    }
+
+
 class JsonArgumentParser(argparse.ArgumentParser):
     def error(self, message: str) -> None:
         raise ValueError(message)
@@ -160,6 +267,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument("--seed", type=int, default=0)
         parser.add_argument("--device", type=int, default=0)
         parser.add_argument(
+            "--sweep",
+            action="store_true",
+            help="run the fixed review sweep instead of the single default case",
+        )
+        parser.add_argument(
             "--require-cuda",
             action="store_true",
             help="return a non-zero status when dependencies or CUDA are unavailable",
@@ -167,17 +279,26 @@ def main(argv: list[str] | None = None) -> int:
         args = parser.parse_args(raw_args)
         require_cuda = args.require_cuda
 
-        result = run_rope_correctness(
-            output_dir=args.output_dir,
-            arch=args.arch,
-            batch=args.batch,
-            seq=args.seq,
-            head_dim=args.head_dim,
-            atol=args.atol,
-            rtol=args.rtol,
-            seed=args.seed,
-            device=args.device,
-        )
+        if args.sweep:
+            result = run_rope_sweep(
+                output_dir=args.output_dir,
+                arch=args.arch,
+                atol=args.atol,
+                rtol=args.rtol,
+                device=args.device,
+            )
+        else:
+            result = run_rope_correctness(
+                output_dir=args.output_dir,
+                arch=args.arch,
+                batch=args.batch,
+                seq=args.seq,
+                head_dim=args.head_dim,
+                atol=args.atol,
+                rtol=args.rtol,
+                seed=args.seed,
+                device=args.device,
+            )
     except Exception as exc:
         result = {
             "schema_version": 1,
@@ -208,6 +329,30 @@ def _artifact_payload(artifact: GluonKernelArtifact) -> dict:
     }
 
 
+def _sweep_case_payload(
+    *,
+    index: int,
+    case_name: str,
+    provenance: str,
+    result: dict,
+) -> dict:
+    payload = {
+        "case_index": index,
+        "case_name": case_name,
+        "shape": result["shape"],
+        "provenance": provenance,
+        "reference": result["reference"],
+        "tolerance": result["tolerance"],
+        "status": result["status"],
+        "artifact": result["artifact"],
+    }
+    if "reason" in result:
+        payload["reason"] = result["reason"]
+    if "max_abs_error" in result:
+        payload["max_abs_error"] = result["max_abs_error"]
+    return payload
+
+
 def _relative_path(path: str | Path) -> str:
     path = Path(path)
     if path.is_absolute():
@@ -227,8 +372,13 @@ def _clean_text(text: str) -> str:
 def _display_command(raw_args: list[str]) -> str:
     safe_args = []
     for arg in raw_args:
-        path = Path(arg)
-        safe_args.append(path.name if path.is_absolute() else arg)
+        if "=" in arg:
+            option, value = arg.split("=", 1)
+            path = Path(value)
+            safe_args.append(f"{option}={path.name}" if path.is_absolute() else arg)
+        else:
+            path = Path(arg)
+            safe_args.append(path.name if path.is_absolute() else arg)
     command = "examples/cuda/gluon_rope_f32.py"
     if safe_args:
         command = f"{command} {shlex.join(safe_args)}"

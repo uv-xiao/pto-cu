@@ -111,8 +111,10 @@ Serving-relevant families verified from the README:
   `gluon_layernorm_h200.md` records one generated `layernorm_f32` FP32
   LayerNorm shape sweep on H200, including the existing smoke shape and
   `hidden=7168` with `DeepSeek-V4-Flash config hidden_size` provenance.
-  `gluon_rope_h200.md` records one generated `rope_f32` FP32 RoPE
-  correctness fixture on H200. `gluon_silu_h200.md` records one generated
+  `gluon_rope_h200.md` records one generated `rope_f32` FP32 RoPE shape
+  sweep on H200, including the existing smoke shape and `head_dim=64` with
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`
+  `rope_head_dim: 64` provenance. `gluon_silu_h200.md` records one generated
   `silu_f32` FP32 SiLU correctness fixture on H200. `gluon_gelu_h200.md`
   records one generated `gelu_f32` FP32 GELU correctness fixture on H200.
   `gluon_gated_silu_h200.md` records one generated `gated_silu_f32` FP32
