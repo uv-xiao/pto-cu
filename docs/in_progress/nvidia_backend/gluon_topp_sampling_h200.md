@@ -8,8 +8,9 @@ before the operator runs. The fixture avoids softmax scope in this PR.
 ## Harness
 
 The harness is `examples/cuda/gluon_topp_sampling.py`. It emits structured
-JSON for pass, skip, and fail cases. The current review gate is intentionally
-small: `rows=2, vocab=8, max_k=5, p=0.75`. The probabilities already sum to one.
+JSON for pass, skip, and fail cases. The default review gate remains
+`rows=2, vocab=8, max_k=5, p=0.75`. The broader H200 fixture is
+`rows=3, vocab=16, max_k=6, p=0.80`. The probabilities already sum to one.
 Candidates are sorted by probability descending, with equal probabilities
 ordered by lower token id first.
 
@@ -24,8 +25,8 @@ The stdout JSON includes:
   `cumulative_probabilities`;
 - GPU result `values`, `indices`, `selected_counts`, and
   `cumulative_probabilities` when CUDA runs;
-- validation flags for values, indices, selected counts, and the cumulative
-  probability boundary;
+- strict validation flags for result payload shape, values, indices, selected
+  counts, and the cumulative probability boundary;
 - explicit non-claims.
 
 ## Local Command
@@ -34,36 +35,11 @@ The stdout JSON includes:
 PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
   examples/cuda/gluon_topp_sampling.py \
   --output-dir tmp/gluon-topp-sampling-local \
-  --arch compute_90
+  --arch compute_90 --rows 3 --vocab 16 --max-k 6 --p 0.80
 ```
 
-Local result:
-
-- exit code: `0`;
-- status: passed;
-- shape: `rows=2, vocab=8, max_k=5, p=0.75`;
-- dtype: `float32`;
-- CPU golden values:
-  `[[0.3, 0.2, 0.15, 0.1, 0.0], [0.25, 0.25, 0.15, 0.1, 0.0]]`;
-- CPU golden indices: `[[1, 3, 5, 2, -1], [0, 2, 6, 4, -1]]`;
-- selected counts: `[4, 4]`;
-- cumulative probabilities: `[0.75, 0.75]`;
-- validation: values, indices, selected counts, and cumulative probability
-  boundary match;
-- max absolute error: `0.0`;
-- max cumulative probability error: `0.0`;
-- source digest:
-  `9f9919d0b209af36a7546714500c78893d11a60a630f70c69b7464d3055d3311`.
-
-Local GPU metadata:
-
-- GPU: NVIDIA A100 family;
-- compute capability: `8.0`;
-- driver: `595.71.05`;
-- CUDA toolkit: `nvcc` from CUDA 12.8;
-- Torch: `2.1.0+cu121`;
-- Torch CUDA: `12.1`;
-- Triton: `3.5.1`.
+Without CUDA tooling or a visible NVIDIA GPU it reports a skip. With
+`--require-cuda`, skipped cases return a non-zero exit status.
 
 ## H200 Command
 
@@ -92,36 +68,46 @@ REMOTE_PTO_CU=<remote-pto-cu> \
     pip install --no-build-isolation -e . ><remote-install-log> && \
     PYTHONPATH=$PWD:$PWD/python \
     .venv/bin/python examples/cuda/gluon_topp_sampling.py \
-      --output-dir tmp/gluon-topp-sampling-h200 \
-      --arch compute_90 --require-cuda'
+      --output-dir tmp/gluon-topp-shape-coverage-h200 \
+      --arch compute_90 --rows 3 --vocab 16 --max-k 6 --p 0.80 \
+      --require-cuda'
 ```
 
 H200 result:
 
 - exit code: `0`;
 - status: passed;
-- shape: `rows=2, vocab=8, max_k=5, p=0.75`;
+- shape: `rows=3, vocab=16, max_k=6, p=0.80`;
 - dtype: `float32`;
 - CPU golden values:
-  `[[0.3, 0.2, 0.15, 0.1, 0.0], [0.25, 0.25, 0.15, 0.1, 0.0]]`;
-- CPU golden indices: `[[1, 3, 5, 2, -1], [0, 2, 6, 4, -1]]`;
-- CPU golden selected counts: `[4, 4]`;
-- CPU golden cumulative probabilities: `[0.75, 0.75]`;
+  `[[0.3, 0.25, 0.15, 0.1, 0.0, 0.0],`
+  `[0.25, 0.2, 0.15, 0.15, 0.05, 0.0],`
+  `[0.22, 0.18, 0.14, 0.1, 0.09, 0.07]]`;
+- CPU golden indices:
+  `[[0, 2, 3, 1, -1, -1], [5, 1, 2, 3, 0, -1],`
+  `[8, 0, 4, 2, 5, 1]]`;
+- CPU golden selected counts: `[4, 5, 6]`;
+- CPU golden cumulative probabilities: `[0.8, 0.8, 0.8]`;
 - GPU result values:
-  `[[0.3, 0.2, 0.15, 0.1, 0.0], [0.25, 0.25, 0.15, 0.1, 0.0]]`;
-- GPU result indices: `[[1, 3, 5, 2, -1], [0, 2, 6, 4, -1]]`;
-- GPU result selected counts: `[4, 4]`;
-- GPU result cumulative probabilities: `[0.75, 0.75]`;
-- validation: values, indices, selected counts, and cumulative probabilities
-  match;
+  `[[0.3, 0.25, 0.15, 0.1, 0.0, 0.0],`
+  `[0.25, 0.2, 0.15, 0.15, 0.05, 0.0],`
+  `[0.22, 0.18, 0.14, 0.1, 0.09, 0.07]]`;
+- GPU result indices:
+  `[[0, 2, 3, 1, -1, -1], [5, 1, 2, 3, 0, -1],`
+  `[8, 0, 4, 2, 5, 1]]`;
+- GPU result selected counts: `[4, 5, 6]`;
+- GPU result cumulative probabilities: `[0.8000001, 0.8, 0.8]`;
+- validation: values shape, indices shape, selected counts shape, cumulative
+  probabilities shape, values, indices, selected counts, and cumulative
+  probabilities match;
 - max absolute error: `0.0`;
-- max cumulative probability error: `0.0`;
+- max cumulative probability error: `9.999999994736442e-08`;
 - source digest:
   `9f9919d0b209af36a7546714500c78893d11a60a630f70c69b7464d3055d3311`.
 
 ## Limitations
 
-- This is a tiny static-shape top-p correctness gate, not broad vocabulary
+- This is a bounded two-fixture top-p correctness gate, not broad vocabulary
   coverage.
 - The input probabilities are already normalized; this is not a softmax gate.
 - The implementation is correctness-focused, not performance-focused.
