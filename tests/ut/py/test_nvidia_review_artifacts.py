@@ -515,9 +515,9 @@ def test_chat_256k_needle_stream_usage_contract_docs_are_guarded():
     ).read_text(encoding="utf-8")
     required_text = [
         "vllm_deepseek_v4_chat_256k_needle_stream_usage_contract_probe.py",
-        "28157",
+        "28158",
         "stream_options.include_usage=true",
-        "PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28157",
+        "PTO_CHAT_NEEDLE_256K_STREAM_USAGE_OK_28158",
     ]
 
     assert example.is_file()
@@ -528,22 +528,28 @@ def test_chat_256k_needle_stream_usage_contract_docs_are_guarded():
     assert "returned streaming usage" in readme
     assert "strict exact output matching" in readme
     assert "PROBE_EXIT_STATUS=2" in evidence
-    assert "failure_category: chat_needle_stream_choice_shape" in evidence
-    assert "server_port: 28157" in evidence
+    assert (
+        "failure_category: chat_needle_stream_prompt_token_mismatch"
+        in evidence
+    )
+    assert "server_port: 28158" in evidence
     assert "endpoint: /v1/chat/completions" in evidence
     assert "stream: true" in evidence
     assert "event_count: 22" in evidence
     assert "content_chunk_count: 18" in evidence
-    assert "done_seen: false" in evidence
-    assert "finish_reason: null" in evidence
-    assert "usage_presence: returned" in evidence
-    assert "usage_accounting_checks: not_evaluated" in evidence
+    assert "done_seen: true" in evidence
+    assert "finish_reason: stop" in evidence
+    assert "normalized_output_equals_expected: true" in evidence
+    assert "expected_answer_exact: passed" in evidence
+    assert "usage_presence: passed" in evidence
+    assert "usage_prompt_tokens_match: not_available" in evidence
+    assert "usage.prompt_tokens: 255797" in evidence
+    assert "usage.completion_tokens: 20" in evidence
+    assert "usage.total_tokens: 255817" in evidence
     assert "choice_count: 0" in evidence
     assert "usage_keys: completion_tokens,prompt_tokens,total_tokens" in evidence
     assert "cleanup.status: passed" in evidence
     assert "remaining_process_group_pids: []" in evidence
-    assert "normalized_output_equals_expected: not_evaluated" in evidence
-    assert "expected_answer_exact: not_evaluated" in evidence
     assert "raw prompt text is not recorded" in evidence
     assert "raw request payload is not recorded" in evidence
     assert "raw generated text is not recorded" in evidence
@@ -552,11 +558,27 @@ def test_chat_256k_needle_stream_usage_contract_docs_are_guarded():
     assert "logprob values are not recorded" in evidence
     assert "generated-text digests are not recorded" in evidence
     assert "private absolute paths are not recorded" in evidence
-    assert "chat_needle_stream_choice_shape" in readme
+    assert "chat_needle_stream_prompt_token_mismatch" in readme
     assert (
         "local_only_vllm_chat_256k_needle_stream_usage_contract: failed"
         in readiness
     )
+    status_block_match = re.search(r"```text\n(.*?)\n```", readiness, re.S)
+    assert status_block_match is not None
+    status_block = status_block_match.group(1)
+    assert (
+        "local_only_vllm_chat_256k_needle_stream_usage_contract: failed "
+        "under recorded\n"
+        "  262144-token boundary with stream_options.include_usage=true; "
+        "final\n"
+        "  zero-choice usage chunk accepted and exact output passed, but "
+        "usage\n"
+        "  accounting failed because usage_prompt_tokens_match was "
+        "not_available\n"
+        "  (chat_needle_stream_prompt_token_mismatch)"
+        in status_block
+    )
+    assert "chat_needle_stream_choice_shape" not in status_block
     assert (
         "vllm_remote_chat_256k_needle_stream_usage_contract_probe.md"
         in readiness
