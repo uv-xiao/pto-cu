@@ -295,15 +295,18 @@ non-zero exit status. H200 evidence is recorded in
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/gluon_gelu_f32.py \
-  --output-dir tmp/gluon-gelu-local \
-  --n 32 --arch compute_90
+  --output-dir tmp/gluon-gelu-shape-coverage-local \
+  --sweep --arch compute_90
 ```
 
 This generates the `gelu_f32` Gluon source and checks FP32
-`0.5 * x * (1.0 + erf(x / sqrt(2.0)))` correctness for one bounded vector
-shape. Without CUDA tooling, a visible NVIDIA GPU, or Gluon `gl.erf`, it
-reports a skip; with `--require-cuda`, the same skip returns a non-zero exit
-status. H200 evidence is recorded in
+`0.5 * x * (1.0 + erf(x / sqrt(2.0)))` correctness for a small fixed sweep:
+the existing `n=32` smoke case and a bounded `n=2048` case with
+`tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`
+`moe_inter_dim: 2048` and `swiglu_limit: 10.0` provenance as standalone GELU
+activation-width evidence. Without CUDA tooling, a visible NVIDIA GPU, or
+Gluon `gl.erf`, it reports skips; with `--require-cuda`, skipped or failed
+cases return a non-zero exit status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_gelu_h200.md`.
 
 ## Gluon FP32 Gated SiLU

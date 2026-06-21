@@ -120,7 +120,11 @@ Serving-relevant families verified from the README:
   from
   `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`
   as standalone SiLU gate-activation-width evidence. `gluon_gelu_h200.md`
-  records one generated `gelu_f32` FP32 GELU correctness fixture on H200.
+  records one generated `gelu_f32` FP32 GELU correctness sweep on H200,
+  including the existing smoke shape and `moe_inter_dim: 2048` with
+  `swiglu_limit: 10.0` provenance from
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`
+  as standalone GELU activation-width evidence.
   `gluon_gated_silu_h200.md` records one generated `gated_silu_f32` FP32
   gated SiLU correctness sweep on H200, including the existing smoke shape
   and `moe_inter_dim: 2048` with `swiglu_limit: 10.0` provenance from
@@ -141,9 +145,11 @@ Serving-relevant families verified from the README:
   semantic correctness, GELU coverage, gated activation coverage, broader
   activation coverage, fused attention evidence, KV-cache integration
   evidence, throughput, latency, or vLLM/simpler-nv integration evidence. The
-  GELU fixture is not FlashInfer integration evidence, gated activation
-  coverage, fused attention evidence, KV-cache integration evidence,
-  throughput, latency, or vLLM/simpler-nv integration evidence.
+  GELU sweep is not FlashInfer integration evidence, production serving
+  readiness, DeepSeek semantic correctness, SiLU coverage, gated activation
+  coverage, broader activation coverage, fused attention evidence, KV-cache
+  integration evidence, throughput, latency, or vLLM/simpler-nv integration
+  evidence.
   The gated SiLU fixture is not FlashInfer integration evidence, fused
   attention evidence, KV-cache integration evidence, throughput, latency,
   DeepSeek semantic correctness, or vLLM/simpler-nv integration evidence.
