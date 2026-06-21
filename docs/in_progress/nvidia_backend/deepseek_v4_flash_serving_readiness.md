@@ -1408,8 +1408,10 @@ local_only_vllm_chat_256k_needle_stream_repeat: passed under recorded
 local_only_vllm_chat_256k_needle_stream_position_sweep: passed under recorded
   262144-token boundary and one server lifecycle
 local_only_vllm_chat_256k_needle_stream_usage_contract: failed under recorded
-  262144-token boundary with stream_options.include_usage=true after a final
-  usage-bearing zero-choice event triggered chat_needle_stream_choice_shape
+  262144-token boundary with stream_options.include_usage=true; final
+  zero-choice usage chunk accepted and exact output passed, but usage
+  accounting failed because usage_prompt_tokens_match was not_available
+  (chat_needle_stream_prompt_token_mismatch)
 local_only_vllm_chat_256k_needle_stream_truncated_failure: failed under
   recorded 262144-token boundary with max_tokens=1 as expected
 one_token_inference_smoke: passed under recorded 4096-token boundary

@@ -563,6 +563,22 @@ def test_chat_256k_needle_stream_usage_contract_docs_are_guarded():
         "local_only_vllm_chat_256k_needle_stream_usage_contract: failed"
         in readiness
     )
+    status_block_match = re.search(r"```text\n(.*?)\n```", readiness, re.S)
+    assert status_block_match is not None
+    status_block = status_block_match.group(1)
+    assert (
+        "local_only_vllm_chat_256k_needle_stream_usage_contract: failed "
+        "under recorded\n"
+        "  262144-token boundary with stream_options.include_usage=true; "
+        "final\n"
+        "  zero-choice usage chunk accepted and exact output passed, but "
+        "usage\n"
+        "  accounting failed because usage_prompt_tokens_match was "
+        "not_available\n"
+        "  (chat_needle_stream_prompt_token_mismatch)"
+        in status_block
+    )
+    assert "chat_needle_stream_choice_shape" not in status_block
     assert (
         "vllm_remote_chat_256k_needle_stream_usage_contract_probe.md"
         in readiness
