@@ -4,51 +4,39 @@ This note records correctness evidence for the generated Gluon `silu_f32`
 primitive. The generated kernel computes the FP32 SiLU reference:
 
 ```text
-out = x * sigmoid(x)
+out = x / (1.0 + exp(-x))
 ```
 
-for a bounded rank-1 input tensor.
+for bounded rank-1 input tensors. This is equivalent to
+`out = x * sigmoid(x)`. This is standalone SiLU activation correctness
+evidence only.
 
 ## Harness
 
 The harness is `examples/cuda/gluon_silu_f32.py`. It emits structured JSON for
-pass, skip, and fail cases. The payload records:
+pass, skip, and fail cases. The default command still runs one case with
+`--n 32`. The `--sweep` path emits aggregate JSON with:
 
-- `kernel_name`, `status`, and `schema_version`;
+- `schema_version: 1`, aggregate `status`, and pass/fail/skip counts;
+- per-case shape, provenance, reference formula, tolerance, and status;
 - generated artifact paths and source digest;
-- vector length and tolerance;
 - maximum absolute error when correctness is measured.
 
 The default output directory is repo-relative `tmp/gluon-silu-local`.
-Absolute `--output-dir` values are rejected so stdout JSON does not leak
-private local paths. The harness suppresses local PyTorch NumPy ABI warning
-noise during skip checks.
+Absolute `--output-dir` values are rejected for both the default path and the
+sweep path so stdout JSON does not leak private local paths. Command display
+also sanitizes equals-form absolute path arguments such as
+`--output-dir=/tmp/private-output`.
 
-## Local Command
+## Sweep Cases
 
-```bash
-PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
-  examples/cuda/gluon_silu_f32.py \
-  --output-dir tmp/gluon-silu-local \
-  --n 32 --arch compute_90
-```
+- Existing smoke fixture: `n=32`, provenance
+  `existing smoke correctness fixture`.
+- DeepSeek-V4-Flash representative standalone SiLU width: `n=2048`, with
+  `tmp/model-artifacts/deepseek-ai/DeepSeek-V4-Flash/inference/config.json`
+  `moe_inter_dim: 2048` and `swiglu_limit: 10.0` provenance.
 
-Local result:
-
-- exit code: `0`;
-- status: passed;
-- shape: `n=32`;
-- tolerance: `atol=1e-5`, `rtol=1e-5`;
-- max absolute error: `1.1920928955078125e-07`;
-- source digest:
-  `760590d7df8971d35dc8885be5aeeb2b4a7cf2cb4340ae604a7d7df84ad31913`.
-
-Local GPU metadata:
-
-- GPU: NVIDIA A100 family;
-- compute capability: `8.0`;
-- driver: `595.71.05`;
-- CUDA toolkit: `nvcc` from CUDA 12.8.
+The `n=2048` case passed on H200, so no smaller passing boundary was needed.
 
 ## H200 Command
 
@@ -58,14 +46,16 @@ Gluon Python environment. The committed command keeps those paths sanitized.
 Execution details:
 
 - synced checkout: `<remote-pto-cu>`;
+- source commit before this branch commit: `8a0bf6cdc7b2929910f1574005b806508ef40986`
+  plus the local SiLU sweep diff synced by the wrapper;
 - python environment: <remote-gluon-venv>;
 - GPU: NVIDIA H200 NVL;
 - compute capability: `9.0`;
 - driver: `580.126.20`;
 - CUDA toolkit: `<cuda-toolkit>`, CUDA 12.8 compiler build;
-- Torch: `2.8.0+cu128`;
-- Torch CUDA: `12.8`;
-- Triton: `3.7.1`.
+- Torch: `2.11.0+cu130`;
+- Torch CUDA: `13.0`;
+- Triton: `3.6.0`.
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
@@ -73,24 +63,35 @@ REMOTE_PTO_CU=<remote-pto-cu> \
   bash -lc 'PYTHONPATH=$PWD:$PWD/python \
     <remote-gluon-venv>/bin/python \
       examples/cuda/gluon_silu_f32.py \
-      --output-dir tmp/gluon-silu-h200 \
-      --n 32 \
-      --require-cuda --device 0 --arch compute_90'
+      --output-dir tmp/gluon-silu-shape-coverage-h200 \
+      --sweep --require-cuda --device 0 --arch compute_90'
 ```
 
-H200 result:
+H200 aggregate result:
 
 - exit code: `0`;
 - status: passed;
-- shape: `n=32`;
-- tolerance: `atol=1e-5`, `rtol=1e-5`;
-- max absolute error: `1.1920928955078125e-07`;
+- case count: `2`;
+- passed cases: `2`;
+- failed cases: `0`;
+- skipped cases: `0`;
+- max absolute error: `4.76837158203125e-07` across the sweep;
 - source digest:
   `760590d7df8971d35dc8885be5aeeb2b4a7cf2cb4340ae604a7d7df84ad31913`.
 
+Per-case H200 result:
+
+| Case | Shape | Status | Max absolute error |
+| --- | --- | --- | --- |
+| existing smoke | `n=32` | passed | `1.1920928955078125e-07` |
+| DeepSeek-V4-Flash representative | `n=2048` | passed | `4.76837158203125e-07` |
+
 ## Limitations
 
-- The evidence covers one bounded FP32 SiLU vector shape.
+- The evidence covers two bounded FP32 SiLU vector shapes.
+- The `n=2048` case is standalone SiLU gate-activation-width evidence tied to
+  DeepSeek-V4-Flash config fields; it does not execute a gated activation
+  kernel or model graph.
 - The implementation is correctness-focused, not performance-focused.
 - The remote evidence used tree sync plus a preserved remote Gluon venv rather
   than a venv created inside the fresh synced checkout.
@@ -100,8 +101,9 @@ H200 result:
 - This is not FlashInfer integration evidence.
 - This is not production serving readiness.
 - This is not DeepSeek semantic correctness.
-- This is not GELU coverage.
 - This is not gated activation coverage.
+- This is not GELU coverage.
+- This is not broader activation coverage.
 - This is not Gemma-style fused norm coverage.
 - This is not fused attention evidence.
 - This is not KV-cache integration evidence.
@@ -110,6 +112,6 @@ H200 result:
 
 ## Follow-Up Gaps
 
-- Add GELU and gated activation fixtures in separate activation slices.
-- Keep Gemma-style fused norm, fused attention, KV-cache mutation, paged
-  attention, and serving integration evidence in their own bounded branches.
+- Keep gated activation, GELU, broader activation, fused attention, KV-cache
+  mutation, paged attention, and serving integration evidence in their own
+  bounded branches.

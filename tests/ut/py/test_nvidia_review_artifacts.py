@@ -2336,10 +2336,18 @@ def test_gluon_silu_h200_evidence_is_review_safe():
     for required in [
         "# Gluon SiLU FP32 H200 Correctness",
         "silu_f32",
+        "out = x / (1.0 + exp(-x))",
         "out = x * sigmoid(x)",
+        "--sweep --require-cuda --device 0 --arch compute_90",
         "--n 32",
+        "n=2048",
+        "moe_inter_dim: 2048",
+        "swiglu_limit: 10.0",
         "--require-cuda --device 0 --arch compute_90",
         "status: passed",
+        "passed cases: `2`",
+        "failed cases: `0`",
+        "skipped cases: `0`",
         "max absolute error:",
         "python environment: <remote-gluon-venv>",
         "REMOTE_PTO_CU=<remote-pto-cu>",
@@ -2348,6 +2356,7 @@ def test_gluon_silu_h200_evidence_is_review_safe():
         "not DeepSeek semantic correctness",
         "not GELU coverage",
         "not gated activation coverage",
+        "not broader activation coverage",
         "not Gemma-style fused norm coverage",
         "not fused attention evidence",
         "not KV-cache integration evidence",
@@ -2366,6 +2375,10 @@ def test_gluon_silu_h200_evidence_is_review_safe():
     checklist_text = checklist.read_text(encoding="utf-8")
     assert "gluon_silu_h200.md" in checklist_text
     assert "SiLU" in checklist_text
+    assert "silu_f32` FP32 SiLU correctness sweep" in checklist_text
+    assert "moe_inter_dim: 2048" in checklist_text
+    assert "swiglu_limit: 10.0" in checklist_text
+    assert "standalone SiLU gate-activation-width evidence" in checklist_text
     assert "GELU" in checklist_text
     assert "gated activation" in checklist_text
     assert "gluon_gated_silu_h200.md" in checklist_text
@@ -2374,6 +2387,9 @@ def test_gluon_silu_h200_evidence_is_review_safe():
     status_text = status.read_text(encoding="utf-8")
     assert "gluon_silu_h200.md" in status_text
     assert "generated Gluon FP32 SiLU fixture" in status_text
+    assert "SiLU fixture shape sweep" in status_text
+    assert "moe_inter_dim: 2048" in status_text
+    assert "swiglu_limit: 10.0" in status_text
     assert "not FlashInfer integration evidence" in status_text
 
 
