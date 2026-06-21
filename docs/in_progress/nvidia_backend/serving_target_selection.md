@@ -65,13 +65,14 @@ The first serving child slice should add a local simpler-nv executor shim for
 4. Add a local skip-safe test for CLI/config wiring and a remote H200 command
    only after the local serving loop can launch the simpler CUDA kernel.
 
-The next PR-sized synthetic serving step is to extend that shim from
-`/v1/completions` to local `/v1/chat/completions` request/response coverage.
-That chat fixture should reuse the same synthetic simpler-nv engine, accept a
-bounded `messages` list with at least one user content entry, and return a
-chat-completions-shaped assistant message with PTO debug fields. This remains
-synthetic local fixture evidence unless the actual cloned `pypto-serving`
-source route is present and inspected.
+The shim has since been extended from `/v1/completions` to
+`/v1/chat/completions` request/response coverage. The chat fixture reuses the
+same synthetic simpler-nv engine, accepts a bounded `messages` list with at
+least one user content entry, and returns a chat-completions-shaped assistant
+message with PTO debug fields. When the cloned `pypto-serving` checkout is
+present, the source-route fixture imports the actual `create_serving_app(...)`
+and exercises the real `/v1/chat/completions` route; this is still synthetic
+adapter contract evidence, not DeepSeek serving evidence.
 
 ## Non-Claims
 

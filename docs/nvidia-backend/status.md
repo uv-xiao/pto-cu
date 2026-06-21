@@ -31,9 +31,9 @@ intentionally too-short output budget.
 
 `pypto-serving` is not yet the real DeepSeek path. The checked-in synthetic
 simpler-nv adapter now exercises the actual cloned `pypto-serving`
-`create_serving_app` / `ServingServer` route on H200 with a CUDA seed and HTTP
-200, but that is source-route contract evidence for the synthetic adapter, not
-real DeepSeek serving.
+`create_serving_app` / `ServingServer` completion and chat routes on H200 with
+a CUDA seed and HTTP 200, but that is source-route contract evidence for the
+synthetic adapter, not real DeepSeek serving.
 
 Evidence:
 
