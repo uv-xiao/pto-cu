@@ -26,6 +26,7 @@ _SUPPORTED_KERNELS = {
     "flashattention_fwd_f32",
     "moe_expert_affine_f32",
     "rmsnorm_f32",
+    "layernorm_f32",
     "rope_f32",
 }
 
@@ -126,6 +127,8 @@ def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
         return _render_moe_expert_affine_source()
     if kernel_name == "rmsnorm_f32":
         return _render_rmsnorm_f32_source()
+    if kernel_name == "layernorm_f32":
+        return _render_layernorm_f32_source()
     if kernel_name == "rope_f32":
         return _render_rope_f32_source()
     raise AssertionError(f"unhandled Gluon kernel: {kernel_name}")
@@ -473,6 +476,60 @@ def _render_rmsnorm_f32_source() -> str:
             rmsnorm_f32_kernel[(x.shape[0],)](
                 x,
                 weight,
+                out,
+                x.shape[0],
+                x.shape[1],
+                eps,
+                num_warps=num_warps,
+            )
+        """
+    ).lstrip()
+
+
+def _render_layernorm_f32_source() -> str:
+    return dedent(
+        """
+        from triton.experimental import gluon
+        from triton.experimental.gluon import language as gl
+
+
+        @gluon.jit
+        def layernorm_f32_kernel(x_ptr, weight_ptr, bias_ptr, out_ptr, rows: gl.constexpr, hidden: gl.constexpr, eps: gl.constexpr):
+            row = gl.program_id(0)
+            mean = 0.0
+            for col in range(0, hidden):
+                x = gl.load(x_ptr + row * hidden + col)
+                mean += x
+            mean = mean / hidden
+
+            var = 0.0
+            for col in range(0, hidden):
+                x = gl.load(x_ptr + row * hidden + col)
+                centered = x - mean
+                var += centered * centered
+            var = var / hidden
+            inv_std = gl.rsqrt(var + eps)
+
+            for col in range(0, hidden):
+                x = gl.load(x_ptr + row * hidden + col)
+                weight = gl.load(weight_ptr + col)
+                bias = gl.load(bias_ptr + col)
+                gl.store(out_ptr + row * hidden + col, (x - mean) * inv_std * weight + bias)
+
+
+        def run_layernorm_f32(x, weight, bias, out, eps=1.0e-5, num_warps=4):
+            expected_rank = 2
+            if len(x.shape) != expected_rank or len(out.shape) != expected_rank:
+                raise ValueError(f"expected x/out to be rank-2, got x={tuple(x.shape)}, out={tuple(out.shape)}")
+            if len(weight.shape) != 1 or len(bias.shape) != 1:
+                raise ValueError(f"expected weight/bias to be rank-1, got weight={tuple(weight.shape)}, bias={tuple(bias.shape)}")
+            if out.shape != x.shape or weight.numel() != x.shape[1] or bias.numel() != x.shape[1]:
+                raise ValueError(f"expected out shape to match x and weight/bias lengths to match hidden, got x={tuple(x.shape)}, weight={tuple(weight.shape)}, bias={tuple(bias.shape)}, out={tuple(out.shape)}")
+
+            layernorm_f32_kernel[(x.shape[0],)](
+                x,
+                weight,
+                bias,
                 out,
                 x.shape[0],
                 x.shape[1],
