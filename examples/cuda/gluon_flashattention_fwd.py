@@ -19,18 +19,36 @@ from simpler_setup.kernel_compiler import KernelCompiler
 DEFAULT_OUTPUT_DIR = Path("tmp/gluon-flashattention-local")
 FLASHATTENTION_TILE = (32, 32, 32)
 FLASHATTENTION_REFERENCE = "softmax((q @ k.T) * scale) @ v"
+FLASHATTENTION_SWEEP_CASES = [
+    {
+        "name": "existing_32x32x32",
+        "tile_shape": (32, 32, 32),
+        "seed": 0,
+        "provenance": "existing 32x32x32 correctness fixture",
+    },
+    {
+        "name": "q16_k64_head_dim64",
+        "tile_shape": (16, 64, 64),
+        "seed": 1,
+        "provenance": (
+            "common serving attention head dimension; selected after "
+            "32x32x64 failed H200 correctness"
+        ),
+    },
+]
 
 
 def build_flashattention_artifact(
     *,
     output_dir: str | Path | None = None,
     arch: str = "compute_90",
+    tile_shape: tuple[int, int, int] = FLASHATTENTION_TILE,
 ) -> GluonKernelArtifact:
     return KernelCompiler(platform="cuda").generate_gluon_kernel(
         "flashattention_fwd_f32",
         output_dir=DEFAULT_OUTPUT_DIR if output_dir is None else output_dir,
         arch=arch,
-        tile_shape=FLASHATTENTION_TILE,
+        tile_shape=tile_shape,
     )
 
 
@@ -77,6 +95,7 @@ def run_flashattention_correctness(
     *,
     output_dir: str | Path | None = None,
     arch: str = "compute_90",
+    tile_shape: tuple[int, int, int] = FLASHATTENTION_TILE,
     atol: float = 1e-3,
     rtol: float = 1e-2,
     seed: int = 0,
@@ -86,7 +105,11 @@ def run_flashattention_correctness(
     if resolved_output_dir.is_absolute():
         raise ValueError("--output-dir must be repo-relative")
 
-    artifact = build_flashattention_artifact(output_dir=resolved_output_dir, arch=arch)
+    artifact = build_flashattention_artifact(
+        output_dir=resolved_output_dir,
+        arch=arch,
+        tile_shape=tile_shape,
+    )
     seqlen_q, seqlen_k, head_dim = artifact.tile_shape
     result = {
         "schema_version": 1,
@@ -146,6 +169,86 @@ def run_flashattention_correctness(
     }
 
 
+def run_flashattention_sweep(
+    *,
+    output_dir: str | Path | None = None,
+    arch: str = "compute_90",
+    atol: float = 1e-3,
+    rtol: float = 1e-2,
+    cases: list[dict] | None = None,
+    skip_reason: Callable[[], str | None] | None = None,
+) -> dict:
+    resolved_output_dir = DEFAULT_OUTPUT_DIR if output_dir is None else Path(output_dir)
+    if resolved_output_dir.is_absolute():
+        raise ValueError("--output-dir must be repo-relative")
+
+    case_specs = FLASHATTENTION_SWEEP_CASES if cases is None else cases
+    case_results = []
+    counts = {"passed": 0, "failed": 0, "skipped": 0}
+
+    for index, case in enumerate(case_specs):
+        case_name = str(case["name"])
+        tile_shape = tuple(int(value) for value in case["tile_shape"])
+        provenance = str(case["provenance"])
+        try:
+            result = run_flashattention_correctness(
+                output_dir=resolved_output_dir / case_name,
+                arch=arch,
+                tile_shape=tile_shape,
+                atol=atol,
+                rtol=rtol,
+                seed=int(case["seed"]),
+                skip_reason=skip_reason,
+            )
+            status = result["status"]
+            counts[status] += 1
+            case_results.append(
+                _sweep_case_payload(
+                    index=index,
+                    case_name=case_name,
+                    provenance=provenance,
+                    result=result,
+                )
+            )
+        except Exception as exc:
+            counts["failed"] += 1
+            seqlen_q, seqlen_k, head_dim = tile_shape
+            case_results.append(
+                {
+                    "case_index": index,
+                    "case_name": case_name,
+                    "shape": {
+                        "seqlen_q": seqlen_q,
+                        "seqlen_k": seqlen_k,
+                        "head_dim": head_dim,
+                    },
+                    "provenance": provenance,
+                    "reference": FLASHATTENTION_REFERENCE,
+                    "tolerance": {"atol": atol, "rtol": rtol},
+                    "status": "failed",
+                    "error_type": type(exc).__name__,
+                    "error": _clean_text(str(exc)),
+                }
+            )
+
+    aggregate_status = "passed"
+    if counts["failed"]:
+        aggregate_status = "failed"
+    elif counts["skipped"]:
+        aggregate_status = "skipped"
+
+    return {
+        "schema_version": 1,
+        "kernel_name": "flashattention_fwd_f32",
+        "status": aggregate_status,
+        "case_count": len(case_results),
+        "passed_cases": counts["passed"],
+        "failed_cases": counts["failed"],
+        "skipped_cases": counts["skipped"],
+        "cases": case_results,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     raw_args = list(sys.argv[1:] if argv is None else argv)
     require_cuda = False
@@ -158,6 +261,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument("--rtol", type=float, default=1e-2)
         parser.add_argument("--seed", type=int, default=0)
         parser.add_argument(
+            "--sweep",
+            action="store_true",
+            help="run the fixed review sweep instead of the single default case",
+        )
+        parser.add_argument(
             "--require-cuda",
             action="store_true",
             help="return a non-zero status when dependencies or CUDA are unavailable",
@@ -165,13 +273,21 @@ def main(argv: list[str] | None = None) -> int:
         args = parser.parse_args(raw_args)
         require_cuda = args.require_cuda
 
-        result = run_flashattention_correctness(
-            output_dir=args.output_dir,
-            arch=args.arch,
-            atol=args.atol,
-            rtol=args.rtol,
-            seed=args.seed,
-        )
+        if args.sweep:
+            result = run_flashattention_sweep(
+                output_dir=args.output_dir,
+                arch=args.arch,
+                atol=args.atol,
+                rtol=args.rtol,
+            )
+        else:
+            result = run_flashattention_correctness(
+                output_dir=args.output_dir,
+                arch=args.arch,
+                atol=args.atol,
+                rtol=args.rtol,
+                seed=args.seed,
+            )
     except Exception as exc:
         result = {
             "schema_version": 1,
@@ -200,6 +316,30 @@ def _artifact_payload(artifact: GluonKernelArtifact) -> dict:
         "source_sha256": artifact.source_sha256,
         "tile_shape": list(artifact.tile_shape),
     }
+
+
+def _sweep_case_payload(
+    *,
+    index: int,
+    case_name: str,
+    provenance: str,
+    result: dict,
+) -> dict:
+    payload = {
+        "case_index": index,
+        "case_name": case_name,
+        "shape": result["shape"],
+        "provenance": provenance,
+        "reference": result["reference"],
+        "tolerance": result["tolerance"],
+        "status": result["status"],
+        "artifact": result["artifact"],
+    }
+    if "reason" in result:
+        payload["reason"] = result["reason"]
+    if "max_abs_error" in result:
+        payload["max_abs_error"] = result["max_abs_error"]
+    return payload
 
 
 def _relative_path(path: str | Path) -> str:

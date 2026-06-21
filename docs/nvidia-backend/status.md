@@ -63,15 +63,17 @@ MoE, FP8/FP4, communication, RoPE, normalization, activation, H200, and
 decode/prefill families to current PTO evidence and next milestones. This is
 not FlashInfer integration evidence and does not change the current serving
 boundary.
-The checklist includes a generated Gluon FlashAttention correctness harness
-on H200, recorded in
-`docs/in_progress/nvidia_backend/gluon_flashattention_h200.md`. Its stdout
-contract now includes `schema_version`, repo-relative artifact paths, absolute
-output-directory rejection, and sanitized error text. This remains
-single-tile FP32 attention correctness evidence, not FlashInfer integration
-evidence, production serving readiness, DeepSeek semantic correctness,
-multi-tile attention coverage, fused attention integration, KV-cache
-integration, throughput, latency, or simpler-nv/vLLM integration evidence.
+The checklist includes a generated Gluon FlashAttention shape sweep on H200,
+recorded in `docs/in_progress/nvidia_backend/gluon_flashattention_h200.md`.
+Its stdout contract now includes `schema_version`, aggregate status, per-case
+provenance, repo-relative artifact paths, absolute output-directory rejection,
+and sanitized error text. The sweep keeps the existing `32x32x32` case and
+adds a bounded `head_dim=64` case selected after `32x32x64 failed H200
+correctness`. This remains single-tile FP32 attention correctness evidence,
+not FlashInfer integration evidence, production serving readiness, DeepSeek
+semantic correctness, multi-tile attention coverage, fused attention
+integration, KV-cache integration, throughput, latency, or simpler-nv/vLLM
+integration evidence.
 The checklist now includes a generated Gluon FP32 RMSNorm shape sweep on H200
 for the normalization sub-slice, recorded in
 `docs/in_progress/nvidia_backend/gluon_rmsnorm_h200.md`. The sweep includes

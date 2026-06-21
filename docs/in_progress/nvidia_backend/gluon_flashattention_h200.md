@@ -1,7 +1,8 @@
 # Gluon FlashAttention H200 Correctness
 
-This note tracks the first `gluon-gen` FlashAttention forward correctness
-milestone. It is correctness evidence, not performance evidence.
+This note tracks the `gluon-gen` FlashAttention forward correctness
+shape-coverage milestone. It is correctness evidence, not performance
+evidence.
 
 ## Current Contract
 
@@ -17,11 +18,25 @@ The generated source uses Gluon `dot_fma` with explicit `BlockedLayout` and
 - PyTorch reference expression: `softmax((q @ k.T) * scale) @ v`
 
 The harness at `examples/cuda/gluon_flashattention_fwd.py` builds the generated
-artifact, loads it, and runs one `32x32x32` FP32 correctness case against
-PyTorch when CUDA and a Gluon build with `dot_fma` support are available.
-The stdout JSON uses `schema_version: 1`, keeps artifact paths repo-relative,
-rejects absolute `--output-dir` values, and sanitizes exception text so
-private absolute paths are not recorded.
+artifact, loads it, and runs FP32 correctness cases against PyTorch when CUDA
+and a Gluon build with `dot_fma` support are available. The default path still
+runs one `32x32x32` single-tile case. The `--sweep` path emits aggregate
+structured JSON with `schema_version: 1`, aggregate status and case counts,
+and per-case shape, provenance, artifact metadata, status, and max error when
+run. Artifact paths are repo-relative, absolute `--output-dir` values are
+rejected, and exception text is sanitized so private absolute paths are not
+recorded.
+
+The sweep includes:
+
+- `existing_32x32x32`: `seqlen_q=32`, `seqlen_k=32`, `head_dim=32`;
+- `q16_k64_head_dim64`: `seqlen_q=16`, `seqlen_k=64`, `head_dim=64`,
+  provenance `common serving attention head dimension; selected after
+  32x32x64 failed H200 correctness`.
+
+The `head_dim=64` case uses the smallest bounded H200-passing representative
+shape found during this slice. The narrower `32x32x64` candidate generated and
+ran, but failed H200 correctness, so it is not promoted as passing evidence.
 
 ## H200 Evidence
 
@@ -35,8 +50,8 @@ REMOTE_PTO_CU=<remote-pto-cu> \
   bash -lc 'PYTHONPATH=$PWD:$PWD/python \
     <remote-gluon-venv>/bin/python \
       examples/cuda/gluon_flashattention_fwd.py \
-      --output-dir tmp/gluon-flashattention-review-hygiene-h200 \
-      --require-cuda --arch compute_90'
+      --output-dir tmp/gluon-flashattention-shape-coverage-h200 \
+      --sweep --require-cuda --arch compute_90'
 ```
 
 Distilled result:
@@ -44,23 +59,37 @@ Distilled result:
 ```text
 schema_version: 1
 status: passed
+case_count: 2
+passed_cases: 2
+failed_cases: 0
+skipped_cases: 0
 shape: seqlen_q=32, seqlen_k=32, head_dim=32
+provenance: existing 32x32x32 correctness fixture
 tolerance: atol=0.001, rtol=0.01
 max_abs_error: 2.384185791015625e-07
 artifact: arch=compute_90, compiler_role=pto-isa-replacement
 source_sha256: 8be2d57903aa58cfb3e2f58eb583dbfdc9f84611b85b90318a3ae68e642330fd
-artifact paths are repo-relative
 tile_shape: 32x32x32
+shape: seqlen_q=16, seqlen_k=64, head_dim=64
+provenance: common serving attention head dimension; selected after
+  32x32x64 failed H200 correctness
+tolerance: atol=0.001, rtol=0.01
+max_abs_error: 2.682209014892578e-07
+artifact: arch=compute_90, compiler_role=pto-isa-replacement
+source_sha256: 1078903f5b4aae7f524685e39b5898f8bc9a68e1732250c3b77f1a84b28c3685
+tile_shape: 16x64x64
+artifact paths are repo-relative
+per-case artifact paths are repo-relative
 machine class: H200
 private absolute paths are not recorded
 ```
 
 ## Boundary
 
-This milestone covers single-tile FlashAttention correctness only. It is not
-benchmark evidence and does not cover block streaming, causal masking,
-varlen/page tables, persistent scheduling, MoE, distributed communication,
-serving, or DeepSeek integration.
+This milestone covers a small single-tile FlashAttention correctness sweep
+only. It is not benchmark evidence and does not cover block streaming, causal
+masking, varlen/page tables, persistent scheduling, MoE, distributed
+communication, serving, or DeepSeek integration.
 
 Non-claims:
 

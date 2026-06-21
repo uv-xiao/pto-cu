@@ -494,6 +494,75 @@ def test_gluon_flashattention_example_uses_repo_relative_default_output_dir(
     assert str(tmp_path) not in json.dumps(result)
 
 
+def test_gluon_flashattention_sweep_aggregates_shape_cases(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    assert hasattr(example, "run_flashattention_sweep")
+
+    result = example.run_flashattention_sweep(
+        output_dir=Path("tmp/gluon-flashattention-sweep"),
+        arch="compute_90",
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["schema_version"] == 1
+    assert result["kernel_name"] == "flashattention_fwd_f32"
+    assert result["status"] == "skipped"
+    assert result["case_count"] == len(example.FLASHATTENTION_SWEEP_CASES)
+    assert result["passed_cases"] == 0
+    assert result["failed_cases"] == 0
+    assert result["skipped_cases"] == len(example.FLASHATTENTION_SWEEP_CASES)
+
+    shapes = [case["shape"] for case in result["cases"]]
+    assert {"seqlen_q": 32, "seqlen_k": 32, "head_dim": 32} in shapes
+    assert {"seqlen_q": 16, "seqlen_k": 64, "head_dim": 64} in shapes
+
+    case = result["cases"][0]
+    assert case["case_index"] == 0
+    assert case["case_name"]
+    assert case["provenance"]
+    assert case["reference"] == example.FLASHATTENTION_REFERENCE
+    assert case["tolerance"] == {"atol": 0.001, "rtol": 0.01}
+    assert case["status"] == "skipped"
+    assert case["reason"] == "torch.cuda is not available"
+    assert case["artifact"]["source_sha256"]
+    assert not Path(case["artifact"]["source_path"]).is_absolute()
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_gluon_flashattention_sweep_cli_requires_cuda_on_aggregate_skip(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(example, "flashattention_skip_reason", lambda: "missing CUDA")
+
+    try:
+        code = example.main(
+            [
+                "--output-dir",
+                "tmp/gluon-flashattention-sweep",
+                "--arch",
+                "compute_90",
+                "--sweep",
+                "--require-cuda",
+            ]
+        )
+    except SystemExit as exc:
+        raise AssertionError("--sweep should be accepted") from exc
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "skipped"
+    assert payload["skipped_cases"] == len(example.FLASHATTENTION_SWEEP_CASES)
+
+
 def test_gluon_flashattention_example_main_requires_cuda_on_skip(
     tmp_path,
     capsys,

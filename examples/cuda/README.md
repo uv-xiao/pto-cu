@@ -181,16 +181,19 @@ status. H200 evidence is recorded in
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/gluon_flashattention_fwd.py \
   --output-dir tmp/gluon-flashattention-local \
-  --arch compute_90
+  --arch compute_90 --sweep
 ```
 
 This generates the `flashattention_fwd_f32` Gluon source and checks
-`softmax((q @ k.T) * scale) @ v` correctness for one bounded
-`32x32x32` single-tile shape. The stdout JSON includes `schema_version`,
+`softmax((q @ k.T) * scale) @ v` correctness. The default command runs one
+bounded `32x32x32` single-tile shape; `--sweep` runs an aggregate structured
+JSON shape sweep with the existing `32x32x32` case and a bounded
+`head_dim=64` case selected after `32x32x64 failed H200 correctness`. The
+stdout JSON includes `schema_version`, aggregate status, per-case provenance,
 repo-relative artifact paths, and sanitized error text. Without CUDA tooling,
-a visible NVIDIA GPU, or Gluon `gl.dot_fma`, it reports a skip; with
-`--require-cuda`, the same skip returns a non-zero exit status. H200 evidence
-is recorded in
+a visible NVIDIA GPU, or Gluon `gl.dot_fma`, it reports skips; with
+`--require-cuda`, skipped or failed cases return a non-zero exit status. H200
+evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_flashattention_h200.md`.
 
 ## Gluon FP32 RMSNorm

@@ -2100,13 +2100,18 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "# Gluon FlashAttention H200 Correctness",
         "flashattention_fwd_f32",
         "softmax((q @ k.T) * scale) @ v",
-        "--output-dir tmp/gluon-flashattention-review-hygiene-h200",
+        "--output-dir tmp/gluon-flashattention-shape-coverage-h200",
         "--require-cuda --arch compute_90",
         "schema_version: 1",
         "artifact paths are repo-relative",
         "private absolute paths are not recorded",
         "status: passed",
         "shape: seqlen_q=32, seqlen_k=32, head_dim=32",
+        "shape: seqlen_q=16, seqlen_k=64, head_dim=64",
+        "common serving attention head dimension",
+        "32x32x64 failed H200 correctness",
+        "case_count: 2",
+        "per-case artifact paths are repo-relative",
         "max_abs_error: 2.384185791015625e-07",
         "source_sha256:",
         "machine class: H200",
@@ -2127,20 +2132,30 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     readme_text = readme.read_text(encoding="utf-8")
     assert "gluon_flashattention_fwd.py" in readme_text
     assert "flashattention_fwd_f32" in readme_text
+    assert "--sweep" in readme_text
+    assert "head_dim=64" in readme_text
+    assert "32x32x64 failed H200 correctness" in readme_text
+    assert "aggregate structured JSON" in readme_text
     assert "schema_version" in readme_text
     assert "repo-relative artifact paths" in readme_text
     assert "gluon_flashattention_h200.md" in readme_text
 
     checklist_text = checklist.read_text(encoding="utf-8")
+    normalized_checklist_text = " ".join(checklist_text.split())
     assert "gluon_flashattention_h200.md" in checklist_text
-    assert "single-tile FP32 FlashAttention forward correctness" in checklist_text
+    assert "small FP32 FlashAttention shape sweep" in normalized_checklist_text
+    assert "head_dim=64" in checklist_text
+    assert "32x32x64 failed H200 correctness" in normalized_checklist_text
     assert "repo-relative artifact paths" in checklist_text
     assert "schema_version" in checklist_text
     assert "not FlashInfer integration evidence" in checklist_text
 
     status_text = status.read_text(encoding="utf-8")
+    normalized_status_text = " ".join(status_text.split())
     assert "gluon_flashattention_h200.md" in status_text
-    assert "generated Gluon FlashAttention correctness harness" in status_text
+    assert "generated Gluon FlashAttention shape sweep" in status_text
+    assert "head_dim=64" in status_text
+    assert "32x32x64 failed H200 correctness" in normalized_status_text
     assert "schema_version" in status_text
     assert "repo-relative artifact paths" in status_text
     assert "not FlashInfer integration evidence" in status_text
