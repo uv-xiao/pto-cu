@@ -29,6 +29,7 @@ _SUPPORTED_KERNELS = {
     "layernorm_f32",
     "rope_f32",
     "silu_f32",
+    "gelu_f32",
 }
 
 
@@ -134,6 +135,8 @@ def _render_source(kernel_name: str, tile_shape: tuple[int, int, int]) -> str:
         return _render_rope_f32_source()
     if kernel_name == "silu_f32":
         return _render_silu_f32_source()
+    if kernel_name == "gelu_f32":
+        return _render_gelu_f32_source()
     raise AssertionError(f"unhandled Gluon kernel: {kernel_name}")
 
 
@@ -618,6 +621,37 @@ def _render_silu_f32_source() -> str:
                 raise ValueError(f"expected out length to match x, got x={x.numel()}, out={out.numel()}")
 
             silu_f32_kernel[(x.numel(),)](
+                x,
+                out,
+                x.numel(),
+                num_warps=num_warps,
+            )
+        """
+    ).lstrip()
+
+
+def _render_gelu_f32_source() -> str:
+    return dedent(
+        """
+        from triton.experimental import gluon
+        from triton.experimental.gluon import language as gl
+
+
+        @gluon.jit
+        def gelu_f32_kernel(x_ptr, out_ptr, n: gl.constexpr):
+            idx = gl.program_id(0)
+            x = gl.load(x_ptr + idx)
+            gl.store(out_ptr + idx, 0.5 * x * (1.0 + gl.erf(x * 0.7071067811865476)))
+
+
+        def run_gelu_f32(x, out, num_warps=4):
+            expected_rank = 1
+            if len(x.shape) != expected_rank or len(out.shape) != expected_rank:
+                raise ValueError(f"expected x/out to be rank-1, got x={tuple(x.shape)}, out={tuple(out.shape)}")
+            if out.numel() != x.numel():
+                raise ValueError(f"expected out length to match x, got x={x.numel()}, out={out.numel()}")
+
+            gelu_f32_kernel[(x.numel(),)](
                 x,
                 out,
                 x.numel(),

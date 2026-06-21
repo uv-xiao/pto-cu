@@ -238,6 +238,22 @@ tooling or a visible NVIDIA GPU it reports a skip; with `--require-cuda`, the
 same skip returns a non-zero exit status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_silu_h200.md`.
 
+## Gluon FP32 GELU
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_gelu_f32.py \
+  --output-dir tmp/gluon-gelu-local \
+  --n 32 --arch compute_90
+```
+
+This generates the `gelu_f32` Gluon source and checks FP32
+`0.5 * x * (1.0 + erf(x / sqrt(2.0)))` correctness for one bounded vector
+shape. Without CUDA tooling, a visible NVIDIA GPU, or Gluon `gl.erf`, it
+reports a skip; with `--require-cuda`, the same skip returns a non-zero exit
+status. H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/gluon_gelu_h200.md`.
+
 ## DeepSeek V4 Flash Weight Manifest
 
 ```bash
