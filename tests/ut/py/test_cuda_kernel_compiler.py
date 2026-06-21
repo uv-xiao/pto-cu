@@ -48,6 +48,15 @@ def _load_gluon_tensor_core_tiled_example():
     return module
 
 
+def _load_gluon_tensor_core_bf16_example():
+    module_path = "examples/cuda/gluon_gemm_tensor_core_bf16.py"
+    spec = importlib.util.spec_from_file_location("gluon_gemm_tensor_core_bf16_example", module_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_gluon_flashattention_example():
     module_path = "examples/cuda/gluon_flashattention_fwd.py"
     spec = importlib.util.spec_from_file_location("gluon_flashattention_fwd_example", module_path)
@@ -251,6 +260,27 @@ def test_generate_gluon_tiled_tensor_core_gemm_writes_tiled_source(tmp_path):
     assert "def run_gemm_tensor_core_tiled_f16_f32" in source
 
 
+def test_generate_gluon_tiled_tensor_core_bf16_gemm_writes_bf16_source(tmp_path):
+    artifact = KernelCompiler(platform="cuda").generate_gluon_kernel(
+        "gemm_tensor_core_tiled_bf16_f32",
+        output_dir=tmp_path,
+        arch="compute_90",
+        tile_shape=(64, 128, 32),
+    )
+
+    source = artifact.source_path.read_text()
+    manifest = json.loads(artifact.manifest_path.read_text())
+
+    assert artifact.kernel_name == "gemm_tensor_core_tiled_bf16_f32"
+    assert artifact.source_path.name == "gemm_tensor_core_tiled_bf16_f32.gluon.py"
+    assert manifest["kernel_name"] == "gemm_tensor_core_tiled_bf16_f32"
+    assert manifest["tile_shape"] == [64, 128, 32]
+    assert "gl.bfloat16" in source
+    assert "def gemm_tensor_core_tiled_bf16_f32_kernel" in source
+    assert "def run_gemm_tensor_core_tiled_bf16_f32" in source
+    assert "TensorDescriptor.from_tensor(a, [64, 32], a_layout)" in source
+
+
 def test_gluon_gemm_example_reports_skip_json_and_relative_artifacts(tmp_path, monkeypatch):
     example = _load_gluon_gemm_example()
     monkeypatch.chdir(tmp_path)
@@ -407,6 +437,78 @@ def test_gluon_tiled_tensor_core_example_main_reports_generation_failure(capsys,
     assert payload["status"] == "failed"
     assert payload["error_type"] == "RuntimeError"
     assert payload["error"] == "tiled generation failed"
+
+
+def test_gluon_bf16_tensor_core_sweep_reports_skip_json_and_provenance(tmp_path):
+    example = _load_gluon_tensor_core_bf16_example()
+
+    result = example.run_bf16_tensor_core_sweep(
+        output_dir=Path("tmp/gluon-bf16-local"),
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["status"] == "skipped"
+    assert result["kernel_name"] == "gemm_tensor_core_tiled_bf16_f32"
+    assert result["case_count"] == 2
+    assert result["skipped_cases"] == 2
+    assert result["cases"][0]["case_name"] == "smoke_tile"
+    assert result["cases"][0]["shape"] == {"m": 64, "n": 128, "k": 32}
+    assert result["cases"][0]["dtype_boundary"] == {
+        "a": "bfloat16",
+        "b": "bfloat16",
+        "accumulator": "float32",
+        "out": "float32",
+    }
+    assert result["cases"][0]["artifact"]["source_path"] == (
+        "tmp/gluon-bf16-local/smoke_tile/"
+        "gemm_tensor_core_tiled_bf16_f32.gluon.py"
+    )
+    assert result["cases"][1]["case_name"] == "deepseek_v4_flash_hidden_size"
+    assert result["cases"][1]["shape"] == {"m": 64, "n": 128, "k": 7168}
+    assert result["cases"][1]["provenance"] == (
+        "DeepSeek-V4-Flash config hidden_size=7168"
+    )
+
+
+def test_gluon_bf16_tensor_core_sweep_validates_tile_shape(tmp_path):
+    example = _load_gluon_tensor_core_bf16_example()
+
+    try:
+        example.run_bf16_tensor_core_sweep(
+            output_dir=Path("tmp/gluon-bf16-local"),
+            cases=[
+                {
+                    "name": "bad_k",
+                    "m": 64,
+                    "n": 128,
+                    "k": 31,
+                    "seed": 0,
+                    "provenance": "unit-test",
+                }
+            ],
+            skip_reason=lambda: "not reached",
+        )
+    except ValueError as exc:
+        assert "expected k divisible by 32" in str(exc)
+    else:
+        raise AssertionError("expected BF16 tensor-core harness to validate shapes")
+
+
+def test_gluon_bf16_tensor_core_sweep_main_requires_cuda_on_skip(
+    tmp_path, capsys, monkeypatch
+):
+    example = _load_gluon_tensor_core_bf16_example()
+    monkeypatch.setattr(example, "tensor_core_skip_reason", lambda: "missing WGMMA APIs")
+
+    code = example.main(
+        ["--output-dir", "tmp/gluon-bf16-local", "--sweep", "--require-cuda"]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "skipped"
+    assert payload["skipped_cases"] == 2
+    assert payload["cases"][0]["reason"] == "missing WGMMA APIs"
 
 
 def test_generate_gluon_flashattention_writes_dot_fma_source_and_manifest(tmp_path):

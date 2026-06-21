@@ -5,13 +5,17 @@ correctness. It is correctness evidence only, not performance evidence.
 
 ## Current Contract
 
-`KernelCompiler(platform="cuda").generate_gluon_kernel(...)` now supports two
-Gluon tensor-core GEMM artifacts:
+`KernelCompiler(platform="cuda").generate_gluon_kernel(...)` now supports
+three Gluon tensor-core GEMM artifacts:
 
 - `gemm_tensor_core_f16_f32`: one `64x32x32` FP16-input, FP32-output WGMMA
   correctness case.
 - `gemm_tensor_core_tiled_f16_f32`: a tiled `64x128x32` CTA variant that loops
   over `K` in 32-wide blocks and launches a 2D grid over `M x N`.
+- `gemm_tensor_core_tiled_bf16_f32`: the same tiled CTA shape with BF16
+  inputs and FP32 accumulator/output. Its review harness covers a smoke tile
+  and a bounded linear-style `m=64,k=7168,n=128` shape using
+  `DeepSeek-V4-Flash config hidden_size=7168` provenance.
 
 Both harnesses always generate source and manifest artifacts before checking
 runtime CUDA availability. They emit structured JSON in pass, skip, and
@@ -78,8 +82,68 @@ Distilled result:
 }
 ```
 
+The BF16 serving-shape fixture is generated and skip-safe, but the current
+remote H200 Gluon stack did not expose the Hopper WGMMA APIs needed to run it.
+The command below was run through `--sync` against the remote checkout with a
+project-local `.venv`.
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'python3 -m venv --system-site-packages .venv && \
+    PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
+      examples/cuda/gluon_gemm_tensor_core_bf16.py \
+      --output-dir tmp/gluon-tensor-core-bf16-h200 \
+      --arch compute_90 --sweep --require-cuda'
+```
+
+Distilled result:
+
+```json
+{
+  "kernel_name": "gemm_tensor_core_tiled_bf16_f32",
+  "status": "skipped",
+  "case_count": 2,
+  "passed_cases": 0,
+  "skipped_cases": 2,
+  "cases": [
+    {
+      "case_name": "smoke_tile",
+      "shape": {"m": 64, "n": 128, "k": 32},
+      "dtype_boundary": {
+        "a": "bfloat16",
+        "b": "bfloat16",
+        "accumulator": "float32",
+        "out": "float32"
+      },
+      "reason": "missing warpgroup_mma and NVMMADistributedLayout"
+    },
+    {
+      "case_name": "deepseek_v4_flash_hidden_size",
+      "shape": {"m": 64, "n": 128, "k": 7168},
+      "provenance": "DeepSeek-V4-Flash config hidden_size=7168",
+      "dtype_boundary": {
+        "a": "bfloat16",
+        "b": "bfloat16",
+        "accumulator": "float32",
+        "out": "float32"
+      },
+      "reason": "missing warpgroup_mma and NVMMADistributedLayout"
+    }
+  ]
+}
+```
+
+The direct H200 probe reported `NVIDIA H200 NVL`, compute capability `9.0`,
+driver `580.126.20`, Triton `3.4.0`, `gl.bfloat16` present, but
+`gl.NVMMADistributedLayout` absent and
+`triton.experimental.gluon.language.nvidia.hopper.warpgroup_mma` unavailable.
+This is unsupported-API evidence, not BF16 runtime correctness evidence.
+
 ## Boundary
 
 This PR does not include flash-attention evidence, MoE or distributed
-evidence, serving evidence, or a performance claim. Generated tensor-core
-source and JSON manifests stay under `tmp/gluon-*`.
+evidence, serving evidence, vLLM/simpler-nv integration, or a performance
+claim. The BF16 fixture is not a FlashInfer integration claim and not a
+production-readiness claim. Generated tensor-core source and JSON manifests
+stay under `tmp/gluon-*`.
