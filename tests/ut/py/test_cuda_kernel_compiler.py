@@ -57,6 +57,17 @@ def _load_gluon_tensor_core_bf16_example():
     return module
 
 
+def _load_gluon_wgmma_preflight_example():
+    module_path = "examples/cuda/gluon_wgmma_api_preflight.py"
+    spec = importlib.util.spec_from_file_location(
+        "gluon_wgmma_api_preflight_example", module_path
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def _load_gluon_flashattention_example():
     module_path = "examples/cuda/gluon_flashattention_fwd.py"
     spec = importlib.util.spec_from_file_location("gluon_flashattention_fwd_example", module_path)
@@ -509,6 +520,291 @@ def test_gluon_bf16_tensor_core_sweep_main_requires_cuda_on_skip(
     assert payload["status"] == "skipped"
     assert payload["skipped_cases"] == 2
     assert payload["cases"][0]["reason"] == "missing WGMMA APIs"
+
+
+def test_gluon_wgmma_api_preflight_reports_payload_shape(monkeypatch):
+    example = _load_gluon_wgmma_preflight_example()
+
+    class FakeCuda:
+        @staticmethod
+        def is_available():
+            return True
+
+        @staticmethod
+        def device_count():
+            return 1
+
+        @staticmethod
+        def current_device():
+            return 0
+
+        @staticmethod
+        def get_device_name(index):
+            assert index == 0
+            return "NVIDIA H200 NVL"
+
+        @staticmethod
+        def get_device_capability(index):
+            assert index == 0
+            return (9, 0)
+
+    fake_torch = SimpleNamespace(cuda=FakeCuda())
+    fake_triton = SimpleNamespace(__version__="3.4.0")
+    fake_gl = SimpleNamespace(
+        NVMMASharedLayout=object(),
+        NVMMADistributedLayout=object(),
+        bfloat16=object(),
+    )
+    fake_modules = {
+        "torch": fake_torch,
+        "triton": fake_triton,
+        "triton.experimental.gluon": SimpleNamespace(),
+        "triton.experimental.gluon.language": fake_gl,
+        "triton.experimental.gluon.nvidia.hopper": SimpleNamespace(
+            TensorDescriptor=object()
+        ),
+        "triton.experimental.gluon.language.nvidia.hopper": SimpleNamespace(
+            warpgroup_mma=object(),
+            warpgroup_mma_wait=object(),
+            mbarrier=object(),
+            tma=object(),
+            fence_async_shared=object(),
+        ),
+    }
+
+    monkeypatch.setattr(
+        example.importlib,
+        "import_module",
+        lambda name: fake_modules[name],
+    )
+
+    payload = example.collect_preflight(
+        command=[
+            "python3",
+            "/private/home/user/pto/examples/cuda/gluon_wgmma_api_preflight.py",
+        ],
+        require_cuda=True,
+    )
+
+    assert payload["schema_version"] == 1
+    assert payload["status"] == "passed"
+    assert payload["command"] == [
+        "python3",
+        "examples/cuda/gluon_wgmma_api_preflight.py",
+    ]
+    assert payload["torch"]["imported"] is True
+    assert payload["torch"]["cuda_available"] is True
+    assert payload["cuda"]["device_count"] == 1
+    assert payload["cuda"]["selected_device"] == {
+        "index": 0,
+        "name": "NVIDIA H200 NVL",
+        "capability": [9, 0],
+    }
+    assert payload["triton"] == {"imported": True, "version": "3.4.0"}
+    assert payload["gluon"]["imported"] is True
+    assert payload["hopper"]["TensorDescriptor"]["imported"] is True
+    assert payload["hopper"]["warpgroup_mma"]["imported"] is True
+    assert payload["hopper"]["tma"]["imported"] is True
+    assert payload["gl_attrs"]["NVMMADistributedLayout"]["present"] is True
+    assert payload["gl_attrs"]["bfloat16"]["present"] is True
+    assert payload["missing_required"] == []
+
+
+def test_gluon_wgmma_api_preflight_zero_devices_reports_one_hopper_marker(
+    monkeypatch,
+):
+    example = _load_gluon_wgmma_preflight_example()
+
+    class FakeCuda:
+        @staticmethod
+        def is_available():
+            return True
+
+        @staticmethod
+        def device_count():
+            return 0
+
+        @staticmethod
+        def current_device():
+            raise AssertionError("zero-device path must not select a device")
+
+    fake_torch = SimpleNamespace(cuda=FakeCuda())
+    fake_triton = SimpleNamespace(__version__="3.4.0")
+    fake_gl = SimpleNamespace(
+        NVMMASharedLayout=object(),
+        NVMMADistributedLayout=object(),
+        bfloat16=object(),
+    )
+    fake_modules = {
+        "torch": fake_torch,
+        "triton": fake_triton,
+        "triton.experimental.gluon": SimpleNamespace(),
+        "triton.experimental.gluon.language": fake_gl,
+        "triton.experimental.gluon.nvidia.hopper": SimpleNamespace(
+            TensorDescriptor=object()
+        ),
+        "triton.experimental.gluon.language.nvidia.hopper": SimpleNamespace(
+            warpgroup_mma=object(),
+            warpgroup_mma_wait=object(),
+            mbarrier=object(),
+            tma=object(),
+            fence_async_shared=object(),
+        ),
+    }
+
+    monkeypatch.setattr(
+        example.importlib,
+        "import_module",
+        lambda name: fake_modules[name],
+    )
+
+    payload = example.collect_preflight(
+        command=["python3", "examples/cuda/gluon_wgmma_api_preflight.py"],
+        require_cuda=True,
+    )
+
+    assert payload["status"] == "failed"
+    assert payload["cuda"]["device_count"] == 0
+    assert payload["cuda_required_missing"] == ["hopper_device"]
+    assert payload["cuda_required_missing"].count("hopper_device") == 1
+
+
+def test_gluon_wgmma_api_preflight_requires_cuda_fails_for_missing_apis(
+    capsys, monkeypatch
+):
+    example = _load_gluon_wgmma_preflight_example()
+
+    def missing_api_payload(command, require_cuda):
+        assert command == ["preflight", "--require-cuda"]
+        assert require_cuda is True
+        return {
+            "schema_version": 1,
+            "status": "failed",
+            "reason": "missing required WGMMA APIs: warpgroup_mma",
+            "missing_required": ["warpgroup_mma"],
+        }
+
+    monkeypatch.setattr(example, "collect_preflight", missing_api_payload)
+
+    code = example.main(["--require-cuda"], command=["preflight", "--require-cuda"])
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "failed"
+    assert payload["missing_required"] == ["warpgroup_mma"]
+
+
+def test_gluon_wgmma_api_preflight_sanitizes_errors_and_paths(monkeypatch):
+    example = _load_gluon_wgmma_preflight_example()
+
+    def raise_private_path(name):
+        raise ImportError(
+            "cannot import from /home/example/private/pto-cu/examples/cuda/kernel.py"
+        )
+
+    monkeypatch.setattr(example.importlib, "import_module", raise_private_path)
+
+    payload = example.collect_preflight(
+        command=[
+            "python3",
+            "/home/example/private/pto-cu/examples/cuda/gluon_wgmma_api_preflight.py",
+        ],
+        require_cuda=False,
+    )
+    encoded = json.dumps(payload)
+
+    assert "examples/cuda/gluon_wgmma_api_preflight.py" in payload["command"]
+    assert "/home/example/private" not in encoded
+    assert "<path>/examples/cuda/kernel.py" in encoded
+    assert payload["status"] == "skipped"
+
+
+def test_gluon_wgmma_api_preflight_captures_and_sanitizes_import_stderr(
+    capsys, monkeypatch
+):
+    example = _load_gluon_wgmma_preflight_example()
+
+    def noisy_torch_import(name):
+        if name == "torch":
+            print(
+                "Traceback: /data/users/example/venv/lib/python3.11/site-packages/"
+                "torch/_tensor.py emitted NumPy ABI warning",
+                file=sys.stderr,
+            )
+            raise ImportError(
+                "torch failed from /data/users/example/venv/lib/python3.11/"
+                "site-packages/torch/__init__.py"
+            )
+        raise ImportError(f"missing {name}")
+
+    monkeypatch.setattr(example.importlib, "import_module", noisy_torch_import)
+
+    payload = example.collect_preflight(
+        command=["python3", "examples/cuda/gluon_wgmma_api_preflight.py"],
+        require_cuda=False,
+    )
+    captured = capsys.readouterr()
+    encoded = json.dumps(payload)
+
+    assert captured.err == ""
+    assert payload["torch"]["imported"] is False
+    assert "stderr" in payload["torch"]
+    assert "<path>/site-packages/torch/_tensor.py" in payload["torch"]["stderr"]
+    assert "/data/users/example" not in encoded
+    assert "/data/users/example" not in captured.err
+    assert payload["status"] == "skipped"
+
+
+def test_gluon_wgmma_api_preflight_command_sanitizer_preserves_repo_script_path():
+    example = _load_gluon_wgmma_preflight_example()
+
+    command = example._sanitize_command(
+        [
+            "/data/users/example/venv/bin/python3",
+            "/data/users/example/pto-cu/examples/cuda/gluon_wgmma_api_preflight.py",
+            "--require-cuda",
+        ]
+    )
+
+    assert command == [
+        "<path>/python3",
+        "examples/cuda/gluon_wgmma_api_preflight.py",
+        "--require-cuda",
+    ]
+
+
+def test_gluon_wgmma_api_preflight_status_logic(monkeypatch):
+    example = _load_gluon_wgmma_preflight_example()
+
+    payload = example._aggregate_status(
+        require_cuda=False,
+        cuda_required_missing=["cuda_available"],
+        missing_required=["warpgroup_mma"],
+        runtime_errors=[],
+    )
+    assert payload == (
+        "skipped",
+        "missing optional CUDA or WGMMA APIs: cuda_available, warpgroup_mma",
+    )
+
+    payload = example._aggregate_status(
+        require_cuda=True,
+        cuda_required_missing=["cuda_available"],
+        missing_required=["warpgroup_mma"],
+        runtime_errors=[],
+    )
+    assert payload == (
+        "failed",
+        "missing required CUDA or WGMMA APIs: cuda_available, warpgroup_mma",
+    )
+
+    payload = example._aggregate_status(
+        require_cuda=False,
+        cuda_required_missing=[],
+        missing_required=[],
+        runtime_errors=[],
+    )
+    assert payload == ("passed", "all required WGMMA APIs are available")
 
 
 def test_generate_gluon_flashattention_writes_dot_fma_source_and_manifest(tmp_path):
