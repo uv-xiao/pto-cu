@@ -40,14 +40,16 @@ artifact, loads it, and runs FP32 correctness cases against PyTorch when CUDA
 and a Gluon build with `dot_fma` support are available. The default path still
 runs one `32x32x32` single-tile case. The single-case path also accepts
 `--tile-shape MxNxD` for bounded repros such as `32x32x64`, `1x32x64`, and
-`4x32x64`, with `--causal` for bounded causal gates. A causal same-length
-`32x32x64` single-case run is reported as `phase: prefill` to distinguish
-same-length multi-query prefill-shaped evidence from decode/append evidence.
-A causal `1x32x64` single-case run is reported as `phase: decode` to
-distinguish single-query decode-shaped evidence from full decode coverage. A
-causal `4x32x64` single-case run is reported as `phase: append` to
-distinguish small multi-query append-shaped evidence from full append KV-cache
-coverage.
+`4x32x64`, with `--causal` for bounded causal gates. The single-case path
+also accepts `--kv-cache-boundary paged` and `--kv-cache-boundary ragged` to
+emit explicit unsupported-boundary JSON before CUDA availability checks. A
+causal same-length `32x32x64` single-case run is reported as
+`phase: prefill` to distinguish same-length multi-query prefill-shaped
+evidence from decode/append evidence. A causal `1x32x64` single-case run is
+reported as `phase: decode` to distinguish single-query decode-shaped
+evidence from full decode coverage. A causal `4x32x64` single-case run is
+reported as `phase: append` to distinguish small multi-query append-shaped
+evidence from full append KV-cache coverage.
 The `--sweep` path emits aggregate structured JSON with `schema_version: 1`,
 aggregate status and case counts, and per-case shape, provenance, artifact
 metadata, status, phase, causal flag, and max error when run. Artifact paths
@@ -292,14 +294,89 @@ prefill, full append, or append KV-cache coverage, not
 MLA/cascade/sparse/POD attention coverage, and not DeepSeek semantic
 correctness.
 
+## Paged/Ragged KV-Cache Unsupported Boundary
+
+On 2026-06-22, the paged and ragged KV-cache boundary probes reported
+structured unsupported JSON on the same H200 class machine. The remote runs
+used tree sync into `<remote-pto-cu>` through the generic CUDA runner and the
+preserved remote Gluon Python environment. These commands do not generate
+correctness artifacts and do not require CUDA availability before reporting
+the unsupported boundary.
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'PYTHONPATH=$PWD:$PWD/python \
+    <remote-gluon-venv>/bin/python \
+      examples/cuda/gluon_flashattention_fwd.py \
+      --output-dir tmp/gluon-flashattention-kvcache-paged-unsupported-h200 \
+      --arch compute_90 --tile-shape 32x32x64 --causal \
+      --kv-cache-boundary paged --require-cuda'
+```
+
+Distilled paged result:
+
+```text
+schema_version: 1
+status: skipped
+phase: prefill
+causal: true
+kv_cache_boundary: paged
+shape: seqlen_q=32, seqlen_k=32, head_dim=64
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+unsupported_boundary.kind: paged_kv_cache
+unsupported_boundary.boundary: paged
+unsupported_boundary.operator: flashattention_fwd_f32
+reason: Gluon FlashAttention paged KV-cache boundary is unsupported; this is unsupported-boundary evidence only
+machine class: H200
+private absolute paths are not recorded
+```
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'PYTHONPATH=$PWD:$PWD/python \
+    <remote-gluon-venv>/bin/python \
+      examples/cuda/gluon_flashattention_fwd.py \
+      --output-dir tmp/gluon-flashattention-kvcache-ragged-unsupported-h200 \
+      --arch compute_90 --tile-shape 32x32x64 --causal \
+      --kv-cache-boundary ragged --require-cuda'
+```
+
+Distilled ragged result:
+
+```text
+schema_version: 1
+status: skipped
+phase: prefill
+causal: true
+kv_cache_boundary: ragged
+shape: seqlen_q=32, seqlen_k=32, head_dim=64
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+unsupported_boundary.kind: ragged_kv_cache
+unsupported_boundary.boundary: ragged
+unsupported_boundary.operator: flashattention_fwd_f32
+reason: Gluon FlashAttention ragged KV-cache boundary is unsupported; this is unsupported-boundary evidence only
+machine class: H200
+private absolute paths are not recorded
+```
+
+These results are unsupported-boundary evidence only. They are not
+paged/ragged KV-cache correctness, not full prefill/decode/append coverage,
+not FlashInfer integration evidence, not vLLM/simpler-nv integration
+evidence, not serving readiness, and not performance, throughput, or latency
+evidence.
+
 ## Boundary
 
 This milestone covers a small single-tile FlashAttention correctness sweep
 and bounded same-length multi-query prefill-shaped, single-query
-decode-shaped, and small multi-query append-shaped gates only. It is not
-benchmark evidence and does not cover block streaming, varlen/page tables,
-persistent scheduling, MoE, distributed communication, serving, or DeepSeek
-integration.
+decode-shaped, small multi-query append-shaped gates, and explicit
+paged/ragged KV-cache unsupported-boundary reporting only. It is not benchmark
+evidence and does not cover block streaming, varlen/page tables, persistent
+scheduling, MoE, distributed communication, serving, or DeepSeek integration.
 
 Non-claims:
 
@@ -307,7 +384,7 @@ Non-claims:
 - not FlashInfer integration evidence
 - not DeepSeek semantic correctness
 - not performance, throughput, or latency evidence
-- not paged/ragged KV-cache coverage
+- not paged/ragged KV-cache correctness
 - not full prefill, full decode, full append, or append coverage
 - not full append or append KV-cache coverage
 - not multi-tile attention coverage

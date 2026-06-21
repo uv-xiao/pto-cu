@@ -51,16 +51,24 @@ Serving-relevant families verified from the README:
   records a small multi-query append-shaped H200 gate for
   `--tile-shape 4x32x64 --causal` with `phase: append`, `causal: true`,
   shape, tolerance, the offset masked PyTorch reference formula, status, and
-  repo-relative artifact paths. vLLM DeepSeek probes are real vLLM serving
-  evidence and mention fp8 MLA KV-cache behavior, but they do not route
-  through PTO kernels.
-- **Gap / next PTO milestone:** add PTO-owned full prefill, append, paged/ragged
-  KV-cache, varlen, full decode coverage, MLA, cascade, sparse, and POD
-  attention fixtures before any attention-serving claim.
+  repo-relative artifact paths. It also records explicit paged/ragged
+  KV-cache unsupported-boundary evidence for
+  `--tile-shape 32x32x64 --causal --kv-cache-boundary paged` and
+  `--tile-shape 32x32x64 --causal --kv-cache-boundary ragged`, with
+  `status: skipped`, `unsupported_boundary.kind: paged_kv_cache`,
+  `unsupported_boundary.kind: ragged_kv_cache`, shape metadata, and
+  repo-relative, private-path-safe commands. This is unsupported-boundary
+  evidence only. vLLM DeepSeek probes are real vLLM serving evidence and
+  mention fp8 MLA KV-cache behavior, but they do not route through PTO
+  kernels.
+- **Gap / next PTO milestone:** add PTO-owned full prefill, append,
+  paged/ragged KV-cache correctness, varlen, full decode coverage, MLA,
+  cascade, sparse, and POD attention fixtures before any attention-serving
+  claim.
 - **Explicit non-claim:** this is not FlashInfer integration evidence, not
   FlashInfer parity, not simpler-nv/vLLM kernel integration evidence, not
   production serving readiness, not performance/throughput/latency evidence,
-  not paged/ragged KV-cache coverage, not full prefill, full decode, full
+  not paged/ragged KV-cache correctness, not full prefill, full decode, full
   append, or append KV-cache coverage, and not DeepSeek semantic correctness.
 
 ### GEMM And Linear Operations

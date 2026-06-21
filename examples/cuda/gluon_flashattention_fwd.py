@@ -107,11 +107,23 @@ def run_flashattention_correctness(
     rtol: float = 1e-2,
     seed: int = 0,
     causal: bool = False,
+    kv_cache_boundary: str = "none",
     skip_reason: Callable[[], str | None] | None = None,
 ) -> dict:
     resolved_output_dir = DEFAULT_OUTPUT_DIR if output_dir is None else Path(output_dir)
     if resolved_output_dir.is_absolute():
         raise ValueError("--output-dir must be repo-relative")
+    _validate_kv_cache_boundary(kv_cache_boundary)
+
+    if kv_cache_boundary != "none":
+        return _unsupported_kv_cache_boundary_result(
+            arch=arch,
+            tile_shape=tile_shape,
+            atol=atol,
+            rtol=rtol,
+            causal=causal,
+            kv_cache_boundary=kv_cache_boundary,
+        )
 
     artifact = build_flashattention_artifact(
         output_dir=resolved_output_dir,
@@ -310,6 +322,15 @@ def main(argv: list[str] | None = None) -> int:
             help="apply a lower-triangular causal mask for the single-case run",
         )
         parser.add_argument(
+            "--kv-cache-boundary",
+            choices=("none", "paged", "ragged"),
+            default="none",
+            help=(
+                "report an explicit unsupported KV-cache boundary for the "
+                "single-case run"
+            ),
+        )
+        parser.add_argument(
             "--require-cuda",
             action="store_true",
             help="return a non-zero status when dependencies or CUDA are unavailable",
@@ -318,6 +339,8 @@ def main(argv: list[str] | None = None) -> int:
         require_cuda = args.require_cuda
 
         if args.sweep:
+            if args.kv_cache_boundary != "none":
+                raise ValueError("--kv-cache-boundary is only supported without --sweep")
             result = run_flashattention_sweep(
                 output_dir=args.output_dir,
                 arch=args.arch,
@@ -333,6 +356,7 @@ def main(argv: list[str] | None = None) -> int:
                 rtol=args.rtol,
                 seed=args.seed,
                 causal=args.causal,
+                kv_cache_boundary=args.kv_cache_boundary,
             )
     except Exception as exc:
         result = {
@@ -416,6 +440,50 @@ def _parse_tile_shape(raw_tile_shape: str | None) -> tuple[int, int, int]:
     if len(parts) != 3 or any(part <= 0 for part in parts):
         raise ValueError("--tile-shape must use MxNxD positive integers")
     return parts
+
+
+def _validate_kv_cache_boundary(kv_cache_boundary: str) -> None:
+    if kv_cache_boundary not in ("none", "paged", "ragged"):
+        raise ValueError("--kv-cache-boundary must be one of: none, paged, ragged")
+
+
+def _unsupported_kv_cache_boundary_result(
+    *,
+    arch: str,
+    tile_shape: tuple[int, int, int],
+    atol: float,
+    rtol: float,
+    causal: bool,
+    kv_cache_boundary: str,
+) -> dict:
+    seqlen_q, seqlen_k, head_dim = tile_shape
+    phase = _phase_for(tile_shape=tile_shape, causal=causal)
+    return {
+        "schema_version": 1,
+        "kernel_name": "flashattention_fwd_f32",
+        "status": "skipped",
+        "phase": phase,
+        "arch": arch,
+        "shape": {
+            "seqlen_q": seqlen_q,
+            "seqlen_k": seqlen_k,
+            "head_dim": head_dim,
+        },
+        "causal": causal,
+        "kv_cache_boundary": kv_cache_boundary,
+        "reference": _reference_for(phase=phase, causal=causal),
+        "tolerance": {"atol": atol, "rtol": rtol},
+        "unsupported_boundary": {
+            "kind": f"{kv_cache_boundary}_kv_cache",
+            "operator": "flashattention_fwd_f32",
+            "boundary": kv_cache_boundary,
+            "status": "unsupported",
+        },
+        "reason": (
+            f"Gluon FlashAttention {kv_cache_boundary} KV-cache boundary is "
+            "unsupported; this is unsupported-boundary evidence only"
+        ),
+    }
 
 
 def _phase_for(*, tile_shape: tuple[int, int, int], causal: bool) -> str:
