@@ -22,6 +22,9 @@ correctly:
 - optional causal gate: `causal: true` applies a lower-triangular
   key-index/query-index mask before softmax, with PyTorch reference
   `softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v`
+- prefill-shaped causal gate: same-length multi-query causal attention is
+  marked as `phase: prefill` and keeps the lower-triangular PyTorch reference
+  instead of the shifted decode/append reference
 - decode-shaped causal gate: a single query over a longer KV prefix is marked
   as `phase: decode` and offsets the causal query index by
   `seqlen_k - seqlen_q`, with PyTorch reference
@@ -37,11 +40,14 @@ artifact, loads it, and runs FP32 correctness cases against PyTorch when CUDA
 and a Gluon build with `dot_fma` support are available. The default path still
 runs one `32x32x32` single-tile case. The single-case path also accepts
 `--tile-shape MxNxD` for bounded repros such as `32x32x64`, `1x32x64`, and
-`4x32x64`, with `--causal` for bounded causal gates. A causal `1x32x64`
-single-case run is reported as `phase: decode` to distinguish single-query
-decode-shaped evidence from the older same-length causal tile. A causal
-`4x32x64` single-case run is reported as `phase: append` to distinguish
-small multi-query append-shaped evidence from full append KV-cache coverage.
+`4x32x64`, with `--causal` for bounded causal gates. A causal same-length
+`32x32x64` single-case run is reported as `phase: prefill` to distinguish
+same-length multi-query prefill-shaped evidence from decode/append evidence.
+A causal `1x32x64` single-case run is reported as `phase: decode` to
+distinguish single-query decode-shaped evidence from full decode coverage. A
+causal `4x32x64` single-case run is reported as `phase: append` to
+distinguish small multi-query append-shaped evidence from full append KV-cache
+coverage.
 The `--sweep` path emits aggregate structured JSON with `schema_version: 1`,
 aggregate status and case counts, and per-case shape, provenance, artifact
 metadata, status, phase, causal flag, and max error when run. Artifact paths
@@ -144,13 +150,16 @@ The fix is bounded to the generated single-kernel correctness case. The
 rectangular score path avoids the current Gluon `dot_fma` RHS-layout boundary
 for row-major K storage; the value accumulation path still uses `dot_fma`.
 
-## Causal Single-Tile Gate
+## Prefill-Shaped Same-Length Gate
 
-On 2026-06-22, the causal single-tile gate generated and launched on the same
-H200 class machine and passed correctness against the masked PyTorch
-reference. The remote run used tree sync into `<remote-pto-cu>` through the
-generic CUDA runner, and the preserved remote Gluon Python environment because
-the remote default Python lacked Torch and Triton/Gluon.
+On 2026-06-22, the same-length multi-query prefill-shaped causal gate
+generated and launched on the same H200 class machine and passed correctness
+against the lower-triangular masked PyTorch reference. The remote run used
+tree sync into `<remote-pto-cu>` through the generic CUDA runner, and the
+preserved remote Gluon Python environment because the remote default Python
+lacked Torch and Triton/Gluon. The earlier
+`--output-dir tmp/gluon-flashattention-causal-boundary-h200` label refers to
+the same bounded shape before the harness classified it as `phase: prefill`.
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
@@ -158,7 +167,7 @@ REMOTE_PTO_CU=<remote-pto-cu> \
   bash -lc 'PYTHONPATH=$PWD:$PWD/python \
     <remote-gluon-venv>/bin/python \
       examples/cuda/gluon_flashattention_fwd.py \
-      --output-dir tmp/gluon-flashattention-causal-boundary-h200 \
+      --output-dir tmp/gluon-flashattention-prefill-boundary-h200 \
       --arch compute_90 --tile-shape 32x32x64 --causal --require-cuda'
 ```
 
@@ -167,6 +176,7 @@ Distilled passed result:
 ```text
 schema_version: 1
 status: passed
+phase: prefill
 causal: true
 shape: seqlen_q=32, seqlen_k=32, head_dim=64
 reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v
@@ -180,12 +190,13 @@ machine class: H200
 private absolute paths are not recorded
 ```
 
-This result is a bounded correctness gate for one generated single-tile FP32
-causal FlashAttention source. It is not FlashInfer integration evidence, not
-vLLM/simpler-nv integration evidence, not production serving readiness, not
-performance, throughput, or latency evidence, not paged/ragged KV-cache
-coverage, not full decode, prefill, or append coverage, and not DeepSeek
-semantic correctness.
+This result is bounded prefill-shaped evidence for one generated same-length
+multi-query FP32 causal FlashAttention source. It is not full prefill
+coverage, not FlashInfer integration evidence, not vLLM/simpler-nv
+integration evidence, not production serving readiness, not performance,
+throughput, or latency evidence, not paged/ragged KV-cache coverage, not full
+decode, full append, or append KV-cache coverage, and not DeepSeek semantic
+correctness.
 
 ## Decode-Shaped Single-Query Gate
 
@@ -284,10 +295,11 @@ correctness.
 ## Boundary
 
 This milestone covers a small single-tile FlashAttention correctness sweep
-and bounded causal single-tile, single-query decode-shaped, and small
-multi-query append-shaped gates only. It is not benchmark evidence and does
-not cover block streaming, varlen/page tables, persistent scheduling, MoE,
-distributed communication, serving, or DeepSeek integration.
+and bounded same-length multi-query prefill-shaped, single-query
+decode-shaped, and small multi-query append-shaped gates only. It is not
+benchmark evidence and does not cover block streaming, varlen/page tables,
+persistent scheduling, MoE, distributed communication, serving, or DeepSeek
+integration.
 
 Non-claims:
 
@@ -296,7 +308,7 @@ Non-claims:
 - not DeepSeek semantic correctness
 - not performance, throughput, or latency evidence
 - not paged/ragged KV-cache coverage
-- not full decode, prefill, or append coverage
+- not full prefill, full decode, full append, or append coverage
 - not full append or append KV-cache coverage
 - not multi-tile attention coverage
 - not fused attention integration

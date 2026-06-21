@@ -422,6 +422,8 @@ def _phase_for(*, tile_shape: tuple[int, int, int], causal: bool) -> str:
     seqlen_q, seqlen_k, _head_dim = tile_shape
     if not causal:
         return "single_tile"
+    if seqlen_q == seqlen_k:
+        return "prefill"
     if seqlen_q == 1 and seqlen_k > seqlen_q:
         return "decode"
     if 1 < seqlen_q < seqlen_k:
