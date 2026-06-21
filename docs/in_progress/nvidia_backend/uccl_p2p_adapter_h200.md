@@ -31,7 +31,7 @@ Fresh PR evidence came from a synced remote tree of branch
 Command:
 
 ```bash
-REMOTE_PTO_CU=/tmp/pto-cu-codex-restart \
+REMOTE_PTO_CU=<remote-pto-cu> \
   .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh -- \
   bash -lc 'source .venv/bin/activate && \
     CUDA_VISIBLE_DEVICES=6,7 OMP_NUM_THREADS=4 \

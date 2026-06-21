@@ -20,6 +20,9 @@ ACTIVE_REVIEW_SURFACES = [
     ROOT / "examples" / "cuda" / "persistent_layered_cross.py",
     ROOT / "examples" / "cuda" / "persistent_moe_dispatch_combine.py",
 ]
+UCCL_PRIVATE_PATH_RE = re.compile(
+    r"/home/|/Users/|/tmp/pto-cu|/tmp/uccl-|uvxiao|bizhaoh200|hina|dasys"
+)
 
 
 def test_nvidia_review_guard_passes():
@@ -262,6 +265,22 @@ def test_review_policy_changelog_and_examples_exist():
         example_root
         / "vllm_deepseek_v4_chat_256k_needle_stream_repeat_probe.py"
     ).is_file()
+
+
+def test_uccl_in_progress_docs_omit_private_paths():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    uccl_docs = sorted(in_progress_root.glob("uccl_*.md"))
+    assert uccl_docs
+
+    offenders = []
+    for path in uccl_docs:
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8").splitlines(), start=1
+        ):
+            if UCCL_PRIVATE_PATH_RE.search(line):
+                offenders.append(f"{path.relative_to(ROOT)}:{line_number}: {line}")
+
+    assert offenders == []
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():

@@ -25,7 +25,7 @@ plan.
 Required remote command for the EP gate:
 
 ```bash
-REMOTE_PTO_CU=/tmp/pto-cu-codex-restart \
+REMOTE_PTO_CU=<remote-pto-cu> \
   .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
   bash -lc 'source .venv/bin/activate && \
     PYTHONPATH=$PWD:$PWD/python .venv/bin/python \

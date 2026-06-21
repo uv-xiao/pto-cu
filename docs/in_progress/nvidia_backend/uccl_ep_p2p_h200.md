@@ -53,10 +53,10 @@ The dependency-qualified UCCL-EP command used the existing remote UCCL bench
 checkout and passed:
 
 ```bash
-REMOTE_PTO_CU=/tmp/pto-cu-codex-restart \
+REMOTE_PTO_CU=<remote-pto-cu> \
   .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh -- \
   bash -lc 'source .venv/bin/activate && \
-    UCCL_EP_BENCH_DIR=/tmp/uccl-codex-probe/ep/bench \
+    UCCL_EP_BENCH_DIR=<external-uccl-ep-bench>/ep/bench \
     CUDA_VISIBLE_DEVICES=6,7 OMP_NUM_THREADS=4 \
     PYTHONPATH=$PWD:$PWD/python \
     torchrun --standalone --nproc_per_node=2 \
