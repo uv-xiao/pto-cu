@@ -32,7 +32,7 @@ CUDA runner. The remote temporary checkout used a project-local `.venv` with
 Torch, CUDA, Triton, and Gluon Hopper WGMMA APIs available.
 
 ```bash
-REMOTE_PTO_CU=/tmp/pto-cu-gluon-gemm \
+REMOTE_PTO_CU=<remote-pto-cu> \
   .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
   bash -lc 'python3 -m venv --system-site-packages .venv && \
     PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
@@ -55,7 +55,7 @@ Distilled result:
 ```
 
 ```bash
-REMOTE_PTO_CU=/tmp/pto-cu-gluon-gemm \
+REMOTE_PTO_CU=<remote-pto-cu> \
   .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
   bash -lc 'python3 -m venv --system-site-packages .venv && \
     PYTHONPATH=$PWD:$PWD/python .venv/bin/python \
@@ -81,4 +81,5 @@ Distilled result:
 ## Boundary
 
 This PR does not include flash-attention evidence, MoE or distributed
-evidence, serving evidence, or a performance claim.
+evidence, serving evidence, or a performance claim. Generated tensor-core
+source and JSON manifests stay under `tmp/gluon-*`.
