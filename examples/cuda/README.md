@@ -175,6 +175,22 @@ reports skips; with `--require-cuda`, skipped cases return a non-zero exit
 status. H200 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_moe_expert_h200.md`.
 
+## Gluon FP32 RMSNorm
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_rmsnorm_f32.py \
+  --output-dir tmp/gluon-rmsnorm-local \
+  --rows 2 --hidden 16 --eps 1e-5 --arch compute_90
+```
+
+This generates the `rmsnorm_f32` Gluon source and checks FP32
+`x * torch.rsqrt(x.pow(2).mean(dim=-1, keepdim=True) + eps) * weight`
+correctness for one bounded normalization shape. Without CUDA tooling or a
+visible NVIDIA GPU it reports a skip; with `--require-cuda`, the same skip
+returns a non-zero exit status. H200 evidence is recorded in
+`docs/in_progress/nvidia_backend/gluon_rmsnorm_h200.md`.
+
 ## DeepSeek V4 Flash Weight Manifest
 
 ```bash

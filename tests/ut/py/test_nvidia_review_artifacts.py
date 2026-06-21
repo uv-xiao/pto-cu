@@ -24,6 +24,7 @@ GLUON_GEMM_REVIEW_DOCS = [
     ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_gen_adapter.md",
     ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_gemm_h200.md",
     ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_tensor_core_gemm.md",
+    ROOT / "docs" / "in_progress" / "nvidia_backend" / "gluon_rmsnorm_h200.md",
 ]
 UCCL_PRIVATE_PATH_RE = re.compile(
     r"/" + "home/"
@@ -1906,7 +1907,9 @@ def test_status_rollup_records_current_deepseek_serving_boundary():
         "docs/in_progress/nvidia_backend/vllm_remote_chat_256k_needle_stream_truncated_failure_probe.md",
         "docs/in_progress/nvidia_backend/pypto_serving_source_contract_h200.md",
         "docs/in_progress/nvidia_backend/flashinfer_serving_operator_checklist.md",
+        "docs/in_progress/nvidia_backend/gluon_rmsnorm_h200.md",
         "FlashInfer-derived operator checklist",
+        "generated Gluon FP32 RMSNorm fixture",
         "not FlashInfer integration evidence",
         "not a transport/server failure",
         "not simpler-nv/vLLM kernel integration evidence",
@@ -1960,6 +1963,11 @@ def test_flashinfer_serving_operator_checklist_is_recorded():
         "NVSHMEM Integration",
         "RoPE",
         "Normalization",
+        "gluon_rmsnorm_h200.md",
+        "RMSNorm",
+        "rmsnorm_f32",
+        "LayerNorm",
+        "Gemma-style fused norm",
         "Activations",
         "Hopper SM 9.0 includes H100 and H200",
         "not FlashInfer integration evidence",
@@ -1976,6 +1984,59 @@ def test_flashinfer_serving_operator_checklist_is_recorded():
     readme_text = readme.read_text(encoding="utf-8")
     assert "FlashInfer serving operator checklist" in readme_text
     assert "flashinfer_serving_operator_checklist.md" in readme_text
+
+
+def test_gluon_rmsnorm_h200_evidence_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    evidence = in_progress_root / "gluon_rmsnorm_h200.md"
+    readme = ROOT / "examples" / "cuda" / "README.md"
+    checklist = in_progress_root / "flashinfer_serving_operator_checklist.md"
+    status = DOC_ROOT / "status.md"
+
+    for path in (
+        evidence,
+        readme,
+        checklist,
+        status,
+        ROOT / "examples" / "cuda" / "gluon_rmsnorm_f32.py",
+    ):
+        assert path.is_file(), path
+
+    evidence_text = evidence.read_text(encoding="utf-8")
+    for required in [
+        "# Gluon RMSNorm FP32 H200 Correctness",
+        "rmsnorm_f32",
+        "x * torch.rsqrt(x.pow(2).mean(dim=-1, keepdim=True) + eps) * weight",
+        "--rows 2 --hidden 16 --eps 1e-5",
+        "--require-cuda --device 0 --arch compute_90",
+        "status: passed",
+        "max absolute error:",
+        "python environment: <remote-gluon-venv>",
+        "REMOTE_PTO_CU=<remote-pto-cu>",
+        "not FlashInfer integration evidence",
+        "not production serving readiness",
+        "not DeepSeek semantic correctness",
+        "not fused normalization or fused activation evidence",
+        "not vLLM/simpler-nv integration evidence",
+    ]:
+        assert required in evidence_text
+    assert UCCL_PRIVATE_PATH_RE.search(evidence_text) is None
+    assert "/" + "home/" not in evidence_text
+
+    readme_text = readme.read_text(encoding="utf-8")
+    assert "gluon_rmsnorm_f32.py" in readme_text
+    assert "rmsnorm_f32" in readme_text
+    assert "gluon_rmsnorm_h200.md" in readme_text
+
+    checklist_text = checklist.read_text(encoding="utf-8")
+    assert "gluon_rmsnorm_h200.md" in checklist_text
+    assert "RMSNorm" in checklist_text
+    assert "LayerNorm" in checklist_text
+    assert "Gemma-style fused norm" in checklist_text
+
+    status_text = status.read_text(encoding="utf-8")
+    assert "gluon_rmsnorm_h200.md" in status_text
+    assert "generated Gluon FP32 RMSNorm fixture" in status_text
 
 
 def test_host_runtime_comm_operation_symbols_are_exported_by_all_producers():
