@@ -1,0 +1,789 @@
+#!/usr/bin/env python3
+"""Synthetic pypto-serving-style shim for simpler NVIDIA execution."""
+
+import argparse
+import contextlib
+import json
+import shutil
+import subprocess
+import sys
+import tempfile
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[2]
+PYPTO_SERVING_SOURCE = ROOT / "tmp" / "sources" / "repos" / "hw-native-sys" / "pypto-serving"
+
+
+@dataclass(frozen=True)
+class RuntimeConfig:
+    max_batch_size: int = 1
+    max_seq_len: int = 16
+    device: str = "cpu"
+    max_new_tokens: int = 2
+
+
+@dataclass(frozen=True)
+class RuntimeModel:
+    model_id: str
+    runtime: RuntimeConfig
+    vocab_size: int = 3
+    hidden_size: int = 4
+
+
+@dataclass(frozen=True)
+class PrefillBatch:
+    request_ids: list[str]
+    token_ids: list[int]
+
+
+@dataclass(frozen=True)
+class PrefillResult:
+    last_hidden: list[list[float]]
+    logits: list[list[float]]
+
+
+@dataclass(frozen=True)
+class DecodeBatch:
+    request_ids: list[str]
+    token_ids: list[int]
+    hidden_states: list[list[float]]
+
+
+@dataclass(frozen=True)
+class DecodeResult:
+    hidden_states: list[list[float]]
+    logits: list[list[float]]
+
+
+@dataclass(frozen=True)
+class KernelLaunchRequest:
+    phase: str
+    platform: str
+    runtime: str
+    device_id: int
+    op: str
+    n: int
+    block_dim: int
+    arch: str
+
+
+@dataclass
+class SimplerNvModelRunner:
+    """Minimal pypto-serving-style runner for one synthetic CUDA model."""
+
+    platform: str = "cuda"
+    runtime: str = "host_schedule"
+    device_id: int = 0
+    arch: str = "compute_90"
+    n: int = 16
+    block_dim: int = 16
+    kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None
+    launch_results: list[dict[str, Any]] = field(default_factory=list)
+
+    def run_prefill(self, model: RuntimeModel, batch: PrefillBatch) -> PrefillResult:
+        self._launch("prefill")
+        return PrefillResult(
+            last_hidden=[[1.0, 0.0, 0.0, 0.0] for _ in batch.request_ids],
+            logits=[[0.0, 10.0, 0.0] for _ in batch.request_ids],
+        )
+
+    def run_decode(self, model: RuntimeModel, batch: DecodeBatch) -> DecodeResult:
+        self._launch("decode")
+        return DecodeResult(
+            hidden_states=[[0.0, 1.0, 0.0, 0.0] for _ in batch.request_ids],
+            logits=[[0.0, 0.0, 10.0] for _ in batch.request_ids],
+        )
+
+    def _launch(self, phase: str) -> None:
+        request = KernelLaunchRequest(
+            phase=phase,
+            platform=self.platform,
+            runtime=self.runtime,
+            device_id=self.device_id,
+            op="add",
+            n=self.n,
+            block_dim=self.block_dim,
+            arch=self.arch,
+        )
+        launcher = default_cuda_seed_launcher if self.kernel_launcher is None else self.kernel_launcher
+        result = launcher(request)
+        self.launch_results.append(result)
+        if result.get("status") == "failed":
+            raise RuntimeError(f"CUDA seed launch failed during {phase}: {result}")
+
+
+class SimplerNvExecutor:
+    """Small ModelExecutor-shaped adapter for the synthetic serving smoke."""
+
+    def __init__(
+        self,
+        *,
+        platform: str = "cuda",
+        runtime: str = "host_schedule",
+        device_id: int = 0,
+        arch: str = "compute_90",
+        kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
+    ) -> None:
+        self.platform = platform
+        self.runtime = runtime
+        self.device_id = int(device_id)
+        self.arch = arch
+        self.kernel_launcher = kernel_launcher
+        self._runners: dict[str, SimplerNvModelRunner] = {}
+
+    def register_model(self, model_id: str, model: RuntimeModel) -> None:
+        self._runners[model_id] = SimplerNvModelRunner(
+            platform=self.platform,
+            runtime=self.runtime,
+            device_id=self.device_id,
+            arch=self.arch,
+            kernel_launcher=self.kernel_launcher,
+        )
+
+    def runner_for(self, model_id: str) -> SimplerNvModelRunner:
+        return self._runners[model_id]
+
+    def run_prefill(self, model: RuntimeModel, batch: PrefillBatch) -> PrefillResult:
+        return self.runner_for(model.model_id).run_prefill(model, batch)
+
+    def run_decode(self, model: RuntimeModel, batch: DecodeBatch) -> DecodeResult:
+        return self.runner_for(model.model_id).run_decode(model, batch)
+
+
+@dataclass(frozen=True)
+class SyntheticModelRecord:
+    model: RuntimeModel
+    model_dir: str
+
+
+class SyntheticPyptoServingEngine:
+    """Small LLMEngine-shaped fixture for synthetic simpler-nv generation."""
+
+    def __init__(
+        self,
+        *,
+        platform: str = "cuda",
+        runtime: str = "host_schedule",
+        device_id: int = 0,
+        arch: str = "compute_90",
+        kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
+    ) -> None:
+        self.executor = SimplerNvExecutor(
+            platform=platform,
+            runtime=runtime,
+            device_id=device_id,
+            arch=arch,
+            kernel_launcher=kernel_launcher,
+        )
+        self._records: dict[str, SyntheticModelRecord] = {}
+
+    def init_model(
+        self,
+        model_id: str = "synthetic-simpler-nv",
+        model_dir: str = "synthetic://simpler-nv",
+    ) -> None:
+        if model_id != "synthetic-simpler-nv":
+            raise ValueError("only the synthetic-simpler-nv model is available")
+        model = create_synthetic_runtime_model()
+        self.executor.register_model(model_id, model)
+        self._records[model_id] = SyntheticModelRecord(model=model, model_dir=model_dir)
+
+    def model_ids(self) -> list[str]:
+        return sorted(self._records)
+
+    def generate(
+        self,
+        *,
+        model_id: str,
+        prompt: str,
+        max_new_tokens: int = 2,
+    ) -> dict[str, Any]:
+        if max_new_tokens <= 0:
+            raise ValueError("max_new_tokens must be positive")
+        if model_id not in self._records:
+            raise KeyError(f"Model {model_id} is not initialized.")
+
+        record = self._records[model_id]
+        model = record.model
+        prompt_tokens = _encode_prompt(prompt)
+        prefill = self.executor.run_prefill(
+            model,
+            PrefillBatch(request_ids=["req-0"], token_ids=prompt_tokens),
+        )
+        token_ids = [_argmax(prefill.logits[0])]
+        hidden = prefill.last_hidden
+        while len(token_ids) < max_new_tokens:
+            decode = self.executor.run_decode(
+                model,
+                DecodeBatch(
+                    request_ids=["req-0"],
+                    token_ids=[token_ids[-1]],
+                    hidden_states=hidden,
+                ),
+            )
+            hidden = decode.hidden_states
+            token_ids.append(_argmax(decode.logits[0]))
+
+        runner = self.executor.runner_for(model_id)
+        launch_statuses = [item.get("status") for item in runner.launch_results]
+        status = "passed" if all(item == "passed" for item in launch_statuses) else "skipped"
+        return {
+            "engine": type(self).__name__,
+            "status": status,
+            "backend": "simpler-nv",
+            "model_id": model_id,
+            "model_dir": record.model_dir,
+            "prompt": prompt,
+            "text": _decode_tokens(token_ids),
+            "token_ids": token_ids,
+            "finish_reason": "length",
+            "launch_count": len(runner.launch_results),
+            "launch_results": runner.launch_results,
+        }
+
+    def create_openai_completion(
+        self,
+        *,
+        model: str,
+        prompt: str,
+        max_tokens: int = 2,
+    ) -> dict[str, Any]:
+        result = self.generate(
+            model_id=model,
+            prompt=prompt,
+            max_new_tokens=max_tokens,
+        )
+        prompt_tokens = _encode_prompt(prompt)
+        completion_tokens = result["token_ids"]
+        return _openai_completion_from_result(
+            model=model,
+            result=result,
+            prompt_token_count=len(prompt_tokens),
+            extra={"pto_engine": result["engine"]},
+        )
+
+
+@dataclass(frozen=True)
+class PyptoServingSourceTokenOutput:
+    text: str
+    finished: bool
+    finish_reason: str
+
+
+class PyptoServingSourceAsyncEngineAdapter:
+    """AsyncLLMEngine-shaped adapter for the actual pypto-serving server."""
+
+    def __init__(self, engine: SyntheticPyptoServingEngine) -> None:
+        self.engine = engine
+        self.last_pto_status = ""
+        self.last_token_ids: list[int] = []
+        self.last_launch_count = 0
+
+    async def add_request(self, request_id: str, prompt: str, config):
+        result = self.engine.generate(
+            model_id="synthetic-simpler-nv",
+            prompt=prompt,
+            max_new_tokens=int(config.max_new_tokens),
+        )
+        self.last_pto_status = result["status"]
+        self.last_token_ids = list(result["token_ids"])
+        self.last_launch_count = int(result["launch_count"])
+        yield PyptoServingSourceTokenOutput(
+            text=result["text"],
+            finished=True,
+            finish_reason="FINISHED_LENGTH",
+        )
+
+
+@contextlib.contextmanager
+def _pypto_serving_source_import_path():
+    if not PYPTO_SERVING_SOURCE.is_dir():
+        raise FileNotFoundError(f"missing {PYPTO_SERVING_SOURCE.relative_to(ROOT)}")
+    source_path = str(PYPTO_SERVING_SOURCE)
+    sys.path.insert(0, source_path)
+    try:
+        yield
+    finally:
+        with contextlib.suppress(ValueError):
+            sys.path.remove(source_path)
+
+
+def create_pypto_serving_source_app(
+    *,
+    model: str = "synthetic-simpler-nv",
+    device_id: int = 0,
+    arch: str = "compute_90",
+    kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
+):
+    with _pypto_serving_source_import_path():
+        from python.core.server import create_serving_app
+
+    engine = SyntheticPyptoServingEngine(
+        device_id=device_id,
+        arch=arch,
+        kernel_launcher=kernel_launcher,
+    )
+    engine.init_model(model)
+    adapter = PyptoServingSourceAsyncEngineAdapter(engine)
+    return create_serving_app(adapter, model), adapter
+
+
+def run_pypto_serving_source_completion_fixture(
+    *,
+    model: str,
+    prompt: str,
+    max_tokens: int = 2,
+    device_id: int = 0,
+    arch: str = "compute_90",
+) -> dict[str, Any]:
+    try:
+        from fastapi.testclient import TestClient
+    except (ImportError, RuntimeError) as exc:
+        return {
+            "status": "skipped",
+            "reason": f"missing FastAPI TestClient: {exc}",
+            "server": "pypto-serving-source",
+            "route": "/v1/completions",
+        }
+    try:
+        app, adapter = create_pypto_serving_source_app(
+            model=model,
+            device_id=device_id,
+            arch=arch,
+        )
+    except (ImportError, RuntimeError, FileNotFoundError) as exc:
+        return {
+            "status": "skipped",
+            "reason": str(exc),
+            "server": "pypto-serving-source",
+            "route": "/v1/completions",
+        }
+
+    response = TestClient(app).post(
+        "/v1/completions",
+        json={"model": model, "prompt": prompt, "max_tokens": max_tokens},
+    )
+    return {
+        "status": "passed" if response.status_code == 200 else "failed",
+        "server": "pypto-serving-source",
+        "route": "/v1/completions",
+        "status_code": response.status_code,
+        "response": response.json(),
+        "pto_status": adapter.last_pto_status,
+        "pto_token_ids": adapter.last_token_ids,
+        "pto_launch_count": adapter.last_launch_count,
+    }
+
+
+def create_synthetic_runtime_model() -> RuntimeModel:
+    return RuntimeModel(
+        model_id="synthetic-simpler-nv",
+        runtime=RuntimeConfig(),
+    )
+
+
+def run_synthetic_serving_request(
+    *,
+    prompt: str,
+    max_new_tokens: int = 2,
+    device_id: int = 0,
+    arch: str = "compute_90",
+    kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    if max_new_tokens <= 0:
+        raise ValueError("max_new_tokens must be positive")
+
+    engine = SyntheticPyptoServingEngine(
+        device_id=device_id,
+        arch=arch,
+        kernel_launcher=kernel_launcher,
+    )
+    engine.init_model("synthetic-simpler-nv")
+    result = engine.generate(
+        model_id="synthetic-simpler-nv",
+        prompt=prompt,
+        max_new_tokens=max_new_tokens,
+    )
+    result.pop("engine", None)
+    result.pop("model_dir", None)
+    return result
+
+
+def run_synthetic_openai_completion(
+    *,
+    model: str,
+    prompt: str,
+    max_tokens: int = 2,
+    device_id: int = 0,
+    arch: str = "compute_90",
+    kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    if model != "synthetic-simpler-nv":
+        raise ValueError("only the synthetic-simpler-nv model is available")
+
+    result = run_synthetic_serving_request(
+        prompt=prompt,
+        max_new_tokens=max_tokens,
+        device_id=device_id,
+        arch=arch,
+        kernel_launcher=kernel_launcher,
+    )
+    prompt_tokens = _encode_prompt(prompt)
+    return _openai_completion_from_result(
+        model=model,
+        result=result,
+        prompt_token_count=len(prompt_tokens),
+    )
+
+
+def create_synthetic_openai_app(
+    *,
+    model: str = "synthetic-simpler-nv",
+    device_id: int = 0,
+    arch: str = "compute_90",
+    kernel_launcher: Callable[[KernelLaunchRequest], dict[str, Any]] | None = None,
+):
+    try:
+        from fastapi import FastAPI
+        from pydantic import BaseModel
+    except ImportError as exc:
+        raise RuntimeError("FastAPI and Pydantic are required for the HTTP fixture") from exc
+
+    class CompletionRequest(BaseModel):
+        model: str = ""
+        prompt: str = ""
+        max_tokens: int = 2
+
+    app = FastAPI(title="Synthetic PyPTO Serving")
+
+    @app.get("/health")
+    def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @app.get("/v1/models")
+    def list_models() -> dict[str, Any]:
+        return {
+            "object": "list",
+            "data": [{"id": model, "object": "model", "owned_by": "pypto"}],
+        }
+
+    @app.post("/v1/completions")
+    def completions(request: CompletionRequest) -> dict[str, Any]:
+        engine = SyntheticPyptoServingEngine(
+            device_id=device_id,
+            arch=arch,
+            kernel_launcher=kernel_launcher,
+        )
+        engine.init_model(model)
+        return engine.create_openai_completion(
+            model=request.model or model,
+            prompt=request.prompt,
+            max_tokens=request.max_tokens,
+        )
+
+    return app
+
+
+def run_synthetic_http_completion_fixture(
+    *,
+    model: str,
+    prompt: str,
+    max_tokens: int = 2,
+    device_id: int = 0,
+    arch: str = "compute_90",
+) -> dict[str, Any]:
+    try:
+        from fastapi.testclient import TestClient
+    except (ImportError, RuntimeError) as exc:
+        return {
+            "status": "skipped",
+            "reason": f"missing FastAPI TestClient: {exc}",
+            "route": "/v1/completions",
+        }
+
+    app = create_synthetic_openai_app(model=model, device_id=device_id, arch=arch)
+    client = TestClient(app)
+    response = client.post(
+        "/v1/completions",
+        json={"model": model, "prompt": prompt, "max_tokens": max_tokens},
+    )
+    return {
+        "status": "passed" if response.status_code == 200 else "failed",
+        "route": "/v1/completions",
+        "status_code": response.status_code,
+        "response": response.json(),
+    }
+
+
+def _openai_completion_from_result(
+    *,
+    model: str,
+    result: dict[str, Any],
+    prompt_token_count: int,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    completion_tokens = result["token_ids"]
+    response = {
+        "id": "cmpl-synthetic-0",
+        "object": "text_completion",
+        "created": 0,
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "text": result["text"],
+                "finish_reason": result["finish_reason"],
+            }
+        ],
+        "usage": {
+            "prompt_tokens": prompt_token_count,
+            "completion_tokens": len(completion_tokens),
+            "total_tokens": prompt_token_count + len(completion_tokens),
+        },
+        "pto_backend": result["backend"],
+        "pto_status": result["status"],
+        "pto_launch_count": result["launch_count"],
+    }
+    if extra:
+        response.update(extra)
+    return response
+
+
+def default_cuda_seed_launcher(request: KernelLaunchRequest) -> dict[str, Any]:
+    nvcc = shutil.which("nvcc")
+    if nvcc is None:
+        return {"status": "skipped", "reason": "nvcc is required for CUDA seed launch"}
+    if request.op != "add":
+        return {"status": "skipped", "reason": f"unsupported CUDA seed op: {request.op}"}
+
+    with tempfile.TemporaryDirectory(prefix="pypto-serving-cuda-seed-") as temp_dir:
+        temp_path = Path(temp_dir)
+        source = temp_path / "seed.cu"
+        executable = temp_path / "seed"
+        source.write_text(_cuda_seed_source(request), encoding="utf-8")
+        compile_result = subprocess.run(
+            [
+                nvcc,
+                f"-arch={request.arch}",
+                str(source),
+                "-o",
+                str(executable),
+            ],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        if compile_result.returncode != 0:
+            return {
+                "status": "skipped",
+                "phase": request.phase,
+                "op": request.op,
+                "reason": compile_result.stdout.strip(),
+                "returncode": compile_result.returncode,
+            }
+        result = subprocess.run(
+            [str(executable), str(request.device_id)],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        payload = {
+            "status": "failed" if result.returncode else "passed",
+            "stdout": result.stdout,
+        }
+    if result.returncode != 0 and payload.get("status") != "skipped":
+        payload = {
+            **payload,
+            "status": "skipped",
+            "reason": payload.get("stdout", result.stdout).strip(),
+            "returncode": result.returncode,
+        }
+    launch_status = payload.get("status", "passed")
+    if launch_status == "pass":
+        launch_status = "passed"
+    return {
+        "status": launch_status,
+        "phase": request.phase,
+        "op": request.op,
+        "reason": payload.get("reason", ""),
+        "cuda_seed": payload,
+    }
+
+
+def _cuda_seed_source(request: KernelLaunchRequest) -> str:
+    return f"""\
+#include <cuda_runtime.h>
+#include <cstdlib>
+#include <cstdio>
+
+__global__ void seed_add(float *out, int n) {{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {{
+        out[idx] = static_cast<float>(idx) + 1.0f;
+    }}
+}}
+
+int main(int argc, char **argv) {{
+    int device = argc > 1 ? std::atoi(argv[1]) : {request.device_id};
+    cudaError_t err = cudaSetDevice(device);
+    if (err != cudaSuccess) {{
+        std::printf("{{\\"status\\":\\"skipped\\",\\"reason\\":\\"cudaSetDevice failed: %s\\"}}\\n", cudaGetErrorString(err));
+        return 2;
+    }}
+    constexpr int n = {request.n};
+    constexpr int block_dim = {request.block_dim};
+    float *out = nullptr;
+    err = cudaMalloc(&out, n * sizeof(float));
+    if (err != cudaSuccess) {{
+        std::printf("{{\\"status\\":\\"skipped\\",\\"reason\\":\\"cudaMalloc failed: %s\\"}}\\n", cudaGetErrorString(err));
+        return 2;
+    }}
+    int grid = (n + block_dim - 1) / block_dim;
+    seed_add<<<grid, block_dim>>>(out, n);
+    err = cudaDeviceSynchronize();
+    if (err != cudaSuccess) {{
+        cudaFree(out);
+        std::printf("{{\\"status\\":\\"skipped\\",\\"reason\\":\\"kernel failed: %s\\"}}\\n", cudaGetErrorString(err));
+        return 2;
+    }}
+    float last = 0.0f;
+    err = cudaMemcpy(&last, out + n - 1, sizeof(float), cudaMemcpyDeviceToHost);
+    cudaFree(out);
+    if (err != cudaSuccess) {{
+        std::printf("{{\\"status\\":\\"skipped\\",\\"reason\\":\\"cudaMemcpy failed: %s\\"}}\\n", cudaGetErrorString(err));
+        return 2;
+    }}
+    if (last != static_cast<float>(n)) {{
+        std::printf("{{\\"status\\":\\"failed\\",\\"reason\\":\\"unexpected CUDA seed output\\"}}\\n");
+        return 1;
+    }}
+    std::printf("{{\\"status\\":\\"pass\\",\\"runtime\\":\\"{request.runtime}\\",\\"ptx_arch\\":\\"{request.arch}\\",\\"op\\":\\"{request.op}\\",\\"n\\":%d,\\"block_dim\\":%d}}\\n", n, block_dim);
+    return 0;
+}}
+"""
+
+
+def _encode_prompt(prompt: str) -> list[int]:
+    return [0] if prompt else [0]
+
+
+def _decode_tokens(token_ids: list[int]) -> str:
+    vocab = {1: "N", 2: "V"}
+    return "".join(vocab.get(token_id, "") for token_id in token_ids)
+
+
+def _argmax(values: list[float]) -> int:
+    return max(range(len(values)), key=values.__getitem__)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--prompt", default="hello")
+    parser.add_argument("--model", default="synthetic-simpler-nv")
+    parser.add_argument("--max-new-tokens", type=int, default=2)
+    parser.add_argument("--device", type=int, default=0)
+    parser.add_argument("--arch", default="compute_90")
+    parser.add_argument(
+        "--openai-completion",
+        action="store_true",
+        help="emit a synthetic OpenAI-compatible /v1/completions response",
+    )
+    parser.add_argument(
+        "--engine",
+        action="store_true",
+        help="route through the synthetic pypto-serving engine fixture",
+    )
+    parser.add_argument(
+        "--http-fixture",
+        action="store_true",
+        help="exercise the synthetic FastAPI /v1/completions fixture in process",
+    )
+    parser.add_argument(
+        "--pypto-serving-source",
+        action="store_true",
+        help="exercise the actual pypto-serving source server contract in process",
+    )
+    parser.add_argument(
+        "--require-cuda",
+        action="store_true",
+        help="return non-zero when the CUDA seed launch is skipped",
+    )
+    args = parser.parse_args(argv)
+
+    if args.pypto_serving_source:
+        result = run_pypto_serving_source_completion_fixture(
+            model=args.model,
+            prompt=args.prompt,
+            max_tokens=args.max_new_tokens,
+            device_id=args.device,
+            arch=args.arch,
+        )
+        status = result["status"]
+        if status == "passed":
+            status = result.get("pto_status", status)
+    elif args.http_fixture:
+        result = run_synthetic_http_completion_fixture(
+            model=args.model,
+            prompt=args.prompt,
+            max_tokens=args.max_new_tokens,
+            device_id=args.device,
+            arch=args.arch,
+        )
+        status = result["status"]
+        if status == "passed" and isinstance(result.get("response"), dict):
+            status = result["response"].get("pto_status", status)
+    elif args.engine:
+        engine = SyntheticPyptoServingEngine(device_id=args.device, arch=args.arch)
+        engine.init_model(args.model)
+        if args.openai_completion:
+            result = engine.create_openai_completion(
+                model=args.model,
+                prompt=args.prompt,
+                max_tokens=args.max_new_tokens,
+            )
+            status = result["pto_status"]
+        else:
+            result = engine.generate(
+                model_id=args.model,
+                prompt=args.prompt,
+                max_new_tokens=args.max_new_tokens,
+            )
+            status = result["status"]
+    elif args.openai_completion:
+        result = run_synthetic_openai_completion(
+            model=args.model,
+            prompt=args.prompt,
+            max_tokens=args.max_new_tokens,
+            device_id=args.device,
+            arch=args.arch,
+        )
+        status = result["pto_status"]
+    else:
+        result = run_synthetic_serving_request(
+            prompt=args.prompt,
+            max_new_tokens=args.max_new_tokens,
+            device_id=args.device,
+            arch=args.arch,
+        )
+        status = result["status"]
+    print(json.dumps(result, indent=2, sort_keys=True))
+    if status == "failed":
+        return 1
+    if status == "skipped" and args.require_cuda:
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

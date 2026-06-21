@@ -71,6 +71,26 @@ installed `uccl.ep` benchmark buffer when optional dependencies and
 `UCCL_EP_BENCH_DIR` are available. It keeps UCCL-EP as Python-side
 adapter/probe evidence and does not add a CUDA host-runtime UCCL ABI.
 
+## pypto-serving simpler-nv Shim
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/pypto_serving_nv_shim.py \
+  --prompt hello --max-new-tokens 2 --arch compute_90
+```
+
+This runs a synthetic `pypto-serving`-style `SimplerNvExecutor` and
+`SimplerNvModelRunner` boundary for the simpler NVIDIA backend. It returns
+deterministic `NV` tokens and skip-safe CUDA seed-launch evidence. H200
+source-contract evidence is recorded in
+`docs/in_progress/nvidia_backend/pypto_serving_source_contract_h200.md`.
+
+Use `--openai-completion` to emit a synthetic `/v1/completions` response
+shape, `--engine` to route through the synthetic `LLMEngine`-shaped fixture,
+`--http-fixture` to exercise the local FastAPI `/v1/completions` fixture, or
+`--pypto-serving-source` to exercise the actual cloned `pypto-serving`
+`create_serving_app` route with the synthetic simpler-nv adapter.
+
 ## Persistent Layered-Cross Graph
 
 ```bash
