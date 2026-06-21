@@ -103,19 +103,20 @@ Serving-relevant families verified from the README:
   descending with lower token id first for ties, fills unused output slots
   with `0.0` values and `-1` indices, validates `values`, `indices`, and
   `selected_counts`, and checks result payload shapes before comparisons.
-  `gluon_speculative_decoding_h200.md` records one
-  generated `speculative_accept_f32` Speculative Decoding accept/reject
-  correctness gate on H200 for `rows=2, max_draft=4`. It consumes draft token
-  ids, draft probabilities, target probabilities for those same draft tokens,
-  and deterministic thresholds, accepts while
+  `gluon_speculative_decoding_h200.md` records generated
+  `speculative_accept_f32` Speculative Decoding accept/reject correctness
+  gates, preserving the default `rows=2, max_draft=4` fixture and adding H200
+  evidence for `rows=3, max_draft=6`. It consumes draft token ids, draft
+  probabilities, target probabilities for those same draft tokens, and
+  deterministic thresholds, accepts while
   `threshold <= min(1.0, target_probability / draft_probability)`, stops at
   first reject per row, fills later output ids with `-1`, and validates
-  `accepted_token_ids`, `accept_mask`, and `accepted_counts`. vLLM probes use
-  bounded sampler settings for real DeepSeek API requests, but those sampler
-  settings do not route through PTO kernels.
-- **Gap / next PTO milestone:** broaden shape coverage for speculative decoding
-  before connecting sampling to a serving stack. Remaining sampling gaps
-  include serving-stack integration.
+  `accepted_token_ids`, `accept_mask`, and `accepted_counts`, checking result
+  payload shapes before comparisons. vLLM probes use bounded sampler settings
+  for real DeepSeek API requests, but those sampler settings do not route
+  through PTO kernels.
+- **Gap / next PTO milestone:** connect sampling to a serving stack. Remaining
+  sampling gaps include serving-stack integration.
 - **Explicit non-claim:** this is not FlashInfer integration evidence, not
   vLLM or simpler-nv kernel integration evidence, not tokenizer semantics,
   not generated-text correctness, and not DeepSeek serving through

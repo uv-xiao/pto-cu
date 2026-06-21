@@ -2,14 +2,15 @@
 
 This note records correctness evidence for the generated Gluon
 `speculative_accept_f32` primitive. The harness validates a deterministic
-speculative-decoding accept/reject boundary over a small static fixture. It
+speculative-decoding accept/reject boundary over small static fixtures. It
 does not use a model, tokenizer, serving stack, or generated text.
 
 ## Harness
 
 The harness is `examples/cuda/gluon_speculative_decoding.py`. It emits
 structured JSON for pass, skip, and fail cases. The current review gate is
-intentionally small: `rows=2, max_draft=4`.
+intentionally small. It preserves the default `rows=2, max_draft=4` fixture
+and adds a broader `rows=3, max_draft=6` fixture.
 
 For each row, inputs are draft token ids, draft probabilities, target
 probabilities for those same draft tokens, and deterministic thresholds. The
@@ -31,7 +32,8 @@ The stdout JSON includes:
 - CPU golden `accepted_token_ids`, `accept_mask`, and `accepted_counts`;
 - GPU result `accepted_token_ids`, `accept_mask`, and `accepted_counts` when
   CUDA runs;
-- validation flags for accepted token ids, accept mask, and accepted counts;
+- validation flags for accepted token ids, accept mask, and accepted counts,
+  including payload shape checks before exact comparisons;
 - explicit non-claims.
 
 ## Local Command
@@ -97,31 +99,37 @@ REMOTE_PTO_CU=<remote-pto-cu> \
     pip install --no-build-isolation -e . ><remote-install-log> && \
     PYTHONPATH=$PWD:$PWD/python \
     .venv/bin/python examples/cuda/gluon_speculative_decoding.py \
-      --output-dir tmp/gluon-speculative-decoding-h200 \
-      --arch compute_90 --require-cuda'
+      --output-dir tmp/gluon-speculative-shape-coverage-h200 \
+      --arch compute_90 --rows 3 --max-draft 6 --require-cuda'
 ```
 
 H200 result:
 
 - exit code: `0`;
 - status: passed;
-- shape: `rows=2, max_draft=4`;
+- shape: `rows=3, max_draft=6`;
 - CPU golden accepted token ids:
-  `[[10, 11, 12, 13], [20, -1, -1, -1]]`;
-- CPU golden accept mask: `[[1, 1, 1, 1], [1, 0, 0, 0]]`;
-- CPU golden accepted counts: `[4, 1]`;
+  `[[10, 11, 12, 13, -1, -1], [20, -1, -1, -1, -1, -1], [30, 31, 32, 33, 34, 35]]`;
+- CPU golden accept mask:
+  `[[1, 1, 1, 1, 0, 0], [1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]`;
+- CPU golden accepted counts: `[4, 1, 6]`;
 - GPU result accepted token ids:
-  `[[10, 11, 12, 13], [20, -1, -1, -1]]`;
-- GPU result accept mask: `[[1, 1, 1, 1], [1, 0, 0, 0]]`;
-- GPU result accepted counts: `[4, 1]`;
+  `[[10, 11, 12, 13, -1, -1], [20, -1, -1, -1, -1, -1], [30, 31, 32, 33, 34, 35]]`;
+- GPU result accept mask:
+  `[[1, 1, 1, 1, 0, 0], [1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1]]`;
+- GPU result accepted counts: `[4, 1, 6]`;
 - validation: accepted token ids, accept mask, and accepted counts match;
+- validation shape checks: accepted token ids, accept mask, and accepted
+  counts shapes match;
+- validation shape flags: `accepted_token_ids_shape_match`,
+  `accept_mask_shape_match`, and `accepted_counts_shape_match`;
 - source digest:
   `d5f9da0a38a56d5194b8c06bf4698acbac14285c6cc038046f6622d2eb1f8db1`.
 
 ## Limitations
 
-- This is a tiny static-shape speculative accept/reject correctness gate, not
-  broad draft-length or batch coverage.
+- This is small static-shape speculative accept/reject correctness evidence,
+  not exhaustive draft-length or batch coverage.
 - The input probabilities are provided directly; this is not a softmax gate.
 - The implementation is correctness-focused, not performance-focused.
 - This does not implement proposer/verifier model scheduling.
