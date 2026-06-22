@@ -536,6 +536,43 @@ source digests, and bridge digest. No runtime component creates or transfers a
 shared ownership token, so the result explicitly reports no ownership token
 and an empty payload lifetime transition log.
 
+## Runtime-Owned Descriptor Implementation Handoff
+
+The `nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor` worker
+audited the current implementation surface and found no real
+`persistent_device_uccl_ep_runtime_fusion` coordinator behind the CUDA
+runtime / `ChipWorker` boundary. The compiled
+`src/cuda/runtime/persistent_device/` files are placeholders, and the runnable
+persistent-device path is generated PTX launched by
+`src/cuda/platform/onboard/host/pto_runtime_c_api.cpp::CudaDeviceRunner`.
+That runner accepts persistent DAG args, but it does not own a UCCL-EP
+dispatch/combine payload descriptor or transfer that descriptor to a UCCL-EP
+runtime component.
+
+Because the lower-level boundary is missing, this slice keeps the normal
+`--with-uccl-ep-fused-boundary` status `unsupported`. It adds local guard
+coverage in `examples/cuda/persistent_moe_dispatch_combine.py`:
+
+- `_validate_runtime_fusion_evidence` accepts only a runtime-owned descriptor
+  produced by `persistent_device_uccl_ep_runtime_fusion`;
+- missing ownership tokens, mismatched tokens, double release,
+  use-after-release, leaked ownership, and rank/device mismatches produce
+  `status: failed` with populated `failure_fields`;
+- pass-like runtime-fusion fields copied from UCCL-EP adapter output,
+  payload provenance, or handoff metadata are rejected with
+  `fabricated_or_untrusted_pass_evidence`;
+- the normal unsupported result records
+  `failure_fields.unsupported_boundary:
+  persistent_device_uccl_ep_runtime_fusion`;
+- `actual_fused_cross_gpu_execution` remains `false` unless the trusted
+  runtime-owned guard passes.
+
+No fresh H200 fused-boundary run is recorded for this blocked implementation
+handoff because the code still cannot truthfully emit real runtime-owned
+descriptor evidence. The last H200 fused-boundary artifact remains the PR #147
+payload-provenance result above, which exited `unsupported` and is not fused
+execution evidence.
+
 ## Implementation-Readiness Map
 
 The next implementation attempt must keep the shared payload descriptor behind

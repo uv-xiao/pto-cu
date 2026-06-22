@@ -64,6 +64,16 @@ UCCL_EP_FUSED_BOUNDARY_MISSING = (
     "shared_dispatch_combine_payload_between_persistent_graph_and_uccl_ep",
     "device_side_cross_gpu_expert_parallel_routing",
 )
+RUNTIME_FUSION_PRODUCER = "persistent_device_uccl_ep_runtime_fusion"
+RUNTIME_FUSION_LIFETIME_SEQUENCE = (
+    ("allocated", "persistent_device_graph"),
+    ("dispatch_ready", "persistent_device_graph"),
+    ("dispatch_in_flight", "uccl_ep_runtime"),
+    ("combine_ready", "persistent_device_graph"),
+    ("combine_in_flight", "uccl_ep_runtime"),
+    ("complete", "persistent_device_graph"),
+    ("released", "released"),
+)
 NO_SHARED_PAYLOAD_OWNERSHIP_REASON = (
     "runtime component has not created or transferred shared payload ownership"
 )
@@ -755,6 +765,13 @@ def run_persistent_moe_uccl_ep_fused_boundary(
         uccl_ep_runner=uccl_ep_runner,
     )
     handoff_validation = handoff.get("handoff_validation") or {}
+    expected_rank_to_device = _rank_to_device_map(device_ids)
+    runtime_fusion = _runtime_fusion_status_from_handoff(
+        handoff=handoff,
+        expected_device_ids=device_ids,
+        expected_rank_to_device=expected_rank_to_device,
+        expected_descriptor=handoff.get("uccl_ep_adapter_shape") or {},
+    )
     boundary_validation = {
         "handoff_passed": handoff.get("status") == "passed",
         "same_device_ids": bool(handoff_validation.get("same_device_ids")),
@@ -765,11 +782,21 @@ def run_persistent_moe_uccl_ep_fused_boundary(
         "descriptor_metadata_present": bool(
             handoff_validation.get("adapter_descriptor_metadata_present")
         ),
-        "actual_fused_cross_gpu_execution": False,
-        "persistent_device_uccl_ep_runtime_fusion": False,
-        "structured_unsupported_boundary": handoff.get("status") == "passed",
+        "runtime_fusion_guard_passed": runtime_fusion["status"] == "passed",
+        "actual_fused_cross_gpu_execution": bool(
+            runtime_fusion["actual_fused_cross_gpu_execution"]
+        ),
+        "persistent_device_uccl_ep_runtime_fusion": runtime_fusion["status"] == "passed",
+        "structured_unsupported_boundary": (
+            handoff.get("status") == "passed" and runtime_fusion["status"] == "unsupported"
+        ),
+        "rejected_pass_evidence": runtime_fusion["status"] == "failed",
     }
-    if handoff.get("status") == "passed":
+    if runtime_fusion["status"] == "passed":
+        status = "passed"
+    elif runtime_fusion["status"] == "failed":
+        status = "failed"
+    elif handoff.get("status") == "passed":
         status = "unsupported"
     else:
         status = handoff.get("status", "failed")
@@ -794,7 +821,7 @@ def run_persistent_moe_uccl_ep_fused_boundary(
         "stream_id": stream_id,
         "uccl_ep_adapter_shape": handoff.get("uccl_ep_adapter_shape"),
         "boundary_validation": boundary_validation,
-        "persistent_device_uccl_ep_runtime_fusion": _unsupported_runtime_fusion_status(),
+        "persistent_device_uccl_ep_runtime_fusion": runtime_fusion,
         "missing_boundaries": list(UCCL_EP_FUSED_BOUNDARY_MISSING),
         "payload_provenance": handoff.get("payload_provenance"),
         "uccl_ep_handoff": handoff,
@@ -1017,7 +1044,188 @@ def _unsupported_runtime_fusion_status() -> dict:
         "shared_ownership_token": None,
         "payload_lifetime_transition_log": [],
         "reason": NO_SHARED_PAYLOAD_OWNERSHIP_REASON,
+        "failure_fields": {
+            "unsupported_boundary": "persistent_device_uccl_ep_runtime_fusion",
+        },
     }
+
+
+def _runtime_fusion_status_from_handoff(
+    *,
+    handoff: dict,
+    expected_device_ids: tuple[int, ...],
+    expected_rank_to_device: dict[str, int],
+    expected_descriptor: dict,
+) -> dict:
+    candidate = _runtime_fusion_candidate_from_handoff(handoff)
+    if candidate is None:
+        return _unsupported_runtime_fusion_status()
+    return _validate_runtime_fusion_evidence(
+        candidate,
+        expected_device_ids=expected_device_ids,
+        expected_rank_to_device=expected_rank_to_device,
+        expected_descriptor=expected_descriptor,
+        trusted_runtime_source=False,
+    )
+
+
+def _runtime_fusion_candidate_from_handoff(handoff: dict) -> dict | None:
+    candidates = [
+        handoff.get("persistent_device_uccl_ep_runtime_fusion"),
+        (handoff.get("uccl_ep_adapter") or {}).get("persistent_device_uccl_ep_runtime_fusion"),
+    ]
+    ownership = ((handoff.get("payload_provenance") or {}).get("shared_payload_ownership") or {})
+    if ownership.get("exists") or ownership.get("ownership_token") or ownership.get("lifetime_transition_log"):
+        candidates.append(
+            {
+                "producer": "payload_provenance",
+                "status": "passed" if ownership.get("exists") else "unsupported",
+                "shared_ownership_token": ownership.get("ownership_token"),
+                "payload_lifetime_transition_log": ownership.get("lifetime_transition_log") or [],
+            }
+        )
+    return next((candidate for candidate in candidates if isinstance(candidate, dict)), None)
+
+
+def _validate_runtime_fusion_evidence(
+    evidence: dict | None,
+    *,
+    expected_device_ids: tuple[int, ...],
+    expected_rank_to_device: dict[str, int],
+    expected_descriptor: dict,
+    trusted_runtime_source: bool = True,
+) -> dict:
+    if not evidence:
+        return _unsupported_runtime_fusion_status()
+
+    failure_fields: dict[str, str] = {}
+    token = evidence.get("shared_ownership_token")
+    transition_log = evidence.get("payload_lifetime_transition_log") or []
+    dispatch_descriptor = evidence.get("dispatch_payload_descriptor") or {}
+    combine_descriptor = evidence.get("combine_payload_descriptor") or {}
+
+    if (
+        not trusted_runtime_source
+        or evidence.get("producer") != RUNTIME_FUSION_PRODUCER
+        or evidence.get("runtime_owned_descriptor") is not True
+    ):
+        failure_fields["fabricated_or_untrusted_pass_evidence"] = (
+            "runtime fusion pass evidence must be emitted by the runtime-owned "
+            "persistent-device/UCCL-EP fusion coordinator"
+        )
+    if not token:
+        failure_fields["missing_ownership_token"] = "runtime fusion evidence is missing a shared token"
+    if evidence.get("rank_to_device") != expected_rank_to_device:
+        failure_fields["rank_device_mismatch"] = "runtime fusion rank/device mapping does not match"
+    if list(evidence.get("device_ids") or []) != list(expected_device_ids):
+        failure_fields["rank_device_mismatch"] = "runtime fusion device ids do not match"
+    if int(evidence.get("world_size") or 0) != len(expected_device_ids):
+        failure_fields["rank_device_mismatch"] = "runtime fusion world size does not match"
+
+    _validate_runtime_fusion_descriptors(
+        failure_fields=failure_fields,
+        token=token,
+        dispatch_descriptor=dispatch_descriptor,
+        combine_descriptor=combine_descriptor,
+        expected_descriptor=expected_descriptor,
+    )
+    _validate_runtime_fusion_lifetime_log(
+        failure_fields=failure_fields,
+        token=token,
+        transition_log=transition_log,
+    )
+    if evidence.get("status") != "passed" or evidence.get("actual_fused_cross_gpu_execution") is not True:
+        failure_fields["incomplete_pass_evidence"] = (
+            "runtime fusion evidence must explicitly report passed and actual fused execution"
+        )
+
+    if failure_fields:
+        return {
+            "status": "failed",
+            "actual_fused_cross_gpu_execution": False,
+            "shared_ownership_token": token,
+            "payload_lifetime_transition_log": transition_log,
+            "reason": "runtime fusion evidence failed local guard validation",
+            "failure_fields": failure_fields,
+        }
+
+    return {
+        "status": "passed",
+        "actual_fused_cross_gpu_execution": True,
+        "shared_ownership_token": token,
+        "payload_lifetime_transition_log": transition_log,
+        "rank_to_device": dict(expected_rank_to_device),
+        "device_ids": list(expected_device_ids),
+        "world_size": len(expected_device_ids),
+        "dispatch_payload_descriptor": dispatch_descriptor,
+        "combine_payload_descriptor": combine_descriptor,
+        "failure_fields": {},
+    }
+
+
+def _validate_runtime_fusion_descriptors(
+    *,
+    failure_fields: dict[str, str],
+    token: str | None,
+    dispatch_descriptor: dict,
+    combine_descriptor: dict,
+    expected_descriptor: dict,
+) -> None:
+    if not dispatch_descriptor or not combine_descriptor:
+        failure_fields["descriptor_mismatch"] = "dispatch and combine payload descriptors are required"
+        return
+    for key in ("num_tokens", "hidden", "num_topk", "num_experts", "input_dtype"):
+        expected = expected_descriptor.get(key)
+        if expected is None:
+            continue
+        if dispatch_descriptor.get(key) != expected or combine_descriptor.get(key) != expected:
+            failure_fields["descriptor_mismatch"] = f"payload descriptor field {key!r} does not match"
+    for descriptor_name, descriptor in (
+        ("dispatch_payload_descriptor", dispatch_descriptor),
+        ("combine_payload_descriptor", combine_descriptor),
+    ):
+        if descriptor.get("ownership_token") != token:
+            failure_fields["mismatched_ownership_token"] = (
+                f"{descriptor_name} does not carry the shared ownership token"
+            )
+
+
+def _validate_runtime_fusion_lifetime_log(
+    *,
+    failure_fields: dict[str, str],
+    token: str | None,
+    transition_log: list[dict],
+) -> None:
+    if not transition_log:
+        failure_fields["missing_lifetime_transition_log"] = "payload lifetime transition log is empty"
+        return
+
+    released_indices = [
+        idx
+        for idx, entry in enumerate(transition_log)
+        if entry.get("state") == "released" or entry.get("owner") == "released"
+    ]
+    if len(released_indices) > 1:
+        failure_fields["double_release"] = "payload ownership was released more than once"
+    if released_indices and released_indices[0] != len(transition_log) - 1:
+        failure_fields["use_after_release"] = "payload lifetime log continues after release"
+    if not released_indices:
+        failure_fields["leaked_in_flight_ownership"] = "payload ownership was never released"
+
+    observed = tuple((entry.get("state"), entry.get("owner")) for entry in transition_log)
+    if observed != RUNTIME_FUSION_LIFETIME_SEQUENCE:
+        failure_fields.setdefault(
+            "illegal_lifetime_transition",
+            "payload lifetime transition log does not match the required sequence",
+        )
+
+    if token:
+        for entry in transition_log:
+            if entry.get("ownership_token") != token:
+                failure_fields["mismatched_ownership_token"] = (
+                    "payload lifetime transition uses a different ownership token"
+                )
+                break
 
 
 def _validate_two_device_results(results: list[dict]) -> dict[str, bool]:

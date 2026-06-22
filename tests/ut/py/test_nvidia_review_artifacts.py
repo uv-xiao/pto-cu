@@ -470,6 +470,7 @@ def test_persistent_moe_uccl_ep_fused_boundary_is_review_safe():
 
     for required in [
         "run_persistent_moe_uccl_ep_fused_boundary",
+        "_validate_runtime_fusion_evidence",
         "--with-uccl-ep-fused-boundary",
         "reduced-fused-cross-gpu-expert-parallel-moe-boundary",
         "persistent_device_uccl_ep_runtime_fusion",
@@ -478,6 +479,8 @@ def test_persistent_moe_uccl_ep_fused_boundary_is_review_safe():
         "payload_provenance",
         "shared_payload_ownership",
         "payload_lifetime_transition_log",
+        "failure_fields",
+        "fabricated_or_untrusted_pass_evidence",
         "unsupported",
         "non-evidence",
     ]:
@@ -490,6 +493,8 @@ def test_persistent_moe_uccl_ep_fused_boundary_is_review_safe():
         assert "payload_provenance" in text
         assert "shared ownership token" in text
         assert "lifetime transition log" in text
+        assert "fabricated_or_untrusted_pass_evidence" in text
+        assert "failure_fields" in text
         assert "not fused evidence" in text
         assert "persistent_device_uccl_ep_runtime_fusion" in text
         assert "/" + "home/" not in text
@@ -552,6 +557,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "persistent-moe-uccl-ep-runtime-fusion-h200.json",
         "`unsupported`, `setup_failed`, and",
         "not fused execution",
+        "Runtime-Owned Descriptor Implementation Handoff",
+        "No fresh H200 fused-boundary run is recorded",
     ]:
         assert required in persistent_moe
 
@@ -560,13 +567,14 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "PR #147 remains accepted provenance-only input evidence",
         "actual_fused_cross_gpu_execution` remains `false`",
         "nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor",
+        "adds local guards only",
     ]:
         assert required in selection
 
     normalized_slicing = " ".join(slicing.split())
     normalized_dispatch_log = " ".join(dispatch_log.split())
     assert "Selected Next Dependency Slice" in slicing
-    assert "Future Implementation Slice" in slicing
+    assert "Current Guard-Only Implementation Handoff" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-readiness" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor" in slicing
@@ -584,6 +592,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "https://github.com/uv-xiao/pto-cu/pull/148" in dispatch_log
     assert "2e9b01450efb709ed4e42f80a5128a01e8f9ad21" in dispatch_log
     assert "Refresh NVIDIA status after payload provenance" in dispatch_log
+    assert "d7d1679d84ef08202e3a61a821613e031edd49bd" in dispatch_log
+    assert "UCCL-EP Runtime Fusion Guard-Only Worker" in dispatch_log
     assert "not actual fused cross-GPU expert-parallel MoE execution" in (
         normalized_slicing
     )

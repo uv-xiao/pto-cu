@@ -23,6 +23,70 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - UCCL-EP Runtime Fusion Guard-Only Worker
+
+- Dispatcher Session or PR:
+  child worker launched after PR #149 merged as
+  `d7d1679d84ef08202e3a61a821613e031edd49bd`.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`;
+  implement the narrow runtime-owned descriptor slice if possible, otherwise
+  produce a reviewable blocked handoff.
+- Exact Codex command or script invocation:
+  child `/goal` worker in branch
+  `nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`; no nested
+  workers launched.
+- Parent goal and child slice:
+  NVIDIA backend restart; attempted implementation of the
+  persistent-device/UCCL-EP runtime-fusion descriptor boundary selected by
+  PR #149.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`; planned PR
+  command `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`.
+- Allowed scope and files:
+  `examples/cuda/persistent_moe_dispatch_combine.py`,
+  `tests/ut/py/test_cuda_comm.py`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`, and this dispatch
+  log.
+- Dependencies and blocked assumptions:
+  starts from PR #149 at
+  `d7d1679d84ef08202e3a61a821613e031edd49bd`. The current compiled
+  `src/cuda/runtime/persistent_device/` role files are placeholders, and the
+  active CUDA platform runner launches generated persistent DAG kernels
+  without a UCCL-EP runtime-fusion coordinator that can own or transfer a
+  shared dispatch/combine descriptor.
+- Verification commands and results:
+  completed before PR. The worker first confirmed the focused runtime-fusion
+  guard tests failed before implementation with 10 expected failures. After
+  implementation, the focused guard selection passed with `10 passed`, full
+  `test_cuda_comm.py` passed with `42 passed`, and
+  `test_nvidia_review_artifacts.py` passed with `61 passed`. `git diff
+  --check`, `git diff --cached --check`, targeted `markdownlint-cli2` over the
+  five touched docs, and `.agents/checks/check_nvidia_review_ready.py` all
+  passed.
+- H200 evidence:
+  no fresh H200 fused-boundary command was run. The branch does not implement
+  a real runtime-owned descriptor boundary and cannot truthfully emit a
+  runtime-owned ownership token, lifetime transition log, or
+  `actual_fused_cross_gpu_execution: true`. The last H200 fused-boundary
+  artifact remains the PR #147 payload-provenance result, which exited
+  `unsupported` and is not fused execution evidence.
+- Merge decision and merge commit:
+  pending PR creation, dispatcher review, and merge decision.
+- Handoff summary and remaining gaps:
+  this branch is a blocked implementation handoff, not fused execution
+  evidence. It keeps the normal `--with-uccl-ep-fused-boundary` result
+  `unsupported`, adds local guards that reject fabricated or incomplete pass
+  evidence through `failure_fields`, and documents that real
+  `persistent_device_uccl_ep_runtime_fusion` still requires a lower-level
+  runtime-owned coordinator behind the CUDA runtime / `ChipWorker` boundary.
+  No fresh H200 fused-success result is claimed.
+
 ### 2026-06-22 - UCCL-EP Runtime Fusion Readiness Worker
 
 - Dispatcher Session or PR:
