@@ -59,10 +59,10 @@ Each dispatch entry should include:
   and lifetime evidence from handoff metadata. This worker must record only
   data emitted by the UCCL-EP adapter and persistent-device graph.
 - Verification commands and results:
-  in progress. `git diff --check` passed; `git diff --cached --check` passed
-  with no staged files; targeted `markdownlint-cli2` over the five touched
-  docs passed; the NVIDIA review guard passed; `test_cuda_comm.py` passed
-  with `33 passed`; and `test_nvidia_review_artifacts.py` passed with
+  completed before PR. `git diff --check` passed; `git diff --cached --check`
+  passed with no staged files; targeted `markdownlint-cli2` over the five
+  touched docs passed; the NVIDIA review guard passed; `test_cuda_comm.py`
+  passed with `33 passed`; and `test_nvidia_review_artifacts.py` passed with
   `61 passed`. Because the example result shape changed, the worker ran the
   H200 fused-boundary command through `run-remote-cuda.sh --sync` using
   `REMOTE_PTO_CU=/tmp/pto-cu-uccl-ep-adapter-payload-provenance`.
