@@ -899,10 +899,31 @@ DeepSeek, throughput, or latency evidence.
 Selected branch:
 `nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl`.
 
-The next slice is a private descriptor allocation implementation only. It may
-add the host-control record and device-visible dispatch/combine descriptor
-buffer mechanics required by the PR #170 allocation policy and bind them to
-the same invocation id carried by the PR #174 runtime-path scaffold.
+This slice is a private descriptor allocation implementation only. It adds
+the host-control record and device-visible dispatch/combine descriptor buffer
+mechanics required by the PR #170 allocation policy and binds them to the same
+invocation id carried by the PR #174 runtime-path scaffold.
+
+Implementation evidence:
+
+- `PtoCudaUcclEpDescriptorHostControl` records the private per-invocation
+  host-control fields: invocation id, persistent graph descriptor, validated
+  rank/device map, descriptor vocabulary, allocation state, runtime-owned
+  flag, shared token, and descriptor offsets.
+- `PtoCudaUcclEpDeviceDescriptorBuffer` models the device-visible dispatch and
+  combine descriptor buffer. The dispatch and combine records carry matching
+  invocation id, graph descriptor, rank/device map, descriptor vocabulary, and
+  shared token.
+- `PtoCudaUcclEpDescriptorAllocation` binds the host-control record, the
+  device-visible buffer, and the PR #174
+  `PtoCudaUcclEpRuntimePath` descriptor views into one private allocation.
+- `pto_cuda_runtime_fusion_allocate_uccl_ep_descriptors` builds that
+  allocation from a private `PtoCudaRuntimeFusionRequest`, requiring the
+  request's same-invocation id, graph descriptor, rank/device metadata, device
+  buffer, and nonzero shared token.
+- `src/cuda/platform/onboard/host/pto_runtime_c_api.cpp` calls the allocator
+  from the persistent DAG private host-runtime path and wires the resulting
+  allocation and runtime path into the private request state.
 
 This scope is explicitly narrower than constructing
 `persistent_device_uccl_ep_runtime_fusion` as a coordinator and narrower than

@@ -1441,3 +1441,28 @@ Required non-claims:
 - no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
 - no `actual_fused_cross_gpu_execution: true`;
 - no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claim.
+
+Implemented surface in this branch:
+
+- `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h` defines
+  `PtoCudaUcclEpDescriptorHostControl`,
+  `PtoCudaUcclEpDeviceDescriptorBuffer`, and
+  `PtoCudaUcclEpDescriptorAllocation` for the private host-control record,
+  device-visible dispatch/combine descriptor buffer, and allocation bundle.
+- `pto_cuda_runtime_fusion_allocate_uccl_ep_descriptors` constructs the
+  private allocation from a `PtoCudaRuntimeFusionRequest`, binding dispatch
+  and combine descriptor views to the same invocation id, persistent graph
+  descriptor, rank/device map, descriptor vocabulary, and shared token.
+- `src/cuda/platform/onboard/host/pto_runtime_c_api.cpp` invokes that helper
+  from `CudaDeviceRunner::record_runtime_fusion_unsupported`, stores the
+  allocation in private runner state, and passes the allocation plus PR #174
+  runtime path into the private entry request.
+- `tests/ut/py/test_cuda_runtime_fusion_private_entry.py` covers the private
+  allocation helper and proves the entry remains unsupported, with descriptor
+  allocation and UCCL-EP runtime path no longer marked missing but the
+  coordinator still missing.
+
+This branch still does not construct
+`persistent_device_uccl_ep_runtime_fusion`, does not dispatch UCCL-EP runtime
+work, does not expose the allocation through public APIs, and does not change
+the accepted fused-boundary evidence state.

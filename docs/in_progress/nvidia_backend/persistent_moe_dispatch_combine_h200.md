@@ -1173,10 +1173,21 @@ DeepSeek, throughput, or latency evidence.
 Selected branch:
 `nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl`.
 
-The next slice should implement only private descriptor allocation mechanics:
+This slice implements only private descriptor allocation mechanics:
 the host-control record and device-visible dispatch/combine descriptor buffer
 required by the PR #170 policy, bound to the same invocation id carried by
 the PR #174 runtime-path scaffold.
+
+The implemented private ABI surface is
+`PtoCudaUcclEpDescriptorHostControl`,
+`PtoCudaUcclEpDeviceDescriptorBuffer`,
+`PtoCudaUcclEpDescriptorAllocation`, and
+`pto_cuda_runtime_fusion_allocate_uccl_ep_descriptors` in
+`src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h`. The CUDA
+host runtime calls that allocator from
+`CudaDeviceRunner::record_runtime_fusion_unsupported`, then attaches the
+resulting allocation and PR #174 `PtoCudaUcclEpRuntimePath` to the private
+runtime-fusion request state.
 
 This is narrower than runtime-fusion coordinator construction and narrower
 than UCCL-EP runtime dispatch. Missing coordinator behavior and missing

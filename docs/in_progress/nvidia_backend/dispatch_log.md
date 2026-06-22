@@ -23,6 +23,112 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-23 - UCCL-EP Runtime Fusion Descriptor Allocation Implementation Worker
+
+- Dispatcher Session or PR:
+  dispatcher review for PR #176 after monitor summary
+  `tmp/codex-goal-monitor/nvidia-uccl-ep-descriptor-allocation-impl/runs/20260622T203751Z/summary.md`.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl`;
+  implement only the private UCCL-EP runtime-fusion descriptor allocation
+  mechanics required after PR #170 mapped descriptor allocation policy and
+  PR #174 made the private runtime-path scaffold visible to request state.
+- Exact Codex command or script invocation:
+  worker launched by
+  `tmp/worker-prompts/run-nvidia-uccl-ep-descriptor-allocation-impl.sh`,
+  which ran the prompt in
+  `tmp/worker-prompts/nvidia-uccl-ep-descriptor-allocation-impl.md`.
+  No nested workers were launched.
+- Monitor locators:
+  Codex session id `019ef0ff-7281-7f00-a994-258c4b20cbc4`;
+  transcript `~/.codex/sessions/2026/06/23/rollout-2026-06-23T04-22-13-019ef0ff-7281-7f00-a994-258c4b20cbc4.jsonl`;
+  worker pane `pto-worker-nvidia-uccl-ep-descriptor-allocation-impl:0.0`;
+  monitor artifacts under
+  `tmp/codex-goal-monitor/nvidia-uccl-ep-descriptor-allocation-impl/`.
+  Final monitor tick `20260622T203751Z` reported `pane_status: missing`,
+  `transcript_status: ok`, `worktree_status: ok`, and `dirty_count: 0`.
+- Parent goal and child slice:
+  NVIDIA backend restart; Descriptor Allocation Implementation Slice selected
+  after PR #174.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl`; PR #176
+  <https://github.com/uv-xiao/pto-cu/pull/176>; opened as a non-draft PR with
+  expected PR command:
+  `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl`.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `f03ec5b5f77b786b69e53408796d04def05ced5f`.
+- Allowed scope and files:
+  `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h`,
+  `src/cuda/platform/onboard/host/pto_runtime_c_api.cpp`,
+  `tests/ut/py/test_cuda_runtime_fusion_private_entry.py`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`,
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`, and
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`.
+- Dependencies and blocked assumptions:
+  PR #164 same-invocation request args, PR #166 capability metadata, PR #168
+  validation policy, PR #170 allocation policy, PR #172 runtime-path map, and
+  PR #174 runtime-path scaffold are prerequisites only, not pass evidence.
+- Selected implementation surface:
+  private host-control record and device-visible dispatch/combine descriptor
+  buffer mechanics bound to the same invocation id carried by the PR #174
+  runtime-path scaffold. Implemented private symbols include
+  `PtoCudaUcclEpDescriptorHostControl`,
+  `PtoCudaUcclEpDeviceDescriptorBuffer`,
+  `PtoCudaUcclEpDescriptorAllocation`, and
+  `pto_cuda_runtime_fusion_allocate_uccl_ep_descriptors`. The CUDA host
+  runtime wires that allocation into private request state from
+  `CudaDeviceRunner::record_runtime_fusion_unsupported`. Missing
+  runtime-fusion coordinator construction and missing UCCL-EP runtime
+  dispatch remain unsupported or failed states.
+- Forbidden and non-claimed surfaces:
+  no runtime-fusion coordinator construction, no UCCL-EP runtime dispatch, no
+  public `TaskArgs`, no public `CallConfig`, no common runtime C API fields,
+  no UCCL host-runtime ABI fields, no examples, no stable docs, no pass
+  evidence, no fresh H200 fused-success evidence, no
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`, no
+  `actual_fused_cross_gpu_execution: true`, no RDMA, no multi-node transport,
+  no serving, no vLLM, no DeepSeek, no throughput, and no latency claim.
+- Verification commands and results:
+  started with the required focused red test:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  /home/uvxiao/pto-cu/.venv/bin/python -m pytest
+  tests/ut/py/test_cuda_runtime_fusion_private_entry.py -q` failed before
+  implementation with `1 failed, 12 passed` because
+  `PtoCudaUcclEpDeviceDescriptorBuffer`,
+  `PtoCudaUcclEpDescriptorAllocation`,
+  `PTO_CUDA_UCCL_EP_DESCRIPTOR_ALLOCATION_VERSION`, and
+  `pto_cuda_runtime_fusion_allocate_uccl_ep_descriptors` did not exist.
+  Required post-implementation verification:
+  `git diff --check`; targeted `markdownlint-cli2` over the five NVIDIA
+  in-progress docs; `PYTHONPATH=$PWD:$PWD/python
+  /home/uvxiao/pto-cu/.venv/bin/python
+  .agents/checks/check_nvidia_review_ready.py`;
+  focused pytest for
+  `tests/ut/py/test_cuda_runtime_fusion_private_entry.py`; and focused pytest
+  for `tests/ut/py/test_nvidia_review_artifacts.py`.
+  Post-implementation results before dispatch-log result update:
+  `git diff --check` passed with no output. Targeted `markdownlint-cli2`
+  over the five NVIDIA status docs passed with `0 error(s)`. The NVIDIA
+  review guard passed. Focused
+  `tests/ut/py/test_cuda_runtime_fusion_private_entry.py` passed with
+  `13 passed`. Focused `tests/ut/py/test_nvidia_review_artifacts.py` passed
+  with `65 passed`.
+- H200 evidence:
+  No fresh H200 command is planned because this slice does not dispatch
+  UCCL-EP runtime work, construct the runtime-fusion coordinator, change
+  fused-boundary example behavior, or claim fused success.
+- Merge decision and merge commit:
+  pending dispatcher review.
+- Handoff summary and remaining gaps:
+  implemented only the private descriptor allocation mechanics. Runtime-fusion
+  coordinator construction, UCCL-EP runtime dispatch, pass evidence, and
+  fresh H200 fused-success evidence remain unsupported or failed states.
+
 ### 2026-06-23 - Post-UCCL-EP-Runtime-Path-Impl Status Refresh Worker
 
 - Dispatcher Session or PR:

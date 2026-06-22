@@ -22,6 +22,8 @@ static const uint32_t PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION = 1;
 static const uint32_t PTO_CUDA_RUNTIME_FUSION_RESULT_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_PATH_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DESCRIPTOR_VIEW_VERSION = 1;
+static const uint32_t PTO_CUDA_UCCL_EP_DESCRIPTOR_ALLOCATION_VERSION = 1;
+static const uint32_t PTO_CUDA_UCCL_EP_DEVICE_DESCRIPTOR_BUFFER_VERSION = 1;
 
 enum PtoCudaRuntimeFusionStatus : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED = 1,
@@ -97,6 +99,48 @@ struct PtoCudaUcclEpRuntimePath {
     uint32_t transport_mode;
     const PtoCudaUcclEpRuntimeDescriptorView *dispatch_descriptor;
     const PtoCudaUcclEpRuntimeDescriptorView *combine_descriptor;
+};
+
+struct PtoCudaUcclEpDeviceDescriptor {
+    uint32_t version;
+    uint32_t descriptor_vocabulary;
+    uint64_t invocation_id;
+    const void *persistent_graph_descriptor;
+    uint32_t capability_crc32;
+    uint32_t rank;
+    uint32_t device_id;
+    uint32_t world_size;
+    uint64_t shared_token;
+};
+
+struct PtoCudaUcclEpDeviceDescriptorBuffer {
+    PtoCudaUcclEpDeviceDescriptor dispatch_descriptor;
+    PtoCudaUcclEpDeviceDescriptor combine_descriptor;
+};
+
+struct PtoCudaUcclEpDescriptorHostControl {
+    uint32_t version;
+    uint32_t runtime_owned;
+    uint64_t invocation_id;
+    const void *persistent_graph_descriptor;
+    uint32_t capability_crc32;
+    uint32_t rank;
+    uint32_t device_id;
+    uint32_t world_size;
+    uint32_t descriptor_vocabulary;
+    uint32_t allocation_state;
+    uint64_t shared_token;
+    size_t device_buffer_size;
+    size_t dispatch_descriptor_offset;
+    size_t combine_descriptor_offset;
+};
+
+struct PtoCudaUcclEpDescriptorAllocation {
+    PtoCudaUcclEpDescriptorHostControl host_control;
+    PtoCudaUcclEpDeviceDescriptorBuffer *device_buffer;
+    PtoCudaUcclEpRuntimeDescriptorView dispatch_descriptor;
+    PtoCudaUcclEpRuntimeDescriptorView combine_descriptor;
+    PtoCudaUcclEpRuntimePath runtime_path;
 };
 
 struct PtoCudaRuntimeFusionRequest {
@@ -198,6 +242,80 @@ inline const char *pto_cuda_runtime_fusion_failure_name(uint32_t failure) {
 
 inline int pto_cuda_uccl_ep_runtime_path_source_is_forbidden(uint32_t source) {
     return source != PTO_CUDA_UCCL_EP_RUNTIME_PATH_SOURCE_COORDINATOR_OWNED;
+}
+
+inline int pto_cuda_runtime_fusion_allocate_uccl_ep_descriptors(
+    const PtoCudaRuntimeFusionRequest *request, PtoCudaUcclEpDescriptorAllocation *allocation, void *device_buffer,
+    size_t device_buffer_size, uint64_t shared_token
+) {
+    if (request == nullptr || allocation == nullptr || device_buffer == nullptr ||
+        request->version != PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION || request->comm_descriptor == nullptr ||
+        request->persistent_graph_descriptor == nullptr || shared_token == 0U ||
+        device_buffer_size < sizeof(PtoCudaUcclEpDeviceDescriptorBuffer)) {
+        return -1;
+    }
+
+    PtoCudaUcclEpDeviceDescriptorBuffer *typed_buffer =
+        static_cast<PtoCudaUcclEpDeviceDescriptorBuffer *>(device_buffer);
+    *allocation = {};
+    *typed_buffer = {};
+
+    typed_buffer->dispatch_descriptor.version = PTO_CUDA_UCCL_EP_DEVICE_DESCRIPTOR_BUFFER_VERSION;
+    typed_buffer->dispatch_descriptor.descriptor_vocabulary =
+        PTO_CUDA_RUNTIME_FUSION_DESCRIPTOR_VOCABULARY_DISPATCH;
+    typed_buffer->dispatch_descriptor.invocation_id = request->invocation_id;
+    typed_buffer->dispatch_descriptor.persistent_graph_descriptor = request->persistent_graph_descriptor;
+    typed_buffer->dispatch_descriptor.capability_crc32 = request->comm_descriptor->capability_crc32;
+    typed_buffer->dispatch_descriptor.rank = request->comm_descriptor->rank;
+    typed_buffer->dispatch_descriptor.device_id = request->comm_descriptor->device_id;
+    typed_buffer->dispatch_descriptor.world_size = request->comm_descriptor->world_size;
+    typed_buffer->dispatch_descriptor.shared_token = shared_token;
+
+    typed_buffer->combine_descriptor = typed_buffer->dispatch_descriptor;
+    typed_buffer->combine_descriptor.descriptor_vocabulary =
+        PTO_CUDA_RUNTIME_FUSION_DESCRIPTOR_VOCABULARY_COMBINE;
+
+    allocation->host_control.version = PTO_CUDA_UCCL_EP_DESCRIPTOR_ALLOCATION_VERSION;
+    allocation->host_control.runtime_owned = 1U;
+    allocation->host_control.invocation_id = request->invocation_id;
+    allocation->host_control.persistent_graph_descriptor = request->persistent_graph_descriptor;
+    allocation->host_control.capability_crc32 = request->comm_descriptor->capability_crc32;
+    allocation->host_control.rank = request->comm_descriptor->rank;
+    allocation->host_control.device_id = request->comm_descriptor->device_id;
+    allocation->host_control.world_size = request->comm_descriptor->world_size;
+    allocation->host_control.descriptor_vocabulary =
+        PTO_CUDA_RUNTIME_FUSION_DESCRIPTOR_VOCABULARY_DISPATCH |
+        PTO_CUDA_RUNTIME_FUSION_DESCRIPTOR_VOCABULARY_COMBINE;
+    allocation->host_control.allocation_state = 1U;
+    allocation->host_control.shared_token = shared_token;
+    allocation->host_control.device_buffer_size = device_buffer_size;
+    allocation->host_control.dispatch_descriptor_offset =
+        offsetof(PtoCudaUcclEpDeviceDescriptorBuffer, dispatch_descriptor);
+    allocation->host_control.combine_descriptor_offset =
+        offsetof(PtoCudaUcclEpDeviceDescriptorBuffer, combine_descriptor);
+    allocation->device_buffer = typed_buffer;
+
+    allocation->dispatch_descriptor.version = PTO_CUDA_UCCL_EP_RUNTIME_DESCRIPTOR_VIEW_VERSION;
+    allocation->dispatch_descriptor.invocation_id = request->invocation_id;
+    allocation->dispatch_descriptor.persistent_graph_descriptor = request->persistent_graph_descriptor;
+    allocation->dispatch_descriptor.capability_crc32 = request->comm_descriptor->capability_crc32;
+    allocation->dispatch_descriptor.rank = request->comm_descriptor->rank;
+    allocation->dispatch_descriptor.device_id = request->comm_descriptor->device_id;
+    allocation->dispatch_descriptor.world_size = request->comm_descriptor->world_size;
+    allocation->dispatch_descriptor.descriptor_vocabulary =
+        PTO_CUDA_RUNTIME_FUSION_DESCRIPTOR_VOCABULARY_DISPATCH;
+    allocation->dispatch_descriptor.shared_token = shared_token;
+    allocation->dispatch_descriptor.source = PTO_CUDA_UCCL_EP_RUNTIME_PATH_SOURCE_COORDINATOR_OWNED;
+
+    allocation->combine_descriptor = allocation->dispatch_descriptor;
+    allocation->combine_descriptor.descriptor_vocabulary =
+        PTO_CUDA_RUNTIME_FUSION_DESCRIPTOR_VOCABULARY_COMBINE;
+
+    allocation->runtime_path.version = PTO_CUDA_UCCL_EP_RUNTIME_PATH_VERSION;
+    allocation->runtime_path.transport_mode = PTO_CUDA_UCCL_EP_TRANSPORT_MODE_EP;
+    allocation->runtime_path.dispatch_descriptor = &allocation->dispatch_descriptor;
+    allocation->runtime_path.combine_descriptor = &allocation->combine_descriptor;
+    return 0;
 }
 
 inline uint32_t pto_cuda_runtime_fusion_validate_descriptor_view(
