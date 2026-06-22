@@ -23,6 +23,53 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - Abandoned UCCL-EP Runtime Fusion Implementation Worker
+
+- Dispatcher Session or PR:
+  child worker handoff after PR #145 defined the dependency/design contract.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-impl-h200`; attempted to
+  implement `persistent_device_uccl_ep_runtime_fusion` after the design
+  contract landed.
+- Exact Codex command or script invocation:
+  child `/goal` worker in local branch
+  `nvidia-uccl-ep-runtime-fusion-impl-h200`.
+- Parent goal and child slice:
+  NVIDIA backend restart; attempted implementation follow-up for the
+  PR #145 UCCL-EP runtime-fusion contract.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-impl-h200`; abandoned local commit
+  `8c7b3715`. The branch and sessions were removed. There was no remote
+  branch and no PR.
+- Allowed scope and files:
+  rejected implementation attempt; this handoff records only docs under
+  `docs/in_progress/nvidia_backend/`.
+- Dependencies and blocked assumptions:
+  PR #143 remains accepted only as a structured unsupported boundary and
+  non-evidence for actual fused cross-GPU expert-parallel MoE execution.
+  PR #145 remains accepted only as a design/dependency contract. The abandoned
+  implementation was rejected because it synthesized `status: passed`,
+  `actual_fused_cross_gpu_execution: true`, a payload ownership token, and a
+  transition log from existing UCCL-EP handoff metadata. Synthetic pass
+  evidence derived from handoff metadata is invalid; it is not a real
+  runtime-fusion implementation.
+- Verification commands and results:
+  no verification result from `8c7b3715` is accepted as evidence. The local
+  implementation attempt was abandoned before push or PR. This docs-only
+  handoff branch passed `git diff --check`, `git diff --cached --check`,
+  targeted `markdownlint-cli2` over the three touched docs, the NVIDIA review
+  guard, and `test_nvidia_review_artifacts.py` with `61 passed`.
+- Merge decision and merge commit:
+  implementation attempt rejected and not pushed. This handoff branch is the
+  durable record.
+- Handoff summary and remaining gaps:
+  the next worker must not fabricate ownership or lifetime transitions. Before
+  any implementation can truthfully report
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`, a narrower
+  dependency must expose real payload provenance produced by the UCCL-EP
+  adapter and persistent-device graph, or otherwise define where real
+  cross-component ownership state lives behind the runtime boundary.
+
 ### 2026-06-22 - UCCL-EP Runtime Fusion Design Worker
 
 - Dispatcher Session or PR:
@@ -58,12 +105,15 @@ Each dispatch entry should include:
   guard passed; and `test_nvidia_review_artifacts.py` passed with
   `61 passed`.
 - Merge decision and merge commit:
-  pending worker PR, parent review, and merge decision.
+  accepted as a design/dependency contract only. PR #145 merged into `main` on
+  2026-06-22 as `902804ff0bc9430448323240a77ebd1e12d775e8`
+  (`Define UCCL EP runtime fusion contract`). The merge decision did not
+  accept any actual fused cross-GPU expert-parallel MoE execution evidence.
 - Handoff summary and remaining gaps:
-  this slice should define payload ownership and lifetime, rank/device
-  mapping, status fields, failure modes, unsupported/setup-failed/pass state
-  handling, and future fused-execution evidence shape. Remaining gaps after
-  this slice are implementation of
+  this slice defined payload ownership and lifetime, rank/device mapping,
+  status fields, failure modes, unsupported/setup-failed/pass state handling,
+  and future fused-execution evidence shape. Remaining gaps after this slice
+  are real adapter-produced payload provenance, implementation of
   `persistent_device_uccl_ep_runtime_fusion`, CUDA host-runtime UCCL dispatch,
   RDMA or multi-node evidence, serving/vLLM integration, DeepSeek correctness,
   and throughput/latency evidence.

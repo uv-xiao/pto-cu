@@ -329,7 +329,7 @@ def test_nvidia_goal_status_rollup_tracks_current_boundaries():
 
     text = rollup.read_text(encoding="utf-8")
     required_phrases = [
-        "`origin/main` at `f73620c6`",
+        "`origin/main` at `902804ff`",
         "`accepted evidence`",
         "`partial evidence`",
         "DeepSeek/vLLM serving evidence",
@@ -337,7 +337,8 @@ def test_nvidia_goal_status_rollup_tracks_current_boundaries():
         "`--with-uccl-ep-fused-boundary`",
         "`status: unsupported`",
         "`persistent_device_uccl_ep_runtime_fusion`",
-        "`nvidia-uccl-ep-runtime-fusion-design`",
+        "`nvidia-uccl-ep-adapter-payload-provenance`",
+        "must not fabricate a shared ownership token",
         "not vLLM plugin integration",
         "not actual fused cross-GPU expert-parallel MoE execution",
     ]
@@ -539,7 +540,16 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         assert required in persistent_moe
 
     normalized_slicing = " ".join(slicing.split())
-    assert "Next Step After This Design PR" in slicing
+    normalized_dispatch_log = " ".join(dispatch_log.split())
+    assert "Next Dependency Slice" in slicing
+    assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
+    assert "real payload provenance" in normalized_slicing
+    assert "only route to `passed` is fabricated ownership" in normalized_slicing
+    assert "nvidia-uccl-ep-runtime-fusion-impl-h200" in dispatch_log
+    assert "8c7b3715" in dispatch_log
+    assert "Synthetic pass evidence derived from handoff metadata is invalid" in (
+        normalized_dispatch_log
+    )
     assert "not actual fused cross-GPU expert-parallel MoE execution" in (
         normalized_slicing
     )
