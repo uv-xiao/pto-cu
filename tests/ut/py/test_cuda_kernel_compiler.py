@@ -1623,12 +1623,14 @@ def test_gluon_flashattention_causal_decode_sweep_aggregates_decode_cases(
     assert result["kernel_name"] == "flashattention_fwd_f32"
     assert result["status"] == "skipped"
     assert result["case_count"] == len(example.FLASHATTENTION_CAUSAL_DECODE_SWEEP_CASES)
-    assert result["case_count"] >= 2
+    assert result["case_count"] >= 4
     assert result["skipped_cases"] == len(example.FLASHATTENTION_CAUSAL_DECODE_SWEEP_CASES)
 
     shapes = [case["shape"] for case in result["cases"]]
     assert {"seqlen_q": 1, "seqlen_k": 16, "head_dim": 64} in shapes
     assert {"seqlen_q": 1, "seqlen_k": 32, "head_dim": 64} in shapes
+    assert {"seqlen_q": 1, "seqlen_k": 64, "head_dim": 64} in shapes
+    assert {"seqlen_q": 1, "seqlen_k": 128, "head_dim": 32} in shapes
 
     for case in result["cases"]:
         assert case["phase"] == "decode"

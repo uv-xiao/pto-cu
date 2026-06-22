@@ -421,7 +421,7 @@ For the bounded causal decode sweep, use:
 ```bash
 PYTHONPATH=$PWD:$PWD/python \
   .venv/bin/python examples/cuda/gluon_flashattention_fwd.py \
-  --output-dir tmp/gluon-flashattention-decode-sweep-h200 \
+  --output-dir tmp/gluon-flashattention-decode-coverage-h200 \
   --arch compute_90 --sweep --causal --causal-sweep-phase decode --require-cuda
 ```
 
@@ -436,7 +436,9 @@ full decode coverage, not paged/ragged KV-cache correctness, not varlen
 attention correctness, not attention-variant correctness, not FlashInfer
 integration, not vLLM/simpler-nv integration, not DeepSeek semantic
 correctness, not production readiness, and not performance evidence.
-In short, only causal decode cases.
+The H200-promoted decode cases include `decode_1x64x64` and
+`decode_1x128x32`; `1x128x64 hit a Triton CUDA out-of-memory boundary`, so it
+is not claimed as passing. In short, only causal decode cases.
 
 For the bounded causal append sweep, use:
 

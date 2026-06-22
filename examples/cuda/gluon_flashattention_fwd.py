@@ -84,6 +84,21 @@ FLASHATTENTION_CAUSAL_DECODE_SWEEP_CASES = [
         "seed": 7,
         "provenance": "bounded single-query causal decode H200 gate",
     },
+    {
+        "name": "decode_1x64x64",
+        "tile_shape": (1, 64, 64),
+        "seed": 8,
+        "provenance": "broader bounded single-query causal decode H200 gate",
+    },
+    {
+        "name": "decode_1x128x32",
+        "tile_shape": (1, 128, 32),
+        "seed": 9,
+        "provenance": (
+            "broader bounded single-query causal decode H200 gate; "
+            "selected after 1x128x64 hit a Triton CUDA out-of-memory boundary"
+        ),
+    },
 ]
 
 

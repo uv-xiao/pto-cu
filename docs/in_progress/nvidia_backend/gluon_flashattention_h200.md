@@ -102,7 +102,12 @@ The causal decode sweep includes:
 - `decode_1x16x64`: `seqlen_q=1`, `seqlen_k=16`, `head_dim=64`,
   provenance `bounded single-query causal decode fixture`;
 - `decode_1x32x64`: `seqlen_q=1`, `seqlen_k=32`, `head_dim=64`,
-  provenance `bounded single-query causal decode H200 gate`.
+  provenance `bounded single-query causal decode H200 gate`;
+- `decode_1x64x64`: `seqlen_q=1`, `seqlen_k=64`, `head_dim=64`,
+  provenance `broader bounded single-query causal decode H200 gate`;
+- `decode_1x128x32`: `seqlen_q=1`, `seqlen_k=128`, `head_dim=32`,
+  provenance `broader bounded single-query causal decode H200 gate;
+  selected after 1x128x64 hit a Triton CUDA out-of-memory boundary`.
 
 The causal append sweep includes:
 
@@ -256,17 +261,17 @@ evidence, and not DeepSeek semantic correctness.
 ## Decode Sweep Gate
 
 On 2026-06-22, the bounded causal decode sweep generated and launched on the
-same H200 class machine and passed correctness for two single-query decode
+same H200 class machine and passed correctness for four single-query decode
 cases against the shifted masked PyTorch reference. The remote run used tree
-sync into `/tmp/decode-sweep-h200` through the generic CUDA runner and
-the preserved remote Gluon Python environment through `/tmp/gluon-venv`.
-The `python -S` launch avoids a stale editable-package hook in that remote
+sync into `<remote-pto-cu>` through the generic CUDA runner and the preserved
+remote Gluon Python environment through `<remote-gluon-venv>`. The
+`python -S` launch avoids a stale editable-package hook in that remote
 environment so `simpler_setup` resolves from the synced checkout.
 
 ```bash
-REMOTE_PTO_CU=/tmp/decode-sweep-h200 \
+REMOTE_PTO_CU=<remote-pto-cu> \
   .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
-  bash -lc '/tmp/gluon-venv/bin/python -S -c '"'"'import runpy, sys; sys.path[:0] = [".", "./python", "/tmp/gluon-venv/lib/python3.12/site-packages"]; sys.argv = ["examples/cuda/gluon_flashattention_fwd.py", "--output-dir", "tmp/gluon-flashattention-decode-sweep-h200", "--arch", "compute_90", "--sweep", "--causal", "--causal-sweep-phase", "decode", "--require-cuda"]; runpy.run_path(sys.argv[0], run_name="__main__")'"'"''
+  bash -lc '<remote-gluon-venv>/bin/python -S -c '"'"'import runpy, sys; sys.path[:0] = [".", "./python", "<remote-gluon-venv>/lib/python3.12/site-packages"]; sys.argv = ["examples/cuda/gluon_flashattention_fwd.py", "--output-dir", "tmp/gluon-flashattention-decode-coverage-h200", "--arch", "compute_90", "--sweep", "--causal", "--causal-sweep-phase", "decode", "--require-cuda"]; runpy.run_path(sys.argv[0], run_name="__main__")'"'"''
 ```
 
 Exit code: 0.
@@ -276,8 +281,8 @@ Distilled passed result:
 ```text
 schema_version: 1
 status: passed
-case_count: 2
-passed_cases: 2
+case_count: 4
+passed_cases: 4
 failed_cases: 0
 skipped_cases: 0
 only causal decode cases
@@ -297,24 +302,43 @@ reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index + (seq
 tolerance: atol=0.001, rtol=0.01
 max_abs_error: 1.4901161193847656e-07
 source_sha256: 43a91756bc237b2c8240a7a61dcec448ceb7d335f915cd62630d7fa8c8a1e4c2
+case_name: decode_1x64x64
+phase: decode
+causal: true
+shape: seqlen_q=1, seqlen_k=64, head_dim=64
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index + (seqlen_k - seqlen_q), -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+max_abs_error: 1.043081283569336e-07
+source_sha256: 13ce1cf16510067af5fa4da1e1e5d79a108843205a4e8856acbe9173a39219cd
+case_name: decode_1x128x32
+phase: decode
+causal: true
+shape: seqlen_q=1, seqlen_k=128, head_dim=32
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index + (seqlen_k - seqlen_q), -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+max_abs_error: 1.1920928955078125e-07
+source_sha256: de4483ad16022bd22f5e0e9a82ed25b35fbaa02841d59ffd708faf257f5e7de8
 per-case artifact paths are repo-relative
 machine class: H200
 private absolute paths are not recorded
 ```
 
-This result is bounded causal decode sweep correctness evidence for two
+This result is bounded causal decode sweep correctness evidence for four
 generated single-query FP32 causal FlashAttention sources where
-`seqlen_q == 1` and `seqlen_k > seqlen_q`. It is not full decode coverage,
-not paged/ragged KV-cache correctness, not varlen attention correctness, not
-attention-variant correctness, not FlashInfer integration evidence, not
-vLLM/simpler-nv integration evidence, not production serving readiness, not
-performance, throughput, or latency evidence, and not DeepSeek semantic
-correctness.
+`seqlen_q == 1` and `seqlen_k > seqlen_q`. The requested `1x128x64`
+candidate is not claimed as passing: it hit a Triton CUDA out-of-memory
+boundary on H200. The promoted 128-length case is `decode_1x128x32`, which
+extends KV length coverage with a smaller head dimension. This is not full
+decode coverage, not paged/ragged KV-cache correctness, not varlen attention
+correctness, not attention-variant correctness, not FlashInfer integration
+evidence, not vLLM/simpler-nv integration evidence, not production serving
+readiness, not performance, throughput, or latency evidence, and not
+DeepSeek semantic correctness.
 
 The explicit selector form is
 `--sweep --causal --causal-sweep-phase decode --require-cuda`.
 The artifact directory option is
-`--output-dir tmp/gluon-flashattention-decode-sweep-h200`.
+`--output-dir tmp/gluon-flashattention-decode-coverage-h200`.
 
 ## Append Sweep Gate
 

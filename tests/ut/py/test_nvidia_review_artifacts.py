@@ -2487,7 +2487,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "softmax((q @ k.T) * scale) @ v",
         "--output-dir tmp/gluon-flashattention-shape-coverage-h200",
         "--output-dir tmp/gluon-flashattention-prefill-sweep-h200",
-        "--output-dir tmp/gluon-flashattention-decode-sweep-h200",
+        "--output-dir tmp/gluon-flashattention-decode-coverage-h200",
         "--output-dir tmp/gluon-flashattention-append-sweep-h200",
         "--output-dir tmp/gluon-flashattention-causal-boundary-h200",
         "--output-dir tmp/gluon-flashattention-decode-boundary-h200",
@@ -2566,10 +2566,15 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "source_sha256: c611666d3b527e615f2d8e4658b57f10865f1547fd370e8bb45639353682a06e",
         "source_sha256: f9f0ff900d33023c462579063be9aa8560a82c63d43aae2bd851369cfcfb58a4",
         "remains separate from the two-case promoted sweep",
-        "case_count: 2",
+        "case_count: 4",
         "case_name: decode_1x16x64",
         "shape: seqlen_q=1, seqlen_k=16, head_dim=64",
         "case_name: decode_1x32x64",
+        "case_name: decode_1x64x64",
+        "shape: seqlen_q=1, seqlen_k=64, head_dim=64",
+        "case_name: decode_1x128x32",
+        "shape: seqlen_q=1, seqlen_k=128, head_dim=32",
+        "1x128x64 hit a Triton CUDA out-of-memory boundary",
         "per-case artifact paths are repo-relative",
         "max_abs_error: 2.384185791015625e-07",
         "source_sha256:",
@@ -2646,6 +2651,9 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "only causal prefill cases" in readme_text
     assert "bounded causal decode sweep correctness evidence" in readme_text
     assert "only causal decode cases" in readme_text
+    assert "decode_1x64x64" in readme_text
+    assert "decode_1x128x32" in readme_text
+    assert "1x128x64 hit a Triton CUDA out-of-memory boundary" in readme_text
     assert "bounded causal append sweep correctness evidence" in readme_text
     assert "only causal append cases" in readme_text
     assert "not full prefill coverage" in readme_text
@@ -2669,6 +2677,9 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "--sweep --causal --causal-sweep-phase append --require-cuda" in checklist_text
     assert "same-length multi-query prefill-shaped" in normalized_checklist_text
     assert "only causal decode cases" in checklist_text
+    assert "decode_1x64x64" in checklist_text
+    assert "decode_1x128x32" in checklist_text
+    assert "1x128x64 hit a Triton CUDA out-of-memory boundary" in checklist_text
     assert "only causal append cases" in checklist_text
     assert "single-query decode-shaped" in normalized_checklist_text
     assert "small multi-query append-shaped" in normalized_checklist_text
