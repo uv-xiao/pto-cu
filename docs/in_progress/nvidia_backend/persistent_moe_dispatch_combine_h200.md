@@ -467,3 +467,44 @@ RDMA, multi-node transport, serving, DeepSeek/vLLM integration, throughput, or
 latency. A later implementation must add the
 `persistent_device_uccl_ep_runtime_fusion` boundary before this can become
 fused evidence.
+
+## Future Fused Execution Evidence Shape
+
+This design/dependency PR defines the evidence contract only. It does not
+implement `persistent_device_uccl_ep_runtime_fusion`, does not change the
+example command, and does not relabel the PR #143 structured unsupported
+boundary as fused evidence.
+
+A later implementation PR may claim actual fused cross-GPU expert-parallel
+MoE execution only when one fresh H200 command emits all of these fields:
+
+- top-level `status: passed`;
+- `fused_boundary_scope`:
+  `reduced-fused-cross-gpu-expert-parallel-moe-boundary`;
+- `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- `actual_fused_cross_gpu_execution: true`;
+- `device_ids`, `rank_to_device`, `world_size`, and UCCL capability id;
+- persistent MoE validation fields with completion count `5`, zero scheduler
+  errors, zero fan-in remaining, zero max error, and matching source/bridge
+  digests;
+- UCCL-EP runtime validation fields for `transport: ep`,
+  `operation: ep_dispatch_combine`, all ranks passed, descriptor metadata
+  present, zero max error, and zero top-k weight error;
+- dispatch and combine payload descriptors with token count, hidden size,
+  top-k, expert count, dtype, metadata shapes, and a shared ownership token;
+- payload ownership/lifetime transition log showing
+  `persistent_device_graph -> uccl_ep_runtime -> persistent_device_graph ->
+  released` with no mismatched token, double release, leaked in-flight owner,
+  or use-after-release;
+- failure fields for setup, descriptor, rank/device, payload lifetime,
+  transport, validation, unsupported boundary, and numeric correctness states;
+- non-claims for CUDA host-runtime UCCL dispatch, RDMA, multi-node transport,
+  serving, DeepSeek/vLLM integration, throughput, and latency unless that same
+  PR also adds separate evidence for those claims.
+
+The expected future command shape remains the PR #143 H200 command with
+`--with-uccl-ep-fused-boundary`. The result may be called fused evidence only
+when the boundary status is `passed` and the JSON records
+`actual_fused_cross_gpu_execution: true`. `unsupported`, `setup_failed`, and
+`failed` remain useful review outcomes, but they are not fused execution
+evidence.
