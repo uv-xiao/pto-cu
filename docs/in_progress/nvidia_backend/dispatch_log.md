@@ -41,8 +41,9 @@ Each dispatch entry should include:
   persistent-device/UCCL-EP runtime-fusion descriptor boundary selected by
   PR #149.
 - Branch name and PR URL or planned PR slot:
-  `nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`; planned PR
-  command `gh pr create --repo uv-xiao/pto-cu --base main --head
+  `nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`;
+  <https://github.com/uv-xiao/pto-cu/pull/150>. Opened as a non-draft PR with
+  `gh pr create --repo uv-xiao/pto-cu --base main --head
   nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`.
 - Allowed scope and files:
   `examples/cuda/persistent_moe_dispatch_combine.py`,
@@ -77,7 +78,13 @@ Each dispatch entry should include:
   artifact remains the PR #147 payload-provenance result, which exited
   `unsupported` and is not fused execution evidence.
 - Merge decision and merge commit:
-  pending PR creation, dispatcher review, and merge decision.
+  accepted only as a guard-only blocked implementation handoff. PR #150
+  merged into `main` on 2026-06-22 as
+  `a6378bfbf55b15be01c334f43332ccd20c160cfa`
+  (`Guard UCCL EP runtime fusion evidence`). The merge decision did not
+  accept `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, actual fused cross-GPU
+  expert-parallel MoE execution, or fresh H200 fused-success evidence.
 - Handoff summary and remaining gaps:
   this branch is a blocked implementation handoff, not fused execution
   evidence. It keeps the normal `--with-uccl-ep-fused-boundary` result
@@ -85,7 +92,11 @@ Each dispatch entry should include:
   evidence through `failure_fields`, and documents that real
   `persistent_device_uccl_ep_runtime_fusion` still requires a lower-level
   runtime-owned coordinator behind the CUDA runtime / `ChipWorker` boundary.
-  No fresh H200 fused-success result is claimed.
+  No fresh H200 fused-success result is claimed. The next selected
+  PR-sized slice is
+  `nvidia-uccl-ep-runtime-fusion-coordinator-boundary-map`, a
+  design/status dependency to make that lower-level coordinator boundary
+  reviewable before another implementation attempt.
 
 ### 2026-06-22 - UCCL-EP Runtime Fusion Readiness Worker
 
@@ -128,7 +139,12 @@ Each dispatch entry should include:
   the NVIDIA review guard passed; and `test_nvidia_review_artifacts.py`
   passed with `61 passed`.
 - Merge decision and merge commit:
-  pending PR creation, dispatcher review, and merge decision.
+  accepted as a design/readiness map only by PR #149,
+  <https://github.com/uv-xiao/pto-cu/pull/149>, merged as
+  `d7d1679d84ef08202e3a61a821613e031edd49bd`. This merge decision did not
+  accept fused execution evidence,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`, or
+  `actual_fused_cross_gpu_execution: true`.
 - Handoff summary and remaining gaps:
   this slice defines where the runtime-owned shared payload descriptor can
   live, names the private fusion coordinator as owner of the ownership token

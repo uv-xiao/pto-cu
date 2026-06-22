@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `2e9b01450efb709ed4e42f80a5128a01e8f9ad21`,
-  after PR #148 (`Refresh NVIDIA status after payload provenance`).
+- Current accepted `main`: `a6378bfbf55b15be01c334f43332ccd20c160cfa`,
+  after PR #150 (`Guard UCCL EP runtime fusion evidence`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -37,11 +37,12 @@ from `main` and lands through focused GitHub PRs.
   descriptor boundary and selected
   `nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor` as the next
   narrow implementation attempt.
-- The current implementation branch found no real runtime-owned
+- PR #150 found no real runtime-owned
   `persistent_device_uccl_ep_runtime_fusion` coordinator behind the CUDA
   runtime / `ChipWorker` boundary. It therefore keeps the fused-boundary
   result `unsupported` and adds local guards that reject fabricated or
-  incomplete pass evidence.
+  incomplete pass evidence. It is accepted only as a guard-only blocked
+  implementation handoff, not fused execution evidence.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -92,6 +93,14 @@ from `main` and lands through focused GitHub PRs.
 - PR #148: refresh NVIDIA status after payload provenance.
   - Result: merged as `2e9b01450efb709ed4e42f80a5128a01e8f9ad21`.
   - Result type: status/slicing refresh only, not fused execution evidence.
+- PR #149: UCCL-EP runtime fusion readiness.
+  - Result: merged as `d7d1679d84ef08202e3a61a821613e031edd49bd`.
+  - Result type: implementation-readiness map only, not fused execution
+    evidence.
+- PR #150: guard UCCL-EP runtime fusion evidence.
+  - Result: merged as `a6378bfbf55b15be01c334f43332ccd20c160cfa`.
+  - Result type: guard-only blocked implementation handoff, not fused
+    execution evidence.
 
 ## Restored Tracking Surface
 
@@ -145,6 +154,8 @@ longer a next candidate. After PR #145, the runtime-fusion design contract is
 also complete as a design-only slice; it is not implementation evidence.
 After PR #147, payload provenance is accepted as provenance-only evidence; it
 is no longer a next candidate and does not change fused-execution status.
+After PR #150, guard-only runtime-fusion evidence checks are accepted as a
+blocked implementation handoff; they do not change fused-execution status.
 
 ## Accepted Payload Provenance Slice
 
@@ -181,22 +192,130 @@ exited with status `unsupported`, as expected. It records
 and an empty lifetime transition log. It must not be cited as fused execution
 evidence.
 
-## Selected Next Dependency Slice
+## Accepted Runtime Fusion Readiness Slice
 
-This section records the selected PR-sized slice from current `main` after
-PR #148. The current slice is a conservative docs/design readiness slice, not
-a runtime implementation attempt.
+This section records the dependency slice selected after PR #148 and accepted
+by PR #149. It is not actual fused cross-GPU expert-parallel MoE execution.
 
-Recommended branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-readiness`.
 
-Objective: define an implementation-readiness map for the real
+Accepted objective: define an implementation-readiness map for the real
 `persistent_device_uccl_ep_runtime_fusion` boundary now that PR #145 defines
 the contract and PR #147 records accepted provenance-only input fields. The
 slice should answer where runtime-owned shared payload descriptors live, which
 component records the ownership token and lifetime transition log, which
 failure states are mandatory, and what local and H200 evidence will be
 required before a later implementation may report `passed`.
+
+Accepted scope:
+
+- `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`
+- `docs/in_progress/nvidia_backend/communication_selection.md`
+- `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`
+- `docs/in_progress/nvidia_backend/pr_slicing_plan.md`
+- `docs/in_progress/nvidia_backend/dispatch_log.md`
+- `tests/ut/py/test_nvidia_review_artifacts.py`
+
+Verification commands:
+
+```bash
+git diff --check
+```
+
+```bash
+git diff --cached --check
+```
+
+```bash
+npx --no-install markdownlint-cli2 \
+  docs/in_progress/nvidia_backend/communication_runtime_boundary.md \
+  docs/in_progress/nvidia_backend/communication_selection.md \
+  docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md \
+  docs/in_progress/nvidia_backend/pr_slicing_plan.md \
+  docs/in_progress/nvidia_backend/dispatch_log.md
+```
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/checks/check_nvidia_review_ready.py
+```
+
+```bash
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q
+```
+
+H200 evidence requirement: no fresh H200 command was required because the
+slice was docs/design/test-guard only. A later branch that changes example
+behavior or result shape must run a fresh H200 fused-boundary command and
+still report `unsupported` unless a real runtime-owned payload boundary
+exists.
+
+A later implementation PR may reuse
+`examples/cuda/persistent_moe_dispatch_combine.py
+--with-uccl-ep-fused-boundary`, but it may claim actual fused cross-GPU
+expert-parallel MoE execution only after a fresh H200 result proves real
+payload ownership, rank/device mapping, boundary status fields, failure modes,
+and `actual_fused_cross_gpu_execution: true`.
+
+Serving promotion and in-progress doc retirement remain deferred until this
+communication dependency boundary is reviewable or the dispatcher explicitly
+chooses a different branch from current `main`.
+
+## Accepted Guard-Only Implementation Handoff
+
+The dispatcher selected exactly one branch after the readiness map, and
+PR #150 merged it as
+`a6378bfbf55b15be01c334f43332ccd20c160cfa`:
+`nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`.
+
+The branch could not honestly implement a runtime-owned shared payload
+descriptor because the lower-level
+`persistent_device_uccl_ep_runtime_fusion` coordinator does not exist behind
+the CUDA runtime / `ChipWorker` boundary. The compiled persistent-device
+runtime role files remain placeholders, and the active CUDA platform runner
+launches generated persistent DAG kernels without a UCCL-EP runtime
+dispatch/combine ownership handoff.
+
+Accepted scope for this blocked implementation handoff:
+
+- keep the normal `--with-uccl-ep-fused-boundary` result `unsupported`;
+- add local guard code that rejects fabricated or incomplete pass evidence;
+- add unit coverage for missing ownership tokens, mismatched tokens, double
+  release, use-after-release, leaked ownership, rank/device mismatch, and
+  untrusted adapter/provenance pass fields;
+- update the communication boundary docs and dispatch log with the blocked
+  lower-level dependency.
+
+No fresh H200 fused-boundary success result is required or claimed for this
+blocked handoff because the implementation cannot truthfully emit real
+runtime-owned descriptor evidence. A future implementation must first add the
+runtime-owned fusion coordinator behind the CUDA runtime / `ChipWorker`
+boundary before reporting `persistent_device_uccl_ep_runtime_fusion.status:
+passed` or `actual_fused_cross_gpu_execution: true`.
+
+## Selected Next Dependency Slice
+
+This section records the selected PR-sized slice from current `main` after
+PR #150. The honest next move is another dependency/design/status slice
+because PR #150 confirmed that no runtime-owned coordinator exists below the
+CUDA runtime / `ChipWorker` boundary. Another implementation attempt would
+only be able to keep adding guards or fabricate ownership, so the next branch
+must first make the lower-level coordinator boundary reviewable.
+
+Recommended branch:
+`nvidia-uccl-ep-runtime-fusion-coordinator-boundary-map`.
+
+Objective: define the missing runtime-owned coordinator boundary for
+`persistent_device_uccl_ep_runtime_fusion` before changing runtime behavior.
+The slice should map the coordinator's runtime owner, `ChipWorker` entry
+point, descriptor allocation site, ownership token issuer, lifetime transition
+state machine, failure-field responsibilities, local tests, and later H200
+command evidence. It must preserve the non-claims from PR #150: no actual
+fused cross-GPU expert-parallel MoE execution, no fresh H200 fused-success
+evidence, no accepted `persistent_device_uccl_ep_runtime_fusion.status:
+passed`, and no accepted `actual_fused_cross_gpu_execution: true`.
 
 Allowed future scope:
 
@@ -238,46 +357,5 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
 
 H200 evidence requirement: no fresh H200 command is required if the slice is
 docs/design/test-guard only. If it changes example behavior or result shape,
-it must run a fresh H200 fused-boundary command and still report
-`unsupported` unless a real runtime-owned payload boundary exists.
-
-A later implementation PR may reuse
-`examples/cuda/persistent_moe_dispatch_combine.py
---with-uccl-ep-fused-boundary`, but it may claim actual fused cross-GPU
-expert-parallel MoE execution only after a fresh H200 result proves real
-payload ownership, rank/device mapping, boundary status fields, failure modes,
-and `actual_fused_cross_gpu_execution: true`.
-
-Serving promotion and in-progress doc retirement remain deferred until this
-communication dependency boundary is reviewable or the dispatcher explicitly
-chooses a different branch from current `main`.
-
-## Current Guard-Only Implementation Handoff
-
-The dispatcher selected exactly one branch after the readiness map:
-`nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`.
-
-The branch could not honestly implement a runtime-owned shared payload
-descriptor because the lower-level
-`persistent_device_uccl_ep_runtime_fusion` coordinator does not exist behind
-the CUDA runtime / `ChipWorker` boundary. The compiled persistent-device
-runtime role files remain placeholders, and the active CUDA platform runner
-launches generated persistent DAG kernels without a UCCL-EP runtime
-dispatch/combine ownership handoff.
-
-Accepted scope for this blocked implementation handoff:
-
-- keep the normal `--with-uccl-ep-fused-boundary` result `unsupported`;
-- add local guard code that rejects fabricated or incomplete pass evidence;
-- add unit coverage for missing ownership tokens, mismatched tokens, double
-  release, use-after-release, leaked ownership, rank/device mismatch, and
-  untrusted adapter/provenance pass fields;
-- update the communication boundary docs and dispatch log with the blocked
-  lower-level dependency.
-
-No fresh H200 fused-boundary success result is required or claimed for this
-blocked handoff because the implementation cannot truthfully emit real
-runtime-owned descriptor evidence. A future implementation must first add the
-runtime-owned fusion coordinator behind the CUDA runtime / `ChipWorker`
-boundary before reporting `persistent_device_uccl_ep_runtime_fusion.status:
-passed` or `actual_fused_cross_gpu_execution: true`.
+it must run a fresh H200 fused-boundary command and report `unsupported`
+unless the runtime-owned coordinator exists and emits real ownership evidence.

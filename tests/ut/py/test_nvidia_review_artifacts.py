@@ -329,7 +329,8 @@ def test_nvidia_goal_status_rollup_tracks_current_boundaries():
 
     text = rollup.read_text(encoding="utf-8")
     required_phrases = [
-        "`origin/main` at `6405dfbd`",
+        "`origin/main` at",
+        "a6378bfbf55b15be01c334f43332ccd20c160cfa",
         "`accepted evidence`",
         "`partial evidence`",
         "DeepSeek/vLLM serving evidence",
@@ -337,7 +338,8 @@ def test_nvidia_goal_status_rollup_tracks_current_boundaries():
         "`--with-uccl-ep-fused-boundary`",
         "`status: unsupported`",
         "`persistent_device_uccl_ep_runtime_fusion`",
-        "`nvidia-uccl-ep-runtime-fusion-readiness`",
+        "`nvidia-uccl-ep-runtime-fusion-coordinator-boundary-map`",
+        "guard-only blocked implementation handoff",
         "provenance-only evidence",
         "no shared payload ownership token or lifetime transition log",
         "not vLLM plugin integration",
@@ -574,14 +576,16 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     normalized_slicing = " ".join(slicing.split())
     normalized_dispatch_log = " ".join(dispatch_log.split())
     assert "Selected Next Dependency Slice" in slicing
-    assert "Current Guard-Only Implementation Handoff" in slicing
+    assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-readiness" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor" in slicing
+    assert "nvidia-uccl-ep-runtime-fusion-coordinator-boundary-map" in slicing
     assert "accepted provenance-only input fields" in normalized_slicing
     assert "no shared payload ownership token" in normalized_slicing
-    assert "2e9b01450efb709ed4e42f80a5128a01e8f9ad21" in slicing
-    assert "Refresh NVIDIA status after payload provenance" in slicing
+    assert "a6378bfbf55b15be01c334f43332ccd20c160cfa" in slicing
+    assert "Guard UCCL EP runtime fusion evidence" in slicing
+    assert "guard-only blocked implementation handoff" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-impl-h200" in dispatch_log
     assert "8c7b3715" in dispatch_log
     assert "Synthetic pass evidence derived from handoff metadata is invalid" in (
@@ -593,6 +597,20 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "2e9b01450efb709ed4e42f80a5128a01e8f9ad21" in dispatch_log
     assert "Refresh NVIDIA status after payload provenance" in dispatch_log
     assert "d7d1679d84ef08202e3a61a821613e031edd49bd" in dispatch_log
+    readiness_entry = dispatch_log.split(
+        "### 2026-06-22 - UCCL-EP Runtime Fusion Readiness Worker", 1
+    )[1].split("\n### ", 1)[0]
+    normalized_readiness_entry = " ".join(readiness_entry.split())
+    assert "https://github.com/uv-xiao/pto-cu/pull/149" in readiness_entry
+    assert "d7d1679d84ef08202e3a61a821613e031edd49bd" in readiness_entry
+    assert "accepted as a design/readiness map only by PR #149" in (
+        normalized_readiness_entry
+    )
+    assert "did not accept fused execution evidence" in normalized_readiness_entry
+    assert "pending PR creation" not in readiness_entry
+    assert "https://github.com/uv-xiao/pto-cu/pull/150" in dispatch_log
+    assert "a6378bfbf55b15be01c334f43332ccd20c160cfa" in dispatch_log
+    assert "Guard UCCL EP runtime fusion evidence" in dispatch_log
     assert "UCCL-EP Runtime Fusion Guard-Only Worker" in dispatch_log
     assert "not actual fused cross-GPU expert-parallel MoE execution" in (
         normalized_slicing
