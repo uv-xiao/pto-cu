@@ -523,6 +523,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     dispatch_log = (in_progress_root / "dispatch_log.md").read_text(
         encoding="utf-8"
     )
+    normalized_persistent_moe = " ".join(persistent_moe.split())
+    normalized_boundary = " ".join(boundary.split())
 
     for text in (persistent_moe, boundary, selection, slicing, dispatch_log):
         assert "persistent_device_uccl_ep_runtime_fusion" in text
@@ -548,8 +550,25 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "`setup_failed`",
         "`failed`",
         "Unsupported and setup-failed states are non-evidence",
+        "Private Runtime Entry Contract",
+        "persistent_device_uccl_ep_runtime_fusion_entry",
+        "`ChipWorker::run` after `ChipStorageTaskArgs` has been assembled",
+        "No field is added to public `TaskArgs` or public `CallConfig`",
+        "`callable_id`",
+        "`rank_device_map`",
+        "`persistent_graph_descriptor`",
+        "`uccl_ep_capability`",
+        "`descriptor_allocation_policy`",
+        "`validation_policy`",
+        "`output_sink`",
+        "`coordinator_status`",
+        "`descriptor_allocation_provenance`",
+        "`ownership_token`",
+        "`state_transitions`",
+        "`validation_summary`",
     ]:
         assert required in boundary
+    assert "Example-side JSON, adapter-only provenance" in normalized_boundary
 
     for required in [
         "Future Fused Execution Evidence Shape",
@@ -573,8 +592,17 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "Lifetime transition state machine",
         "Failure-field responsibilities",
         "PR #151 remains a post-PR150 status refresh",
+        "Coordinator Entry Contract",
+        "persistent_device_uccl_ep_runtime_fusion_entry",
+        "The entry contract does not widen the public runtime API",
+        "coordinator request is assembled from private runtime state",
+        "The result returned to the host/runtime status artifact",
+        "No fresh H200 fused-boundary run is recorded for this entry-contract",
     ]:
         assert required in persistent_moe
+    assert "Example-side JSON, adapter-only provenance" in (
+        normalized_persistent_moe
+    )
 
     normalized_selection = " ".join(selection.split())
     for required in [
@@ -586,13 +614,19 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "coordinator-boundary map keeps the runtime owner concrete",
         "PR #150 remains guard-only blocked implementation evidence",
         "PR #151 remains a post-PR150 status refresh",
+        "persistent_device_uccl_ep_runtime_fusion_entry",
+        "does not add public `TaskArgs`, public `CallConfig`, or UCCL",
+        "callable id, chip-local rank/device map, persistent graph descriptor",
+        "coordinator status, descriptor allocation provenance",
+        "forbidden pass-evidence paths",
+        "PR #152 remains a coordinator-boundary map only",
     ]:
         assert required in normalized_selection
 
     normalized_slicing = " ".join(slicing.split())
     normalized_dispatch_log = " ".join(dispatch_log.split())
-    assert "Current Coordinator Boundary Map Slice" in slicing
-    assert "Selected Next Slice After Coordinator Map" in slicing
+    assert "Accepted Coordinator Boundary Map Slice" in slicing
+    assert "Current Coordinator Entry Contract Slice" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
@@ -600,6 +634,14 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-coordinator-boundary-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-coordinator-entry-contract" in slicing
+    assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
+    assert "UCCL-EP runtime fusion coordinator boundary map" in slicing
+    assert "persistent_device_uccl_ep_runtime_fusion_entry" in slicing
+    assert "callable id, chip-local rank/device map" in normalized_slicing
+    assert "public `TaskArgs`, and public `CallConfig`" in normalized_slicing
+    assert "fabricated or untrusted pass evidence stay explicit" in (
+        normalized_slicing
+    )
     assert "accepted provenance-only input fields" in normalized_slicing
     assert "no shared payload ownership token" in normalized_slicing
     assert "a6378bfbf55b15be01c334f43332ccd20c160cfa" in slicing
@@ -634,6 +676,9 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "Guard UCCL EP runtime fusion evidence" in dispatch_log
     assert "UCCL-EP Runtime Fusion Guard-Only Worker" in dispatch_log
     assert "UCCL-EP Runtime Fusion Coordinator Boundary Map Worker" in dispatch_log
+    assert "UCCL-EP Runtime Fusion Coordinator Entry Contract Worker" in (
+        dispatch_log
+    )
     coordinator_boundary_entry = dispatch_log.split(
         "### 2026-06-22 - UCCL-EP Runtime Fusion Coordinator Boundary Map Worker",
         1,
@@ -644,6 +689,27 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         dispatch_log
     )
     assert "3548a5761c2785bc855d68ec53469651d2227096" in dispatch_log
+    entry_contract_entry = dispatch_log.split(
+        "### 2026-06-22 - UCCL-EP Runtime Fusion Coordinator Entry Contract Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_entry_contract_entry = " ".join(entry_contract_entry.split())
+    assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in (
+        entry_contract_entry
+    )
+    assert "persistent_device_uccl_ep_runtime_fusion_entry" in (
+        entry_contract_entry
+    )
+    assert "`ChipWorker::run` / `ChipStorageTaskArgs` request path" in (
+        entry_contract_entry
+    )
+    assert "https://github.com/uv-xiao/pto-cu/pull/153" in (
+        entry_contract_entry
+    )
+    assert "Opened as a non-draft PR" in normalized_entry_contract_entry
+    assert "does not implement CUDA runtime behavior" in (
+        normalized_entry_contract_entry
+    )
     assert "PR #151 remains a post-PR150 status refresh" in (
         normalized_dispatch_log
     )

@@ -743,6 +743,56 @@ None of those PRs accepted
 `persistent_device_uccl_ep_runtime_fusion.status: passed` or
 `actual_fused_cross_gpu_execution: true`.
 
+## Coordinator Entry Contract
+
+The coordinator-boundary map above is still not enough for an implementation
+branch to construct trusted runtime-fusion evidence. The next dependency is a
+private CUDA persistent-device entry contract for the host-callable path:
+`persistent_device_uccl_ep_runtime_fusion_entry`. It is reached only after
+`ChipWorker::run` decodes the mailbox task, builds `ChipStorageTaskArgs`, and
+enters the CUDA host runtime for the selected callable id.
+
+The entry contract does not widen the public runtime API. It does not add
+public `TaskArgs` fields, public `CallConfig` fields, or a UCCL host-runtime
+ABI. The coordinator request is assembled from private runtime state already
+available behind the chip-child boundary:
+
+- callable id;
+- chip-local rank/device map derived from Worker-local device ordering;
+- persistent graph descriptor handle;
+- UCCL-EP capability metadata and adapter provenance handles;
+- descriptor allocation policy for the host-control record and
+  device-visible dispatch/combine descriptor buffer;
+- validation policy for descriptor, rank/device, payload lifetime, transport,
+  scheduler, and numeric checks;
+- runtime-owned output sink for the fused-boundary status artifact.
+
+The result returned to the host/runtime status artifact must include:
+
+- coordinator status;
+- descriptor allocation provenance and runtime-owned allocation flag;
+- one coordinator-issued ownership token shared by dispatch and combine;
+- ordered state transitions with actor, state, token, descriptor id,
+  rank/device map, and status;
+- rank/device map used by the coordinator;
+- validation summary;
+- explicit failure fields for setup, unsupported, descriptor, rank/device,
+  payload lifetime, transport, scheduler, validation, and fabricated or
+  untrusted pass evidence.
+
+The forbidden evidence paths stay explicit. Example-side JSON, adapter-only
+provenance, handoff metadata, public `TaskArgs`, and public `CallConfig` must
+not synthesize pass status, `actual_fused_cross_gpu_execution: true`,
+allocation provenance, an ownership token, or a transition log. If those
+paths supply pass-like fields, the status artifact must report `failed` with
+`failure_fields.fabricated_or_untrusted_pass_evidence`.
+
+No fresh H200 fused-boundary run is recorded for this entry-contract slice.
+The current H200 fused-boundary evidence remains the structured unsupported
+payload-provenance result above. A later implementation must keep the same
+command shape and may report pass/true only when the fresh result is emitted
+by the runtime coordinator through this private entry.
+
 ## Future Fused Execution Evidence Shape
 
 This design/dependency PR defines the evidence contract only. It does not
