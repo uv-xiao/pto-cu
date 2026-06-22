@@ -23,6 +23,80 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - Runtime Args Handoff Map Worker
+
+- Dispatcher Session or PR:
+  current `/goal` worker session on branch
+  `nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map`, after PR #161
+  merged as `6026ed7cbfa1d4724e22e109bbd75c06d0e9f9a7`.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map`; map
+  the next private dependency boundary before another runtime implementation
+  attempt.
+- Exact Codex command or script invocation:
+  worker launched by `tmp/worker-prompts/run-nvidia-runtime-args-handoff-map.sh`,
+  which ran `codex exec --dangerously-bypass-approvals-and-sandbox -C
+  <worktree> "$(cat tmp/worker-prompts/nvidia-runtime-args-handoff-map.md)"`.
+  No nested workers were launched.
+- Monitor locators:
+  Codex session id `019eefd0-948d-7941-a911-22b627ba15ba`; transcript
+  `~/.codex/sessions/2026/06/22/rollout-2026-06-22T22-51-24-019eefd0-948d-7941-a911-22b627ba15ba.jsonl`;
+  worker pane `pto-worker-nvidia-runtime-args-handoff-map:0.0`; recurring
+  monitor artifacts under
+  `tmp/codex-goal-monitor/nvidia-runtime-args-handoff-map/`. The final
+  interval summary at `20260622T150654Z` reported the pane missing, transcript
+  ok, worktree ok, `dirty_count: 0`, and latest commit `ea5190aa`.
+- Parent goal and child slice:
+  NVIDIA backend restart; runtime-args private handoff map selected by
+  PR #161 after PR #160's private request-envelope dependency.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map`;
+  <https://github.com/uv-xiao/pto-cu/pull/162>. Opened as a non-draft PR
+  with `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map`.
+- Allowed scope and files:
+  review-facing docs/tests only:
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  and `tests/ut/py/test_nvidia_review_artifacts.py`.
+- Dependencies and blocked assumptions:
+  starts from current `main` at
+  `6026ed7cbfa1d4724e22e109bbd75c06d0e9f9a7`. PR #160 is accepted only as a
+  private request-envelope and host-runtime handoff dependency. PR #161 is
+  accepted only as a status/slicing refresh. The valid next boundary must keep
+  the real `ChipStorageTaskArgs *` owned by `ChipWorker::run`, keep the real
+  `PtoCudaPersistentDagArgs *` owned by the CUDA persistent DAG host-runtime
+  path, and associate them only inside a private CUDA host-runtime handoff.
+- Verification commands and results:
+  completed before PR creation. `git diff --check` passed with no output;
+  targeted `markdownlint-cli2` over the five NVIDIA docs passed with
+  `0 error(s)`; the NVIDIA review guard passed; and
+  `test_nvidia_review_artifacts.py` passed with `61 passed`.
+- H200 evidence:
+  no fresh H200 command is planned because this is a docs/test dependency map
+  only and does not change CUDA runtime behavior, example behavior, result
+  shape, or fused-boundary evidence.
+- Merge decision and merge commit:
+  pending PR creation and review.
+- Handoff summary and remaining gaps:
+  the selected map rejects the invalid shortcut from PR #157 and the
+  overbroad `ChipWorker::run` synthesis path rejected by PR #160.
+  `PtoCudaPrivateRunArgsEnvelope` may associate `runtime_task_args` with
+  `chip_storage_task_args` only when the CUDA host runtime has real
+  same-invocation pointers for both `PtoCudaPersistentDagArgs *` and
+  `ChipStorageTaskArgs *`. A future implementation must add private
+  host-runtime coverage for null pointers, wrong sizes, stale envelopes,
+  mismatched callable types, cross-invocation envelopes, and forbidden
+  public/API evidence paths before it can move beyond unsupported or failed
+  status. This slice does not claim runtime-fusion success, fresh H200
+  fused-success evidence,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
+  DeepSeek, throughput, or latency.
+
 ### 2026-06-22 - Post-Private-Envelope Status Refresh Worker
 
 - Dispatcher Session or PR:

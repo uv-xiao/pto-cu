@@ -874,6 +874,44 @@ C API fields, UCCL host-runtime ABI fields, RDMA, multi-node, serving, vLLM,
 DeepSeek, throughput, latency, fresh H200 fused-success evidence, or
 pass/true fused-boundary status.
 
+## Runtime Args Handoff Map
+
+The selected post-PR161 dependency slice maps the private handoff that must
+exist before another implementation attempt. It does not change the H200
+result shape and does not record a fresh fused-boundary run.
+
+The valid association is:
+
+- `ChipWorker::run` builds the real `ChipStorageTaskArgs` from the decoded
+  mailbox `TaskArgs` view and keeps that pointer typed as
+  `const ChipStorageTaskArgs *`;
+- the CUDA persistent DAG host-runtime path builds the real
+  `PtoCudaPersistentDagArgs *` after resolving the prepared persistent DAG
+  callable;
+- `PtoCudaPrivateRunArgsEnvelope` associates those two private pointers only
+  inside the CUDA host runtime and only for the same `ChipWorker::run`
+  invocation;
+- `persistent_device_uccl_ep_runtime_fusion_entry` may consume the
+  association only after the envelope proves the chip-storage size,
+  runtime-task-args size, callable type, rank/device metadata, and private
+  output sink are all valid.
+
+This map keeps PR #160's separation intact. `PtoCudaPersistentDagArgs *` is
+not a `ChipStorageTaskArgs *`, `ChipStorageTaskArgs *` is not persistent DAG
+runtime args, and neither pointer can be synthesized from public `TaskArgs`,
+public `CallConfig`, example-side JSON, adapter provenance, payload
+provenance, or handoff metadata.
+
+A later implementation must fail or remain unsupported for null pointers,
+wrong sizes, stale envelopes, mismatched callable types, cross-invocation
+envelopes, missing coordinator, missing descriptor allocator, missing
+UCCL-EP runtime path, missing validation policy, missing UCCL-EP capability
+metadata, and forbidden pass-evidence sources. This dependency map therefore
+does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+does not set `actual_fused_cross_gpu_execution: true`, and does not claim
+RDMA, multi-node, serving, vLLM, DeepSeek, throughput, latency, or fresh H200
+fused-success evidence.
+
 ## Future Fused Execution Evidence Shape
 
 This design/dependency PR defines the evidence contract only. It does not

@@ -571,6 +571,56 @@ descriptor allocator, UCCL-EP runtime path, validation policy, UCCL-EP
 capability metadata, or pass evidence still keeps the result unsupported or
 failed.
 
+## Runtime Args Handoff Map
+
+The next private dependency is the association boundary between the typed
+chip-storage task args and the runtime-specific persistent DAG args. The
+selected map preserves PR #160's separation: the two pointers are separate
+fields in `PtoCudaPrivateRunArgsEnvelope`, and each field is valid only when
+it points at a real object created by its owning layer.
+
+`ChipWorker::run` remains the only owner of the `ChipStorageTaskArgs` object
+assembled from the mailbox `TaskArgs` view. It may hand the address of that
+object to a CUDA-private hook for the duration of the call, but it must not
+reinterpret that object as persistent DAG runtime args. If the private hook
+needs `PtoCudaPersistentDagArgs *`, `ChipWorker::run` still cannot provide it
+and must reject the path instead of fabricating a runtime pointer.
+
+The CUDA persistent DAG host-runtime path is the owner of
+`PtoCudaPersistentDagArgs *`. That path resolves the prepared persistent DAG
+callable, validates the persistent DAG state, and constructs the runtime
+launch request. Only there can a future implementation populate
+`PtoCudaPrivateRunArgsEnvelope::runtime_task_args` with a real
+`PtoCudaPersistentDagArgs *` while also carrying the
+`chip_storage_task_args` pointer received from the same `ChipWorker::run`
+invocation.
+
+The reviewable private association point is therefore:
+
+```text
+ChipWorker::run
+  -> const ChipStorageTaskArgs *
+  -> CUDA private host-runtime handoff
+  -> prepared persistent DAG callable lookup
+  -> PtoCudaPersistentDagArgs *
+  -> PtoCudaPrivateRunArgsEnvelope
+  -> persistent_device_uccl_ep_runtime_fusion_entry
+```
+
+The association is valid only when both pointers are same-invocation inputs,
+the envelope records `sizeof(ChipStorageTaskArgs)` for the chip-storage
+field, and the runtime-task-args size matches the CUDA persistent DAG args
+type used by the prepared callable. Null, stale, wrong-size, wrong-callable,
+or cross-invocation envelopes are implementation failures, not skips.
+
+This handoff map does not implement that association. It records the next
+implementation owner and the tests a later code slice needs: private
+host-runtime coverage for null pointers, wrong sizes, mismatched callable
+types, stale envelopes, and forbidden public/API evidence paths. Until that
+code exists, the fused-boundary status remains unsupported or failed and must
+not report `persistent_device_uccl_ep_runtime_fusion.status: passed` or
+`actual_fused_cross_gpu_execution: true`.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node
