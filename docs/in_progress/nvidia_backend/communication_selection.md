@@ -100,6 +100,16 @@ restart. It is a planning boundary, not performance evidence.
   `persistent_device_uccl_ep_runtime_fusion` exists and can prove actual fused
   cross-GPU expert-parallel MoE execution.
   It is a structured unsupported boundary.
+- This design/dependency slice selects
+  `persistent_device_uccl_ep_runtime_fusion` as the next UCCL-EP dependency
+  before implementation. The boundary must preserve the existing runtime
+  separation: UCCL-EP remains opt-in and internal, rank/device mapping derives
+  from Worker-local device ordering, and dispatch/combine payload ownership is
+  recorded by the runtime result rather than exposed in public task APIs.
+- The next implementation PR should keep the current H200 command shape and
+  convert only the fused-boundary result from `unsupported` to `passed` after
+  the persistent-device graph and UCCL-EP runtime share payload descriptors,
+  payload ownership, rank/device mapping, status fields, and failure modes.
 
 ## Non-Claims
 

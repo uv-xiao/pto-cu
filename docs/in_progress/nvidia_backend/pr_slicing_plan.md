@@ -99,9 +99,9 @@ selects exactly one next worker slice. After PR #143, the UCCL-EP fused
 boundary worker is complete as an unsupported-boundary status slice; it is no
 longer a next candidate.
 
-## Next Slice
+## Current Slice
 
-Choose this child slice after the status refresh PR is reviewed:
+This child slice is active after the status refresh PR selected it:
 
 - Branch: `nvidia-uccl-ep-runtime-fusion-design`.
 - Scope: dependency/design PR for `persistent_device_uccl_ep_runtime_fusion`.
@@ -113,6 +113,17 @@ Choose this child slice after the status refresh PR is reviewed:
 - Non-claims: not DeepSeek serving, not vLLM plugin integration, not RDMA or
   multi-node evidence, not throughput or latency evidence, and not actual
   fused cross-GPU expert-parallel MoE execution.
+
+## Next Step After This Design PR
+
+After this design/dependency PR is reviewed, the next implementation slice
+should keep the same command surface,
+`examples/cuda/persistent_moe_dispatch_combine.py
+--with-uccl-ep-fused-boundary`, and implement only the missing
+`persistent_device_uccl_ep_runtime_fusion` runtime boundary. That follow-up
+must prove payload ownership and lifetime transitions, rank/device mapping,
+boundary status fields, and failure modes in one fresh H200 result before it
+claims actual fused cross-GPU expert-parallel MoE execution.
 
 Serving promotion and in-progress doc retirement remain deferred until this
 communication dependency boundary is reviewable or the dispatcher explicitly

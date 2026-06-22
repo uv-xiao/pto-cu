@@ -23,6 +23,51 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - UCCL-EP Runtime Fusion Design Worker
+
+- Dispatcher Session or PR:
+  child worker session for the dependency/design slice selected after PR #143.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-design`; define the reviewable
+  contract for the missing `persistent_device_uccl_ep_runtime_fusion`
+  boundary without implementing it.
+- Exact Codex command or script invocation:
+  child `/goal` worker in worktree
+  `nvidia-uccl-ep-runtime-fusion-design`.
+- Parent goal and child slice:
+  NVIDIA backend restart; dependency/design PR for persistent-device graph to
+  UCCL-EP runtime fusion.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-design`;
+  <https://github.com/uv-xiao/pto-cu/pull/145>.
+- Allowed scope and files:
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/dispatch_log.md`, and
+  `tests/ut/py/test_nvidia_review_artifacts.py`.
+- Dependencies and blocked assumptions:
+  starts from `f021845a94523664c2042ea7d8fd0dfb8a08d6cb` on branch
+  `nvidia-uccl-ep-runtime-fusion-design`. PR #143 already records
+  `--with-uccl-ep-fused-boundary` as `status: unsupported`; this slice must
+  not relabel that result as fused evidence.
+- Verification commands and results:
+  `git diff --check` passed; `git diff --cached --check` passed; targeted
+  `markdownlint-cli2` over the five touched docs passed; the NVIDIA review
+  guard passed; and `test_nvidia_review_artifacts.py` passed with
+  `61 passed`.
+- Merge decision and merge commit:
+  pending worker PR, parent review, and merge decision.
+- Handoff summary and remaining gaps:
+  this slice should define payload ownership and lifetime, rank/device
+  mapping, status fields, failure modes, unsupported/setup-failed/pass state
+  handling, and future fused-execution evidence shape. Remaining gaps after
+  this slice are implementation of
+  `persistent_device_uccl_ep_runtime_fusion`, CUDA host-runtime UCCL dispatch,
+  RDMA or multi-node evidence, serving/vLLM integration, DeepSeek correctness,
+  and throughput/latency evidence.
+
 ### 2026-06-22 - Post-Fused-Boundary Status Refresh Worker
 
 - Dispatcher Session or PR:

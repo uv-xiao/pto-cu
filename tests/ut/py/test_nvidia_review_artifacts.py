@@ -491,6 +491,61 @@ def test_persistent_moe_uccl_ep_fused_boundary_is_review_safe():
     assert "/" + "home/" not in doc
 
 
+def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    persistent_moe = (
+        in_progress_root / "persistent_moe_dispatch_combine_h200.md"
+    ).read_text(encoding="utf-8")
+    boundary = (in_progress_root / "communication_runtime_boundary.md").read_text(
+        encoding="utf-8"
+    )
+    selection = (in_progress_root / "communication_selection.md").read_text(
+        encoding="utf-8"
+    )
+    slicing = (in_progress_root / "pr_slicing_plan.md").read_text(
+        encoding="utf-8"
+    )
+    dispatch_log = (in_progress_root / "dispatch_log.md").read_text(
+        encoding="utf-8"
+    )
+
+    for text in (persistent_moe, boundary, selection, slicing, dispatch_log):
+        assert "persistent_device_uccl_ep_runtime_fusion" in text
+        assert "actual fused" in text
+        assert "cross-GPU expert-parallel MoE" in text
+
+    for required in [
+        "payload owner field",
+        "payload lifetime state",
+        "rank-to-CUDA-device mapping",
+        "`passed`",
+        "`unsupported`",
+        "`setup_failed`",
+        "`failed`",
+        "Unsupported and setup-failed states are non-evidence",
+    ]:
+        assert required in boundary
+
+    for required in [
+        "Future Fused Execution Evidence Shape",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+        "`device_ids`, `rank_to_device`, `world_size`",
+        "shared ownership token",
+        "payload ownership/lifetime transition log",
+        "`unsupported`, `setup_failed`, and",
+        "not fused execution",
+    ]:
+        assert required in persistent_moe
+
+    normalized_slicing = " ".join(slicing.split())
+    assert "Next Step After This Design PR" in slicing
+    assert "not actual fused cross-GPU expert-parallel MoE execution" in (
+        normalized_slicing
+    )
+    assert "https://github.com/uv-xiao/pto-cu/pull/145" in dispatch_log
+
+
 def test_chat_256k_needle_stream_evidence_is_review_safe():
     evidence = (
         ROOT

@@ -194,6 +194,69 @@ fused evidence; it is a review-safe non-evidence marker for the missing
 runtime boundary. It is a structured unsupported boundary.
 It is not fused evidence.
 
+## UCCL-EP Runtime Fusion Contract
+
+This design/dependency slice names the missing runtime boundary. It does not
+implement `persistent_device_uccl_ep_runtime_fusion`.
+
+`persistent_device_uccl_ep_runtime_fusion` is the internal contract between a
+persistent-device graph descriptor and an opt-in UCCL-EP dispatch/combine
+runtime. Its implementation must sit behind the CUDA runtime boundary, not in
+`TaskArgs`, `CallConfig`, or user orchestration code.
+
+The contract must expose these reviewable fields before an implementation can
+claim actual fused cross-GPU expert-parallel MoE execution:
+
+- graph descriptor id and persistent-device runtime id;
+- UCCL capability id and rank-to-CUDA-device mapping;
+- dispatch payload descriptor, including token count, hidden size, top-k,
+  expert count, input dtype, and metadata shape summary;
+- combine payload descriptor using the same ownership token as dispatch;
+- payload owner field with allowed values `persistent_device_graph`,
+  `uccl_ep_runtime`, and `released`;
+- payload lifetime state with allowed values `allocated`, `dispatch_ready`,
+  `dispatch_in_flight`, `combine_ready`, `combine_in_flight`, `complete`, and
+  `released`;
+- status fields for `persistent_moe`, `uccl_ep_runtime`,
+  `persistent_device_uccl_ep_runtime_fusion`, and
+  `actual_fused_cross_gpu_execution`;
+- failure fields for setup, descriptor, rank/device, payload lifetime,
+  transport, validation, and unsupported-boundary failures.
+
+Dispatch and combine payload ownership must transfer exactly once per phase.
+The persistent-device graph owns task buffers until it publishes a
+`dispatch_ready` payload descriptor. The UCCL-EP runtime owns the descriptor
+and payload views while dispatch or combine is in flight. Ownership returns to
+the persistent-device graph only after UCCL-EP records `combine_ready` with a
+matching ownership token. The implementation must record mismatched tokens,
+double release, use-after-release, and leaked in-flight ownership as failures,
+not as skips.
+
+Rank/device mapping is derived from the same Worker-local device ordering used
+by the existing communication boundary. The evidence shape must report
+`rank_to_device`, `device_ids`, `world_size`, and the UCCL capability id. A
+rank/device mismatch between the persistent graph and UCCL-EP runtime is a
+failure, even when either component can pass independently.
+
+Status values must stay review-safe:
+
+- `passed`: setup completed, persistent MoE passed, UCCL-EP runtime passed,
+  payload ownership and lifetime checks passed, rank/device mapping matched,
+  and `actual_fused_cross_gpu_execution` is `true`.
+- `unsupported`: prerequisites completed far enough to identify the missing
+  `persistent_device_uccl_ep_runtime_fusion` implementation or another named
+  unsupported runtime boundary.
+- `setup_failed`: dependency import, build, extension load, GPU discovery,
+  process-group launch, or remote environment setup failed before the boundary
+  contract could run.
+- `failed`: the boundary ran and produced a validation, descriptor,
+  rank/device, payload lifetime, transport, or numeric correctness failure.
+
+Unsupported and setup-failed states are non-evidence for fused execution.
+They may be useful review evidence for dependency shape only when they include
+the named failing boundary, command, device ids, dependency placeholders, and
+non-claims.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node
