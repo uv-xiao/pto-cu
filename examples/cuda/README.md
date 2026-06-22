@@ -528,6 +528,25 @@ attention correctness, varlen attention correctness, paged/ragged KV-cache
 correctness, full prefill/decode/append coverage, serving integration, or
 performance evidence.
 
+For explicit Sparse Attention unsupported-boundary evidence, use:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_flashattention_fwd.py \
+  --output-dir tmp/gluon-flashattention-sparse-unsupported-h200 \
+  --arch compute_90 --tile-shape 32x32x64 --causal \
+  --attention-variant sparse --require-cuda
+```
+
+This command emits structured skip JSON before CUDA availability checks. The
+JSON records `schema_version`, `status: skipped`, `phase: prefill`,
+`causal: true`, `attention_variant: sparse`, shape metadata, tolerance, and
+`unsupported_boundary` with stable `kind: sparse_attention`. This is
+unsupported-boundary evidence only, not Sparse Attention correctness,
+Cascade Attention correctness, MLA attention correctness, varlen attention
+correctness, paged/ragged KV-cache correctness, full prefill/decode/append
+coverage, serving integration, or performance evidence.
+
 ## Gluon FP32 RMSNorm
 
 ```bash
