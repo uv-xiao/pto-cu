@@ -242,6 +242,35 @@ restart. It is a planning boundary, not performance evidence.
   widen public `TaskArgs` / `CallConfig`, widen the common runtime C API or
   UCCL host-runtime ABI, or claim H200 fused success.
 
+## Capability Metadata Map Slice
+
+PR #165 selected this dependency slice after PR #164 accepted only the
+private host-runtime pointer association. This branch maps private UCCL-EP
+capability metadata for the later
+`persistent_device_uccl_ep_runtime_fusion_entry` coordinator request without
+implementing CUDA runtime behavior.
+
+The minimum private metadata fields are capability id, world size,
+rank-to-device map, descriptor vocabulary, transport mode, adapter provenance
+handles, and setup/validation failure ownership. They stay private to the
+CUDA persistent-device runtime path and chip-child private metadata.
+
+The PR #164 association between real same-invocation `ChipStorageTaskArgs *`
+and `PtoCudaPersistentDagArgs *` is preserved. Capability metadata may only
+describe the private UCCL-EP capability that the later coordinator consumes;
+it cannot stand in for either same-invocation pointer.
+
+The cases missing, stale, mismatched-rank, mismatched-world-size, or
+public/API-sourced capability metadata remain unsupported or failed. Public
+`TaskArgs`, public `CallConfig`, common runtime C API, UCCL host-runtime ABI,
+example JSON, adapter provenance, and handoff metadata remain forbidden
+pass-evidence paths.
+
+This slice makes no CUDA runtime behavior change. It has no runtime-fusion
+coordinator implementation, no descriptor allocator implementation, no
+UCCL-EP runtime path implementation, no validation policy implementation, and
+no fresh H200 fused-success evidence.
+
 ## Non-Claims
 
 UCCL PTO host-runtime dispatch, RDMA evidence, multi-node evidence,

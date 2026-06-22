@@ -973,14 +973,30 @@ Required dependency boundaries:
   UCCL host-runtime ABI fields, example JSON, adapter provenance, and handoff
   metadata as forbidden pass-evidence paths.
 
-Allowed future scope:
+Implemented surface in this branch:
+
+- maps private UCCL-EP capability metadata as a dependency vocabulary only;
+- keeps the metadata private to the CUDA persistent-device runtime path and
+  chip-child private metadata;
+- records capability id, world size, rank-to-device map, descriptor
+  vocabulary, transport mode, adapter provenance handles, and
+  setup/validation failure ownership as the minimum later coordinator fields;
+- preserves the PR #164 association between real same-invocation
+  `ChipStorageTaskArgs *` and `PtoCudaPersistentDagArgs *`;
+- treats missing, stale, mismatched-rank, mismatched-world-size, and
+  public/API-sourced capability metadata as unsupported or failed states;
+- keeps forbidden pass-evidence paths explicit: public `TaskArgs`, public
+  `CallConfig`, common runtime C API, UCCL host-runtime ABI, example JSON,
+  adapter provenance, and handoff metadata.
+
+Allowed scope:
 
 - review-facing docs/tests that map the capability metadata dependency;
 - focused review-artifact assertions that pin PR #164 acceptance and this
   next selected branch;
 - no CUDA runtime behavior change.
 
-Required future non-claims:
+Required non-claims:
 
 - no runtime-fusion coordinator implementation;
 - no descriptor allocator implementation;

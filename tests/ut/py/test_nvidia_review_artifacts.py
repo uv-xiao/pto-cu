@@ -1124,6 +1124,90 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     ]:
         assert required in normalized_post_private_host_handoff_entry
 
+    capability_metadata_entry = dispatch_log.split(
+        "### 2026-06-23 - UCCL-EP Runtime Fusion Capability Metadata Map Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_capability_metadata_entry = " ".join(
+        capability_metadata_entry.split()
+    )
+    for required in [
+        "pto-worker-nvidia-uccl-ep-runtime-fusion-capability-metadata-map",
+        "tmp/worker-prompts/run-nvidia-capability-metadata-map.sh",
+        "tmp/worker-prompts/nvidia-capability-metadata-map.md",
+        "019ef035-0d37-7132-9ace-acc82b2da5b7",
+        "rollout-2026-06-23T00-41-09-019ef035-0d37-7132-9ace-acc82b2da5b7.jsonl",
+        "pto-worker-nvidia-capability-metadata-map:0.0",
+        "tmp/codex-goal-monitor/nvidia-capability-metadata-map/",
+        "20260622T165808Z",
+        "`dirty_count: 0`",
+        "3dfafd61",
+        "nvidia-uccl-ep-runtime-fusion-capability-metadata-map",
+        "bb526ff6c3c21597cffe1acd34bf08158a947cc3",
+        "Planned PR URL slot",
+        "https://github.com/uv-xiao/pto-cu/pull/166",
+        "Opened as a non-draft PR",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "review-facing docs/tests only",
+        "PR #164 association between real same-invocation",
+        "PR #165 selected this dependency slice",
+        "capability id, world size, rank-to-device map",
+        "descriptor vocabulary, transport mode",
+        "adapter provenance handles",
+        "setup/validation failure ownership",
+        "missing, stale, mismatched-rank, mismatched-world-size",
+        "public/API-sourced capability metadata",
+        "unsupported or failed",
+        "public `TaskArgs`, public `CallConfig`",
+        "common runtime C API",
+        "UCCL host-runtime ABI",
+        "example JSON, adapter provenance, and handoff metadata",
+        "No runtime code changes",
+        "No fresh H200 command is planned",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_capability_metadata_entry
+    assert "No nested workers were launched" in normalized_capability_metadata_entry
+
+    for text in (
+        persistent_moe,
+        boundary,
+        selection,
+        slicing,
+        dispatch_log,
+    ):
+        normalized_text = " ".join(text.split())
+        for required in [
+            "Capability Metadata Map Slice",
+            "private UCCL-EP capability metadata",
+            "capability id",
+            "world size",
+            "rank-to-device map",
+            "descriptor vocabulary",
+            "transport mode",
+            "adapter provenance handles",
+            "setup/validation failure ownership",
+            "missing, stale, mismatched-rank, mismatched-world-size",
+            "public/API-sourced capability metadata",
+            "unsupported or failed",
+            "PR #164 association",
+            "real same-invocation `ChipStorageTaskArgs *` and",
+            "PtoCudaPersistentDagArgs *",
+            "forbidden pass-evidence paths",
+            "public `TaskArgs`, public `CallConfig`",
+            "common runtime C API",
+            "UCCL host-runtime ABI",
+            "example JSON, adapter provenance, and handoff metadata",
+            "no CUDA runtime behavior change",
+            "no runtime-fusion coordinator implementation",
+            "no descriptor allocator implementation",
+            "no UCCL-EP runtime path implementation",
+            "no validation policy implementation",
+            "no fresh H200 fused-success evidence",
+        ]:
+            assert required in normalized_text
+
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():
     evidence = (
