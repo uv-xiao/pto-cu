@@ -526,6 +526,11 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "payload owner field",
         "payload lifetime state",
         "rank-to-CUDA-device mapping",
+        "CUDA persistent-device runtime run context",
+        "persistent-device/UCCL-EP runtime fusion coordinator",
+        "PR #147 provenance is accepted input evidence only",
+        "Mandatory failure states include descriptor shape mismatch",
+        "Non-evidence states also include independent two-device",
         "`passed`",
         "`unsupported`",
         "`setup_failed`",
@@ -541,18 +546,33 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "`device_ids`, `rank_to_device`, `world_size`",
         "shared ownership token",
         "payload ownership/lifetime transition log",
+        "Implementation-Readiness Map",
+        "Local evidence required before a later implementation reports",
+        "H200 evidence required before those fields may report passed/true",
+        "persistent-moe-uccl-ep-runtime-fusion-h200.json",
         "`unsupported`, `setup_failed`, and",
         "not fused execution",
     ]:
         assert required in persistent_moe
 
+    for required in [
+        "runtime fusion coordinator owns",
+        "PR #147 remains accepted provenance-only input evidence",
+        "actual_fused_cross_gpu_execution` remains `false`",
+        "nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor",
+    ]:
+        assert required in selection
+
     normalized_slicing = " ".join(slicing.split())
     normalized_dispatch_log = " ".join(dispatch_log.split())
     assert "Selected Next Dependency Slice" in slicing
+    assert "Future Implementation Slice" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-readiness" in slicing
+    assert "nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor" in slicing
     assert "accepted provenance-only input fields" in normalized_slicing
     assert "no shared payload ownership token" in normalized_slicing
+    assert "2e9b01450efb709ed4e42f80a5128a01e8f9ad21" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-impl-h200" in dispatch_log
     assert "8c7b3715" in dispatch_log
     assert "Synthetic pass evidence derived from handoff metadata is invalid" in (
@@ -560,6 +580,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     )
     assert "https://github.com/uv-xiao/pto-cu/pull/147" in dispatch_log
     assert "6405dfbd8b403b8d6a0e82813e185c209d4d7e08" in dispatch_log
+    assert "https://github.com/uv-xiao/pto-cu/pull/148" in dispatch_log
+    assert "2e9b01450efb709ed4e42f80a5128a01e8f9ad21" in dispatch_log
     assert "not actual fused cross-GPU expert-parallel MoE execution" in (
         normalized_slicing
     )

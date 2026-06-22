@@ -120,6 +120,23 @@ restart. It is a planning boundary, not performance evidence.
   convert only the fused-boundary result from `unsupported` to `passed` after
   the persistent-device graph and UCCL-EP runtime share payload descriptors,
   payload ownership, rank/device mapping, status fields, and failure modes.
+- The readiness map keeps those shared payload descriptors behind the
+  `ChipWorker` to CUDA runtime boundary. A private
+  persistent-device/UCCL-EP runtime fusion coordinator owns the shared
+  descriptor, issues the ownership token, validates the payload lifetime
+  transition log, and records descriptor, rank/device, payload lifetime,
+  transport, scheduler, validation, and unsupported-boundary failures.
+- PR #147 remains accepted provenance-only input evidence. It supplies adapter
+  and graph payload fields, but it has no runtime-owned shared descriptor, no
+  shared ownership token, and an empty lifetime transition log; therefore
+  `persistent_device_uccl_ep_runtime_fusion.status` remains `unsupported` and
+  `actual_fused_cross_gpu_execution` remains `false`.
+- A future implementation branch should be
+  `nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`, scoped only
+  to creating the runtime-owned descriptor, ownership token, lifetime log,
+  local guards, and one H200 fused-boundary result. It must not add RDMA,
+  multi-node transport, UCCL host-runtime ABI expansion, serving, vLLM, or
+  DeepSeek claims.
 
 ## Non-Claims
 

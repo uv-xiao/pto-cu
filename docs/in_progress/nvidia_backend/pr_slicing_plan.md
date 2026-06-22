@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `6405dfbd`, after PR #147
-  (`Record UCCL EP adapter payload provenance`).
+- Current accepted `main`: `2e9b01450efb709ed4e42f80a5128a01e8f9ad21`,
+  after PR #148 (`Refresh NVIDIA backend status after UCCL provenance`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -30,6 +30,9 @@ from `main` and lands through focused GitHub PRs.
   `actual_fused_cross_gpu_execution` remains `false`, and no shared payload
   ownership token or lifetime transition log exists. It is accepted
   provenance-only evidence, not fused execution evidence.
+- PR #148 recorded the post-PR #147 status refresh and selected the
+  `nvidia-uccl-ep-runtime-fusion-readiness` dependency slice. It did not
+  change runtime behavior, result shape, or fused-execution evidence status.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -77,6 +80,9 @@ from `main` and lands through focused GitHub PRs.
   - Result: merged as `6405dfbd8b403b8d6a0e82813e185c209d4d7e08`.
   - Result type: provenance-only unsupported-boundary evidence, not fused
     execution evidence.
+- PR #148: refresh NVIDIA backend status after UCCL provenance.
+  - Result: merged as `2e9b01450efb709ed4e42f80a5128a01e8f9ad21`.
+  - Result type: status/slicing refresh only, not fused execution evidence.
 
 ## Restored Tracking Surface
 
@@ -168,9 +174,9 @@ evidence.
 
 ## Selected Next Dependency Slice
 
-This section selects exactly one next PR-sized slice from current `main` after
-PR #147. The next slice is a conservative docs/design readiness slice, not a
-runtime implementation attempt.
+This section records the selected PR-sized slice from current `main` after
+PR #148. The current slice is a conservative docs/design readiness slice, not
+a runtime implementation attempt.
 
 Recommended branch:
 `nvidia-uccl-ep-runtime-fusion-readiness`.
@@ -236,3 +242,15 @@ and `actual_fused_cross_gpu_execution: true`.
 Serving promotion and in-progress doc retirement remain deferred until this
 communication dependency boundary is reviewable or the dispatcher explicitly
 chooses a different branch from current `main`.
+
+## Future Implementation Slice
+
+If the dispatcher chooses to implement the boundary after this readiness map,
+select exactly one branch:
+`nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`.
+
+Scope it narrowly to the runtime-owned shared payload descriptor, ownership
+token, lifetime transition log, local guards, and one H200
+`--with-uccl-ep-fused-boundary` result. It must not add UCCL host-runtime ABI
+expansion, RDMA, multi-node transport, serving, vLLM integration, DeepSeek
+correctness, or throughput/latency claims.

@@ -536,6 +536,80 @@ source digests, and bridge digest. No runtime component creates or transfers a
 shared ownership token, so the result explicitly reports no ownership token
 and an empty payload lifetime transition log.
 
+## Implementation-Readiness Map
+
+The next implementation attempt must keep the shared payload descriptor behind
+the existing CUDA runtime and `ChipWorker` boundary. The runtime-owned
+descriptor may live in the persistent-device CUDA runtime run context, with a
+host-side control record and a device-visible descriptor buffer created for one
+`ChipWorker::run` invocation. Python-side UCCL-EP adapter provenance and
+persistent-device graph provenance remain inputs to the result, not ownership
+evidence.
+
+The persistent-device/UCCL-EP runtime fusion coordinator records the
+ownership token and payload lifetime transition log. It must issue one shared
+token for the dispatch/combine payload, validate that dispatch and combine use
+that token, and record transitions through `allocated`, `dispatch_ready`,
+`dispatch_in_flight`, `combine_ready`, `combine_in_flight`, `complete`, and
+`released`. Missing token, mismatched token, illegal transition, double
+release, use-after-release, or leaked in-flight ownership is a failure.
+
+Mandatory failure states for the future result are setup failure, unsupported
+boundary, descriptor mismatch, rank/device mismatch, payload lifetime failure,
+transport failure, persistent-device scheduler failure, numeric validation
+failure, and stale or incomplete evidence. Non-evidence states include
+`unsupported`, `setup_failed`, `failed`, adapter-only pass, independent
+two-device persistent MoE pass, NCCL worker-control pass, provenance without a
+shared ownership token, empty lifetime transition log, and any result where
+`actual_fused_cross_gpu_execution` is `false`.
+
+Local evidence required before a later implementation reports
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or
+`actual_fused_cross_gpu_execution: true`:
+
+- focused tests that reject `passed` when the shared ownership token is
+  missing, mismatched, double released, used after release, or left in flight;
+- focused tests that reject `passed` when rank/device mapping differs between
+  the persistent-device graph and UCCL-EP runtime;
+- review-artifact tests that require the pass result to include dispatch and
+  combine descriptors, ownership token, lifetime transition log, failure
+  fields, and non-claims;
+- the NVIDIA review guard and `test_nvidia_review_artifacts.py`.
+
+H200 evidence required before those fields may report passed/true is one fresh
+remote command using the fused-boundary path:
+
+```bash
+REMOTE_PTO_CU=<remote-checkout> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'python3 -m venv --system-site-packages .venv && \
+    source .venv/bin/activate && \
+    pip install scikit-build-core nanobind cmake ninja nvidia-nccl-cu12 \
+      >/tmp/pto-cu-uccl-ep-fusion-build-deps-install.log && \
+    pip install --no-build-isolation -e . \
+      >/tmp/pto-cu-uccl-ep-fusion-pip-install.log && \
+    UCCL_SITE=$PWD/.venv/lib/python3.12/site-packages && \
+    mkdir -p "$UCCL_SITE/uccl" && \
+    cp <external-uccl-ep-bench>/uccl/__init__.py \
+      "$UCCL_SITE/uccl/__init__.py" && \
+    cp <external-uccl-ep-bench>/ep/build/lib.linux-x86_64-cpython-312/ep*.so \
+      "$UCCL_SITE/uccl/" && \
+    UCCL_EP_BENCH_DIR=<external-uccl-ep-bench>/ep/bench \
+    NCCL_DEBUG=WARN \
+    PYTHONPATH=$PWD:$PWD/python:$UCCL_SITE:<uccl-python-site-packages> \
+    .venv/bin/python examples/cuda/persistent_moe_dispatch_combine.py \
+      --device-ids 6,7 --n 4096 --arch compute_90 \
+      --with-uccl-ep-fused-boundary --tensor-numel 1024 \
+      --require-cuda \
+      --output-json tmp/persistent-moe-uccl-ep-runtime-fusion-h200.json'
+```
+
+That H200 result must show `status: passed`,
+`persistent_device_uccl_ep_runtime_fusion.status: passed`,
+`actual_fused_cross_gpu_execution: true`, matching rank/device mapping,
+zero persistent MoE and UCCL-EP validation errors, a non-null shared ownership
+token, a complete lifetime transition log, and no failure fields set.
+
 ## Future Fused Execution Evidence Shape
 
 This design/dependency PR defines the evidence contract only. It does not
