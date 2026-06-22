@@ -20,6 +20,8 @@
 
 static const uint32_t PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION = 1;
 static const uint32_t PTO_CUDA_RUNTIME_FUSION_RESULT_VERSION = 1;
+static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_PATH_VERSION = 1;
+static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DESCRIPTOR_VIEW_VERSION = 1;
 
 enum PtoCudaRuntimeFusionStatus : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED = 1,
@@ -51,11 +53,56 @@ enum PtoCudaRuntimeFusionFailure : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_UCCL_EP_CAPABILITY = 1U << 8U,
     PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_OUTPUT_SINK = 1U << 9U,
     PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE = 1U << 10U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_STALE_DESCRIPTOR_VIEW = 1U << 11U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_DESCRIPTOR_TOKEN_MISMATCH = 1U << 12U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_RANK_DEVICE_MISMATCH = 1U << 13U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_TRANSPORT_MODE_MISMATCH = 1U << 14U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_DESCRIPTOR_VOCABULARY_MISMATCH = 1U << 15U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_PUBLIC_API_RUNTIME_PATH = 1U << 16U,
+};
+
+enum PtoCudaUcclEpRuntimePathSource : uint32_t {
+    PTO_CUDA_UCCL_EP_RUNTIME_PATH_SOURCE_COORDINATOR_OWNED = 1,
+    PTO_CUDA_UCCL_EP_RUNTIME_PATH_SOURCE_PUBLIC_API = 2,
+    PTO_CUDA_UCCL_EP_RUNTIME_PATH_SOURCE_EXAMPLE_JSON = 3,
+    PTO_CUDA_UCCL_EP_RUNTIME_PATH_SOURCE_ADAPTER_PROVENANCE = 4,
+    PTO_CUDA_UCCL_EP_RUNTIME_PATH_SOURCE_HANDOFF_METADATA = 5,
+};
+
+enum PtoCudaUcclEpTransportMode : uint32_t {
+    PTO_CUDA_UCCL_EP_TRANSPORT_MODE_UNKNOWN = 0,
+    PTO_CUDA_UCCL_EP_TRANSPORT_MODE_EP = 1,
+};
+
+enum PtoCudaRuntimeFusionDescriptorVocabulary : uint32_t {
+    PTO_CUDA_RUNTIME_FUSION_DESCRIPTOR_VOCABULARY_DISPATCH = 1U << 0U,
+    PTO_CUDA_RUNTIME_FUSION_DESCRIPTOR_VOCABULARY_COMBINE = 1U << 1U,
+};
+
+struct PtoCudaUcclEpRuntimeDescriptorView {
+    uint32_t version;
+    uint64_t invocation_id;
+    const void *persistent_graph_descriptor;
+    uint32_t capability_crc32;
+    uint32_t rank;
+    uint32_t device_id;
+    uint32_t world_size;
+    uint32_t descriptor_vocabulary;
+    uint64_t shared_token;
+    uint32_t source;
+};
+
+struct PtoCudaUcclEpRuntimePath {
+    uint32_t version;
+    uint32_t transport_mode;
+    const PtoCudaUcclEpRuntimeDescriptorView *dispatch_descriptor;
+    const PtoCudaUcclEpRuntimeDescriptorView *combine_descriptor;
 };
 
 struct PtoCudaRuntimeFusionRequest {
     uint32_t version;
     int32_t callable_id;
+    uint64_t invocation_id;
     const ChipStorageTaskArgs *chip_storage_task_args;
     size_t chip_storage_task_args_size;
     const void *persistent_graph_descriptor;
@@ -132,9 +179,99 @@ inline const char *pto_cuda_runtime_fusion_failure_name(uint32_t failure) {
             return "missing_output_sink";
         case PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE:
             return "fabricated_or_untrusted_pass_evidence";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_STALE_DESCRIPTOR_VIEW:
+            return "stale_descriptor_view";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_DESCRIPTOR_TOKEN_MISMATCH:
+            return "descriptor_token_mismatch";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_RANK_DEVICE_MISMATCH:
+            return "rank_device_mismatch";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_TRANSPORT_MODE_MISMATCH:
+            return "transport_mode_mismatch";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_DESCRIPTOR_VOCABULARY_MISMATCH:
+            return "descriptor_vocabulary_mismatch";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_PUBLIC_API_RUNTIME_PATH:
+            return "public_api_runtime_path";
         default:
             return "unknown_failure";
     }
+}
+
+inline int pto_cuda_uccl_ep_runtime_path_source_is_forbidden(uint32_t source) {
+    return source != PTO_CUDA_UCCL_EP_RUNTIME_PATH_SOURCE_COORDINATOR_OWNED;
+}
+
+inline uint32_t pto_cuda_runtime_fusion_validate_descriptor_view(
+    const PtoCudaRuntimeFusionRequest *request, const PtoCudaUcclEpRuntimeDescriptorView *view,
+    uint32_t expected_vocabulary
+) {
+    if (view == nullptr) {
+        return PTO_CUDA_RUNTIME_FUSION_FAILURE_STALE_DESCRIPTOR_VIEW;
+    }
+
+    uint32_t failures = 0;
+    if (view->version != PTO_CUDA_UCCL_EP_RUNTIME_DESCRIPTOR_VIEW_VERSION ||
+        view->invocation_id != request->invocation_id ||
+        view->persistent_graph_descriptor != request->persistent_graph_descriptor) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_STALE_DESCRIPTOR_VIEW;
+    }
+    if (view->descriptor_vocabulary != expected_vocabulary) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DESCRIPTOR_VOCABULARY_MISMATCH;
+    }
+    if (pto_cuda_uccl_ep_runtime_path_source_is_forbidden(view->source)) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_PUBLIC_API_RUNTIME_PATH |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE;
+    }
+
+    if (request->comm_descriptor != nullptr &&
+        (view->capability_crc32 != request->comm_descriptor->capability_crc32 ||
+         view->rank != request->comm_descriptor->rank || view->device_id != request->comm_descriptor->device_id ||
+         view->world_size != request->comm_descriptor->world_size)) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_RANK_DEVICE_MISMATCH;
+    }
+    return failures;
+}
+
+inline uint32_t pto_cuda_runtime_fusion_validate_uccl_ep_runtime_path(
+    const PtoCudaRuntimeFusionRequest *request, const PtoCudaUcclEpRuntimePath *runtime_path
+) {
+    if (runtime_path == nullptr) {
+        return PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_UCCL_EP_RUNTIME;
+    }
+
+    uint32_t failures = 0;
+    if (runtime_path->version != PTO_CUDA_UCCL_EP_RUNTIME_PATH_VERSION) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_STALE_DESCRIPTOR_VIEW;
+    }
+    if (runtime_path->transport_mode != PTO_CUDA_UCCL_EP_TRANSPORT_MODE_EP) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_TRANSPORT_MODE_MISMATCH;
+    }
+
+    const PtoCudaUcclEpRuntimeDescriptorView *dispatch = runtime_path->dispatch_descriptor;
+    const PtoCudaUcclEpRuntimeDescriptorView *combine = runtime_path->combine_descriptor;
+    failures |= pto_cuda_runtime_fusion_validate_descriptor_view(
+        request, dispatch, PTO_CUDA_RUNTIME_FUSION_DESCRIPTOR_VOCABULARY_DISPATCH
+    );
+    failures |= pto_cuda_runtime_fusion_validate_descriptor_view(
+        request, combine, PTO_CUDA_RUNTIME_FUSION_DESCRIPTOR_VOCABULARY_COMBINE
+    );
+
+    if (dispatch == nullptr || combine == nullptr || dispatch->shared_token == 0U ||
+        dispatch->shared_token != combine->shared_token) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DESCRIPTOR_TOKEN_MISMATCH;
+    }
+    return failures;
+}
+
+inline int pto_cuda_runtime_fusion_failure_is_runtime_path_failed(uint32_t failures) {
+    const uint32_t runtime_path_failed_mask =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_STALE_DESCRIPTOR_VIEW |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_DESCRIPTOR_TOKEN_MISMATCH |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_RANK_DEVICE_MISMATCH |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_TRANSPORT_MODE_MISMATCH |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_DESCRIPTOR_VOCABULARY_MISMATCH |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_PUBLIC_API_RUNTIME_PATH |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE;
+    return (failures & runtime_path_failed_mask) != 0U;
 }
 
 inline int persistent_device_uccl_ep_runtime_fusion_entry(
@@ -181,6 +318,10 @@ inline int persistent_device_uccl_ep_runtime_fusion_entry(
     }
     if (request->uccl_ep_runtime == nullptr) {
         out.failure_fields |= PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_UCCL_EP_RUNTIME;
+    } else {
+        const PtoCudaUcclEpRuntimePath *runtime_path =
+            static_cast<const PtoCudaUcclEpRuntimePath *>(request->uccl_ep_runtime);
+        out.failure_fields |= pto_cuda_runtime_fusion_validate_uccl_ep_runtime_path(request, runtime_path);
     }
     if (request->validation_policy == nullptr) {
         out.failure_fields |= PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_VALIDATION_POLICY;
@@ -193,6 +334,9 @@ inline int persistent_device_uccl_ep_runtime_fusion_entry(
         out.status = PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED;
         out.failure_fields |= PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE;
         out.reason = "forbidden source attempted to provide runtime fusion pass evidence";
+    } else if (pto_cuda_runtime_fusion_failure_is_runtime_path_failed(out.failure_fields)) {
+        out.status = PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED;
+        out.reason = "private UCCL-EP runtime path validation failed";
     } else {
         out.failure_fields |= PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
     }
