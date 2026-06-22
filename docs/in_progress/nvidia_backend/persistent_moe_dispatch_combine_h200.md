@@ -912,13 +912,13 @@ does not set `actual_fused_cross_gpu_execution: true`, and does not claim
 RDMA, multi-node, serving, vLLM, DeepSeek, throughput, latency, or fresh H200
 fused-success evidence.
 
-PR #162 accepted this map as docs/test dependency evidence only. The selected
-next implementation slice is
-`nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`, which should
-add only the private CUDA persistent DAG host-runtime association for real
+PR #162 accepted this map as docs/test dependency evidence only. PR #164
+accepted
+`nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`, which adds only
+the private CUDA persistent DAG host-runtime association for real
 same-invocation `ChipStorageTaskArgs *` and `PtoCudaPersistentDagArgs *`
-pointers. It must keep the fused-boundary result unsupported or failed until
-a later coordinator slice emits real fused execution evidence.
+pointers. It keeps the fused-boundary result unsupported or failed until a
+later coordinator slice emits real fused execution evidence.
 
 That implementation slice now adds the private association plumbing only:
 `ChipWorker::run` carries the real chip-storage pointer, expected size,
@@ -932,6 +932,15 @@ continues to reject forbidden public/API evidence paths.
 This is still not fused execution evidence. The coordinator, descriptor
 allocator, UCCL-EP runtime path, validation policy, UCCL-EP capability
 metadata, pass evidence, and fresh H200 fused-success result are absent.
+
+The next selected dependency slice is
+`nvidia-uccl-ep-runtime-fusion-capability-metadata-map`. It should map the
+private UCCL-EP capability metadata required by the later coordinator request
+without implementing runtime behavior. Required fields include capability id,
+world size, rank-to-device map, descriptor vocabulary, transport mode,
+adapter provenance handles, and setup/validation failure ownership. Missing,
+stale, mismatched-rank, mismatched-world-size, or public/API-sourced
+capability metadata must remain unsupported or failed, not pass evidence.
 
 ## Future Fused Execution Evidence Shape
 

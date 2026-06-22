@@ -23,6 +23,86 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-23 - Post-Private-Host-Runtime-Handoff Status Refresh Worker
+
+- Dispatcher Session or PR:
+  current `/goal` worker session on branch
+  `nvidia-goal-status-post-private-host-runtime-handoff`, after PR #164
+  merged as `be914b97898468033c7f834dde0c43466353ac95`.
+- Worker id and objective:
+  `pto-worker-nvidia-goal-status-post-private-host-runtime-handoff`; refresh
+  the NVIDIA backend restart status after PR #164, record PR #164 as an
+  accepted private host-runtime handoff implementation only, and select
+  exactly one next PR-sized dependency slice.
+- Exact Codex command or script invocation:
+  worker launched by
+  `tmp/worker-prompts/run-nvidia-post-private-host-runtime-handoff-status-refresh.sh`,
+  which ran `codex exec --dangerously-bypass-approvals-and-sandbox -C
+  <worktree> "$(cat
+  tmp/worker-prompts/nvidia-post-private-host-runtime-handoff-status-refresh.md)"`.
+  No nested workers were launched.
+- Monitor locators:
+  Codex session id `019ef01e-0a6f-7e62-a40a-dc7f4fb954f0`; transcript
+  `~/.codex/sessions/2026/06/23/rollout-2026-06-23T00-16-01-019ef01e-0a6f-7e62-a40a-dc7f4fb954f0.jsonl`;
+  worker pane `pto-worker-nvidia-post-private-host-runtime-handoff:0.0`;
+  recurring monitor artifacts under
+  `tmp/codex-goal-monitor/nvidia-post-private-host-runtime-handoff-status-refresh/`.
+  The latest recorded monitor summary at `20260622T163142Z` showed
+  `pane_status: ok`, `transcript_status: ok`, `worktree_status: ok`,
+  `dirty_count: 0`, and latest commit `fb9c7e65`.
+- Parent goal and child slice:
+  NVIDIA backend restart; post-PR164 status/slicing refresh only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-goal-status-post-private-host-runtime-handoff`;
+  <https://github.com/uv-xiao/pto-cu/pull/165>. Opened as a non-draft PR
+  with `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-goal-status-post-private-host-runtime-handoff`.
+- Allowed scope and files:
+  review-facing docs/tests only:
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  and `tests/ut/py/test_nvidia_review_artifacts.py`. No runtime code changes.
+- Dependencies and blocked assumptions:
+  starts from current `main` at
+  `be914b97898468033c7f834dde0c43466353ac95`. PR #164 is accepted only as a
+  private CUDA persistent DAG host-runtime handoff that associates real
+  same-invocation `ChipStorageTaskArgs *` and
+  `PtoCudaPersistentDagArgs *` pointers before the private
+  `persistent_device_uccl_ep_runtime_fusion_entry` is requested. It did not
+  implement the coordinator, descriptor allocator, UCCL-EP runtime path,
+  validation policy, UCCL-EP capability metadata, pass evidence, or H200
+  fused-success evidence.
+- Verification commands and results:
+  completed before initial PR creation and rerun after adding the PR URL to
+  this entry. `git diff --check` passed with no output. Targeted
+  `markdownlint-cli2` over the five NVIDIA status docs passed with
+  `0 error(s)`. The NVIDIA review guard passed. The required focused pytest
+  command for
+  `tests/ut/py/test_cuda_runtime_fusion_private_entry.py`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`, and
+  `tests/ut/py/test_chip_worker.py` passed with `87 passed`.
+- H200 evidence:
+  no fresh H200 command is planned because this is a docs/test status refresh
+  only and does not change CUDA runtime behavior, example behavior, result
+  shape, or fused-boundary evidence.
+- Merge decision and merge commit:
+  pending PR review.
+- Handoff summary and remaining gaps:
+  selected exactly one next PR-sized dependency slice:
+  `nvidia-uccl-ep-runtime-fusion-capability-metadata-map`. That future branch
+  should map the private UCCL-EP capability metadata required by the
+  coordinator request without implementing runtime behavior or expanding
+  public `TaskArgs`, public `CallConfig`, the common runtime C API, or UCCL
+  host-runtime ABI fields. Missing runtime-owned coordinator, descriptor
+  allocator, UCCL-EP runtime path, validation policy, pass evidence, and
+  fresh H200 fused-success evidence remain unsupported or failed states.
+  `persistent_device_uccl_ep_runtime_fusion.status: passed` and
+  `actual_fused_cross_gpu_execution: true` remain unreachable until a later
+  coordinator slice emits real fused-boundary evidence.
+
 ### 2026-06-22 - Private Host Runtime Handoff Worker
 
 - Dispatcher Session or PR:
@@ -87,7 +167,18 @@ Each dispatch entry should include:
   no fresh H200 command is planned because this slice does not change the
   fused-boundary result shape and does not claim runtime-fusion success.
 - Merge decision and merge commit:
-  pending PR review.
+  accepted as a private host-runtime handoff implementation only. PR #164
+  merged into `main` on 2026-06-22 as
+  `be914b97898468033c7f834dde0c43466353ac95`
+  (`Add CUDA private runtime handoff`). The merge decision did not accept
+  CUDA runtime-fusion coordinator behavior, descriptor allocator behavior,
+  UCCL-EP runtime path behavior, validation policy, UCCL-EP capability
+  metadata, result-shape changes, fused execution evidence, fresh H200
+  fused-success evidence, public `TaskArgs` or `CallConfig` expansion, common
+  runtime C API expansion, UCCL host-runtime ABI expansion,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
+  DeepSeek, throughput, or latency claims.
 - Handoff summary and remaining gaps:
   `ChipWorker::run` now carries the real typed chip-storage pointer and a
   private invocation id into the CUDA host runtime; the CUDA persistent DAG
@@ -157,7 +248,14 @@ Each dispatch entry should include:
   only and does not change CUDA runtime behavior, example behavior, result
   shape, or fused-boundary evidence.
 - Merge decision and merge commit:
-  pending PR review.
+  accepted as a status/slicing refresh only. PR #163 merged into `main` on
+  2026-06-22 as `cc26283be5b3355af8148a8e4ca5421d57c2ff80`
+  (`Refresh NVIDIA status after runtime args map`). The merge decision did
+  not accept CUDA runtime behavior, result-shape changes, fused execution
+  evidence, fresh H200 fused-success evidence,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
+  DeepSeek, throughput, or latency claims.
 - Handoff summary and remaining gaps:
   selected exactly one next PR-sized implementation slice:
   `nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`. That future

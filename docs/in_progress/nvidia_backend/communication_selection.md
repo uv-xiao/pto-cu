@@ -226,7 +226,7 @@ restart. It is a planning boundary, not performance evidence.
   metadata remain forbidden ways to provide the runtime args association.
   Null, stale, wrong-size, wrong-callable, or cross-invocation envelopes must
   be failed or unsupported states, not pass evidence.
-- The selected implementation slice
+- PR #164's accepted implementation slice
   `nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff` adds only the
   private CUDA persistent DAG host-runtime association for real
   same-invocation `ChipStorageTaskArgs *` and `PtoCudaPersistentDagArgs *`
@@ -235,6 +235,12 @@ restart. It is a planning boundary, not performance evidence.
   forbidden public/API evidence paths. It does not add a runtime-fusion
   coordinator, descriptor allocator, UCCL-EP runtime path, validation policy,
   UCCL-EP capability metadata, pass evidence, or fused-success claim.
+- The next selected slice is
+  `nvidia-uccl-ep-runtime-fusion-capability-metadata-map`, a docs/test
+  dependency map for the private UCCL-EP capability metadata that a later
+  coordinator request will need. It must not implement runtime behavior,
+  widen public `TaskArgs` / `CallConfig`, widen the common runtime C API or
+  UCCL host-runtime ABI, or claim H200 fused success.
 
 ## Non-Claims
 
