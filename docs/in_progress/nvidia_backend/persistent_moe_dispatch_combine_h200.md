@@ -1061,6 +1061,44 @@ or claim H200 fused-success evidence. Public `TaskArgs`, public `CallConfig`,
 common runtime C API, UCCL host-runtime ABI, example JSON, adapter provenance,
 and handoff metadata remain forbidden pass-evidence paths.
 
+PR #170 accepted only the private descriptor allocation policy dependency map
+as `bd0b59ee8d5afc969020d3aea047aafc9f3152be`: allocator owner,
+host-control record policy, device-visible descriptor buffer policy,
+dispatch/combine descriptor identity, shared-token requirement, and allocation
+lifetime failure ownership. It did not implement CUDA runtime behavior,
+descriptor allocation, UCCL-EP runtime dispatch, a coordinator, pass evidence,
+or H200 fused-success evidence.
+
+## UCCL-EP Runtime Path Map Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`.
+
+This selected dependency slice maps the private UCCL-EP runtime path that a
+later coordinator must use after PR #170 descriptor allocation policy. It
+defines how coordinator-owned dispatch and combine descriptor views would
+reach UCCL-EP runtime logic, without implementing UCCL-EP runtime dispatch or
+constructing the coordinator.
+
+The runtime path remains private to the CUDA persistent-device runtime path.
+PR #164 same-invocation request args, PR #166 UCCL-EP capability metadata,
+PR #168 validation policy, and PR #170 descriptor allocation policy remain
+prerequisites, not pass evidence.
+
+The map must define the runtime-path owner, dispatch descriptor handoff,
+combine descriptor handoff, descriptor-token checks, rank/device checks,
+transport-mode checks, and runtime-path failure ownership. missing runtime
+path is unsupported. stale descriptor views, descriptor-token mismatch,
+rank/device mismatch, transport-mode mismatch, descriptor-vocabulary
+mismatch, and public/API-sourced runtime-path fields are failed as fabricated
+or untrusted pass evidence.
+
+This selected slice must not implement UCCL-EP runtime dispatch, construct a
+coordinator, allocate descriptors, change CUDA runtime behavior, claim pass
+evidence, or claim H200 fused-success evidence. It must not report
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or set
+`actual_fused_cross_gpu_execution: true`.
+
 ## Future Fused Execution Evidence Shape
 
 This design/dependency PR defines the evidence contract only. It does not

@@ -23,6 +23,106 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-23 - Post-Descriptor-Allocation-Policy-Map Status Refresh Worker
+
+- Dispatcher Session or PR:
+  current `/goal` worker session on branch
+  `nvidia-goal-status-post-descriptor-allocation-policy-map`, after PR #170
+  merged as `bd0b59ee8d5afc969020d3aea047aafc9f3152be`.
+- Worker id and objective:
+  `pto-worker-nvidia-goal-status-post-descriptor-allocation-policy-map`;
+  refresh the NVIDIA backend restart status after PR #170, record PR #170 as
+  accepted only for the private descriptor allocation policy dependency map,
+  and select exactly one next PR-sized dependency or implementation slice.
+- Exact Codex command or script invocation:
+  worker launched by
+  `tmp/worker-prompts/run-nvidia-post-descriptor-allocation-policy-map-status-refresh.sh`,
+  which ran the prompt in
+  `tmp/worker-prompts/nvidia-post-descriptor-allocation-policy-map-status-refresh.md`.
+  No nested workers were launched.
+- Monitor locators:
+  Codex session id `019ef097-163d-7d73-8086-aa1b83fe9dc2`;
+  transcript path
+  `~/.codex/sessions/2026/06/23/rollout-2026-06-23T02-28-14-019ef097-163d-7d73-8086-aa1b83fe9dc2.jsonl`;
+  tmux pane
+  `pto-worker-nvidia-post-descriptor-allocation-policy-map:0.0` (`%266`).
+  Recurring monitor artifacts are under
+  `tmp/codex-goal-monitor/nvidia-post-descriptor-allocation-policy-map/`.
+  Latest summary `20260622T184343Z` reported `pane_status: missing`,
+  `transcript_status: ok`, `worktree_status: ok`, `dirty_count: 0`, and
+  latest commit `87c8b976`.
+- Parent goal and child slice:
+  NVIDIA backend restart; post-PR170 status/slicing refresh only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-goal-status-post-descriptor-allocation-policy-map`;
+  <https://github.com/uv-xiao/pto-cu/pull/171>. Opened as a non-draft PR
+  with
+  `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-goal-status-post-descriptor-allocation-policy-map`.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `bd0b59ee8d5afc969020d3aea047aafc9f3152be`.
+- Allowed scope and files:
+  review-facing docs/tests only:
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  and `tests/ut/py/test_nvidia_review_artifacts.py`. No CUDA runtime
+  behavior changes.
+- Dependencies and blocked assumptions:
+  PR #164 is accepted only for the private CUDA persistent DAG host-runtime
+  handoff that associates real same-invocation `ChipStorageTaskArgs *` and
+  `PtoCudaPersistentDagArgs *` pointers. PR #166 is accepted only as a
+  private UCCL-EP capability metadata dependency map. PR #168 is accepted
+  only as a private validation policy dependency map. PR #170 accepted only
+  the private descriptor allocation policy dependency map: allocator
+  owner, host-control record policy, device-visible descriptor buffer policy,
+  dispatch/combine descriptor identity, shared-token requirement, and
+  allocation lifetime failure ownership.
+- Non-claims:
+  PR #170 did not implement CUDA runtime behavior, descriptor allocation,
+  UCCL-EP runtime dispatch, a coordinator, pass evidence, or H200
+  fused-success evidence. This branch also makes no CUDA runtime behavior
+  change and claims no `persistent_device_uccl_ep_runtime_fusion.status:
+  passed`, no `actual_fused_cross_gpu_execution: true`, no RDMA, no
+  multi-node transport, no serving, no vLLM, no DeepSeek, no throughput, and
+  no latency result.
+- Selected next slice:
+  selected exactly one next PR-sized dependency slice, the UCCL-EP Runtime
+  Path Map Slice:
+  `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`. That future
+  branch should map the private UCCL-EP runtime path that consumes the PR
+  #170 descriptor identities after PR #164 request-args handoff, PR #166
+  capability metadata, and PR #168 validation policy. It should define the
+  runtime-path owner, dispatch descriptor handoff, combine descriptor
+  handoff, descriptor-token checks, rank/device checks, transport-mode
+  checks, and runtime-path failure ownership. missing runtime path is
+  unsupported. stale descriptor views, descriptor-token mismatch, rank/device
+  mismatch, transport-mode mismatch, descriptor-vocabulary mismatch, and
+  public/API-sourced runtime-path fields are failed as fabricated or
+  untrusted pass evidence. This slice must not implement UCCL-EP runtime
+  dispatch or construct the coordinator.
+- Verification commands and results:
+  completed before initial PR creation and rerun after adding the PR URL to
+  this entry. `git diff --check` passed with no output. Targeted
+  `markdownlint-cli2` over the five NVIDIA status docs passed with
+  `0 error(s)`. The NVIDIA review guard passed. The required focused pytest
+  command for `tests/ut/py/test_nvidia_review_artifacts.py` passed with
+  `61 passed`.
+- H200 evidence:
+  No fresh H200 command is planned because this is a docs/test status refresh
+  only and does not change CUDA runtime behavior, example behavior, result
+  shape, or fused-boundary evidence.
+- Merge decision and merge commit:
+  pending PR review.
+- Handoff summary and remaining gaps:
+  selected exactly one next PR-sized dependency slice:
+  `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`. UCCL-EP runtime
+  path implementation, coordinator implementation, pass evidence, and fresh
+  H200 fused-success evidence remain unsupported or failed states.
+
 ### 2026-06-23 - UCCL-EP Runtime Fusion Descriptor Allocation Policy Map Worker
 
 - Dispatcher Session or PR:
