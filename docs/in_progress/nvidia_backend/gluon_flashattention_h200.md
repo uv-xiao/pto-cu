@@ -67,7 +67,11 @@ metadata, status, phase, causal flag, and max error when run.
 evidence with only causal prefill cases: every case is same-length
 multi-query attention, records `phase: prefill`, `causal: true`, and uses the
 lower-triangular PyTorch reference instead of the shifted decode/append
-reference. `--sweep --causal --causal-sweep-phase append` switches to bounded
+reference. `--sweep --causal --causal-sweep-phase decode` switches to bounded
+causal decode sweep correctness evidence with only causal decode cases: every
+case has `seqlen_q == 1` and `seqlen_k > seqlen_q`, records `phase: decode`,
+`causal: true`, and uses the shifted decode/append PyTorch reference.
+`--sweep --causal --causal-sweep-phase append` switches to bounded
 causal append sweep correctness evidence with only causal append cases: every
 case has `seqlen_q > 1` and `seqlen_q < seqlen_k`, records `phase: append`,
 `causal: true`, and uses the shifted decode/append PyTorch reference.
@@ -92,6 +96,13 @@ The causal prefill sweep includes:
   provenance `bounded same-length multi-query causal prefill fixture`;
 - `prefill_32x32x64`: `seqlen_q=32`, `seqlen_k=32`, `head_dim=64`,
   provenance `bounded same-length multi-query causal prefill H200 gate`.
+
+The causal decode sweep includes:
+
+- `decode_1x16x64`: `seqlen_q=1`, `seqlen_k=16`, `head_dim=64`,
+  provenance `bounded single-query causal decode fixture`;
+- `decode_1x32x64`: `seqlen_q=1`, `seqlen_k=32`, `head_dim=64`,
+  provenance `bounded single-query causal decode H200 gate`.
 
 The causal append sweep includes:
 
@@ -241,6 +252,69 @@ decode, not full append, not attention-variant correctness, not FlashInfer
 integration evidence, not vLLM/simpler-nv integration evidence, not
 production serving readiness, not performance, throughput, or latency
 evidence, and not DeepSeek semantic correctness.
+
+## Decode Sweep Gate
+
+On 2026-06-22, the bounded causal decode sweep generated and launched on the
+same H200 class machine and passed correctness for two single-query decode
+cases against the shifted masked PyTorch reference. The remote run used tree
+sync into `/tmp/decode-sweep-h200` through the generic CUDA runner and
+the preserved remote Gluon Python environment through `/tmp/gluon-venv`.
+The `python -S` launch avoids a stale editable-package hook in that remote
+environment so `simpler_setup` resolves from the synced checkout.
+
+```bash
+REMOTE_PTO_CU=/tmp/decode-sweep-h200 \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc '/tmp/gluon-venv/bin/python -S -c '"'"'import runpy, sys; sys.path[:0] = [".", "./python", "/tmp/gluon-venv/lib/python3.12/site-packages"]; sys.argv = ["examples/cuda/gluon_flashattention_fwd.py", "--output-dir", "tmp/gluon-flashattention-decode-sweep-h200", "--arch", "compute_90", "--sweep", "--causal", "--causal-sweep-phase", "decode", "--require-cuda"]; runpy.run_path(sys.argv[0], run_name="__main__")'"'"''
+```
+
+Exit code: 0.
+
+Distilled passed result:
+
+```text
+schema_version: 1
+status: passed
+case_count: 2
+passed_cases: 2
+failed_cases: 0
+skipped_cases: 0
+only causal decode cases
+case_name: decode_1x16x64
+phase: decode
+causal: true
+shape: seqlen_q=1, seqlen_k=16, head_dim=64
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index + (seqlen_k - seqlen_q), -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+max_abs_error: 1.7881393432617188e-07
+source_sha256: 27408fa383b16b99cc20adb29d609f19a2d57f9ce1db0b24f5906aa005ac3952
+case_name: decode_1x32x64
+phase: decode
+causal: true
+shape: seqlen_q=1, seqlen_k=32, head_dim=64
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index + (seqlen_k - seqlen_q), -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+max_abs_error: 1.4901161193847656e-07
+source_sha256: 43a91756bc237b2c8240a7a61dcec448ceb7d335f915cd62630d7fa8c8a1e4c2
+per-case artifact paths are repo-relative
+machine class: H200
+private absolute paths are not recorded
+```
+
+This result is bounded causal decode sweep correctness evidence for two
+generated single-query FP32 causal FlashAttention sources where
+`seqlen_q == 1` and `seqlen_k > seqlen_q`. It is not full decode coverage,
+not paged/ragged KV-cache correctness, not varlen attention correctness, not
+attention-variant correctness, not FlashInfer integration evidence, not
+vLLM/simpler-nv integration evidence, not production serving readiness, not
+performance, throughput, or latency evidence, and not DeepSeek semantic
+correctness.
+
+The explicit selector form is
+`--sweep --causal --causal-sweep-phase decode --require-cuda`.
+The artifact directory option is
+`--output-dir tmp/gluon-flashattention-decode-sweep-h200`.
 
 ## Append Sweep Gate
 

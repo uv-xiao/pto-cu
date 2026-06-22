@@ -1604,6 +1604,49 @@ def test_gluon_flashattention_causal_append_sweep_aggregates_append_cases(
     assert str(tmp_path) not in json.dumps(result)
 
 
+def test_gluon_flashattention_causal_decode_sweep_aggregates_decode_cases(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    result = example.run_flashattention_sweep(
+        output_dir=Path("tmp/gluon-flashattention-decode-sweep"),
+        arch="compute_90",
+        causal=True,
+        causal_sweep_phase="decode",
+        skip_reason=lambda: "torch.cuda is not available",
+    )
+
+    assert result["schema_version"] == 1
+    assert result["kernel_name"] == "flashattention_fwd_f32"
+    assert result["status"] == "skipped"
+    assert result["case_count"] == len(example.FLASHATTENTION_CAUSAL_DECODE_SWEEP_CASES)
+    assert result["case_count"] >= 2
+    assert result["skipped_cases"] == len(example.FLASHATTENTION_CAUSAL_DECODE_SWEEP_CASES)
+
+    shapes = [case["shape"] for case in result["cases"]]
+    assert {"seqlen_q": 1, "seqlen_k": 16, "head_dim": 64} in shapes
+    assert {"seqlen_q": 1, "seqlen_k": 32, "head_dim": 64} in shapes
+
+    for case in result["cases"]:
+        assert case["phase"] == "decode"
+        assert case["causal"] is True
+        assert case["shape"]["seqlen_q"] == 1
+        assert case["shape"]["seqlen_k"] > case["shape"]["seqlen_q"]
+        assert case["reference"] == example.FLASHATTENTION_CAUSAL_DECODE_REFERENCE
+        assert case["reference"] != example.FLASHATTENTION_CAUSAL_REFERENCE
+        assert case["tolerance"] == {"atol": 0.001, "rtol": 0.01}
+        assert case["provenance"]
+        assert case["status"] == "skipped"
+        assert case["reason"] == "torch.cuda is not available"
+        assert case["artifact"]["source_sha256"]
+        assert not Path(case["artifact"]["source_path"]).is_absolute()
+        assert not Path(case["artifact"]["manifest_path"]).is_absolute()
+    assert str(tmp_path) not in json.dumps(result)
+
+
 def test_gluon_flashattention_causal_sweep_preserves_metadata_on_case_failure(
     tmp_path,
     monkeypatch,
@@ -1684,6 +1727,99 @@ def test_gluon_flashattention_causal_append_sweep_preserves_metadata_on_case_fai
     assert case["provenance"] == "test failing causal append fixture"
     assert case["error_type"] == "RuntimeError"
     assert case["error"] == "append lowering failed under ."
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_gluon_flashattention_causal_decode_sweep_preserves_metadata_on_case_failure(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    def fail_case(**_kwargs):
+        raise RuntimeError(f"decode lowering failed under {tmp_path}")
+
+    monkeypatch.setattr(example, "run_flashattention_correctness", fail_case)
+
+    result = example.run_flashattention_sweep(
+        output_dir=Path("tmp/gluon-flashattention-decode-sweep"),
+        arch="compute_90",
+        causal=True,
+        causal_sweep_phase="decode",
+        cases=[
+            {
+                "name": "failing_decode",
+                "tile_shape": (1, 16, 64),
+                "seed": 9,
+                "provenance": "test failing causal decode fixture",
+            }
+        ],
+    )
+
+    assert result["status"] == "failed"
+    assert result["case_count"] == 1
+    assert result["failed_cases"] == 1
+    case = result["cases"][0]
+    assert case["phase"] == "decode"
+    assert case["causal"] is True
+    assert case["shape"] == {"seqlen_q": 1, "seqlen_k": 16, "head_dim": 64}
+    assert case["reference"] == example.FLASHATTENTION_CAUSAL_DECODE_REFERENCE
+    assert case["tolerance"] == {"atol": 0.001, "rtol": 0.01}
+    assert case["provenance"] == "test failing causal decode fixture"
+    assert case["error_type"] == "RuntimeError"
+    assert case["error"] == "decode lowering failed under ."
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_gluon_flashattention_causal_decode_sweep_preserves_runtime_failure_details(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    def fail_case(**_kwargs):
+        return {
+            "shape": {"seqlen_q": 1, "seqlen_k": 16, "head_dim": 64},
+            "phase": "decode",
+            "reference": example.FLASHATTENTION_CAUSAL_DECODE_REFERENCE,
+            "tolerance": {"atol": 0.001, "rtol": 0.01},
+            "causal": True,
+            "status": "failed",
+            "artifact": {
+                "source_path": "tmp/failing/flashattention_fwd_f32.gluon.py",
+                "manifest_path": "tmp/failing/flashattention_fwd_f32.gluon.json",
+                "source_sha256": "deadbeef",
+            },
+            "error_type": "TypeError",
+            "error": f"decode runtime failed under {tmp_path}",
+        }
+
+    monkeypatch.setattr(example, "run_flashattention_correctness", fail_case)
+
+    result = example.run_flashattention_sweep(
+        output_dir=Path("tmp/gluon-flashattention-decode-sweep"),
+        arch="compute_90",
+        causal=True,
+        causal_sweep_phase="decode",
+        cases=[
+            {
+                "name": "runtime_failing_decode",
+                "tile_shape": (1, 16, 64),
+                "seed": 10,
+                "provenance": "test runtime failure causal decode fixture",
+            }
+        ],
+    )
+
+    assert result["status"] == "failed"
+    assert result["case_count"] == 1
+    case = result["cases"][0]
+    assert case["phase"] == "decode"
+    assert case["causal"] is True
+    assert case["error_type"] == "TypeError"
+    assert case["error"] == "decode runtime failed under ."
     assert str(tmp_path) not in json.dumps(result)
 
 
@@ -1782,6 +1918,42 @@ def test_gluon_flashattention_causal_append_sweep_cli_requires_cuda_on_aggregate
         assert case["causal"] is True
         assert case["shape"]["seqlen_q"] > 1
         assert case["shape"]["seqlen_q"] < case["shape"]["seqlen_k"]
+        assert case["reference"] == example.FLASHATTENTION_CAUSAL_DECODE_REFERENCE
+
+
+def test_gluon_flashattention_causal_decode_sweep_cli_requires_cuda_on_aggregate_skip(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(example, "flashattention_skip_reason", lambda: "missing CUDA")
+
+    code = example.main(
+        [
+            "--output-dir",
+            "tmp/gluon-flashattention-decode-sweep",
+            "--arch",
+            "compute_90",
+            "--sweep",
+            "--causal",
+            "--causal-sweep-phase",
+            "decode",
+            "--require-cuda",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == "skipped"
+    assert payload["case_count"] == len(example.FLASHATTENTION_CAUSAL_DECODE_SWEEP_CASES)
+    assert payload["skipped_cases"] == len(example.FLASHATTENTION_CAUSAL_DECODE_SWEEP_CASES)
+    for case in payload["cases"]:
+        assert case["phase"] == "decode"
+        assert case["causal"] is True
+        assert case["shape"]["seqlen_q"] == 1
+        assert case["shape"]["seqlen_k"] > case["shape"]["seqlen_q"]
         assert case["reference"] == example.FLASHATTENTION_CAUSAL_DECODE_REFERENCE
 
 
