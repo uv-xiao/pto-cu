@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `21b2b32a475dc04e19700115af74510daef70859`,
-  after PR #172 (`Map UCCL EP runtime path`).
+- Current accepted `main`: `3b4b19a04855d27289fb9cdad802fee0c47d8265`,
+  after PR #174 (`Add private UCCL EP runtime path scaffold`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -143,7 +143,15 @@ from `main` and lands through focused GitHub PRs.
   runtime-path failure ownership. It did not implement CUDA runtime behavior,
   UCCL-EP runtime dispatch, a coordinator, descriptor allocation, pass
   evidence, or H200 fused-success evidence.
-- This branch records the post-PR172 status refresh and selects exactly one
+- PR #174 accepted only the private UCCL-EP runtime path scaffold:
+  `PtoCudaUcclEpRuntimePath`, `PtoCudaUcclEpRuntimeDescriptorView`, private
+  descriptor-view validation, and invocation-id propagation through private
+  CUDA runtime-fusion request state. It did not implement the runtime-fusion
+  coordinator, descriptor allocation, UCCL-EP runtime dispatch, pass evidence,
+  fresh H200 fused-success evidence, public `TaskArgs`, public `CallConfig`,
+  common runtime C API fields, UCCL host-runtime ABI fields, serving, vLLM,
+  DeepSeek, throughput, or latency evidence.
+- This branch records the post-PR174 status refresh and selects exactly one
   next implementation slice. It does not change CUDA runtime behavior, result
   shape, or fused-execution evidence status.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
@@ -282,6 +290,12 @@ from `main` and lands through focused GitHub PRs.
     runtime behavior, UCCL-EP runtime dispatch implementation, coordinator
     behavior, descriptor allocation implementation, pass evidence, or fused
     execution evidence.
+- PR #174: add private UCCL EP runtime path scaffold.
+  - Result: merged as `3b4b19a04855d27289fb9cdad802fee0c47d8265`.
+  - Result type: private UCCL-EP runtime path scaffold only, not coordinator
+    behavior, descriptor allocation implementation, UCCL-EP runtime dispatch,
+    pass evidence, H200 fused-success evidence, public runtime API expansion,
+    serving, vLLM, DeepSeek, or performance evidence.
 
 ## Restored Tracking Surface
 
@@ -372,10 +386,14 @@ runtime dispatch, coordinator behavior, pass evidence, or H200 fused-success
 evidence. After PR #172, the private UCCL-EP runtime path map is accepted as
 a dependency slice only; it does not implement CUDA runtime behavior,
 UCCL-EP runtime dispatch, coordinator behavior, descriptor allocation, pass
-evidence, or H200 fused-success evidence. The current accepted baseline is
-`21b2b32a475dc04e19700115af74510daef70859`, and the next slice is exactly
+evidence, or H200 fused-success evidence. After PR #174, the private
+UCCL-EP runtime path scaffold is accepted as a narrow private implementation
+slice only; it does not implement coordinator behavior, descriptor
+allocation, UCCL-EP runtime dispatch, pass evidence, or fresh H200
+fused-success evidence. The current accepted baseline is
+`3b4b19a04855d27289fb9cdad802fee0c47d8265`, and the next slice is exactly
 one narrow implementation slice:
-`nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl`.
+`nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl`.
 
 ## Accepted Payload Provenance Slice
 
@@ -1319,9 +1337,9 @@ only, merged as `21b2b32a475dc04e19700115af74510daef70859`. It did not
 implement CUDA runtime behavior, UCCL-EP runtime dispatch, a coordinator,
 descriptor allocation, pass evidence, or H200 fused-success evidence.
 
-## UCCL-EP Runtime Path Implementation Slice
+## Accepted UCCL-EP Runtime Path Implementation Slice
 
-Current branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl`.
 
 Objective: implement the narrow private UCCL-EP runtime path scaffold after
@@ -1375,3 +1393,51 @@ Required non-claims:
 Remaining implementation gaps after this slice are the runtime-fusion
 coordinator, descriptor allocation, real UCCL-EP runtime dispatch, pass
 evidence, and fresh H200 fused-success evidence.
+
+PR #174 met this objective as a private UCCL-EP runtime path scaffold only,
+merged as `3b4b19a04855d27289fb9cdad802fee0c47d8265`. It accepted
+`PtoCudaUcclEpRuntimePath`, `PtoCudaUcclEpRuntimeDescriptorView`, private
+descriptor-view validation, and invocation-id propagation through private
+CUDA runtime-fusion request state. It did not implement the runtime-fusion
+coordinator, descriptor allocation, UCCL-EP runtime dispatch, pass evidence,
+fresh H200 fused-success evidence, public `TaskArgs`, public `CallConfig`,
+common runtime C API fields, UCCL host-runtime ABI fields, serving, vLLM,
+DeepSeek, throughput, or latency evidence.
+
+## Descriptor Allocation Implementation Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl`.
+
+Objective: implement only the private descriptor allocation mechanics needed
+after PR #170 mapped descriptor allocation policy and PR #174 made the
+private UCCL-EP runtime path scaffold visible to runtime-fusion request state.
+This is narrower than constructing the runtime-fusion coordinator and narrower
+than dispatching UCCL-EP runtime work.
+
+Required implementation boundaries:
+
+- keep allocation private to the CUDA persistent-device runtime path;
+- allocate or model only the private host-control record and device-visible
+  dispatch/combine descriptor buffer required by the PR #170 policy;
+- bind allocations to the same invocation id carried by the PR #174
+  runtime-path scaffold;
+- preserve PR #164 same-invocation request args, PR #166 capability
+  metadata, PR #168 validation policy, PR #170 allocation policy, PR #172
+  runtime-path map, and PR #174 runtime-path scaffold as prerequisites rather
+  than pass evidence;
+- keep missing coordinator and missing UCCL-EP runtime dispatch as
+  unsupported or failed states;
+- keep public `TaskArgs`, public `CallConfig`, common runtime C API fields,
+  UCCL host-runtime ABI fields, example JSON, adapter provenance, handoff
+  metadata, and payload provenance out of pass-evidence paths.
+
+Required non-claims:
+
+- no runtime-fusion coordinator construction;
+- no UCCL-EP runtime dispatch;
+- no pass evidence;
+- no fresh H200 fused-success evidence;
+- no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- no `actual_fused_cross_gpu_execution: true`;
+- no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claim.

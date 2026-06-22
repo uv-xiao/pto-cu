@@ -1123,9 +1123,9 @@ ownership. It did not implement CUDA runtime behavior, UCCL-EP runtime
 dispatch, a coordinator, descriptor allocation, pass evidence, or H200
 fused-success evidence.
 
-## UCCL-EP Runtime Path Implementation Slice
+## Accepted UCCL-EP Runtime Path Implementation Slice
 
-Current branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl`.
 
 This slice implements only the private UCCL-EP runtime path scaffold
@@ -1158,12 +1158,39 @@ descriptor views, and public/API-sourced runtime-path fields. Valid scaffold
 inputs still produce an unsupported fused-boundary status until descriptor
 allocation and coordinator-owned UCCL-EP runtime dispatch exist.
 
+PR #174 accepted this private runtime-path scaffold as
+`3b4b19a04855d27289fb9cdad802fee0c47d8265`. The accepted surface is limited
+to `PtoCudaUcclEpRuntimePath`, `PtoCudaUcclEpRuntimeDescriptorView`, private
+descriptor-view validation, and invocation-id propagation through private
+CUDA runtime-fusion request state. It did not implement the runtime-fusion
+coordinator, descriptor allocation, UCCL-EP runtime dispatch, pass evidence,
+fresh H200 fused-success evidence, public `TaskArgs`, public `CallConfig`,
+common runtime C API fields, UCCL host-runtime ABI fields, serving, vLLM,
+DeepSeek, throughput, or latency evidence.
+
+## Descriptor Allocation Implementation Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl`.
+
+The next slice should implement only private descriptor allocation mechanics:
+the host-control record and device-visible dispatch/combine descriptor buffer
+required by the PR #170 policy, bound to the same invocation id carried by
+the PR #174 runtime-path scaffold.
+
+This is narrower than runtime-fusion coordinator construction and narrower
+than UCCL-EP runtime dispatch. Missing coordinator behavior and missing
+UCCL-EP runtime dispatch remain unsupported or failed states. The slice must
+not change the H200 fused-boundary claim state, must not report
+`persistent_device_uccl_ep_runtime_fusion.status: passed`, and must not set
+`actual_fused_cross_gpu_execution: true`.
+
 ## Future Fused Execution Evidence Shape
 
-This implementation PR defines only the private runtime-path scaffold. It does
-not implement `persistent_device_uccl_ep_runtime_fusion`, does not change the
-example command, and does not relabel the PR #143 structured unsupported
-boundary as fused evidence.
+PR #174 defines only the private runtime-path scaffold. It does not implement
+`persistent_device_uccl_ep_runtime_fusion`, does not change the example
+command, and does not relabel the PR #143 structured unsupported boundary as
+fused evidence.
 
 A later implementation PR may claim actual fused cross-GPU expert-parallel
 MoE execution only when one fresh H200 command emits all of these fields:
