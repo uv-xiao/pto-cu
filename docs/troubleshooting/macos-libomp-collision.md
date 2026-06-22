@@ -23,7 +23,10 @@ Two distinct `libomp.dylib` copies get mapped into the Python process that pytes
 1. **Homebrew's libomp** — `/opt/homebrew/opt/libomp/lib/libomp.dylib`, pulled in by the chain:
    `numpy → openblas (/opt/homebrew/opt/openblas/lib/libopenblas.0.dylib) → libomp`
 
-   `numpy` is loaded from the homebrew-managed system Python because our venv is created with `--system-site-packages` (required by `.claude/rules/venv-isolation.md`). Homebrew's numpy links against homebrew's openblas, which links against homebrew's libomp.
+   `numpy` is loaded from the homebrew-managed system Python because our venv
+   is created with `--system-site-packages` (required by
+   `.agents/rules/venv-isolation.md`). Homebrew's numpy links against
+   homebrew's openblas, which links against homebrew's libomp.
 
 2. **PyTorch's bundled libomp** — `.venv/lib/python3.14/site-packages/torch/lib/libomp.dylib`, pulled in by:
    `torch → torch/_C → libtorch_python → libomp`
@@ -73,7 +76,9 @@ Neither risk applies to our workload: the goldens use numpy/torch only for rando
 
 - **Do not** try to fix this by `dlopen`-preloading one libomp with `ctypes.CDLL(..., RTLD_GLOBAL)`. It doesn't work — dyld resolves subsequent libomp references by install name, not by symbol, so the second copy still loads.
 - **Do not** try `DYLD_INSERT_LIBRARIES=.../torch/lib/libomp.dylib`. Same reason: different install names.
-- **Do not** drop `--system-site-packages` from the venv to try to get a pip-installed numpy — `.claude/rules/venv-isolation.md` requires `--system-site-packages` so system-level driver bindings remain accessible.
+- **Do not** drop `--system-site-packages` from the venv to try to get a
+  pip-installed numpy — `.agents/rules/venv-isolation.md` requires
+  `--system-site-packages` so system-level driver bindings remain accessible.
 - **Do not** "fix" it by removing `numpy` or `torch` imports from goldens. `import torch` transitively imports numpy, and writing golden reference math in pure Python is painful. Converting all goldens to torch does **not** make the conflict go away.
 - **Do not** interpret OMP Error #15 as evidence of a sim-parallel threading bug, dlopen/dlclose ordering issue, or pthread TSD race. The crash happens during Python import, well before any C++ DeviceRunner code executes. A significant amount of debugging effort was wasted in commit `5cc0814` ("fix: in progress sim parallel") chasing this misdiagnosis.
 

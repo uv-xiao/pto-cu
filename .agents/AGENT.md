@@ -15,17 +15,16 @@ This repository keeps Codex-facing project guidance under `.agents/`.
 
 ## Priority
 
-1. Follow `CLAUDE.md` and `.claude/rules/` first.
-2. Follow `.agents/coding-guidance.md`.
-3. Follow `.agents/rules/` for CUDA backend review, evaluation, dispatch, and
+1. Follow `AGENTS.md` and `.agents/coding-guidance.md` first.
+2. Follow `.agents/rules/` for CUDA backend review, evaluation, dispatch, and
    evidence discipline.
-4. Use `.agents/skills/cuda-backend-eval/` for CUDA smoke and benchmark work.
-5. Use `.agents/skills/codex-goal-monitor/` when a separate Codex `/goal`
+3. Use `.agents/skills/cuda-backend-eval/` for CUDA smoke and benchmark work.
+4. Use `.agents/skills/codex-goal-monitor/` when a separate Codex `/goal`
    session needs read-only tmux supervision or approved steering.
-6. Use `.agents/templates/ultimate-goal.md` with
+5. Use `.agents/templates/ultimate-goal.md` with
    `.agents/rules/ultimate-goal-dispatch.md` when work spans multiple PRs or
    Codex sessions.
-7. Run `.agents/checks/check_nvidia_review_ready.py` before claiming that the
+6. Run `.agents/checks/check_nvidia_review_ready.py` before claiming that the
    NVIDIA backend branch is ready for human review.
 
 ## Long-Running Goals

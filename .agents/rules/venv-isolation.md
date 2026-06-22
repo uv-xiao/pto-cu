@@ -40,7 +40,9 @@ Multiple AI agents may work on this repo concurrently (parallel sessions, worktr
 
 ### Worktree Scenario
 
-When working in a git worktree (`.claude/worktrees/` or any other worktree path), the same rule applies — create `.venv` **inside the worktree directory**, not in the original repo. Each worktree gets its own independent venv.
+When working in a git worktree, the same rule applies: create `.venv`
+**inside the worktree directory**, not in the original repo. Each worktree gets
+its own independent venv.
 
 ### Quick Reference
 

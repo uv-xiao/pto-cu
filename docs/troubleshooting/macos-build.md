@@ -285,7 +285,7 @@ directories that come and go.
 - [`macos-libomp-collision.md`](macos-libomp-collision.md) — a
   separate macOS-only issue (libomp double-load in pytest workers,
   worked around in `conftest.py`).
-- [`.claude/rules/venv-isolation.md`](../../.claude/rules/venv-isolation.md)
+- [`.agents/rules/venv-isolation.md`](../../.agents/rules/venv-isolation.md)
   — required setup for the `.venv` per worktree.
 - `simpler_setup/toolchain.py` — authoritative source for which compiler
   each phase uses.

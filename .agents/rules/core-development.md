@@ -1,6 +1,7 @@
 # Core Development Rules
 
-- Follow `CLAUDE.md` and `.claude/rules/` for upstream PTO runtime
+- Follow `AGENTS.md`, `.agents/coding-guidance.md`, and `.agents/rules/`
+  for upstream PTO runtime
   architecture and terminology.
 - Keep CUDA backend work scoped to the runtime, platform, docs, tests,
   examples, and `.agents/` surfaces needed by the task.

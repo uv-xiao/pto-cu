@@ -19,10 +19,10 @@ stale that results from your edit is part of your edit:
 
 ```bash
 # Symbol rename, removal, or signature change
-rg '\bold_name\b' docs/ .claude/rules/ src/ python/ examples/ tests/
+rg '\bold_name\b' docs/ .agents/rules/ src/ python/ examples/ tests/
 
 # Flag / CLI option added, renamed, or removed
-rg -- '--old-flag' docs/ .github/workflows/ .claude/skills/ README.md
+rg -- '--old-flag' docs/ .github/workflows/ .agents/skills/ README.md
 ```
 
 Each match is either already correct, or a doc/comment you must update in
