@@ -846,20 +846,32 @@ slice. The branch does not add public `TaskArgs` fields, public `CallConfig`
 fields, or UCCL host-runtime ABI fields, and it does not claim
 `persistent_device_uccl_ep_runtime_fusion.status: passed`.
 
-## Next ChipStorageTaskArgs Request Boundary Slice
+## Closed Invalid ChipStorageTaskArgs Request Boundary Attempt
 
-The next PR-sized slice is
-`nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`. It should
-thread only the private `ChipStorageTaskArgs` request input through the
-existing `ChipWorker::run` / CUDA host-runtime request path. The expected
+PR #157 (`nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`) is
+closed invalid. The branch assigned the persistent DAG run `args` pointer to
+`PtoCudaRuntimeFusionRequest::chip_storage_task_args` and recorded
+`sizeof(ChipStorageTaskArgs)`. That pointer is a
+`PtoCudaPersistentDagArgs *` in the CUDA host-runtime persistent DAG path, not
+a `ChipStorageTaskArgs *` from `ChipWorker::run`.
+
+The current code therefore still has no real `ChipStorageTaskArgs` request
+path into `persistent_device_uccl_ep_runtime_fusion_entry`. The expected
 review-safe result remains `unsupported`; missing coordinator, descriptor
 allocator, UCCL-EP runtime path, validation policy, UCCL-EP capability
-metadata, and pass evidence remain unsupported or failed states.
+metadata, real chip-storage task args, and pass evidence remain unsupported
+or failed states.
 
-The slice must not add public `TaskArgs`, public `CallConfig`, UCCL
-host-runtime ABI fields, RDMA, multi-node, serving, vLLM, DeepSeek,
-throughput, latency, fresh H200 fused-success evidence, or pass/true
-fused-boundary status.
+## Next Private Request Envelope Dependency Slice
+
+The next dependency slice is
+`nvidia-uccl-ep-runtime-fusion-private-request-envelope`. It must define a
+private ABI/envelope path that can carry a real `ChipStorageTaskArgs` from
+`ChipWorker::run` while keeping `PtoCudaPersistentDagArgs *` separate as a
+persistent DAG runtime input. The slice must not add public `TaskArgs`,
+public `CallConfig`, common runtime C API fields, UCCL host-runtime ABI
+fields, RDMA, multi-node, serving, vLLM, DeepSeek, throughput, latency, fresh
+H200 fused-success evidence, or pass/true fused-boundary status.
 
 ## Future Fused Execution Evidence Shape
 

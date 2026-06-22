@@ -23,6 +23,68 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - UCCL-EP Runtime Fusion ChipStorage Blocked Handoff
+
+- Dispatcher Session or PR:
+  current `/goal` session on branch
+  `nvidia-uccl-ep-runtime-fusion-chip-storage-blocked-handoff`, after PR #158
+  merged as `41a9e1e4135313a9787386fb32c21f8b85254d4b`.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-chip-storage-blocked-handoff`;
+  record the closed invalid ChipStorageTaskArgs request-boundary attempt as a
+  blocked NVIDIA runtime-fusion handoff.
+- Exact Codex command or script invocation:
+  direct `/goal` work in this branch; no nested workers launched.
+- Parent goal and child slice:
+  NVIDIA backend restart; blocked handoff after PR #157
+  (<https://github.com/uv-xiao/pto-cu/pull/157>,
+  `nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`) was closed
+  invalid by the dispatcher.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-chip-storage-blocked-handoff`; planned
+  non-draft PR with `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-chip-storage-blocked-handoff`.
+- Allowed scope and files:
+  NVIDIA in-progress review docs and focused review-artifact tests only:
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  and `tests/ut/py/test_nvidia_review_artifacts.py`.
+- Dependencies and blocked assumptions:
+  starts from current `main` at
+  `41a9e1e4135313a9787386fb32c21f8b85254d4b`. PR #158 already fixed monitor
+  transcript lookup and is unrelated to this runtime-fusion boundary. PR #157
+  is closed invalid, not accepted. Its implementation recorded the persistent
+  DAG run `args` pointer as
+  `PtoCudaRuntimeFusionRequest::chip_storage_task_args` and labeled it
+  `sizeof(ChipStorageTaskArgs)`, but that pointer is a
+  `PtoCudaPersistentDagArgs *`, not a `ChipStorageTaskArgs *`. Current `main`
+  intentionally does not contain PR #157.
+- Verification commands and results:
+  completed before PR creation. `git diff --check` passed; `git diff
+  --cached --check` passed after staging; targeted `markdownlint-cli2` over
+  the five touched docs passed with `0 error(s)`; the NVIDIA review guard
+  passed; and `test_nvidia_review_artifacts.py` passed with `61 passed`.
+- H200 evidence:
+  no fresh H200 command is planned because this is docs/test handoff recording
+  only and does not change CUDA runtime behavior, example behavior, result
+  shape, or fused-boundary evidence.
+- Merge decision and merge commit:
+  pending PR creation and review.
+- Handoff summary and remaining gaps:
+  the CUDA code state remains unclaimed: no real `ChipStorageTaskArgs`
+  request path reaches `persistent_device_uccl_ep_runtime_fusion_entry`.
+  The next valid dependency is
+  `nvidia-uccl-ep-runtime-fusion-private-request-envelope`, a broader private
+  ABI/envelope path that can carry a real `ChipStorageTaskArgs` from
+  `ChipWorker::run` without expanding public `TaskArgs`, public `CallConfig`,
+  the common runtime C API, or UCCL host-runtime ABI fields. This handoff does
+  not accept `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, fresh H200 fused-success evidence,
+  RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claims.
+
 ### 2026-06-22 - UCCL-EP Runtime Fusion Private Entry Unsupported Worker
 
 - Dispatcher Session or PR:
@@ -97,11 +159,10 @@ Each dispatch entry should include:
   `persistent_device_uccl_ep_runtime_fusion.status: passed`, set
   `actual_fused_cross_gpu_execution: true`, or claim RDMA, multi-node,
   serving, vLLM, DeepSeek, throughput, or latency evidence. The next selected
-  PR-sized slice is
-  `nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`, which should
-  thread only the private `ChipStorageTaskArgs` request input through the
-  existing `ChipWorker::run` / CUDA host-runtime request path while keeping
-  the fused-boundary result unsupported.
+  PR-sized slice at that time was
+  `nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`; PR #157
+  later attempted it and was closed invalid because it confused
+  `PtoCudaPersistentDagArgs *` with a real `ChipStorageTaskArgs *`.
 
 ### 2026-06-22 - Post-Coordinator-Entry-Contract Status Refresh Worker
 

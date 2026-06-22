@@ -193,13 +193,20 @@ restart. It is a planning boundary, not performance evidence.
   unsupported runtime scaffold only
   (`nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`). None of those
   PRs proves actual fused cross-GPU expert-parallel MoE execution.
-- The next PR-sized slice is
-  `nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`. It can
-  thread only the private `ChipStorageTaskArgs` request input through the
-  existing `ChipWorker::run` / CUDA host-runtime request path and must keep
-  the fused-boundary result `unsupported` unless the runtime coordinator
-  emits real descriptor ownership, ownership-token, lifetime-transition,
-  rank/device, validation, and failure-field evidence.
+- PR #157
+  (`nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`) is closed
+  invalid. It assigned a `PtoCudaPersistentDagArgs *` persistent DAG run
+  pointer to `PtoCudaRuntimeFusionRequest::chip_storage_task_args` and labeled
+  it `sizeof(ChipStorageTaskArgs)`, but that is not a real
+  `ChipStorageTaskArgs *` from `ChipWorker::run`.
+- The next PR-sized dependency is
+  `nvidia-uccl-ep-runtime-fusion-private-request-envelope`. It should define a
+  broader private ABI/envelope path that can carry a real
+  `ChipStorageTaskArgs` from `ChipWorker::run` without expanding public
+  `TaskArgs`, public `CallConfig`, common runtime C API, or UCCL host-runtime
+  ABI fields. It must keep the fused-boundary result `unsupported` unless the
+  runtime coordinator emits real descriptor ownership, ownership-token,
+  lifetime-transition, rank/device, validation, and failure-field evidence.
 
 ## Non-Claims
 
