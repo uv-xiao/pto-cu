@@ -131,12 +131,20 @@ restart. It is a planning boundary, not performance evidence.
   shared ownership token, and an empty lifetime transition log; therefore
   `persistent_device_uccl_ep_runtime_fusion.status` remains `unsupported` and
   `actual_fused_cross_gpu_execution` remains `false`.
-- A future implementation branch should be
-  `nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`, scoped only
-  to creating the runtime-owned descriptor, ownership token, lifetime log,
-  local guards, and one H200 fused-boundary result. It must not add RDMA,
-  multi-node transport, UCCL host-runtime ABI expansion, serving, vLLM, or
-  DeepSeek claims.
+- The first implementation attempt on
+  `nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor` found no real
+  runtime-owned UCCL-EP fusion coordinator behind the CUDA runtime /
+  `ChipWorker` boundary. It therefore adds local guards only:
+  `_validate_runtime_fusion_evidence` rejects fabricated or incomplete pass
+  evidence, records missing ownership in `failure_fields`, and keeps the
+  normal fused-boundary result `unsupported`. Pass-like handoff metadata is
+  rejected with `failure_fields.fabricated_or_untrusted_pass_evidence`.
+- A later implementation branch should keep the same narrow scope but first
+  add the missing runtime-owned coordinator behind the CUDA runtime /
+  `ChipWorker` boundary. Only that lower-level boundary can create the shared
+  descriptor, ownership token, lifetime log, and fresh H200 fused-boundary
+  result. It must not add RDMA, multi-node transport, UCCL host-runtime ABI
+  expansion, serving, vLLM, or DeepSeek claims.
 
 ## Non-Claims
 

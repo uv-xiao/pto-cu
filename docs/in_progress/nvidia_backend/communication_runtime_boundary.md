@@ -209,6 +209,17 @@ empty lifetime transition log. The
 until a runtime component creates and transfers a real cross-component payload
 boundary.
 
+The blocked implementation slice adds local guard code in
+`examples/cuda/persistent_moe_dispatch_combine.py` rather than changing that
+status. `_validate_runtime_fusion_evidence` accepts only evidence whose
+producer is `persistent_device_uccl_ep_runtime_fusion`, whose descriptor is
+marked runtime-owned, whose rank/device mapping matches the Worker-local
+device ordering, and whose ownership token and lifetime transition log are
+complete. Pass-like fields copied from UCCL-EP adapter output, payload
+provenance, or handoff metadata are rejected with
+`fabricated_or_untrusted_pass_evidence` and cannot set
+`actual_fused_cross_gpu_execution: true`.
+
 ## UCCL-EP Runtime Fusion Contract
 
 This design/dependency slice names the missing runtime boundary. It does not
@@ -285,6 +296,14 @@ transport failure, persistent-device scheduler failure, numeric validation
 failure, and unsupported runtime boundary. These states must be reported as
 `failed`, `setup_failed`, or `unsupported`; they must not be downgraded to
 skips.
+
+The current local guard reports these states in `failure_fields`. The normal
+fused-boundary result is still `unsupported` with
+`failure_fields.unsupported_boundary: persistent_device_uccl_ep_runtime_fusion`
+because no trusted runtime-owned descriptor source exists. If a handoff or
+adapter result tries to supply pass-like runtime-fusion fields, the guard marks
+the fused-boundary result `failed` and records the rejection in
+`failure_fields`; it does not treat that metadata as runtime-owned evidence.
 
 Status values must stay review-safe:
 

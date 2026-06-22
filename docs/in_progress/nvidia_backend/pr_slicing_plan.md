@@ -33,6 +33,15 @@ from `main` and lands through focused GitHub PRs.
 - PR #148 recorded the post-PR #147 status refresh and selected the
   `nvidia-uccl-ep-runtime-fusion-readiness` dependency slice. It did not
   change runtime behavior, result shape, or fused-execution evidence status.
+- PR #149 defined the implementation-readiness map for the runtime-owned
+  descriptor boundary and selected
+  `nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor` as the next
+  narrow implementation attempt.
+- The current implementation branch found no real runtime-owned
+  `persistent_device_uccl_ep_runtime_fusion` coordinator behind the CUDA
+  runtime / `ChipWorker` boundary. It therefore keeps the fused-boundary
+  result `unsupported` and adds local guards that reject fabricated or
+  incomplete pass evidence.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -243,14 +252,32 @@ Serving promotion and in-progress doc retirement remain deferred until this
 communication dependency boundary is reviewable or the dispatcher explicitly
 chooses a different branch from current `main`.
 
-## Future Implementation Slice
+## Current Guard-Only Implementation Handoff
 
-If the dispatcher chooses to implement the boundary after this readiness map,
-select exactly one branch:
+The dispatcher selected exactly one branch after the readiness map:
 `nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`.
 
-Scope it narrowly to the runtime-owned shared payload descriptor, ownership
-token, lifetime transition log, local guards, and one H200
-`--with-uccl-ep-fused-boundary` result. It must not add UCCL host-runtime ABI
-expansion, RDMA, multi-node transport, serving, vLLM integration, DeepSeek
-correctness, or throughput/latency claims.
+The branch could not honestly implement a runtime-owned shared payload
+descriptor because the lower-level
+`persistent_device_uccl_ep_runtime_fusion` coordinator does not exist behind
+the CUDA runtime / `ChipWorker` boundary. The compiled persistent-device
+runtime role files remain placeholders, and the active CUDA platform runner
+launches generated persistent DAG kernels without a UCCL-EP runtime
+dispatch/combine ownership handoff.
+
+Accepted scope for this blocked implementation handoff:
+
+- keep the normal `--with-uccl-ep-fused-boundary` result `unsupported`;
+- add local guard code that rejects fabricated or incomplete pass evidence;
+- add unit coverage for missing ownership tokens, mismatched tokens, double
+  release, use-after-release, leaked ownership, rank/device mismatch, and
+  untrusted adapter/provenance pass fields;
+- update the communication boundary docs and dispatch log with the blocked
+  lower-level dependency.
+
+No fresh H200 fused-boundary success result is required or claimed for this
+blocked handoff because the implementation cannot truthfully emit real
+runtime-owned descriptor evidence. A future implementation must first add the
+runtime-owned fusion coordinator behind the CUDA runtime / `ChipWorker`
+boundary before reporting `persistent_device_uccl_ep_runtime_fusion.status:
+passed` or `actual_fused_cross_gpu_execution: true`.

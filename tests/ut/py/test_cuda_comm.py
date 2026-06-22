@@ -491,12 +491,16 @@ def test_persistent_moe_uccl_ep_fused_boundary_reports_unsupported():
     assert result["boundary_validation"]["structured_unsupported_boundary"] is True
     assert "persistent_device_uccl_ep_runtime_fusion" in result["missing_boundaries"]
     assert "non-evidence" in result["evidence_statement"]
-    assert result["persistent_device_uccl_ep_runtime_fusion"] == {
-        "status": "unsupported",
-        "actual_fused_cross_gpu_execution": False,
-        "shared_ownership_token": None,
-        "payload_lifetime_transition_log": [],
-        "reason": "runtime component has not created or transferred shared payload ownership",
+    fusion = result["persistent_device_uccl_ep_runtime_fusion"]
+    assert fusion["status"] == "unsupported"
+    assert fusion["actual_fused_cross_gpu_execution"] is False
+    assert fusion["shared_ownership_token"] is None
+    assert fusion["payload_lifetime_transition_log"] == []
+    assert fusion["reason"] == (
+        "runtime component has not created or transferred shared payload ownership"
+    )
+    assert fusion["failure_fields"] == {
+        "unsupported_boundary": "persistent_device_uccl_ep_runtime_fusion"
     }
 
     provenance = result["payload_provenance"]
@@ -556,6 +560,217 @@ def test_persistent_moe_uccl_ep_fused_boundary_reports_unsupported():
         "lifetime_transition_log": [],
         "reason": "runtime component has not created or transferred shared payload ownership",
     }
+
+
+def _complete_runtime_fusion_evidence() -> dict:
+    token = "runtime-owned:rank0-rank1:dispatch-combine"
+    descriptor = {
+        "num_tokens": 64,
+        "hidden": 1024,
+        "num_topk": 4,
+        "num_experts": 16,
+        "input_dtype": "bf16",
+        "metadata_shapes": {
+            "topk_idx": [64, 4],
+            "topk_weights": [64, 4],
+            "num_tokens_per_rank": [2],
+            "is_token_in_rank": [64, 2],
+            "num_tokens_per_expert": [16],
+        },
+        "ownership_token": token,
+    }
+    return {
+        "producer": "persistent_device_uccl_ep_runtime_fusion",
+        "runtime_owned_descriptor": True,
+        "status": "passed",
+        "actual_fused_cross_gpu_execution": True,
+        "shared_ownership_token": token,
+        "device_ids": [6, 7],
+        "rank_to_device": {"0": 6, "1": 7},
+        "world_size": 2,
+        "dispatch_payload_descriptor": descriptor,
+        "combine_payload_descriptor": dict(descriptor),
+        "payload_lifetime_transition_log": [
+            {"state": "allocated", "owner": "persistent_device_graph", "ownership_token": token},
+            {"state": "dispatch_ready", "owner": "persistent_device_graph", "ownership_token": token},
+            {"state": "dispatch_in_flight", "owner": "uccl_ep_runtime", "ownership_token": token},
+            {"state": "combine_ready", "owner": "persistent_device_graph", "ownership_token": token},
+            {"state": "combine_in_flight", "owner": "uccl_ep_runtime", "ownership_token": token},
+            {"state": "complete", "owner": "persistent_device_graph", "ownership_token": token},
+            {"state": "released", "owner": "released", "ownership_token": token},
+        ],
+    }
+
+
+def test_runtime_fusion_evidence_validator_accepts_complete_runtime_owned_boundary():
+    module = _load_persistent_moe_example()
+
+    result = module._validate_runtime_fusion_evidence(
+        _complete_runtime_fusion_evidence(),
+        expected_device_ids=(6, 7),
+        expected_rank_to_device={"0": 6, "1": 7},
+        expected_descriptor={
+            "num_tokens": 64,
+            "hidden": 1024,
+            "num_topk": 4,
+            "num_experts": 16,
+            "input_dtype": "bf16",
+        },
+    )
+
+    assert result["status"] == "passed"
+    assert result["actual_fused_cross_gpu_execution"] is True
+    assert result["shared_ownership_token"] == "runtime-owned:rank0-rank1:dispatch-combine"
+    assert result["failure_fields"] == {}
+
+
+@pytest.mark.parametrize(
+    ("mutate", "failure_field"),
+    [
+        (
+            lambda evidence: evidence.update(shared_ownership_token=None),
+            "missing_ownership_token",
+        ),
+        (
+            lambda evidence: evidence["combine_payload_descriptor"].update(
+                ownership_token="runtime-owned:wrong"
+            ),
+            "mismatched_ownership_token",
+        ),
+        (
+            lambda evidence: evidence["payload_lifetime_transition_log"].append(
+                {
+                    "state": "released",
+                    "owner": "released",
+                    "ownership_token": evidence["shared_ownership_token"],
+                }
+            ),
+            "double_release",
+        ),
+        (
+            lambda evidence: evidence["payload_lifetime_transition_log"].append(
+                {
+                    "state": "dispatch_ready",
+                    "owner": "persistent_device_graph",
+                    "ownership_token": evidence["shared_ownership_token"],
+                }
+            ),
+            "use_after_release",
+        ),
+        (
+            lambda evidence: evidence.update(
+                payload_lifetime_transition_log=evidence["payload_lifetime_transition_log"][:-1]
+            ),
+            "leaked_in_flight_ownership",
+        ),
+        (
+            lambda evidence: evidence.update(rank_to_device={"0": 6, "1": 99}),
+            "rank_device_mismatch",
+        ),
+        (
+            lambda evidence: evidence.update(producer="uccl_ep_dispatch_combine_adapter"),
+            "fabricated_or_untrusted_pass_evidence",
+        ),
+    ],
+)
+def test_runtime_fusion_evidence_validator_rejects_invalid_pass_evidence(
+    mutate,
+    failure_field,
+):
+    module = _load_persistent_moe_example()
+    evidence = _complete_runtime_fusion_evidence()
+    mutate(evidence)
+
+    result = module._validate_runtime_fusion_evidence(
+        evidence,
+        expected_device_ids=(6, 7),
+        expected_rank_to_device={"0": 6, "1": 7},
+        expected_descriptor={
+            "num_tokens": 64,
+            "hidden": 1024,
+            "num_topk": 4,
+            "num_experts": 16,
+            "input_dtype": "bf16",
+        },
+    )
+
+    assert result["status"] == "failed"
+    assert result["actual_fused_cross_gpu_execution"] is False
+    assert failure_field in result["failure_fields"]
+
+
+def test_fused_boundary_rejects_fabricated_runtime_fusion_fields_from_adapter():
+    module = _load_persistent_moe_example()
+
+    def fake_moe_runner(**_kwargs):
+        return {
+            "status": "passed",
+            "device_ids": [6, 7],
+            "evidence_scope": "same-node-two-device-baseline",
+            "validation": {
+                "all_devices_passed": True,
+                "completed_count_is_5": True,
+                "scheduler_errors_zero": True,
+                "fanin_remaining_zero": True,
+                "source_digests_match": True,
+                "bridge_metadata_match": True,
+            },
+            "source_digests": {
+                "dispatch_source_sha256": "dispatch",
+                "gluon_expert_bridge_sha256": "bridge",
+                "task_body_func12_sha256": "bridge",
+            },
+            "per_device_results": [
+                {
+                    "device": 6,
+                    "max_abs_error": 0.0,
+                    "device_scheduler_errors": {"count": 0, "code": 0, "task_id": 0},
+                },
+                {
+                    "device": 7,
+                    "max_abs_error": 0.0,
+                    "device_scheduler_errors": {"count": 0, "code": 0, "task_id": 0},
+                },
+            ],
+        }
+
+    def fake_uccl_ep_runner(**_kwargs):
+        return {
+            "status": "passed",
+            "backend": "uccl",
+            "transport": "ep",
+            "operation": "ep_dispatch_combine",
+            "device_ids": [6, 7],
+            "capability": {
+                "capability_id": "uccl:rank0->cuda6,rank1->cuda7",
+                "rank_to_device": {"0": 6, "1": 7},
+            },
+            "descriptor": {
+                "num_tokens": 64,
+                "hidden": 1024,
+                "num_topk": 4,
+                "num_experts": 16,
+                "input_dtype": "bf16",
+            },
+            "rank_results": [
+                {"rank": 0, "device_id": 6, "passed": True, "max_abs_error": 0.0, "topk_weight_error": 0.0},
+                {"rank": 1, "device_id": 7, "passed": True, "max_abs_error": 0.0, "topk_weight_error": 0.0},
+            ],
+            "persistent_device_uccl_ep_runtime_fusion": _complete_runtime_fusion_evidence(),
+        }
+
+    result = module.run_persistent_moe_uccl_ep_fused_boundary(
+        device_ids=(6, 7),
+        tensor_numel=1024,
+        moe_runner=fake_moe_runner,
+        uccl_ep_runner=fake_uccl_ep_runner,
+    )
+
+    fusion = result["persistent_device_uccl_ep_runtime_fusion"]
+    assert result["status"] == "failed"
+    assert fusion["status"] == "failed"
+    assert fusion["actual_fused_cross_gpu_execution"] is False
+    assert "fabricated_or_untrusted_pass_evidence" in fusion["failure_fields"]
 
 
 def test_nccl_worker_control_ops_example_drives_ctrl_comm_op_with_worker_memory():
