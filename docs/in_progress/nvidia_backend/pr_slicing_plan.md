@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `29da72a171b25deeeb53db399f9cdf54d38c647a`,
-  after PR #154 (`Refresh NVIDIA status after entry contract`).
+- Current accepted `main`: `d04732e3a5513d8172b41d0812f2d84065039526`,
+  after PR #155 (`Add private UCCL EP runtime fusion entry scaffold`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -62,6 +62,14 @@ from `main` and lands through focused GitHub PRs.
   `nvidia-uccl-ep-runtime-fusion-private-entry-unsupported` as the next
   narrow implementation slice. It did not change CUDA runtime behavior,
   result shape, or fused-execution evidence status.
+- PR #155 added the private CUDA host-side
+  `persistent_device_uccl_ep_runtime_fusion_entry` request/result scaffold.
+  The CUDA persistent DAG host-runtime path now records an unsupported
+  runtime-fusion result from private state only. It did not report
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`, set
+  `actual_fused_cross_gpu_execution: true`, expand public `TaskArgs` or
+  `CallConfig`, expand a UCCL host-runtime ABI, or claim fresh H200 fused
+  success.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -132,6 +140,10 @@ from `main` and lands through focused GitHub PRs.
 - PR #154: refresh NVIDIA status after entry contract.
   - Result: merged as `29da72a171b25deeeb53db399f9cdf54d38c647a`.
   - Result type: status/slicing refresh only, not fused execution evidence.
+- PR #155: private UCCL-EP runtime fusion entry scaffold.
+  - Result: merged as `d04732e3a5513d8172b41d0812f2d84065039526`.
+  - Result type: private unsupported runtime scaffold only, not fused
+    execution evidence.
 
 ## Restored Tracking Surface
 
@@ -194,8 +206,10 @@ result-shape, or fused-execution evidence change. After PR #153, the
 coordinator entry contract is complete as a private dependency slice; it is
 not a runtime behavior, UCCL host-runtime ABI, result-shape, or
 fused-execution evidence change. After PR #154, the post-PR153 status refresh
-is complete and the private unsupported entry scaffold remains the next
-implementation slice.
+is complete. After PR #155, the private unsupported entry scaffold is
+accepted as a request/result scaffold only; it is not fused execution
+evidence, and the next slice moves one boundary lower to private
+`ChipStorageTaskArgs` request plumbing.
 
 ## Accepted Payload Provenance Slice
 
@@ -537,9 +551,9 @@ shape, create descriptor memory, emit a coordinator-owned ownership token,
 claim fresh H200 fused success, or change the accepted unsupported evidence
 status.
 
-## Next Private Entry Implementation Slice
+## Accepted Private Entry Unsupported Scaffold
 
-Recommended branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`.
 
 Objective: implement the smallest private CUDA persistent-device entry
@@ -598,3 +612,37 @@ Allowed scope:
   evidence paths;
 - review-artifact docs and tests that pin the unsupported evidence boundary;
 - no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency work.
+
+PR #155 met this objective as a private unsupported scaffold only. It added
+the private request/result ABI and a CUDA persistent DAG host-runtime hook
+that records an unsupported result from private state currently available in
+the runtime path. It did not implement a coordinator, descriptor allocator,
+UCCL-EP runtime path, validation policy, UCCL-EP capability metadata,
+`ChipStorageTaskArgs` request materialization, pass evidence, or fresh H200
+fused success.
+
+## Next ChipStorageTaskArgs Request Boundary Slice
+
+Recommended branch:
+`nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`.
+
+Objective: make the next dependency boundary below the private scaffold
+reviewable by threading only the private `ChipStorageTaskArgs` request input
+into the CUDA persistent-device runtime-fusion request path. The slice should
+prove that the request can carry the existing chip-local task-argument view
+behind `ChipWorker::run` without adding public API fields or changing the
+fused-boundary result from `unsupported`.
+
+Required boundaries:
+
+- keep the field private to `ChipWorker::run` / CUDA host-runtime request
+  construction;
+- do not add public `TaskArgs`, public `CallConfig`, or UCCL host-runtime ABI
+  fields;
+- populate or explicitly reject the private `chip_storage_task_args` request
+  field with focused local coverage;
+- keep missing coordinator, descriptor allocator, UCCL-EP runtime path,
+  validation policy, UCCL-EP capability metadata, and pass evidence as
+  unsupported or failed states;
+- keep `persistent_device_uccl_ep_runtime_fusion.status: passed` and
+  `actual_fused_cross_gpu_execution: true` unreachable.

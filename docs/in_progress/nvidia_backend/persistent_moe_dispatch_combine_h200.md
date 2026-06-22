@@ -799,10 +799,10 @@ fresh H200 fused success, report
 `persistent_device_uccl_ep_runtime_fusion.status: passed`, or set
 `actual_fused_cross_gpu_execution: true`.
 
-## Next Private Entry Implementation Slice
+## Accepted Private Entry Unsupported Scaffold
 
-The next PR-sized slice is
-`nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`. It can implement
+PR #155 accepted
+`nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`. It implemented
 only the smallest private entry scaffold behind `ChipWorker::run` and
 `ChipStorageTaskArgs`. The expected review-safe result remains
 `unsupported` until the runtime coordinator itself allocates a shared
@@ -838,12 +838,28 @@ Forbidden pass-evidence paths remain rejected. Adapter provenance,
 example-side JSON, handoff metadata, payload provenance, public `TaskArgs`,
 and public `CallConfig` map to
 `fabricated_or_untrusted_pass_evidence` and cannot set
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or
 `actual_fused_cross_gpu_execution: true`.
 
 No fresh H200 fused-boundary run is recorded for this unsupported scaffold
 slice. The branch does not add public `TaskArgs` fields, public `CallConfig`
 fields, or UCCL host-runtime ABI fields, and it does not claim
 `persistent_device_uccl_ep_runtime_fusion.status: passed`.
+
+## Next ChipStorageTaskArgs Request Boundary Slice
+
+The next PR-sized slice is
+`nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`. It should
+thread only the private `ChipStorageTaskArgs` request input through the
+existing `ChipWorker::run` / CUDA host-runtime request path. The expected
+review-safe result remains `unsupported`; missing coordinator, descriptor
+allocator, UCCL-EP runtime path, validation policy, UCCL-EP capability
+metadata, and pass evidence remain unsupported or failed states.
+
+The slice must not add public `TaskArgs`, public `CallConfig`, UCCL
+host-runtime ABI fields, RDMA, multi-node, serving, vLLM, DeepSeek,
+throughput, latency, fresh H200 fused-success evidence, or pass/true
+fused-boundary status.
 
 ## Future Fused Execution Evidence Shape
 

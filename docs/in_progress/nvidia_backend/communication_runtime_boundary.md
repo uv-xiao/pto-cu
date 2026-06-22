@@ -515,13 +515,13 @@ change the fused-boundary result shape, claim fresh H200 fused success, report
 `persistent_device_uccl_ep_runtime_fusion.status: passed`, or set
 `actual_fused_cross_gpu_execution: true`.
 
-The next narrow implementation slice is
-`nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`. It may add private
-entry scaffolding behind the `ChipWorker::run` / `ChipStorageTaskArgs` path,
-but the review-safe result remains `unsupported` unless the runtime
-coordinator itself creates shared dispatch/combine descriptor ownership,
-issues the ownership token, records the complete lifetime transition log, and
-emits trusted coordinator-owned validation fields.
+PR #155 accepted the private unsupported entry scaffold as the next narrow
+implementation slice. It added private request/result plumbing behind the
+CUDA persistent DAG host-runtime path, but the review-safe result remains
+`unsupported` because the runtime coordinator still does not create shared
+dispatch/combine descriptor ownership, issue the ownership token, record the
+complete lifetime transition log, or emit trusted coordinator-owned
+validation fields.
 
 That slice now introduces a private CUDA host-side scaffold, not a pass
 implementation. `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h`
@@ -543,6 +543,14 @@ sets explicit failure bits and keeps
 JSON, handoff metadata, payload provenance, public `TaskArgs`, and public
 `CallConfig` are rejected as `fabricated_or_untrusted_pass_evidence` if they
 try to provide pass-like fields.
+
+The next PR-sized slice is
+`nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`. It should
+thread only the private `ChipStorageTaskArgs` request input through the
+existing `ChipWorker::run` / CUDA host-runtime request path and keep the
+result `unsupported`. It must not add public `TaskArgs`, public `CallConfig`,
+UCCL host-runtime ABI fields, pass evidence, RDMA, multi-node, serving, vLLM,
+DeepSeek, throughput, or latency claims.
 
 ## Non-Claims
 

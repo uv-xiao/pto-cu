@@ -609,7 +609,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "coordinator request is assembled from private runtime state",
         "The result returned to the host/runtime status artifact",
         "No fresh H200 fused-boundary run is recorded for this entry-contract",
-        "Next Private Entry Implementation Slice",
+        "Accepted Private Entry Unsupported Scaffold",
         "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported",
         "private entry scaffold behind `ChipWorker::run`",
         "The expected review-safe result remains",
@@ -618,6 +618,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "PtoCudaRuntimeFusionRequest",
         "PtoCudaRuntimeFusionResult",
         "explicit failure bits",
+        "Next ChipStorageTaskArgs Request Boundary Slice",
+        "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request",
     ]:
         assert required in persistent_moe
     assert "Example-side JSON, adapter-only provenance" in (
@@ -644,7 +646,9 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "explicit failure bits",
         "PR #152 remains a coordinator-boundary map only",
         "PR #153 remains a private entry-contract only",
+        "PR #155 remains a private unsupported runtime scaffold only",
         "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported",
+        "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request",
         "must keep the fused-boundary result `unsupported`",
     ]:
         assert required in normalized_selection
@@ -653,7 +657,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     normalized_dispatch_log = " ".join(dispatch_log.split())
     assert "Accepted Coordinator Boundary Map Slice" in slicing
     assert "Accepted Coordinator Entry Contract Slice" in slicing
-    assert "Next Private Entry Implementation Slice" in slicing
+    assert "Accepted Private Entry Unsupported Scaffold" in slicing
+    assert "Next ChipStorageTaskArgs Request Boundary Slice" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
@@ -662,8 +667,10 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "nvidia-uccl-ep-runtime-fusion-coordinator-boundary-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-coordinator-entry-contract" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported" in slicing
+    assert "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request" in slicing
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
     assert "b58598490d37065e6c972eaaea6d4bc4900469c7" in slicing
+    assert "d04732e3a5513d8172b41d0812f2d84065039526" in slicing
     assert "UCCL-EP runtime fusion coordinator boundary map" in slicing
     assert "persistent_device_uccl_ep_runtime_fusion_entry" in slicing
     assert "callable id, chip-local rank/device map" in normalized_slicing
@@ -800,10 +807,19 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     )[1].split("\n### ", 1)[0]
     normalized_private_entry_worker = " ".join(private_entry_worker.split())
     assert "29da72a171b25deeeb53db399f9cdf54d38c647a" in private_entry_worker
+    assert "d04732e3a5513d8172b41d0812f2d84065039526" in private_entry_worker
     assert "https://github.com/uv-xiao/pto-cu/pull/155" in private_entry_worker
     assert "Opened as a non-draft PR" in normalized_private_entry_worker
     assert "unsupported private scaffold" in normalized_private_entry_worker
     assert "branch remains unsupported" in normalized_private_entry_worker
+    assert "accepted as a private unsupported runtime scaffold only" in (
+        normalized_private_entry_worker
+    )
+    assert "pending PR creation" not in private_entry_worker
+    assert "pending dispatcher review" not in private_entry_worker
+    assert "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request" in (
+        private_entry_worker
+    )
     assert "`persistent_device_uccl_ep_runtime_fusion.status: passed`" in (
         private_entry_worker
     )
