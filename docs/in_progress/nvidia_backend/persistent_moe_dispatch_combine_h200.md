@@ -1125,10 +1125,10 @@ fused-success evidence.
 
 ## UCCL-EP Runtime Path Implementation Slice
 
-Selected branch:
+Current branch:
 `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl`.
 
-The next slice implements only the private UCCL-EP runtime path scaffold
+This slice implements only the private UCCL-EP runtime path scaffold
 needed before a later coordinator can route dispatch/combine descriptor views
 into UCCL-EP runtime logic. It starts from the accepted PR #172 runtime-path
 map and keeps the result non-evidence until real coordinator-owned runtime
@@ -1151,10 +1151,17 @@ runtime-fusion coordinator, emit pass evidence, or report
 `persistent_device_uccl_ep_runtime_fusion.status: passed` or
 `actual_fused_cross_gpu_execution: true`.
 
+The scaffold adds private runtime-path descriptor views and checks for
+same-invocation id, coordinator-owned source, shared descriptor token,
+rank/device agreement, transport mode `ep`, descriptor vocabulary, stale
+descriptor views, and public/API-sourced runtime-path fields. Valid scaffold
+inputs still produce an unsupported fused-boundary status until descriptor
+allocation and coordinator-owned UCCL-EP runtime dispatch exist.
+
 ## Future Fused Execution Evidence Shape
 
-This design/dependency PR defines the evidence contract only. It does not
-implement `persistent_device_uccl_ep_runtime_fusion`, does not change the
+This implementation PR defines only the private runtime-path scaffold. It does
+not implement `persistent_device_uccl_ep_runtime_fusion`, does not change the
 example command, and does not relabel the PR #143 structured unsupported
 boundary as fused evidence.
 

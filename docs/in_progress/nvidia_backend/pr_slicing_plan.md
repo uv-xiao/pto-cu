@@ -1319,9 +1319,9 @@ only, merged as `21b2b32a475dc04e19700115af74510daef70859`. It did not
 implement CUDA runtime behavior, UCCL-EP runtime dispatch, a coordinator,
 descriptor allocation, pass evidence, or H200 fused-success evidence.
 
-## Selected UCCL-EP Runtime Path Implementation Slice
+## UCCL-EP Runtime Path Implementation Slice
 
-Selected branch:
+Current branch:
 `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl`.
 
 Objective: implement the narrow private UCCL-EP runtime path scaffold after
@@ -1346,6 +1346,22 @@ Required implementation boundaries:
 - keep descriptor allocation implementation, coordinator implementation,
   pass evidence, and H200 fused-success evidence out of this slice.
 
+Implemented surface in this branch:
+
+- adds the private `PtoCudaUcclEpRuntimePath` and
+  `PtoCudaUcclEpRuntimeDescriptorView` scaffold below the CUDA
+  persistent-device runtime boundary;
+- carries the same-invocation id through `PtoCudaRuntimeFusionRequest` so
+  runtime-path descriptor views can be checked against the private run
+  envelope;
+- validates private runtime-path descriptor handoff fields for stale views,
+  descriptor-token mismatch, rank/device mismatch, transport-mode mismatch,
+  descriptor-vocabulary mismatch, and public/API-sourced runtime-path fields;
+- treats public/API, example JSON, adapter provenance, handoff metadata, and
+  payload provenance as fabricated or untrusted pass evidence;
+- leaves missing coordinator and missing descriptor allocator as unsupported
+  or failed states and keeps the normal result non-passing.
+
 Required non-claims:
 
 - no runtime-fusion coordinator implementation;
@@ -1355,3 +1371,7 @@ Required non-claims:
 - no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
 - no `actual_fused_cross_gpu_execution: true`;
 - no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claim.
+
+Remaining implementation gaps after this slice are the runtime-fusion
+coordinator, descriptor allocation, real UCCL-EP runtime dispatch, pass
+evidence, and fresh H200 fused-success evidence.

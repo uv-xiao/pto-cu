@@ -838,13 +838,13 @@ evidence, or H200 fused-success evidence.
 
 ## UCCL-EP Runtime Path Implementation Slice
 
-Selected branch:
+Current branch:
 `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl`.
 
-The next slice is the narrow private UCCL-EP runtime path implementation
-scaffold. It starts from the PR #172 map and may add private runtime-path
-plumbing below the CUDA persistent-device runtime boundary, but it must not
-construct the runtime-fusion coordinator or allocate dispatch/combine
+This slice adds the narrow private UCCL-EP runtime path implementation
+scaffold. It starts from the PR #172 map and adds private runtime-path
+plumbing below the CUDA persistent-device runtime boundary, without
+constructing the runtime-fusion coordinator or allocating dispatch/combine
 descriptor memory.
 
 Required implementation boundaries:
@@ -859,6 +859,20 @@ Required implementation boundaries:
 - keep public `TaskArgs`, public `CallConfig`, the common runtime C API,
   UCCL host-runtime ABI fields, example JSON, adapter provenance, and handoff
   metadata out of pass-evidence paths.
+
+Implemented private scaffold:
+
+- `PtoCudaUcclEpRuntimePath` and `PtoCudaUcclEpRuntimeDescriptorView` are
+  private CUDA runtime-fusion inputs carried through the existing internal
+  `uccl_ep_runtime` pointer;
+- `PtoCudaRuntimeFusionRequest::invocation_id` connects descriptor views to
+  the same private run envelope as `ChipStorageTaskArgs` and records the
+  same-invocation id used by runtime-path checks;
+- runtime-path validation reports failed stale descriptor views,
+  descriptor-token mismatch, rank/device mismatch, transport-mode mismatch,
+  descriptor-vocabulary mismatch, and public/API-sourced runtime-path fields;
+- valid private runtime-path descriptors still do not produce pass evidence
+  while the coordinator and descriptor allocator are absent.
 
 Required non-claims:
 

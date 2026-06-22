@@ -784,7 +784,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "Validation Policy Map Slice" in slicing
     assert "Descriptor Allocation Policy Map Slice" in slicing
     assert "Accepted UCCL-EP Runtime Path Map Slice" in slicing
-    assert "Selected UCCL-EP Runtime Path Implementation Slice" in slicing
+    assert "UCCL-EP Runtime Path Implementation Slice" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl" in (
         slicing
     )
@@ -1682,6 +1682,126 @@ def test_uccl_ep_runtime_path_map_slice_is_review_safe():
         "No fresh H200 command is planned",
     ]:
         assert required in normalized_post_runtime_path_entry
+
+
+def test_uccl_ep_runtime_path_impl_slice_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+    runtime_fusion_abi = (
+        ROOT / "src" / "cuda" / "platform" / "include" / "host"
+        / "pto_cuda_runtime_fusion_abi.h"
+    ).read_text(encoding="utf-8")
+    host_runtime = (
+        ROOT / "src" / "cuda" / "platform" / "onboard" / "host"
+        / "pto_runtime_c_api.cpp"
+    ).read_text(encoding="utf-8")
+    common_abi = (
+        ROOT / "src" / "common" / "worker" / "pto_runtime_c_api.h"
+    ).read_text(encoding="utf-8")
+
+    required_impl_terms = [
+        "uccl-ep runtime path implementation slice",
+        "nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl",
+        "private runtime-path",
+        "cuda persistent-device runtime",
+        "same-invocation id",
+        "descriptor-token mismatch",
+        "rank/device mismatch",
+        "transport-mode mismatch",
+        "descriptor-vocabulary mismatch",
+        "stale descriptor views",
+        "public/api-sourced runtime-path fields",
+        "missing descriptor allocation",
+        "missing coordinator",
+        "pr #164",
+        "pr #166",
+        "pr #168",
+        "pr #170",
+        "pr #172",
+        "prerequisites",
+        "pass evidence",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split()).lower()
+        for required in required_impl_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+
+    for name in ["boundary", "slicing", "dispatch"]:
+        normalized = " ".join(texts[name].split()).lower()
+        for required in [
+            "ptocudaucclepruntimepath",
+            "ptocudaucclepruntimedescriptorview",
+        ]:
+            assert required in normalized, f"{name} missing {required!r}"
+
+    for required in [
+        "PtoCudaUcclEpRuntimePath",
+        "PtoCudaUcclEpRuntimeDescriptorView",
+        "PtoCudaRuntimeFusionRequest",
+        "invocation_id",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_STALE_DESCRIPTOR_VIEW",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DESCRIPTOR_TOKEN_MISMATCH",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_RANK_DEVICE_MISMATCH",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_TRANSPORT_MODE_MISMATCH",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DESCRIPTOR_VOCABULARY_MISMATCH",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_PUBLIC_API_RUNTIME_PATH",
+        "pto_cuda_runtime_fusion_validate_uccl_ep_runtime_path",
+        "PTO_CUDA_UCCL_EP_RUNTIME_PATH_SOURCE_COORDINATOR_OWNED",
+        "PTO_CUDA_UCCL_EP_RUNTIME_PATH_SOURCE_PUBLIC_API",
+    ]:
+        assert required in runtime_fusion_abi
+
+    assert "request.invocation_id = expected_invocation_id" in host_runtime
+    assert "persistent_device_uccl_ep_runtime_fusion_entry" in host_runtime
+    assert "PtoCudaUcclEpRuntimePath" not in common_abi
+    assert "PtoCudaUcclEpRuntimeDescriptorView" not in common_abi
+    assert "invocation_id" not in common_abi
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-23 - UCCL-EP Runtime Fusion Runtime Path "
+        "Implementation Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "pto-worker-nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl",
+        "tmp/worker-prompts/run-nvidia-uccl-ep-runtime-path-impl.sh",
+        "tmp/worker-prompts/nvidia-uccl-ep-runtime-path-impl.md",
+        "019ef0cd-b772-72b0-b8c2-838341262729",
+        "rollout-2026-06-23T03-27-54-019ef0cd-b772-72b0-b8c2-838341262729.jsonl",
+        "pto-worker-nvidia-uccl-ep-runtime-path-impl:0.0",
+        "tmp/codex-goal-monitor/nvidia-uccl-ep-runtime-path-impl/",
+        "20260622T195828Z",
+        "pane_status: missing",
+        "dirty_count: 0",
+        "a39dba21",
+        "nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl",
+        "a37913b1cf5e3e501863253a789833289e918e15",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "No nested workers were launched",
+        "PtoCudaUcclEpRuntimePath",
+        "PtoCudaUcclEpRuntimeDescriptorView",
+        "same-invocation id",
+        "descriptor token",
+        "transport mode `ep`",
+        "public/API-sourced runtime-path",
+        "missing descriptor allocator and missing coordinator",
+        "No pass evidence",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+        "No fresh H200 command is planned",
+    ]:
+        assert required in normalized_dispatch
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():

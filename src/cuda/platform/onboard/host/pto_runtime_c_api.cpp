@@ -740,7 +740,7 @@ public:
                 return -1;
             }
             dag_state = typed_args->state;
-            record_runtime_fusion_unsupported(callable_id, envelope, dag_state);
+            record_runtime_fusion_unsupported(callable_id, envelope, expected_invocation_id, dag_state);
             kernel_args[0] = &dag_state;
         }
         CUresult cu_rc = cuLaunchKernel(
@@ -848,11 +848,13 @@ private:
     cudaStream_t default_stream() { return stream_for(0); }
 
     void record_runtime_fusion_unsupported(
-        int32_t callable_id, const PtoCudaPrivateRunArgsEnvelope *envelope, const PtoCudaPersistentDagState *dag_state
+        int32_t callable_id, const PtoCudaPrivateRunArgsEnvelope *envelope, uint64_t expected_invocation_id,
+        const PtoCudaPersistentDagState *dag_state
     ) {
         PtoCudaRuntimeFusionRequest request = {};
         request.version = PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION;
         request.callable_id = callable_id;
+        request.invocation_id = expected_invocation_id;
         request.persistent_graph_descriptor = dag_state;
         request.output_sink = &last_runtime_fusion_result_;
         if (envelope != nullptr) {

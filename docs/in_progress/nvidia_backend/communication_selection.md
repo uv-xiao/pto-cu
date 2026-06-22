@@ -454,11 +454,11 @@ checks, transport-mode checks, and runtime-path failure ownership.
 
 ## UCCL-EP Runtime Path Implementation Slice
 
-Selected branch:
+Current branch:
 `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl`.
 
 This implementation slice is limited to the private UCCL-EP runtime path
-scaffold required after PR #172. It may make the mapped runtime path visible
+scaffold required after PR #172. It makes the mapped runtime path visible
 to private CUDA persistent-device runtime code, but it must keep missing
 coordinator behavior and missing descriptor allocation as unsupported or
 failed states.
@@ -474,6 +474,11 @@ The slice must not implement the runtime-fusion coordinator, implement
 descriptor allocation, claim pass evidence, claim H200 fused-success evidence,
 or report `persistent_device_uccl_ep_runtime_fusion.status: passed` or
 `actual_fused_cross_gpu_execution: true`.
+
+The private runtime-path scaffold is limited to versioned descriptor views,
+same-invocation id checks, coordinator-owned source checks, rank/device
+checks, transport-mode checks, descriptor-vocabulary checks, and explicit
+failed states for stale descriptor views or fabricated runtime-path fields.
 
 ## Non-Claims
 
