@@ -145,6 +145,9 @@ void ChipWorker::init_with_role_paths(
         simpler_init_roles_fn_ = load_optional_symbol<SimplerInitRolesFn>(handle, "simpler_init_roles");
         prepare_callable_fn_ = load_symbol<PrepareCallableFn>(handle, "prepare_callable");
         run_prepared_fn_ = load_symbol<RunPreparedFn>(handle, "run_prepared");
+        run_prepared_with_cuda_private_args_fn_ = load_optional_symbol<RunPreparedWithCudaPrivateArgsFn>(
+            handle, "run_prepared_with_cuda_private_args"
+        );
         unregister_callable_fn_ = load_symbol<UnregisterCallableFn>(handle, "unregister_callable");
         configure_cuda_comm_descriptor_fn_ =
             load_optional_symbol<ConfigureCudaCommDescriptorFn>(handle, "configure_cuda_comm_descriptor");
@@ -252,6 +255,7 @@ void ChipWorker::init_with_role_paths(
         simpler_init_roles_fn_ = nullptr;
         prepare_callable_fn_ = nullptr;
         run_prepared_fn_ = nullptr;
+        run_prepared_with_cuda_private_args_fn_ = nullptr;
         unregister_callable_fn_ = nullptr;
         configure_cuda_comm_descriptor_fn_ = nullptr;
         get_aicpu_dlopen_count_fn_ = nullptr;
@@ -298,6 +302,7 @@ void ChipWorker::init_with_role_paths(
         simpler_init_roles_fn_ = nullptr;
         prepare_callable_fn_ = nullptr;
         run_prepared_fn_ = nullptr;
+        run_prepared_with_cuda_private_args_fn_ = nullptr;
         unregister_callable_fn_ = nullptr;
         configure_cuda_comm_descriptor_fn_ = nullptr;
         get_aicpu_dlopen_count_fn_ = nullptr;
@@ -355,6 +360,7 @@ void ChipWorker::finalize() {
     simpler_init_roles_fn_ = nullptr;
     prepare_callable_fn_ = nullptr;
     run_prepared_fn_ = nullptr;
+    run_prepared_with_cuda_private_args_fn_ = nullptr;
     unregister_callable_fn_ = nullptr;
     configure_cuda_comm_descriptor_fn_ = nullptr;
     get_aicpu_dlopen_count_fn_ = nullptr;
@@ -402,6 +408,20 @@ RunTiming ChipWorker::run(int32_t callable_id, TaskArgsView args, const CallConf
 }
 
 RunTiming ChipWorker::run(int32_t callable_id, const ChipStorageTaskArgs *args, const CallConfig &config) {
+    if (run_prepared_with_cuda_private_args_fn_ != nullptr) {
+        config.validate();
+        if (!initialized_) {
+            throw std::runtime_error("ChipWorker not initialized; call init() first");
+        }
+        if (args == nullptr) {
+            throw std::runtime_error("run_prepared: args must not be null");
+        }
+
+        throw std::runtime_error(
+            "ChipWorker cannot build CUDA private run envelope from ChipStorageTaskArgs; "
+            "use run_raw_args with runtime-specific CUDA args"
+        );
+    }
     return run_raw_args(callable_id, args, config);
 }
 

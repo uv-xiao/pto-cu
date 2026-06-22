@@ -199,14 +199,16 @@ restart. It is a planning boundary, not performance evidence.
   pointer to `PtoCudaRuntimeFusionRequest::chip_storage_task_args` and labeled
   it `sizeof(ChipStorageTaskArgs)`, but that is not a real
   `ChipStorageTaskArgs *` from `ChipWorker::run`.
-- The next PR-sized dependency is
-  `nvidia-uccl-ep-runtime-fusion-private-request-envelope`. It should define a
-  broader private ABI/envelope path that can carry a real
-  `ChipStorageTaskArgs` from `ChipWorker::run` without expanding public
-  `TaskArgs`, public `CallConfig`, common runtime C API, or UCCL host-runtime
-  ABI fields. It must keep the fused-boundary result `unsupported` unless the
-  runtime coordinator emits real descriptor ownership, ownership-token,
-  lifetime-transition, rank/device, validation, and failure-field evidence.
+- The `nvidia-uccl-ep-runtime-fusion-private-request-envelope` dependency
+  narrows that handoff. Its private envelope can carry runtime-specific task
+  args separately from a typed `ChipStorageTaskArgs` pointer without expanding
+  public `TaskArgs`, public `CallConfig`, common runtime C API, or UCCL
+  host-runtime ABI fields. `ChipWorker::run` cannot provide the required
+  `PtoCudaPersistentDagArgs *`, so it explicitly rejects the private-envelope
+  path instead of fabricating runtime args. It keeps the fused-boundary result
+  `unsupported` unless the runtime coordinator emits real descriptor
+  ownership, ownership-token, lifetime-transition, rank/device, validation,
+  and failure-field evidence.
 
 ## Non-Claims
 

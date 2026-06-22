@@ -647,33 +647,34 @@ recorded `sizeof(ChipStorageTaskArgs)`, but that pointer is a
 `src/cuda/platform/onboard/host/pto_runtime_c_api.cpp`, not a
 `ChipStorageTaskArgs *` materialized by `ChipWorker::run`.
 
-The current CUDA code state remains unclaimed: no real
-`ChipStorageTaskArgs` request path reaches
+Before the private-request-envelope dependency, the CUDA code state was
+unclaimed: no real `ChipStorageTaskArgs` request path reached
 `persistent_device_uccl_ep_runtime_fusion_entry`. The persistent DAG scaffold
 still records `missing_chip_storage_task_args` when no valid private request
 input exists.
 
-## Next Private Request Envelope Dependency Slice
+## Current Private Request Envelope Dependency Slice
 
-Recommended branch:
+Current branch:
 `nvidia-uccl-ep-runtime-fusion-private-request-envelope`.
 
-Objective: define a broader private ABI/envelope path that can carry a real
-`ChipStorageTaskArgs` from `ChipWorker::run` to the CUDA persistent-device
-runtime-fusion request without expanding public `TaskArgs`, public
+Objective: define the private ABI/envelope dependency surface and make the
+`ChipWorker::run` handoff honest without expanding public `TaskArgs`, public
 `CallConfig`, the common runtime C API, or UCCL host-runtime ABI fields. The
 envelope must keep runtime-specific persistent DAG inputs separate from the
 chip-storage task-argument pointer and size so `PtoCudaPersistentDagArgs *`
-cannot be mislabeled as `ChipStorageTaskArgs *`.
+cannot be mislabeled as `ChipStorageTaskArgs *`. Until a real
+runtime-specific args pointer is available at the `ChipWorker` boundary, the
+typed-args path must reject the private envelope instead of fabricating it.
 
 Required boundaries:
 
-- keep the envelope private to `ChipWorker::run` / CUDA host-runtime request
-  construction;
+- keep the envelope private to CUDA host-runtime request construction and the
+  `ChipWorker::run` rejection boundary;
 - do not add public `TaskArgs`, public `CallConfig`, or UCCL host-runtime ABI
   fields;
-- carry or explicitly reject a real `ChipStorageTaskArgs` pointer/size with
-  focused local coverage;
+- carry a real `ChipStorageTaskArgs` pointer/size only when a valid private
+  envelope exists, or explicitly reject the path with focused local coverage;
 - preserve `PtoCudaPersistentDagArgs *` as persistent DAG runtime input only,
   never as `chip_storage_task_args`;
 - keep missing coordinator, descriptor allocator, UCCL-EP runtime path,
@@ -681,3 +682,30 @@ Required boundaries:
   unsupported or failed states;
 - keep `persistent_device_uccl_ep_runtime_fusion.status: passed` and
   `actual_fused_cross_gpu_execution: true` unreachable.
+
+Implemented surface in this branch:
+
+- `src/cuda/platform/include/host/pto_cuda_private_run_envelope.h` defines the
+  private CUDA run envelope with separate runtime-task-args and typed
+  `ChipStorageTaskArgs` fields;
+- `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h` now types
+  `PtoCudaRuntimeFusionRequest::chip_storage_task_args` as
+  `const ChipStorageTaskArgs *`;
+- `src/common/worker/chip_worker.cpp` probes the optional CUDA-only
+  `run_prepared_with_cuda_private_args` symbol and explicitly rejects the
+  typed-args private-envelope path because it cannot provide runtime-specific
+  CUDA args;
+- `src/cuda/platform/onboard/host/pto_runtime_c_api.cpp` unwraps the private
+  envelope, keeps `PtoCudaPersistentDagArgs *` as runtime-specific DAG input,
+  and copies only `envelope->chip_storage_task_args` into the runtime-fusion
+  request;
+- `tests/ut/py/test_cuda_runtime_fusion_private_entry.py` compiles the typed
+  envelope, guards the source-level private hook, and checks that
+  `ChipWorker::run` does not pass `ChipStorageTaskArgs *` as runtime args.
+
+This branch still does not implement the runtime-fusion coordinator,
+descriptor allocator, UCCL-EP runtime path, validation policy, UCCL-EP
+capability metadata, or pass evidence. The review-safe result therefore
+remains unsupported or failed, never
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or
+`actual_fused_cross_gpu_execution: true`.

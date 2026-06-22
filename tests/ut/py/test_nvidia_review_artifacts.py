@@ -619,9 +619,11 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "PtoCudaRuntimeFusionResult",
         "explicit failure bits",
         "Closed Invalid ChipStorageTaskArgs Request Boundary Attempt",
-        "Next Private Request Envelope Dependency Slice",
+        "slice now narrows",
+        "explicitly rejects the private-envelope path",
         "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request",
         "nvidia-uccl-ep-runtime-fusion-private-request-envelope",
+        "pto_cuda_private_run_envelope.h",
         "PtoCudaPersistentDagArgs *",
         "`sizeof(ChipStorageTaskArgs)`",
     ]:
@@ -656,7 +658,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request",
         "PtoCudaPersistentDagArgs *",
         "nvidia-uccl-ep-runtime-fusion-private-request-envelope",
-        "must keep the fused-boundary result `unsupported`",
+        "keeps the fused-boundary result `unsupported`",
+        "explicitly rejects the private-envelope path",
     ]:
         assert required in normalized_selection
 
@@ -666,7 +669,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "Accepted Coordinator Entry Contract Slice" in slicing
     assert "Accepted Private Entry Unsupported Scaffold" in slicing
     assert "Closed Invalid ChipStorageTaskArgs Request Boundary Attempt" in slicing
-    assert "Next Private Request Envelope Dependency Slice" in slicing
+    assert "Current Private Request Envelope Dependency Slice" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
@@ -683,6 +686,11 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "PtoCudaPersistentDagArgs *" in slicing
     assert "`sizeof(ChipStorageTaskArgs)`" in slicing
     assert "no real `ChipStorageTaskArgs` request path" in normalized_slicing
+    assert "pto_cuda_private_run_envelope.h" in slicing
+    assert "run_prepared_with_cuda_private_args" in slicing
+    assert "does not pass `ChipStorageTaskArgs *` as runtime args" in (
+        normalized_slicing
+    )
     assert "PR #158 fixed the Codex monitor transcript lookup" in slicing
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
     assert "b58598490d37065e6c972eaaea6d4bc4900469c7" in slicing

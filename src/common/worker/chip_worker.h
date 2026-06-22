@@ -154,6 +154,8 @@ private:
     using PrepareCallableFn = int (*)(void *, int32_t, const void *);
     using RunPreparedFn =
         int (*)(void *, void *, int32_t, const void *, int, int, int, int, int, int, const char *, PtoRunTiming *);
+    using RunPreparedWithCudaPrivateArgsFn =
+        int (*)(void *, void *, int32_t, const void *, int, int, int, int, int, int, const char *, PtoRunTiming *);
     using UnregisterCallableFn = int (*)(void *, int32_t);
     using ConfigureCudaCommDescriptorFn = int (*)(void *, const void *, size_t);
     using GetAicpuDlopenCountFn = size_t (*)(void *);
@@ -210,6 +212,7 @@ private:
     SimplerInitRolesFn simpler_init_roles_fn_ = nullptr;
     PrepareCallableFn prepare_callable_fn_ = nullptr;
     RunPreparedFn run_prepared_fn_ = nullptr;
+    RunPreparedWithCudaPrivateArgsFn run_prepared_with_cuda_private_args_fn_ = nullptr;
     UnregisterCallableFn unregister_callable_fn_ = nullptr;
     ConfigureCudaCommDescriptorFn configure_cuda_comm_descriptor_fn_ = nullptr;
     GetAicpuDlopenCountFn get_aicpu_dlopen_count_fn_ = nullptr;

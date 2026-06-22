@@ -19,6 +19,8 @@ def _compile_and_run(tmp_path: Path, source: str) -> str:
             "-Wextra",
             "-I",
             str(ROOT / "src" / "cuda" / "platform" / "include"),
+            "-I",
+            str(ROOT / "src" / "common"),
             "-o",
             str(binary_path),
             str(source_path),
@@ -54,14 +56,15 @@ def test_private_runtime_fusion_entry_reports_missing_runtime_surfaces(tmp_path)
         #include <iostream>
 
         int main() {
+            ChipStorageTaskArgs chip_storage = {};
             PtoCudaCommDeviceDescriptor descriptor = {
                 PTO_CUDA_COMM_BACKEND_NCCL, 1U, 7U, 2U, 0x1234U
             };
             PtoCudaRuntimeFusionRequest request = {};
             request.version = PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION;
             request.callable_id = 42;
-            request.chip_storage_task_args = reinterpret_cast<const void *>(0x10);
-            request.chip_storage_task_args_size = 4096U;
+            request.chip_storage_task_args = &chip_storage;
+            request.chip_storage_task_args_size = sizeof(chip_storage);
             request.persistent_graph_descriptor = reinterpret_cast<const void *>(0x20);
             request.comm_descriptor = &descriptor;
             request.uccl_ep_capability_metadata = reinterpret_cast<const void *>(0x30);
@@ -113,14 +116,15 @@ def test_private_runtime_fusion_entry_rejects_forbidden_pass_evidence(tmp_path):
         #include <iostream>
 
         int main() {
+            ChipStorageTaskArgs chip_storage = {};
             PtoCudaCommDeviceDescriptor descriptor = {
                 PTO_CUDA_COMM_BACKEND_NCCL, 0U, 6U, 2U, 0x4567U
             };
             PtoCudaRuntimeFusionRequest request = {};
             request.version = PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION;
             request.callable_id = 5;
-            request.chip_storage_task_args = reinterpret_cast<const void *>(0x10);
-            request.chip_storage_task_args_size = 4096U;
+            request.chip_storage_task_args = &chip_storage;
+            request.chip_storage_task_args_size = sizeof(chip_storage);
             request.persistent_graph_descriptor = reinterpret_cast<const void *>(0x20);
             request.comm_descriptor = &descriptor;
             request.uccl_ep_capability_metadata = reinterpret_cast<const void *>(0x30);
@@ -164,14 +168,15 @@ def test_private_runtime_fusion_entry_keeps_pass_unreachable_without_evidence(tm
         #include <cassert>
 
         int main() {
+            ChipStorageTaskArgs chip_storage = {};
             PtoCudaCommDeviceDescriptor descriptor = {
                 PTO_CUDA_COMM_BACKEND_NCCL, 0U, 6U, 2U, 0x789AU
             };
             PtoCudaRuntimeFusionRequest request = {};
             request.version = PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION;
             request.callable_id = 9;
-            request.chip_storage_task_args = reinterpret_cast<const void *>(0x10);
-            request.chip_storage_task_args_size = 4096U;
+            request.chip_storage_task_args = &chip_storage;
+            request.chip_storage_task_args_size = sizeof(chip_storage);
             request.persistent_graph_descriptor = reinterpret_cast<const void *>(0x20);
             request.comm_descriptor = &descriptor;
             request.uccl_ep_capability_metadata = reinterpret_cast<const void *>(0x30);
@@ -197,10 +202,66 @@ def test_private_runtime_fusion_entry_keeps_pass_unreachable_without_evidence(tm
     )
 
 
+def test_private_runtime_fusion_request_envelope_keeps_chip_storage_typed_and_separate(
+    tmp_path,
+):
+    _compile_and_run(
+        tmp_path,
+        """
+        #include "host/pto_cuda_persistent_device_abi.h"
+        #include "host/pto_cuda_private_run_envelope.h"
+        #include "host/pto_cuda_runtime_fusion_abi.h"
+
+        #include <cassert>
+        #include <type_traits>
+
+        int main() {
+            static_assert(
+                std::is_same<
+                    decltype(PtoCudaRuntimeFusionRequest{}.chip_storage_task_args),
+                    const ChipStorageTaskArgs *
+                >::value,
+                "runtime fusion request must carry a typed ChipStorageTaskArgs pointer"
+            );
+
+            ChipStorageTaskArgs chip_storage = {};
+            PtoCudaPersistentDagArgs persistent_dag_args = {};
+            PtoCudaPrivateRunArgsEnvelope envelope = {};
+            envelope.version = PTO_CUDA_PRIVATE_RUN_ENVELOPE_VERSION;
+            envelope.runtime_task_args = &persistent_dag_args;
+            envelope.runtime_task_args_size = sizeof(persistent_dag_args);
+            envelope.chip_storage_task_args = &chip_storage;
+            envelope.chip_storage_task_args_size = sizeof(chip_storage);
+
+            PtoCudaRuntimeFusionRequest request = {};
+            request.version = PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION;
+            request.callable_id = 17;
+            request.chip_storage_task_args = envelope.chip_storage_task_args;
+            request.chip_storage_task_args_size = envelope.chip_storage_task_args_size;
+            request.persistent_graph_descriptor =
+                static_cast<const PtoCudaPersistentDagArgs *>(
+                    envelope.runtime_task_args
+                )->state;
+
+            assert(request.chip_storage_task_args == &chip_storage);
+            assert(request.chip_storage_task_args !=
+                   reinterpret_cast<const ChipStorageTaskArgs *>(&persistent_dag_args));
+            assert(request.chip_storage_task_args_size == sizeof(ChipStorageTaskArgs));
+            assert(envelope.runtime_task_args == &persistent_dag_args);
+            assert(envelope.runtime_task_args_size == sizeof(PtoCudaPersistentDagArgs));
+            return 0;
+        }
+        """,
+    )
+
+
 def test_cuda_host_runtime_hooks_private_entry_without_public_api_expansion():
     host_runtime = (
         ROOT / "src" / "cuda" / "platform" / "onboard" / "host" / "pto_runtime_c_api.cpp"
     ).read_text(encoding="utf-8")
+    chip_worker = (ROOT / "src" / "common" / "worker" / "chip_worker.cpp").read_text(
+        encoding="utf-8"
+    )
     common_abi = (ROOT / "src" / "common" / "worker" / "pto_runtime_c_api.h").read_text(
         encoding="utf-8"
     )
@@ -208,5 +269,21 @@ def test_cuda_host_runtime_hooks_private_entry_without_public_api_expansion():
     assert "persistent_device_uccl_ep_runtime_fusion_entry" in host_runtime
     assert "PtoCudaRuntimeFusionRequest" in host_runtime
     assert "PtoCudaRuntimeFusionResult" in host_runtime
+    assert "PtoCudaPrivateRunArgsEnvelope" in host_runtime
+    assert "run_prepared_with_cuda_private_args" in host_runtime
+    assert "run_prepared_with_cuda_private_args" in chip_worker
+    assert "request.chip_storage_task_args = args" not in host_runtime
+    assert "request.chip_storage_task_args = envelope->chip_storage_task_args" in host_runtime
     assert "persistent_device_uccl_ep_runtime_fusion_entry" not in common_abi
     assert "PtoCudaRuntimeFusionRequest" not in common_abi
+    assert "PtoCudaPrivateRunArgsEnvelope" not in common_abi
+
+
+def test_chip_worker_rejects_private_envelope_without_runtime_specific_args():
+    chip_worker = (ROOT / "src" / "common" / "worker" / "chip_worker.cpp").read_text(
+        encoding="utf-8"
+    )
+
+    assert "envelope.runtime_task_args = args;" not in chip_worker
+    assert "envelope.runtime_task_args_size = sizeof(*args);" not in chip_worker
+    assert "ChipWorker cannot build CUDA private run envelope" in chip_worker
