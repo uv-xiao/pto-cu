@@ -2118,6 +2118,83 @@ def test_gluon_flashattention_example_cli_reports_sparse_unsupported(
     assert "Sparse Attention" in payload["reason"]
 
 
+def test_gluon_flashattention_example_reports_pod_unsupported_before_cuda(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    def fail_if_checked():
+        raise AssertionError("CUDA availability should not be checked")
+
+    result = example.run_flashattention_correctness(
+        output_dir=Path("flashattention-pod-artifacts"),
+        arch="compute_90",
+        tile_shape=(32, 32, 64),
+        causal=True,
+        attention_variant="pod",
+        skip_reason=fail_if_checked,
+    )
+
+    assert result["schema_version"] == 1
+    assert result["status"] == "skipped"
+    assert result["phase"] == "prefill"
+    assert result["causal"] is True
+    assert result["shape"] == {"seqlen_q": 32, "seqlen_k": 32, "head_dim": 64}
+    assert result["attention_variant"] == "pod"
+    assert result["reference"] == example.FLASHATTENTION_CAUSAL_REFERENCE
+    assert result["unsupported_boundary"] == {
+        "kind": "pod_attention",
+        "operator": "flashattention_fwd_f32",
+        "boundary": "pod",
+        "status": "unsupported",
+    }
+    assert "POD-Attention" in result["reason"]
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_gluon_flashattention_example_cli_reports_pod_unsupported(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    def fail_if_checked():
+        raise AssertionError("CUDA availability should not be checked")
+
+    monkeypatch.setattr(example, "flashattention_skip_reason", fail_if_checked)
+
+    code = example.main(
+        [
+            "--output-dir",
+            "flashattention-pod-artifacts",
+            "--arch",
+            "compute_90",
+            "--tile-shape",
+            "32x32x64",
+            "--causal",
+            "--attention-variant",
+            "pod",
+            "--require-cuda",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["schema_version"] == 1
+    assert payload["status"] == "skipped"
+    assert payload["phase"] == "prefill"
+    assert payload["causal"] is True
+    assert payload["shape"] == {"seqlen_q": 32, "seqlen_k": 32, "head_dim": 64}
+    assert payload["attention_variant"] == "pod"
+    assert payload["unsupported_boundary"]["kind"] == "pod_attention"
+    assert payload["unsupported_boundary"]["boundary"] == "pod"
+    assert "POD-Attention" in payload["reason"]
+
+
 def test_gluon_flashattention_example_cli_rejects_bad_attention_variant():
     example = _load_gluon_flashattention_example()
 

@@ -365,7 +365,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         parser.add_argument(
             "--attention-variant",
-            choices=("standard", "mla", "cascade", "sparse"),
+            choices=("standard", "mla", "cascade", "sparse", "pod"),
             default="standard",
             help=(
                 "report an explicit unsupported attention variant boundary "
@@ -501,9 +501,9 @@ def _validate_sequence_boundary(sequence_boundary: str) -> None:
 
 
 def _validate_attention_variant(attention_variant: str) -> None:
-    if attention_variant not in ("standard", "mla", "cascade", "sparse"):
+    if attention_variant not in ("standard", "mla", "cascade", "sparse", "pod"):
         raise ValueError(
-            "--attention-variant must be one of: standard, mla, cascade, sparse"
+            "--attention-variant must be one of: standard, mla, cascade, sparse, pod"
         )
 
 
@@ -522,11 +522,13 @@ def _unsupported_attention_variant_result(
         "mla": "mla_attention",
         "cascade": "cascade_attention",
         "sparse": "sparse_attention",
+        "pod": "pod_attention",
     }[attention_variant]
     boundary_label = {
         "mla": "MLA attention",
         "cascade": "Cascade Attention",
         "sparse": "Sparse Attention",
+        "pod": "POD-Attention",
     }[attention_variant]
     return {
         "schema_version": 1,
