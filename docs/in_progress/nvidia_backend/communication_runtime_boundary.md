@@ -616,10 +616,19 @@ or cross-invocation envelopes are implementation failures, not skips.
 This handoff map does not implement that association. It records the next
 implementation owner and the tests a later code slice needs: private
 host-runtime coverage for null pointers, wrong sizes, mismatched callable
-types, stale envelopes, and forbidden public/API evidence paths. Until that
-code exists, the fused-boundary status remains unsupported or failed and must
-not report `persistent_device_uccl_ep_runtime_fusion.status: passed` or
+types, stale envelopes, cross-invocation envelopes, and forbidden public/API
+evidence paths. Until that code exists, the fused-boundary status remains
+unsupported or failed and must not report
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or
 `actual_fused_cross_gpu_execution: true`.
+
+PR #162 accepted this map as docs/test dependency evidence only. The selected
+next implementation slice is
+`nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`: a narrow private
+CUDA persistent DAG host-runtime handoff that associates only real
+same-invocation `ChipStorageTaskArgs *` and `PtoCudaPersistentDagArgs *`
+pointers. It must not expand public `TaskArgs`, public `CallConfig`, the
+common runtime C API, or UCCL host-runtime ABI fields.
 
 ## Non-Claims
 

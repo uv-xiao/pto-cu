@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `6026ed7cbfa1d4724e22e109bbd75c06d0e9f9a7`,
-  after PR #161 (`Refresh NVIDIA status after PR 160`).
+- Current accepted `main`: `0ba8f30696132c06a3cd49b95fbd7bb46b8b9a99`,
+  after PR #162 (`Map CUDA runtime args handoff`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -98,6 +98,10 @@ from `main` and lands through focused GitHub PRs.
   `nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map` as the next
   conservative dependency slice. It did not change CUDA runtime behavior,
   result shape, or fused-execution evidence status.
+- PR #162 accepted that runtime-args handoff map as a docs/test dependency
+  slice only. It did not change CUDA runtime behavior, result shape, or
+  fused-execution evidence status. The selected next slice is the narrow
+  private host-runtime handoff implementation, not another handoff-map slice.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -191,6 +195,10 @@ from `main` and lands through focused GitHub PRs.
   - Result: merged as `6026ed7cbfa1d4724e22e109bbd75c06d0e9f9a7`.
   - Result type: status/slicing refresh only, not runtime behavior or fused
     execution evidence.
+- PR #162: map CUDA runtime args handoff.
+  - Result: merged as `0ba8f30696132c06a3cd49b95fbd7bb46b8b9a99`.
+  - Result type: docs/test dependency map only, not runtime behavior or fused
+    execution evidence.
 
 ## Restored Tracking Surface
 
@@ -262,10 +270,13 @@ only. PR #159 records the invalid PR #157 handoff and selected the private
 request-envelope dependency. After PR #160, the private envelope and
 host-runtime hook are accepted only as a dependency that prevents the
 persistent DAG args pointer from being mislabeled as `ChipStorageTaskArgs *`;
-it is not runtime-fusion success. After PR #161, the current accepted
-baseline is `6026ed7cbfa1d4724e22e109bbd75c06d0e9f9a7`, and the next slice
-is exactly one conservative dependency/status map:
-`nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map`.
+it is not runtime-fusion success. After PR #161, the post-private-envelope
+status refresh is complete. After PR #162, the runtime-args handoff map is
+complete as a docs/test dependency slice; it is not a runtime behavior,
+result-shape, or fused-execution evidence change. The current accepted
+baseline is `0ba8f30696132c06a3cd49b95fbd7bb46b8b9a99`, and the next slice
+is exactly one conservative implementation slice:
+`nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`.
 
 ## Accepted Payload Provenance Slice
 
@@ -762,9 +773,9 @@ runtime path, validation policy, UCCL-EP capability metadata, or pass
 evidence. It did not expand public `TaskArgs`, public `CallConfig`, the
 common runtime C API, or UCCL host-runtime ABI fields.
 
-## Selected Runtime Args Handoff Map Slice
+## Accepted Runtime Args Handoff Map Slice
 
-Selected branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map`.
 
 Objective: map the next private dependency boundary before another runtime
@@ -800,12 +811,12 @@ that already has both sides of the data:
 The first implementation after this map should be a narrow private
 host-runtime handoff that proves the two pointers are associated inside one
 CUDA persistent DAG invocation, with local tests for null, wrong-size,
-mismatched-callable, and stale-envelope cases. It still must keep missing
-coordinator, descriptor allocator, UCCL-EP runtime path, validation policy,
-UCCL-EP capability metadata, and pass evidence as unsupported or failed
-states. It must not change CUDA runtime behavior in this docs/test slice,
-expand public `TaskArgs`, public `CallConfig`, the common runtime C API, or
-UCCL host-runtime ABI fields. It must keep
+mismatched-callable, stale-envelope, cross-invocation, and forbidden
+public/API evidence-path cases. It still must keep missing coordinator,
+descriptor allocator, UCCL-EP runtime path, validation policy, UCCL-EP
+capability metadata, and pass evidence as unsupported or failed states.
+It must not expand public `TaskArgs`, public `CallConfig`, the common runtime
+C API, or UCCL host-runtime ABI fields. It must keep
 `persistent_device_uccl_ep_runtime_fusion.status: passed` and
 `actual_fused_cross_gpu_execution: true` unreachable.
 
@@ -824,5 +835,57 @@ Required non-claims:
 - no fresh H200 fused-success evidence;
 - no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency
   claim;
+- no public `TaskArgs`, public `CallConfig`, common runtime C API, or UCCL
+  host-runtime ABI expansion.
+
+PR #162 met this objective as a runtime-args handoff map only. It did not
+implement the private association, change CUDA runtime behavior, change the
+fused-boundary result shape, claim fresh H200 fused success, report
+`persistent_device_uccl_ep_runtime_fusion.status: passed`, or set
+`actual_fused_cross_gpu_execution: true`.
+
+## Selected Private Host Runtime Handoff Implementation Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`.
+
+Objective: implement only the private CUDA persistent DAG host-runtime
+handoff needed to associate real same-invocation `ChipStorageTaskArgs *` and
+`PtoCudaPersistentDagArgs *` pointers before
+`persistent_device_uccl_ep_runtime_fusion_entry` is requested. This is the
+narrowest implementation step after PR #162 because the map already selected
+the CUDA host runtime as the owner of the association.
+
+Required implementation boundaries:
+
+- keep the association private to the CUDA persistent DAG host-runtime path;
+- do not add public `TaskArgs`, public `CallConfig`, common runtime C API, or
+  UCCL host-runtime ABI fields;
+- accept `ChipStorageTaskArgs *` only when it comes from the current
+  `ChipWorker::run` invocation and has the expected size;
+- accept `PtoCudaPersistentDagArgs *` only after the prepared persistent DAG
+  callable is resolved for that same invocation;
+- reject null pointers, wrong sizes, mismatched callable types, stale
+  envelopes, cross-invocation envelopes, and forbidden public/API evidence
+  paths with focused local tests;
+- keep missing coordinator, descriptor allocator, UCCL-EP runtime path,
+  validation policy, UCCL-EP capability metadata, and pass evidence as
+  unsupported or failed states;
+- keep `persistent_device_uccl_ep_runtime_fusion.status: passed` and
+  `actual_fused_cross_gpu_execution: true` unreachable unless a later
+  coordinator slice emits real fused-boundary evidence.
+
+Allowed future implementation scope:
+
+- private CUDA host-runtime handoff code under the CUDA persistent DAG path;
+- focused local tests for the association and rejection cases above;
+- review-facing docs/tests that pin the unsupported evidence boundary.
+
+Required future non-claims:
+
+- no runtime-fusion success;
+- no fresh H200 fused-success evidence unless the implementation changes the
+  fused-boundary result and records a fresh H200 command;
+- no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claim;
 - no public `TaskArgs`, public `CallConfig`, common runtime C API, or UCCL
   host-runtime ABI expansion.

@@ -912,6 +912,14 @@ does not set `actual_fused_cross_gpu_execution: true`, and does not claim
 RDMA, multi-node, serving, vLLM, DeepSeek, throughput, latency, or fresh H200
 fused-success evidence.
 
+PR #162 accepted this map as docs/test dependency evidence only. The selected
+next implementation slice is
+`nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`, which should
+add only the private CUDA persistent DAG host-runtime association for real
+same-invocation `ChipStorageTaskArgs *` and `PtoCudaPersistentDagArgs *`
+pointers. It must keep the fused-boundary result unsupported or failed until
+a later coordinator slice emits real fused execution evidence.
+
 ## Future Fused Execution Evidence Shape
 
 This design/dependency PR defines the evidence contract only. It does not
