@@ -5,11 +5,14 @@ restart. It is a planning boundary, not performance evidence.
 
 ## Role Summary
 
-| Source | Role For PTO NVIDIA | Initial Decision |
-| ------ | ------------------- | ---------------- |
-| Ray | Process and serving orchestration | Keep as an orchestration option outside the compiled CUDA scheduler and worker path. |
-| NCCL | Baseline collectives | Use as the first baseline for all-reduce, all-gather, reduce-scatter, broadcast, and send/receive comparisons on NVIDIA GPUs. |
-| UCCL | EP/P2P research path | Keep as an opt-in experimental adapter direction. Do not include UCCL host-runtime dispatch in the NCCL worker-control slice. |
+- Ray: process and serving orchestration. Keep as an orchestration option
+  outside the compiled CUDA scheduler and worker path.
+- NCCL: baseline collectives. Use as the first baseline for all-reduce,
+  all-gather, reduce-scatter, broadcast, and send/receive comparisons on
+  NVIDIA GPUs.
+- UCCL: EP/P2P research path. Keep as an opt-in experimental adapter
+  direction. Do not include UCCL host-runtime dispatch in the NCCL
+  worker-control slice.
 
 ## Implications
 
@@ -91,6 +94,12 @@ restart. It is a planning boundary, not performance evidence.
   `--with-uccl-ep-handoff` path passed by composing the existing two-device
   persistent MoE aggregate with the Python-side UCCL-EP dispatch/combine
   adapter on the same device ids.
+- The reduced fused cross-GPU expert-parallel MoE boundary now has an explicit
+  `--with-uccl-ep-fused-boundary` result shape. It records a structured
+  unsupported boundary, not fused evidence, until
+  `persistent_device_uccl_ep_runtime_fusion` exists and can prove actual fused
+  cross-GPU expert-parallel MoE execution.
+  It is a structured unsupported boundary.
 
 ## Non-Claims
 

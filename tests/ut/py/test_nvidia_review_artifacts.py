@@ -445,6 +445,46 @@ def test_persistent_moe_two_device_baseline_is_review_safe():
     assert "--with-uccl-ep-handoff --tensor-numel 1024 --build --require-cuda" not in readme
 
 
+def test_persistent_moe_uccl_ep_fused_boundary_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    doc = (in_progress_root / "persistent_moe_dispatch_combine_h200.md").read_text(
+        encoding="utf-8"
+    )
+    boundary = (in_progress_root / "communication_runtime_boundary.md").read_text(
+        encoding="utf-8"
+    )
+    selection = (in_progress_root / "communication_selection.md").read_text(
+        encoding="utf-8"
+    )
+    example = (
+        ROOT / "examples" / "cuda" / "persistent_moe_dispatch_combine.py"
+    ).read_text(encoding="utf-8")
+
+    for required in [
+        "run_persistent_moe_uccl_ep_fused_boundary",
+        "--with-uccl-ep-fused-boundary",
+        "reduced-fused-cross-gpu-expert-parallel-moe-boundary",
+        "persistent_device_uccl_ep_runtime_fusion",
+        "structured_unsupported_boundary",
+        "actual_fused_cross_gpu_execution",
+        "unsupported",
+        "non-evidence",
+    ]:
+        assert required in example
+        assert required in doc
+
+    for text in (boundary, selection):
+        assert "reduced fused cross-GPU expert-parallel MoE boundary" in text
+        assert "structured unsupported boundary" in text
+        assert "not fused evidence" in text
+        assert "persistent_device_uccl_ep_runtime_fusion" in text
+        assert "/" + "home/" not in text
+
+    assert "<external-uccl-ep-bench>" in doc
+    assert "<uccl-python-site-packages>" in doc
+    assert "/" + "home/" not in doc
+
+
 def test_chat_256k_needle_stream_evidence_is_review_safe():
     evidence = (
         ROOT

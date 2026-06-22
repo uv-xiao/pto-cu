@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import struct
+import sys
 import zlib
 from pathlib import Path
 
@@ -62,6 +63,18 @@ def _load_uccl_ep_adapter_example():
     assert spec is not None
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_persistent_moe_example():
+    example = ROOT / "examples" / "cuda" / "persistent_moe_dispatch_combine.py"
+    assert example.is_file(), f"missing {example.relative_to(ROOT)}"
+    spec = importlib.util.spec_from_file_location("persistent_moe_dispatch_combine_example", example)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -376,6 +389,92 @@ def test_uccl_ep_dispatch_combine_adapter_validates_repeats():
             repeats=0,
             skip_reason=lambda: "no test UCCL-EP",
         )
+
+
+def test_persistent_moe_uccl_ep_fused_boundary_reports_unsupported():
+    module = _load_persistent_moe_example()
+    source_digests = {
+        "dispatch_source_sha256": "dispatch",
+        "gluon_expert_bridge_sha256": "bridge",
+        "task_body_func12_sha256": "bridge",
+    }
+
+    def fake_moe_runner(**_kwargs):
+        return {
+            "status": "passed",
+            "device_ids": [6, 7],
+            "evidence_scope": "same-node-two-device-baseline",
+            "validation": {
+                "all_devices_passed": True,
+                "completed_count_is_5": True,
+                "scheduler_errors_zero": True,
+                "fanin_remaining_zero": True,
+                "source_digests_match": True,
+                "bridge_metadata_match": True,
+            },
+            "source_digests": source_digests,
+            "per_device_results": [
+                {
+                    "device": 6,
+                    "max_abs_error": 0.0,
+                    "device_scheduler_errors": {"count": 0, "code": 0, "task_id": 0},
+                },
+                {
+                    "device": 7,
+                    "max_abs_error": 0.0,
+                    "device_scheduler_errors": {"count": 0, "code": 0, "task_id": 0},
+                },
+            ],
+        }
+
+    def fake_uccl_ep_runner(**_kwargs):
+        return {
+            "status": "passed",
+            "backend": "uccl",
+            "transport": "ep",
+            "operation": "ep_dispatch_combine",
+            "device_ids": [6, 7],
+            "capability": {"capability_id": "uccl:rank0->cuda6,rank1->cuda7"},
+            "descriptor": {
+                "num_tokens": 64,
+                "hidden": 1024,
+                "num_topk": 4,
+                "num_experts": 16,
+                "input_dtype": "bf16",
+            },
+            "rank_results": [
+                {
+                    "rank": 0,
+                    "passed": True,
+                    "max_abs_error": 0.0,
+                    "topk_weight_error": 0.0,
+                },
+                {
+                    "rank": 1,
+                    "passed": True,
+                    "max_abs_error": 0.0,
+                    "topk_weight_error": 0.0,
+                },
+            ],
+        }
+
+    result = module.run_persistent_moe_uccl_ep_fused_boundary(
+        device_ids=(6, 7),
+        tensor_numel=1024,
+        moe_runner=fake_moe_runner,
+        uccl_ep_runner=fake_uccl_ep_runner,
+    )
+
+    assert result["status"] == "unsupported"
+    assert result["fused_boundary_scope"] == (
+        "reduced-fused-cross-gpu-expert-parallel-moe-boundary"
+    )
+    assert result["handoff_scope"] == "persistent-moe-plus-uccl-ep-adapter"
+    assert result["boundary_validation"]["handoff_passed"] is True
+    assert result["boundary_validation"]["actual_fused_cross_gpu_execution"] is False
+    assert result["boundary_validation"]["structured_unsupported_boundary"] is True
+    assert "persistent_device_uccl_ep_runtime_fusion" in result["missing_boundaries"]
+    assert "non-evidence" in result["evidence_statement"]
 
 
 def test_nccl_worker_control_ops_example_drives_ctrl_comm_op_with_worker_memory():

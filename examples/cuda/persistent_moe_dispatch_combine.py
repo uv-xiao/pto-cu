@@ -37,6 +37,7 @@ DEFAULT_OUTPUT_JSON = None
 TWO_DEVICE_EVIDENCE_SCOPE = "same-node-two-device-baseline"
 HANDOFF_SCOPE = "persistent-moe-plus-nccl-worker-control"
 UCCL_EP_HANDOFF_SCOPE = "persistent-moe-plus-uccl-ep-adapter"
+UCCL_EP_FUSED_BOUNDARY_SCOPE = "reduced-fused-cross-gpu-expert-parallel-moe-boundary"
 TWO_DEVICE_EVIDENCE_STATEMENT = (
     "same-node two-device baseline evidence: the existing persistent MoE "
     "dispatch/combine graph ran independently on each requested CUDA device; "
@@ -51,6 +52,17 @@ UCCL_EP_HANDOFF_EVIDENCE_STATEMENT = (
     "same-node two-device UCCL-EP handoff gate: the existing persistent MoE "
     "graph ran on both requested devices, then the Python-side UCCL-EP "
     "dispatch/combine adapter ran on the same device ids"
+)
+UCCL_EP_FUSED_BOUNDARY_EVIDENCE_STATEMENT = (
+    "structured unsupported boundary: the accepted persistent MoE plus "
+    "UCCL-EP adapter handoff can be run in one command, but this is "
+    "non-evidence for fused cross-GPU expert-parallel MoE until the "
+    "persistent_device_uccl_ep_runtime_fusion boundary exists"
+)
+UCCL_EP_FUSED_BOUNDARY_MISSING = (
+    "persistent_device_uccl_ep_runtime_fusion",
+    "shared_dispatch_combine_payload_between_persistent_graph_and_uccl_ep",
+    "device_side_cross_gpu_expert_parallel_routing",
 )
 CONTEXT_DEFINITION = """
 struct PtoTaskContext {
@@ -690,6 +702,100 @@ def run_persistent_moe_uccl_ep_handoff(
             "not fused cross-GPU expert-parallel MoE",
             "not CUDA host-runtime UCCL dispatch",
             "no serving, vLLM, DeepSeek, RDMA, multi-node, or performance claim",
+        ],
+    }
+
+
+def run_persistent_moe_uccl_ep_fused_boundary(
+    *,
+    device_ids: tuple[int, int] = (6, 7),
+    n: int = 4096,
+    tensor_numel: int = 1024,
+    arch: str = "compute_80",
+    block_dim: int = 256,
+    scheduler_blocks: int = 1,
+    worker_blocks: int = 4,
+    queue_capacity: int = 5,
+    stream_id: int = 0,
+    num_tokens: int = 64,
+    num_topk: int = 4,
+    num_experts: int = 16,
+    input_dtype: str = "bf16",
+    repeats: int = 1,
+    uccl_ep_bench_dir: str | None = None,
+    moe_runner: Callable[..., dict] | None = None,
+    uccl_ep_runner: Callable[..., dict] | None = None,
+) -> dict:
+    handoff = run_persistent_moe_uccl_ep_handoff(
+        device_ids=device_ids,
+        n=n,
+        tensor_numel=tensor_numel,
+        arch=arch,
+        block_dim=block_dim,
+        scheduler_blocks=scheduler_blocks,
+        worker_blocks=worker_blocks,
+        queue_capacity=queue_capacity,
+        stream_id=stream_id,
+        num_tokens=num_tokens,
+        num_topk=num_topk,
+        num_experts=num_experts,
+        input_dtype=input_dtype,
+        repeats=repeats,
+        uccl_ep_bench_dir=uccl_ep_bench_dir,
+        moe_runner=moe_runner,
+        uccl_ep_runner=uccl_ep_runner,
+    )
+    handoff_validation = handoff.get("handoff_validation") or {}
+    boundary_validation = {
+        "handoff_passed": handoff.get("status") == "passed",
+        "same_device_ids": bool(handoff_validation.get("same_device_ids")),
+        "persistent_moe_passed": bool(handoff_validation.get("persistent_moe_passed")),
+        "uccl_ep_adapter_passed": bool(
+            handoff_validation.get("uccl_ep_adapter_passed")
+        ),
+        "descriptor_metadata_present": bool(
+            handoff_validation.get("adapter_descriptor_metadata_present")
+        ),
+        "actual_fused_cross_gpu_execution": False,
+        "persistent_device_uccl_ep_runtime_fusion": False,
+        "structured_unsupported_boundary": handoff.get("status") == "passed",
+    }
+    if handoff.get("status") == "passed":
+        status = "unsupported"
+    else:
+        status = handoff.get("status", "failed")
+
+    return {
+        "schema_version": 1,
+        "status": status,
+        "runtime": "persistent_device",
+        "dag_shape": DAG_SHAPE,
+        "fused_boundary_scope": UCCL_EP_FUSED_BOUNDARY_SCOPE,
+        "handoff_scope": handoff.get("handoff_scope"),
+        "evidence_statement": UCCL_EP_FUSED_BOUNDARY_EVIDENCE_STATEMENT,
+        "device_ids": list(device_ids),
+        "devices": list(device_ids),
+        "n": n,
+        "tensor_numel": int(tensor_numel),
+        "arch": arch,
+        "block_dim": block_dim,
+        "scheduler_blocks": scheduler_blocks,
+        "worker_blocks": worker_blocks,
+        "queue_capacity": queue_capacity,
+        "stream_id": stream_id,
+        "uccl_ep_adapter_shape": handoff.get("uccl_ep_adapter_shape"),
+        "boundary_validation": boundary_validation,
+        "missing_boundaries": list(UCCL_EP_FUSED_BOUNDARY_MISSING),
+        "uccl_ep_handoff": handoff,
+        "handoff_boundary": handoff.get("handoff_boundary"),
+        "persistent_moe_validation": handoff.get("persistent_moe_validation"),
+        "uccl_ep_adapter_validation": handoff.get("uccl_ep_adapter_validation"),
+        "persistent_moe_source_digests": handoff.get("persistent_moe_source_digests"),
+        "non_claims": [
+            "structured unsupported boundary, not fused MoE evidence",
+            "not actual fused cross-GPU expert-parallel MoE execution",
+            "not CUDA host-runtime UCCL dispatch",
+            "no serving, vLLM, DeepSeek, RDMA, multi-node, throughput, or latency claim",
         ],
     }
 
@@ -1346,6 +1452,14 @@ def main(argv: list[str] | None = None) -> int:
             action="store_true",
             help="run the two-device MoE baseline and UCCL-EP adapter on the same devices",
         )
+        parser.add_argument(
+            "--with-uccl-ep-fused-boundary",
+            action="store_true",
+            help=(
+                "run the UCCL-EP handoff path and report the reduced fused "
+                "cross-GPU MoE boundary status"
+            ),
+        )
         parser.add_argument("--uccl-ep-num-tokens", type=int, default=64)
         parser.add_argument("--uccl-ep-num-topk", type=int, default=4)
         parser.add_argument("--uccl-ep-num-experts", type=int, default=16)
@@ -1380,6 +1494,26 @@ def main(argv: list[str] | None = None) -> int:
             if args.device_ids is None:
                 raise ValueError("--with-uccl-ep-handoff requires --device-ids")
             result = run_persistent_moe_uccl_ep_handoff(
+                device_ids=args.device_ids,
+                n=args.n,
+                tensor_numel=args.tensor_numel,
+                arch=args.arch,
+                block_dim=args.block_dim,
+                scheduler_blocks=args.scheduler_blocks,
+                worker_blocks=args.worker_blocks,
+                queue_capacity=args.queue_capacity,
+                stream_id=args.stream_id,
+                num_tokens=args.uccl_ep_num_tokens,
+                num_topk=args.uccl_ep_num_topk,
+                num_experts=args.uccl_ep_num_experts,
+                input_dtype=args.uccl_ep_input_dtype,
+                repeats=args.uccl_ep_repeats,
+                uccl_ep_bench_dir=args.uccl_ep_bench_dir,
+            )
+        elif args.with_uccl_ep_fused_boundary:
+            if args.device_ids is None:
+                raise ValueError("--with-uccl-ep-fused-boundary requires --device-ids")
+            result = run_persistent_moe_uccl_ep_fused_boundary(
                 device_ids=args.device_ids,
                 n=args.n,
                 tensor_numel=args.tensor_numel,
@@ -1453,6 +1587,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if result["status"] == "skipped" and require_cuda:
         return 2
+    if result["status"] == "unsupported":
+        return 3
     return 0
 
 

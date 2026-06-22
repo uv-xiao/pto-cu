@@ -183,6 +183,17 @@ matching, and zero max errors into one review-safe JSON result. This path is
 separate from the NCCL host-runtime worker-control path and does not add CUDA
 host-runtime UCCL dispatch.
 
+The reduced fused cross-GPU expert-parallel MoE boundary is represented by
+`examples/cuda/persistent_moe_dispatch_combine.py
+--with-uccl-ep-fused-boundary`. That mode deliberately records a structured
+unsupported boundary when the handoff path passes, because the current runtime
+still lacks `persistent_device_uccl_ep_runtime_fusion`: a shared
+persistent-device/UCCL-EP boundary that can route dispatch/combine payloads
+inside one fused cross-GPU expert-parallel MoE execution. The result is not
+fused evidence; it is a review-safe non-evidence marker for the missing
+runtime boundary. It is a structured unsupported boundary.
+It is not fused evidence.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node
