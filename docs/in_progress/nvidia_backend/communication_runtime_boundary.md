@@ -623,17 +623,26 @@ failed and must not report
 `persistent_device_uccl_ep_runtime_fusion.status: passed` or
 `actual_fused_cross_gpu_execution: true`.
 
-PR #162 accepted this map as docs/test dependency evidence only. The selected
-next implementation slice is
-`nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`: a narrow private
-CUDA persistent DAG host-runtime handoff that associates only real
+PR #162 accepted this map as docs/test dependency evidence only. PR #164 then
+accepted
+`nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`: a narrow
+private CUDA persistent DAG host-runtime handoff that associates only real
 same-invocation `ChipStorageTaskArgs *` and `PtoCudaPersistentDagArgs *`
-pointers. It must not expand public `TaskArgs`, public `CallConfig`, the
+pointers. It did not expand public `TaskArgs`, public `CallConfig`, the
 common runtime C API, or UCCL host-runtime ABI fields.
 
-This branch implements that handoff and keeps the coordinator, descriptor
+PR #164 implements that handoff and keeps the coordinator, descriptor
 allocator, UCCL-EP runtime path, validation policy, UCCL-EP capability
 metadata, pass evidence, and H200 fused-success evidence absent.
+
+The next selected dependency slice is
+`nvidia-uccl-ep-runtime-fusion-capability-metadata-map`. It should map the
+private UCCL-EP capability metadata required by the later coordinator request:
+capability id, world size, rank-to-device map, descriptor vocabulary,
+transport mode, adapter provenance handles, and setup/validation failure
+ownership. It must keep public `TaskArgs`, public `CallConfig`, common
+runtime C API fields, UCCL host-runtime ABI fields, example JSON, adapter
+provenance, and handoff metadata out of the pass-evidence path.
 
 ## Non-Claims
 

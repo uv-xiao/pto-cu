@@ -679,6 +679,9 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "mismatched-callable cases, stale envelopes, cross-invocation",
         "adds only the private CUDA persistent DAG host-runtime association",
         "does not add a runtime-fusion coordinator",
+        "PR #164's accepted implementation slice",
+        "nvidia-uccl-ep-runtime-fusion-capability-metadata-map",
+        "private UCCL-EP capability metadata",
     ]:
         assert required in normalized_selection
 
@@ -690,7 +693,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "Closed Invalid ChipStorageTaskArgs Request Boundary Attempt" in slicing
     assert "Accepted Private Request Envelope Dependency Slice" in slicing
     assert "Accepted Runtime Args Handoff Map Slice" in slicing
-    assert "Selected Private Host Runtime Handoff Implementation Slice" in slicing
+    assert "Accepted Private Host Runtime Handoff Implementation Slice" in slicing
+    assert "Selected UCCL-EP Capability Metadata Map Slice" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
@@ -728,6 +732,13 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "After PR #162, the runtime-args handoff map is complete" in (
         normalized_slicing
     )
+    assert "After PR #164, the private host-runtime handoff is accepted" in (
+        normalized_slicing
+    )
+    assert "current accepted baseline is `be914b97898468033c7f834dde0c43466353ac95`" in (
+        normalized_slicing
+    )
+    assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
     assert "b58598490d37065e6c972eaaea6d4bc4900469c7" in slicing
     assert "d04732e3a5513d8172b41d0812f2d84065039526" in slicing
@@ -736,8 +747,11 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "142132a2df296ce64e4cd2c17af909d619bcad22" in slicing
     assert "6026ed7cbfa1d4724e22e109bbd75c06d0e9f9a7" in slicing
     assert "0ba8f30696132c06a3cd49b95fbd7bb46b8b9a99" in slicing
+    assert "cc26283be5b3355af8148a8e4ca5421d57c2ff80" in slicing
+    assert "be914b97898468033c7f834dde0c43466353ac95" in slicing
     assert "Runtime Args Handoff Map Slice" in slicing
     assert "Private Host Runtime Handoff Implementation Slice" in slicing
+    assert "Capability Metadata Map Slice" in slicing
     assert "PtoCudaPrivateRunArgsEnvelope" in slicing
     assert "same-invocation" in normalized_slicing
     assert "mismatched-callable" in normalized_slicing
@@ -1061,8 +1075,11 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "tmp/codex-goal-monitor/nvidia-private-host-runtime-handoff/",
         "dirty_count: 0",
         "https://github.com/uv-xiao/pto-cu/pull/164",
+        "be914b97898468033c7f834dde0c43466353ac95",
         "Opened as a non-draft PR with `gh pr create --repo uv-xiao/pto-cu",
         "private CUDA persistent DAG host-runtime handoff",
+        "accepted as a private host-runtime handoff implementation only",
+        "Add CUDA private runtime handoff",
         "4 failed, 5 passed",
         "70 passed",
         "17 passed",
@@ -1071,6 +1088,41 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     ]:
         assert required in normalized_private_host_handoff_entry
     assert "No nested workers were launched" in normalized_private_host_handoff_entry
+
+    post_private_host_handoff_entry = dispatch_log.split(
+        "### 2026-06-23 - Post-Private-Host-Runtime-Handoff Status Refresh Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_post_private_host_handoff_entry = " ".join(
+        post_private_host_handoff_entry.split()
+    )
+    for required in [
+        "nvidia-goal-status-post-private-host-runtime-handoff",
+        "run-nvidia-post-private-host-runtime-handoff-status-refresh.sh",
+        "nvidia-post-private-host-runtime-handoff-status-refresh.md",
+        "019ef01e-0a6f-7e62-a40a-dc7f4fb954f0",
+        "rollout-2026-06-23T00-16-01-019ef01e-0a6f-7e62-a40a-dc7f4fb954f0.jsonl",
+        "pto-worker-nvidia-post-private-host-runtime-handoff:0.0",
+        "tmp/codex-goal-monitor/nvidia-post-private-host-runtime-handoff-status-refresh/",
+        "20260622T163142Z",
+        "`dirty_count: 0`",
+        "fb9c7e65",
+        "be914b97898468033c7f834dde0c43466353ac95",
+        "PR #164 is accepted only as a private CUDA persistent DAG",
+        "https://github.com/uv-xiao/pto-cu/pull/165",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "review-facing docs/tests only",
+        "No runtime code changes",
+        "completed before initial PR creation",
+        "87 passed",
+        "selected exactly one next PR-sized dependency slice",
+        "nvidia-uccl-ep-runtime-fusion-capability-metadata-map",
+        "private UCCL-EP capability metadata",
+        "No nested workers were launched",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_post_private_host_handoff_entry
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():
