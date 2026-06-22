@@ -2487,6 +2487,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "softmax((q @ k.T) * scale) @ v",
         "--output-dir tmp/gluon-flashattention-shape-coverage-h200",
         "--output-dir tmp/gluon-flashattention-prefill-sweep-h200",
+        "--output-dir tmp/gluon-flashattention-append-sweep-h200",
         "--output-dir tmp/gluon-flashattention-causal-boundary-h200",
         "--output-dir tmp/gluon-flashattention-decode-boundary-h200",
         "--output-dir tmp/gluon-flashattention-append-boundary-h200",
@@ -2500,6 +2501,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "--output-dir tmp/gluon-flashattention-pod-unsupported-h200",
         "--require-cuda --arch compute_90",
         "--sweep --causal --require-cuda",
+        "--sweep --causal --causal-sweep-phase append --require-cuda",
         "--tile-shape 32x32x64 --causal --require-cuda",
         "--tile-shape 1x32x64 --causal --require-cuda",
         "--tile-shape 4x32x64 --causal --require-cuda",
@@ -2540,6 +2542,8 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "same-length multi-query prefill-shaped",
         "bounded causal prefill sweep correctness evidence",
         "only causal prefill cases",
+        "bounded causal append sweep correctness evidence",
+        "only causal append cases",
         "phase: prefill",
         "single-query decode-shaped",
         "small multi-query append-shaped",
@@ -2548,6 +2552,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "shape: seqlen_q=16, seqlen_k=64, head_dim=64",
         "shape: seqlen_q=1, seqlen_k=32, head_dim=64",
         "shape: seqlen_q=4, seqlen_k=32, head_dim=64",
+        "shape: seqlen_q=8, seqlen_k=32, head_dim=64",
         "causal_query_offset: 28",
         "common serving attention head dimension",
         "32x32x64 failed H200 correctness",
@@ -2567,6 +2572,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "not FlashInfer integration evidence",
         "not DeepSeek semantic correctness",
         "not full prefill coverage",
+        "not bounded append KV-cache coverage",
         "not paged/ragged KV-cache correctness",
         "not full decode",
         "not full append",
@@ -2594,6 +2600,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "--sweep" in readme_text
     assert "--causal" in readme_text
     assert "--sweep --causal --require-cuda" in readme_text
+    assert "--sweep --causal --causal-sweep-phase append --require-cuda" in readme_text
     assert "head_dim=64" in readme_text
     assert "32x32x64 failed H200 correctness" in readme_text
     assert "causal: true" in readme_text
@@ -2629,6 +2636,8 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "same-length multi-query prefill-shaped" in readme_text
     assert "bounded causal prefill sweep correctness evidence" in readme_text
     assert "only causal prefill cases" in readme_text
+    assert "bounded causal append sweep correctness evidence" in readme_text
+    assert "only causal append cases" in readme_text
     assert "not full prefill coverage" in readme_text
     assert "not attention-variant correctness" in readme_text
     assert "single-query decode-shaped" in readme_text
@@ -2643,8 +2652,11 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "gluon_flashattention_h200.md" in checklist_text
     assert "small FP32 FlashAttention shape sweep" in normalized_checklist_text
     assert "bounded causal prefill sweep correctness evidence" in checklist_text
+    assert "bounded causal append sweep correctness evidence" in checklist_text
     assert "--sweep --causal --require-cuda" in checklist_text
+    assert "--sweep --causal --causal-sweep-phase append --require-cuda" in checklist_text
     assert "same-length multi-query prefill-shaped" in normalized_checklist_text
+    assert "only causal append cases" in checklist_text
     assert "single-query decode-shaped" in normalized_checklist_text
     assert "small multi-query append-shaped" in normalized_checklist_text
     assert "causal: true" in checklist_text

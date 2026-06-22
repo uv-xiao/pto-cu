@@ -57,6 +57,20 @@ FLASHATTENTION_CAUSAL_PREFILL_SWEEP_CASES = [
         "provenance": "bounded same-length multi-query causal prefill H200 gate",
     },
 ]
+FLASHATTENTION_CAUSAL_APPEND_SWEEP_CASES = [
+    {
+        "name": "append_4x32x64",
+        "tile_shape": (4, 32, 64),
+        "seed": 4,
+        "provenance": "bounded multi-query causal append fixture",
+    },
+    {
+        "name": "append_8x32x64",
+        "tile_shape": (8, 32, 64),
+        "seed": 5,
+        "provenance": "bounded multi-query causal append H200 gate",
+    },
+]
 
 
 def build_flashattention_artifact(
@@ -260,19 +274,22 @@ def run_flashattention_sweep(
     atol: float = 1e-3,
     rtol: float = 1e-2,
     causal: bool = False,
+    causal_sweep_phase: str = "prefill",
     cases: list[dict] | None = None,
     skip_reason: Callable[[], str | None] | None = None,
 ) -> dict:
     resolved_output_dir = DEFAULT_OUTPUT_DIR if output_dir is None else Path(output_dir)
     if resolved_output_dir.is_absolute():
         raise ValueError("--output-dir must be repo-relative")
+    _validate_causal_sweep_phase(causal_sweep_phase)
 
     if cases is None:
-        case_specs = (
-            FLASHATTENTION_CAUSAL_PREFILL_SWEEP_CASES
-            if causal
-            else FLASHATTENTION_SWEEP_CASES
-        )
+        if not causal:
+            case_specs = FLASHATTENTION_SWEEP_CASES
+        elif causal_sweep_phase == "append":
+            case_specs = FLASHATTENTION_CAUSAL_APPEND_SWEEP_CASES
+        else:
+            case_specs = FLASHATTENTION_CAUSAL_PREFILL_SWEEP_CASES
     else:
         case_specs = cases
     case_results = []
@@ -371,6 +388,15 @@ def main(argv: list[str] | None = None) -> int:
             help="apply a lower-triangular causal mask for single-case or sweep runs",
         )
         parser.add_argument(
+            "--causal-sweep-phase",
+            choices=("prefill", "append"),
+            default="prefill",
+            help=(
+                "select causal sweep cases; default preserves the bounded "
+                "same-length prefill sweep"
+            ),
+        )
+        parser.add_argument(
             "--kv-cache-boundary",
             choices=("none", "paged", "ragged"),
             default="none",
@@ -418,6 +444,7 @@ def main(argv: list[str] | None = None) -> int:
                 atol=args.atol,
                 rtol=args.rtol,
                 causal=args.causal,
+                causal_sweep_phase=args.causal_sweep_phase,
             )
         else:
             result = run_flashattention_correctness(
@@ -531,6 +558,11 @@ def _validate_attention_variant(attention_variant: str) -> None:
         raise ValueError(
             "--attention-variant must be one of: standard, mla, cascade, sparse, pod"
         )
+
+
+def _validate_causal_sweep_phase(causal_sweep_phase: str) -> None:
+    if causal_sweep_phase not in ("prefill", "append"):
+        raise ValueError("--causal-sweep-phase must be one of: prefill, append")
 
 
 def _unsupported_attention_variant_result(

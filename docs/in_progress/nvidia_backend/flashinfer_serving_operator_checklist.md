@@ -46,7 +46,14 @@ Serving-relevant families verified from the README:
   `case_count`, only
   causal prefill cases, same-length shapes, `phase: prefill`, `causal: true`,
   tolerance, provenance, the lower-triangular masked PyTorch reference formula,
-  status, and repo-relative artifact paths. The same note also records
+  status, and repo-relative artifact paths. It also records bounded causal
+  append sweep correctness evidence for
+  `--sweep --causal --causal-sweep-phase append --require-cuda`, with
+  `schema_version`, aggregate status, `case_count`, only causal append cases,
+  append shapes, `phase: append`, `causal: true`, tolerance, provenance, the
+  shifted masked PyTorch reference formula, status, and repo-relative artifact
+  paths. This is bounded causal append sweep correctness evidence. The same
+  note also records
   a bounded same-length multi-query prefill-shaped H200 gate for
   `--tile-shape 32x32x64 --causal` with `phase: prefill`, `causal: true`,
   shape, tolerance, the lower-triangular masked PyTorch reference formula,
@@ -108,6 +115,7 @@ Serving-relevant families verified from the README:
   not paged/ragged KV-cache correctness, not full prefill coverage, not full
   decode, not full append, not attention-variant correctness, not full
   prefill, full decode, full append, or append KV-cache coverage,
+  not bounded append KV-cache coverage,
   not varlen attention correctness, and not DeepSeek semantic correctness.
 
 ### GEMM And Linear Operations
