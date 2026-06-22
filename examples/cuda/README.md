@@ -464,6 +464,8 @@ KV-cache correctness, not full prefill or full decode coverage, not
 attention-variant correctness, not FlashInfer integration, not
 vLLM/simpler-nv integration, not DeepSeek semantic correctness, not
 production readiness, and not performance evidence.
+The H200-promoted append cases include `append_8x32x64` and
+`append_8x64x64`.
 In short, only causal append cases.
 
 For the bounded same-length multi-query prefill-shaped causal gate, use:

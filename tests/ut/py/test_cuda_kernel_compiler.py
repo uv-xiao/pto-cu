@@ -1973,6 +1973,14 @@ def test_gluon_flashattention_causal_append_sweep_cli_requires_cuda_on_aggregate
     assert payload["status"] == "skipped"
     assert payload["case_count"] == len(example.FLASHATTENTION_CAUSAL_APPEND_SWEEP_CASES)
     assert payload["skipped_cases"] == len(example.FLASHATTENTION_CAUSAL_APPEND_SWEEP_CASES)
+    append_cases = {case["case_name"]: case for case in payload["cases"]}
+    assert "append_8x64x64" in append_cases
+    broader_case = append_cases["append_8x64x64"]
+    assert broader_case["shape"] == {"seqlen_q": 8, "seqlen_k": 64, "head_dim": 64}
+    assert (
+        broader_case["provenance"]
+        == "broader bounded multi-query causal append H200 gate"
+    )
     for case in payload["cases"]:
         assert case["phase"] == "append"
         assert case["causal"] is True

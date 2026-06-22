@@ -76,6 +76,12 @@ FLASHATTENTION_CAUSAL_APPEND_SWEEP_CASES = [
         "seed": 5,
         "provenance": "bounded multi-query causal append H200 gate",
     },
+    {
+        "name": "append_8x64x64",
+        "tile_shape": (8, 64, 64),
+        "seed": 11,
+        "provenance": "broader bounded multi-query causal append H200 gate",
+    },
 ]
 FLASHATTENTION_CAUSAL_DECODE_SWEEP_CASES = [
     {

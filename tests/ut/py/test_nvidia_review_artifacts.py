@@ -2549,6 +2549,10 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "only causal decode cases",
         "bounded causal append sweep correctness evidence",
         "only causal append cases",
+        "case_count: 3",
+        "case_name: append_8x64x64",
+        "shape: seqlen_q=8, seqlen_k=64, head_dim=64",
+        "broader bounded multi-query causal append H200 gate",
         "phase: prefill",
         "single-query decode-shaped",
         "small multi-query append-shaped",
@@ -2659,6 +2663,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "1x128x64 hit a Triton CUDA out-of-memory boundary" in readme_text
     assert "bounded causal append sweep correctness evidence" in readme_text
     assert "only causal append cases" in readme_text
+    assert "append_8x64x64" in readme_text
     assert "not full prefill coverage" in readme_text
     assert "not attention-variant correctness" in readme_text
     assert "single-query decode-shaped" in readme_text
@@ -2685,6 +2690,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "decode_1x128x32" in checklist_text
     assert "1x128x64 hit a Triton CUDA out-of-memory boundary" in checklist_text
     assert "only causal append cases" in checklist_text
+    assert "append_8x64x64" in checklist_text
     assert "single-query decode-shaped" in normalized_checklist_text
     assert "small multi-query append-shaped" in normalized_checklist_text
     assert "causal: true" in checklist_text
