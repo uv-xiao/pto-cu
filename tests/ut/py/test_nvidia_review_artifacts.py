@@ -317,6 +317,30 @@ def test_review_policy_changelog_and_examples_exist():
     ).is_file()
 
 
+def test_nvidia_goal_status_rollup_tracks_current_boundaries():
+    rollup = (
+        ROOT
+        / "docs"
+        / "in_progress"
+        / "nvidia_backend"
+        / "goal_status_rollup.md"
+    )
+    assert rollup.is_file()
+
+    text = rollup.read_text(encoding="utf-8")
+    required_phrases = [
+        "`origin/main` at `3338a239`",
+        "`accepted evidence`",
+        "`partial evidence`",
+        "DeepSeek/vLLM serving evidence",
+        "Simpler-nv integration evidence",
+        "`nvidia-moe-uccl-ep-fused-boundary-h200`",
+        "not vLLM plugin integration",
+    ]
+    for phrase in required_phrases:
+        assert phrase in text
+
+
 def test_uccl_in_progress_docs_omit_private_paths():
     in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
     uccl_docs = sorted(in_progress_root.glob("uccl_*.md"))
