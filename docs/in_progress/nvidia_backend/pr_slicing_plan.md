@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `41a9e1e4135313a9787386fb32c21f8b85254d4b`,
-  after PR #158 (`Fix Codex monitor transcript lookup`).
+- Current accepted `main`: `142132a2df296ce64e4cd2c17af909d619bcad22`,
+  after PR #160 (`Add CUDA runtime fusion request envelope`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -83,6 +83,17 @@ from `main` and lands through focused GitHub PRs.
   not accepted implementation evidence.
 - PR #158 fixed the Codex monitor transcript lookup and is already on `main`.
   It is unrelated to the NVIDIA runtime-fusion request boundary.
+- PR #159 recorded PR #157 as a closed invalid ChipStorage request handoff,
+  kept the CUDA runtime-fusion code state unclaimed, and selected the private
+  request-envelope dependency that PR #160 later implemented.
+- PR #160 added the private CUDA run envelope and host-runtime hook while
+  keeping the fused-boundary result unsupported. It is accepted only as a
+  private request-envelope / host-runtime handoff dependency, not
+  runtime-fusion success. It does not report
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`, set
+  `actual_fused_cross_gpu_execution: true`, expand public `TaskArgs` or
+  `CallConfig`, expand a UCCL host-runtime ABI, or claim fresh H200 fused
+  success.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -157,6 +168,21 @@ from `main` and lands through focused GitHub PRs.
   - Result: merged as `d04732e3a5513d8172b41d0812f2d84065039526`.
   - Result type: private unsupported runtime scaffold only, not fused
     execution evidence.
+- PR #156: refresh NVIDIA status after private entry scaffold.
+  - Result: merged as `6b6b3f3756da2b3857c7206cb6625383a6dc0bd7`.
+  - Result type: status/slicing refresh only, not fused execution evidence.
+- PR #158: fix Codex monitor transcript lookup.
+  - Result: merged as `41a9e1e4135313a9787386fb32c21f8b85254d4b`.
+  - Result type: monitor tooling fix only, unrelated to CUDA runtime-fusion
+    evidence.
+- PR #159: record invalid ChipStorage request handoff.
+  - Result: merged as `f1b4abb9c9544a71af70decc15bf1424837e0966`.
+  - Result type: closed-invalid handoff record only, not fused execution
+    evidence.
+- PR #160: private CUDA runtime fusion request envelope.
+  - Result: merged as `142132a2df296ce64e4cd2c17af909d619bcad22`.
+  - Result type: private request-envelope and host-runtime handoff dependency
+    only, not runtime-fusion success or fused execution evidence.
 
 ## Restored Tracking Surface
 
@@ -221,8 +247,16 @@ not a runtime behavior, UCCL host-runtime ABI, result-shape, or
 fused-execution evidence change. After PR #154, the post-PR153 status refresh
 is complete. After PR #155, the private unsupported entry scaffold is
 accepted as a request/result scaffold only; it is not fused execution
-evidence, and the next slice moves one boundary lower to private
-`ChipStorageTaskArgs` request plumbing.
+evidence. After PR #156, the post-private-entry status refresh is complete.
+PR #157 remains closed invalid because it confused the persistent DAG args
+pointer with a real `ChipStorageTaskArgs *`. PR #158 is a monitor tooling fix
+only. PR #159 records the invalid PR #157 handoff and selected the private
+request-envelope dependency. After PR #160, the private envelope and
+host-runtime hook are accepted only as a dependency that prevents the
+persistent DAG args pointer from being mislabeled as `ChipStorageTaskArgs *`;
+it is not runtime-fusion success. The next slice is exactly one conservative
+dependency/status map:
+`nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map`.
 
 ## Accepted Payload Provenance Slice
 
@@ -653,9 +687,9 @@ unclaimed: no real `ChipStorageTaskArgs` request path reached
 still records `missing_chip_storage_task_args` when no valid private request
 input exists.
 
-## Current Private Request Envelope Dependency Slice
+## Accepted Private Request Envelope Dependency Slice
 
-Current branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-private-request-envelope`.
 
 Objective: define the private ABI/envelope dependency surface and make the
@@ -709,3 +743,48 @@ capability metadata, or pass evidence. The review-safe result therefore
 remains unsupported or failed, never
 `persistent_device_uccl_ep_runtime_fusion.status: passed` or
 `actual_fused_cross_gpu_execution: true`.
+
+PR #160 met this objective as a private request-envelope and host-runtime
+handoff dependency only. It added the private run envelope and host-runtime
+hook, and it made the `ChipWorker::run` typed-args path reject private
+envelope use unless a real runtime-specific CUDA args pointer exists. It did
+not implement the runtime-fusion coordinator, descriptor allocator, UCCL-EP
+runtime path, validation policy, UCCL-EP capability metadata, or pass
+evidence. It did not expand public `TaskArgs`, public `CallConfig`, the
+common runtime C API, or UCCL host-runtime ABI fields.
+
+## Selected Runtime Args Handoff Map Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map`.
+
+Objective: map the next private dependency boundary before another runtime
+implementation attempt. The slice should describe how a real
+runtime-specific `PtoCudaPersistentDagArgs *` can be associated with a real
+`ChipStorageTaskArgs *` at the private CUDA host-runtime handoff while
+preserving the separation introduced by PR #160.
+
+This is intentionally a conservative dependency/status slice because the next
+implementation boundary is still ambiguous. It must not change CUDA runtime
+behavior, expand public `TaskArgs`, public `CallConfig`, the common runtime C
+API, or UCCL host-runtime ABI fields. It must keep
+`persistent_device_uccl_ep_runtime_fusion.status: passed` and
+`actual_fused_cross_gpu_execution: true` unreachable.
+
+Allowed scope:
+
+- `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`
+- `docs/in_progress/nvidia_backend/communication_selection.md`
+- `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`
+- `docs/in_progress/nvidia_backend/pr_slicing_plan.md`
+- `docs/in_progress/nvidia_backend/dispatch_log.md`
+- focused review-artifact tests if assertions need to pin the handoff map
+
+Required non-claims:
+
+- no runtime-fusion success;
+- no fresh H200 fused-success evidence;
+- no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency
+  claim;
+- no public `TaskArgs`, public `CallConfig`, common runtime C API, or UCCL
+  host-runtime ABI expansion.

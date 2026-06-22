@@ -23,6 +23,61 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - Post-Private-Envelope Status Refresh Worker
+
+- Dispatcher Session or PR:
+  current `/goal` worker session on branch
+  `nvidia-goal-status-post-private-envelope`, after PR #160 merged as
+  `142132a2df296ce64e4cd2c17af909d619bcad22`.
+- Worker id and objective:
+  `pto-worker-nvidia-goal-status-post-private-envelope`; refresh the NVIDIA
+  backend restart status after PR #160, record its merge decision as a
+  private envelope / host-runtime handoff dependency only, and select one
+  next PR-sized slice.
+- Exact Codex command or script invocation:
+  direct `/goal` work in this branch; no nested workers launched.
+- Parent goal and child slice:
+  NVIDIA backend restart; post-PR160 status/slicing refresh only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-goal-status-post-private-envelope`;
+  <https://github.com/uv-xiao/pto-cu/pull/161>. Opened as a non-draft PR with
+  `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-goal-status-post-private-envelope`.
+- Allowed scope and files:
+  NVIDIA in-progress review docs and focused review-artifact tests only:
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`, and
+  `tests/ut/py/test_nvidia_review_artifacts.py`.
+- Dependencies and blocked assumptions:
+  starts from current `main` at
+  `142132a2df296ce64e4cd2c17af909d619bcad22`. PR #157 remains closed
+  invalid. PR #160 is accepted only as a private request-envelope and
+  host-runtime handoff dependency; it is not runtime-fusion success and does
+  not make fused pass evidence reachable.
+- Verification commands and results:
+  completed before PR creation. `git diff --check` passed with no output;
+  targeted `markdownlint-cli2` over the five NVIDIA status docs passed with
+  `0 error(s)`; the NVIDIA review guard passed; and focused
+  `test_nvidia_review_artifacts.py` passed with `61 passed`.
+- H200 evidence:
+  no fresh H200 command is planned because this is docs/test status refresh
+  only and does not change CUDA runtime behavior, example behavior, result
+  shape, or fused-boundary evidence.
+- Merge decision and merge commit:
+  pending PR creation and review.
+- Handoff summary and remaining gaps:
+  selected exactly one next PR-sized slice:
+  `nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map`. This is a
+  conservative dependency/status slice to map how a real runtime-specific
+  `PtoCudaPersistentDagArgs *` can be associated with a real
+  `ChipStorageTaskArgs *` at the private host-runtime handoff without
+  expanding public `TaskArgs`, public `CallConfig`, the common runtime C API,
+  or UCCL host-runtime ABI fields. It must not claim fused execution, RDMA,
+  multi-node, serving, vLLM, DeepSeek, throughput, latency, fresh H200
+  fused-success evidence,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`, or
+  `actual_fused_cross_gpu_execution: true`.
+
 ### 2026-06-22 - UCCL-EP Runtime Fusion Private Request Envelope
 
 - Dispatcher Session or PR:
@@ -70,7 +125,16 @@ Each dispatch entry should include:
   dependency slice and does not claim fused-success, RDMA, multi-node,
   serving, vLLM, DeepSeek, throughput, or latency evidence.
 - Merge decision and merge commit:
-  pending PR creation and review.
+  accepted as a private request-envelope and host-runtime handoff dependency
+  only. PR #160 merged into `main` on 2026-06-22 as
+  `142132a2df296ce64e4cd2c17af909d619bcad22`
+  (`Add CUDA runtime fusion request envelope`). The merge decision did not
+  accept runtime-fusion success, fused execution evidence, fresh H200
+  fused-success evidence, UCCL host-runtime ABI expansion, public `TaskArgs`
+  or `CallConfig` expansion,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
+  DeepSeek, throughput, or latency claims.
 - Handoff summary and remaining gaps:
   blocker follow-up fixed the private request-envelope claim by making the
   `ChipWorker::run` typed-args path explicitly reject
