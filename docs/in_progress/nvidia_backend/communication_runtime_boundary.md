@@ -509,6 +509,20 @@ The entry contract is a dependency boundary only. It names the private request
 and result fields that a later implementation must satisfy before it can
 construct a coordinator and emit trusted fused-boundary evidence.
 
+PR #153 accepted this entry contract as private dependency evidence only. It
+did not implement CUDA runtime behavior, add UCCL host-runtime ABI fields,
+change the fused-boundary result shape, claim fresh H200 fused success, report
+`persistent_device_uccl_ep_runtime_fusion.status: passed`, or set
+`actual_fused_cross_gpu_execution: true`.
+
+The next narrow implementation slice is
+`nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`. It may add private
+entry scaffolding behind the `ChipWorker::run` / `ChipStorageTaskArgs` path,
+but the review-safe result remains `unsupported` unless the runtime
+coordinator itself creates shared dispatch/combine descriptor ownership,
+issues the ownership token, records the complete lifetime transition log, and
+emits trusted coordinator-owned validation fields.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node

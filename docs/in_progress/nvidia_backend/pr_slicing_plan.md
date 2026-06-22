@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `3548a5761c2785bc855d68ec53469651d2227096`,
-  after PR #151 (`Refresh NVIDIA status after runtime fusion guard`).
+- Current accepted `main`: `b58598490d37065e6c972eaaea6d4bc4900469c7`,
+  after PR #153 (`Define UCCL EP coordinator entry contract`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -52,6 +52,12 @@ from `main` and lands through focused GitHub PRs.
   `nvidia-uccl-ep-runtime-fusion-coordinator-entry-contract` as the next
   dependency slice. It did not implement runtime behavior, expand public
   `TaskArgs` / `CallConfig`, or change fused-execution evidence status.
+- PR #153 defined the private
+  `persistent_device_uccl_ep_runtime_fusion_entry` contract below
+  `ChipWorker::run` and selected
+  `nvidia-uccl-ep-runtime-fusion-private-entry-unsupported` as the next
+  narrow implementation slice. It did not implement runtime behavior, expand
+  a UCCL host-runtime ABI, or change fused-execution evidence status.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -116,6 +122,9 @@ from `main` and lands through focused GitHub PRs.
 - PR #152: UCCL-EP runtime fusion coordinator boundary map.
   - Result: merged as `8b5e8075000a2a3e35c4e71c5cb698224b003b44`.
   - Result type: coordinator-boundary map only, not fused execution evidence.
+- PR #153: UCCL-EP coordinator entry contract.
+  - Result: merged as `b58598490d37065e6c972eaaea6d4bc4900469c7`.
+  - Result type: private entry-contract only, not fused execution evidence.
 
 ## Restored Tracking Surface
 
@@ -174,7 +183,10 @@ blocked implementation handoff; they do not change fused-execution status.
 After PR #151, the post-PR150 status refresh is complete; it is not a runtime
 behavior or result-shape change. After PR #152, the coordinator-boundary map
 is complete as a dependency slice; it is not a runtime behavior,
-result-shape, or fused-execution evidence change.
+result-shape, or fused-execution evidence change. After PR #153, the
+coordinator entry contract is complete as a private dependency slice; it is
+not a runtime behavior, UCCL host-runtime ABI, result-shape, or
+fused-execution evidence change.
 
 ## Accepted Payload Provenance Slice
 
@@ -317,7 +329,8 @@ passed` or `actual_fused_cross_gpu_execution: true`.
 ## Accepted Post-PR150 Status Refresh
 
 PR #151 merged as `3548a5761c2785bc855d68ec53469651d2227096`:
-`nvidia-goal-status-post-runtime-fusion-guard`.
+`nvidia-goal-status-post-runtime-fusion-guard`
+(`Refresh NVIDIA status after runtime fusion guard`).
 
 The branch refreshed the goal status, slicing plan, dispatch log, and focused
 review-artifact assertions after PR #150. It preserved the accepted evidence
@@ -419,19 +432,24 @@ Coordinator-boundary requirements for this branch:
   remains guard-only blocked implementation evidence, and PR #151 remains a
   post-PR150 status refresh.
 
-## Current Coordinator Entry Contract Slice
+## Accepted Coordinator Entry Contract Slice
 
-Recommended branch:
+This section records the PR-sized slice selected after PR #152 and accepted
+by PR #153. The branch made the private `ChipWorker::run` to CUDA
+persistent-device host-callable entry contract reviewable before any
+implementation constructs a coordinator.
+
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-coordinator-entry-contract`.
 
 Objective: define the narrow private runtime entry contract that an
-implementation branch would need before constructing a coordinator. This is
-still a dependency slice because the coordinator-boundary map does not create
+implementation branch needs before constructing a coordinator. This remained
+a dependency slice because the coordinator-boundary map did not create
 runtime code, descriptor memory, UCCL-EP runtime dispatch, or H200 pass
-evidence. A direct implementation after this docs branch would still be
-unable to honestly emit coordinator-owned evidence unless the private entry
-contract first defines how `ChipWorker` and the CUDA host runtime request,
-return, and validate coordinator result fields.
+evidence. The accepted contract defines how `ChipWorker` and the CUDA host
+runtime request, return, and validate coordinator result fields without
+adding public `TaskArgs`, public `CallConfig`, or UCCL host-runtime ABI
+fields.
 
 Required contract content:
 
@@ -497,10 +515,61 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
 
 Required non-claims:
 
-- no CUDA runtime behavior change unless the dispatcher explicitly widens the
-  branch;
+- no CUDA runtime behavior change;
 - no UCCL host-runtime ABI expansion;
 - no fresh H200 fused-success claim;
 - no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
 - no `actual_fused_cross_gpu_execution: true`;
 - no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claim.
+
+PR #153 met this objective as a private entry-contract slice only. It did not
+implement CUDA runtime behavior, change the fused-boundary example result
+shape, create descriptor memory, emit a coordinator-owned ownership token,
+claim fresh H200 fused success, or change the accepted unsupported evidence
+status.
+
+## Next Private Entry Implementation Slice
+
+Recommended branch:
+`nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`.
+
+Objective: implement the smallest private CUDA persistent-device entry
+scaffold behind the `ChipWorker::run` / `ChipStorageTaskArgs` path without
+changing public APIs. The branch may add runtime-owned request/result
+plumbing for `persistent_device_uccl_ep_runtime_fusion_entry`, but the normal
+`--with-uccl-ep-fused-boundary` outcome must remain `unsupported` unless the
+runtime coordinator itself creates a shared dispatch/combine descriptor,
+issues the ownership token, records the complete lifetime transition log, and
+emits trusted coordinator-owned validation fields.
+
+This is now a narrow implementation slice rather than another docs-only
+dependency because PR #152 defined the coordinator boundary and PR #153
+defined the private entry contract. The honest implementation floor is still
+an unsupported result: creating an entry scaffold is not enough to report
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or
+`actual_fused_cross_gpu_execution: true`.
+
+Required implementation boundaries:
+
+- keep the entry private to the CUDA persistent-device runtime path;
+- do not add public `TaskArgs`, public `CallConfig`, or UCCL host-runtime ABI
+  fields;
+- derive request fields from callable id, `ChipStorageTaskArgs`, private
+  rank/device metadata, persistent graph descriptor handles, UCCL-EP
+  capability metadata, descriptor allocation policy, validation policy, and a
+  runtime-owned output sink;
+- emit `unsupported` with explicit failure fields when the coordinator,
+  descriptor allocator, UCCL-EP runtime path, or validation policy is absent;
+- reject adapter-only provenance, example-side JSON, handoff metadata, public
+  `TaskArgs`, and public `CallConfig` as pass-evidence sources;
+- keep `persistent_device_uccl_ep_runtime_fusion.status: passed` and
+  `actual_fused_cross_gpu_execution: true` unreachable unless real
+  coordinator-owned evidence exists.
+
+Allowed scope:
+
+- private CUDA persistent-device runtime entry scaffolding;
+- focused unit tests for unsupported private-entry behavior and forbidden
+  evidence paths;
+- review-artifact docs and tests that pin the unsupported evidence boundary;
+- no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency work.
