@@ -647,6 +647,102 @@ That H200 result must show `status: passed`,
 zero persistent MoE and UCCL-EP validation errors, a non-null shared ownership
 token, a complete lifetime transition log, and no failure fields set.
 
+## Coordinator Boundary Map
+
+PR #150 confirmed that guards alone cannot implement the boundary because the
+runtime-owned coordinator is absent. The next honest implementation dependency
+is therefore a concrete map for where the coordinator enters and what evidence
+it owns.
+
+Coordinator owner:
+`persistent_device_uccl_ep_runtime_fusion`, created inside the CUDA
+persistent-device runtime run context for exactly one `ChipWorker::run`
+invocation.
+
+Reviewable entry point:
+
+1. L3+ scheduling still dispatches an opaque chip task through the normal
+   `WorkerThread` mailbox path.
+2. The chip child calls `ChipWorker::run` with the callable id, decoded
+   `TaskArgsView`, and `CallConfig`.
+3. `ChipWorker::run` builds `ChipStorageTaskArgs` and calls the CUDA
+   host-runtime `.so`.
+4. The persistent-device runtime run context creates the coordinator when the
+   callable and private CUDA communication metadata opt into UCCL-EP fusion.
+5. The coordinator allocates the shared dispatch/combine descriptor, emits the
+   ownership token, validates transitions, and writes
+   `persistent_device_uccl_ep_runtime_fusion` result fields.
+
+Descriptor allocation site:
+the CUDA persistent-device runtime run context allocates a host-side control
+record and device-visible descriptor buffer before launching the
+persistent-device scheduler. The example, adapter result, and provenance JSON
+may describe payloads, but they do not allocate or own the shared descriptor.
+
+Ownership token issuer:
+only the coordinator issues the token. Dispatch and combine descriptors must
+carry the same token, and the final result must show that the token was
+released after `complete`.
+
+Lifetime transition state machine:
+
+```text
+allocated
+  -> dispatch_ready
+  -> dispatch_in_flight
+  -> combine_ready
+  -> combine_in_flight
+  -> complete
+  -> released
+```
+
+Failure-field responsibilities:
+
+- `unsupported_boundary`: missing coordinator or missing runtime fusion
+  capability.
+- `descriptor`: descriptor shape, dtype, metadata, allocation, or ownership
+  mismatch.
+- `rank_device`: graph, UCCL capability, and Worker-local device ordering
+  disagree.
+- `payload_lifetime`: missing token, mismatched token, illegal transition,
+  double release, use-after-release, leaked owner, or missing release.
+- `transport`: UCCL-EP runtime dispatch/combine failure.
+- `scheduler`: persistent-device scheduler error, incomplete DAG, or nonzero
+  fan-in remaining.
+- `validation`: numeric mismatch or missing required pass field.
+- `fabricated_or_untrusted_pass_evidence`: adapter, provenance, handoff, or
+  example-side fields try to stand in for coordinator-owned evidence.
+
+Local tests required before pass/true:
+
+- reject `passed` without a runtime-owned descriptor allocation site;
+- reject `passed` without exactly one coordinator-issued token shared by
+  dispatch and combine;
+- reject missing, skipped, or out-of-order lifetime transitions;
+- reject rank/device mismatches against Worker-local device ordering;
+- reject any pass-like fields supplied by handoff metadata or adapter
+  provenance;
+- require failure fields and non-claims to remain present in unsupported,
+  setup-failed, and failed outputs.
+
+Future H200 evidence required before pass/true:
+run the existing `--with-uccl-ep-fused-boundary` command on a fresh branch
+checkout and record a JSON artifact produced by the runtime coordinator. The
+artifact must show top-level `status: passed`,
+`persistent_device_uccl_ep_runtime_fusion.status: passed`,
+`actual_fused_cross_gpu_execution: true`, matching rank/device mapping, zero
+persistent-device and UCCL-EP validation errors, one non-null shared ownership
+token, the complete lifetime transition log, and empty failure fields. If any
+of those are missing, the result remains `unsupported`, `setup_failed`, or
+`failed` and is not fused execution evidence.
+
+This map preserves the accepted evidence boundary. PR #147 remains
+provenance-only unsupported-boundary evidence. PR #150 remains guard-only
+blocked implementation evidence. PR #151 remains a post-PR150 status refresh.
+None of those PRs accepted
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or
+`actual_fused_cross_gpu_execution: true`.
+
 ## Future Fused Execution Evidence Shape
 
 This design/dependency PR defines the evidence contract only. It does not

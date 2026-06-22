@@ -331,6 +331,98 @@ any result where `actual_fused_cross_gpu_execution` is `false`. These states
 can remain useful dependency evidence, but they must not be described as
 actual fused cross-GPU expert-parallel MoE execution.
 
+## Runtime Fusion Coordinator Boundary
+
+The missing owner is a CUDA persistent-device runtime component:
+`persistent_device_uccl_ep_runtime_fusion`. It is scoped to one
+`ChipWorker::run` invocation and sits below the Python example handoff. The
+example may request the fused-boundary mode and carry adapter or graph
+provenance, but it cannot allocate the shared dispatch/combine descriptor,
+issue the ownership token, or claim payload lifetime transitions. Those
+fields are only trustworthy when emitted behind the `ChipWorker` to CUDA host
+runtime edge.
+
+The reviewable entry point shape is:
+
+1. `WorkerThread` dispatches a normal chip task with `Callable`, `TaskArgs`,
+   and `CallConfig`.
+2. The chip child decodes the mailbox payload and calls `ChipWorker::run`.
+3. `ChipWorker::run` converts the decoded view to `ChipStorageTaskArgs` and
+   calls the CUDA host-runtime entry point for the selected callable id.
+4. The CUDA persistent-device runtime run context detects the opt-in
+   UCCL-EP fusion capability and constructs
+   `persistent_device_uccl_ep_runtime_fusion`.
+5. The coordinator allocates one host-side control record plus one
+   device-visible dispatch/combine descriptor buffer before launching the
+   persistent-device scheduler.
+6. The coordinator passes descriptor views to the persistent-device graph and
+   UCCL-EP runtime adapter without exposing those views through public
+   `TaskArgs`, `CallConfig`, or example-owned JSON fields.
+7. The coordinator collects status, validation, failure fields, the ownership
+   token, and the lifetime transition log after scheduler and UCCL-EP work
+   complete.
+
+The descriptor allocation site is the CUDA persistent-device runtime run
+context, not `examples/cuda/persistent_moe_dispatch_combine.py`. The owner of
+the allocation is the coordinator. The persistent-device graph may fill graph
+descriptor provenance and scheduler validation. The UCCL-EP runtime may fill
+transport validation and dispatch/combine adapter provenance. Neither side may
+independently mark the shared descriptor as runtime-owned.
+
+The ownership token issuer is also the coordinator. A later pass result must
+show exactly one token shared by dispatch and combine descriptor records. The
+token must be created before `dispatch_ready`, must be present on every
+transition, and must be released only after `complete`.
+
+The required state machine is:
+
+```text
+allocated
+  -> dispatch_ready
+  -> dispatch_in_flight
+  -> combine_ready
+  -> combine_in_flight
+  -> complete
+  -> released
+```
+
+Every transition records actor, state, token, descriptor id, rank/device map,
+and result status. Legal actors are `persistent_device_graph`,
+`uccl_ep_runtime`, and
+`persistent_device_uccl_ep_runtime_fusion`. Illegal transition, missing token,
+mismatched token, double release, use-after-release, leaked in-flight owner,
+or missing release is a payload lifetime failure.
+
+Failure-field responsibilities are split so review can identify the failing
+owner:
+
+- `setup`: dependency import, CUDA device discovery, build, extension load, or
+  process launch before the boundary can run.
+- `unsupported_boundary`: missing coordinator, missing UCCL-EP runtime path,
+  or missing persistent-device fusion capability.
+- `descriptor`: shape, dtype, metadata, or descriptor allocation mismatch.
+- `rank_device`: mismatch between Worker-local device ordering, graph
+  rank/device mapping, and UCCL capability mapping.
+- `payload_lifetime`: token, owner, transition, release, or leak error.
+- `transport`: UCCL-EP dispatch/combine runtime failure after setup.
+- `scheduler`: persistent-device scheduler error, incomplete task count, or
+  nonzero fan-in remaining.
+- `validation`: numeric validation failure or missing required pass field.
+- `fabricated_or_untrusted_pass_evidence`: pass-like fields supplied by
+  adapter output, payload provenance, handoff metadata, or example-side JSON
+  instead of the coordinator.
+
+Local tests required before implementation may report
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or
+`actual_fused_cross_gpu_execution: true` must exercise this entry point shape
+and failure split. They must reject pass results without a runtime-owned
+descriptor allocation site, one coordinator-issued ownership token, a complete
+transition log, matching rank/device maps, and empty failure fields. Future
+H200 evidence must use the existing
+`--with-uccl-ep-fused-boundary` command shape and may report passed/true only
+when the fresh JSON result is produced by the runtime coordinator rather than
+by example-side handoff metadata.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node

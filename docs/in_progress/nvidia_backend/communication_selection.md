@@ -145,6 +145,23 @@ restart. It is a planning boundary, not performance evidence.
   descriptor, ownership token, lifetime log, and fresh H200 fused-boundary
   result. It must not add RDMA, multi-node transport, UCCL host-runtime ABI
   expansion, serving, vLLM, or DeepSeek claims.
+- The coordinator-boundary map keeps the runtime owner concrete:
+  `persistent_device_uccl_ep_runtime_fusion` is created inside the CUDA
+  persistent-device runtime run context for one `ChipWorker::run` call. The
+  descriptor allocation site, ownership token issuer, and lifetime state
+  machine live there, not in example-side handoff metadata.
+- The reviewable entry point is `WorkerThread` chip dispatch ->
+  `ChipWorker::run` -> CUDA host-runtime callable entry ->
+  persistent-device runtime run context -> runtime-fusion coordinator.
+  Future pass evidence must record the coordinator-issued token and the
+  `allocated` -> `dispatch_ready` -> `dispatch_in_flight` ->
+  `combine_ready` -> `combine_in_flight` -> `complete` -> `released`
+  transition log.
+- The current accepted evidence boundary is unchanged: PR #147 remains
+  provenance-only unsupported-boundary evidence, PR #150 remains guard-only
+  blocked implementation evidence, and PR #151 remains a post-PR150 status
+  refresh. None of those PRs proves actual fused cross-GPU expert-parallel
+  MoE execution.
 
 ## Non-Claims
 
