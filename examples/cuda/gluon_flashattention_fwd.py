@@ -43,6 +43,20 @@ FLASHATTENTION_SWEEP_CASES = [
         ),
     },
 ]
+FLASHATTENTION_CAUSAL_PREFILL_SWEEP_CASES = [
+    {
+        "name": "prefill_16x16x64",
+        "tile_shape": (16, 16, 64),
+        "seed": 2,
+        "provenance": "bounded same-length multi-query causal prefill fixture",
+    },
+    {
+        "name": "prefill_32x32x64",
+        "tile_shape": (32, 32, 64),
+        "seed": 3,
+        "provenance": "bounded same-length multi-query causal prefill H200 gate",
+    },
+]
 
 
 def build_flashattention_artifact(
@@ -245,6 +259,7 @@ def run_flashattention_sweep(
     arch: str = "compute_90",
     atol: float = 1e-3,
     rtol: float = 1e-2,
+    causal: bool = False,
     cases: list[dict] | None = None,
     skip_reason: Callable[[], str | None] | None = None,
 ) -> dict:
@@ -252,7 +267,14 @@ def run_flashattention_sweep(
     if resolved_output_dir.is_absolute():
         raise ValueError("--output-dir must be repo-relative")
 
-    case_specs = FLASHATTENTION_SWEEP_CASES if cases is None else cases
+    if cases is None:
+        case_specs = (
+            FLASHATTENTION_CAUSAL_PREFILL_SWEEP_CASES
+            if causal
+            else FLASHATTENTION_SWEEP_CASES
+        )
+    else:
+        case_specs = cases
     case_results = []
     counts = {"passed": 0, "failed": 0, "skipped": 0}
 
@@ -268,6 +290,7 @@ def run_flashattention_sweep(
                 atol=atol,
                 rtol=rtol,
                 seed=int(case["seed"]),
+                causal=causal,
                 skip_reason=skip_reason,
             )
             status = result["status"]
@@ -283,6 +306,7 @@ def run_flashattention_sweep(
         except Exception as exc:
             counts["failed"] += 1
             seqlen_q, seqlen_k, head_dim = tile_shape
+            phase = _phase_for(tile_shape=tile_shape, causal=causal)
             case_results.append(
                 {
                     "case_index": index,
@@ -293,8 +317,9 @@ def run_flashattention_sweep(
                         "head_dim": head_dim,
                     },
                     "provenance": provenance,
-                    "causal": False,
-                    "reference": FLASHATTENTION_REFERENCE,
+                    "phase": phase,
+                    "causal": causal,
+                    "reference": _reference_for(phase=phase, causal=causal),
                     "tolerance": {"atol": atol, "rtol": rtol},
                     "status": "failed",
                     "error_type": type(exc).__name__,
@@ -343,7 +368,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument(
             "--causal",
             action="store_true",
-            help="apply a lower-triangular causal mask for the single-case run",
+            help="apply a lower-triangular causal mask for single-case or sweep runs",
         )
         parser.add_argument(
             "--kv-cache-boundary",
@@ -392,6 +417,7 @@ def main(argv: list[str] | None = None) -> int:
                 arch=args.arch,
                 atol=args.atol,
                 rtol=args.rtol,
+                causal=args.causal,
             )
         else:
             result = run_flashattention_correctness(

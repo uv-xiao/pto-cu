@@ -41,6 +41,12 @@ Serving-relevant families verified from the README:
   `32x32x32` case and a bounded `head_dim=64` case selected after `32x32x64
   failed H200 correctness`; the `32x32x64` repro now passes with structured
   JSON and remains separate from the promoted sweep. The same note now records
+  bounded causal prefill sweep correctness evidence for
+  `--sweep --causal --require-cuda`, with `schema_version`, aggregate status,
+  `case_count`, only
+  causal prefill cases, same-length shapes, `phase: prefill`, `causal: true`,
+  tolerance, provenance, the lower-triangular masked PyTorch reference formula,
+  status, and repo-relative artifact paths. The same note also records
   a bounded same-length multi-query prefill-shaped H200 gate for
   `--tile-shape 32x32x64 --causal` with `phase: prefill`, `causal: true`,
   shape, tolerance, the lower-triangular masked PyTorch reference formula,
@@ -99,9 +105,10 @@ Serving-relevant families verified from the README:
   FlashInfer parity, not
   simpler-nv/vLLM kernel integration evidence, not production serving
   readiness, not performance/throughput/latency evidence,
-  not paged/ragged KV-cache correctness, not full prefill, full decode, full
-  append, or append KV-cache coverage, not varlen attention correctness, and
-  not DeepSeek semantic correctness.
+  not paged/ragged KV-cache correctness, not full prefill coverage, not full
+  decode, not full append, not attention-variant correctness, not full
+  prefill, full decode, full append, or append KV-cache coverage,
+  not varlen attention correctness, and not DeepSeek semantic correctness.
 
 ### GEMM And Linear Operations
 
