@@ -644,6 +644,46 @@ ownership. It must keep public `TaskArgs`, public `CallConfig`, common
 runtime C API fields, UCCL host-runtime ABI fields, example JSON, adapter
 provenance, and handoff metadata out of the pass-evidence path.
 
+## Capability Metadata Map Slice
+
+This branch maps private UCCL-EP capability metadata only. The metadata stays
+inside the CUDA persistent-device runtime path and chip-child private metadata;
+it is not promoted into public `TaskArgs`, public `CallConfig`, the common
+runtime C API, or UCCL host-runtime ABI fields.
+
+The later `persistent_device_uccl_ep_runtime_fusion_entry` coordinator request
+needs only this private metadata vocabulary:
+
+- capability id;
+- world size;
+- rank-to-device map;
+- descriptor vocabulary for dispatch/combine payload metadata;
+- transport mode;
+- adapter provenance handles;
+- setup/validation failure ownership.
+
+The PR #164 association between real same-invocation `ChipStorageTaskArgs *`
+and `PtoCudaPersistentDagArgs *` remains the only accepted request-args
+handoff. Capability metadata is an additional private dependency, not a way to
+replace either pointer or synthesize runtime-fusion evidence.
+
+The cases missing, stale, mismatched-rank, mismatched-world-size, or
+public/API-sourced capability metadata must report `unsupported` or `failed`.
+Missing private metadata is an unsupported prerequisite; stale metadata, rank
+mismatch, world size mismatch, and public/API-sourced capability metadata are
+validation failures when a boundary attempts to use them.
+
+The forbidden pass-evidence paths remain explicit: public `TaskArgs`, public
+`CallConfig`, common runtime C API, UCCL host-runtime ABI, example JSON,
+adapter provenance, and handoff metadata must not supply fields that set
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or
+`actual_fused_cross_gpu_execution: true`.
+
+This is a docs/test dependency map with no CUDA runtime behavior change. It
+has no runtime-fusion coordinator implementation, no descriptor allocator
+implementation, no UCCL-EP runtime path implementation, no validation policy
+implementation, and no fresh H200 fused-success evidence.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node

@@ -23,6 +23,87 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-23 - UCCL-EP Runtime Fusion Capability Metadata Map Worker
+
+- Dispatcher Session or PR:
+  current `/goal` worker session on branch
+  `nvidia-uccl-ep-runtime-fusion-capability-metadata-map`, after PR #165
+  selected this dependency slice.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-capability-metadata-map`; map the
+  private UCCL-EP capability metadata that a later
+  `persistent_device_uccl_ep_runtime_fusion_entry` coordinator request will
+  need, without implementing CUDA runtime behavior.
+- Exact Codex command or script invocation:
+  worker launched by
+  `tmp/worker-prompts/run-nvidia-capability-metadata-map.sh`, which ran
+  `codex exec --dangerously-bypass-approvals-and-sandbox -C <worktree>
+  "$(cat tmp/worker-prompts/nvidia-capability-metadata-map.md)"`.
+  No nested workers were launched.
+- Monitor locators:
+  Codex session id `019ef035-0d37-7132-9ace-acc82b2da5b7`; transcript
+  `~/.codex/sessions/2026/06/23/rollout-2026-06-23T00-41-09-019ef035-0d37-7132-9ace-acc82b2da5b7.jsonl`;
+  worker pane `pto-worker-nvidia-capability-metadata-map:0.0`.
+  Recurring monitor artifacts under
+  `tmp/codex-goal-monitor/nvidia-capability-metadata-map/`. The latest
+  recorded monitor summary at `20260622T165808Z` showed `pane_status: ok`,
+  `transcript_status: ok`, `worktree_status: ok`, `dirty_count: 0`, and
+  latest commit `3dfafd61`.
+- Parent goal and child slice:
+  NVIDIA backend restart; Capability Metadata Map Slice for private UCCL-EP
+  capability metadata selected by PR #165 after PR #164 accepted the private
+  host-runtime handoff only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-capability-metadata-map`; Planned PR URL
+  slot: <https://github.com/uv-xiao/pto-cu/pull/166>. Opened as a non-draft
+  PR with `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-capability-metadata-map`.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `bb526ff6c3c21597cffe1acd34bf08158a947cc3`.
+- Allowed scope and files:
+  review-facing docs/tests only:
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  and `tests/ut/py/test_nvidia_review_artifacts.py`. No runtime code
+  changes.
+- Dependencies and blocked assumptions:
+  PR #164 association between real same-invocation `ChipStorageTaskArgs *`
+  and `PtoCudaPersistentDagArgs *` remains required. PR #165 selected this
+  dependency slice because UCCL-EP capability metadata is still absent. The
+  minimum private fields are capability id, world size, rank-to-device map,
+  descriptor vocabulary, transport mode, adapter provenance handles, and
+  setup/validation failure ownership. The cases missing, stale,
+  mismatched-rank, mismatched-world-size, or public/API-sourced capability
+  metadata must report unsupported or failed.
+- forbidden pass-evidence paths:
+  public `TaskArgs`, public `CallConfig`, common runtime C API, UCCL
+  host-runtime ABI, example JSON, adapter provenance, and handoff metadata.
+- Verification commands and results:
+  completed before initial PR creation and rerun after adding the PR URL to
+  this entry. `git diff --check` passed with no output. Targeted
+  `markdownlint-cli2` over the five NVIDIA status docs passed with
+  `0 error(s)`. The NVIDIA review guard passed. The required focused pytest
+  command for `tests/ut/py/test_nvidia_review_artifacts.py` passed with
+  `61 passed`.
+- H200 evidence:
+  No fresh H200 command is planned because this is a docs/test dependency map
+  only and does not change CUDA runtime behavior, example behavior, result
+  shape, or fused-boundary evidence.
+- Merge decision and merge commit:
+  pending PR review.
+- Handoff summary and remaining gaps:
+  this branch maps private capability metadata only. It has no runtime-fusion
+  coordinator implementation, no descriptor allocator implementation, no
+  UCCL-EP runtime path implementation, no validation policy implementation,
+  no CUDA runtime behavior change, and no fresh H200 fused-success evidence.
+  `persistent_device_uccl_ep_runtime_fusion.status: passed` and
+  `actual_fused_cross_gpu_execution: true` remain unreachable until a later
+  coordinator slice emits real fused-boundary evidence.
+
 ### 2026-06-23 - Post-Private-Host-Runtime-Handoff Status Refresh Worker
 
 - Dispatcher Session or PR:

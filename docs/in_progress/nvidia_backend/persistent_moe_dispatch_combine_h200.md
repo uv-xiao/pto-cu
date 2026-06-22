@@ -938,9 +938,51 @@ The next selected dependency slice is
 private UCCL-EP capability metadata required by the later coordinator request
 without implementing runtime behavior. Required fields include capability id,
 world size, rank-to-device map, descriptor vocabulary, transport mode,
-adapter provenance handles, and setup/validation failure ownership. Missing,
-stale, mismatched-rank, mismatched-world-size, or public/API-sourced
+adapter provenance handles, and setup/validation failure ownership. The cases
+missing, stale, mismatched-rank, mismatched-world-size, or public/API-sourced
 capability metadata must remain unsupported or failed, not pass evidence.
+
+## Capability Metadata Map Slice
+
+This branch maps only the private UCCL-EP capability metadata dependency for
+the later `persistent_device_uccl_ep_runtime_fusion_entry` request. It does
+not change the H200 command shape, does not run fresh H200 fused-success
+evidence, and does not change `persistent_device_uccl_ep_runtime_fusion` from
+unsupported.
+
+The minimum metadata fields are capability id, world size, rank-to-device
+map, descriptor vocabulary, transport mode, adapter provenance handles, and
+setup/validation failure ownership. The descriptor vocabulary names the
+dispatch/combine payload terms a later coordinator must validate; it does not
+allocate descriptors or transfer ownership.
+
+The metadata source is private to the CUDA persistent-device runtime path and
+chip-child private metadata. It is valid only after the PR #164 association
+between real same-invocation `ChipStorageTaskArgs *` and
+`PtoCudaPersistentDagArgs *` exists for the same invocation. Capability
+metadata does not replace that association and cannot be copied from public
+or example-owned result fields.
+
+Failure ownership is split conservatively:
+
+- missing private metadata is `unsupported`;
+- stale metadata is `failed` when an invocation tries to consume it;
+- mismatched-rank metadata is `failed`;
+- mismatched-world-size metadata is `failed`;
+- public/API-sourced capability metadata is `failed` as fabricated or
+  untrusted pass evidence.
+
+The forbidden pass-evidence paths remain public `TaskArgs`, public
+`CallConfig`, common runtime C API, UCCL host-runtime ABI, example JSON,
+adapter provenance, and handoff metadata. They must not provide private UCCL
+capability metadata and must not set
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or
+`actual_fused_cross_gpu_execution: true`.
+
+This is a docs/test dependency map with no CUDA runtime behavior change. It
+has no runtime-fusion coordinator implementation, no descriptor allocator
+implementation, no UCCL-EP runtime path implementation, no validation policy
+implementation, and no fresh H200 fused-success evidence.
 
 ## Future Fused Execution Evidence Shape
 
