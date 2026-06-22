@@ -157,11 +157,28 @@ restart. It is a planning boundary, not performance evidence.
   `allocated` -> `dispatch_ready` -> `dispatch_in_flight` ->
   `combine_ready` -> `combine_in_flight` -> `complete` -> `released`
   transition log.
+- The private entry contract names
+  `persistent_device_uccl_ep_runtime_fusion_entry` as the CUDA
+  persistent-device host-callable path reached after `ChipWorker::run`
+  assembles `ChipStorageTaskArgs`. It does not add public `TaskArgs`,
+  public `CallConfig`, or UCCL host-runtime ABI fields.
+- `ChipWorker::run` requests coordinator construction with existing private
+  runtime inputs: callable id, chip-local rank/device map, persistent graph
+  descriptor handle, UCCL-EP capability metadata, descriptor allocation
+  policy, validation policy, and a runtime-owned output sink.
+- The entry result must return coordinator status, descriptor allocation
+  provenance, coordinator-issued ownership token, ordered state transitions,
+  rank/device map, validation summary, and explicit failure fields to the
+  host/runtime status artifact.
+- Example-side JSON, adapter-only provenance, handoff metadata, public
+  `TaskArgs`, and public `CallConfig` remain forbidden pass-evidence paths.
+  If they supply pass-like fields, the result must fail with
+  `fabricated_or_untrusted_pass_evidence`.
 - The current accepted evidence boundary is unchanged: PR #147 remains
   provenance-only unsupported-boundary evidence, PR #150 remains guard-only
-  blocked implementation evidence, and PR #151 remains a post-PR150 status
-  refresh. None of those PRs proves actual fused cross-GPU expert-parallel
-  MoE execution.
+  blocked implementation evidence, PR #151 remains a post-PR150 status
+  refresh, and PR #152 remains a coordinator-boundary map only. None of those
+  PRs proves actual fused cross-GPU expert-parallel MoE execution.
 
 ## Non-Claims
 
@@ -169,4 +186,7 @@ UCCL PTO host-runtime dispatch, RDMA evidence, multi-node evidence,
 serving-level communication evidence, and DeepSeek model correctness remain
 pending. The UCCL-EP handoff evidence is adapter/probe evidence only.
 UCCL adapter execution is limited to opt-in Python-side probes and handoff
-gates.
+gates. This entry-contract slice does not change CUDA runtime behavior, claim
+fresh H200 fused success, report
+`persistent_device_uccl_ep_runtime_fusion.status: passed`, or set
+`actual_fused_cross_gpu_execution: true`.

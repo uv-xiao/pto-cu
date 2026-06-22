@@ -423,6 +423,92 @@ H200 evidence must use the existing
 when the fresh JSON result is produced by the runtime coordinator rather than
 by example-side handoff metadata.
 
+## Private Runtime Entry Contract
+
+The private callable entry is owned by the CUDA persistent-device runtime. The
+contract name is `persistent_device_uccl_ep_runtime_fusion`, and the
+host-callable path is the internal
+`persistent_device_uccl_ep_runtime_fusion_entry` reached from
+`ChipWorker::run` after `ChipStorageTaskArgs` has been assembled. This entry
+is not a public UCCL host-runtime ABI and is not exposed through `simpler`.
+
+`ChipWorker::run` and `ChipStorageTaskArgs` request coordinator construction
+only by carrying existing private runtime state into the CUDA host-runtime
+callable path:
+
+- the normal callable id selected by the mailbox dispatch;
+- the `ChipStorageTaskArgs` tensor/scalar view produced from `TaskArgs`;
+- the unchanged `CallConfig`;
+- the chip-local rank/device map that the Worker already derived from
+  private CUDA communication launch metadata;
+- an internal persistent graph descriptor handle associated with the callable;
+- an opaque UCCL-EP capability metadata handle attached to the chip child;
+- private descriptor allocation and validation policies selected by the CUDA
+  persistent-device runtime.
+
+No field is added to public `TaskArgs` or public `CallConfig`. No user-visible
+Python object can request a pass result directly.
+
+The coordinator construction request has these minimum fields:
+
+- `callable_id`: the mailbox callable id for the prepared persistent graph;
+- `rank_device_map`: chip-local rank, CUDA device id, world size, and
+  Worker-local device ordering;
+- `persistent_graph_descriptor`: an internal handle for the persistent MoE
+  graph descriptor and its graph provenance;
+- `uccl_ep_capability`: opaque capability id, world size, transport mode,
+  descriptor vocabulary, and adapter provenance handles;
+- `descriptor_allocation_policy`: runtime-owned allocation requirement,
+  host-control record policy, device-visible descriptor buffer policy, and
+  dispatch/combine token-sharing rule;
+- `validation_policy`: required rank/device match, descriptor shape and dtype
+  checks, lifetime transition checks, scheduler checks, transport checks, and
+  numeric validation checks;
+- `output_sink`: the runtime-owned status artifact writer for
+  `persistent_device_uccl_ep_runtime_fusion`.
+
+The coordinator result returned to the host/runtime status artifact has these
+minimum fields:
+
+- `coordinator_status`: `passed`, `unsupported`, `setup_failed`, or `failed`;
+- `descriptor_allocation_provenance`: allocator owner, host-control record
+  id, device-visible descriptor id, dispatch descriptor id, combine descriptor
+  id, and runtime-owned allocation flag;
+- `ownership_token`: one coordinator-issued token shared by dispatch and
+  combine descriptors, or `null` when unsupported or setup failed;
+- `state_transitions`: ordered transition records with actor, state, token,
+  descriptor id, rank/device map, and status;
+- `rank_device_map`: the Worker-local device ordering and UCCL capability map
+  used by the coordinator;
+- `validation_summary`: scheduler, transport, descriptor, lifetime, rank
+  device, and numeric validation outcomes;
+- `failure_fields`: explicit setup, unsupported, descriptor, rank/device,
+  payload lifetime, transport, scheduler, validation, and
+  fabricated/untrusted evidence failures.
+
+Forbidden data paths remain non-evidence. Example-side JSON, adapter-only
+provenance, handoff metadata, public `TaskArgs`, and public `CallConfig` must
+not synthesize `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+`actual_fused_cross_gpu_execution: true`, an ownership token, allocation
+provenance, or transition log. If any of those paths supplies pass-like
+fields, the result must be `failed` with
+`failure_fields.fabricated_or_untrusted_pass_evidence`.
+
+Failure behavior stays explicit:
+
+- `unsupported`: the private entry, UCCL-EP capability, persistent graph
+  descriptor, descriptor allocation policy, or validation policy is absent.
+- `setup_failed`: dependency import, CUDA setup, extension load, build,
+  process launch, or private metadata setup fails before the coordinator can
+  validate the request.
+- `failed`: descriptor allocation, rank/device agreement, payload lifetime,
+  UCCL-EP transport, persistent-device scheduler, validation, or fabricated
+  pass-evidence checks fail after the coordinator boundary is reached.
+
+The entry contract is a dependency boundary only. It names the private request
+and result fields that a later implementation must satisfy before it can
+construct a coordinator and emit trusted fused-boundary evidence.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node
