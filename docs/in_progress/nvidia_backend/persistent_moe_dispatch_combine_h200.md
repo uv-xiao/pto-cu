@@ -846,20 +846,34 @@ slice. The branch does not add public `TaskArgs` fields, public `CallConfig`
 fields, or UCCL host-runtime ABI fields, and it does not claim
 `persistent_device_uccl_ep_runtime_fusion.status: passed`.
 
-## Next ChipStorageTaskArgs Request Boundary Slice
+## ChipStorageTaskArgs Request Boundary Slice
 
-The next PR-sized slice is
-`nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`. It should
-thread only the private `ChipStorageTaskArgs` request input through the
-existing `ChipWorker::run` / CUDA host-runtime request path. The expected
-review-safe result remains `unsupported`; missing coordinator, descriptor
-allocator, UCCL-EP runtime path, validation policy, UCCL-EP capability
-metadata, and pass evidence remain unsupported or failed states.
+The PR-sized slice selected after PR #156 is
+`nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`. It threads
+only the private `ChipStorageTaskArgs` request input through the existing
+`ChipWorker::run` / CUDA host-runtime request path. The expected review-safe
+result remains `unsupported`; missing coordinator, descriptor allocator,
+UCCL-EP runtime path, validation policy, UCCL-EP capability metadata, and
+pass evidence remain unsupported or failed states.
 
 The slice must not add public `TaskArgs`, public `CallConfig`, UCCL
 host-runtime ABI fields, RDMA, multi-node, serving, vLLM, DeepSeek,
 throughput, latency, fresh H200 fused-success evidence, or pass/true
 fused-boundary status.
+
+The implemented boundary is intentionally one field wide.
+`src/cuda/platform/onboard/host/pto_runtime_c_api.cpp` assigns the persistent
+DAG run `args` pointer to
+`PtoCudaRuntimeFusionRequest::chip_storage_task_args` and records
+`sizeof(ChipStorageTaskArgs)` as the private request size. Focused local
+coverage verifies that assignment and keeps the field out of the common
+runtime C API.
+
+The next selected PR-sized slice is
+`nvidia-uccl-ep-runtime-fusion-uccl-capability-request`. It should thread or
+explicitly reject only the private UCCL-EP capability metadata request input
+behind the same boundary while keeping the fused-boundary result
+`unsupported`.
 
 ## Future Fused Execution Evidence Shape
 

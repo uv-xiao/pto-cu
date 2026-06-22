@@ -544,13 +544,31 @@ JSON, handoff metadata, payload provenance, public `TaskArgs`, and public
 `CallConfig` are rejected as `fabricated_or_untrusted_pass_evidence` if they
 try to provide pass-like fields.
 
-The next PR-sized slice is
+The PR-sized slice selected after PR #156 is
 `nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`. It should
 thread only the private `ChipStorageTaskArgs` request input through the
 existing `ChipWorker::run` / CUDA host-runtime request path and keep the
 result `unsupported`. It must not add public `TaskArgs`, public `CallConfig`,
 UCCL host-runtime ABI fields, pass evidence, RDMA, multi-node, serving, vLLM,
 DeepSeek, throughput, or latency claims.
+
+The ChipStorageTaskArgs request-boundary slice now fills that one private
+field. `src/cuda/platform/onboard/host/pto_runtime_c_api.cpp` assigns the
+persistent DAG run `args` pointer to
+`PtoCudaRuntimeFusionRequest::chip_storage_task_args` and records
+`sizeof(ChipStorageTaskArgs)` as the private request size. This proves the
+existing chip-local task-argument view can reach
+`persistent_device_uccl_ep_runtime_fusion_entry` without adding public
+`TaskArgs`, public `CallConfig`, or UCCL host-runtime ABI fields. The result
+stays `unsupported` because coordinator ownership, descriptor allocation,
+UCCL-EP runtime dispatch, validation policy, and UCCL-EP capability metadata
+are still absent.
+
+The next selected PR-sized slice is
+`nvidia-uccl-ep-runtime-fusion-uccl-capability-request`. It should thread or
+explicitly reject only the private UCCL-EP capability metadata request input
+behind this same CUDA host-runtime boundary while preserving unsupported
+status and all non-claims.
 
 ## Non-Claims
 

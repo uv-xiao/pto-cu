@@ -210,3 +210,17 @@ def test_cuda_host_runtime_hooks_private_entry_without_public_api_expansion():
     assert "PtoCudaRuntimeFusionResult" in host_runtime
     assert "persistent_device_uccl_ep_runtime_fusion_entry" not in common_abi
     assert "PtoCudaRuntimeFusionRequest" not in common_abi
+
+
+def test_cuda_host_runtime_threads_private_chip_storage_task_args_request():
+    host_runtime = (
+        ROOT / "src" / "cuda" / "platform" / "onboard" / "host" / "pto_runtime_c_api.cpp"
+    ).read_text(encoding="utf-8")
+    common_abi = (ROOT / "src" / "common" / "worker" / "pto_runtime_c_api.h").read_text(
+        encoding="utf-8"
+    )
+
+    assert "request.chip_storage_task_args = args;" in host_runtime
+    assert "request.chip_storage_task_args_size = sizeof(ChipStorageTaskArgs);" in host_runtime
+    assert "(void)args;" not in host_runtime
+    assert "chip_storage_task_args" not in common_abi

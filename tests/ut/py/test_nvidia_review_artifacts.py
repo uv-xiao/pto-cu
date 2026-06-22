@@ -618,7 +618,10 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "PtoCudaRuntimeFusionRequest",
         "PtoCudaRuntimeFusionResult",
         "explicit failure bits",
-        "Next ChipStorageTaskArgs Request Boundary Slice",
+        "ChipStorageTaskArgs Request Boundary Slice",
+        "PtoCudaRuntimeFusionRequest::chip_storage_task_args",
+        "sizeof(ChipStorageTaskArgs)",
+        "nvidia-uccl-ep-runtime-fusion-uccl-capability-request",
         "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request",
     ]:
         assert required in persistent_moe
@@ -649,6 +652,9 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "PR #155 remains a private unsupported runtime scaffold only",
         "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported",
         "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request",
+        "PtoCudaRuntimeFusionRequest",
+        "sizeof(ChipStorageTaskArgs)",
+        "nvidia-uccl-ep-runtime-fusion-uccl-capability-request",
         "must keep the fused-boundary result `unsupported`",
     ]:
         assert required in normalized_selection
@@ -658,7 +664,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "Accepted Coordinator Boundary Map Slice" in slicing
     assert "Accepted Coordinator Entry Contract Slice" in slicing
     assert "Accepted Private Entry Unsupported Scaffold" in slicing
-    assert "Next ChipStorageTaskArgs Request Boundary Slice" in slicing
+    assert "ChipStorageTaskArgs Request Boundary Slice" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
@@ -668,9 +674,11 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "nvidia-uccl-ep-runtime-fusion-coordinator-entry-contract" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request" in slicing
+    assert "nvidia-uccl-ep-runtime-fusion-uccl-capability-request" in slicing
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
     assert "b58598490d37065e6c972eaaea6d4bc4900469c7" in slicing
     assert "d04732e3a5513d8172b41d0812f2d84065039526" in slicing
+    assert "6b6b3f3756da2b3857c7206cb6625383a6dc0bd7" in slicing
     assert "UCCL-EP runtime fusion coordinator boundary map" in slicing
     assert "persistent_device_uccl_ep_runtime_fusion_entry" in slicing
     assert "callable id, chip-local rank/device map" in normalized_slicing
@@ -792,14 +800,46 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "record_runtime_fusion_unsupported" in cuda_host_runtime
     assert "PtoCudaRuntimeFusionRequest" in cuda_host_runtime
     assert "PtoCudaRuntimeFusionResult" in cuda_host_runtime
+    assert "request.chip_storage_task_args = args;" in cuda_host_runtime
+    assert "request.chip_storage_task_args_size = sizeof(ChipStorageTaskArgs);" in (
+        cuda_host_runtime
+    )
 
     for required in [
         "test_private_runtime_fusion_entry_reports_missing_runtime_surfaces",
         "test_private_runtime_fusion_entry_rejects_forbidden_pass_evidence",
         "test_private_runtime_fusion_entry_keeps_pass_unreachable_without_evidence",
         "test_cuda_host_runtime_hooks_private_entry_without_public_api_expansion",
+        "test_cuda_host_runtime_threads_private_chip_storage_task_args_request",
     ]:
         assert required in private_entry_test
+
+    chip_storage_worker = dispatch_log.split(
+        "### 2026-06-22 - UCCL-EP Runtime Fusion ChipStorageTaskArgs Request Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_chip_storage_worker = " ".join(chip_storage_worker.split())
+    assert "6b6b3f3756da2b3857c7206cb6625383a6dc0bd7" in chip_storage_worker
+    assert "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request" in (
+        chip_storage_worker
+    )
+    assert "https://github.com/uv-xiao/pto-cu/pull/157" in chip_storage_worker
+    assert "Opened as a non-draft PR" in normalized_chip_storage_worker
+    assert "pending PR creation" not in normalized_chip_storage_worker
+    assert "PtoCudaRuntimeFusionRequest::chip_storage_task_args" in (
+        chip_storage_worker
+    )
+    assert "sizeof(ChipStorageTaskArgs)" in chip_storage_worker
+    assert "nvidia-uccl-ep-runtime-fusion-uccl-capability-request" in (
+        chip_storage_worker
+    )
+    assert "`persistent_device_uccl_ep_runtime_fusion.status: passed`" in (
+        chip_storage_worker
+    )
+    assert "`actual_fused_cross_gpu_execution: true`" in chip_storage_worker
+    assert "does not emit pass/true fused-boundary evidence" in (
+        normalized_chip_storage_worker
+    )
 
     private_entry_worker = dispatch_log.split(
         "### 2026-06-22 - UCCL-EP Runtime Fusion Private Entry Unsupported Worker",

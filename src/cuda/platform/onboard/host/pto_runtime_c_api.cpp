@@ -16,6 +16,7 @@
 #include "host/pto_cuda_persistent_device_abi.h"
 #include "host/pto_cuda_runtime_fusion_abi.h"
 #include "platform_comm/comm.h"
+#include "task_interface/task_args.h"
 
 #include <cuda.h>
 #include <cuda_runtime_api.h>
@@ -805,12 +806,13 @@ private:
         PtoCudaRuntimeFusionRequest request = {};
         request.version = PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION;
         request.callable_id = callable_id;
+        request.chip_storage_task_args = args;
+        request.chip_storage_task_args_size = sizeof(ChipStorageTaskArgs);
         request.persistent_graph_descriptor = dag_state;
         request.output_sink = &last_runtime_fusion_result_;
         if (has_comm_descriptor_) {
             request.comm_descriptor = &comm_descriptor_;
         }
-        (void)args;
 
         PtoCudaRuntimeFusionResult result = {};
         int rc = persistent_device_uccl_ep_runtime_fusion_entry(&request, &result);

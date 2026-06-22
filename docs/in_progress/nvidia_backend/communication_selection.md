@@ -193,13 +193,24 @@ restart. It is a planning boundary, not performance evidence.
   unsupported runtime scaffold only
   (`nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`). None of those
   PRs proves actual fused cross-GPU expert-parallel MoE execution.
-- The next PR-sized slice is
+- The PR-sized slice selected after PR #156 is
   `nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`. It can
   thread only the private `ChipStorageTaskArgs` request input through the
   existing `ChipWorker::run` / CUDA host-runtime request path and must keep
   the fused-boundary result `unsupported` unless the runtime coordinator
   emits real descriptor ownership, ownership-token, lifetime-transition,
   rank/device, validation, and failure-field evidence.
+- The ChipStorageTaskArgs request-boundary slice keeps that promise by
+  assigning the existing persistent DAG run `args` pointer and
+  `sizeof(ChipStorageTaskArgs)` to the private
+  `PtoCudaRuntimeFusionRequest`. It does not add public `TaskArgs`, public
+  `CallConfig`, or UCCL host-runtime ABI fields, and missing coordinator,
+  descriptor allocator, UCCL-EP runtime path, validation policy, and
+  UCCL-EP capability metadata still keep the result `unsupported`.
+- The next selected PR-sized slice is
+  `nvidia-uccl-ep-runtime-fusion-uccl-capability-request`. It should thread
+  or explicitly reject only the private UCCL-EP capability metadata request
+  input while preserving unsupported status and all non-claims.
 
 ## Non-Claims
 

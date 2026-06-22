@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `d04732e3a5513d8172b41d0812f2d84065039526`,
-  after PR #155 (`Add private UCCL EP runtime fusion entry scaffold`).
+- Current accepted `main`: `6b6b3f3756da2b3857c7206cb6625383a6dc0bd7`,
+  after PR #156 (`Refresh NVIDIA status after private entry scaffold`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -70,6 +70,10 @@ from `main` and lands through focused GitHub PRs.
   `actual_fused_cross_gpu_execution: true`, expand public `TaskArgs` or
   `CallConfig`, expand a UCCL host-runtime ABI, or claim fresh H200 fused
   success.
+- PR #156 recorded the post-PR155 status refresh and selected
+  `nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request` as the next
+  narrow implementation slice. It did not change CUDA runtime behavior,
+  result shape, or fused-execution evidence status.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -621,9 +625,9 @@ UCCL-EP runtime path, validation policy, UCCL-EP capability metadata,
 `ChipStorageTaskArgs` request materialization, pass evidence, or fresh H200
 fused success.
 
-## Next ChipStorageTaskArgs Request Boundary Slice
+## ChipStorageTaskArgs Request Boundary Slice
 
-Recommended branch:
+Current branch:
 `nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`.
 
 Objective: make the next dependency boundary below the private scaffold
@@ -646,3 +650,25 @@ Required boundaries:
   unsupported or failed states;
 - keep `persistent_device_uccl_ep_runtime_fusion.status: passed` and
   `actual_fused_cross_gpu_execution: true` unreachable.
+
+Implemented boundary surface:
+
+- `src/cuda/platform/onboard/host/pto_runtime_c_api.cpp` now assigns the
+  existing persistent DAG run `args` pointer to
+  `PtoCudaRuntimeFusionRequest::chip_storage_task_args` and records
+  `sizeof(ChipStorageTaskArgs)` in the private request size field;
+- the request field remains private to the CUDA host-runtime construction
+  path and is not added to public `TaskArgs`, public `CallConfig`, or the
+  common runtime C API;
+- the private entry still reports `unsupported` because the coordinator,
+  descriptor allocator, UCCL-EP runtime path, validation policy, and UCCL-EP
+  capability metadata are absent;
+- focused local coverage in
+  `tests/ut/py/test_cuda_runtime_fusion_private_entry.py` verifies the
+  private request assignment and the absence of public API expansion.
+
+Next selected PR-sized slice:
+`nvidia-uccl-ep-runtime-fusion-uccl-capability-request`. It should thread or
+explicitly reject only the private UCCL-EP capability metadata request input
+behind the same CUDA host-runtime boundary while preserving the unsupported
+fused-boundary result and all non-claims.
