@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `e0ee2879`, after PR #146
-  (`Record abandoned UCCL EP fusion attempt`).
+- Current accepted `main`: `6405dfbd`, after PR #147
+  (`Record UCCL EP adapter payload provenance`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -23,6 +23,13 @@ from `main` and lands through focused GitHub PRs.
   `nvidia-uccl-ep-runtime-fusion-impl-h200` attempt as invalid because it
   synthesized pass evidence from handoff metadata instead of emitting real
   runtime-fusion ownership evidence.
+- PR #147 recorded UCCL-EP adapter descriptor/rank payload provenance and
+  persistent-device graph payload provenance. The H200 fused-boundary command
+  exited `unsupported` as expected,
+  `persistent_device_uccl_ep_runtime_fusion.status` remains `unsupported`,
+  `actual_fused_cross_gpu_execution` remains `false`, and no shared payload
+  ownership token or lifetime transition log exists. It is accepted
+  provenance-only evidence, not fused execution evidence.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -65,6 +72,10 @@ from `main` and lands through focused GitHub PRs.
 - PR #146: abandoned UCCL-EP fusion attempt handoff.
   - Result: merged as `e0ee287939f7798578e318bf16017fe4939371c2`.
   - Result type: invalid implementation attempt record only, not fused
+    execution evidence.
+- PR #147: UCCL-EP adapter payload provenance.
+  - Result: merged as `6405dfbd8b403b8d6a0e82813e185c209d4d7e08`.
+  - Result type: provenance-only unsupported-boundary evidence, not fused
     execution evidence.
 
 ## Restored Tracking Surface
@@ -117,23 +128,26 @@ selects exactly one next worker slice. After PR #143, the UCCL-EP fused
 boundary worker is complete as an unsupported-boundary status slice; it is no
 longer a next candidate. After PR #145, the runtime-fusion design contract is
 also complete as a design-only slice; it is not implementation evidence.
+After PR #147, payload provenance is accepted as provenance-only evidence; it
+is no longer a next candidate and does not change fused-execution status.
 
-## Current Dependency Slice
+## Accepted Payload Provenance Slice
 
-This section is the former Next Dependency Slice selected after PR #146.
-It is not actual fused cross-GPU expert-parallel MoE execution.
+This section records the dependency slice selected after PR #146 and accepted
+by PR #147. It is not actual fused cross-GPU expert-parallel MoE execution.
 
-This PR-sized dependency does not try to flip
-`persistent_device_uccl_ep_runtime_fusion.status` to `passed`. It should first
-add real payload provenance that is produced by the UCCL-EP adapter and the
+The accepted PR-sized dependency did not try to flip
+`persistent_device_uccl_ep_runtime_fusion.status` to `passed`. It recorded
+real payload provenance produced by the UCCL-EP adapter and the
 persistent-device graph, rather than synthesizing ownership from handoff
 metadata.
 
-Recommended branch:
+Accepted branch:
 `nvidia-uccl-ep-adapter-payload-provenance`.
 
-Objective: extend the UCCL-EP adapter handoff or fused-boundary result shape so
-it records only real data emitted by the participating components:
+Accepted objective: extend the UCCL-EP adapter handoff and fused-boundary
+result shape so it records only real data emitted by the participating
+components:
 
 - UCCL-EP adapter dispatch/combine descriptor provenance, including the
   adapter-reported token count, hidden size, top-k, expert count, dtype,
@@ -145,11 +159,72 @@ it records only real data emitted by the participating components:
 - `persistent_device_uccl_ep_runtime_fusion.status: unsupported` until a
   runtime-owned cross-component boundary exists.
 
-This dependency may be an implementation slice if it adds real adapter-produced
-data to the existing JSON, or a runtime/platform spike if the codebase first
-needs to decide where cross-component ownership state can live behind
-`ChipWorker` and the CUDA runtime boundary. It must not select a path whose
-only route to `passed` is fabricated ownership or lifetime transitions.
+PR #147 met this objective as provenance-only evidence. The H200 evidence
+exited with status `unsupported`, as expected. It records
+`persistent_device_uccl_ep_runtime_fusion.status: unsupported`,
+`actual_fused_cross_gpu_execution: false`, no shared payload ownership token,
+and an empty lifetime transition log. It must not be cited as fused execution
+evidence.
+
+## Selected Next Dependency Slice
+
+This section selects exactly one next PR-sized slice from current `main` after
+PR #147. The next slice is a conservative docs/design readiness slice, not a
+runtime implementation attempt.
+
+Recommended branch:
+`nvidia-uccl-ep-runtime-fusion-readiness`.
+
+Objective: define an implementation-readiness map for the real
+`persistent_device_uccl_ep_runtime_fusion` boundary now that PR #145 defines
+the contract and PR #147 records accepted provenance-only input fields. The
+slice should answer where runtime-owned shared payload descriptors live, which
+component records the ownership token and lifetime transition log, which
+failure states are mandatory, and what local and H200 evidence will be
+required before a later implementation may report `passed`.
+
+Allowed future scope:
+
+- `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`
+- `docs/in_progress/nvidia_backend/communication_selection.md`
+- `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`
+- `docs/in_progress/nvidia_backend/pr_slicing_plan.md`
+- `docs/in_progress/nvidia_backend/dispatch_log.md`
+- `tests/ut/py/test_nvidia_review_artifacts.py`
+
+Verification commands:
+
+```bash
+git diff --check
+```
+
+```bash
+git diff --cached --check
+```
+
+```bash
+npx --no-install markdownlint-cli2 \
+  docs/in_progress/nvidia_backend/communication_runtime_boundary.md \
+  docs/in_progress/nvidia_backend/communication_selection.md \
+  docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md \
+  docs/in_progress/nvidia_backend/pr_slicing_plan.md \
+  docs/in_progress/nvidia_backend/dispatch_log.md
+```
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python .agents/checks/check_nvidia_review_ready.py
+```
+
+```bash
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python -m pytest tests/ut/py/test_nvidia_review_artifacts.py -q
+```
+
+H200 evidence requirement: no fresh H200 command is required if the slice is
+docs/design/test-guard only. If it changes example behavior or result shape,
+it must run a fresh H200 fused-boundary command and still report
+`unsupported` unless a real runtime-owned payload boundary exists.
 
 A later implementation PR may reuse
 `examples/cuda/persistent_moe_dispatch_combine.py
