@@ -64,6 +64,9 @@ UCCL_EP_FUSED_BOUNDARY_MISSING = (
     "shared_dispatch_combine_payload_between_persistent_graph_and_uccl_ep",
     "device_side_cross_gpu_expert_parallel_routing",
 )
+NO_SHARED_PAYLOAD_OWNERSHIP_REASON = (
+    "runtime component has not created or transferred shared payload ownership"
+)
 CONTEXT_DEFINITION = """
 struct PtoTaskContext {
     const PtoCudaPersistentDagTask *task;
@@ -614,6 +617,11 @@ def run_persistent_moe_uccl_ep_handoff(
     source_digests = persistent_moe.get("source_digests") or {}
     max_abs_error = _max_uccl_ep_error(uccl_ep_adapter, "max_abs_error")
     topk_weight_error = _max_uccl_ep_error(uccl_ep_adapter, "topk_weight_error")
+    payload_provenance = _payload_provenance(
+        persistent_moe=persistent_moe,
+        uccl_ep_adapter=uccl_ep_adapter,
+        device_ids=device_ids,
+    )
     handoff_validation = {
         "same_device_ids": (
             persistent_moe.get("device_ids") == list(device_ids)
@@ -683,6 +691,7 @@ def run_persistent_moe_uccl_ep_handoff(
         "uccl_ep_adapter_max_abs_error": max_abs_error,
         "uccl_ep_adapter_topk_weight_error": topk_weight_error,
         "handoff_validation": handoff_validation,
+        "payload_provenance": payload_provenance,
         "handoff_boundary": {
             "persistent_moe_scope": persistent_moe.get("evidence_scope"),
             "uccl_backend": uccl_ep_adapter.get("backend"),
@@ -785,7 +794,9 @@ def run_persistent_moe_uccl_ep_fused_boundary(
         "stream_id": stream_id,
         "uccl_ep_adapter_shape": handoff.get("uccl_ep_adapter_shape"),
         "boundary_validation": boundary_validation,
+        "persistent_device_uccl_ep_runtime_fusion": _unsupported_runtime_fusion_status(),
         "missing_boundaries": list(UCCL_EP_FUSED_BOUNDARY_MISSING),
+        "payload_provenance": handoff.get("payload_provenance"),
         "uccl_ep_handoff": handoff,
         "handoff_boundary": handoff.get("handoff_boundary"),
         "persistent_moe_validation": handoff.get("persistent_moe_validation"),
@@ -919,6 +930,94 @@ def _persistent_scheduler_errors(result: dict) -> list[dict]:
             }
         )
     return errors
+
+
+def _payload_provenance(
+    *,
+    persistent_moe: dict,
+    uccl_ep_adapter: dict,
+    device_ids: tuple[int, ...],
+) -> dict:
+    source_digests = persistent_moe.get("source_digests") or {}
+    return {
+        "uccl_ep_adapter": _uccl_ep_adapter_provenance(uccl_ep_adapter, device_ids),
+        "persistent_device_graph": {
+            "producer": "persistent_moe_dispatch_combine",
+            "graph_descriptor_id": persistent_moe.get("dag_shape") or DAG_SHAPE,
+            "runtime": persistent_moe.get("runtime") or "persistent_device",
+            "device_ids": list(persistent_moe.get("device_ids") or device_ids),
+            "rank_to_device": _rank_to_device_map(device_ids),
+            "source_digests": source_digests,
+            "bridge_digest": source_digests.get("gluon_expert_bridge_sha256"),
+        },
+        "shared_payload_ownership": _absent_shared_payload_ownership(),
+    }
+
+
+def _uccl_ep_adapter_provenance(uccl_ep_adapter: dict, device_ids: tuple[int, ...]) -> dict:
+    capability = uccl_ep_adapter.get("capability") or {}
+    descriptor = uccl_ep_adapter.get("descriptor") or {}
+    rank_results = uccl_ep_adapter.get("rank_results") or []
+    return {
+        "producer": "uccl_ep_dispatch_combine_adapter",
+        "capability_id": capability.get("capability_id"),
+        "world_size": uccl_ep_adapter.get("world_size") or capability.get("world_size"),
+        "device_ids": list(uccl_ep_adapter.get("device_ids") or device_ids),
+        "rank_to_device": capability.get("rank_to_device") or _rank_to_device_map(device_ids),
+        "descriptor": {
+            key: descriptor.get(key)
+            for key in (
+                "num_tokens",
+                "hidden",
+                "num_topk",
+                "num_experts",
+                "experts_per_rank",
+                "input_dtype",
+                "metadata_shapes",
+            )
+            if descriptor.get(key) is not None
+        },
+        "rank_results": [
+            {
+                key: item.get(key)
+                for key in (
+                    "rank",
+                    "device_id",
+                    "input_dtype",
+                    "recv_tokens",
+                    "expected_total_sent_tokens",
+                    "passed",
+                    "max_abs_error",
+                    "topk_weight_error",
+                )
+                if item.get(key) is not None
+            }
+            for item in rank_results
+        ],
+    }
+
+
+def _rank_to_device_map(device_ids: tuple[int, ...]) -> dict[str, int]:
+    return {str(rank): int(device_id) for rank, device_id in enumerate(device_ids)}
+
+
+def _absent_shared_payload_ownership() -> dict:
+    return {
+        "exists": False,
+        "ownership_token": None,
+        "lifetime_transition_log": [],
+        "reason": NO_SHARED_PAYLOAD_OWNERSHIP_REASON,
+    }
+
+
+def _unsupported_runtime_fusion_status() -> dict:
+    return {
+        "status": "unsupported",
+        "actual_fused_cross_gpu_execution": False,
+        "shared_ownership_token": None,
+        "payload_lifetime_transition_log": [],
+        "reason": NO_SHARED_PAYLOAD_OWNERSHIP_REASON,
+    }
 
 
 def _validate_two_device_results(results: list[dict]) -> dict[str, bool]:

@@ -23,6 +23,74 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - UCCL-EP Adapter Payload Provenance Worker
+
+- Dispatcher Session or PR:
+  child worker launched after PR #146 recorded the invalid runtime-fusion
+  implementation attempt.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-adapter-payload-provenance`; add real
+  adapter-produced and persistent-device graph payload provenance before any
+  future runtime-fusion implementation attempt.
+- Exact Codex command or script invocation:
+  child `/goal` worker prompt in the existing branch
+  `nvidia-uccl-ep-adapter-payload-provenance`; no nested workers launched.
+- Parent goal and child slice:
+  NVIDIA backend restart; dependency slice for UCCL-EP adapter and
+  persistent-device payload provenance.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-adapter-payload-provenance`;
+  <https://github.com/uv-xiao/pto-cu/pull/147>. Opened as a non-draft PR
+  with `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-adapter-payload-provenance`.
+- Allowed scope and files:
+  `examples/cuda/persistent_moe_dispatch_combine.py`,
+  `tests/ut/py/test_cuda_comm.py`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`, and this dispatch
+  log.
+- Dependencies and blocked assumptions:
+  PR #143 remains accepted only as a structured unsupported boundary. PR #145
+  remains a design/dependency contract. PR #146 records the abandoned
+  implementation attempt as invalid because it fabricated shared ownership
+  and lifetime evidence from handoff metadata. This worker must record only
+  data emitted by the UCCL-EP adapter and persistent-device graph.
+- Verification commands and results:
+  in progress. `git diff --check` passed; `git diff --cached --check` passed
+  with no staged files; targeted `markdownlint-cli2` over the five touched
+  docs passed; the NVIDIA review guard passed; `test_cuda_comm.py` passed
+  with `33 passed`; and `test_nvidia_review_artifacts.py` passed with
+  `61 passed`. Because the example result shape changed, the worker ran the
+  H200 fused-boundary command through `run-remote-cuda.sh --sync` using
+  `REMOTE_PTO_CU=/tmp/pto-cu-uccl-ep-adapter-payload-provenance`.
+- H200 evidence:
+  remote `run-remote-cuda.sh --sync` on `NVIDIA H200 NVL` devices `6,7`,
+  driver `580.126.20`, CUDA toolkit under `/usr/local/cuda`, Python `3.12.3`.
+  The command wrote
+  `tmp/persistent-moe-uccl-ep-payload-provenance-h200.json` in the synced
+  checkout and exited `3` with `status: unsupported`, as expected. Persistent
+  MoE validation passed on both devices with completed count `5`, zero
+  scheduler errors, zero fan-in remaining, zero max error, and matching
+  source/bridge digests. UCCL-EP adapter validation passed on both ranks with
+  descriptor metadata present, `recv_tokens: [88]` on both ranks, zero max
+  error, and zero top-k weight error. The result records
+  `payload_provenance`, no shared ownership token, an empty lifetime
+  transition log, and
+  `persistent_device_uccl_ep_runtime_fusion.status: unsupported`; it remains
+  non-evidence for actual fused cross-GPU expert-parallel MoE execution.
+- Merge decision and merge commit:
+  pending worker PR, dispatcher review, and merge decision.
+- Handoff summary and remaining gaps:
+  the slice adds provenance-only result fields for the UCCL-EP adapter and
+  persistent-device graph. Remaining gaps are actual
+  `persistent_device_uccl_ep_runtime_fusion`, runtime-owned shared payload
+  ownership transfer, CUDA host-runtime UCCL dispatch, RDMA or multi-node
+  evidence, serving/vLLM integration, DeepSeek correctness, and
+  throughput/latency evidence.
+
 ### 2026-06-22 - Abandoned UCCL-EP Runtime Fusion Implementation Worker
 
 - Dispatcher Session or PR:

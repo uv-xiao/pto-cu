@@ -194,6 +194,21 @@ fused evidence; it is a review-safe non-evidence marker for the missing
 runtime boundary. It is a structured unsupported boundary.
 It is not fused evidence.
 
+The current handoff and fused-boundary result shapes now include
+`payload_provenance` as dependency evidence. The UCCL-EP adapter side records
+only fields emitted by the adapter result: capability id, world size,
+rank-to-CUDA-device mapping, descriptor dimensions, descriptor metadata
+shapes, and rank results. The persistent-device graph side records only
+existing graph inputs and outputs: graph descriptor id, device ids,
+rank/device mapping, source digests, and bridge digest.
+
+This provenance does not create shared payload ownership. The result records
+no shared ownership token, `shared_payload_ownership.exists: false`, and an
+empty lifetime transition log. The
+`persistent_device_uccl_ep_runtime_fusion.status` field remains `unsupported`
+until a runtime component creates and transfers a real cross-component payload
+boundary.
+
 ## UCCL-EP Runtime Fusion Contract
 
 This design/dependency slice names the missing runtime boundary. It does not

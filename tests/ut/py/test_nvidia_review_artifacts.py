@@ -474,6 +474,9 @@ def test_persistent_moe_uccl_ep_fused_boundary_is_review_safe():
         "persistent_device_uccl_ep_runtime_fusion",
         "structured_unsupported_boundary",
         "actual_fused_cross_gpu_execution",
+        "payload_provenance",
+        "shared_payload_ownership",
+        "payload_lifetime_transition_log",
         "unsupported",
         "non-evidence",
     ]:
@@ -483,6 +486,9 @@ def test_persistent_moe_uccl_ep_fused_boundary_is_review_safe():
     for text in (boundary, selection):
         assert "reduced fused cross-GPU expert-parallel MoE boundary" in text
         assert "structured unsupported boundary" in text
+        assert "payload_provenance" in text
+        assert "shared ownership token" in text
+        assert "lifetime transition log" in text
         assert "not fused evidence" in text
         assert "persistent_device_uccl_ep_runtime_fusion" in text
         assert "/" + "home/" not in text

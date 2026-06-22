@@ -351,6 +351,34 @@ Result: pass. The command exited with status `0`.
 - `handoff_validation.bridge_digests_match`: `true`
 - `handoff_validation.adapter_descriptor_metadata_present`: `true`
 - `handoff_validation.max_errors_zero`: `true`
+- `payload_provenance.uccl_ep_adapter.producer`:
+  `uccl_ep_dispatch_combine_adapter`
+- `payload_provenance.uccl_ep_adapter.capability_id`:
+  `uccl:rank0->cuda6,rank1->cuda7`
+- `payload_provenance.uccl_ep_adapter.descriptor.num_tokens`: `64`
+- `payload_provenance.uccl_ep_adapter.descriptor.hidden`: `1024`
+- `payload_provenance.uccl_ep_adapter.descriptor.num_topk`: `4`
+- `payload_provenance.uccl_ep_adapter.descriptor.num_experts`: `16`
+- `payload_provenance.uccl_ep_adapter.descriptor.input_dtype`: `bf16`
+- `payload_provenance.uccl_ep_adapter.descriptor.metadata_shapes.topk_idx`:
+  `[64, 4]`
+- `payload_provenance.uccl_ep_adapter.rank_results[0].recv_tokens`:
+  `[88]`
+- `payload_provenance.uccl_ep_adapter.rank_results[1].recv_tokens`:
+  `[88]`
+- `payload_provenance.persistent_device_graph.graph_descriptor_id`:
+  `graph_descriptor_moe_dispatch_combine`
+- `payload_provenance.persistent_device_graph.device_ids`: `[6, 7]`
+- `payload_provenance.persistent_device_graph.rank_to_device`:
+  `{"0": 6, "1": 7}`
+- `payload_provenance.persistent_device_graph.source_digests`:
+  recorded from the persistent-device aggregate result
+- `payload_provenance.persistent_device_graph.bridge_digest`:
+  `7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f`
+- `payload_provenance.shared_payload_ownership.exists`: `false`
+- `payload_provenance.shared_payload_ownership.ownership_token`: `null`
+- `payload_provenance.shared_payload_ownership.lifetime_transition_log`:
+  `[]`
 - `handoff_boundary.uccl_capability_id`:
   `uccl:rank0->cuda6,rank1->cuda7`
 - `uccl_ep_adapter.rank_results[0].recv_tokens`: `[88]`
@@ -400,8 +428,15 @@ REMOTE_PTO_CU=<remote-checkout> \
       --device-ids 6,7 --n 4096 --arch compute_90 \
       --with-uccl-ep-fused-boundary --tensor-numel 1024 \
       --require-cuda \
-      --output-json tmp/persistent-moe-uccl-ep-fused-boundary-h200.json'
+      --output-json tmp/persistent-moe-uccl-ep-payload-provenance-h200.json'
 ```
+
+Fresh payload-provenance evidence for this slice used
+`REMOTE_PTO_CU=/tmp/pto-cu-uccl-ep-adapter-payload-provenance` with
+`--sync`. The external UCCL checkout and external Torch site-packages path are
+intentionally represented by the placeholders in the command above. The JSON
+artifact path in the synced checkout was
+`tmp/persistent-moe-uccl-ep-payload-provenance-h200.json`.
 
 Run method: generic remote runner with `--sync` into a temporary remote
 checkout. The synced checkout creates a project-local venv, installs this repo
@@ -418,10 +453,11 @@ gpu: NVIDIA H200 NVL, compute capability 9.0, 143771 MiB
 driver: 580.126.20
 CUDA_HOME: /usr/local/cuda
 python: 3.12.3
-source sync: --sync into <remote-checkout>
+source sync: --sync into /tmp/pto-cu-uccl-ep-adapter-payload-provenance
 UCCL dependency path policy: sanitized external UCCL checkout plus
   project-local venv copy of uccl.ep; external Torch site-packages via
   PYTHONPATH
+artifact: tmp/persistent-moe-uccl-ep-payload-provenance-h200.json
 ```
 
 Result: structured unsupported boundary. The command exited with status `3`.
@@ -430,6 +466,14 @@ Result: structured unsupported boundary. The command exited with status `3`.
 - `fused_boundary_scope`:
   `reduced-fused-cross-gpu-expert-parallel-moe-boundary`
 - `handoff_scope`: `persistent-moe-plus-uccl-ep-adapter`
+- `persistent_device_uccl_ep_runtime_fusion.status`: `unsupported`
+- `persistent_device_uccl_ep_runtime_fusion.actual_fused_cross_gpu_execution`:
+  `false`
+- `persistent_device_uccl_ep_runtime_fusion.shared_ownership_token`: `null`
+- `persistent_device_uccl_ep_runtime_fusion.payload_lifetime_transition_log`:
+  `[]`
+- `persistent_device_uccl_ep_runtime_fusion.reason`: runtime component has not
+  created or transferred shared payload ownership
 - `boundary_validation.handoff_passed`: `true`
 - `boundary_validation.actual_fused_cross_gpu_execution`: `false`
 - `boundary_validation.structured_unsupported_boundary`: `true`
@@ -452,6 +496,22 @@ Result: structured unsupported boundary. The command exited with status `3`.
 - `uccl_ep_adapter_validation.topk_weight_error_zero`: `true`
 - `uccl_ep_adapter.rank_results[0].recv_tokens`: `[88]`
 - `uccl_ep_adapter.rank_results[1].recv_tokens`: `[88]`
+- `payload_provenance.uccl_ep_adapter.capability_id`:
+  `uccl:rank0->cuda6,rank1->cuda7`
+- `payload_provenance.uccl_ep_adapter.descriptor.metadata_shapes.topk_idx`:
+  `[64, 4]`
+- `payload_provenance.uccl_ep_adapter.rank_results[0].recv_tokens`:
+  `[88]`
+- `payload_provenance.uccl_ep_adapter.rank_results[1].recv_tokens`:
+  `[88]`
+- `payload_provenance.persistent_device_graph.graph_descriptor_id`:
+  `graph_descriptor_moe_dispatch_combine`
+- `payload_provenance.persistent_device_graph.source_digests`:
+  recorded from the persistent-device aggregate result
+- `payload_provenance.shared_payload_ownership.exists`: `false`
+- `payload_provenance.shared_payload_ownership.ownership_token`: `null`
+- `payload_provenance.shared_payload_ownership.lifetime_transition_log`:
+  `[]`
 - `persistent_moe_source_digests.dispatch_source_sha256`:
   `c096ede6d4ab5e1a9a33070bc1fcf988b9fb9c405d929a770c962308b396b209`
 - `persistent_moe_source_digests.gluon_expert_bridge_sha256`:
@@ -467,6 +527,14 @@ RDMA, multi-node transport, serving, DeepSeek/vLLM integration, throughput, or
 latency. A later implementation must add the
 `persistent_device_uccl_ep_runtime_fusion` boundary before this can become
 fused evidence.
+
+The current provenance fields are dependency evidence only. The UCCL-EP
+adapter provenance is copied from the adapter result's capability, descriptor,
+metadata shapes, and rank results. The persistent-device graph provenance is
+copied from the existing graph descriptor id, device ids, rank/device mapping,
+source digests, and bridge digest. No runtime component creates or transfers a
+shared ownership token, so the result explicitly reports no ownership token
+and an empty payload lifetime transition log.
 
 ## Future Fused Execution Evidence Shape
 
