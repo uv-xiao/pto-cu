@@ -991,14 +991,25 @@ private validation policy required after PR #166's capability metadata map and
 before descriptor allocation, UCCL-EP runtime dispatch, coordinator
 implementation, pass evidence, or H200 fused-success evidence.
 
-The validation policy must validate the PR #164 same-invocation request args
-and PR #166 capability metadata together. It must define required failures for
-missing metadata, stale metadata, mismatched-rank metadata,
-mismatched-world-size metadata, descriptor-vocabulary mismatch,
-transport-mode mismatch, adapter-provenance mismatch, and public/API-sourced
-metadata. Public `TaskArgs`, public `CallConfig`, common runtime C API, UCCL
-host-runtime ABI, example JSON, adapter provenance, and handoff metadata
-remain forbidden pass-evidence paths.
+The validation policy remains private to the CUDA persistent-device runtime
+path. It validates PR #164 same-invocation request args and PR #166 capability
+metadata together before a later coordinator can consume either dependency.
+
+Failure ownership is explicit: missing metadata is unsupported, stale metadata
+is failed, mismatched-rank metadata is failed, and mismatched-world-size
+metadata is failed. descriptor-vocabulary mismatch is failed because
+descriptor vocabulary must match dispatch/combine payload terms.
+transport-mode mismatch is failed because transport mode must be `ep`.
+adapter-provenance mismatch is failed because adapter provenance handles must
+match the private capability id, invocation id, and rank/device map.
+public/API-sourced metadata is failed as fabricated or untrusted pass
+evidence.
+
+This slice has no descriptor allocation policy implementation, no UCCL-EP
+runtime dispatch, no coordinator implementation, no pass evidence, and no
+H200 fused-success evidence. Public `TaskArgs`, public `CallConfig`, common
+runtime C API, UCCL host-runtime ABI, example JSON, adapter provenance, and
+handoff metadata remain forbidden pass-evidence paths.
 
 ## Future Fused Execution Evidence Shape
 

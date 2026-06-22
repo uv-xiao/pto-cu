@@ -289,12 +289,28 @@ The next selected dependency slice is
 private validation policy required before a coordinator may consume the
 PR #164 same-invocation request args and PR #166 UCCL-EP capability metadata.
 
-The policy must define how the private runtime reports missing metadata,
-stale metadata, mismatched rank, mismatched world size,
-descriptor-vocabulary mismatch, transport-mode mismatch,
-adapter-provenance mismatch, and public/API-sourced metadata. This slice must
-not allocate descriptors, implement UCCL-EP runtime dispatch, construct the
-coordinator, change CUDA runtime behavior, or claim pass evidence.
+The validation policy remains private to the CUDA persistent-device runtime
+path. It validates PR #164 same-invocation request args and PR #166 capability
+metadata together before a coordinator can consume either dependency.
+
+Failure ownership is explicit: missing metadata is unsupported, stale metadata
+is failed, mismatched-rank metadata is failed, and mismatched-world-size
+metadata is failed. descriptor-vocabulary mismatch is failed because
+descriptor vocabulary must match dispatch/combine payload terms.
+transport-mode mismatch is failed because transport mode must be `ep`.
+adapter-provenance mismatch is failed because adapter provenance handles must
+match the private capability id, invocation id, and rank/device map.
+public/API-sourced metadata is failed as fabricated or untrusted pass
+evidence.
+
+This slice has no descriptor allocation policy implementation, no UCCL-EP
+runtime dispatch, no coordinator implementation, no pass evidence, and no
+H200 fused-success evidence. It must not allocate descriptors, implement
+UCCL-EP runtime dispatch, construct the coordinator, change CUDA runtime
+behavior, or claim pass evidence. Public `TaskArgs`, public `CallConfig`,
+common runtime C API fields, UCCL host-runtime ABI fields, example JSON,
+adapter provenance, and handoff metadata remain forbidden pass-evidence
+paths.
 
 ## Non-Claims
 

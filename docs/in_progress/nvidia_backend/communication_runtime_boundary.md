@@ -687,18 +687,31 @@ private validation policy required after PR #166's capability metadata
 vocabulary and before descriptor allocation, UCCL-EP runtime dispatch,
 coordinator implementation, pass evidence, or H200 fused-success evidence.
 
-The validation policy must stay private to the CUDA persistent-device runtime
-path. It validates the PR #164 same-invocation request args and the PR #166
-capability metadata together, including capability id, world size,
-rank-to-device map, descriptor vocabulary, transport mode, adapter provenance
-handles, and setup/validation failure ownership.
+The validation policy remains private to the CUDA persistent-device runtime
+path. It validates PR #164 same-invocation request args and PR #166 capability
+metadata together, including capability id, world size, rank-to-device map,
+descriptor vocabulary, transport mode, adapter provenance handles, and
+setup/validation failure ownership.
 
-Required failures include missing metadata, stale metadata, mismatched-rank,
-mismatched-world-size, descriptor-vocabulary mismatch, transport-mode
-mismatch, adapter-provenance mismatch, and public/API-sourced metadata.
-Public `TaskArgs`, public `CallConfig`, common runtime C API fields, UCCL
-host-runtime ABI fields, example JSON, adapter provenance, and handoff
-metadata remain forbidden pass-evidence paths.
+Failure ownership is explicit:
+
+- missing metadata is unsupported;
+- stale metadata is failed;
+- mismatched-rank metadata is failed;
+- mismatched-world-size metadata is failed;
+- descriptor-vocabulary mismatch is failed because descriptor vocabulary must
+  match dispatch/combine payload terms;
+- transport-mode mismatch is failed because transport mode must be `ep`;
+- adapter-provenance mismatch is failed because adapter provenance handles
+  must match the private capability id, invocation id, and rank/device map;
+- public/API-sourced metadata is failed as fabricated or untrusted pass
+  evidence.
+
+This slice has no descriptor allocation policy implementation, no UCCL-EP
+runtime dispatch, no coordinator implementation, no pass evidence, and no
+H200 fused-success evidence. Public `TaskArgs`, public `CallConfig`, common
+runtime C API fields, UCCL host-runtime ABI fields, example JSON, adapter
+provenance, and handoff metadata remain forbidden pass-evidence paths.
 
 ## Non-Claims
 
