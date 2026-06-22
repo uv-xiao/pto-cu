@@ -131,6 +131,10 @@ from `main` and lands through focused GitHub PRs.
   not implement CUDA runtime behavior, descriptor allocation policy, UCCL-EP
   runtime dispatch, a coordinator, pass evidence, or H200 fused-success
   evidence.
+- This branch maps only the private descriptor allocation policy dependency
+  that a later coordinator request needs after PR #168. It does not implement
+  descriptor allocation, CUDA runtime behavior, UCCL-EP runtime dispatch, a
+  coordinator, pass evidence, or H200 fused-success evidence.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -1118,9 +1122,9 @@ PR #168 met this objective as a private validation policy dependency map
 only. It merged as `e33d232deccdf947b9c382a3605191d0d5ae0004` and is no
 longer selected as future work.
 
-## Selected Descriptor Allocation Policy Map Slice
+## Accepted Descriptor Allocation Policy Map Slice
 
-Selected branch:
+Branch:
 `nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map`.
 
 Objective: map the private descriptor allocation policy that a later
@@ -1152,9 +1156,39 @@ Required dependency boundaries:
   UCCL host-runtime ABI fields, example JSON, adapter provenance, and handoff
   metadata as forbidden pass-evidence paths.
 
+Implemented surface in this branch:
+
+- the descriptor allocation policy remains private to the CUDA
+  persistent-device runtime path;
+- PR #164 same-invocation request args, PR #166 UCCL-EP capability metadata,
+  and PR #168 validation policy are prerequisites only, never pass evidence;
+- the allocator owner is the future private
+  `persistent_device_uccl_ep_runtime_fusion` coordinator inside one CUDA
+  persistent-device runtime run context;
+- host-control record policy defines private per-invocation records for
+  invocation id, persistent graph descriptor id, UCCL capability id,
+  validated rank/device map, descriptor vocabulary, allocation state, runtime
+  owner, and shared ownership token slot;
+- device-visible descriptor buffer policy defines future coordinator-owned
+  buffers allocated through the CUDA persistent-device runtime allocator and
+  visible only to the persistent-device scheduler and UCCL-EP runtime path;
+- dispatch descriptor identity is the validated graph descriptor id,
+  capability id, invocation id, rank/device map, dispatch vocabulary, payload
+  shape, and coordinator-issued shared token;
+- combine descriptor identity uses the same validated ids, rank/device map,
+  combine vocabulary, payload shape, and the same shared token as dispatch;
+- the shared-token requirement is strict: dispatch and combine descriptors
+  must carry one coordinator-issued token, and token-sharing mismatch is
+  failed;
+- allocation lifetime failure ownership belongs to the same private runtime
+  owner, which must report stale policy, non-runtime-owned allocation,
+  descriptor-vocabulary mismatch, token-sharing mismatch, rank/device
+  mismatch, and public/API-sourced policy fields as failed states.
+
 Required non-claims:
 
 - no CUDA runtime behavior change;
+- no descriptor allocation implementation;
 - no runtime-fusion coordinator implementation;
 - no UCCL-EP runtime path implementation;
 - no pass evidence;
@@ -1162,3 +1196,5 @@ Required non-claims:
 - no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
 - no `actual_fused_cross_gpu_execution: true`;
 - no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claim.
+- no public `TaskArgs`, public `CallConfig`, common runtime C API, or UCCL
+  host-runtime ABI expansion.

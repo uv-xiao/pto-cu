@@ -699,7 +699,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "Accepted Private Host Runtime Handoff Implementation Slice" in slicing
     assert "Accepted UCCL-EP Capability Metadata Map Slice" in slicing
     assert "Accepted Validation Policy Map Slice" in slicing
-    assert "Selected Descriptor Allocation Policy Map Slice" in slicing
+    assert "Accepted Descriptor Allocation Policy Map Slice" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
@@ -1318,6 +1318,60 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     ]:
         assert required in normalized_post_validation_policy_entry
 
+    descriptor_policy_entry = dispatch_log.split(
+        "### 2026-06-23 - UCCL-EP Runtime Fusion Descriptor "
+        "Allocation Policy Map Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_descriptor_policy_entry = " ".join(
+        descriptor_policy_entry.split()
+    )
+    for required in [
+        "pto-worker-nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map",
+        "tmp/worker-prompts/run-nvidia-descriptor-allocation-policy-map.sh",
+        "tmp/worker-prompts/nvidia-descriptor-allocation-policy-map.md",
+        "019ef080-a2ce-7b12-b4ea-b262014674f1",
+        "rollout-2026-06-23T02-03-42-019ef080-a2ce-7b12-b4ea-b262014674f1.jsonl",
+        "pto-worker-nvidia-descriptor-allocation-policy-map:0.0",
+        "tmp/codex-goal-monitor/nvidia-descriptor-allocation-policy-map/",
+        "20260622T182026Z",
+        "dirty_count: 0",
+        "af0cafdf",
+        "nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map",
+        "c0bff19b3f5571da34ea030d81c9de184a9ec230",
+        "https://github.com/uv-xiao/pto-cu/pull/170",
+        "Opened as a non-draft PR",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "review-facing docs/tests only",
+        "PR #164 is accepted only for the private CUDA persistent DAG",
+        "PR #166 is accepted only as a private UCCL-EP capability metadata",
+        "PR #168 is accepted only as a private validation policy",
+        "prerequisites, not pass evidence",
+        "private descriptor allocation policy",
+        "allocator owner is the future private",
+        "host-control record policy",
+        "device-visible descriptor buffer policy",
+        "dispatch descriptor identity",
+        "combine descriptor identity",
+        "shared-token requirement",
+        "allocation lifetime failure ownership",
+        "missing policy is unsupported",
+        "stale policy is failed",
+        "non-runtime-owned allocation is failed",
+        "descriptor-vocabulary mismatch is failed",
+        "token-sharing mismatch is failed",
+        "rank/device mismatch is failed",
+        "public/API-sourced policy fields are failed",
+        "No descriptor allocation implementation",
+        "No CUDA runtime behavior change",
+        "No fresh H200 command is planned",
+        "No public `TaskArgs`, public `CallConfig`, common runtime C API",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_descriptor_policy_entry
+    assert "No nested workers were launched" in normalized_descriptor_policy_entry
+
     for text in (
         persistent_moe,
         boundary,
@@ -1377,16 +1431,23 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
             "nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map",
             "private descriptor allocation policy",
             "host-control record",
+            "host-control record policy",
             "device-visible descriptor buffer",
+            "device-visible descriptor buffer policy",
             "dispatch descriptor identity",
             "combine descriptor identity",
             "shared-token requirement",
+            "allocator owner is the future private",
             "allocation lifetime failure ownership",
             "missing policy is unsupported",
             "stale policy is failed",
             "non-runtime-owned allocation is failed",
+            "descriptor-vocabulary mismatch is failed",
             "token-sharing mismatch is failed",
             "rank/device mismatch is failed",
+            "public/API-sourced policy fields are failed",
+            "coordinator-issued shared token",
+            "same shared token as dispatch",
         ]:
             assert required in normalized_text
 

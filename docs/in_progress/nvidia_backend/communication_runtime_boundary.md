@@ -720,33 +720,51 @@ PR #168 merged this validation policy scope as
 
 ## Descriptor Allocation Policy Map Slice
 
-The next selected dependency slice is
-`nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map`. It should
-map only the private descriptor allocation policy required after PR #168's
-validation policy and before UCCL-EP runtime dispatch, coordinator
-implementation, pass evidence, or H200 fused-success evidence.
+Branch:
+`nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map`.
+
+This dependency slice maps only the private descriptor allocation policy
+required after PR #168's validation policy and before UCCL-EP runtime
+dispatch, coordinator implementation, pass evidence, or H200 fused-success
+evidence. It does not implement descriptor allocation.
 
 The descriptor allocation policy remains private to the CUDA
-persistent-device runtime path. It must preserve PR #164 same-invocation
-request args, PR #166 UCCL-EP capability metadata, and PR #168 validation
-policy as prerequisites rather than pass evidence.
+persistent-device runtime path. It preserves PR #164 same-invocation request
+args, PR #166 UCCL-EP capability metadata, and PR #168 validation policy as
+prerequisites rather than pass evidence.
 
-The selected map must define host-control record policy, device-visible
-descriptor buffer policy, dispatch descriptor identity, combine descriptor
-identity, shared-token requirement, allocator owner, and allocation lifetime
-failure ownership.
+The allocator owner is the future private
+`persistent_device_uccl_ep_runtime_fusion` coordinator inside one CUDA
+persistent-device runtime run context. The host-control record policy is private
+per invocation: the record may identify invocation id, persistent graph
+descriptor id, UCCL capability id, validated rank/device map, descriptor
+vocabulary, allocation state, runtime owner, and shared ownership token slot,
+but those fields are not public API or ABI fields.
 
-Failure ownership should be explicit: missing policy is unsupported, stale
-policy is failed, non-runtime-owned allocation is failed,
-descriptor-vocabulary mismatch is failed, token-sharing mismatch is failed,
-rank/device mismatch is failed, and public/API-sourced policy fields are
-failed as fabricated or untrusted pass evidence.
+The device-visible descriptor buffer policy is also private: buffers are future
+coordinator-owned allocations from the CUDA persistent-device runtime
+allocator, visible only to the persistent-device scheduler and UCCL-EP
+runtime path. The dispatch descriptor identity is the validated graph
+descriptor id, capability id, invocation id, rank/device map, dispatch
+vocabulary, payload shape, and coordinator-issued shared token. The combine
+descriptor identity uses the same validated ids, rank/device map, combine
+vocabulary, payload shape, and the same shared token as dispatch.
 
-This future slice must not implement UCCL-EP runtime dispatch, construct the
-coordinator, change CUDA runtime behavior, or claim pass evidence. Public
-`TaskArgs`, public `CallConfig`, common runtime C API fields, UCCL
-host-runtime ABI fields, example JSON, adapter provenance, and handoff
-metadata remain forbidden pass-evidence paths.
+Failure ownership is explicit: missing policy is unsupported, stale policy is
+failed, non-runtime-owned allocation is failed, descriptor-vocabulary mismatch
+is failed, token-sharing mismatch is failed, rank/device mismatch is failed,
+and public/API-sourced policy fields are failed as fabricated or untrusted
+pass evidence. The shared-token requirement is strict because dispatch and
+combine descriptor identities must share exactly one coordinator-issued
+ownership token. The allocation lifetime failure ownership belongs to that
+same private runtime owner.
+
+This slice must not implement UCCL-EP runtime dispatch, construct the
+coordinator, change CUDA runtime behavior, allocate descriptors, claim pass
+evidence, or claim H200 fused-success evidence. Public `TaskArgs`, public
+`CallConfig`, common runtime C API fields, UCCL host-runtime ABI fields,
+example JSON, adapter provenance, and handoff metadata remain forbidden
+pass-evidence paths.
 
 ## Non-Claims
 
