@@ -71,6 +71,20 @@ FLASHATTENTION_CAUSAL_APPEND_SWEEP_CASES = [
         "provenance": "bounded multi-query causal append H200 gate",
     },
 ]
+FLASHATTENTION_CAUSAL_DECODE_SWEEP_CASES = [
+    {
+        "name": "decode_1x16x64",
+        "tile_shape": (1, 16, 64),
+        "seed": 6,
+        "provenance": "bounded single-query causal decode fixture",
+    },
+    {
+        "name": "decode_1x32x64",
+        "tile_shape": (1, 32, 64),
+        "seed": 7,
+        "provenance": "bounded single-query causal decode H200 gate",
+    },
+]
 
 
 def build_flashattention_artifact(
@@ -286,6 +300,8 @@ def run_flashattention_sweep(
     if cases is None:
         if not causal:
             case_specs = FLASHATTENTION_SWEEP_CASES
+        elif causal_sweep_phase == "decode":
+            case_specs = FLASHATTENTION_CAUSAL_DECODE_SWEEP_CASES
         elif causal_sweep_phase == "append":
             case_specs = FLASHATTENTION_CAUSAL_APPEND_SWEEP_CASES
         else:
@@ -389,7 +405,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         parser.add_argument(
             "--causal-sweep-phase",
-            choices=("prefill", "append"),
+            choices=("prefill", "decode", "append"),
             default="prefill",
             help=(
                 "select causal sweep cases; default preserves the bounded "
@@ -512,6 +528,10 @@ def _sweep_case_payload(
         payload["reason"] = result["reason"]
     if "max_abs_error" in result:
         payload["max_abs_error"] = result["max_abs_error"]
+    if "error_type" in result:
+        payload["error_type"] = result["error_type"]
+    if "error" in result:
+        payload["error"] = _clean_text(str(result["error"]))
     return payload
 
 
@@ -561,8 +581,10 @@ def _validate_attention_variant(attention_variant: str) -> None:
 
 
 def _validate_causal_sweep_phase(causal_sweep_phase: str) -> None:
-    if causal_sweep_phase not in ("prefill", "append"):
-        raise ValueError("--causal-sweep-phase must be one of: prefill, append")
+    if causal_sweep_phase not in ("prefill", "decode", "append"):
+        raise ValueError(
+            "--causal-sweep-phase must be one of: prefill, decode, append"
+        )
 
 
 def _unsupported_attention_variant_result(

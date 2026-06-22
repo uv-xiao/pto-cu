@@ -416,6 +416,28 @@ append, not attention-variant correctness, not FlashInfer integration, not
 vLLM/simpler-nv integration, not DeepSeek semantic correctness, not
 production readiness, and not performance evidence.
 
+For the bounded causal decode sweep, use:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_flashattention_fwd.py \
+  --output-dir tmp/gluon-flashattention-decode-sweep-h200 \
+  --arch compute_90 --sweep --causal --causal-sweep-phase decode --require-cuda
+```
+
+The causal decode sweep JSON records `schema_version`, aggregate status,
+`case_count`, per-case shape, tolerance, provenance, repo-relative artifact
+paths, `causal: true`, `phase: decode`, and the shifted PyTorch reference
+formula
+`softmax(masked_fill((q @ k.T) * scale, key_index > query_index + (seqlen_k - seqlen_q), -inf)) @ v`.
+It is bounded causal decode sweep correctness evidence with only causal
+decode cases where `seqlen_q == 1` and `seqlen_k > seqlen_q`. It is not
+full decode coverage, not paged/ragged KV-cache correctness, not varlen
+attention correctness, not attention-variant correctness, not FlashInfer
+integration, not vLLM/simpler-nv integration, not DeepSeek semantic
+correctness, not production readiness, and not performance evidence.
+In short, only causal decode cases.
+
 For the bounded causal append sweep, use:
 
 ```bash
