@@ -42,15 +42,20 @@ Each dispatch entry should include:
   tmp/worker-prompts/nvidia-post-capability-metadata-map-status-refresh.md)"`.
   No nested workers were launched.
 - Monitor locators:
-  Codex session id: dispatcher to fill after monitor setup. Transcript path:
-  dispatcher to fill after monitor setup. Worker pane: dispatcher to fill
-  after monitor setup. Recurring monitor summary details: dispatcher to fill
-  after monitor setup.
+  Codex session id `019ef048-030a-7333-9374-9c6d2f528ad5`; transcript
+  `~/.codex/sessions/2026/06/23/rollout-2026-06-23T01-01-51-019ef048-030a-7333-9374-9c6d2f528ad5.jsonl`;
+  worker pane `pto-worker-nvidia-post-capability-metadata-map:0.0`;
+  recurring monitor artifacts under
+  `tmp/codex-goal-monitor/nvidia-post-capability-metadata-map-status-refresh/`.
+  The latest recorded monitor summary at `20260622T171837Z` showed
+  `pane_status: ok`, `transcript_status: ok`, `worktree_status: ok`,
+  `dirty_count: 0`, and latest commit `35aaae64`.
 - Parent goal and child slice:
   NVIDIA backend restart; post-PR166 status/slicing refresh only.
 - Branch name and PR URL or planned PR slot:
-  `nvidia-goal-status-post-capability-metadata-map`; Planned PR URL slot:
-  dispatcher to replace after PR creation. Expected PR command:
+  `nvidia-goal-status-post-capability-metadata-map`;
+  <https://github.com/uv-xiao/pto-cu/pull/167>. Opened as a non-draft PR
+  with:
   `gh pr create --repo uv-xiao/pto-cu --base main --head
   nvidia-goal-status-post-capability-metadata-map`.
 - Target repository, base branch, and starting commit:
@@ -79,23 +84,18 @@ Each dispatch entry should include:
   allocator, UCCL-EP runtime path, validation policy, CUDA runtime behavior,
   pass evidence, or H200 fused-success evidence.
 - Verification commands and results:
-  pending.
+  completed before initial PR creation and rerun after adding the PR URL to
+  this entry. `git diff --check` passed with no output. Targeted
+  `markdownlint-cli2` over the five NVIDIA status docs passed with
+  `0 error(s)`. The NVIDIA review guard passed. The required focused pytest
+  command for `tests/ut/py/test_nvidia_review_artifacts.py` passed with
+  `61 passed`.
 - H200 evidence:
   no fresh H200 command is planned because this is a docs/test status refresh
   only and does not change CUDA runtime behavior, example behavior, result
   shape, or fused-boundary evidence.
 - Merge decision and merge commit:
-  accepted as a status/slicing refresh only. PR #165 merged into `main` on
-  2026-06-23 as `bb526ff6c3c21597cffe1acd34bf08158a947cc3`
-  (`Refresh NVIDIA status after PR 164`). The merge decision did not accept
-  CUDA runtime behavior, result-shape changes, fused execution evidence,
-  fresh H200 fused-success evidence, runtime-fusion coordinator behavior,
-  descriptor allocator behavior, UCCL-EP runtime path behavior, validation
-  policy, UCCL-EP capability metadata, public `TaskArgs` or `CallConfig`
-  expansion, common runtime C API expansion, UCCL host-runtime ABI expansion,
-  `persistent_device_uccl_ep_runtime_fusion.status: passed`,
-  `actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
-  DeepSeek, throughput, or latency claims.
+  pending PR review.
 - Handoff summary and remaining gaps:
   selected exactly one next PR-sized dependency slice, the Validation Policy
   Map Slice:
