@@ -416,6 +416,29 @@ append, not attention-variant correctness, not FlashInfer integration, not
 vLLM/simpler-nv integration, not DeepSeek semantic correctness, not
 production readiness, and not performance evidence.
 
+For the bounded causal append sweep, use:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_flashattention_fwd.py \
+  --output-dir tmp/gluon-flashattention-append-sweep-h200 \
+  --arch compute_90 --sweep --causal --causal-sweep-phase append --require-cuda
+```
+
+The causal append sweep JSON records `schema_version`, aggregate status,
+`case_count`, per-case shape, tolerance, provenance, repo-relative artifact
+paths, `causal: true`, `phase: append`, and the shifted PyTorch reference
+formula
+`softmax(masked_fill((q @ k.T) * scale, key_index > query_index + (seqlen_k - seqlen_q), -inf)) @ v`.
+It is bounded causal append sweep correctness evidence with only causal
+append cases where `seqlen_q > 1` and `seqlen_q < seqlen_k`. It is not full
+append coverage, not bounded append KV-cache coverage, not paged/ragged
+KV-cache correctness, not full prefill or full decode coverage, not
+attention-variant correctness, not FlashInfer integration, not
+vLLM/simpler-nv integration, not DeepSeek semantic correctness, not
+production readiness, and not performance evidence.
+In short, only causal append cases.
+
 For the bounded same-length multi-query prefill-shaped causal gate, use:
 
 ```bash
