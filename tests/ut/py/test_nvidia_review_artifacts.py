@@ -597,6 +597,17 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "2e9b01450efb709ed4e42f80a5128a01e8f9ad21" in dispatch_log
     assert "Refresh NVIDIA status after payload provenance" in dispatch_log
     assert "d7d1679d84ef08202e3a61a821613e031edd49bd" in dispatch_log
+    readiness_entry = dispatch_log.split(
+        "### 2026-06-22 - UCCL-EP Runtime Fusion Readiness Worker", 1
+    )[1].split("\n### ", 1)[0]
+    normalized_readiness_entry = " ".join(readiness_entry.split())
+    assert "https://github.com/uv-xiao/pto-cu/pull/149" in readiness_entry
+    assert "d7d1679d84ef08202e3a61a821613e031edd49bd" in readiness_entry
+    assert "accepted as a design/readiness map only by PR #149" in (
+        normalized_readiness_entry
+    )
+    assert "did not accept fused execution evidence" in normalized_readiness_entry
+    assert "pending PR creation" not in readiness_entry
     assert "https://github.com/uv-xiao/pto-cu/pull/150" in dispatch_log
     assert "a6378bfbf55b15be01c334f43332ccd20c160cfa" in dispatch_log
     assert "Guard UCCL EP runtime fusion evidence" in dispatch_log

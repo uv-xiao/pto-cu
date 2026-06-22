@@ -139,7 +139,12 @@ Each dispatch entry should include:
   the NVIDIA review guard passed; and `test_nvidia_review_artifacts.py`
   passed with `61 passed`.
 - Merge decision and merge commit:
-  pending PR creation, dispatcher review, and merge decision.
+  accepted as a design/readiness map only by PR #149,
+  <https://github.com/uv-xiao/pto-cu/pull/149>, merged as
+  `d7d1679d84ef08202e3a61a821613e031edd49bd`. This merge decision did not
+  accept fused execution evidence,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`, or
+  `actual_fused_cross_gpu_execution: true`.
 - Handoff summary and remaining gaps:
   this slice defines where the runtime-owned shared payload descriptor can
   live, names the private fusion coordinator as owner of the ownership token
