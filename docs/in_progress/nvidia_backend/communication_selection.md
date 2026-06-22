@@ -174,6 +174,17 @@ restart. It is a planning boundary, not performance evidence.
   `TaskArgs`, and public `CallConfig` remain forbidden pass-evidence paths.
   If they supply pass-like fields, the result must fail with
   `fabricated_or_untrusted_pass_evidence`.
+- The private unsupported entry scaffold adds
+  `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h` and a CUDA
+  host-runtime hook in
+  `src/cuda/platform/onboard/host/pto_runtime_c_api.cpp`. It constructs a
+  private `PtoCudaRuntimeFusionRequest` from the callable id, persistent DAG
+  graph descriptor, private CUDA rank/device descriptor when configured, and
+  runtime-owned output sink. Missing coordinator, descriptor allocator,
+  UCCL-EP runtime path, validation policy, UCCL-EP capability metadata, or
+  `ChipStorageTaskArgs` keeps the result `unsupported` with explicit failure
+  bits. Forbidden pass-evidence paths still fail as
+  `fabricated_or_untrusted_pass_evidence`.
 - The current accepted evidence boundary is unchanged: PR #147 remains
   provenance-only unsupported-boundary evidence, PR #150 remains guard-only
   blocked implementation evidence, PR #151 remains a post-PR150 status

@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `b58598490d37065e6c972eaaea6d4bc4900469c7`,
-  after PR #153 (`Define UCCL EP coordinator entry contract`).
+- Current accepted `main`: `29da72a171b25deeeb53db399f9cdf54d38c647a`,
+  after PR #154 (`Refresh NVIDIA status after entry contract`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -58,6 +58,10 @@ from `main` and lands through focused GitHub PRs.
   `nvidia-uccl-ep-runtime-fusion-private-entry-unsupported` as the next
   narrow implementation slice. It did not implement runtime behavior, expand
   a UCCL host-runtime ABI, or change fused-execution evidence status.
+- PR #154 recorded the post-PR153 status refresh and selected
+  `nvidia-uccl-ep-runtime-fusion-private-entry-unsupported` as the next
+  narrow implementation slice. It did not change CUDA runtime behavior,
+  result shape, or fused-execution evidence status.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -125,6 +129,9 @@ from `main` and lands through focused GitHub PRs.
 - PR #153: UCCL-EP coordinator entry contract.
   - Result: merged as `b58598490d37065e6c972eaaea6d4bc4900469c7`.
   - Result type: private entry-contract only, not fused execution evidence.
+- PR #154: refresh NVIDIA status after entry contract.
+  - Result: merged as `29da72a171b25deeeb53db399f9cdf54d38c647a`.
+  - Result type: status/slicing refresh only, not fused execution evidence.
 
 ## Restored Tracking Surface
 
@@ -186,7 +193,9 @@ is complete as a dependency slice; it is not a runtime behavior,
 result-shape, or fused-execution evidence change. After PR #153, the
 coordinator entry contract is complete as a private dependency slice; it is
 not a runtime behavior, UCCL host-runtime ABI, result-shape, or
-fused-execution evidence change.
+fused-execution evidence change. After PR #154, the post-PR153 status refresh
+is complete and the private unsupported entry scaffold remains the next
+implementation slice.
 
 ## Accepted Payload Provenance Slice
 
@@ -565,6 +574,22 @@ Required implementation boundaries:
 - keep `persistent_device_uccl_ep_runtime_fusion.status: passed` and
   `actual_fused_cross_gpu_execution: true` unreachable unless real
   coordinator-owned evidence exists.
+
+Implemented scaffold surface:
+
+- `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h` defines the
+  private `PtoCudaRuntimeFusionRequest`,
+  `PtoCudaRuntimeFusionResult`, status values, failure bits, forbidden
+  evidence source values, and
+  `persistent_device_uccl_ep_runtime_fusion_entry`;
+- `src/cuda/platform/onboard/host/pto_runtime_c_api.cpp` builds the private
+  request on the persistent DAG path from callable id, graph descriptor,
+  private CUDA communication descriptor when configured, and a runtime-owned
+  result sink;
+- `tests/ut/py/test_cuda_runtime_fusion_private_entry.py` compiles the
+  private header in isolation and verifies unsupported missing-surface
+  behavior, forbidden pass-evidence rejection, and absence from the common
+  runtime C API.
 
 Allowed scope:
 

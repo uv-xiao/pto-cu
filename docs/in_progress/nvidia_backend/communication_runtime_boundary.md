@@ -523,6 +523,27 @@ coordinator itself creates shared dispatch/combine descriptor ownership,
 issues the ownership token, records the complete lifetime transition log, and
 emits trusted coordinator-owned validation fields.
 
+That slice now introduces a private CUDA host-side scaffold, not a pass
+implementation. `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h`
+defines `PtoCudaRuntimeFusionRequest`,
+`PtoCudaRuntimeFusionResult`, and
+`persistent_device_uccl_ep_runtime_fusion_entry`. The CUDA host runtime calls
+the entry from
+`src/cuda/platform/onboard/host/pto_runtime_c_api.cpp` when the persistent DAG
+path has a graph descriptor. The request is populated only from private
+runtime state currently available there: callable id, persistent graph
+descriptor pointer, private CUDA rank/device descriptor when configured, and
+a runtime-owned output sink.
+
+The scaffold keeps normal evidence unsupported. Missing coordinator,
+descriptor allocator, UCCL-EP runtime path, validation policy,
+`ChipStorageTaskArgs`, UCCL-EP capability metadata, or rank/device metadata
+sets explicit failure bits and keeps
+`actual_fused_cross_gpu_execution` false. Adapter provenance, example-side
+JSON, handoff metadata, payload provenance, public `TaskArgs`, and public
+`CallConfig` are rejected as `fabricated_or_untrusted_pass_evidence` if they
+try to provide pass-like fields.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node
