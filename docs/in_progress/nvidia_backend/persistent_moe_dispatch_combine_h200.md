@@ -932,15 +932,8 @@ continues to reject forbidden public/API evidence paths.
 This is still not fused execution evidence. The coordinator, descriptor
 allocator, UCCL-EP runtime path, validation policy, UCCL-EP capability
 metadata, pass evidence, and fresh H200 fused-success result are absent.
-
-The next selected dependency slice is
-`nvidia-uccl-ep-runtime-fusion-capability-metadata-map`. It should map the
-private UCCL-EP capability metadata required by the later coordinator request
-without implementing runtime behavior. Required fields include capability id,
-world size, rank-to-device map, descriptor vocabulary, transport mode,
-adapter provenance handles, and setup/validation failure ownership. The cases
-missing, stale, mismatched-rank, mismatched-world-size, or public/API-sourced
-capability metadata must remain unsupported or failed, not pass evidence.
+PR #165 accepted only the post-PR164 docs/test status refresh and selected
+the capability metadata map.
 
 ## Capability Metadata Map Slice
 
@@ -972,6 +965,10 @@ Failure ownership is split conservatively:
 - public/API-sourced capability metadata is `failed` as fabricated or
   untrusted pass evidence.
 
+The cases missing, stale, mismatched-rank, mismatched-world-size, or
+public/API-sourced capability metadata must remain unsupported or failed, not
+pass evidence.
+
 The forbidden pass-evidence paths remain public `TaskArgs`, public
 `CallConfig`, common runtime C API, UCCL host-runtime ABI, example JSON,
 adapter provenance, and handoff metadata. They must not provide private UCCL
@@ -982,7 +979,26 @@ capability metadata and must not set
 This is a docs/test dependency map with no CUDA runtime behavior change. It
 has no runtime-fusion coordinator implementation, no descriptor allocator
 implementation, no UCCL-EP runtime path implementation, no validation policy
-implementation, and no fresh H200 fused-success evidence.
+implementation, and no fresh H200 fused-success evidence. PR #166 accepted
+only this private metadata dependency map and merged as
+`42b996666e279024b43f490a310c490a591a897d`.
+
+## Validation Policy Map Slice
+
+The next selected dependency slice is
+`nvidia-uccl-ep-runtime-fusion-validation-policy-map`. It should map only the
+private validation policy required after PR #166's capability metadata map and
+before descriptor allocation, UCCL-EP runtime dispatch, coordinator
+implementation, pass evidence, or H200 fused-success evidence.
+
+The validation policy must validate the PR #164 same-invocation request args
+and PR #166 capability metadata together. It must define required failures for
+missing metadata, stale metadata, mismatched-rank metadata,
+mismatched-world-size metadata, descriptor-vocabulary mismatch,
+transport-mode mismatch, adapter-provenance mismatch, and public/API-sourced
+metadata. Public `TaskArgs`, public `CallConfig`, common runtime C API, UCCL
+host-runtime ABI, example JSON, adapter provenance, and handoff metadata
+remain forbidden pass-evidence paths.
 
 ## Future Fused Execution Evidence Shape
 

@@ -633,16 +633,10 @@ common runtime C API, or UCCL host-runtime ABI fields.
 
 PR #164 implements that handoff and keeps the coordinator, descriptor
 allocator, UCCL-EP runtime path, validation policy, UCCL-EP capability
-metadata, pass evidence, and H200 fused-success evidence absent.
-
-The next selected dependency slice is
-`nvidia-uccl-ep-runtime-fusion-capability-metadata-map`. It should map the
-private UCCL-EP capability metadata required by the later coordinator request:
-capability id, world size, rank-to-device map, descriptor vocabulary,
-transport mode, adapter provenance handles, and setup/validation failure
-ownership. It must keep public `TaskArgs`, public `CallConfig`, common
-runtime C API fields, UCCL host-runtime ABI fields, example JSON, adapter
-provenance, and handoff metadata out of the pass-evidence path.
+metadata, pass evidence, and H200 fused-success evidence absent. PR #165 then
+recorded a docs/test status refresh and selected the capability metadata map.
+PR #166 accepted only the private UCCL-EP capability metadata map; it did not
+implement validation policy or CUDA runtime behavior.
 
 ## Capability Metadata Map Slice
 
@@ -682,7 +676,29 @@ adapter provenance, and handoff metadata must not supply fields that set
 This is a docs/test dependency map with no CUDA runtime behavior change. It
 has no runtime-fusion coordinator implementation, no descriptor allocator
 implementation, no UCCL-EP runtime path implementation, no validation policy
-implementation, and no fresh H200 fused-success evidence.
+implementation, and no fresh H200 fused-success evidence. PR #166 merged this
+scope as `42b996666e279024b43f490a310c490a591a897d`.
+
+## Validation Policy Map Slice
+
+The next selected dependency slice is
+`nvidia-uccl-ep-runtime-fusion-validation-policy-map`. It should map the
+private validation policy required after PR #166's capability metadata
+vocabulary and before descriptor allocation, UCCL-EP runtime dispatch,
+coordinator implementation, pass evidence, or H200 fused-success evidence.
+
+The validation policy must stay private to the CUDA persistent-device runtime
+path. It validates the PR #164 same-invocation request args and the PR #166
+capability metadata together, including capability id, world size,
+rank-to-device map, descriptor vocabulary, transport mode, adapter provenance
+handles, and setup/validation failure ownership.
+
+Required failures include missing metadata, stale metadata, mismatched-rank,
+mismatched-world-size, descriptor-vocabulary mismatch, transport-mode
+mismatch, adapter-provenance mismatch, and public/API-sourced metadata.
+Public `TaskArgs`, public `CallConfig`, common runtime C API fields, UCCL
+host-runtime ABI fields, example JSON, adapter provenance, and handoff
+metadata remain forbidden pass-evidence paths.
 
 ## Non-Claims
 

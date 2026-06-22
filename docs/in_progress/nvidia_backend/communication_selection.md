@@ -235,14 +235,24 @@ restart. It is a planning boundary, not performance evidence.
   forbidden public/API evidence paths. It does not add a runtime-fusion
   coordinator, descriptor allocator, UCCL-EP runtime path, validation policy,
   UCCL-EP capability metadata, pass evidence, or fused-success claim.
+- PR #165 accepted only the post-PR164 docs/test status refresh and selected
+  the capability metadata map.
+- PR #166 accepted only the private UCCL-EP capability metadata dependency
+  map. It did not implement a runtime-fusion coordinator, descriptor
+  allocator, UCCL-EP runtime path, validation policy, CUDA runtime behavior,
+  pass evidence, or H200 fused-success evidence.
 - The next selected slice is
-  `nvidia-uccl-ep-runtime-fusion-capability-metadata-map`, a docs/test
-  dependency map for the private UCCL-EP capability metadata that a later
-  coordinator request will need. It must not implement runtime behavior,
-  widen public `TaskArgs` / `CallConfig`, widen the common runtime C API or
-  UCCL host-runtime ABI, or claim H200 fused success.
+  `nvidia-uccl-ep-runtime-fusion-validation-policy-map`, a docs/test
+  dependency map for the private validation policy that a later coordinator
+  request will need after the capability metadata vocabulary exists. It must
+  not implement runtime behavior, widen public `TaskArgs` / `CallConfig`,
+  widen the common runtime C API or UCCL host-runtime ABI, or claim H200 fused
+  success.
 
 ## Capability Metadata Map Slice
+
+Accepted branch:
+`nvidia-uccl-ep-runtime-fusion-capability-metadata-map`.
 
 PR #165 selected this dependency slice after PR #164 accepted only the
 private host-runtime pointer association. This branch maps private UCCL-EP
@@ -269,7 +279,22 @@ pass-evidence paths.
 This slice makes no CUDA runtime behavior change. It has no runtime-fusion
 coordinator implementation, no descriptor allocator implementation, no
 UCCL-EP runtime path implementation, no validation policy implementation, and
-no fresh H200 fused-success evidence.
+no fresh H200 fused-success evidence. PR #166 merged this scope as
+`42b996666e279024b43f490a310c490a591a897d`.
+
+## Validation Policy Map Slice
+
+The next selected dependency slice is
+`nvidia-uccl-ep-runtime-fusion-validation-policy-map`. It maps only the
+private validation policy required before a coordinator may consume the
+PR #164 same-invocation request args and PR #166 UCCL-EP capability metadata.
+
+The policy must define how the private runtime reports missing metadata,
+stale metadata, mismatched rank, mismatched world size,
+descriptor-vocabulary mismatch, transport-mode mismatch,
+adapter-provenance mismatch, and public/API-sourced metadata. This slice must
+not allocate descriptors, implement UCCL-EP runtime dispatch, construct the
+coordinator, change CUDA runtime behavior, or claim pass evidence.
 
 ## Non-Claims
 
