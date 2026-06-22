@@ -408,9 +408,24 @@ descriptor identity and must carry the same shared token as dispatch.
 The map defines descriptor-token checks, rank/device checks, and
 transport-mode checks before either descriptor handoff may be consumed.
 
-Failure ownership is explicit: missing runtime path is unsupported, stale
-descriptor views are failed, descriptor-token mismatch is failed,
-rank/device mismatch is failed, transport-mode mismatch is failed,
+The dispatch handoff identity includes invocation id, persistent graph
+descriptor id, UCCL capability id, validated rank/device map, descriptor
+vocabulary, dispatch payload shape, and coordinator-issued shared token. The
+combine handoff identity includes the matching invocation id, graph descriptor
+id, UCCL capability id, rank/device map, descriptor vocabulary, combine
+payload shape, and exactly the same token. Public/API-sourced runtime-path
+fields cannot replace any of those private inputs.
+
+descriptor-token checks fail unless dispatch and combine descriptor views
+carry the same coordinator-issued token from the current same-invocation
+request. Rank/device checks fail unless persistent graph descriptor metadata,
+private UCCL-EP capability metadata, and Worker-local CUDA device ordering
+agree. Transport-mode checks fail unless the private capability metadata
+declares `transport mode: ep`.
+
+Runtime-path failure ownership is explicit: missing runtime path is
+unsupported, stale descriptor views are failed, descriptor-token mismatch is
+failed, rank/device mismatch is failed, transport-mode mismatch is failed,
 descriptor-vocabulary mismatch is failed, and public/API-sourced runtime-path
 fields are failed as fabricated or untrusted pass evidence.
 

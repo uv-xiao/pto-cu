@@ -1085,13 +1085,29 @@ PR #164 same-invocation request args, PR #166 UCCL-EP capability metadata,
 PR #168 validation policy, and PR #170 descriptor allocation policy remain
 prerequisites, not pass evidence.
 
-The map must define the runtime-path owner, dispatch descriptor handoff,
-combine descriptor handoff, descriptor-token checks, rank/device checks,
-transport-mode checks, and runtime-path failure ownership. missing runtime
-path is unsupported. stale descriptor views, descriptor-token mismatch,
-rank/device mismatch, transport-mode mismatch, descriptor-vocabulary
-mismatch, and public/API-sourced runtime-path fields are failed as fabricated
-or untrusted pass evidence.
+The runtime-path owner is the future private
+`persistent_device_uccl_ep_runtime_fusion` coordinator inside one CUDA
+persistent-device runtime run context. The dispatch descriptor handoff uses
+the PR #170 dispatch descriptor identity: invocation id, persistent graph
+descriptor id, UCCL capability id, validated rank/device map, descriptor
+vocabulary, dispatch payload shape, and coordinator-issued shared token. The
+combine descriptor handoff uses the PR #170 combine descriptor identity with
+the same invocation id, graph descriptor id, UCCL capability id, rank/device
+map, descriptor vocabulary, combine payload shape, and exactly the same token.
+
+descriptor-token checks fail unless dispatch and combine descriptor views
+carry the same coordinator-issued token from the current same-invocation
+request. Rank/device checks fail unless persistent graph descriptor metadata,
+private UCCL-EP capability metadata, and Worker-local CUDA device ordering
+agree. transport-mode checks fail unless the private capability metadata
+declares `transport mode: ep`.
+
+Runtime-path failure ownership remains private to the future coordinator.
+missing runtime path is unsupported. stale descriptor views are failed,
+descriptor-token mismatch is failed, rank/device mismatch is failed,
+transport-mode mismatch is failed, descriptor-vocabulary mismatch is failed,
+and public/API-sourced runtime-path fields are failed as fabricated or
+untrusted pass evidence.
 
 This selected slice must not implement UCCL-EP runtime dispatch, construct a
 coordinator, allocate descriptors, change CUDA runtime behavior, claim pass
