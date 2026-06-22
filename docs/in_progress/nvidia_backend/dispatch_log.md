@@ -23,6 +23,68 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - Post-Coordinator-Entry-Contract Status Refresh Worker
+
+- Dispatcher Session or PR:
+  child worker launched after PR #153 merged as
+  `b58598490d37065e6c972eaaea6d4bc4900469c7`.
+- Worker id and objective:
+  `pto-worker-nvidia-goal-status-post-entry-contract`; refresh NVIDIA backend
+  restart status after PR #153, record merge decisions for PR #152 and
+  PR #153, and select the next PR-sized slice without changing runtime
+  behavior.
+- Exact Codex command or script invocation:
+  child `/goal` worker in branch
+  `nvidia-goal-status-post-entry-contract`; no nested workers launched.
+- Parent goal and child slice:
+  NVIDIA backend restart; post-PR153 status/slicing refresh only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-goal-status-post-entry-contract`;
+  <https://github.com/uv-xiao/pto-cu/pull/154>. Opened as a non-draft PR
+  with `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-goal-status-post-entry-contract`.
+- Allowed scope and files:
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/dispatch_log.md`, and
+  `tests/ut/py/test_nvidia_review_artifacts.py` if assertions need to pin
+  the refreshed status.
+- Dependencies and blocked assumptions:
+  starts from current `main` at
+  `b58598490d37065e6c972eaaea6d4bc4900469c7`. PR #147 remains accepted only
+  as provenance-only unsupported-boundary evidence. PR #150 remains accepted
+  only as guard-only blocked implementation evidence. PR #151 remains a
+  post-PR150 status refresh. PR #152 remains a coordinator-boundary map only.
+  PR #153 remains a private entry-contract only. No PR has accepted
+  `persistent_device_uccl_ep_runtime_fusion.status: passed` or
+  `actual_fused_cross_gpu_execution: true`.
+- Verification commands and results:
+  completed before PR creation. `git diff --check` passed; `git diff
+  --cached --check` passed after staging; targeted `markdownlint-cli2` over
+  the five touched docs passed with `0 error(s)`; the NVIDIA review guard
+  passed; and `test_nvidia_review_artifacts.py` passed with `61 passed`.
+- H200 evidence:
+  no fresh H200 command is planned because this slice is docs/status/test
+  guard only and does not change CUDA runtime behavior, example behavior, or
+  result shape.
+- Merge decision and merge commit:
+  pending dispatcher review and merge decision.
+- Handoff summary and remaining gaps:
+  this refresh marks PR #152 and PR #153 accepted with exact merge commits,
+  preserves the unsupported fused-execution evidence boundary, and selects
+  `nvidia-uccl-ep-runtime-fusion-private-entry-unsupported` as the next
+  narrow implementation slice. That future branch may add private entry
+  scaffolding, but it must keep the fused-boundary result `unsupported` unless
+  the runtime coordinator emits real shared-descriptor ownership evidence.
+  This refresh does not implement CUDA runtime behavior, expand public
+  `TaskArgs` or `CallConfig`, expand a UCCL host-runtime ABI, claim fresh
+  H200 fused success, report
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`, set
+  `actual_fused_cross_gpu_execution: true`, or claim RDMA, multi-node,
+  serving, vLLM, DeepSeek, throughput, or latency evidence.
+
 ### 2026-06-22 - UCCL-EP Runtime Fusion Coordinator Entry Contract Worker
 
 - Dispatcher Session or PR:
@@ -73,7 +135,15 @@ Each dispatch entry should include:
   must run a fresh H200 command and report `unsupported`, `setup_failed`, or
   `failed` unless the runtime-owned coordinator emits real ownership evidence.
 - Merge decision and merge commit:
-  pending dispatcher review and merge decision.
+  accepted as a private entry-contract slice only. PR #153 merged into
+  `main` on 2026-06-22 as
+  `b58598490d37065e6c972eaaea6d4bc4900469c7`
+  (`Define UCCL EP coordinator entry contract`). The merge decision did not
+  accept CUDA runtime behavior changes, UCCL host-runtime ABI expansion,
+  fresh H200 fused-success evidence,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
+  DeepSeek, throughput, or latency claims.
 - Handoff summary and remaining gaps:
   this slice defines the private owner and name
   `persistent_device_uccl_ep_runtime_fusion_entry`, the
@@ -85,6 +155,13 @@ Each dispatch entry should include:
   `persistent_device_uccl_ep_runtime_fusion.status: passed`, set
   `actual_fused_cross_gpu_execution: true`, or claim RDMA, multi-node,
   serving, vLLM, DeepSeek, throughput, or latency evidence.
+  The next selected PR-sized slice is
+  `nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`, because PR #152
+  mapped the coordinator boundary and PR #153 defined the private entry
+  contract. That implementation slice may add private entry scaffolding, but
+  it must still report `unsupported` unless the runtime coordinator emits
+  real coordinator-owned descriptor, ownership-token, lifetime-transition,
+  rank/device, validation, and failure-field evidence.
 
 ### 2026-06-22 - UCCL-EP Runtime Fusion Coordinator Boundary Map Worker
 
@@ -137,7 +214,13 @@ Each dispatch entry should include:
   command and report `unsupported` unless the runtime-owned coordinator emits
   real ownership evidence.
 - Merge decision and merge commit:
-  pending dispatcher review and merge decision.
+  accepted as a coordinator-boundary map only. PR #152 merged into `main` on
+  2026-06-22 as `8b5e8075000a2a3e35c4e71c5cb698224b003b44`
+  (`Map UCCL EP runtime fusion coordinator boundary`). The merge decision did
+  not accept CUDA runtime behavior changes,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, or fresh H200 fused-success
+  evidence.
 - Handoff summary and remaining gaps:
   this slice maps the runtime owner, `ChipWorker` entry point, descriptor
   allocation site, ownership token issuer, lifetime transition state machine,

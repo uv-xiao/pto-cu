@@ -177,8 +177,16 @@ restart. It is a planning boundary, not performance evidence.
 - The current accepted evidence boundary is unchanged: PR #147 remains
   provenance-only unsupported-boundary evidence, PR #150 remains guard-only
   blocked implementation evidence, PR #151 remains a post-PR150 status
-  refresh, and PR #152 remains a coordinator-boundary map only. None of those
-  PRs proves actual fused cross-GPU expert-parallel MoE execution.
+  refresh, PR #152 remains a coordinator-boundary map only, and PR #153
+  remains a private entry-contract only. None of those PRs proves actual
+  fused cross-GPU expert-parallel MoE execution.
+- The next PR-sized slice is
+  `nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`. It can implement
+  only private entry scaffolding behind `ChipWorker::run` /
+  `ChipStorageTaskArgs` and must keep the fused-boundary result `unsupported`
+  unless the runtime coordinator emits real descriptor ownership,
+  ownership-token, lifetime-transition, rank/device, validation, and
+  failure-field evidence.
 
 ## Non-Claims
 
@@ -186,7 +194,7 @@ UCCL PTO host-runtime dispatch, RDMA evidence, multi-node evidence,
 serving-level communication evidence, and DeepSeek model correctness remain
 pending. The UCCL-EP handoff evidence is adapter/probe evidence only.
 UCCL adapter execution is limited to opt-in Python-side probes and handoff
-gates. This entry-contract slice does not change CUDA runtime behavior, claim
-fresh H200 fused success, report
+gates. PR #153 did not change CUDA runtime behavior, claim fresh H200 fused
+success, report
 `persistent_device_uccl_ep_runtime_fusion.status: passed`, or set
 `actual_fused_cross_gpu_execution: true`.

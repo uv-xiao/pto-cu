@@ -793,6 +793,27 @@ payload-provenance result above. A later implementation must keep the same
 command shape and may report pass/true only when the fresh result is emitted
 by the runtime coordinator through this private entry.
 
+PR #153 accepted this entry contract only. It did not implement CUDA runtime
+behavior, expand a UCCL host-runtime ABI, create descriptor memory, claim
+fresh H200 fused success, report
+`persistent_device_uccl_ep_runtime_fusion.status: passed`, or set
+`actual_fused_cross_gpu_execution: true`.
+
+## Next Private Entry Implementation Slice
+
+The next PR-sized slice is
+`nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`. It can implement
+only the smallest private entry scaffold behind `ChipWorker::run` and
+`ChipStorageTaskArgs`. The expected review-safe result remains
+`unsupported` until the runtime coordinator itself allocates a shared
+dispatch/combine descriptor, issues the ownership token, records the complete
+lifetime transition log, and emits coordinator-owned validation fields.
+
+The implementation must keep public `TaskArgs`, public `CallConfig`, and UCCL
+host-runtime ABI fields unchanged. Adapter-only provenance, example-side
+JSON, handoff metadata, and public API fields remain forbidden pass-evidence
+paths.
+
 ## Future Fused Execution Evidence Shape
 
 This design/dependency PR defines the evidence contract only. It does not

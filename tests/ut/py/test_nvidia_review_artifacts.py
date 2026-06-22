@@ -598,6 +598,10 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "coordinator request is assembled from private runtime state",
         "The result returned to the host/runtime status artifact",
         "No fresh H200 fused-boundary run is recorded for this entry-contract",
+        "Next Private Entry Implementation Slice",
+        "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported",
+        "private entry scaffold behind `ChipWorker::run`",
+        "The expected review-safe result remains",
     ]:
         assert required in persistent_moe
     assert "Example-side JSON, adapter-only provenance" in (
@@ -620,13 +624,17 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "coordinator status, descriptor allocation provenance",
         "forbidden pass-evidence paths",
         "PR #152 remains a coordinator-boundary map only",
+        "PR #153 remains a private entry-contract only",
+        "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported",
+        "must keep the fused-boundary result `unsupported`",
     ]:
         assert required in normalized_selection
 
     normalized_slicing = " ".join(slicing.split())
     normalized_dispatch_log = " ".join(dispatch_log.split())
     assert "Accepted Coordinator Boundary Map Slice" in slicing
-    assert "Current Coordinator Entry Contract Slice" in slicing
+    assert "Accepted Coordinator Entry Contract Slice" in slicing
+    assert "Next Private Entry Implementation Slice" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
@@ -634,7 +642,9 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-coordinator-boundary-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-coordinator-entry-contract" in slicing
+    assert "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported" in slicing
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
+    assert "b58598490d37065e6c972eaaea6d4bc4900469c7" in slicing
     assert "UCCL-EP runtime fusion coordinator boundary map" in slicing
     assert "persistent_device_uccl_ep_runtime_fusion_entry" in slicing
     assert "callable id, chip-local rank/device map" in normalized_slicing
@@ -679,11 +689,20 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "UCCL-EP Runtime Fusion Coordinator Entry Contract Worker" in (
         dispatch_log
     )
+    assert "Post-Coordinator-Entry-Contract Status Refresh Worker" in (
+        dispatch_log
+    )
     coordinator_boundary_entry = dispatch_log.split(
         "### 2026-06-22 - UCCL-EP Runtime Fusion Coordinator Boundary Map Worker",
         1,
     )[1].split("\n### ", 1)[0]
     assert "pending PR creation" not in coordinator_boundary_entry
+    assert "pending dispatcher review and merge decision" not in (
+        coordinator_boundary_entry
+    )
+    assert "accepted as a coordinator-boundary map only" in (
+        " ".join(coordinator_boundary_entry.split())
+    )
     assert "nvidia-uccl-ep-runtime-fusion-coordinator-boundary-map" in dispatch_log
     assert "nvidia-uccl-ep-runtime-fusion-coordinator-entry-contract" in (
         dispatch_log
@@ -707,6 +726,18 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         entry_contract_entry
     )
     assert "Opened as a non-draft PR" in normalized_entry_contract_entry
+    assert "pending dispatcher review and merge decision" not in (
+        entry_contract_entry
+    )
+    assert "accepted as a private entry-contract slice only" in (
+        normalized_entry_contract_entry
+    )
+    assert "b58598490d37065e6c972eaaea6d4bc4900469c7" in (
+        entry_contract_entry
+    )
+    assert "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported" in (
+        entry_contract_entry
+    )
     assert "does not implement CUDA runtime behavior" in (
         normalized_entry_contract_entry
     )
