@@ -13,8 +13,10 @@ session. This is the Codex-to-Codex adaptation of the upstream
 
 - Codex session id: the UUID in `~/.codex/sessions/**/rollout-*.jsonl`.
 - tmux pane: exact target pane such as `session:window.pane`.
-- Cadence or one-shot mode: recurring monitor runs are orchestrated by the
-  human or the outer session; this skill does not create a scheduler.
+- Cadence or one-shot mode: run a manual audit once, or arm an external
+  scheduler for recurring ticks. Codex does not expose Claude Code's
+  `CronCreate`/`PushNotification` tools in this repo environment, so recurring
+  ticks are implemented with `cron`, `systemd --user`, or a tmux shell loop.
 - Parent dispatch log: the goal log that records the child worker's launch,
   branch, scope, and expected PR.
 
@@ -71,6 +73,9 @@ tail -n 80 ~/.codex/sessions/**/rollout-*.jsonl
 - The monitor is read-only by default: use `git status`, `git diff`,
   `git log`, `rg`, `sed`, `find`, `jq`, `tail`, `head`, `wc`, and
   `tmux capture-pane` only for inspection.
+- Scheduler ticks may write only monitor-owned artifacts under `tmp/` or
+  another explicitly named scratch directory. They must not edit the target
+  repository, target transcript, or target tmux pane.
 - Do not edit the target repository, target transcript, or target tmux pane
   while auditing.
 - If the target is the parent dispatcher, treat direct implementation as drift
@@ -82,6 +87,55 @@ tail -n 80 ~/.codex/sessions/**/rollout-*.jsonl
   implementation, or no false completion claim.
 - If the transcript, pane, or current `/goal` state is ambiguous, stop and ask.
 
+## Recurring Scheduler
+
+This section adapts the upstream `monitor-codex-goal` cron behavior to Codex.
+The upstream version uses Claude Code `CronCreate` and phone push tools. Codex
+does not provide those builtins here, so the monitor uses an external scheduler
+that runs a read-only tick script and records concise snapshots for the parent
+session to inspect.
+
+Use the bundled tick helper:
+
+```bash
+.agents/skills/codex-goal-monitor/scripts/monitor-codex-goal-tick.sh \
+  --session-id '<codex-session-id>' \
+  --pane '<session:window.pane>' \
+  --worktree '<target-worktree>' \
+  --out-dir tmp/codex-goal-monitor/<worker-name>
+```
+
+The helper verifies the pane, captures a bounded tmux tail, tails the transcript
+without loading it whole, records `git status` / `git log -1` / optional dirty
+diff stats, and writes a compact `latest/summary.md`. The parent should read
+`summary.md` first and open larger captures only when the summary reports a
+finding, terminal state, dirty worktree, or missing locator.
+
+To arm a recurring tick, prefer one of these patterns:
+
+```bash
+# tmux loop, easy to stop by killing the monitor-loop pane.
+while :; do
+  .agents/skills/codex-goal-monitor/scripts/monitor-codex-goal-tick.sh \
+    --session-id '<codex-session-id>' \
+    --pane '<session:window.pane>' \
+    --worktree '<target-worktree>' \
+    --out-dir tmp/codex-goal-monitor/<worker-name>
+  sleep 3600
+done
+
+# cron entry; use absolute paths in a wrapper script for readability.
+17 * * * * '<repo>/tmp/codex-goal-monitor/<worker-name>/tick.sh'
+```
+
+The wrapper should `cd` to the repo and run the helper with absolute
+`--worktree` / `--out-dir` paths, appending stdout/stderr to `cron.log`.
+
+Do not run frequent captures. Default to 30-60 minutes for long-running workers,
+or 10-15 minutes only while a worker is near a handoff. Each parent review
+should inspect at most the latest summary unless there is a concrete reason to
+open full tmux or transcript captures.
+
 ## Audit Loop
 
 1. Resolve the transcript under `~/.codex/sessions` and verify the tmux pane:
@@ -91,13 +145,16 @@ tail -n 80 ~/.codex/sessions/**/rollout-*.jsonl
      verify-target '<session:window.pane>'
    ```
 
-2. Read recent transcript entries line-by-line. Extract the latest human
+2. If a scheduler is armed, read only the latest monitor `summary.md` first.
+   Open the full transcript or pane captures only when the summary flags a
+   reason to inspect them.
+3. Read recent transcript entries line-by-line. Extract the latest human
    steering, current goal status, completion claims, tool failures, and blocked
    state. Do not treat agent summaries as evidence unless commands or artifacts
    back them.
-3. Inspect the target worktree read-only. Compare claims against `git status`,
+4. Inspect the target worktree read-only. Compare claims against `git status`,
    `git diff`, tests, benchmark outputs, and docs mentioned by the target.
-4. Classify findings:
+5. Classify findings:
    - drift from the human's latest constraints;
    - worker doing dispatcher-owned decomposition or launching nested workers;
    - direct long-running implementation in the dispatcher session;
@@ -108,11 +165,11 @@ tail -n 80 ~/.codex/sessions/**/rollout-*.jsonl
    - fake/stub implementation described as working;
    - broken project invariant or skipped verification;
    - repeated tool failure or blocker without a blocked-status handoff.
-5. If clean, report the transcript id, pane, checked commit, and evidence read.
-6. If steering is needed, write a narrow prompt to a scratch file. It must name
+6. If clean, report the transcript id, pane, checked commit, and evidence read.
+7. If steering is needed, write a narrow prompt to a scratch file. It must name
    the desired outcome, verification surface, constraints that must not regress,
    and when the target should mark itself blocked instead of complete.
-7. After human approval, inject:
+8. After human approval, inject:
 
    ```bash
    .agents/skills/codex-goal-monitor/scripts/inject-codex-steer.sh \
@@ -143,6 +200,13 @@ is unclear, report the ambiguity instead of injecting a prompt.
 ## Helper Commands
 
 ```bash
+# Capture one bounded recurring-monitor tick.
+scripts/monitor-codex-goal-tick.sh \
+  --session-id '<codex-session-id>' \
+  --pane '<session:window.pane>' \
+  --worktree '<target-worktree>' \
+  --out-dir tmp/codex-goal-monitor/<worker-name>
+
 # Verify the pane exists and can be addressed.
 scripts/inject-codex-steer.sh verify-target '<session:window.pane>'
 
