@@ -22,16 +22,6 @@
 
 namespace {
 
-static const uint32_t PTO_CUDA_PRIVATE_RUN_ENVELOPE_VERSION = 1;
-
-struct PtoCudaPrivateRunArgsEnvelope {
-    uint32_t version;
-    const void *runtime_task_args;
-    size_t runtime_task_args_size;
-    const ChipStorageTaskArgs *chip_storage_task_args;
-    size_t chip_storage_task_args_size;
-};
-
 template <typename T>
 T load_symbol(void *handle, const char *name) {
     dlerror();  // clear any existing error
@@ -427,24 +417,10 @@ RunTiming ChipWorker::run(int32_t callable_id, const ChipStorageTaskArgs *args, 
             throw std::runtime_error("run_prepared: args must not be null");
         }
 
-        PtoCudaPrivateRunArgsEnvelope envelope = {};
-        envelope.version = PTO_CUDA_PRIVATE_RUN_ENVELOPE_VERSION;
-        envelope.runtime_task_args = args;
-        envelope.runtime_task_args_size = sizeof(*args);
-        envelope.chip_storage_task_args = args;
-        envelope.chip_storage_task_args_size = sizeof(*args);
-
-        void *rt = runtime_buf_.data();
-        PtoRunTiming timing{0, 0};
-        int rc = run_prepared_with_cuda_private_args_fn_(
-            device_ctx_, rt, callable_id, &envelope, config.block_dim, config.aicpu_thread_num,
-            config.enable_l2_swimlane, config.enable_dump_tensor, config.enable_pmu, config.enable_dep_gen,
-            config.output_prefix, &timing
+        throw std::runtime_error(
+            "ChipWorker cannot build CUDA private run envelope from ChipStorageTaskArgs; "
+            "use run_raw_args with runtime-specific CUDA args"
         );
-        if (rc != 0) {
-            throw std::runtime_error("run_prepared failed with code " + std::to_string(rc));
-        }
-        return RunTiming{timing.host_wall_ns, timing.device_wall_ns};
     }
     return run_raw_args(callable_id, args, config);
 }

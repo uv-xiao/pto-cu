@@ -56,11 +56,13 @@ Each dispatch entry should include:
   runtime-specific DAG input and copy only a real `ChipStorageTaskArgs *` into
   `PtoCudaRuntimeFusionRequest::chip_storage_task_args`.
 - Verification commands and results:
-  completed before PR creation. `git diff --check` passed; `git diff
-  --cached --check` passed after staging; targeted `markdownlint-cli2` over
-  the five touched docs passed with `0 error(s)`; the NVIDIA review guard
-  passed; `test_nvidia_review_artifacts.py` passed with `61 passed`;
-  `test_cuda_runtime_fusion_private_entry.py` passed with `5 passed`; and
+  blocker follow-up: `git diff --check` passed; targeted
+  `markdownlint-cli2` over the five touched NVIDIA docs passed with
+  `0 error(s)`; the NVIDIA review guard passed; focused red regression
+  `test_chip_worker_rejects_private_envelope_without_runtime_specific_args`
+  first failed on `envelope.runtime_task_args = args;`, then passed;
+  `test_cuda_runtime_fusion_private_entry.py` passed with `6 passed`;
+  `test_nvidia_review_artifacts.py` passed with `61 passed`; and
   `test_cuda_backend.py::test_cuda_persistent_host_runtime_exports_role_keyed_init`
   passed with `1 passed`.
 - H200 evidence:
@@ -70,11 +72,18 @@ Each dispatch entry should include:
 - Merge decision and merge commit:
   pending PR creation and review.
 - Handoff summary and remaining gaps:
-  this slice adds the typed private envelope and host-runtime hook, but it
-  does not implement the runtime-fusion coordinator, descriptor allocator,
-  UCCL-EP runtime path, validation policy, UCCL-EP capability metadata, or
-  pass evidence. `persistent_device_uccl_ep_runtime_fusion.status: passed`
-  and `actual_fused_cross_gpu_execution: true` remain unreachable.
+  blocker follow-up fixed the private request-envelope claim by making the
+  `ChipWorker::run` typed-args path explicitly reject
+  `run_prepared_with_cuda_private_args` instead of passing
+  `ChipStorageTaskArgs *` as `runtime_task_args`. The focused regression first
+  failed on `envelope.runtime_task_args = args;`, then passed after the
+  rejection. This slice now remains a narrower private envelope and host-runtime
+  handoff dependency only. It does not implement a way for `ChipWorker` to
+  provide real runtime-specific `PtoCudaPersistentDagArgs *`, and it does not
+  implement the runtime-fusion coordinator, descriptor allocator, UCCL-EP
+  runtime path, validation policy, UCCL-EP capability metadata, or pass
+  evidence. `persistent_device_uccl_ep_runtime_fusion.status: passed` and
+  `actual_fused_cross_gpu_execution: true` remain unreachable.
 
 ### 2026-06-22 - UCCL-EP Runtime Fusion ChipStorage Blocked Handoff
 

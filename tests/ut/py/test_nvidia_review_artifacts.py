@@ -619,7 +619,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "PtoCudaRuntimeFusionResult",
         "explicit failure bits",
         "Closed Invalid ChipStorageTaskArgs Request Boundary Attempt",
-        "private ABI/envelope path",
+        "slice now narrows",
+        "explicitly rejects the private-envelope path",
         "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request",
         "nvidia-uccl-ep-runtime-fusion-private-request-envelope",
         "pto_cuda_private_run_envelope.h",
@@ -658,6 +659,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "PtoCudaPersistentDagArgs *",
         "nvidia-uccl-ep-runtime-fusion-private-request-envelope",
         "keeps the fused-boundary result `unsupported`",
+        "explicitly rejects the private-envelope path",
     ]:
         assert required in normalized_selection
 
@@ -686,6 +688,9 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "no real `ChipStorageTaskArgs` request path" in normalized_slicing
     assert "pto_cuda_private_run_envelope.h" in slicing
     assert "run_prepared_with_cuda_private_args" in slicing
+    assert "does not pass `ChipStorageTaskArgs *` as runtime args" in (
+        normalized_slicing
+    )
     assert "PR #158 fixed the Codex monitor transcript lookup" in slicing
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
     assert "b58598490d37065e6c972eaaea6d4bc4900469c7" in slicing

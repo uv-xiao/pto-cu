@@ -552,15 +552,17 @@ assigning the persistent DAG run `args` pointer to
 `PtoCudaPersistentDagArgs *`, not a `ChipStorageTaskArgs *`, so the branch
 fabricated the private request boundary and remains a blocked handoff only.
 
-The `nvidia-uccl-ep-runtime-fusion-private-request-envelope` slice adds that
-private path. `pto_cuda_private_run_envelope.h` carries runtime-specific task
-args separately from a typed `ChipStorageTaskArgs` pointer, and
+The `nvidia-uccl-ep-runtime-fusion-private-request-envelope` slice narrows that
+handoff. `pto_cuda_private_run_envelope.h` carries runtime-specific task args
+separately from a typed `ChipStorageTaskArgs` pointer, and
 `PtoCudaRuntimeFusionRequest::chip_storage_task_args` is now a
-`const ChipStorageTaskArgs *`. `ChipWorker::run` probes the optional
-CUDA-only `run_prepared_with_cuda_private_args` symbol, while the CUDA host
-runtime keeps `PtoCudaPersistentDagArgs *` as the persistent DAG launch input
-and copies only `envelope->chip_storage_task_args` into the runtime-fusion
-request.
+`const ChipStorageTaskArgs *`. The CUDA host runtime keeps
+`PtoCudaPersistentDagArgs *` as the persistent DAG launch input and copies only
+`envelope->chip_storage_task_args` into the runtime-fusion request when a valid
+private envelope is supplied. `ChipWorker::run` probes the optional CUDA-only
+`run_prepared_with_cuda_private_args` symbol, but explicitly rejects the
+typed-args private-envelope path because it cannot supply the required
+runtime-specific `PtoCudaPersistentDagArgs *`.
 
 This does not add public `TaskArgs`, public `CallConfig`, common runtime C API
 fields, UCCL host-runtime ABI fields, pass evidence, RDMA, multi-node,

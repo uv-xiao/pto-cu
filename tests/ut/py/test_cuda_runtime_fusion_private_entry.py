@@ -277,3 +277,13 @@ def test_cuda_host_runtime_hooks_private_entry_without_public_api_expansion():
     assert "persistent_device_uccl_ep_runtime_fusion_entry" not in common_abi
     assert "PtoCudaRuntimeFusionRequest" not in common_abi
     assert "PtoCudaPrivateRunArgsEnvelope" not in common_abi
+
+
+def test_chip_worker_rejects_private_envelope_without_runtime_specific_args():
+    chip_worker = (ROOT / "src" / "common" / "worker" / "chip_worker.cpp").read_text(
+        encoding="utf-8"
+    )
+
+    assert "envelope.runtime_task_args = args;" not in chip_worker
+    assert "envelope.runtime_task_args_size = sizeof(*args);" not in chip_worker
+    assert "ChipWorker cannot build CUDA private run envelope" in chip_worker

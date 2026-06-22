@@ -855,13 +855,16 @@ closed invalid. The branch assigned the persistent DAG run `args` pointer to
 `PtoCudaPersistentDagArgs *` in the CUDA host-runtime persistent DAG path, not
 a `ChipStorageTaskArgs *` from `ChipWorker::run`.
 
-The `nvidia-uccl-ep-runtime-fusion-private-request-envelope` slice now adds a
-private ABI/envelope path that can carry a real `ChipStorageTaskArgs` from
-`ChipWorker::run` while keeping `PtoCudaPersistentDagArgs *` separate as a
-persistent DAG runtime input. `pto_cuda_private_run_envelope.h` carries both
-fields, `PtoCudaRuntimeFusionRequest::chip_storage_task_args` is typed as
-`const ChipStorageTaskArgs *`, and the CUDA host runtime copies only
-`envelope->chip_storage_task_args` into the runtime-fusion request.
+The `nvidia-uccl-ep-runtime-fusion-private-request-envelope` slice now narrows
+that handoff. `pto_cuda_private_run_envelope.h` can represent runtime-specific
+task args separately from a typed `ChipStorageTaskArgs` pointer, and
+`PtoCudaRuntimeFusionRequest::chip_storage_task_args` is typed as
+`const ChipStorageTaskArgs *`. The CUDA host runtime copies only
+`envelope->chip_storage_task_args` into the runtime-fusion request when a valid
+private envelope is supplied. `ChipWorker::run` cannot honestly provide the
+runtime-specific `PtoCudaPersistentDagArgs *` for this private envelope, so it
+explicitly rejects the private-envelope path instead of passing
+`ChipStorageTaskArgs *` as persistent DAG runtime args.
 
 The expected review-safe result remains `unsupported`; missing coordinator,
 descriptor allocator, UCCL-EP runtime path, validation policy, UCCL-EP
