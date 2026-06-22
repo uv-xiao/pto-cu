@@ -112,7 +112,15 @@ not need `--max-parallel` manually.
 ### Scheduling constraints
 
 - Sim scene tests and no-hardware unit tests run on github-hosted runners (no hardware).
-- `detect-changes` computes two flags (`a2a3_changed`, `a5_changed`) from the PR diff. Each flag is `false` only when *every* changed file is in the opposite platform's tree (`src/{arch}/`, `examples/{arch}/`, `tests/{st,device_tests}/{arch}/`) or in the `NON_CODE` list (`docs/`, `.docs/`, `.claude/`, `KNOWN_ISSUES.md`, `.gitignore`, `README.md`, `.pre-commit-config.yaml`). Anything else — shared C++ (`src/common/`), Python (`python/`, `simpler_setup/`), build files (`CMakeLists.txt`, `pyproject.toml`), test infra (`tests/ut/`, `tests/lint/`), tooling (`tools/`) — flips both flags to `true`.
+- `detect-changes` computes two flags (`a2a3_changed`, `a5_changed`) from the
+  PR diff. Each flag is `false` only when *every* changed file is in the
+  opposite platform's tree (`src/{arch}/`, `examples/{arch}/`,
+  `tests/{st,device_tests}/{arch}/`) or in the `NON_CODE` list (`docs/`,
+  `.docs/`, `.agents/`, `KNOWN_ISSUES.md`, `.gitignore`, `README.md`,
+  `.pre-commit-config.yaml`). Anything else — shared C++ (`src/common/`),
+  Python (`python/`, `simpler_setup/`), build files (`CMakeLists.txt`,
+  `pyproject.toml`), test infra (`tests/ut/`, `tests/lint/`), tooling
+  (`tools/`) — flips both flags to `true`.
 - **Gated jobs (scene tests only):** `st-sim-{a2a3,a5}`, `st-onboard-{a2a3,a5}` run iff their platform's flag is `true`.
 - **Unconditional jobs (all UT):** `ut`, `ut-a2a3`, `ut-a5` always run. The gating regex intentionally does **not** include `tests/ut/` — unit tests exercise shared contracts (nanobind bindings, RuntimeBuilder, ring buffers, etc.) and the risk of silently skipping a regression outweighs the CI minutes saved. A consequence: self-hosted runners (`a2a3`, `a5`) are always busy for at least the UT job, even on doc-only PRs that skip all scene tests.
 

@@ -36,7 +36,7 @@ Modular runtime for building and executing task dependency graphs on Ascend devi
 git clone <repo-url>
 cd simpler
 
-# Install (venv recommended — see `.claude/rules/venv-isolation.md`)
+# Install (venv recommended — see `.agents/rules/venv-isolation.md`)
 pip install --no-build-isolation -e '.[test]'
 
 # Run the vector example (simulation, no hardware required)

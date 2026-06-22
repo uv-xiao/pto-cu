@@ -105,7 +105,7 @@ Five install paths × two entry points = the verification matrix. CI enforces th
 | `pip install .` | ✅ | pip creates an isolated build env, installs scikit-build-core there, builds wheel, installs wheel. Slower (extra build deps download), but works. |
 | `pip install --no-build-isolation .` | ✅ | Uses the venv's already-installed `scikit-build-core`, `nanobind`, `cmake`. Fastest. Requires those packages pre-installed in the venv. |
 | `pip install -e .` | ✅ | Works because we set `editable.rebuild = false` in `pyproject.toml`. C++ changes require an explicit `pip install ...` to recompile. |
-| `pip install --no-build-isolation -e .` | ✅ | **Recommended for development** (per `.claude/rules/venv-isolation.md`). |
+| `pip install --no-build-isolation -e .` | ✅ | **Recommended for development** (per `.agents/rules/venv-isolation.md`). |
 | `cmake + PYTHONPATH` | ✅ | No-pip workflow. See "cmake direct" below. |
 
 The reason `editable.rebuild = false` is mandatory: with `editable.rebuild = true`, scikit-build-core's rebuild-on-import hook executes `cmake --build`, which re-runs the cmake binary path baked into `build.ninja`. When the install was done with build isolation, that path points into pip's ephemeral build env (`/var/folders/.../pip-build-env-XXX/`) which pip deletes after install — the next import fails with `cmake: No such file or directory`. Disabling rebuild-on-import sidesteps this entirely; users who change C++ re-run `pip install` (which is the same workflow as for `pip install .` anyway).
@@ -161,6 +161,8 @@ The smoke check itself only verifies imports and each entry point's `--help`. Fu
 
 ## See also
 
-- [`.claude/rules/venv-isolation.md`](../.claude/rules/venv-isolation.md) — venv setup and `--no-build-isolation` rationale
-- [`.claude/rules/architecture.md`](../.claude/rules/architecture.md) — codebase-level architecture map
+- [`.agents/rules/venv-isolation.md`](../.agents/rules/venv-isolation.md) —
+  venv setup and `--no-build-isolation` rationale
+- [`.agents/rules/architecture.md`](../.agents/rules/architecture.md) —
+  codebase-level architecture map
 - [`docs/developer-guide.md`](developer-guide.md) — full directory structure and build workflow

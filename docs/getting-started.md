@@ -77,7 +77,9 @@ export ASCEND_HOME_PATH=/usr/local/Ascend/ascend-toolkit/latest
 
 ## Install
 
-All workflows assume an activated project-local venv (see [`.claude/rules/venv-isolation.md`](../.claude/rules/venv-isolation.md) for why `--no-build-isolation` is required).
+All workflows assume an activated project-local venv (see
+[`.agents/rules/venv-isolation.md`](../.agents/rules/venv-isolation.md) for
+why `--no-build-isolation` is required).
 
 **Recommended daily-dev setup:**
 

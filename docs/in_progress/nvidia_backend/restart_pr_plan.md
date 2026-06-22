@@ -29,7 +29,7 @@ The current `restart` branch should not be pushed as one PR.
 - It has no commit history, so a PR from the branch would look like a new
   repository import rather than a reviewable delta from `origin/main`.
 - The index already stages broad base-repository reconstruction. A normal
-  `git commit` would bundle unrelated files across `.claude/`, `.agents/`,
+  `git commit` would bundle unrelated files across `.agents/`,
   docs, examples, `src/`, tests, packaging, and CI.
 - Many restart-specific artifacts are still untracked, including
   `docs/in_progress/nvidia_backend/`, new CUDA examples, new probe tests,
@@ -625,4 +625,3 @@ and historical evidence at once.
   2-H200 correct-output serving.
 - Any claim that generated kernels have "perfect performance" until benchmark
   comparisons and hardware artifacts support that wording.
-

@@ -1,9 +1,8 @@
 # PTO CUDA Agent Coding Guidance
 
 This file is the primary `.agents/` engineering manual for this repository.
-`CLAUDE.md` and `.claude/rules/` remain the source of truth for the upstream
-runtime architecture; this file adds review, dispatch, and evidence rules for
-the NVIDIA backend work.
+`AGENTS.md` and `.agents/rules/` are the source of truth for repository
+workflow, runtime architecture, review, dispatch, and evidence rules.
 
 ## Repository Direction
 
@@ -24,7 +23,8 @@ The active CUDA surfaces are:
 
 ## Hard Gates
 
-- Keep `CLAUDE.md`, `.claude/rules/`, and `.agents/rules/` aligned.
+- Keep `AGENTS.md`, `.agents/coding-guidance.md`, and `.agents/rules/`
+  aligned.
 - Do not describe CUDA behavior as implemented unless code evidence exists.
 - Keep evaluation claims tied to raw artifacts under `tmp/` and validator
   commands.
