@@ -749,9 +749,12 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "After PR #170, the private descriptor allocation policy map" in (
         normalized_slicing
     )
+    assert "After PR #172, the private UCCL-EP runtime path map" in (
+        normalized_slicing
+    )
     assert (
         "current accepted baseline is "
-        "`bd0b59ee8d5afc969020d3aea047aafc9f3152be`"
+        "`21b2b32a475dc04e19700115af74510daef70859`"
     ) in normalized_slicing
     assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-validation-policy-map" in slicing
@@ -774,12 +777,17 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "bb526ff6c3c21597cffe1acd34bf08158a947cc3" in slicing
     assert "42b996666e279024b43f490a310c490a591a897d" in slicing
     assert "bd0b59ee8d5afc969020d3aea047aafc9f3152be" in slicing
+    assert "21b2b32a475dc04e19700115af74510daef70859" in slicing
     assert "Runtime Args Handoff Map Slice" in slicing
     assert "Private Host Runtime Handoff Implementation Slice" in slicing
     assert "Capability Metadata Map Slice" in slicing
     assert "Validation Policy Map Slice" in slicing
     assert "Descriptor Allocation Policy Map Slice" in slicing
-    assert "Selected UCCL-EP Runtime Path Map Slice" in slicing
+    assert "Accepted UCCL-EP Runtime Path Map Slice" in slicing
+    assert "Selected UCCL-EP Runtime Path Implementation Slice" in slicing
+    assert "nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl" in (
+        slicing
+    )
     assert "PtoCudaPrivateRunArgsEnvelope" in slicing
     assert "same-invocation" in normalized_slicing
     assert "mismatched-callable" in normalized_slicing
@@ -1526,6 +1534,10 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
             "missing runtime path is unsupported",
             "stale descriptor",
             "public/API-sourced runtime-path fields",
+            "PR #172 accepted only",
+            "21b2b32a475dc04e19700115af74510daef70859",
+            "nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl",
+            "UCCL-EP Runtime Path Implementation Slice",
         ]:
             assert required in normalized_text
 
@@ -1617,6 +1629,59 @@ def test_uccl_ep_runtime_path_map_slice_is_review_safe():
         "62 passed",
     ]:
         assert required in normalized_dispatch
+
+    post_runtime_path_entry = texts["dispatch"].split(
+        "### 2026-06-23 - Post-UCCL-EP-Runtime-Path-Map "
+        "Status Refresh Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_post_runtime_path_entry = " ".join(
+        post_runtime_path_entry.split()
+    )
+    for required in [
+        "pto-worker-nvidia-goal-status-post-uccl-ep-runtime-path-map",
+        "run-nvidia-post-uccl-ep-runtime-path-map-status-refresh.sh",
+        "nvidia-post-uccl-ep-runtime-path-map-status-refresh.md",
+        "019ef0bb-3bdf-72f2-a655-aea215e1bbc6",
+        "rollout-2026-06-23T03-07-42-019ef0bb-3bdf-72f2-a655-aea215e1bbc6.jsonl",
+        "pto-worker-nvidia-post-uccl-ep-runtime-path-map:0.0",
+        "tmp/codex-goal-monitor/nvidia-post-uccl-ep-runtime-path-map/",
+        "20260622T192303Z",
+        "pane_status: missing",
+        "dirty_count: 0",
+        "c412c78e",
+        "nvidia-goal-status-post-uccl-ep-runtime-path-map",
+        "21b2b32a475dc04e19700115af74510daef70859",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "review-facing docs/tests only",
+        "PR #164 is accepted only for the private CUDA persistent DAG",
+        "PR #166 is accepted only as a private UCCL-EP capability metadata",
+        "PR #168 is accepted only as a private validation policy",
+        "PR #170 is accepted only as a private descriptor allocation policy",
+        "PR #172 accepted only a private UCCL-EP runtime path",
+        "runtime-path owner",
+        "dispatch descriptor handoff",
+        "combine descriptor handoff",
+        "descriptor-token checks",
+        "rank/device checks",
+        "transport-mode checks",
+        "runtime-path failure ownership",
+        "did not implement CUDA runtime behavior",
+        "UCCL-EP runtime dispatch",
+        "a coordinator",
+        "descriptor allocation",
+        "pass evidence",
+        "H200 fused-success evidence",
+        "selected exactly one next PR-sized implementation slice",
+        "UCCL-EP Runtime Path Implementation Slice",
+        "nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl",
+        "missing descriptor allocation and missing coordinator behavior",
+        "No nested workers were launched",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+        "No fresh H200 command is planned",
+    ]:
+        assert required in normalized_post_runtime_path_entry
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():
