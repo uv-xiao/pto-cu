@@ -395,6 +395,27 @@ a visible NVIDIA GPU, or Gluon `gl.dot_fma`, it reports skips; with
 evidence is recorded in
 `docs/in_progress/nvidia_backend/gluon_flashattention_h200.md`.
 
+For the bounded causal prefill sweep, use:
+
+```bash
+PYTHONPATH=$PWD:$PWD/python \
+  .venv/bin/python examples/cuda/gluon_flashattention_fwd.py \
+  --output-dir tmp/gluon-flashattention-prefill-sweep-h200 \
+  --arch compute_90 --sweep --causal --require-cuda
+```
+
+The causal prefill sweep JSON records `schema_version`, aggregate status,
+`case_count`, per-case shape, tolerance, provenance, repo-relative artifact
+paths, `causal: true`, `phase: prefill`, and the lower-triangular PyTorch
+reference formula
+`softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v`.
+It is bounded causal prefill sweep correctness evidence with only causal
+prefill cases; in short, only causal prefill cases. It is not full prefill coverage.
+It is not paged/ragged KV-cache correctness, not full decode, not full
+append, not attention-variant correctness, not FlashInfer integration, not
+vLLM/simpler-nv integration, not DeepSeek semantic correctness, not
+production readiness, and not performance evidence.
+
 For the bounded same-length multi-query prefill-shaped causal gate, use:
 
 ```bash

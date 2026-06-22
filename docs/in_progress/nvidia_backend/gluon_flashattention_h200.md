@@ -62,9 +62,14 @@ reported as `phase: append` to distinguish small multi-query append-shaped
 evidence from full append KV-cache coverage.
 The `--sweep` path emits aggregate structured JSON with `schema_version: 1`,
 aggregate status and case counts, and per-case shape, provenance, artifact
-metadata, status, phase, causal flag, and max error when run. Artifact paths
-are repo-relative, absolute `--output-dir` values are rejected, and exception
-text is sanitized so private absolute paths are not recorded.
+metadata, status, phase, causal flag, and max error when run.
+`--sweep --causal` switches to bounded causal prefill sweep correctness
+evidence with only causal prefill cases: every case is same-length
+multi-query attention, records `phase: prefill`, `causal: true`, and uses the
+lower-triangular PyTorch reference instead of the shifted decode/append
+reference. Artifact paths are repo-relative, absolute `--output-dir` values
+are rejected, and exception text is sanitized so private absolute paths are
+not recorded.
 
 The sweep includes:
 
@@ -77,6 +82,13 @@ The `head_dim=64` sweep case remains the smallest bounded H200-passing
 representative shape selected during the earlier blocker slice. The narrower
 `32x32x64` candidate is now a first-class single-case repro and passes H200
 correctness, but it remains separate from the two-case promoted sweep.
+
+The causal prefill sweep includes:
+
+- `prefill_16x16x64`: `seqlen_q=16`, `seqlen_k=16`, `head_dim=64`,
+  provenance `bounded same-length multi-query causal prefill fixture`;
+- `prefill_32x32x64`: `seqlen_q=32`, `seqlen_k=32`, `head_dim=64`,
+  provenance `bounded same-length multi-query causal prefill H200 gate`.
 
 ## H200 Evidence
 
@@ -163,6 +175,62 @@ rectangular score path avoids the current Gluon `dot_fma` RHS-layout boundary
 for row-major K storage; the value accumulation path still uses `dot_fma`.
 
 ## Prefill-Shaped Same-Length Gate
+
+On 2026-06-22, the bounded causal prefill sweep generated and launched on the
+same H200 class machine and passed correctness for two same-length
+multi-query cases against the lower-triangular masked PyTorch reference. The
+remote run used tree sync into `<remote-pto-cu>` through the generic CUDA
+runner, and the preserved remote Gluon Python environment because the remote
+default Python lacked Torch and Triton/Gluon.
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'PYTHONPATH=$PWD:$PWD/python \
+    <remote-gluon-venv>/bin/python \
+      examples/cuda/gluon_flashattention_fwd.py \
+      --output-dir tmp/gluon-flashattention-prefill-sweep-h200 \
+      --arch compute_90 --sweep --causal --require-cuda'
+```
+
+Distilled passed result:
+
+```text
+schema_version: 1
+status: passed
+case_count: 2
+passed_cases: 2
+failed_cases: 0
+skipped_cases: 0
+only causal prefill cases
+case_name: prefill_16x16x64
+phase: prefill
+causal: true
+shape: seqlen_q=16, seqlen_k=16, head_dim=64
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+max_abs_error: 7.152557373046875e-07
+source_sha256: 4fe8973767abc90e219c56bcca5ff7a9a03be56a39b75e915e2deb9a8a62781c
+case_name: prefill_32x32x64
+phase: prefill
+causal: true
+shape: seqlen_q=32, seqlen_k=32, head_dim=64
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+max_abs_error: 8.344650268554688e-07
+source_sha256: f9f0ff900d33023c462579063be9aa8560a82c63d43aae2bd851369cfcfb58a4
+per-case artifact paths are repo-relative
+machine class: H200
+private absolute paths are not recorded
+```
+
+This result is bounded causal prefill sweep correctness evidence for two
+generated same-length multi-query FP32 causal FlashAttention sources. It is
+not full prefill coverage, not paged/ragged KV-cache correctness, not full
+decode, not full append, not attention-variant correctness, not FlashInfer
+integration evidence, not vLLM/simpler-nv integration evidence, not
+production serving readiness, not performance, throughput, or latency
+evidence, and not DeepSeek semantic correctness.
 
 On 2026-06-22, the same-length multi-query prefill-shaped causal gate
 generated and launched on the same H200 class machine and passed correctness
