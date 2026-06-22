@@ -2544,6 +2544,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "same-length multi-query prefill-shaped",
         "bounded causal prefill sweep correctness evidence",
         "only causal prefill cases",
+        "case_name: prefill_64x64x64",
         "bounded causal decode sweep correctness evidence",
         "only causal decode cases",
         "bounded causal append sweep correctness evidence",
@@ -2553,6 +2554,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "small multi-query append-shaped",
         "shape: seqlen_q=32, seqlen_k=32, head_dim=32",
         "shape: seqlen_q=32, seqlen_k=32, head_dim=64",
+        "shape: seqlen_q=64, seqlen_k=64, head_dim=64",
         "shape: seqlen_q=16, seqlen_k=64, head_dim=64",
         "shape: seqlen_q=1, seqlen_k=32, head_dim=64",
         "shape: seqlen_q=4, seqlen_k=32, head_dim=64",
@@ -2649,6 +2651,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "same-length multi-query prefill-shaped" in readme_text
     assert "bounded causal prefill sweep correctness evidence" in readme_text
     assert "only causal prefill cases" in readme_text
+    assert "prefill_64x64x64" in readme_text
     assert "bounded causal decode sweep correctness evidence" in readme_text
     assert "only causal decode cases" in readme_text
     assert "decode_1x64x64" in readme_text
@@ -2676,6 +2679,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "--sweep --causal --causal-sweep-phase decode --require-cuda" in checklist_text
     assert "--sweep --causal --causal-sweep-phase append --require-cuda" in checklist_text
     assert "same-length multi-query prefill-shaped" in normalized_checklist_text
+    assert "prefill_64x64x64" in checklist_text
     assert "only causal decode cases" in checklist_text
     assert "decode_1x64x64" in checklist_text
     assert "decode_1x128x32" in checklist_text

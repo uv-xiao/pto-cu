@@ -95,7 +95,10 @@ The causal prefill sweep includes:
 - `prefill_16x16x64`: `seqlen_q=16`, `seqlen_k=16`, `head_dim=64`,
   provenance `bounded same-length multi-query causal prefill fixture`;
 - `prefill_32x32x64`: `seqlen_q=32`, `seqlen_k=32`, `head_dim=64`,
-  provenance `bounded same-length multi-query causal prefill H200 gate`.
+  provenance `bounded same-length multi-query causal prefill H200 gate`;
+- `prefill_64x64x64`: `seqlen_q=64`, `seqlen_k=64`, `head_dim=64`,
+  provenance `broader bounded same-length multi-query causal prefill H200
+  gate`.
 
 The causal decode sweep includes:
 
@@ -203,11 +206,15 @@ for row-major K storage; the value accumulation path still uses `dot_fma`.
 ## Prefill-Shaped Same-Length Gate
 
 On 2026-06-22, the bounded causal prefill sweep generated and launched on the
-same H200 class machine and passed correctness for two same-length
+same H200 class machine and passed correctness for three same-length
 multi-query cases against the lower-triangular masked PyTorch reference. The
 remote run used tree sync into `<remote-pto-cu>` through the generic CUDA
 runner, and the preserved remote Gluon Python environment because the remote
-default Python lacked Torch and Triton/Gluon.
+default Python lacked Torch and Triton/Gluon. The broader `prefill_64x64x64`
+case was promoted after a single-case H200 causal prefill probe passed.
+The earlier two-case gate used
+`--output-dir tmp/gluon-flashattention-prefill-sweep-h200`; the latest
+broader run below used a fresh repo-relative output directory.
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
@@ -215,7 +222,7 @@ REMOTE_PTO_CU=<remote-pto-cu> \
   bash -lc 'PYTHONPATH=$PWD:$PWD/python \
     <remote-gluon-venv>/bin/python \
       examples/cuda/gluon_flashattention_fwd.py \
-      --output-dir tmp/gluon-flashattention-prefill-sweep-h200 \
+      --output-dir tmp/gluon-flashattention-prefill-coverage-h200 \
       --arch compute_90 --sweep --causal --require-cuda'
 ```
 
@@ -224,8 +231,8 @@ Distilled passed result:
 ```text
 schema_version: 1
 status: passed
-case_count: 2
-passed_cases: 2
+case_count: 3
+passed_cases: 3
 failed_cases: 0
 skipped_cases: 0
 only causal prefill cases
@@ -245,12 +252,20 @@ reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)
 tolerance: atol=0.001, rtol=0.01
 max_abs_error: 8.344650268554688e-07
 source_sha256: f9f0ff900d33023c462579063be9aa8560a82c63d43aae2bd851369cfcfb58a4
+case_name: prefill_64x64x64
+phase: prefill
+causal: true
+shape: seqlen_q=64, seqlen_k=64, head_dim=64
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+max_abs_error: 5.960464477539062e-07
+source_sha256: e89532a0e196f072dd7429a83ccceb5ac71819b4e590882999c2c6c10e08fba5
 per-case artifact paths are repo-relative
 machine class: H200
 private absolute paths are not recorded
 ```
 
-This result is bounded causal prefill sweep correctness evidence for two
+This result is bounded causal prefill sweep correctness evidence for three
 generated same-length multi-query FP32 causal FlashAttention sources. It is
 not full prefill coverage, not paged/ragged KV-cache correctness, not full
 decode, not full append, not attention-variant correctness, not FlashInfer

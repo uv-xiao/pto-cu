@@ -409,8 +409,11 @@ The causal prefill sweep JSON records `schema_version`, aggregate status,
 paths, `causal: true`, `phase: prefill`, and the lower-triangular PyTorch
 reference formula
 `softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v`.
-It is bounded causal prefill sweep correctness evidence with only causal
-prefill cases; in short, only causal prefill cases. It is not full prefill coverage.
+The promoted bounded same-length cases include `prefill_16x16x64`,
+`prefill_32x32x64`, and `prefill_64x64x64`.
+This is bounded causal prefill sweep correctness evidence. It includes only
+causal prefill cases; in short, only causal prefill cases.
+It is not full prefill coverage.
 It is not paged/ragged KV-cache correctness, not full decode, not full
 append, not attention-variant correctness, not FlashInfer integration, not
 vLLM/simpler-nv integration, not DeepSeek semantic correctness, not

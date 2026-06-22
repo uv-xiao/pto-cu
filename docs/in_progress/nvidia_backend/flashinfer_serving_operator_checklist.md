@@ -44,9 +44,10 @@ Serving-relevant families verified from the README:
   bounded causal prefill sweep correctness evidence for
   `--sweep --causal --require-cuda`, with `schema_version`, aggregate status,
   `case_count`, only
-  causal prefill cases, same-length shapes, `phase: prefill`, `causal: true`,
-  tolerance, provenance, the lower-triangular masked PyTorch reference formula,
-  status, and repo-relative artifact paths. It also records
+  causal prefill cases, same-length shapes through `prefill_64x64x64`,
+  `phase: prefill`, `causal: true`, tolerance, provenance, the
+  lower-triangular masked PyTorch reference formula, status, and repo-relative
+  artifact paths. It also records
   bounded causal decode sweep correctness evidence for
   `--sweep --causal --causal-sweep-phase decode --require-cuda`, with
   `schema_version`, aggregate status, `case_count`, only causal decode cases,
