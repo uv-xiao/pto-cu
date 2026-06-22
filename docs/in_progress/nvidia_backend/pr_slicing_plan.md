@@ -7,10 +7,16 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
+- Current accepted `main`: `f73620c6`, after PR #143
+  (`Record UCCL EP fused boundary status`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
-- The current audit branch `nvidia-goal-status-rollup` owns only
+- PR #143 added an explicit `--with-uccl-ep-fused-boundary` status gate. It
+  records `status: unsupported` after the UCCL-EP handoff passes because
+  `persistent_device_uccl_ep_runtime_fusion` is missing. It is not fused
+  cross-GPU expert-parallel MoE evidence.
+- The current audit branch `nvidia-goal-status-post-fused-boundary` owns only
   `docs/in_progress/nvidia_backend/goal_status_rollup.md`, this slicing note,
   the dispatch log update, and an optional review-artifact guard.
 
@@ -36,6 +42,12 @@ from `main` and lands through focused GitHub PRs.
   - Result: merged as `c3964aad9204d0fbd0042ebbd7f88309530b80d2`.
 - PR #139: restart tracking restoration.
   - Result: merged as `3722ad7efd7257fcc3807111aa449bfb49c57ea3`.
+- PR #142: NVIDIA backend goal status rollup.
+  - Result: merged as `afe82fb78783f24f36c01f41d9086064832cfaee`.
+- PR #143: UCCL-EP fused boundary status.
+  - Result: merged as `f73620c613b7a97c352384d6e90f32ae8c4106cd`.
+  - Result type: structured unsupported boundary, not fused execution
+    evidence.
 
 ## Restored Tracking Surface
 
@@ -83,16 +95,25 @@ Non-claims:
 The current acceptance-area audit lives in
 `docs/in_progress/nvidia_backend/goal_status_rollup.md`. It separates
 DeepSeek/vLLM serving evidence from simpler-nv kernel integration evidence and
-selects exactly one next worker slice.
+selects exactly one next worker slice. After PR #143, the UCCL-EP fused
+boundary worker is complete as an unsupported-boundary status slice; it is no
+longer a next candidate.
 
-## Next Candidate Slices
+## Next Slice
 
-Choose the next child slice after the rollup PR is reviewed:
+Choose this child slice after the status refresh PR is reviewed:
 
-1. Launch `nvidia-moe-uccl-ep-fused-boundary-h200` to turn the accepted
-   persistent-MoE plus UCCL-EP handoff into a reduced fused cross-GPU
-   expert-parallel MoE boundary on H200.
-2. Continue serving promotion if current vLLM/DeepSeek evidence is ready to
-   move from in-progress notes into stable review docs.
-3. Retire redundant in-progress docs only after their evidence is represented
-   in accepted stable docs or no longer needed.
+- Branch: `nvidia-uccl-ep-runtime-fusion-design`.
+- Scope: dependency/design PR for `persistent_device_uccl_ep_runtime_fusion`.
+- Objective: define the missing persistent-device graph to UCCL-EP runtime
+  fusion contract exposed by PR #143, including payload ownership,
+  rank/device mapping, status fields, failure modes, and review evidence
+  required before an implementation PR can claim actual fused cross-GPU
+  expert-parallel MoE execution.
+- Non-claims: not DeepSeek serving, not vLLM plugin integration, not RDMA or
+  multi-node evidence, not throughput or latency evidence, and not actual
+  fused cross-GPU expert-parallel MoE execution.
+
+Serving promotion and in-progress doc retirement remain deferred until this
+communication dependency boundary is reviewable or the dispatcher explicitly
+chooses a different branch from current `main`.
