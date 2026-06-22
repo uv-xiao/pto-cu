@@ -14,6 +14,7 @@
 #include "host/pto_cuda_comm_descriptor_abi.h"
 #include "host/pto_cuda_host_schedule_abi.h"
 #include "host/pto_cuda_persistent_device_abi.h"
+#include "host/pto_cuda_private_run_envelope.h"
 #include "host/pto_cuda_runtime_fusion_abi.h"
 #include "platform_comm/comm.h"
 
@@ -438,7 +439,10 @@ public:
         return 0;
     }
 
-    int run(int32_t callable_id, const void *args, PtoRunTiming *out_timing) {
+    int run(
+        int32_t callable_id, const void *args, PtoRunTiming *out_timing,
+        const PtoCudaPrivateRunArgsEnvelope *envelope = nullptr
+    ) {
         if (out_timing != nullptr) {
             std::memset(out_timing, 0, sizeof(*out_timing));
         }
@@ -724,7 +728,7 @@ public:
                 return -1;
             }
             dag_state = typed_args->state;
-            record_runtime_fusion_unsupported(callable_id, args, dag_state);
+            record_runtime_fusion_unsupported(callable_id, envelope, dag_state);
             kernel_args[0] = &dag_state;
         }
         CUresult cu_rc = cuLaunchKernel(
@@ -751,6 +755,16 @@ public:
             return -1;
         }
         return 0;
+    }
+
+    int run_with_private_args(
+        int32_t callable_id, const PtoCudaPrivateRunArgsEnvelope *envelope, PtoRunTiming *out_timing
+    ) {
+        if (envelope == nullptr || envelope->version != PTO_CUDA_PRIVATE_RUN_ENVELOPE_VERSION ||
+            envelope->runtime_task_args == nullptr) {
+            return -1;
+        }
+        return run(callable_id, envelope->runtime_task_args, out_timing, envelope);
     }
 
     const PtoCudaCommDeviceDescriptor *comm_descriptor_or_null() const {
@@ -800,17 +814,20 @@ private:
     cudaStream_t default_stream() { return stream_for(0); }
 
     void record_runtime_fusion_unsupported(
-        int32_t callable_id, const void *args, const PtoCudaPersistentDagState *dag_state
+        int32_t callable_id, const PtoCudaPrivateRunArgsEnvelope *envelope, const PtoCudaPersistentDagState *dag_state
     ) {
         PtoCudaRuntimeFusionRequest request = {};
         request.version = PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION;
         request.callable_id = callable_id;
         request.persistent_graph_descriptor = dag_state;
         request.output_sink = &last_runtime_fusion_result_;
+        if (envelope != nullptr) {
+            request.chip_storage_task_args = envelope->chip_storage_task_args;
+            request.chip_storage_task_args_size = envelope->chip_storage_task_args_size;
+        }
         if (has_comm_descriptor_) {
             request.comm_descriptor = &comm_descriptor_;
         }
-        (void)args;
 
         PtoCudaRuntimeFusionResult result = {};
         int rc = persistent_device_uccl_ep_runtime_fusion_entry(&request, &result);
@@ -1044,6 +1061,27 @@ int run_prepared(
     if (ctx == nullptr) return -1;
     try {
         return runner(ctx)->run(callable_id, args, out_timing);
+    } catch (...) {
+        return -1;
+    }
+}
+
+int run_prepared_with_cuda_private_args(
+    DeviceContextHandle ctx, RuntimeHandle runtime, int32_t callable_id,
+    const PtoCudaPrivateRunArgsEnvelope *envelope, int block_dim, int aicpu_thread_num, int enable_l2_swimlane,
+    int enable_dump_tensor, int enable_pmu, int enable_dep_gen, const char *output_prefix, PtoRunTiming *out_timing
+) {
+    (void)runtime;
+    (void)block_dim;
+    (void)aicpu_thread_num;
+    (void)enable_l2_swimlane;
+    (void)enable_dump_tensor;
+    (void)enable_pmu;
+    (void)enable_dep_gen;
+    (void)output_prefix;
+    if (ctx == nullptr) return -1;
+    try {
+        return runner(ctx)->run_with_private_args(callable_id, envelope, out_timing);
     } catch (...) {
         return -1;
     }

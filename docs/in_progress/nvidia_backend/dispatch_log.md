@@ -23,6 +23,59 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - UCCL-EP Runtime Fusion Private Request Envelope
+
+- Dispatcher Session or PR:
+  current `/goal` session on branch
+  `nvidia-uccl-ep-runtime-fusion-private-request-envelope`, after PR #159
+  recorded the closed invalid PR #157 attempt and selected this dependency.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-private-request-envelope`;
+  implement the private CUDA runtime-fusion request envelope dependency slice.
+- Exact Codex command or script invocation:
+  direct `/goal` work in this branch; no nested workers launched.
+- Parent goal and child slice:
+  NVIDIA backend restart; dependency after PR #157
+  (`nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`) was closed
+  invalid because it mislabeled `PtoCudaPersistentDagArgs *` as
+  `ChipStorageTaskArgs *`.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-private-request-envelope`;
+  <https://github.com/uv-xiao/pto-cu/pull/160>. Opened as a non-draft PR
+  with `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-private-request-envelope`.
+- Allowed scope and files:
+  private CUDA platform/runtime-fusion ABI and host-runtime request plumbing
+  under `src/cuda/platform/`, the optional private `ChipWorker` hook in
+  `src/common/worker/chip_worker.{h,cpp}`, focused private-entry and review
+  artifact tests, and NVIDIA in-progress docs.
+- Dependencies and blocked assumptions:
+  starts from current `main` after PR #159. The slice must not expand public
+  `TaskArgs`, public `CallConfig`, the common runtime C API, or UCCL
+  host-runtime ABI fields. It must keep `PtoCudaPersistentDagArgs *` as
+  runtime-specific DAG input and copy only a real `ChipStorageTaskArgs *` into
+  `PtoCudaRuntimeFusionRequest::chip_storage_task_args`.
+- Verification commands and results:
+  completed before PR creation. `git diff --check` passed; `git diff
+  --cached --check` passed after staging; targeted `markdownlint-cli2` over
+  the five touched docs passed with `0 error(s)`; the NVIDIA review guard
+  passed; `test_nvidia_review_artifacts.py` passed with `61 passed`;
+  `test_cuda_runtime_fusion_private_entry.py` passed with `5 passed`; and
+  `test_cuda_backend.py::test_cuda_persistent_host_runtime_exports_role_keyed_init`
+  passed with `1 passed`.
+- H200 evidence:
+  no fresh H200 command is planned because this is a private request-envelope
+  dependency slice and does not claim fused-success, RDMA, multi-node,
+  serving, vLLM, DeepSeek, throughput, or latency evidence.
+- Merge decision and merge commit:
+  pending PR creation and review.
+- Handoff summary and remaining gaps:
+  this slice adds the typed private envelope and host-runtime hook, but it
+  does not implement the runtime-fusion coordinator, descriptor allocator,
+  UCCL-EP runtime path, validation policy, UCCL-EP capability metadata, or
+  pass evidence. `persistent_device_uccl_ep_runtime_fusion.status: passed`
+  and `actual_fused_cross_gpu_execution: true` remain unreachable.
+
 ### 2026-06-22 - UCCL-EP Runtime Fusion ChipStorage Blocked Handoff
 
 - Dispatcher Session or PR:

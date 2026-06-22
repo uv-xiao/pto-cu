@@ -855,23 +855,21 @@ closed invalid. The branch assigned the persistent DAG run `args` pointer to
 `PtoCudaPersistentDagArgs *` in the CUDA host-runtime persistent DAG path, not
 a `ChipStorageTaskArgs *` from `ChipWorker::run`.
 
-The current code therefore still has no real `ChipStorageTaskArgs` request
-path into `persistent_device_uccl_ep_runtime_fusion_entry`. The expected
-review-safe result remains `unsupported`; missing coordinator, descriptor
-allocator, UCCL-EP runtime path, validation policy, UCCL-EP capability
-metadata, real chip-storage task args, and pass evidence remain unsupported
-or failed states.
-
-## Next Private Request Envelope Dependency Slice
-
-The next dependency slice is
-`nvidia-uccl-ep-runtime-fusion-private-request-envelope`. It must define a
+The `nvidia-uccl-ep-runtime-fusion-private-request-envelope` slice now adds a
 private ABI/envelope path that can carry a real `ChipStorageTaskArgs` from
 `ChipWorker::run` while keeping `PtoCudaPersistentDagArgs *` separate as a
-persistent DAG runtime input. The slice must not add public `TaskArgs`,
-public `CallConfig`, common runtime C API fields, UCCL host-runtime ABI
-fields, RDMA, multi-node, serving, vLLM, DeepSeek, throughput, latency, fresh
-H200 fused-success evidence, or pass/true fused-boundary status.
+persistent DAG runtime input. `pto_cuda_private_run_envelope.h` carries both
+fields, `PtoCudaRuntimeFusionRequest::chip_storage_task_args` is typed as
+`const ChipStorageTaskArgs *`, and the CUDA host runtime copies only
+`envelope->chip_storage_task_args` into the runtime-fusion request.
+
+The expected review-safe result remains `unsupported`; missing coordinator,
+descriptor allocator, UCCL-EP runtime path, validation policy, UCCL-EP
+capability metadata, and pass evidence remain unsupported or failed states.
+The slice does not add public `TaskArgs`, public `CallConfig`, common runtime
+C API fields, UCCL host-runtime ABI fields, RDMA, multi-node, serving, vLLM,
+DeepSeek, throughput, latency, fresh H200 fused-success evidence, or
+pass/true fused-boundary status.
 
 ## Future Fused Execution Evidence Shape
 

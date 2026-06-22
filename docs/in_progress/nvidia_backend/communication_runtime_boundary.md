@@ -552,14 +552,22 @@ assigning the persistent DAG run `args` pointer to
 `PtoCudaPersistentDagArgs *`, not a `ChipStorageTaskArgs *`, so the branch
 fabricated the private request boundary and remains a blocked handoff only.
 
-The current CUDA code still has no real `ChipStorageTaskArgs` request path
-for `persistent_device_uccl_ep_runtime_fusion_entry`. The next dependency
-slice is `nvidia-uccl-ep-runtime-fusion-private-request-envelope`: define a
-broader private ABI/envelope path that can carry a real `ChipStorageTaskArgs`
-from `ChipWorker::run` while keeping persistent DAG runtime args separate.
-It must not add public `TaskArgs`, public `CallConfig`, common runtime C API
+The `nvidia-uccl-ep-runtime-fusion-private-request-envelope` slice adds that
+private path. `pto_cuda_private_run_envelope.h` carries runtime-specific task
+args separately from a typed `ChipStorageTaskArgs` pointer, and
+`PtoCudaRuntimeFusionRequest::chip_storage_task_args` is now a
+`const ChipStorageTaskArgs *`. `ChipWorker::run` probes the optional
+CUDA-only `run_prepared_with_cuda_private_args` symbol, while the CUDA host
+runtime keeps `PtoCudaPersistentDagArgs *` as the persistent DAG launch input
+and copies only `envelope->chip_storage_task_args` into the runtime-fusion
+request.
+
+This does not add public `TaskArgs`, public `CallConfig`, common runtime C API
 fields, UCCL host-runtime ABI fields, pass evidence, RDMA, multi-node,
-serving, vLLM, DeepSeek, throughput, or latency claims.
+serving, vLLM, DeepSeek, throughput, or latency claims. Missing coordinator,
+descriptor allocator, UCCL-EP runtime path, validation policy, UCCL-EP
+capability metadata, or pass evidence still keeps the result unsupported or
+failed.
 
 ## Non-Claims
 

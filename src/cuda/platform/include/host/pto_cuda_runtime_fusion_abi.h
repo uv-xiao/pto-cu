@@ -13,6 +13,7 @@
 #define SRC_CUDA_PLATFORM_INCLUDE_HOST_PTO_CUDA_RUNTIME_FUSION_ABI_H_
 
 #include "pto_cuda_comm_descriptor_abi.h"
+#include "task_interface/task_args.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -55,7 +56,7 @@ enum PtoCudaRuntimeFusionFailure : uint32_t {
 struct PtoCudaRuntimeFusionRequest {
     uint32_t version;
     int32_t callable_id;
-    const void *chip_storage_task_args;
+    const ChipStorageTaskArgs *chip_storage_task_args;
     size_t chip_storage_task_args_size;
     const void *persistent_graph_descriptor;
     const PtoCudaCommDeviceDescriptor *comm_descriptor;
@@ -162,7 +163,8 @@ inline int persistent_device_uccl_ep_runtime_fusion_entry(
         out.failure_fields |= PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RANK_DEVICE_METADATA;
     }
 
-    if (request->chip_storage_task_args == nullptr || request->chip_storage_task_args_size == 0U) {
+    if (request->chip_storage_task_args == nullptr ||
+        request->chip_storage_task_args_size != sizeof(ChipStorageTaskArgs)) {
         out.failure_fields |= PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_CHIP_STORAGE_TASK_ARGS;
     }
     if (request->persistent_graph_descriptor == nullptr) {
