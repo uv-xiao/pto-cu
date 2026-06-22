@@ -440,17 +440,33 @@ def test_persistent_moe_uccl_ep_fused_boundary_reports_unsupported():
                 "hidden": 1024,
                 "num_topk": 4,
                 "num_experts": 16,
+                "experts_per_rank": 8,
                 "input_dtype": "bf16",
+                "metadata_shapes": {
+                    "topk_idx": [64, 4],
+                    "topk_weights": [64, 4],
+                    "num_tokens_per_rank": [2],
+                    "is_token_in_rank": [64, 2],
+                    "num_tokens_per_expert": [16],
+                },
             },
             "rank_results": [
                 {
                     "rank": 0,
+                    "device_id": 6,
+                    "input_dtype": "bf16",
+                    "recv_tokens": [88],
+                    "expected_total_sent_tokens": [88],
                     "passed": True,
                     "max_abs_error": 0.0,
                     "topk_weight_error": 0.0,
                 },
                 {
                     "rank": 1,
+                    "device_id": 7,
+                    "input_dtype": "bf16",
+                    "recv_tokens": [88],
+                    "expected_total_sent_tokens": [88],
                     "passed": True,
                     "max_abs_error": 0.0,
                     "topk_weight_error": 0.0,
@@ -475,6 +491,71 @@ def test_persistent_moe_uccl_ep_fused_boundary_reports_unsupported():
     assert result["boundary_validation"]["structured_unsupported_boundary"] is True
     assert "persistent_device_uccl_ep_runtime_fusion" in result["missing_boundaries"]
     assert "non-evidence" in result["evidence_statement"]
+    assert result["persistent_device_uccl_ep_runtime_fusion"] == {
+        "status": "unsupported",
+        "actual_fused_cross_gpu_execution": False,
+        "shared_ownership_token": None,
+        "payload_lifetime_transition_log": [],
+        "reason": "runtime component has not created or transferred shared payload ownership",
+    }
+
+    provenance = result["payload_provenance"]
+    assert provenance["uccl_ep_adapter"]["producer"] == "uccl_ep_dispatch_combine_adapter"
+    assert provenance["uccl_ep_adapter"]["capability_id"] == "uccl:rank0->cuda6,rank1->cuda7"
+    assert provenance["uccl_ep_adapter"]["device_ids"] == [6, 7]
+    assert provenance["uccl_ep_adapter"]["rank_to_device"] == {"0": 6, "1": 7}
+    assert provenance["uccl_ep_adapter"]["descriptor"] == {
+        "num_tokens": 64,
+        "hidden": 1024,
+        "num_topk": 4,
+        "num_experts": 16,
+        "experts_per_rank": 8,
+        "input_dtype": "bf16",
+        "metadata_shapes": {
+            "topk_idx": [64, 4],
+            "topk_weights": [64, 4],
+            "num_tokens_per_rank": [2],
+            "is_token_in_rank": [64, 2],
+            "num_tokens_per_expert": [16],
+        },
+    }
+    assert provenance["uccl_ep_adapter"]["rank_results"] == [
+        {
+            "rank": 0,
+            "device_id": 6,
+            "input_dtype": "bf16",
+            "recv_tokens": [88],
+            "expected_total_sent_tokens": [88],
+            "passed": True,
+            "max_abs_error": 0.0,
+            "topk_weight_error": 0.0,
+        },
+        {
+            "rank": 1,
+            "device_id": 7,
+            "input_dtype": "bf16",
+            "recv_tokens": [88],
+            "expected_total_sent_tokens": [88],
+            "passed": True,
+            "max_abs_error": 0.0,
+            "topk_weight_error": 0.0,
+        },
+    ]
+    assert provenance["persistent_device_graph"] == {
+        "producer": "persistent_moe_dispatch_combine",
+        "graph_descriptor_id": "graph_descriptor_moe_dispatch_combine",
+        "runtime": "persistent_device",
+        "device_ids": [6, 7],
+        "rank_to_device": {"0": 6, "1": 7},
+        "source_digests": source_digests,
+        "bridge_digest": "bridge",
+    }
+    assert provenance["shared_payload_ownership"] == {
+        "exists": False,
+        "ownership_token": None,
+        "lifetime_transition_log": [],
+        "reason": "runtime component has not created or transferred shared payload ownership",
+    }
 
 
 def test_nccl_worker_control_ops_example_drives_ctrl_comm_op_with_worker_memory():

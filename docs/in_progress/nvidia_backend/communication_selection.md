@@ -100,6 +100,16 @@ restart. It is a planning boundary, not performance evidence.
   `persistent_device_uccl_ep_runtime_fusion` exists and can prove actual fused
   cross-GPU expert-parallel MoE execution.
   It is a structured unsupported boundary.
+- The UCCL-EP handoff and fused-boundary JSON now record
+  `payload_provenance` from participating components only. Adapter provenance
+  includes the UCCL capability id, descriptor dimensions, metadata shapes,
+  rank results, and rank/device mapping. Persistent-device graph provenance
+  includes the graph descriptor id, device ids, rank/device mapping, source
+  digests, and bridge digest.
+- No runtime component creates or transfers shared payload ownership in the
+  current result. The JSON explicitly reports no shared ownership token and an
+  empty lifetime transition log, while
+  `persistent_device_uccl_ep_runtime_fusion.status` remains `unsupported`.
 - This design/dependency slice selects
   `persistent_device_uccl_ep_runtime_fusion` as the next UCCL-EP dependency
   before implementation. The boundary must preserve the existing runtime

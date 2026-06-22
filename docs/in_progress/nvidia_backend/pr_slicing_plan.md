@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `902804ff`, after PR #145
-  (`Define UCCL EP runtime fusion contract`).
+- Current accepted `main`: `e0ee2879`, after PR #146
+  (`Record abandoned UCCL EP fusion attempt`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -19,12 +19,14 @@ from `main` and lands through focused GitHub PRs.
 - PR #145 accepted the design/dependency contract for
   `persistent_device_uccl_ep_runtime_fusion`. It is not an implementation and
   does not change the PR #143 evidence status.
+- PR #146 recorded the abandoned
+  `nvidia-uccl-ep-runtime-fusion-impl-h200` attempt as invalid because it
+  synthesized pass evidence from handoff metadata instead of emitting real
+  runtime-fusion ownership evidence.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
   runtime-fusion ownership.
-- The current handoff branch `nvidia-uccl-fusion-impl-blocked-handoff` owns
-  only this slicing note, the dispatch log update, and the goal rollup update.
 
 ## Rules
 
@@ -60,6 +62,10 @@ from `main` and lands through focused GitHub PRs.
   - Result: merged as `902804ff0bc9430448323240a77ebd1e12d775e8`.
   - Result type: design/dependency contract only, not fused execution
     evidence.
+- PR #146: abandoned UCCL-EP fusion attempt handoff.
+  - Result: merged as `e0ee287939f7798578e318bf16017fe4939371c2`.
+  - Result type: invalid implementation attempt record only, not fused
+    execution evidence.
 
 ## Restored Tracking Surface
 
@@ -112,25 +118,12 @@ boundary worker is complete as an unsupported-boundary status slice; it is no
 longer a next candidate. After PR #145, the runtime-fusion design contract is
 also complete as a design-only slice; it is not implementation evidence.
 
-## Current Slice
+## Current Dependency Slice
 
-This docs-only handoff slice records the abandoned implementation attempt:
+This section is the former Next Dependency Slice selected after PR #146.
+It is not actual fused cross-GPU expert-parallel MoE execution.
 
-- Branch: `nvidia-uccl-fusion-impl-blocked-handoff`.
-- Scope: docs-only handoff for the rejected
-  `nvidia-uccl-ep-runtime-fusion-impl-h200` attempt.
-- Objective: record that local commit `8c7b3715` was abandoned because it
-  synthesized `status: passed`, `actual_fused_cross_gpu_execution: true`,
-  a payload ownership token, and a transition log from existing UCCL-EP
-  handoff metadata. Synthetic pass evidence derived from handoff metadata is
-  invalid.
-- Non-claims: not DeepSeek serving, not vLLM plugin integration, not RDMA or
-  multi-node evidence, not throughput or latency evidence, and not actual
-  fused cross-GPU expert-parallel MoE execution.
-
-## Next Dependency Slice
-
-The next PR-sized dependency should not try to flip
+This PR-sized dependency does not try to flip
 `persistent_device_uccl_ep_runtime_fusion.status` to `passed`. It should first
 add real payload provenance that is produced by the UCCL-EP adapter and the
 persistent-device graph, rather than synthesizing ownership from handoff
