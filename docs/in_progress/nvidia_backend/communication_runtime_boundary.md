@@ -219,6 +219,31 @@ persistent-device graph descriptor and an opt-in UCCL-EP dispatch/combine
 runtime. Its implementation must sit behind the CUDA runtime boundary, not in
 `TaskArgs`, `CallConfig`, or user orchestration code.
 
+The CUDA persistent-device runtime run context may hold runtime-owned shared
+payload descriptors. The host side of that context is reachable only through
+the existing `ChipWorker` to host-runtime `.so` edge, and it may allocate a
+device-visible descriptor buffer before launching the persistent-device
+scheduler. Python may pass the existing callable id, task payloads,
+`CallConfig`, device ids, and private communication launch metadata, but it
+must not manufacture the shared descriptor, ownership token, or lifetime log.
+
+The component that records the ownership token and payload lifetime transition
+log is the persistent-device/UCCL-EP runtime fusion coordinator. It is a
+private runtime component inside the `persistent_device` CUDA runtime, scoped
+to one `ChipWorker::run` invocation. The persistent-device graph can publish
+graph provenance and the UCCL-EP runtime can publish adapter provenance, but
+neither component may independently synthesize a shared ownership token. The
+fusion coordinator issues the token, validates every state transition, and
+emits the transition log in the fused-boundary result.
+
+PR #147 provenance is accepted input evidence only. It proves that the
+UCCL-EP adapter and persistent-device graph can each report descriptor and
+rank provenance. It does not prove that a runtime-owned shared payload
+descriptor exists. Until the fusion coordinator creates the shared descriptor,
+`persistent_device_uccl_ep_runtime_fusion.status` remains `unsupported`,
+`actual_fused_cross_gpu_execution` remains `false`, and no shared ownership
+token or payload lifetime transition log exists.
+
 The contract must expose these reviewable fields before an implementation can
 claim actual fused cross-GPU expert-parallel MoE execution:
 
@@ -253,6 +278,14 @@ by the existing communication boundary. The evidence shape must report
 rank/device mismatch between the persistent graph and UCCL-EP runtime is a
 failure, even when either component can pass independently.
 
+Mandatory failure states include descriptor shape mismatch, missing ownership
+token, mismatched ownership token, illegal lifetime transition, double release,
+use-after-release, leaked in-flight ownership, rank/device mismatch, UCCL
+transport failure, persistent-device scheduler failure, numeric validation
+failure, and unsupported runtime boundary. These states must be reported as
+`failed`, `setup_failed`, or `unsupported`; they must not be downgraded to
+skips.
+
 Status values must stay review-safe:
 
 - `passed`: setup completed, persistent MoE passed, UCCL-EP runtime passed,
@@ -271,6 +304,13 @@ Unsupported and setup-failed states are non-evidence for fused execution.
 They may be useful review evidence for dependency shape only when they include
 the named failing boundary, command, device ids, dependency placeholders, and
 non-claims.
+
+Non-evidence states also include independent two-device persistent MoE
+baselines, Python-side UCCL-EP adapter passes, NCCL worker-control passes,
+payload provenance without a shared ownership token, stale H200 artifacts, and
+any result where `actual_fused_cross_gpu_execution` is `false`. These states
+can remain useful dependency evidence, but they must not be described as
+actual fused cross-GPU expert-parallel MoE execution.
 
 ## Non-Claims
 

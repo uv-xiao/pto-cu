@@ -23,6 +23,59 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - UCCL-EP Runtime Fusion Readiness Worker
+
+- Dispatcher Session or PR:
+  child worker launched after PR #148 merged as
+  `2e9b01450efb709ed4e42f80a5128a01e8f9ad21`.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-readiness`; define an
+  implementation-readiness map before another
+  `persistent_device_uccl_ep_runtime_fusion` implementation attempt.
+- Exact Codex command or script invocation:
+  child `/goal` worker in branch
+  `nvidia-uccl-ep-runtime-fusion-readiness`; no nested workers launched.
+- Parent goal and child slice:
+  NVIDIA backend restart; docs/design dependency slice for the
+  persistent-device to UCCL-EP runtime-fusion boundary.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-readiness`;
+  <https://github.com/uv-xiao/pto-cu/pull/149>. Opened as a non-draft PR with
+  `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-readiness`.
+- Allowed scope and files:
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/dispatch_log.md`, and
+  `tests/ut/py/test_nvidia_review_artifacts.py`.
+- Dependencies and blocked assumptions:
+  starts from current `main` at
+  `2e9b01450efb709ed4e42f80a5128a01e8f9ad21`. PR #145 is a design contract
+  only. PR #147 remains accepted provenance-only input evidence:
+  `persistent_device_uccl_ep_runtime_fusion.status` is `unsupported`,
+  `actual_fused_cross_gpu_execution` is `false`, and no shared ownership token
+  or lifetime transition log exists.
+- Verification commands and results:
+  completed before this handoff. `git diff --check` passed;
+  `git diff --cached --check` passed after staging; targeted
+  `markdownlint-cli2` over the five touched docs passed with `0 error(s)`;
+  the NVIDIA review guard passed; and `test_nvidia_review_artifacts.py`
+  passed with `61 passed`.
+- Merge decision and merge commit:
+  pending PR creation, dispatcher review, and merge decision.
+- Handoff summary and remaining gaps:
+  this slice defines where the runtime-owned shared payload descriptor can
+  live, names the private fusion coordinator as owner of the ownership token
+  and lifetime transition log, records mandatory failure and non-evidence
+  states, lists local and H200 evidence required before any later pass/true
+  claim, and selects exactly one future branch:
+  `nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor`. Remaining
+  gaps are implementation of the real boundary, CUDA host-runtime UCCL
+  dispatch, RDMA or multi-node evidence, serving/vLLM integration, DeepSeek
+  correctness, and throughput/latency evidence.
+
 ### 2026-06-22 - Post-Payload-Provenance Status Refresh Worker
 
 - Dispatcher Session or PR:
@@ -63,7 +116,11 @@ Each dispatch entry should include:
   passed with `0 error(s)`; the NVIDIA review guard passed; and
   `test_nvidia_review_artifacts.py` passed with `61 passed`.
 - Merge decision and merge commit:
-  pending PR #148 dispatcher review and merge decision.
+  accepted as a status/slicing refresh only. PR #148 merged into `main` on
+  2026-06-22 as `2e9b01450efb709ed4e42f80a5128a01e8f9ad21`
+  (`Refresh NVIDIA status after payload provenance`). The merge decision
+  did not accept any actual fused cross-GPU expert-parallel MoE execution
+  evidence.
 - Handoff summary and remaining gaps:
   status docs promote PR #147 from next slice to accepted provenance-only
   baseline and select
