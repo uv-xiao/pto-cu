@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `20b3e625ea8c9d6e4f06bb3992779b807f65acf9`,
-  after PR #167 (`Refresh NVIDIA status after capability metadata`).
+- Current accepted `main`: `e33d232deccdf947b9c382a3605191d0d5ae0004`,
+  after PR #168 (`Map UCCL EP validation policy`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -127,6 +127,10 @@ from `main` and lands through focused GitHub PRs.
   `nvidia-uccl-ep-runtime-fusion-validation-policy-map` as the next
   dependency slice. It did not change CUDA runtime behavior, result shape, or
   fused-execution evidence status.
+- PR #168 accepted only the private validation policy dependency map. It did
+  not implement CUDA runtime behavior, descriptor allocation policy, UCCL-EP
+  runtime dispatch, a coordinator, pass evidence, or H200 fused-success
+  evidence.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -246,6 +250,11 @@ from `main` and lands through focused GitHub PRs.
   - Result: merged as `20b3e625ea8c9d6e4f06bb3992779b807f65acf9`.
   - Result type: status/slicing refresh only, not runtime behavior or fused
     execution evidence.
+- PR #168: map UCCL EP validation policy.
+  - Result: merged as `e33d232deccdf947b9c382a3605191d0d5ae0004`.
+  - Result type: private validation policy dependency map only, not runtime
+    behavior, descriptor allocation, UCCL-EP runtime dispatch, coordinator
+    behavior, pass evidence, or fused execution evidence.
 
 ## Restored Tracking Surface
 
@@ -327,10 +336,13 @@ does not add coordinator-owned UCCL-EP runtime fusion evidence. After
 PR #165, the post-PR164 status refresh is complete. After PR #166, the
 private UCCL-EP capability metadata map is accepted as a dependency slice
 only; it does not implement validation policy or runtime behavior. After
-PR #167, the post-capability-metadata status refresh is complete. The current
-accepted baseline is `20b3e625ea8c9d6e4f06bb3992779b807f65acf9`, and the
-next slice is exactly one conservative dependency slice:
-`nvidia-uccl-ep-runtime-fusion-validation-policy-map`.
+PR #167, the post-capability-metadata status refresh is complete. After
+PR #168, the private validation policy map is accepted as a dependency slice
+only; it does not implement descriptor allocation policy or runtime behavior.
+The current accepted baseline is
+`e33d232deccdf947b9c382a3605191d0d5ae0004`, and the next slice is exactly
+one conservative dependency slice:
+`nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map`.
 
 ## Accepted Payload Provenance Slice
 
@@ -1044,9 +1056,9 @@ PR #166 met this objective as a private capability metadata dependency map
 only. It merged as `42b996666e279024b43f490a310c490a591a897d` and is no
 longer selected as future work.
 
-## Selected Validation Policy Map Slice
+## Accepted Validation Policy Map Slice
 
-Selected branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-validation-policy-map`.
 
 Objective: map the private validation policy that a later
@@ -1097,6 +1109,55 @@ Required non-claims:
 - no runtime-fusion coordinator implementation;
 - no descriptor allocator implementation;
 - no UCCL-EP runtime path implementation;
+- no fresh H200 fused-success evidence;
+- no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- no `actual_fused_cross_gpu_execution: true`;
+- no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claim.
+
+PR #168 met this objective as a private validation policy dependency map
+only. It merged as `e33d232deccdf947b9c382a3605191d0d5ae0004` and is no
+longer selected as future work.
+
+## Selected Descriptor Allocation Policy Map Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map`.
+
+Objective: map the private descriptor allocation policy that a later
+`persistent_device_uccl_ep_runtime_fusion_entry` coordinator request must use
+after PR #168 defined validation policy. This is the narrowest missing
+dependency after validation policy because descriptor allocation policy must
+define what the coordinator may allocate before UCCL-EP runtime dispatch,
+coordinator implementation, pass evidence, or H200 fused-success evidence can
+be claimed.
+
+Required dependency boundaries:
+
+- keep descriptor allocation policy private to the CUDA persistent-device
+  runtime path;
+- preserve PR #164 same-invocation request args, PR #166 UCCL-EP capability
+  metadata, and PR #168 validation policy as prerequisites rather than pass
+  evidence;
+- define host-control record, device-visible descriptor buffer, dispatch
+  descriptor identity, combine descriptor identity, shared-token requirement,
+  allocator owner, and allocation lifetime failure ownership;
+- define unsupported or failed states: missing policy is unsupported, stale
+  policy is failed, non-runtime-owned allocation is failed,
+  descriptor-vocabulary mismatch is failed, token-sharing mismatch is failed,
+  rank/device mismatch is failed, and public/API-sourced policy fields are
+  failed;
+- keep UCCL-EP runtime dispatch, coordinator implementation, pass evidence,
+  and H200 fused-success evidence out of this slice;
+- keep public `TaskArgs`, public `CallConfig`, the common runtime C API,
+  UCCL host-runtime ABI fields, example JSON, adapter provenance, and handoff
+  metadata as forbidden pass-evidence paths.
+
+Required non-claims:
+
+- no CUDA runtime behavior change;
+- no runtime-fusion coordinator implementation;
+- no UCCL-EP runtime path implementation;
+- no pass evidence;
 - no fresh H200 fused-success evidence;
 - no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
 - no `actual_fused_cross_gpu_execution: true`;

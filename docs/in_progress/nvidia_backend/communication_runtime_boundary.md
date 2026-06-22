@@ -681,11 +681,13 @@ scope as `42b996666e279024b43f490a310c490a591a897d`.
 
 ## Validation Policy Map Slice
 
-The next selected dependency slice is
-`nvidia-uccl-ep-runtime-fusion-validation-policy-map`. It should map the
-private validation policy required after PR #166's capability metadata
-vocabulary and before descriptor allocation, UCCL-EP runtime dispatch,
-coordinator implementation, pass evidence, or H200 fused-success evidence.
+Accepted branch:
+`nvidia-uccl-ep-runtime-fusion-validation-policy-map`.
+
+PR #168 accepted only the private validation policy dependency map required
+after PR #166's capability metadata vocabulary and before descriptor
+allocation, UCCL-EP runtime dispatch, coordinator implementation, pass
+evidence, or H200 fused-success evidence.
 
 The validation policy remains private to the CUDA persistent-device runtime
 path. It validates PR #164 same-invocation request args and PR #166 capability
@@ -712,6 +714,39 @@ runtime dispatch, no coordinator implementation, no pass evidence, and no
 H200 fused-success evidence. Public `TaskArgs`, public `CallConfig`, common
 runtime C API fields, UCCL host-runtime ABI fields, example JSON, adapter
 provenance, and handoff metadata remain forbidden pass-evidence paths.
+
+PR #168 merged this validation policy scope as
+`e33d232deccdf947b9c382a3605191d0d5ae0004`.
+
+## Descriptor Allocation Policy Map Slice
+
+The next selected dependency slice is
+`nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map`. It should
+map only the private descriptor allocation policy required after PR #168's
+validation policy and before UCCL-EP runtime dispatch, coordinator
+implementation, pass evidence, or H200 fused-success evidence.
+
+The descriptor allocation policy remains private to the CUDA
+persistent-device runtime path. It must preserve PR #164 same-invocation
+request args, PR #166 UCCL-EP capability metadata, and PR #168 validation
+policy as prerequisites rather than pass evidence.
+
+The selected map must define host-control record policy, device-visible
+descriptor buffer policy, dispatch descriptor identity, combine descriptor
+identity, shared-token requirement, allocator owner, and allocation lifetime
+failure ownership.
+
+Failure ownership should be explicit: missing policy is unsupported, stale
+policy is failed, non-runtime-owned allocation is failed,
+descriptor-vocabulary mismatch is failed, token-sharing mismatch is failed,
+rank/device mismatch is failed, and public/API-sourced policy fields are
+failed as fabricated or untrusted pass evidence.
+
+This future slice must not implement UCCL-EP runtime dispatch, construct the
+coordinator, change CUDA runtime behavior, or claim pass evidence. Public
+`TaskArgs`, public `CallConfig`, common runtime C API fields, UCCL
+host-runtime ABI fields, example JSON, adapter provenance, and handoff
+metadata remain forbidden pass-evidence paths.
 
 ## Non-Claims
 

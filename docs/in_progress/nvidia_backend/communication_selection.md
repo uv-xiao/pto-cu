@@ -241,13 +241,19 @@ restart. It is a planning boundary, not performance evidence.
   map. It did not implement a runtime-fusion coordinator, descriptor
   allocator, UCCL-EP runtime path, validation policy, CUDA runtime behavior,
   pass evidence, or H200 fused-success evidence.
+- PR #167 accepted only the post-PR166 docs/test status refresh and selected
+  the validation policy map.
+- PR #168 accepted only the private validation policy dependency map. It did
+  not implement CUDA runtime behavior, descriptor allocation policy, UCCL-EP
+  runtime dispatch, a coordinator, pass evidence, or H200 fused-success
+  evidence.
 - The next selected slice is
-  `nvidia-uccl-ep-runtime-fusion-validation-policy-map`, a docs/test
-  dependency map for the private validation policy that a later coordinator
-  request will need after the capability metadata vocabulary exists. It must
+  `nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map`, a
+  docs/test dependency map for the private descriptor allocation policy that a
+  later coordinator request will need after validation policy exists. It must
   not implement runtime behavior, widen public `TaskArgs` / `CallConfig`,
-  widen the common runtime C API or UCCL host-runtime ABI, or claim H200 fused
-  success.
+  widen the common runtime C API or UCCL host-runtime ABI, implement UCCL-EP
+  runtime dispatch, construct a coordinator, or claim H200 fused success.
 
 ## Capability Metadata Map Slice
 
@@ -284,10 +290,12 @@ no fresh H200 fused-success evidence. PR #166 merged this scope as
 
 ## Validation Policy Map Slice
 
-The next selected dependency slice is
-`nvidia-uccl-ep-runtime-fusion-validation-policy-map`. It maps only the
-private validation policy required before a coordinator may consume the
-PR #164 same-invocation request args and PR #166 UCCL-EP capability metadata.
+Accepted branch:
+`nvidia-uccl-ep-runtime-fusion-validation-policy-map`.
+
+PR #168 maps only the private validation policy required before a coordinator
+may consume the PR #164 same-invocation request args and PR #166 UCCL-EP
+capability metadata.
 
 The validation policy remains private to the CUDA persistent-device runtime
 path. It validates PR #164 same-invocation request args and PR #166 capability
@@ -311,6 +319,38 @@ behavior, or claim pass evidence. Public `TaskArgs`, public `CallConfig`,
 common runtime C API fields, UCCL host-runtime ABI fields, example JSON,
 adapter provenance, and handoff metadata remain forbidden pass-evidence
 paths.
+
+PR #168 merged this validation policy scope as
+`e33d232deccdf947b9c382a3605191d0d5ae0004`.
+
+## Descriptor Allocation Policy Map Slice
+
+The next selected dependency slice is
+`nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map`. It maps only
+the private descriptor allocation policy required before a coordinator may
+allocate host-control records or device-visible dispatch/combine descriptors.
+
+The descriptor allocation policy remains private to the CUDA
+persistent-device runtime path. It must preserve PR #164 same-invocation
+request args, PR #166 UCCL-EP capability metadata, and PR #168 validation
+policy as prerequisites rather than pass evidence.
+
+The map should define allocator owner, host-control record policy,
+device-visible descriptor buffer policy, dispatch descriptor identity,
+combine descriptor identity, shared-token requirement, rank/device
+compatibility, and allocation lifetime failure ownership.
+
+Failure ownership is explicit: missing policy is unsupported, stale policy is
+failed, non-runtime-owned allocation is failed, descriptor-vocabulary mismatch
+is failed, token-sharing mismatch is failed, rank/device mismatch is failed,
+and public/API-sourced policy fields are failed as fabricated or untrusted
+pass evidence.
+
+This slice must not implement UCCL-EP runtime dispatch, construct a
+coordinator, change CUDA runtime behavior, or claim pass evidence. Public
+`TaskArgs`, public `CallConfig`, common runtime C API fields, UCCL
+host-runtime ABI fields, example JSON, adapter provenance, and handoff
+metadata remain forbidden pass-evidence paths.
 
 ## Non-Claims
 
