@@ -23,6 +23,63 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - NVIDIA MoE UCCL-EP Fused Boundary Worker
+
+- Dispatcher Session or PR:
+  child worker session for the next slice selected by the goal status rollup.
+- Worker id and objective:
+  `pto-worker-nvidia-moe-uccl-ep-fused-boundary-h200`; convert the accepted
+  persistent-MoE plus UCCL-EP adapter handoff into an explicit reduced fused
+  cross-GPU expert-parallel MoE boundary result.
+- Exact Codex command or script invocation:
+  child `/goal` worker in worktree
+  `nvidia-moe-uccl-ep-fused-boundary-h200`.
+- Parent goal and child slice:
+  NVIDIA backend restart; first reduced fused cross-GPU expert-parallel MoE
+  boundary status from the accepted persistent MoE plus UCCL-EP handoff.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-moe-uccl-ep-fused-boundary-h200`;
+  <https://github.com/uv-xiao/pto-cu/pull/143>.
+- Allowed scope and files:
+  `examples/cuda/persistent_moe_dispatch_combine.py`,
+  `tests/ut/py/test_cuda_comm.py`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`, and this
+  dispatch log.
+- Dependencies and blocked assumptions:
+  H200 UCCL-EP execution used sanitized external dependency paths:
+  `<external-uccl-ep-bench>` for the UCCL checkout and EP bench helper, and
+  `<uccl-python-site-packages>` for external Torch site packages. The command
+  copied the prebuilt `uccl.ep` extension into the project-local remote venv.
+- Verification commands and results:
+  `git diff --check` passed; `git diff --cached --check` passed; targeted
+  `markdownlint-cli2` over the persistent MoE, communication boundary,
+  communication selection, and dispatch log docs passed; `test_cuda_comm.py`
+  passed with `33 passed`; the NVIDIA review guard passed; and
+  `test_nvidia_review_artifacts.py` passed with `60 passed`.
+- H200 evidence:
+  remote `run-remote-cuda.sh --sync` on `NVIDIA H200 NVL` devices `6,7`,
+  driver `580.126.20`, CUDA toolkit under `/usr/local/cuda`, Python `3.12.3`.
+  The command exited `3` with `status: unsupported`. Persistent MoE validation
+  passed on both devices with `max_abs_error: 0.0`, completed count `5`,
+  zero scheduler errors, zero fan-in remaining, and matching source/bridge
+  digests. UCCL-EP adapter validation passed on both ranks with
+  `max_abs_error: 0.0`, `topk_weight_error: 0.0`, descriptor metadata present,
+  and `recv_tokens: [88]` on both ranks. The result is non-evidence for actual
+  fused cross-GPU expert-parallel MoE because
+  `persistent_device_uccl_ep_runtime_fusion` remains missing.
+- Merge decision and merge commit:
+  pending worker PR, parent review, and exact-head merge decision.
+- Handoff summary and remaining gaps:
+  the branch adds `--with-uccl-ep-fused-boundary` and records a structured
+  unsupported boundary instead of promoting the prior handoff to fused
+  evidence. Remaining gaps are actual persistent-device/UCCL-EP runtime
+  fusion, device-side cross-GPU expert routing, CUDA host-runtime UCCL
+  dispatch, RDMA or multi-node evidence, serving/vLLM integration,
+  DeepSeek correctness, and throughput/latency evidence.
+
 ### 2026-06-22 - Dispatch Goal Status Rollup Worker
 
 - Dispatcher Session or PR:

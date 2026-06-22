@@ -158,10 +158,12 @@ Result: pass.
 
 Per-device validation:
 
-| Device | Status | Max error | Completed | Scheduler errors | Fan-in | Host ns | Device ns |
-| ------ | ------ | --------- | --------- | ---------------- | ------ | ------- | --------- |
-| 6 | passed | 0.0 | 5 | `{count: 0, code: 0, task_id: 0}` | `[0, 0, 0, 0, 0]` | 2446295 | 46144 |
-| 7 | passed | 0.0 | 5 | `{count: 0, code: 0, task_id: 0}` | `[0, 0, 0, 0, 0]` | 60360 | 49888 |
+- Device `6`: status `passed`, max error `0.0`, completed `5`,
+  scheduler errors `{count: 0, code: 0, task_id: 0}`, fan-in
+  `[0, 0, 0, 0, 0]`, host `2446295` ns, device `46144` ns.
+- Device `7`: status `passed`, max error `0.0`, completed `5`,
+  scheduler errors `{count: 0, code: 0, task_id: 0}`, fan-in
+  `[0, 0, 0, 0, 0]`, host `60360` ns, device `49888` ns.
 
 The aggregate command records the same `gluon_expert_bridge` metadata and the
 matching func id `12` `task_bodies` digest on both devices. This remains a
@@ -363,3 +365,105 @@ not validate distributed expert parallelism, fused cross-GPU MoE
 dispatch/combine, CUDA host-runtime UCCL dispatch, RDMA, multi-node transport,
 serving, DeepSeek/vLLM integration, or performance.
 It does not validate CUDA host-runtime UCCL dispatch.
+
+## Reduced Fused Boundary Gate
+
+This slice adds an explicit fused-boundary mode without relabeling the
+accepted UCCL-EP handoff as fused evidence. The command routes the same
+bounded payload through the persistent MoE graph and UCCL-EP adapter path in
+one H200 command, then records the reduced fused cross-GPU expert-parallel MoE
+boundary as a structured unsupported boundary. The implementation anchor is
+`run_persistent_moe_uccl_ep_fused_boundary` in
+`examples/cuda/persistent_moe_dispatch_combine.py`.
+
+Command shape:
+
+```bash
+REMOTE_PTO_CU=<remote-checkout> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'python3 -m venv --system-site-packages .venv && \
+    source .venv/bin/activate && \
+    pip install scikit-build-core nanobind cmake ninja nvidia-nccl-cu12 \
+      >/tmp/pto-cu-uccl-ep-fused-boundary-build-deps-install.log && \
+    pip install --no-build-isolation -e . \
+      >/tmp/pto-cu-uccl-ep-fused-boundary-pip-install.log && \
+    UCCL_SITE=$PWD/.venv/lib/python3.12/site-packages && \
+    mkdir -p "$UCCL_SITE/uccl" && \
+    cp <external-uccl-ep-bench>/uccl/__init__.py \
+      "$UCCL_SITE/uccl/__init__.py" && \
+    cp <external-uccl-ep-bench>/ep/build/lib.linux-x86_64-cpython-312/ep*.so \
+      "$UCCL_SITE/uccl/" && \
+    UCCL_EP_BENCH_DIR=<external-uccl-ep-bench>/ep/bench \
+    NCCL_DEBUG=WARN \
+    PYTHONPATH=$PWD:$PWD/python:$UCCL_SITE:<uccl-python-site-packages> \
+    .venv/bin/python examples/cuda/persistent_moe_dispatch_combine.py \
+      --device-ids 6,7 --n 4096 --arch compute_90 \
+      --with-uccl-ep-fused-boundary --tensor-numel 1024 \
+      --require-cuda \
+      --output-json tmp/persistent-moe-uccl-ep-fused-boundary-h200.json'
+```
+
+Run method: generic remote runner with `--sync` into a temporary remote
+checkout. The synced checkout creates a project-local venv, installs this repo
+editable, copies the prebuilt UCCL-EP extension from
+`<external-uccl-ep-bench>` into that venv, and uses
+`<uccl-python-site-packages>` only as an external Python dependency path.
+
+Environment:
+
+```text
+machine class: NVIDIA H200 host
+devices: 6,7
+gpu: NVIDIA H200 NVL, compute capability 9.0, 143771 MiB
+driver: 580.126.20
+CUDA_HOME: /usr/local/cuda
+python: 3.12.3
+source sync: --sync into <remote-checkout>
+UCCL dependency path policy: sanitized external UCCL checkout plus
+  project-local venv copy of uccl.ep; external Torch site-packages via
+  PYTHONPATH
+```
+
+Result: structured unsupported boundary. The command exited with status `3`.
+
+- `status`: `unsupported`
+- `fused_boundary_scope`:
+  `reduced-fused-cross-gpu-expert-parallel-moe-boundary`
+- `handoff_scope`: `persistent-moe-plus-uccl-ep-adapter`
+- `boundary_validation.handoff_passed`: `true`
+- `boundary_validation.actual_fused_cross_gpu_execution`: `false`
+- `boundary_validation.structured_unsupported_boundary`: `true`
+- `missing_boundaries`: includes
+  `persistent_device_uccl_ep_runtime_fusion`,
+  `shared_dispatch_combine_payload_between_persistent_graph_and_uccl_ep`, and
+  `device_side_cross_gpu_expert_parallel_routing`
+- `persistent_moe_validation.all_devices_passed`: `true`
+- `persistent_moe_validation.completed_count_is_5`: `true`
+- `persistent_moe_validation.scheduler_errors_zero`: `true`
+- `persistent_moe_validation.fanin_remaining_zero`: `true`
+- `persistent_moe_validation.source_digests_match`: `true`
+- `persistent_moe_validation.bridge_metadata_match`: `true`
+- `uccl_ep_adapter_validation.adapter_passed`: `true`
+- `uccl_ep_adapter_validation.transport_is_ep`: `true`
+- `uccl_ep_adapter_validation.operation_is_dispatch_combine`: `true`
+- `uccl_ep_adapter_validation.descriptor_metadata_present`: `true`
+- `uccl_ep_adapter_validation.all_ranks_passed`: `true`
+- `uccl_ep_adapter_validation.max_abs_error_zero`: `true`
+- `uccl_ep_adapter_validation.topk_weight_error_zero`: `true`
+- `uccl_ep_adapter.rank_results[0].recv_tokens`: `[88]`
+- `uccl_ep_adapter.rank_results[1].recv_tokens`: `[88]`
+- `persistent_moe_source_digests.dispatch_source_sha256`:
+  `c096ede6d4ab5e1a9a33070bc1fcf988b9fb9c405d929a770c962308b396b209`
+- `persistent_moe_source_digests.gluon_expert_bridge_sha256`:
+  `7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f`
+- `persistent_moe_source_digests.task_body_func12_sha256`:
+  `7cd6c62b29a6774cef62e1f00f0bbf6c106d62c82e1e10e3c571e80a5e62eb4f`
+- `evidence_statement`: structured unsupported boundary and non-evidence for
+  fused cross-GPU expert-parallel MoE
+
+This is non-evidence for actual fused cross-GPU expert-parallel MoE. It does
+not validate distributed expert parallelism, CUDA host-runtime UCCL dispatch,
+RDMA, multi-node transport, serving, DeepSeek/vLLM integration, throughput, or
+latency. A later implementation must add the
+`persistent_device_uccl_ep_runtime_fusion` boundary before this can become
+fused evidence.
