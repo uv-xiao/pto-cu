@@ -23,6 +23,73 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - UCCL-EP Runtime Fusion Private Entry Unsupported Worker
+
+- Dispatcher Session or PR:
+  child worker launched after PR #154 merged as
+  `29da72a171b25deeeb53db399f9cdf54d38c647a`.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`;
+  implement the narrow private CUDA persistent-device runtime-fusion entry
+  scaffold while keeping fused-boundary evidence unsupported unless real
+  coordinator-owned evidence exists.
+- Exact Codex command or script invocation:
+  child `/goal` worker in branch
+  `nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`; no nested
+  workers launched.
+- Parent goal and child slice:
+  NVIDIA backend restart; private unsupported scaffold for
+  `persistent_device_uccl_ep_runtime_fusion_entry` selected by PR #154.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`;
+  <https://github.com/uv-xiao/pto-cu/pull/155>. Opened as a non-draft PR
+  with `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`.
+- Allowed scope and files:
+  private CUDA runtime-fusion scaffold files under
+  `src/cuda/platform/include/host/` and
+  `src/cuda/platform/onboard/host/`, focused unit tests, the NVIDIA
+  in-progress boundary/selection/status docs, and review-artifact tests.
+- Dependencies and blocked assumptions:
+  starts from current `main` at
+  `29da72a171b25deeeb53db399f9cdf54d38c647a`. PR #147 remains accepted only
+  as provenance-only unsupported-boundary evidence. PR #150 remains accepted
+  only as guard-only blocked implementation evidence. PR #152 remains a
+  coordinator-boundary map only. PR #153 remains a private entry-contract
+  only. PR #154 remains a post-PR153 status refresh only. No PR has accepted
+  `persistent_device_uccl_ep_runtime_fusion.status: passed` or
+  `actual_fused_cross_gpu_execution: true`.
+- Verification commands and results:
+  completed before PR creation. `git diff --check` passed; targeted
+  `markdownlint-cli2` over the five touched docs passed with `0 error(s)`;
+  the NVIDIA review guard passed; `test_nvidia_review_artifacts.py` passed
+  with `61 passed`; `test_cuda_runtime_fusion_private_entry.py` passed with
+  `4 passed`; and
+  `test_cuda_backend.py::test_cuda_persistent_host_runtime_exports_role_keyed_init`
+  passed with `1 passed`. Local CUDA visibility was checked before CUDA
+  verification: `nvcc` resolved to `/usr/local/cuda-12.8/bin/nvcc`, and
+  `nvidia-smi` reported local A100 GPUs with driver `595.71.05`. The
+  persistent DAG smoke
+  `test_cuda_backend.py::test_cuda_persistent_device_smoke_runs_dispatch_dag`
+  was run with `-rs` and skipped because `cuda_persistent_smoke.py is not
+  part of the slim CUDA eval skill`; it is not pass evidence.
+- H200 evidence:
+  no fresh H200 command is planned because this slice adds only an
+  unsupported private scaffold and does not emit pass/true fused-boundary
+  evidence. The branch remains unsupported.
+- Merge decision and merge commit:
+  pending PR creation, dispatcher review, and merge decision.
+- Handoff summary and remaining gaps:
+  this slice adds a private CUDA host-side request/result scaffold and
+  explicit unsupported/failure fields. It does not implement the real
+  coordinator, allocate shared dispatch/combine descriptors, issue an
+  ownership token, record a complete lifetime transition log, expand public
+  `TaskArgs` or `CallConfig`, expand a UCCL host-runtime ABI, claim fresh H200
+  fused success, report
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`, set
+  `actual_fused_cross_gpu_execution: true`, or claim RDMA, multi-node,
+  serving, vLLM, DeepSeek, throughput, or latency evidence.
+
 ### 2026-06-22 - Post-Coordinator-Entry-Contract Status Refresh Worker
 
 - Dispatcher Session or PR:

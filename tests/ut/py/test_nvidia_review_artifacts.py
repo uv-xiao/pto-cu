@@ -523,6 +523,17 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     dispatch_log = (in_progress_root / "dispatch_log.md").read_text(
         encoding="utf-8"
     )
+    private_entry_header = (
+        ROOT / "src" / "cuda" / "platform" / "include" / "host"
+        / "pto_cuda_runtime_fusion_abi.h"
+    ).read_text(encoding="utf-8")
+    cuda_host_runtime = (
+        ROOT / "src" / "cuda" / "platform" / "onboard" / "host"
+        / "pto_runtime_c_api.cpp"
+    ).read_text(encoding="utf-8")
+    private_entry_test = (
+        ROOT / "tests" / "ut" / "py" / "test_cuda_runtime_fusion_private_entry.py"
+    ).read_text(encoding="utf-8")
     normalized_persistent_moe = " ".join(persistent_moe.split())
     normalized_boundary = " ".join(boundary.split())
 
@@ -602,6 +613,11 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported",
         "private entry scaffold behind `ChipWorker::run`",
         "The expected review-safe result remains",
+        "Private Entry Unsupported Scaffold",
+        "pto_cuda_runtime_fusion_abi.h",
+        "PtoCudaRuntimeFusionRequest",
+        "PtoCudaRuntimeFusionResult",
+        "explicit failure bits",
     ]:
         assert required in persistent_moe
     assert "Example-side JSON, adapter-only provenance" in (
@@ -623,6 +639,9 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "callable id, chip-local rank/device map, persistent graph descriptor",
         "coordinator status, descriptor allocation provenance",
         "forbidden pass-evidence paths",
+        "pto_cuda_runtime_fusion_abi.h",
+        "PtoCudaRuntimeFusionRequest",
+        "explicit failure bits",
         "PR #152 remains a coordinator-boundary map only",
         "PR #153 remains a private entry-contract only",
         "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported",
@@ -748,6 +767,47 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         normalized_slicing
     )
     assert "https://github.com/uv-xiao/pto-cu/pull/145" in dispatch_log
+
+    for required in [
+        "PtoCudaRuntimeFusionRequest",
+        "PtoCudaRuntimeFusionResult",
+        "PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_COORDINATOR",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_DESCRIPTOR_ALLOCATOR",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_UCCL_EP_RUNTIME",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_VALIDATION_POLICY",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE",
+        "persistent_device_uccl_ep_runtime_fusion_entry",
+    ]:
+        assert required in private_entry_header
+
+    assert "persistent_device_uccl_ep_runtime_fusion_entry" in cuda_host_runtime
+    assert "record_runtime_fusion_unsupported" in cuda_host_runtime
+    assert "PtoCudaRuntimeFusionRequest" in cuda_host_runtime
+    assert "PtoCudaRuntimeFusionResult" in cuda_host_runtime
+
+    for required in [
+        "test_private_runtime_fusion_entry_reports_missing_runtime_surfaces",
+        "test_private_runtime_fusion_entry_rejects_forbidden_pass_evidence",
+        "test_private_runtime_fusion_entry_keeps_pass_unreachable_without_evidence",
+        "test_cuda_host_runtime_hooks_private_entry_without_public_api_expansion",
+    ]:
+        assert required in private_entry_test
+
+    private_entry_worker = dispatch_log.split(
+        "### 2026-06-22 - UCCL-EP Runtime Fusion Private Entry Unsupported Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_private_entry_worker = " ".join(private_entry_worker.split())
+    assert "29da72a171b25deeeb53db399f9cdf54d38c647a" in private_entry_worker
+    assert "https://github.com/uv-xiao/pto-cu/pull/155" in private_entry_worker
+    assert "Opened as a non-draft PR" in normalized_private_entry_worker
+    assert "unsupported private scaffold" in normalized_private_entry_worker
+    assert "branch remains unsupported" in normalized_private_entry_worker
+    assert "`persistent_device_uccl_ep_runtime_fusion.status: passed`" in (
+        private_entry_worker
+    )
+    assert "`actual_fused_cross_gpu_execution: true`" in private_entry_worker
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():

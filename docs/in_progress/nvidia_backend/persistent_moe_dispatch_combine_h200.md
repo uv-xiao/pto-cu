@@ -814,6 +814,37 @@ host-runtime ABI fields unchanged. Adapter-only provenance, example-side
 JSON, handoff metadata, and public API fields remain forbidden pass-evidence
 paths.
 
+## Private Entry Unsupported Scaffold
+
+This implementation slice adds the first private CUDA host-side scaffold for
+`persistent_device_uccl_ep_runtime_fusion_entry` without accepting pass
+evidence. The private request/result shape lives in
+`src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h`, and the CUDA
+host runtime calls it from
+`src/cuda/platform/onboard/host/pto_runtime_c_api.cpp` when the persistent
+DAG run path has a graph descriptor.
+
+The scaffold records only unsupported or failed status. It derives available
+private fields from the callable id, the persistent graph descriptor pointer,
+the private CUDA communication descriptor when one is configured, and a
+runtime-owned result sink. `PtoCudaRuntimeFusionRequest` and
+`PtoCudaRuntimeFusionResult` carry that private request/result boundary.
+When the coordinator, descriptor allocator, UCCL-EP runtime path, validation
+policy, UCCL-EP capability metadata, or `ChipStorageTaskArgs` surface is
+absent, the result records explicit failure bits and keeps
+`persistent_device_uccl_ep_runtime_fusion.status: unsupported`.
+
+Forbidden pass-evidence paths remain rejected. Adapter provenance,
+example-side JSON, handoff metadata, payload provenance, public `TaskArgs`,
+and public `CallConfig` map to
+`fabricated_or_untrusted_pass_evidence` and cannot set
+`actual_fused_cross_gpu_execution: true`.
+
+No fresh H200 fused-boundary run is recorded for this unsupported scaffold
+slice. The branch does not add public `TaskArgs` fields, public `CallConfig`
+fields, or UCCL host-runtime ABI fields, and it does not claim
+`persistent_device_uccl_ep_runtime_fusion.status: passed`.
+
 ## Future Fused Execution Evidence Shape
 
 This design/dependency PR defines the evidence contract only. It does not
