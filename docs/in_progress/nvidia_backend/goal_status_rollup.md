@@ -1,6 +1,6 @@
 # NVIDIA Backend Goal Status Rollup
 
-This rollup audits `origin/main` at `902804ff` against the acceptance
+This rollup audits `origin/main` at `6405dfbd` against the acceptance
 criteria in `docs/in_progress/001-nvidia-backend.md`. It uses checked-in
 files and accepted merge history only. No new H200 or serving command was run
 for this handoff slice.
@@ -48,8 +48,11 @@ for this handoff slice.
   `--with-uccl-ep-fused-boundary`, which returns `status: unsupported` when
   the UCCL-EP handoff passes but
   `persistent_device_uccl_ep_runtime_fusion` is missing. PR #145 defines the
-  missing boundary's design contract only. PR #14, PR #55, PR #57, PR #95,
-  PR #101, PR #143, and PR #145 are the main accepted refs. This is still not
+  missing boundary's design contract only. PR #147 records accepted
+  provenance-only evidence for the UCCL-EP adapter descriptor/rank payload and
+  persistent-device graph payload, while the fused-boundary command still
+  exits `unsupported` as expected. PR #14, PR #55, PR #57, PR #95, PR #101,
+  PR #143, PR #145, and PR #147 are the main accepted refs. This is still not
   fused cross-GPU expert-parallel MoE, serving, or DeepSeek evidence.
 - Distributed compiler/runtime direction:
   `partial evidence`.
@@ -60,10 +63,13 @@ for this handoff slice.
   `docs/in_progress/nvidia_backend/uccl_ep_adapter_h200.md` cover Ray, NCCL,
   and UCCL role selection plus H200 NCCL and UCCL adapter probes. PR #143
   records an explicit UCCL-EP fused-boundary mode as a structured unsupported
-  boundary, not fused execution evidence. PR #59, PR #101, and PR #143 are
-  accepted refs for worker-control, handoff, and boundary-status evidence.
-  UCCL host-runtime dispatch, the missing persistent-device/UCCL-EP runtime
-  fusion implementation, RDMA, multi-node, and serving communication remain
+  boundary, not fused execution evidence. PR #147 records
+  `payload_provenance` from the UCCL-EP adapter and persistent-device graph,
+  with no shared payload ownership token or lifetime transition log. PR #59,
+  PR #101, PR #143, and PR #147 are accepted refs for worker-control,
+  handoff, boundary-status, and provenance-only evidence. UCCL host-runtime
+  dispatch, the missing persistent-device/UCCL-EP runtime fusion
+  implementation, RDMA, multi-node, and serving communication remain
   incomplete. PR #145 is a design contract for that missing runtime-fusion
   boundary, not execution evidence.
 - Multi-GPU MoE dispatch/combine:
@@ -74,8 +80,13 @@ for this handoff slice.
   PR #143 adds a review-safe `--with-uccl-ep-fused-boundary` status gate that
   reports `unsupported` after the handoff passes because
   `persistent_device_uccl_ep_runtime_fusion` does not exist. PR #145 defines
-  the contract that a future implementation must satisfy. It does not yet run
-  fused cross-GPU expert-parallel dispatch/combine.
+  the contract that a future implementation must satisfy. PR #147 adds
+  provenance-only H200 evidence: UCCL-EP adapter descriptor/rank payload
+  provenance is recorded, persistent-device graph payload provenance is
+  recorded, `persistent_device_uccl_ep_runtime_fusion.status` remains
+  `unsupported`, `actual_fused_cross_gpu_execution` remains `false`, and no
+  shared payload ownership token or lifetime transition log exists. It does
+  not yet run fused cross-GPU expert-parallel dispatch/combine.
 - Serving launches simpler NVIDIA kernels:
   `partial evidence`.
   `docs/in_progress/nvidia_backend/serving_target_selection.md`,
@@ -104,7 +115,10 @@ for this handoff slice.
   merge, PR #141 recorded the status rollup worker dispatch, PR #142 landed
   the first status rollup, and PR #143 landed the structured unsupported
   UCCL-EP fused-boundary status. PR #145 landed the design/dependency
-  contract without changing the accepted evidence status.
+  contract without changing the accepted evidence status. PR #146 recorded an
+  invalid abandoned implementation attempt. PR #147 landed the payload
+  provenance-only status slice and did not change fused-execution evidence
+  status.
 
 ## Evidence Separation
 
@@ -120,21 +134,19 @@ or vLLM plugin integration.
 ## Recommended Next Slice
 
 Recommended branch:
-`nvidia-uccl-ep-adapter-payload-provenance`.
+`nvidia-uccl-ep-runtime-fusion-readiness`.
 
-Objective: add a narrower dependency before another implementation attempt:
-record real payload provenance produced by the UCCL-EP adapter and the
-persistent-device graph. The slice may extend the existing handoff or
-fused-boundary JSON, but it must not fabricate a shared ownership token,
-payload lifetime transition log, or
-`actual_fused_cross_gpu_execution: true` from existing handoff metadata.
-`persistent_device_uccl_ep_runtime_fusion.status` should remain
-`unsupported` until a runtime component actually creates and transfers the
-cross-component payload ownership state.
+Objective: add one conservative design/status dependency before another
+implementation attempt. The slice should turn the accepted PR #145 contract
+and PR #147 provenance fields into an implementation-readiness map for
+`persistent_device_uccl_ep_runtime_fusion`: where the runtime-owned shared
+payload descriptor can live, which component records ownership transfer and
+lifetime transitions, which failure states are mandatory, and which tests and
+H200 command must prove the boundary later. It should not change runtime
+behavior or relabel the PR #147 unsupported result.
 
 Owned paths:
 
-- `examples/cuda/persistent_moe_dispatch_combine.py`
 - `tests/ut/py/test_nvidia_review_artifacts.py`
 - `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`
 - `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`
@@ -168,9 +180,11 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python \
 ```
 
 H200 evidence requirement: do not relabel the #143 structured unsupported
-boundary as fused evidence. If the slice touches the example result shape, it
-must run a fresh H200 handoff or fused-boundary command and report
-`unsupported` unless a real runtime-owned payload boundary exists.
+boundary or the #147 provenance-only unsupported result as fused evidence.
+This readiness slice should not require fresh H200 execution if it remains
+docs/design/test-guard only. If it changes example behavior or result shape,
+it must run a fresh H200 fused-boundary command and report `unsupported`
+unless a real runtime-owned payload boundary exists.
 
 Non-claims for the next slice:
 

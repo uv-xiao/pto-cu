@@ -23,6 +23,57 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - Post-Payload-Provenance Status Refresh Worker
+
+- Dispatcher Session or PR:
+  child worker launched after PR #147 merged as
+  `6405dfbd8b403b8d6a0e82813e185c209d4d7e08`.
+- Worker id and objective:
+  `pto-worker-nvidia-goal-status-post-payload-provenance`; refresh the
+  NVIDIA backend restart status surface after PR #147 and select one
+  conservative next PR-sized slice.
+- Exact Codex command or script invocation:
+  child `/goal` worker in the existing branch
+  `nvidia-goal-status-post-payload-provenance`; no nested workers launched.
+- Parent goal and child slice:
+  NVIDIA backend restart; post-#147 docs/status audit and handoff refresh
+  only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-goal-status-post-payload-provenance`;
+  <https://github.com/uv-xiao/pto-cu/pull/148>. Opened as a non-draft PR with
+  `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-goal-status-post-payload-provenance`.
+- Allowed scope and files:
+  `docs/in_progress/nvidia_backend/goal_status_rollup.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/dispatch_log.md`, and focused guard
+  alignment in `tests/ut/py/test_nvidia_review_artifacts.py` if needed.
+- Dependencies and blocked assumptions:
+  starts from current `main` at `6405dfbd8b403b8d6a0e82813e185c209d4d7e08`.
+  PR #147 is accepted only as provenance evidence: UCCL-EP adapter
+  descriptor/rank payload provenance and persistent-device graph payload
+  provenance are recorded, the H200 command exited `unsupported` as expected,
+  `persistent_device_uccl_ep_runtime_fusion.status` remains `unsupported`,
+  `actual_fused_cross_gpu_execution` remains `false`, and no shared payload
+  ownership token or lifetime transition log exists.
+- Verification commands and results:
+  completed before PR. `git diff --check` passed; `git diff --cached --check`
+  passed with no staged files; targeted `markdownlint-cli2` over
+  `goal_status_rollup.md`, `pr_slicing_plan.md`, and `dispatch_log.md`
+  passed with `0 error(s)`; the NVIDIA review guard passed; and
+  `test_nvidia_review_artifacts.py` passed with `61 passed`.
+- Merge decision and merge commit:
+  pending PR #148 dispatcher review and merge decision.
+- Handoff summary and remaining gaps:
+  status docs promote PR #147 from next slice to accepted provenance-only
+  baseline and select
+  `nvidia-uccl-ep-runtime-fusion-readiness` as the next conservative
+  docs/design dependency slice. Remaining gaps are actual
+  `persistent_device_uccl_ep_runtime_fusion`, runtime-owned shared payload
+  ownership transfer, payload lifetime transition logging, CUDA host-runtime
+  UCCL dispatch, RDMA or multi-node evidence, serving/vLLM integration,
+  DeepSeek correctness, and throughput/latency evidence.
+
 ### 2026-06-22 - UCCL-EP Adapter Payload Provenance Worker
 
 - Dispatcher Session or PR:
@@ -82,7 +133,11 @@ Each dispatch entry should include:
   `persistent_device_uccl_ep_runtime_fusion.status: unsupported`; it remains
   non-evidence for actual fused cross-GPU expert-parallel MoE execution.
 - Merge decision and merge commit:
-  pending worker PR, dispatcher review, and merge decision.
+  accepted as provenance-only evidence. PR #147 merged into `main` on
+  2026-06-22 as `6405dfbd8b403b8d6a0e82813e185c209d4d7e08`
+  (`Record UCCL EP adapter payload provenance`). The merge decision did not
+  accept the result as actual fused cross-GPU expert-parallel MoE execution
+  evidence.
 - Handoff summary and remaining gaps:
   the slice adds provenance-only result fields for the UCCL-EP adapter and
   persistent-device graph. Remaining gaps are actual

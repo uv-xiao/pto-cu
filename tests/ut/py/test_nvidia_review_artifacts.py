@@ -329,7 +329,7 @@ def test_nvidia_goal_status_rollup_tracks_current_boundaries():
 
     text = rollup.read_text(encoding="utf-8")
     required_phrases = [
-        "`origin/main` at `902804ff`",
+        "`origin/main` at `6405dfbd`",
         "`accepted evidence`",
         "`partial evidence`",
         "DeepSeek/vLLM serving evidence",
@@ -337,8 +337,9 @@ def test_nvidia_goal_status_rollup_tracks_current_boundaries():
         "`--with-uccl-ep-fused-boundary`",
         "`status: unsupported`",
         "`persistent_device_uccl_ep_runtime_fusion`",
-        "`nvidia-uccl-ep-adapter-payload-provenance`",
-        "must not fabricate a shared ownership token",
+        "`nvidia-uccl-ep-runtime-fusion-readiness`",
+        "provenance-only evidence",
+        "no shared payload ownership token or lifetime transition log",
         "not vLLM plugin integration",
         "not actual fused cross-GPU expert-parallel MoE execution",
     ]
@@ -547,15 +548,18 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
 
     normalized_slicing = " ".join(slicing.split())
     normalized_dispatch_log = " ".join(dispatch_log.split())
-    assert "Next Dependency Slice" in slicing
+    assert "Selected Next Dependency Slice" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
-    assert "real payload provenance" in normalized_slicing
-    assert "only route to `passed` is fabricated ownership" in normalized_slicing
+    assert "nvidia-uccl-ep-runtime-fusion-readiness" in slicing
+    assert "accepted provenance-only input fields" in normalized_slicing
+    assert "no shared payload ownership token" in normalized_slicing
     assert "nvidia-uccl-ep-runtime-fusion-impl-h200" in dispatch_log
     assert "8c7b3715" in dispatch_log
     assert "Synthetic pass evidence derived from handoff metadata is invalid" in (
         normalized_dispatch_log
     )
+    assert "https://github.com/uv-xiao/pto-cu/pull/147" in dispatch_log
+    assert "6405dfbd8b403b8d6a0e82813e185c209d4d7e08" in dispatch_log
     assert "not actual fused cross-GPU expert-parallel MoE execution" in (
         normalized_slicing
     )
