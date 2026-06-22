@@ -254,6 +254,15 @@ restart. It is a planning boundary, not performance evidence.
   not implement runtime behavior, widen public `TaskArgs` / `CallConfig`,
   widen the common runtime C API or UCCL host-runtime ABI, implement UCCL-EP
   runtime dispatch, construct a coordinator, or claim H200 fused success.
+- PR #170 accepted only the private descriptor allocation policy dependency
+  map. It did not implement CUDA runtime behavior, descriptor allocation,
+  UCCL-EP runtime dispatch, a coordinator, pass evidence, or H200
+  fused-success evidence.
+- The next selected slice is
+  `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`, a docs/test
+  dependency map for the private UCCL-EP runtime path that consumes the PR
+  #170 descriptor identities. It must not implement UCCL-EP runtime dispatch,
+  construct a coordinator, allocate descriptors, or claim H200 fused success.
 
 ## Capability Metadata Map Slice
 
@@ -367,6 +376,46 @@ failure ownership belongs to that same private runtime owner.
 
 This slice must not implement descriptor allocation, UCCL-EP runtime
 dispatch, construct a coordinator, change CUDA runtime behavior, claim pass
+evidence, or claim H200 fused-success evidence. Public `TaskArgs`, public
+`CallConfig`, common runtime C API fields, UCCL host-runtime ABI fields,
+example JSON, adapter provenance, and handoff metadata remain forbidden
+pass-evidence paths.
+
+PR #170 merged this descriptor allocation policy scope as
+`bd0b59ee8d5afc969020d3aea047aafc9f3152be`.
+
+## UCCL-EP Runtime Path Map Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`.
+
+This dependency slice maps only the private UCCL-EP runtime path required
+after PR #170's descriptor allocation policy and before UCCL-EP runtime
+dispatch implementation, coordinator implementation, pass evidence, or H200
+fused-success evidence. It does not implement UCCL-EP runtime dispatch.
+
+The UCCL-EP runtime path remains private to the CUDA persistent-device
+runtime path. It preserves PR #164 same-invocation request args, PR #166
+UCCL-EP capability metadata, PR #168 validation policy, and PR #170
+descriptor allocation policy as prerequisites rather than pass evidence.
+
+The runtime-path owner is the future private
+`persistent_device_uccl_ep_runtime_fusion` coordinator inside one CUDA
+persistent-device runtime run context. The dispatch descriptor handoff uses
+the PR #170 dispatch descriptor identity, including the coordinator-issued
+shared token. The combine descriptor handoff uses the PR #170 combine
+descriptor identity and must carry the same shared token as dispatch.
+The map defines descriptor-token checks, rank/device checks, and
+transport-mode checks before either descriptor handoff may be consumed.
+
+Failure ownership is explicit: missing runtime path is unsupported, stale
+descriptor views are failed, descriptor-token mismatch is failed,
+rank/device mismatch is failed, transport-mode mismatch is failed,
+descriptor-vocabulary mismatch is failed, and public/API-sourced runtime-path
+fields are failed as fabricated or untrusted pass evidence.
+
+This selected slice must not implement UCCL-EP runtime dispatch, construct a
+coordinator, allocate descriptors, change CUDA runtime behavior, claim pass
 evidence, or claim H200 fused-success evidence. Public `TaskArgs`, public
 `CallConfig`, common runtime C API fields, UCCL host-runtime ABI fields,
 example JSON, adapter provenance, and handoff metadata remain forbidden

@@ -766,6 +766,46 @@ evidence, or claim H200 fused-success evidence. Public `TaskArgs`, public
 example JSON, adapter provenance, and handoff metadata remain forbidden
 pass-evidence paths.
 
+PR #170 accepted only the private descriptor allocation policy scope as
+`bd0b59ee8d5afc969020d3aea047aafc9f3152be`: allocator owner, host-control
+record policy, device-visible descriptor buffer policy, dispatch/combine
+descriptor identity, shared-token requirement, and allocation lifetime failure
+ownership. It did not implement CUDA runtime behavior, descriptor allocation,
+UCCL-EP runtime dispatch, a coordinator, pass evidence, or H200 fused-success
+evidence.
+
+## UCCL-EP Runtime Path Map Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`.
+
+The next dependency slice maps the private UCCL-EP runtime path after PR #170
+descriptor allocation policy. It is a map only: it defines how a later
+runtime-fusion coordinator would pass coordinator-owned dispatch and combine
+descriptor views into UCCL-EP runtime logic, but it must not implement that
+runtime path.
+
+The runtime path remains private to the CUDA persistent-device runtime path.
+It consumes PR #164 same-invocation request args, PR #166 capability metadata,
+PR #168 validation policy, and PR #170 descriptor allocation policy as
+prerequisites. Those inputs remain prerequisites rather than pass evidence.
+
+The map must define the runtime-path owner, dispatch descriptor handoff,
+combine descriptor handoff, descriptor-token checks, rank/device checks,
+transport-mode checks, and runtime-path failure ownership. missing runtime
+path is unsupported. stale descriptors, token mismatch, rank/device mismatch,
+transport-mode mismatch, descriptor-vocabulary mismatch, and
+public/API-sourced runtime-path fields are failed as fabricated or untrusted
+pass
+evidence.
+
+This selected slice must not implement UCCL-EP runtime dispatch, construct a
+coordinator, allocate descriptors, change CUDA runtime behavior, claim pass
+evidence, or claim H200 fused-success evidence. Public `TaskArgs`, public
+`CallConfig`, common runtime C API fields, UCCL host-runtime ABI fields,
+example JSON, adapter provenance, and handoff metadata remain forbidden
+pass-evidence paths.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node
