@@ -62,7 +62,8 @@ Serving-relevant families verified from the README:
   `schema_version`, aggregate status, `case_count`, only causal append cases,
   append shapes, `phase: append`, `causal: true`, tolerance, provenance, the
   shifted masked PyTorch reference formula, status, and repo-relative artifact
-  paths. This is bounded causal append sweep correctness evidence. The same
+  paths. The promoted append sweep includes `append_8x64x64`. This is
+  bounded causal append sweep correctness evidence. The same
   note also records
   a bounded same-length multi-query prefill-shaped H200 gate for
   `--tile-shape 32x32x64 --causal` with `phase: prefill`, `causal: true`,

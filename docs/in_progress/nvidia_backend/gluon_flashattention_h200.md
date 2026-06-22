@@ -117,7 +117,9 @@ The causal append sweep includes:
 - `append_4x32x64`: `seqlen_q=4`, `seqlen_k=32`, `head_dim=64`,
   provenance `bounded multi-query causal append fixture`;
 - `append_8x32x64`: `seqlen_q=8`, `seqlen_k=32`, `head_dim=64`,
-  provenance `bounded multi-query causal append H200 gate`.
+  provenance `bounded multi-query causal append H200 gate`;
+- `append_8x64x64`: `seqlen_q=8`, `seqlen_k=64`, `head_dim=64`,
+  provenance `broader bounded multi-query causal append H200 gate`.
 
 ## H200 Evidence
 
@@ -358,11 +360,14 @@ The artifact directory option is
 ## Append Sweep Gate
 
 On 2026-06-22, the bounded causal append sweep generated and launched on the
-same H200 class machine and passed correctness for two multi-query append
+same H200 class machine and passed correctness for three multi-query append
 cases against the shifted masked PyTorch reference. The remote run used tree
 sync into `<remote-pto-cu>` through the generic CUDA runner, and the preserved
 remote Gluon Python environment because the remote default Python lacked Torch
-and Triton/Gluon.
+and Triton/Gluon. The broader `append_8x64x64` case was promoted after a
+single-case H200 causal append probe passed. The earlier two-case gate used
+`--output-dir tmp/gluon-flashattention-append-sweep-h200`; the latest broader
+run below used a fresh repo-relative output directory.
 
 ```bash
 REMOTE_PTO_CU=<remote-pto-cu> \
@@ -370,7 +375,7 @@ REMOTE_PTO_CU=<remote-pto-cu> \
   bash -lc 'PYTHONPATH=$PWD:$PWD/python \
     <remote-gluon-venv>/bin/python \
       examples/cuda/gluon_flashattention_fwd.py \
-      --output-dir tmp/gluon-flashattention-append-sweep-h200 \
+      --output-dir tmp/gluon-flashattention-append-coverage-h200 \
       --arch compute_90 --sweep --causal --causal-sweep-phase append \
       --require-cuda'
 ```
@@ -380,8 +385,8 @@ Distilled passed result:
 ```text
 schema_version: 1
 status: passed
-case_count: 2
-passed_cases: 2
+case_count: 3
+passed_cases: 3
 failed_cases: 0
 skipped_cases: 0
 only causal append cases
@@ -401,12 +406,20 @@ reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index + (seq
 tolerance: atol=0.001, rtol=0.01
 max_abs_error: 2.384185791015625e-07
 source_sha256: 525d25e9de9ce22b49cd5cd5ed461905643077507d08c8974ec36dc114788385
+case_name: append_8x64x64
+phase: append
+causal: true
+shape: seqlen_q=8, seqlen_k=64, head_dim=64
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index + (seqlen_k - seqlen_q), -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+max_abs_error: 5.364418029785156e-07
+source_sha256: 37f72c81f3a54dac55bafeeb90846f8389171a5c6990ab3d479aa7754c6febc5
 per-case artifact paths are repo-relative
 machine class: H200
 private absolute paths are not recorded
 ```
 
-This result is bounded causal append sweep correctness evidence for two
+This result is bounded causal append sweep correctness evidence for three
 generated multi-query FP32 causal FlashAttention sources. It is not full
 append coverage, not bounded append KV-cache coverage, not paged/ragged
 KV-cache correctness, not full prefill coverage, not full decode, not full
