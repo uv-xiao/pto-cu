@@ -1545,8 +1545,13 @@ def test_gluon_flashattention_causal_sweep_aggregates_prefill_cases(
     assert result["kernel_name"] == "flashattention_fwd_f32"
     assert result["status"] == "skipped"
     assert result["case_count"] == len(example.FLASHATTENTION_CAUSAL_PREFILL_SWEEP_CASES)
-    assert result["case_count"] >= 2
+    assert result["case_count"] >= 3
     assert result["skipped_cases"] == len(example.FLASHATTENTION_CAUSAL_PREFILL_SWEEP_CASES)
+
+    shapes = [case["shape"] for case in result["cases"]]
+    assert {"seqlen_q": 16, "seqlen_k": 16, "head_dim": 64} in shapes
+    assert {"seqlen_q": 32, "seqlen_k": 32, "head_dim": 64} in shapes
+    assert {"seqlen_q": 64, "seqlen_k": 64, "head_dim": 64} in shapes
 
     for case in result["cases"]:
         assert case["phase"] == "prefill"
@@ -1687,6 +1692,59 @@ def test_gluon_flashattention_causal_sweep_preserves_metadata_on_case_failure(
     assert case["provenance"] == "test failing causal prefill fixture"
     assert case["error_type"] == "RuntimeError"
     assert case["error"] == "prefill lowering failed under ."
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_gluon_flashattention_causal_prefill_sweep_preserves_runtime_failure_details(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    def fail_case(**_kwargs):
+        return {
+            "shape": {"seqlen_q": 64, "seqlen_k": 64, "head_dim": 64},
+            "phase": "prefill",
+            "reference": example.FLASHATTENTION_CAUSAL_REFERENCE,
+            "tolerance": {"atol": 0.001, "rtol": 0.01},
+            "causal": True,
+            "status": "failed",
+            "artifact": {
+                "source_path": "tmp/failing/flashattention_fwd_f32.gluon.py",
+                "manifest_path": "tmp/failing/flashattention_fwd_f32.gluon.json",
+                "source_sha256": "deadbeef",
+            },
+            "error_type": "TypeError",
+            "error": f"prefill runtime failed under {tmp_path}",
+        }
+
+    monkeypatch.setattr(example, "run_flashattention_correctness", fail_case)
+
+    result = example.run_flashattention_sweep(
+        output_dir=Path("tmp/gluon-flashattention-prefill-sweep"),
+        arch="compute_90",
+        causal=True,
+        cases=[
+            {
+                "name": "runtime_failing_prefill",
+                "tile_shape": (64, 64, 64),
+                "seed": 10,
+                "provenance": "test runtime failure causal prefill fixture",
+            }
+        ],
+    )
+
+    assert result["status"] == "failed"
+    assert result["case_count"] == 1
+    case = result["cases"][0]
+    assert case["phase"] == "prefill"
+    assert case["causal"] is True
+    assert case["artifact"]["source_path"] == "tmp/failing/flashattention_fwd_f32.gluon.py"
+    assert not Path(case["artifact"]["source_path"]).is_absolute()
+    assert not Path(case["artifact"]["manifest_path"]).is_absolute()
+    assert case["error_type"] == "TypeError"
+    assert case["error"] == "prefill runtime failed under ."
     assert str(tmp_path) not in json.dumps(result)
 
 

@@ -56,6 +56,12 @@ FLASHATTENTION_CAUSAL_PREFILL_SWEEP_CASES = [
         "seed": 3,
         "provenance": "bounded same-length multi-query causal prefill H200 gate",
     },
+    {
+        "name": "prefill_64x64x64",
+        "tile_shape": (64, 64, 64),
+        "seed": 10,
+        "provenance": "broader bounded same-length multi-query causal prefill H200 gate",
+    },
 ]
 FLASHATTENTION_CAUSAL_APPEND_SWEEP_CASES = [
     {
