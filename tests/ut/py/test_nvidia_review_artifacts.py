@@ -2495,6 +2495,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "--output-dir tmp/gluon-flashattention-varlen-unsupported-h200",
         "--output-dir tmp/gluon-flashattention-mla-unsupported-h200",
         "--output-dir tmp/gluon-flashattention-cascade-unsupported-h200",
+        "--output-dir tmp/gluon-flashattention-sparse-unsupported-h200",
         "--require-cuda --arch compute_90",
         "--tile-shape 32x32x64 --causal --require-cuda",
         "--tile-shape 1x32x64 --causal --require-cuda",
@@ -2504,6 +2505,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "--sequence-boundary varlen --require-cuda",
         "--attention-variant mla --require-cuda",
         "--attention-variant cascade --require-cuda",
+        "--attention-variant sparse --require-cuda",
         "schema_version: 1",
         "phase: prefill",
         "phase: decode",
@@ -2513,11 +2515,13 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "sequence_boundary: varlen",
         "attention_variant: mla",
         "attention_variant: cascade",
+        "attention_variant: sparse",
         "unsupported_boundary.kind: paged_kv_cache",
         "unsupported_boundary.kind: ragged_kv_cache",
         "unsupported_boundary.kind: varlen_attention",
         "unsupported_boundary.kind: mla_attention",
         "unsupported_boundary.kind: cascade_attention",
+        "unsupported_boundary.kind: sparse_attention",
         "unsupported-boundary evidence only",
         "softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v",
         (
@@ -2558,6 +2562,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
         "not varlen attention correctness",
         "not MLA attention correctness",
         "not Cascade Attention correctness",
+        "not Sparse Attention correctness",
         "not full prefill, full decode, full append, or append coverage",
         "not multi-tile attention coverage",
         "not fused attention integration",
@@ -2587,18 +2592,21 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "--sequence-boundary varlen" in readme_text
     assert "--attention-variant mla" in readme_text
     assert "--attention-variant cascade" in readme_text
+    assert "--attention-variant sparse" in readme_text
     assert "unsupported_boundary" in readme_text
     assert "paged_kv_cache" in readme_text
     assert "ragged_kv_cache" in readme_text
     assert "varlen_attention" in readme_text
     assert "mla_attention" in readme_text
     assert "cascade_attention" in readme_text
+    assert "sparse_attention" in readme_text
     assert "sequence_boundary" in readme_text
     assert "attention_variant" in readme_text
     assert "unsupported-boundary evidence only" in readme_text
     assert "not varlen attention correctness" in readme_text
     assert "not MLA attention correctness" in readme_text
     assert "not Cascade Attention correctness" in readme_text
+    assert "not Sparse Attention correctness" in readme_text
     assert "same-length multi-query prefill-shaped" in readme_text
     assert "single-query decode-shaped" in readme_text
     assert "small multi-query append-shaped" in readme_text
@@ -2627,14 +2635,17 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "--sequence-boundary varlen" in checklist_text
     assert "--attention-variant mla" in checklist_text
     assert "--attention-variant cascade" in checklist_text
+    assert "--attention-variant sparse" in checklist_text
     assert "unsupported_boundary.kind: paged_kv_cache" in checklist_text
     assert "unsupported_boundary.kind: ragged_kv_cache" in checklist_text
     assert "unsupported_boundary.kind: varlen_attention" in checklist_text
     assert "unsupported_boundary.kind: mla_attention" in checklist_text
     assert "unsupported_boundary.kind: cascade_attention" in checklist_text
+    assert "unsupported_boundary.kind: sparse_attention" in checklist_text
     assert "sequence_boundary: varlen" in checklist_text
     assert "attention_variant: mla" in checklist_text
     assert "attention_variant: cascade" in checklist_text
+    assert "attention_variant: sparse" in checklist_text
     assert "unsupported-boundary evidence only" in checklist_text
     assert "--causal" in checklist_text
     assert "32x32x64 failed H200 correctness" in normalized_checklist_text
@@ -2647,6 +2658,7 @@ def test_gluon_flashattention_h200_evidence_is_review_safe():
     assert "not varlen attention correctness" in checklist_text
     assert "not MLA attention correctness" in checklist_text
     assert "not Cascade Attention correctness" in checklist_text
+    assert "not Sparse Attention correctness" in checklist_text
     assert (
         "not full prefill, full decode, full append, or append KV-cache coverage"
         in normalized_checklist_text
