@@ -573,6 +573,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "accepted provenance-only input fields" in normalized_slicing
     assert "no shared payload ownership token" in normalized_slicing
     assert "2e9b01450efb709ed4e42f80a5128a01e8f9ad21" in slicing
+    assert "Refresh NVIDIA status after payload provenance" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-impl-h200" in dispatch_log
     assert "8c7b3715" in dispatch_log
     assert "Synthetic pass evidence derived from handoff metadata is invalid" in (
@@ -582,6 +583,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "6405dfbd8b403b8d6a0e82813e185c209d4d7e08" in dispatch_log
     assert "https://github.com/uv-xiao/pto-cu/pull/148" in dispatch_log
     assert "2e9b01450efb709ed4e42f80a5128a01e8f9ad21" in dispatch_log
+    assert "Refresh NVIDIA status after payload provenance" in dispatch_log
     assert "not actual fused cross-GPU expert-parallel MoE execution" in (
         normalized_slicing
     )

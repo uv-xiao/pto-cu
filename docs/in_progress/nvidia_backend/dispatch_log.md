@@ -118,7 +118,7 @@ Each dispatch entry should include:
 - Merge decision and merge commit:
   accepted as a status/slicing refresh only. PR #148 merged into `main` on
   2026-06-22 as `2e9b01450efb709ed4e42f80a5128a01e8f9ad21`
-  (`Refresh NVIDIA backend status after UCCL provenance`). The merge decision
+  (`Refresh NVIDIA status after payload provenance`). The merge decision
   did not accept any actual fused cross-GPU expert-parallel MoE execution
   evidence.
 - Handoff summary and remaining gaps:

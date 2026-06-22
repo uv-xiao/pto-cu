@@ -8,7 +8,7 @@ from `main` and lands through focused GitHub PRs.
 
 - Base branch: `main`.
 - Current accepted `main`: `2e9b01450efb709ed4e42f80a5128a01e8f9ad21`,
-  after PR #148 (`Refresh NVIDIA backend status after UCCL provenance`).
+  after PR #148 (`Refresh NVIDIA status after payload provenance`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -80,7 +80,7 @@ from `main` and lands through focused GitHub PRs.
   - Result: merged as `6405dfbd8b403b8d6a0e82813e185c209d4d7e08`.
   - Result type: provenance-only unsupported-boundary evidence, not fused
     execution evidence.
-- PR #148: refresh NVIDIA backend status after UCCL provenance.
+- PR #148: refresh NVIDIA status after payload provenance.
   - Result: merged as `2e9b01450efb709ed4e42f80a5128a01e8f9ad21`.
   - Result type: status/slicing refresh only, not fused execution evidence.
 
