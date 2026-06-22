@@ -535,6 +535,11 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "rank-to-CUDA-device mapping",
         "CUDA persistent-device runtime run context",
         "persistent-device/UCCL-EP runtime fusion coordinator",
+        "Runtime Fusion Coordinator Boundary",
+        "The descriptor allocation site is the CUDA persistent-device runtime run",
+        "The ownership token issuer is also the coordinator",
+        "The required state machine is",
+        "fabricated_or_untrusted_pass_evidence",
         "PR #147 provenance is accepted input evidence only",
         "Mandatory failure states include descriptor shape mismatch",
         "Non-evidence states also include independent two-device",
@@ -561,31 +566,47 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "not fused execution",
         "Runtime-Owned Descriptor Implementation Handoff",
         "No fresh H200 fused-boundary run is recorded",
+        "Coordinator Boundary Map",
+        "Reviewable entry point",
+        "Descriptor allocation site",
+        "Ownership token issuer",
+        "Lifetime transition state machine",
+        "Failure-field responsibilities",
+        "PR #151 remains a post-PR150 status refresh",
     ]:
         assert required in persistent_moe
 
+    normalized_selection = " ".join(selection.split())
     for required in [
         "runtime fusion coordinator owns",
         "PR #147 remains accepted provenance-only input evidence",
         "actual_fused_cross_gpu_execution` remains `false`",
         "nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor",
         "adds local guards only",
+        "coordinator-boundary map keeps the runtime owner concrete",
+        "PR #150 remains guard-only blocked implementation evidence",
+        "PR #151 remains a post-PR150 status refresh",
     ]:
-        assert required in selection
+        assert required in normalized_selection
 
     normalized_slicing = " ".join(slicing.split())
     normalized_dispatch_log = " ".join(dispatch_log.split())
-    assert "Selected Next Dependency Slice" in slicing
+    assert "Current Coordinator Boundary Map Slice" in slicing
+    assert "Selected Next Slice After Coordinator Map" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
+    assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-readiness" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-impl-runtime-owned-descriptor" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-coordinator-boundary-map" in slicing
+    assert "nvidia-uccl-ep-runtime-fusion-coordinator-entry-contract" in slicing
     assert "accepted provenance-only input fields" in normalized_slicing
     assert "no shared payload ownership token" in normalized_slicing
     assert "a6378bfbf55b15be01c334f43332ccd20c160cfa" in slicing
-    assert "Guard UCCL EP runtime fusion evidence" in slicing
+    assert "guard UCCL-EP runtime fusion evidence" in slicing
     assert "guard-only blocked implementation handoff" in slicing
+    assert "3548a5761c2785bc855d68ec53469651d2227096" in slicing
+    assert "Refresh NVIDIA status after runtime fusion guard" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-impl-h200" in dispatch_log
     assert "8c7b3715" in dispatch_log
     assert "Synthetic pass evidence derived from handoff metadata is invalid" in (
@@ -612,6 +633,20 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "a6378bfbf55b15be01c334f43332ccd20c160cfa" in dispatch_log
     assert "Guard UCCL EP runtime fusion evidence" in dispatch_log
     assert "UCCL-EP Runtime Fusion Guard-Only Worker" in dispatch_log
+    assert "UCCL-EP Runtime Fusion Coordinator Boundary Map Worker" in dispatch_log
+    coordinator_boundary_entry = dispatch_log.split(
+        "### 2026-06-22 - UCCL-EP Runtime Fusion Coordinator Boundary Map Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    assert "pending PR creation" not in coordinator_boundary_entry
+    assert "nvidia-uccl-ep-runtime-fusion-coordinator-boundary-map" in dispatch_log
+    assert "nvidia-uccl-ep-runtime-fusion-coordinator-entry-contract" in (
+        dispatch_log
+    )
+    assert "3548a5761c2785bc855d68ec53469651d2227096" in dispatch_log
+    assert "PR #151 remains a post-PR150 status refresh" in (
+        normalized_dispatch_log
+    )
     assert "not actual fused cross-GPU expert-parallel MoE execution" in (
         normalized_slicing
     )
