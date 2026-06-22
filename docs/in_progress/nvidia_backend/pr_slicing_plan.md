@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `d04732e3a5513d8172b41d0812f2d84065039526`,
-  after PR #155 (`Add private UCCL EP runtime fusion entry scaffold`).
+- Current accepted `main`: `41a9e1e4135313a9787386fb32c21f8b85254d4b`,
+  after PR #158 (`Fix Codex monitor transcript lookup`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -70,6 +70,19 @@ from `main` and lands through focused GitHub PRs.
   `actual_fused_cross_gpu_execution: true`, expand public `TaskArgs` or
   `CallConfig`, expand a UCCL host-runtime ABI, or claim fresh H200 fused
   success.
+- PR #156 recorded the post-PR155 status refresh and selected
+  `nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request` as the next
+  dependency slice. It did not change CUDA runtime behavior, result shape, or
+  fused-execution evidence status.
+- PR #157 attempted that request boundary but was closed invalid. It recorded
+  the persistent DAG run `args` pointer, whose static type at the CUDA
+  host-runtime call site is `PtoCudaPersistentDagArgs *`, as
+  `PtoCudaRuntimeFusionRequest::chip_storage_task_args` and labeled it
+  `sizeof(ChipStorageTaskArgs)`. That was not a real
+  `ChipStorageTaskArgs *` from `ChipWorker::run`, so it is a blocked handoff,
+  not accepted implementation evidence.
+- PR #158 fixed the Codex monitor transcript lookup and is already on `main`.
+  It is unrelated to the NVIDIA runtime-fusion request boundary.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -621,26 +634,48 @@ UCCL-EP runtime path, validation policy, UCCL-EP capability metadata,
 `ChipStorageTaskArgs` request materialization, pass evidence, or fresh H200
 fused success.
 
-## Next ChipStorageTaskArgs Request Boundary Slice
+## Closed Invalid ChipStorageTaskArgs Request Boundary Attempt
 
-Recommended branch:
+Closed branch:
 `nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`.
 
-Objective: make the next dependency boundary below the private scaffold
-reviewable by threading only the private `ChipStorageTaskArgs` request input
-into the CUDA persistent-device runtime-fusion request path. The slice should
-prove that the request can carry the existing chip-local task-argument view
-behind `ChipWorker::run` without adding public API fields or changing the
-fused-boundary result from `unsupported`.
+PR #157 (`Thread private ChipStorageTaskArgs request`) is closed invalid and
+must not be resurrected. The implementation assigned the persistent DAG run
+`args` pointer to `PtoCudaRuntimeFusionRequest::chip_storage_task_args` and
+recorded `sizeof(ChipStorageTaskArgs)`, but that pointer is a
+`PtoCudaPersistentDagArgs *` inside
+`src/cuda/platform/onboard/host/pto_runtime_c_api.cpp`, not a
+`ChipStorageTaskArgs *` materialized by `ChipWorker::run`.
+
+The current CUDA code state remains unclaimed: no real
+`ChipStorageTaskArgs` request path reaches
+`persistent_device_uccl_ep_runtime_fusion_entry`. The persistent DAG scaffold
+still records `missing_chip_storage_task_args` when no valid private request
+input exists.
+
+## Next Private Request Envelope Dependency Slice
+
+Recommended branch:
+`nvidia-uccl-ep-runtime-fusion-private-request-envelope`.
+
+Objective: define a broader private ABI/envelope path that can carry a real
+`ChipStorageTaskArgs` from `ChipWorker::run` to the CUDA persistent-device
+runtime-fusion request without expanding public `TaskArgs`, public
+`CallConfig`, the common runtime C API, or UCCL host-runtime ABI fields. The
+envelope must keep runtime-specific persistent DAG inputs separate from the
+chip-storage task-argument pointer and size so `PtoCudaPersistentDagArgs *`
+cannot be mislabeled as `ChipStorageTaskArgs *`.
 
 Required boundaries:
 
-- keep the field private to `ChipWorker::run` / CUDA host-runtime request
+- keep the envelope private to `ChipWorker::run` / CUDA host-runtime request
   construction;
 - do not add public `TaskArgs`, public `CallConfig`, or UCCL host-runtime ABI
   fields;
-- populate or explicitly reject the private `chip_storage_task_args` request
-  field with focused local coverage;
+- carry or explicitly reject a real `ChipStorageTaskArgs` pointer/size with
+  focused local coverage;
+- preserve `PtoCudaPersistentDagArgs *` as persistent DAG runtime input only,
+  never as `chip_storage_task_args`;
 - keep missing coordinator, descriptor allocator, UCCL-EP runtime path,
   validation policy, UCCL-EP capability metadata, and pass evidence as
   unsupported or failed states;

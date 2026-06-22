@@ -618,8 +618,12 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "PtoCudaRuntimeFusionRequest",
         "PtoCudaRuntimeFusionResult",
         "explicit failure bits",
-        "Next ChipStorageTaskArgs Request Boundary Slice",
+        "Closed Invalid ChipStorageTaskArgs Request Boundary Attempt",
+        "Next Private Request Envelope Dependency Slice",
         "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request",
+        "nvidia-uccl-ep-runtime-fusion-private-request-envelope",
+        "PtoCudaPersistentDagArgs *",
+        "`sizeof(ChipStorageTaskArgs)`",
     ]:
         assert required in persistent_moe
     assert "Example-side JSON, adapter-only provenance" in (
@@ -648,7 +652,10 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "PR #153 remains a private entry-contract only",
         "PR #155 remains a private unsupported runtime scaffold only",
         "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported",
+        "PR #157",
         "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request",
+        "PtoCudaPersistentDagArgs *",
+        "nvidia-uccl-ep-runtime-fusion-private-request-envelope",
         "must keep the fused-boundary result `unsupported`",
     ]:
         assert required in normalized_selection
@@ -658,7 +665,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "Accepted Coordinator Boundary Map Slice" in slicing
     assert "Accepted Coordinator Entry Contract Slice" in slicing
     assert "Accepted Private Entry Unsupported Scaffold" in slicing
-    assert "Next ChipStorageTaskArgs Request Boundary Slice" in slicing
+    assert "Closed Invalid ChipStorageTaskArgs Request Boundary Attempt" in slicing
+    assert "Next Private Request Envelope Dependency Slice" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
@@ -668,9 +676,18 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "nvidia-uccl-ep-runtime-fusion-coordinator-entry-contract" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request" in slicing
+    assert "nvidia-uccl-ep-runtime-fusion-private-request-envelope" in slicing
+    assert "PR #157 attempted that request boundary but was closed invalid" in (
+        normalized_slicing
+    )
+    assert "PtoCudaPersistentDagArgs *" in slicing
+    assert "`sizeof(ChipStorageTaskArgs)`" in slicing
+    assert "no real `ChipStorageTaskArgs` request path" in normalized_slicing
+    assert "PR #158 fixed the Codex monitor transcript lookup" in slicing
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
     assert "b58598490d37065e6c972eaaea6d4bc4900469c7" in slicing
     assert "d04732e3a5513d8172b41d0812f2d84065039526" in slicing
+    assert "41a9e1e4135313a9787386fb32c21f8b85254d4b" in slicing
     assert "UCCL-EP runtime fusion coordinator boundary map" in slicing
     assert "persistent_device_uccl_ep_runtime_fusion_entry" in slicing
     assert "callable id, chip-local rank/device map" in normalized_slicing
@@ -824,6 +841,32 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         private_entry_worker
     )
     assert "`actual_fused_cross_gpu_execution: true`" in private_entry_worker
+
+    blocked_handoff_entry = dispatch_log.split(
+        "### 2026-06-22 - UCCL-EP Runtime Fusion ChipStorage Blocked Handoff",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_blocked_handoff_entry = " ".join(blocked_handoff_entry.split())
+    for required in [
+        "nvidia-uccl-ep-runtime-fusion-chip-storage-blocked-handoff",
+        "https://github.com/uv-xiao/pto-cu/pull/157",
+        "PR #157 is closed invalid, not accepted",
+        "PtoCudaRuntimeFusionRequest::chip_storage_task_args",
+        "`sizeof(ChipStorageTaskArgs)`",
+        "PtoCudaPersistentDagArgs *",
+        "not a `ChipStorageTaskArgs *`",
+        "Current `main` intentionally does not contain PR #157",
+        "no real `ChipStorageTaskArgs` request path",
+        "nvidia-uccl-ep-runtime-fusion-private-request-envelope",
+        "without expanding public `TaskArgs`, public `CallConfig`,",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_blocked_handoff_entry
+    assert "PR #158 already fixed monitor transcript lookup" in (
+        normalized_blocked_handoff_entry
+    )
+    assert "pending PR creation and review" in normalized_blocked_handoff_entry
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():

@@ -544,13 +544,22 @@ JSON, handoff metadata, payload provenance, public `TaskArgs`, and public
 `CallConfig` are rejected as `fabricated_or_untrusted_pass_evidence` if they
 try to provide pass-like fields.
 
-The next PR-sized slice is
-`nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`. It should
-thread only the private `ChipStorageTaskArgs` request input through the
-existing `ChipWorker::run` / CUDA host-runtime request path and keep the
-result `unsupported`. It must not add public `TaskArgs`, public `CallConfig`,
-UCCL host-runtime ABI fields, pass evidence, RDMA, multi-node, serving, vLLM,
-DeepSeek, throughput, or latency claims.
+PR #157 (`nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`) is
+closed invalid. It tried to satisfy the missing `ChipStorageTaskArgs` field by
+assigning the persistent DAG run `args` pointer to
+`PtoCudaRuntimeFusionRequest::chip_storage_task_args` and recording
+`sizeof(ChipStorageTaskArgs)`. At that call site the pointer is a
+`PtoCudaPersistentDagArgs *`, not a `ChipStorageTaskArgs *`, so the branch
+fabricated the private request boundary and remains a blocked handoff only.
+
+The current CUDA code still has no real `ChipStorageTaskArgs` request path
+for `persistent_device_uccl_ep_runtime_fusion_entry`. The next dependency
+slice is `nvidia-uccl-ep-runtime-fusion-private-request-envelope`: define a
+broader private ABI/envelope path that can carry a real `ChipStorageTaskArgs`
+from `ChipWorker::run` while keeping persistent DAG runtime args separate.
+It must not add public `TaskArgs`, public `CallConfig`, common runtime C API
+fields, UCCL host-runtime ABI fields, pass evidence, RDMA, multi-node,
+serving, vLLM, DeepSeek, throughput, or latency claims.
 
 ## Non-Claims
 
