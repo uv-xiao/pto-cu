@@ -582,16 +582,18 @@ it points at a real object created by its owning layer.
 `ChipWorker::run` remains the only owner of the `ChipStorageTaskArgs` object
 assembled from the mailbox `TaskArgs` view. It may hand the address of that
 object to a CUDA-private hook for the duration of the call, but it must not
-reinterpret that object as persistent DAG runtime args. If the private hook
-needs `PtoCudaPersistentDagArgs *`, `ChipWorker::run` still cannot provide it
-and must reject the path instead of fabricating a runtime pointer.
+reinterpret that object as persistent DAG runtime args. The private hook now
+carries only the typed chip-storage pointer, its expected size, callable id,
+and a per-`ChipWorker` invocation id into the CUDA host runtime. It still does
+not set `runtime_task_args` from the chip-storage pointer.
 
 The CUDA persistent DAG host-runtime path is the owner of
 `PtoCudaPersistentDagArgs *`. That path resolves the prepared persistent DAG
 callable, validates the persistent DAG state, and constructs the runtime
-launch request. Only there can a future implementation populate
-`PtoCudaPrivateRunArgsEnvelope::runtime_task_args` with a real
-`PtoCudaPersistentDagArgs *` while also carrying the
+launch request. Only there can the implementation populate
+`PtoCudaPrivateRunArgsEnvelope::runtime_task_args` with the
+`PtoCudaPersistentDagArgs *` used by that persistent DAG invocation while also
+carrying the
 `chip_storage_task_args` pointer received from the same `ChipWorker::run`
 invocation.
 
@@ -613,12 +615,11 @@ field, and the runtime-task-args size matches the CUDA persistent DAG args
 type used by the prepared callable. Null, stale, wrong-size, wrong-callable,
 or cross-invocation envelopes are implementation failures, not skips.
 
-This handoff map does not implement that association. It records the next
-implementation owner and the tests a later code slice needs: private
-host-runtime coverage for null pointers, wrong sizes, mismatched callable
-types, stale envelopes, cross-invocation envelopes, and forbidden public/API
-evidence paths. Until that code exists, the fused-boundary status remains
-unsupported or failed and must not report
+The private host-runtime handoff implementation now adds that association
+plumbing and local coverage for null pointers, wrong sizes, mismatched
+callable types, stale envelopes, cross-invocation envelopes, and forbidden
+public/API evidence paths. The fused-boundary status remains unsupported or
+failed and must not report
 `persistent_device_uccl_ep_runtime_fusion.status: passed` or
 `actual_fused_cross_gpu_execution: true`.
 
@@ -629,6 +630,10 @@ CUDA persistent DAG host-runtime handoff that associates only real
 same-invocation `ChipStorageTaskArgs *` and `PtoCudaPersistentDagArgs *`
 pointers. It must not expand public `TaskArgs`, public `CallConfig`, the
 common runtime C API, or UCCL host-runtime ABI fields.
+
+This branch implements that handoff and keeps the coordinator, descriptor
+allocator, UCCL-EP runtime path, validation policy, UCCL-EP capability
+metadata, pass evidence, and H200 fused-success evidence absent.
 
 ## Non-Claims
 

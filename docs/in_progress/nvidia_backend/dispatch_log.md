@@ -23,6 +23,82 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - Private Host Runtime Handoff Worker
+
+- Dispatcher Session or PR:
+  current `/goal` worker session on branch
+  `nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`, after PR #163
+  merged as `cc26283be5b3355af8148a8e4ca5421d57c2ff80`.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`;
+  implement only the private CUDA persistent DAG host-runtime handoff that
+  associates real same-invocation `ChipStorageTaskArgs *` and
+  `PtoCudaPersistentDagArgs *` pointers before
+  `persistent_device_uccl_ep_runtime_fusion_entry` is requested.
+- Exact Codex command or script invocation:
+  worker launched by `tmp/worker-prompts/run-nvidia-private-host-runtime-handoff.sh`,
+  which ran `codex exec --dangerously-bypass-approvals-and-sandbox -C
+  <worktree> "$(cat tmp/worker-prompts/nvidia-private-host-runtime-handoff.md)"`.
+  No nested workers were launched.
+- Monitor locators:
+  Codex session id `019eeffa-3757-7611-9a9e-e288b1a1258b`; transcript
+  `~/.codex/sessions/2026/06/22/rollout-2026-06-22T23-36-53-019eeffa-3757-7611-9a9e-e288b1a1258b.jsonl`;
+  worker pane `pto-worker-nvidia-private-host-runtime-handoff:0.0`;
+  recurring monitor artifacts under
+  `tmp/codex-goal-monitor/nvidia-private-host-runtime-handoff/`. The final
+  interval summary at `20260622T160726Z` reported the pane missing,
+  transcript ok, worktree ok, `dirty_count: 0`, and latest commit `476d6e35`.
+- Parent goal and child slice:
+  NVIDIA backend restart; private host-runtime handoff implementation after
+  the PR #162 runtime-args handoff map and PR #163 status refresh.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`;
+  <https://github.com/uv-xiao/pto-cu/pull/164>. Opened as a non-draft PR
+  with `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`.
+- Allowed scope and files:
+  private CUDA persistent DAG host-runtime handoff code, focused local tests,
+  and review-facing NVIDIA docs/tests. No public `TaskArgs`, public
+  `CallConfig`, common runtime C API, or UCCL host-runtime ABI expansion.
+- Dependencies and blocked assumptions:
+  starts from current `main` at
+  `cc26283be5b3355af8148a8e4ca5421d57c2ff80`. PR #162 is accepted only as a
+  runtime-args handoff map and PR #163 is a status refresh only. This slice
+  associates the private pointers but does not implement the runtime-fusion
+  coordinator, descriptor allocator, UCCL-EP runtime path, validation policy,
+  UCCL-EP capability metadata, or pass evidence.
+- Verification commands and results:
+  completed before PR creation. The focused TDD RED run for
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  /home/uvxiao/pto-cu/.venv/bin/python -m pytest
+  tests/ut/py/test_cuda_runtime_fusion_private_entry.py -q` failed on the
+  missing private envelope helpers and old `ChipWorker` rejection boundary
+  with `4 failed, 5 passed`; the focused GREEN run passed with `9 passed`.
+  `git diff --check` passed with no output. Targeted `markdownlint-cli2` over
+  the five NVIDIA status docs passed with `0 error(s)`. The NVIDIA review
+  guard passed. The required focused pytest command for
+  `tests/ut/py/test_cuda_runtime_fusion_private_entry.py` and
+  `tests/ut/py/test_nvidia_review_artifacts.py` passed with `70 passed`.
+  The additional ChipWorker-focused command
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  /home/uvxiao/pto-cu/.venv/bin/python -m pytest
+  tests/ut/py/test_chip_worker.py -q` passed with `17 passed`.
+- H200 evidence:
+  no fresh H200 command is planned because this slice does not change the
+  fused-boundary result shape and does not claim runtime-fusion success.
+- Merge decision and merge commit:
+  pending PR review.
+- Handoff summary and remaining gaps:
+  `ChipWorker::run` now carries the real typed chip-storage pointer and a
+  private invocation id into the CUDA host runtime; the CUDA persistent DAG
+  path completes and validates the private envelope after resolving the
+  prepared persistent DAG callable. Missing coordinator, descriptor
+  allocator, UCCL-EP runtime path, validation policy, UCCL-EP capability
+  metadata, and pass evidence remain unsupported or failed states.
+  `persistent_device_uccl_ep_runtime_fusion.status: passed` and
+  `actual_fused_cross_gpu_execution: true` remain unreachable until a later
+  coordinator slice emits real fused-boundary evidence.
+
 ### 2026-06-22 - Post-Runtime-Args-Handoff-Map Status Refresh Worker
 
 - Dispatcher Session or PR:

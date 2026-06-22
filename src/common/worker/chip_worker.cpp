@@ -22,6 +22,18 @@
 
 namespace {
 
+constexpr uint32_t kCudaPrivateRunEnvelopeVersion = 2;
+
+struct CudaPrivateRunArgsEnvelope {
+    uint32_t version = 0;
+    int32_t callable_id = 0;
+    uint64_t invocation_id = 0;
+    const void *runtime_task_args = nullptr;
+    size_t runtime_task_args_size = 0;
+    const ChipStorageTaskArgs *chip_storage_task_args = nullptr;
+    size_t chip_storage_task_args_size = 0;
+};
+
 template <typename T>
 T load_symbol(void *handle, const char *name) {
     dlerror();  // clear any existing error
@@ -256,6 +268,7 @@ void ChipWorker::init_with_role_paths(
         prepare_callable_fn_ = nullptr;
         run_prepared_fn_ = nullptr;
         run_prepared_with_cuda_private_args_fn_ = nullptr;
+        cuda_private_run_invocation_id_ = 0;
         unregister_callable_fn_ = nullptr;
         configure_cuda_comm_descriptor_fn_ = nullptr;
         get_aicpu_dlopen_count_fn_ = nullptr;
@@ -303,6 +316,7 @@ void ChipWorker::init_with_role_paths(
         prepare_callable_fn_ = nullptr;
         run_prepared_fn_ = nullptr;
         run_prepared_with_cuda_private_args_fn_ = nullptr;
+        cuda_private_run_invocation_id_ = 0;
         unregister_callable_fn_ = nullptr;
         configure_cuda_comm_descriptor_fn_ = nullptr;
         get_aicpu_dlopen_count_fn_ = nullptr;
@@ -361,6 +375,7 @@ void ChipWorker::finalize() {
     prepare_callable_fn_ = nullptr;
     run_prepared_fn_ = nullptr;
     run_prepared_with_cuda_private_args_fn_ = nullptr;
+    cuda_private_run_invocation_id_ = 0;
     unregister_callable_fn_ = nullptr;
     configure_cuda_comm_descriptor_fn_ = nullptr;
     get_aicpu_dlopen_count_fn_ = nullptr;
@@ -417,10 +432,24 @@ RunTiming ChipWorker::run(int32_t callable_id, const ChipStorageTaskArgs *args, 
             throw std::runtime_error("run_prepared: args must not be null");
         }
 
-        throw std::runtime_error(
-            "ChipWorker cannot build CUDA private run envelope from ChipStorageTaskArgs; "
-            "use run_raw_args with runtime-specific CUDA args"
+        CudaPrivateRunArgsEnvelope envelope = {};
+        envelope.version = kCudaPrivateRunEnvelopeVersion;
+        envelope.callable_id = callable_id;
+        envelope.invocation_id = ++cuda_private_run_invocation_id_;
+        envelope.chip_storage_task_args = args;
+        envelope.chip_storage_task_args_size = sizeof(*args);
+
+        void *rt = runtime_buf_.data();
+        PtoRunTiming timing{0, 0};
+        int rc = run_prepared_with_cuda_private_args_fn_(
+            device_ctx_, rt, callable_id, &envelope, config.block_dim, config.aicpu_thread_num,
+            config.enable_l2_swimlane, config.enable_dump_tensor, config.enable_pmu, config.enable_dep_gen,
+            config.output_prefix, &timing
         );
+        if (rc != 0) {
+            throw std::runtime_error("run_prepared_with_cuda_private_args failed with code " + std::to_string(rc));
+        }
+        return RunTiming{timing.host_wall_ns, timing.device_wall_ns};
     }
     return run_raw_args(callable_id, args, config);
 }

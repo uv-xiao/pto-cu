@@ -255,6 +255,169 @@ def test_private_runtime_fusion_request_envelope_keeps_chip_storage_typed_and_se
     )
 
 
+def test_private_runtime_fusion_envelope_validates_same_invocation_dag_only(
+    tmp_path,
+):
+    _compile_and_run(
+        tmp_path,
+        """
+        #include "host/pto_cuda_host_schedule_abi.h"
+        #include "host/pto_cuda_persistent_device_abi.h"
+        #include "host/pto_cuda_private_run_envelope.h"
+
+        #include <cassert>
+        #include <cstdint>
+
+        int main() {
+            ChipStorageTaskArgs chip_storage = {};
+            PtoCudaPersistentDagState dag_state = {};
+            PtoCudaPersistentDagArgs persistent_dag_args = {&dag_state};
+
+            PtoCudaPrivateRunArgsEnvelope envelope = {};
+            int rc = pto_cuda_private_run_envelope_init(
+                &envelope,
+                31,
+                9001,
+                &persistent_dag_args,
+                sizeof(persistent_dag_args),
+                &chip_storage,
+                sizeof(chip_storage)
+            );
+            assert(rc == 0);
+            assert(envelope.callable_id == 31);
+            assert(envelope.invocation_id == 9001);
+
+            assert(
+                pto_cuda_private_run_envelope_validate(
+                    &envelope,
+                    31,
+                    9001,
+                    PTO_CUDA_PERSISTENT_OP_DAG_F32_RING,
+                    sizeof(PtoCudaPersistentDagArgs)
+                ) == PTO_CUDA_PRIVATE_RUN_ENVELOPE_OK
+            );
+            assert(
+                pto_cuda_private_run_envelope_validate(
+                    &envelope,
+                    32,
+                    9001,
+                    PTO_CUDA_PERSISTENT_OP_DAG_F32_RING,
+                    sizeof(PtoCudaPersistentDagArgs)
+                ) == PTO_CUDA_PRIVATE_RUN_ENVELOPE_CALLABLE_MISMATCH
+            );
+            assert(
+                pto_cuda_private_run_envelope_validate(
+                    &envelope,
+                    31,
+                    9002,
+                    PTO_CUDA_PERSISTENT_OP_DAG_F32_RING,
+                    sizeof(PtoCudaPersistentDagArgs)
+                ) == PTO_CUDA_PRIVATE_RUN_ENVELOPE_CROSS_INVOCATION
+            );
+            assert(
+                pto_cuda_private_run_envelope_validate(
+                    &envelope,
+                    31,
+                    9001,
+                    PTO_CUDA_HOST_OP_VECTOR_ADD_F32,
+                    sizeof(PtoCudaPersistentDagArgs)
+                ) == PTO_CUDA_PRIVATE_RUN_ENVELOPE_CALLABLE_TYPE_MISMATCH
+            );
+            return 0;
+        }
+        """,
+    )
+
+
+def test_private_runtime_fusion_envelope_rejects_null_wrong_size_and_stale(
+    tmp_path,
+):
+    _compile_and_run(
+        tmp_path,
+        """
+        #include "host/pto_cuda_persistent_device_abi.h"
+        #include "host/pto_cuda_private_run_envelope.h"
+
+        #include <cassert>
+
+        int main() {
+            ChipStorageTaskArgs chip_storage = {};
+            PtoCudaPersistentDagState dag_state = {};
+            PtoCudaPersistentDagArgs persistent_dag_args = {&dag_state};
+
+            PtoCudaPrivateRunArgsEnvelope envelope = {};
+            assert(
+                pto_cuda_private_run_envelope_init(
+                    nullptr,
+                    1,
+                    2,
+                    &persistent_dag_args,
+                    sizeof(persistent_dag_args),
+                    &chip_storage,
+                    sizeof(chip_storage)
+                ) == PTO_CUDA_PRIVATE_RUN_ENVELOPE_NULL_POINTER
+            );
+            assert(
+                pto_cuda_private_run_envelope_init(
+                    &envelope,
+                    1,
+                    2,
+                    nullptr,
+                    sizeof(persistent_dag_args),
+                    &chip_storage,
+                    sizeof(chip_storage)
+                ) == PTO_CUDA_PRIVATE_RUN_ENVELOPE_NULL_POINTER
+            );
+            assert(
+                pto_cuda_private_run_envelope_init(
+                    &envelope,
+                    1,
+                    2,
+                    &persistent_dag_args,
+                    sizeof(persistent_dag_args) - 1,
+                    &chip_storage,
+                    sizeof(chip_storage)
+                ) == PTO_CUDA_PRIVATE_RUN_ENVELOPE_WRONG_RUNTIME_ARGS_SIZE
+            );
+            assert(
+                pto_cuda_private_run_envelope_init(
+                    &envelope,
+                    1,
+                    2,
+                    &persistent_dag_args,
+                    sizeof(persistent_dag_args),
+                    &chip_storage,
+                    sizeof(chip_storage) - 1
+                ) == PTO_CUDA_PRIVATE_RUN_ENVELOPE_WRONG_CHIP_STORAGE_SIZE
+            );
+
+            assert(
+                pto_cuda_private_run_envelope_init(
+                    &envelope,
+                    1,
+                    2,
+                    &persistent_dag_args,
+                    sizeof(persistent_dag_args),
+                    &chip_storage,
+                    sizeof(chip_storage)
+                ) == PTO_CUDA_PRIVATE_RUN_ENVELOPE_OK
+            );
+            envelope.version = PTO_CUDA_PRIVATE_RUN_ENVELOPE_VERSION - 1;
+            assert(
+                pto_cuda_private_run_envelope_validate(
+                    &envelope,
+                    1,
+                    2,
+                    PTO_CUDA_PERSISTENT_OP_DAG_F32_RING,
+                    sizeof(PtoCudaPersistentDagArgs)
+                ) == PTO_CUDA_PRIVATE_RUN_ENVELOPE_STALE
+            );
+            return 0;
+        }
+        """,
+    )
+
+
 def test_cuda_host_runtime_hooks_private_entry_without_public_api_expansion():
     host_runtime = (
         ROOT / "src" / "cuda" / "platform" / "onboard" / "host" / "pto_runtime_c_api.cpp"
@@ -279,11 +442,26 @@ def test_cuda_host_runtime_hooks_private_entry_without_public_api_expansion():
     assert "PtoCudaPrivateRunArgsEnvelope" not in common_abi
 
 
-def test_chip_worker_rejects_private_envelope_without_runtime_specific_args():
+def test_chip_worker_builds_private_handoff_without_inventing_runtime_args():
     chip_worker = (ROOT / "src" / "common" / "worker" / "chip_worker.cpp").read_text(
         encoding="utf-8"
     )
 
     assert "envelope.runtime_task_args = args;" not in chip_worker
     assert "envelope.runtime_task_args_size = sizeof(*args);" not in chip_worker
-    assert "ChipWorker cannot build CUDA private run envelope" in chip_worker
+    assert "envelope.chip_storage_task_args = args;" in chip_worker
+    assert "envelope.chip_storage_task_args_size = sizeof(*args);" in chip_worker
+    assert "run_prepared_with_cuda_private_args_fn_" in chip_worker
+    assert "ChipWorker cannot build CUDA private run envelope" not in chip_worker
+
+
+def test_cuda_host_runtime_validates_private_handoff_after_callable_resolution():
+    host_runtime = (
+        ROOT / "src" / "cuda" / "platform" / "onboard" / "host" / "pto_runtime_c_api.cpp"
+    ).read_text(encoding="utf-8")
+
+    assert "PreparedCallable &prepared = it->second" in host_runtime
+    assert "pto_cuda_private_run_envelope_validate" in host_runtime
+    assert "prepared.op" in host_runtime
+    assert "sizeof(PtoCudaPersistentDagArgs)" in host_runtime
+    assert "PTO_CUDA_PRIVATE_RUN_ENVELOPE_CALLABLE_TYPE_MISMATCH" in host_runtime

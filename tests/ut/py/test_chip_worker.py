@@ -319,6 +319,20 @@ class TestChipWorkerPython:
                     (void)handle; (void)allocation_id; (void)rank_count; (void)domain_rank; return 0;
                 }
                 int comm_barrier(void *handle) { (void)handle; return 0; }
+                int comm_all_reduce_f32(void *handle, const float *send, float *recv, size_t count) {
+                    (void)handle; (void)send; (void)recv; (void)count; return 0;
+                }
+                int comm_reduce_scatter_f32(void *handle, const float *send, float *recv, size_t recv_count) {
+                    (void)handle; (void)send; (void)recv; (void)recv_count; return 0;
+                }
+                int comm_all_gather_f32(void *handle, const float *send, float *recv, size_t send_count) {
+                    (void)handle; (void)send; (void)recv; (void)send_count; return 0;
+                }
+                int comm_send_recv_f32(
+                    void *handle, const float *send, float *recv, size_t count, int dst_rank, int src_rank
+                ) {
+                    (void)handle; (void)send; (void)recv; (void)count; (void)dst_rank; (void)src_rank; return 0;
+                }
                 int comm_destroy(void *handle) { (void)handle; return 0; }
                 """
             )

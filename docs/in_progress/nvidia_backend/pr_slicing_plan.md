@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `0ba8f30696132c06a3cd49b95fbd7bb46b8b9a99`,
-  after PR #162 (`Map CUDA runtime args handoff`).
+- Current accepted `main`: `cc26283be5b3355af8148a8e4ca5421d57c2ff80`,
+  after PR #163 (`Refresh NVIDIA status after runtime args map`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -102,6 +102,10 @@ from `main` and lands through focused GitHub PRs.
   slice only. It did not change CUDA runtime behavior, result shape, or
   fused-execution evidence status. The selected next slice is the narrow
   private host-runtime handoff implementation, not another handoff-map slice.
+- PR #163 recorded the post-PR162 status refresh and selected
+  `nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff` as the next
+  narrow implementation slice. It did not change CUDA runtime behavior,
+  result shape, or fused-execution evidence status.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -889,3 +893,32 @@ Required future non-claims:
 - no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claim;
 - no public `TaskArgs`, public `CallConfig`, common runtime C API, or UCCL
   host-runtime ABI expansion.
+
+Implemented surface in this branch:
+
+- `src/common/worker/chip_worker.cpp` builds a CUDA-private handoff envelope
+  with the real `ChipStorageTaskArgs *`, `sizeof(ChipStorageTaskArgs)`,
+  callable id, and a per-`ChipWorker` private invocation id. It does not set
+  `runtime_task_args` from that chip-storage pointer.
+- `src/cuda/platform/onboard/host/pto_runtime_c_api.cpp` completes the
+  envelope only inside the CUDA persistent DAG host-runtime path, after the
+  prepared callable has resolved to `PTO_CUDA_PERSISTENT_OP_DAG_F32_RING`.
+  It then validates callable id, invocation id, callable type, and both
+  pointer sizes before requesting
+  `persistent_device_uccl_ep_runtime_fusion_entry`.
+- `src/cuda/platform/include/host/pto_cuda_private_run_envelope.h` now defines
+  private envelope status values plus init/validate helpers for null pointer,
+  stale envelope, callable mismatch, cross-invocation, callable-type
+  mismatch, runtime-args size, and chip-storage size rejection.
+- `tests/ut/py/test_cuda_runtime_fusion_private_entry.py` covers the private
+  envelope acceptance and rejection cases, the `ChipWorker::run` chip-storage
+  handoff, the host-runtime validation point, forbidden pass-evidence
+  rejection, and the continued absence of public/common ABI expansion.
+
+This implementation remains a private handoff slice only. It does not add the
+runtime-fusion coordinator, descriptor allocator, UCCL-EP runtime path,
+validation policy, UCCL-EP capability metadata, pass evidence, H200 fused
+success evidence, or any RDMA, multi-node, serving, vLLM, DeepSeek,
+throughput, or latency claim. `persistent_device_uccl_ep_runtime_fusion.status:
+passed` and `actual_fused_cross_gpu_execution: true` remain unreachable until
+a later coordinator slice emits real fused-boundary evidence.

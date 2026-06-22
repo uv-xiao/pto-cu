@@ -920,6 +920,19 @@ same-invocation `ChipStorageTaskArgs *` and `PtoCudaPersistentDagArgs *`
 pointers. It must keep the fused-boundary result unsupported or failed until
 a later coordinator slice emits real fused execution evidence.
 
+That implementation slice now adds the private association plumbing only:
+`ChipWorker::run` carries the real chip-storage pointer, expected size,
+callable id, and private invocation id into the CUDA host runtime, and the
+CUDA persistent DAG path completes the envelope only after resolving the
+prepared callable as a persistent DAG. The implementation keeps
+`PtoCudaPersistentDagArgs *` separate from `ChipStorageTaskArgs *`, rejects
+null, stale, wrong-size, wrong-callable, and cross-invocation envelopes, and
+continues to reject forbidden public/API evidence paths.
+
+This is still not fused execution evidence. The coordinator, descriptor
+allocator, UCCL-EP runtime path, validation policy, UCCL-EP capability
+metadata, pass evidence, and fresh H200 fused-success result are absent.
+
 ## Future Fused Execution Evidence Shape
 
 This design/dependency PR defines the evidence contract only. It does not

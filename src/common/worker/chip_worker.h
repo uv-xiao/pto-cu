@@ -213,6 +213,7 @@ private:
     PrepareCallableFn prepare_callable_fn_ = nullptr;
     RunPreparedFn run_prepared_fn_ = nullptr;
     RunPreparedWithCudaPrivateArgsFn run_prepared_with_cuda_private_args_fn_ = nullptr;
+    uint64_t cuda_private_run_invocation_id_ = 0;
     UnregisterCallableFn unregister_callable_fn_ = nullptr;
     ConfigureCudaCommDescriptorFn configure_cuda_comm_descriptor_fn_ = nullptr;
     GetAicpuDlopenCountFn get_aicpu_dlopen_count_fn_ = nullptr;
