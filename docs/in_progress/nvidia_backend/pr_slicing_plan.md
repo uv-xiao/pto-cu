@@ -33,16 +33,19 @@ from `main` and lands through focused GitHub PRs.
   - Result: merged as `9e793ab1f51ccf2ffbf5120005acc2cddf42b843`.
 - PR #136: broader Gluon FlashAttention append sweep coverage.
   - Result: merged as `c3964aad9204d0fbd0042ebbd7f88309530b80d2`.
+- PR #139: restart tracking restoration.
+  - Result: merged as `3722ad7efd7257fcc3807111aa449bfb49c57ea3`.
 
-## Active PR - Restart Tracking Restoration
+## Restored Tracking Surface
 
-Objective: restore a concise, current umbrella goal, source/skill notes,
-artifact audit, slicing plan, and dispatch log so future workers have durable
-context without committing a scrollback-sized historical log.
+The restored tracking surface now includes a concise umbrella goal,
+source/skill notes, artifact audit, slicing plan, and dispatch log so future
+workers have durable context without committing a scrollback-sized historical
+log.
 
 PR: <https://github.com/uv-xiao/pto-cu/pull/139>.
 
-Owned paths:
+Restored paths:
 
 - `docs/in_progress/001-nvidia-backend.md`
 - `docs/in_progress/nvidia_backend/source_manifest.md`
