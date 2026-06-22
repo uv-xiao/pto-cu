@@ -752,9 +752,12 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "After PR #172, the private UCCL-EP runtime path map" in (
         normalized_slicing
     )
+    assert "After PR #174, the private UCCL-EP runtime path scaffold" in (
+        normalized_slicing
+    )
     assert (
         "current accepted baseline is "
-        "`21b2b32a475dc04e19700115af74510daef70859`"
+        "`3b4b19a04855d27289fb9cdad802fee0c47d8265`"
     ) in normalized_slicing
     assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-validation-policy-map" in slicing
@@ -762,6 +765,9 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         slicing
     )
     assert "nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map" in (
+        slicing
+    )
+    assert "nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl" in (
         slicing
     )
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
@@ -778,13 +784,15 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "42b996666e279024b43f490a310c490a591a897d" in slicing
     assert "bd0b59ee8d5afc969020d3aea047aafc9f3152be" in slicing
     assert "21b2b32a475dc04e19700115af74510daef70859" in slicing
+    assert "3b4b19a04855d27289fb9cdad802fee0c47d8265" in slicing
     assert "Runtime Args Handoff Map Slice" in slicing
     assert "Private Host Runtime Handoff Implementation Slice" in slicing
     assert "Capability Metadata Map Slice" in slicing
     assert "Validation Policy Map Slice" in slicing
     assert "Descriptor Allocation Policy Map Slice" in slicing
     assert "Accepted UCCL-EP Runtime Path Map Slice" in slicing
-    assert "UCCL-EP Runtime Path Implementation Slice" in slicing
+    assert "Accepted UCCL-EP Runtime Path Implementation Slice" in slicing
+    assert "Descriptor Allocation Implementation Slice" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl" in (
         slicing
     )
@@ -1799,6 +1807,105 @@ def test_uccl_ep_runtime_path_impl_slice_is_review_safe():
         "No pass evidence",
         "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
         "`actual_fused_cross_gpu_execution: true`",
+        "No fresh H200 command is planned",
+        "PR #174 merged as `3b4b19a04855d27289fb9cdad802fee0c47d8265`",
+    ]:
+        assert required in normalized_dispatch
+
+
+def test_post_uccl_ep_runtime_path_impl_status_refresh_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+
+    required_refresh_terms = [
+        "pr #174",
+        "3b4b19a04855d27289fb9cdad802fee0c47d8265",
+        "ptocudaucclepruntimepath",
+        "ptocudaucclepruntimedescriptorview",
+        "private descriptor-view validation",
+        "invocation-id propagation",
+        "descriptor allocation implementation",
+        "nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl",
+        "narrower than",
+        "coordinator",
+        "uccl-ep runtime dispatch",
+        "pass evidence",
+        "fresh h200 fused-success evidence",
+        "serving",
+        "vllm",
+        "deepseek",
+        "throughput",
+        "latency",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split()).lower()
+        for required in required_refresh_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-23 - Post-UCCL-EP-Runtime-Path-Impl "
+        "Status Refresh Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "pto-worker-nvidia-goal-status-post-uccl-ep-runtime-path-impl",
+        "run-nvidia-post-uccl-ep-runtime-path-impl-status-refresh.sh",
+        "nvidia-post-uccl-ep-runtime-path-impl-status-refresh.md",
+        "019ef0f2-c2d3-7ae2-91dd-ba81b660fd1b",
+        "rollout-2026-06-23T04-08-21-019ef0f2-c2d3-7ae2-91dd-ba81b660fd1b.jsonl",
+        "pto-worker-nvidia-post-uccl-ep-runtime-path-impl-status-refresh:0.0",
+        "tmp/codex-goal-monitor/nvidia-post-uccl-ep-runtime-path-impl-status-refresh/",
+        "20260622T201758Z",
+        "pane_status: missing",
+        "dirty_count: 0",
+        "2c2256e8",
+        "nvidia-goal-status-post-uccl-ep-runtime-path-impl",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "uv-xiao/pto-cu",
+        "base branch `main`",
+        "starting commit `3b4b19a04855d27289fb9cdad802fee0c47d8265`",
+        "review-facing docs/tests only",
+        "docs/in_progress/nvidia_backend/dispatch_log.md",
+        "docs/in_progress/nvidia_backend/pr_slicing_plan.md",
+        "docs/in_progress/nvidia_backend/communication_runtime_boundary.md",
+        "docs/in_progress/nvidia_backend/communication_selection.md",
+        "docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md",
+        "tests/ut/py/test_nvidia_review_artifacts.py",
+        "No nested workers were launched",
+        "PR #174 accepted only the private UCCL-EP runtime path scaffold",
+        "PtoCudaUcclEpRuntimePath",
+        "PtoCudaUcclEpRuntimeDescriptorView",
+        "private descriptor-view validation",
+        "invocation-id propagation",
+        "did not implement the runtime-fusion coordinator",
+        "descriptor allocation",
+        "UCCL-EP runtime dispatch",
+        "fresh H200 fused-success evidence",
+        "public `TaskArgs`",
+        "public `CallConfig`",
+        "common runtime C API",
+        "UCCL host-runtime ABI",
+        "serving, vLLM, DeepSeek, throughput, or latency",
+        "selected exactly one next PR-sized implementation slice",
+        "Descriptor Allocation Implementation Slice",
+        "nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl",
+        "narrower than runtime-fusion coordinator construction",
+        "UCCL-EP runtime dispatch",
+        "git diff --check",
+        "markdownlint-cli2",
+        "NVIDIA review guard",
+        "tests/ut/py/test_nvidia_review_artifacts.py",
         "No fresh H200 command is planned",
     ]:
         assert required in normalized_dispatch

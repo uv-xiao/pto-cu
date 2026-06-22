@@ -836,9 +836,9 @@ runtime-path failure ownership. It did not implement CUDA runtime behavior,
 UCCL-EP runtime dispatch, a coordinator, descriptor allocation, pass
 evidence, or H200 fused-success evidence.
 
-## UCCL-EP Runtime Path Implementation Slice
+## Accepted UCCL-EP Runtime Path Implementation Slice
 
-Current branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl`.
 
 This slice adds the narrow private UCCL-EP runtime path implementation
@@ -884,11 +884,44 @@ Required non-claims:
 - no `actual_fused_cross_gpu_execution: true`;
 - no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claim.
 
+PR #174 accepted this private runtime-path scaffold as
+`3b4b19a04855d27289fb9cdad802fee0c47d8265`. The accepted surface is limited
+to `PtoCudaUcclEpRuntimePath`, `PtoCudaUcclEpRuntimeDescriptorView`, private
+descriptor-view validation, and invocation-id propagation through private
+CUDA runtime-fusion request state. It did not implement the runtime-fusion
+coordinator, descriptor allocation, UCCL-EP runtime dispatch, pass evidence,
+fresh H200 fused-success evidence, public `TaskArgs`, public `CallConfig`,
+common runtime C API fields, UCCL host-runtime ABI fields, serving, vLLM,
+DeepSeek, throughput, or latency evidence.
+
+## Descriptor Allocation Implementation Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl`.
+
+The next slice is a private descriptor allocation implementation only. It may
+add the host-control record and device-visible dispatch/combine descriptor
+buffer mechanics required by the PR #170 allocation policy and bind them to
+the same invocation id carried by the PR #174 runtime-path scaffold.
+
+This scope is explicitly narrower than constructing
+`persistent_device_uccl_ep_runtime_fusion` as a coordinator and narrower than
+dispatching UCCL-EP runtime work. Missing coordinator behavior and missing
+UCCL-EP runtime dispatch must remain unsupported or failed states. Public
+`TaskArgs`, public `CallConfig`, common runtime C API fields, UCCL
+host-runtime ABI fields, example JSON, adapter provenance, handoff metadata,
+and payload provenance remain forbidden pass-evidence paths.
+
+This slice must not claim pass evidence, fresh H200 fused-success evidence,
+`persistent_device_uccl_ep_runtime_fusion.status: passed`,
+`actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
+DeepSeek, throughput, or latency.
+
 ## Non-Claims
 
-This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node
-transport, serving integration, vLLM integration, or DeepSeek model
-correctness. The UCCL-EP handoff is adapter/probe evidence only. Later slices
-must add fresh implementation, evidence, and docs before making broader
-communication or serving claims.
+This status refresh does not claim UCCL host-runtime dispatch, RDMA,
+multi-node transport, serving integration, vLLM integration, or DeepSeek
+model correctness. The UCCL-EP handoff is adapter/probe evidence only. Later
+slices must add fresh implementation, evidence, and docs before making
+broader communication or serving claims.
 DeepSeek model correctness remains out of scope.
