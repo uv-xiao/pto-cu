@@ -1265,3 +1265,36 @@ Required non-claims:
 - no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claim;
 - no public `TaskArgs`, public `CallConfig`, common runtime C API, or UCCL
   host-runtime ABI expansion.
+
+Implemented surface in this branch:
+
+- the runtime-path owner is the future private
+  `persistent_device_uccl_ep_runtime_fusion` coordinator inside one CUDA
+  persistent-device runtime run context;
+- the dispatch descriptor handoff consumes the PR #170 dispatch descriptor
+  identity: invocation id, persistent graph descriptor id, UCCL capability id,
+  validated rank/device map, descriptor vocabulary, dispatch payload shape,
+  and coordinator-issued shared token;
+- the combine descriptor handoff consumes the PR #170 combine descriptor
+  identity with the same invocation id, persistent graph descriptor id, UCCL
+  capability id, validated rank/device map, descriptor vocabulary, combine
+  payload shape, and exactly the same coordinator-issued shared token;
+- descriptor-token checks fail unless dispatch and combine descriptor views
+  carry the same coordinator-issued token and the token belongs to the current
+  same-invocation request;
+- rank/device checks fail unless the persistent graph descriptor, private
+  UCCL-EP capability metadata, and Worker-local CUDA device ordering agree;
+- transport-mode checks fail unless the private UCCL-EP capability metadata
+  declares `transport mode: ep` before either descriptor handoff is consumed;
+- runtime-path failure ownership remains private to the future coordinator:
+  missing runtime path is unsupported, stale descriptor views are failed,
+  descriptor-token mismatch is failed, rank/device mismatch is failed,
+  transport-mode mismatch is failed, descriptor-vocabulary mismatch is failed,
+  and public/API-sourced runtime-path fields are failed;
+- public `TaskArgs`, public `CallConfig`, common runtime C API fields, UCCL
+  host-runtime ABI fields, example JSON, adapter provenance, and handoff
+  metadata remain forbidden pass-evidence paths for this dependency.
+
+This branch remains a docs/test dependency slice. It does not implement the
+runtime path, construct the coordinator, allocate descriptor memory, dispatch
+UCCL-EP work, emit pass evidence, or add fresh H200 fused-success evidence.

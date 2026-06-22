@@ -792,12 +792,33 @@ prerequisites. Those inputs remain prerequisites rather than pass evidence.
 
 The map must define the runtime-path owner, dispatch descriptor handoff,
 combine descriptor handoff, descriptor-token checks, rank/device checks,
-transport-mode checks, and runtime-path failure ownership. missing runtime
-path is unsupported. stale descriptors, token mismatch, rank/device mismatch,
-transport-mode mismatch, descriptor-vocabulary mismatch, and
-public/API-sourced runtime-path fields are failed as fabricated or untrusted
-pass
-evidence.
+transport-mode checks, and runtime-path failure ownership. The runtime-path
+owner is the future private `persistent_device_uccl_ep_runtime_fusion`
+coordinator inside one CUDA persistent-device runtime run context.
+
+The dispatch descriptor handoff may consume only the PR #170 dispatch
+descriptor identity: invocation id, persistent graph descriptor id, UCCL
+capability id, validated rank/device map, descriptor vocabulary, dispatch
+payload shape, and coordinator-issued shared token. The combine descriptor
+handoff may consume only the matching PR #170 combine descriptor identity with
+the same invocation id, persistent graph descriptor id, UCCL capability id,
+validated rank/device map, descriptor vocabulary, combine payload shape, and
+exactly the same coordinator-issued shared token.
+
+descriptor-token checks fail unless dispatch and combine descriptor views
+carry the same coordinator-issued token and that token belongs to the current
+same-invocation request. Rank/device checks fail unless the persistent graph
+descriptor, private UCCL-EP capability metadata, and Worker-local CUDA device
+ordering agree. Transport-mode checks fail unless the private UCCL-EP
+capability metadata declares `transport mode: ep` before either descriptor
+handoff is consumed.
+
+Runtime-path failure ownership is private to the future coordinator. missing
+runtime path is unsupported. stale descriptor views are failed,
+descriptor-token mismatch is failed, rank/device mismatch is failed,
+transport-mode mismatch is failed, descriptor-vocabulary mismatch is failed,
+and public/API-sourced runtime-path fields are failed as fabricated or
+untrusted pass evidence.
 
 This selected slice must not implement UCCL-EP runtime dispatch, construct a
 coordinator, allocate descriptors, change CUDA runtime behavior, claim pass

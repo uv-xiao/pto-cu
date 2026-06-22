@@ -1530,6 +1530,95 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
             assert required in normalized_text
 
 
+def test_uccl_ep_runtime_path_map_slice_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+
+    required_path_map_terms = [
+        "uccl-ep runtime path map slice",
+        "nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map",
+        "private uccl-ep runtime path",
+        "cuda persistent-device runtime path",
+        "runtime-path owner",
+        "dispatch descriptor handoff",
+        "combine descriptor handoff",
+        "descriptor-token checks",
+        "rank/device checks",
+        "transport-mode checks",
+        "runtime-path failure ownership",
+        "missing runtime path is unsupported",
+        "stale descriptor views are failed",
+        "descriptor-token mismatch is failed",
+        "rank/device mismatch is failed",
+        "transport-mode mismatch is failed",
+        "descriptor-vocabulary mismatch is failed",
+        "public/api-sourced runtime-path fields are failed",
+        "pr #164",
+        "same-invocation request args",
+        "pr #166",
+        "uccl-ep capability metadata",
+        "pr #168",
+        "validation policy",
+        "pr #170",
+        "descriptor allocation policy",
+        "prerequisites",
+        "pass evidence",
+        "coordinator-issued shared token",
+        "token",
+        "transport mode: ep",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split()).lower()
+        for required in required_path_map_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-23 - UCCL-EP Runtime Fusion Runtime Path Map Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "pto-worker-nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map",
+        "tmp/worker-prompts/run-nvidia-uccl-ep-runtime-path-map.sh",
+        "tmp/worker-prompts/nvidia-uccl-ep-runtime-path-map.md",
+        "019ef0a8-ee9a-7550-ac78-f244dd6f84cb",
+        "rollout-2026-06-23T02-47-43-019ef0a8-ee9a-7550-ac78-f244dd6f84cb.jsonl",
+        "pto-worker-nvidia-uccl-ep-runtime-path-map:0.0",
+        "tmp/codex-goal-monitor/nvidia-uccl-ep-runtime-path-map/",
+        "20260622T190307Z",
+        "pane_status: missing",
+        "dirty_count: 0",
+        "cd800f20",
+        "planned PR URL slot",
+        "https://github.com/uv-xiao/pto-cu/pull/172",
+        "Opened as a non-draft PR",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "75cf6045b4042ef592bb6962a592f0f658fc4d29",
+        "review-facing docs/tests only",
+        "No nested workers were launched",
+        "No pass evidence",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+        "No RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency",
+        "No fresh H200 command is planned",
+        "completed before initial PR creation",
+        "0 error(s)",
+        "NVIDIA review guard passed",
+        "62 passed",
+    ]:
+        assert required in normalized_dispatch
+
+
 def test_chat_256k_needle_stream_evidence_is_review_safe():
     evidence = (
         ROOT

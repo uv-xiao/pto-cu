@@ -23,6 +23,117 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-23 - UCCL-EP Runtime Fusion Runtime Path Map Worker
+
+- Dispatcher Session or PR:
+  current `/goal` child worker session on branch
+  `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`, starting from
+  `75cf6045b4042ef592bb6962a592f0f658fc4d29`.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`;
+  map the private UCCL-EP runtime path that a later
+  `persistent_device_uccl_ep_runtime_fusion_entry` coordinator request must
+  use after PR #170 defined descriptor allocation policy, without
+  implementing CUDA runtime behavior or UCCL-EP runtime dispatch.
+- Exact Codex command or script invocation:
+  worker launched by
+  `tmp/worker-prompts/run-nvidia-uccl-ep-runtime-path-map.sh`, which ran the
+  prompt in `tmp/worker-prompts/nvidia-uccl-ep-runtime-path-map.md`.
+  No nested workers were launched.
+- Monitor locators:
+  Codex session id `019ef0a8-ee9a-7550-ac78-f244dd6f84cb`;
+  transcript path
+  `~/.codex/sessions/2026/06/23/rollout-2026-06-23T02-47-43-019ef0a8-ee9a-7550-ac78-f244dd6f84cb.jsonl`;
+  tmux pane `pto-worker-nvidia-uccl-ep-runtime-path-map:0.0`;
+  recurring monitor artifacts under
+  `tmp/codex-goal-monitor/nvidia-uccl-ep-runtime-path-map/`.
+  Latest summary `20260622T190307Z` reported `pane_status: missing`,
+  `transcript_status: ok`, `worktree_status: ok`, `dirty_count: 0`, and
+  latest commit `cd800f20`.
+- Parent goal and child slice:
+  NVIDIA backend restart; UCCL-EP Runtime Path Map Slice selected after
+  PR #170.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`;
+  planned PR URL slot resolved to
+  <https://github.com/uv-xiao/pto-cu/pull/172>. Opened as a non-draft PR
+  with
+  `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `75cf6045b4042ef592bb6962a592f0f658fc4d29`.
+- Allowed scope and files:
+  review-facing docs/tests only:
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  and `tests/ut/py/test_nvidia_review_artifacts.py`. No CUDA runtime
+  behavior changes.
+- Dependencies and blocked assumptions:
+  PR #164 is accepted only for the private CUDA persistent DAG host-runtime
+  handoff that associates real same-invocation `ChipStorageTaskArgs *` and
+  `PtoCudaPersistentDagArgs *` pointers. PR #166 is accepted only as a
+  private UCCL-EP capability metadata dependency map. PR #168 is accepted
+  only as a private validation policy dependency map. PR #170 is accepted
+  only as a private descriptor allocation policy dependency map: allocator
+  owner, host-control record policy, device-visible descriptor buffer policy,
+  dispatch/combine descriptor identity, shared-token requirement, and
+  allocation lifetime failure ownership. These are prerequisites, not pass
+  evidence.
+- Runtime path map:
+  the private UCCL-EP runtime path remains private to the CUDA
+  persistent-device runtime path. The runtime-path owner is the future
+  private `persistent_device_uccl_ep_runtime_fusion` coordinator inside one
+  CUDA persistent-device runtime run context. The dispatch descriptor handoff
+  uses the PR #170 dispatch descriptor identity, including invocation id,
+  persistent graph descriptor id, UCCL capability id, validated rank/device
+  map, descriptor vocabulary, dispatch payload shape, and coordinator-issued
+  shared token. The combine descriptor handoff uses the matching PR #170
+  combine descriptor identity with exactly the same token. Descriptor-token
+  checks, rank/device checks, and transport-mode checks run before either
+  descriptor handoff may be consumed; transport-mode checks require
+  `transport mode: ep`.
+- Unsupported and failed states:
+  missing runtime path is unsupported. stale descriptor views are failed,
+  descriptor-token mismatch is failed, rank/device mismatch is failed,
+  transport-mode mismatch is failed, descriptor-vocabulary mismatch is failed,
+  and public/API-sourced runtime-path fields are failed as fabricated or
+  untrusted pass evidence. Runtime-path failure ownership remains private to
+  the future coordinator.
+- Forbidden pass-evidence paths:
+  public `TaskArgs`, public `CallConfig`, common runtime C API fields, UCCL
+  host-runtime ABI fields, example JSON, adapter provenance, and handoff
+  metadata remain forbidden pass-evidence paths for this dependency slice.
+- Non-claims:
+  no CUDA runtime behavior change. No UCCL-EP runtime path implementation.
+  No runtime-fusion coordinator implementation. No descriptor allocation
+  implementation. No pass evidence. No fresh H200 fused-success evidence. No
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`. No
+  `actual_fused_cross_gpu_execution: true`. No RDMA, multi-node, serving,
+  vLLM, DeepSeek, throughput, or latency claim. No public `TaskArgs`, public
+  `CallConfig`, common runtime C API, or UCCL host-runtime ABI expansion.
+- Verification commands and results:
+  completed before initial PR creation and rerun after adding the PR URL to
+  this entry. `git diff --check` passed with no output. Targeted
+  `markdownlint-cli2` over the five NVIDIA status docs passed with
+  `0 error(s)`. The NVIDIA review guard passed. The required focused pytest
+  command for `tests/ut/py/test_nvidia_review_artifacts.py` passed with
+  `62 passed`.
+- H200 evidence:
+  No fresh H200 command is planned because this is a docs/test dependency
+  slice and does not change CUDA runtime behavior, UCCL-EP runtime dispatch,
+  example behavior, result shape, or fused-boundary evidence.
+- Merge decision and merge commit:
+  pending dispatcher review.
+- Handoff summary and remaining gaps:
+  this branch maps the private UCCL-EP runtime path dependency only. Runtime
+  path implementation, coordinator implementation, descriptor allocation
+  implementation, pass evidence, and fresh H200 fused-success evidence remain
+  unsupported or failed states.
+
 ### 2026-06-23 - Post-Descriptor-Allocation-Policy-Map Status Refresh Worker
 
 - Dispatcher Session or PR:
