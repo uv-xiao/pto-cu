@@ -293,6 +293,7 @@ public:
             }
         }
         streams_.clear();
+        private_run_invocation_id_ = 0;
         return cudaDeviceSynchronize() == cudaSuccess ? 0 : -1;
     }
 
@@ -441,7 +442,7 @@ public:
 
     int run(
         int32_t callable_id, const void *args, PtoRunTiming *out_timing,
-        const PtoCudaPrivateRunArgsEnvelope *envelope = nullptr
+        const PtoCudaPrivateRunArgsEnvelope *envelope = nullptr, uint64_t expected_invocation_id = 0
     ) {
         if (out_timing != nullptr) {
             std::memset(out_timing, 0, sizeof(*out_timing));
@@ -465,6 +466,17 @@ public:
             prepared.op != PTO_CUDA_PERSISTENT_OP_VECTOR_ADD_F32_QUEUE &&
             prepared.op != PTO_CUDA_PERSISTENT_OP_DAG_F32_RING) {
             return -1;
+        }
+        if (envelope != nullptr) {
+            int envelope_status = pto_cuda_private_run_envelope_validate(
+                envelope, callable_id, expected_invocation_id, prepared.op, sizeof(PtoCudaPersistentDagArgs)
+            );
+            if (envelope_status != PTO_CUDA_PRIVATE_RUN_ENVELOPE_OK) {
+                if (envelope_status == PTO_CUDA_PRIVATE_RUN_ENVELOPE_CALLABLE_TYPE_MISMATCH) {
+                    return -1;
+                }
+                return -1;
+            }
         }
         if (cudaSetDevice(device_id_) != cudaSuccess) {
             return -1;
@@ -761,10 +773,32 @@ public:
         int32_t callable_id, const PtoCudaPrivateRunArgsEnvelope *envelope, PtoRunTiming *out_timing
     ) {
         if (envelope == nullptr || envelope->version != PTO_CUDA_PRIVATE_RUN_ENVELOPE_VERSION ||
-            envelope->runtime_task_args == nullptr) {
+            envelope->chip_storage_task_args == nullptr ||
+            envelope->chip_storage_task_args_size != sizeof(ChipStorageTaskArgs)) {
             return -1;
         }
-        return run(callable_id, envelope->runtime_task_args, out_timing, envelope);
+
+        const uint64_t expected_invocation_id = private_run_invocation_id_ + 1;
+        if (envelope->invocation_id != expected_invocation_id) {
+            return -1;
+        }
+        private_run_invocation_id_ = expected_invocation_id;
+
+        PtoCudaPersistentDagArgs dag_args = {};
+        PtoCudaPrivateRunArgsEnvelope completed = *envelope;
+        if (completed.runtime_task_args == nullptr) {
+            if (completed.chip_storage_task_args->scalar_count() < 1) {
+                return -1;
+            }
+            dag_args.state =
+                reinterpret_cast<const PtoCudaPersistentDagState *>(completed.chip_storage_task_args->scalar(0));
+            if (dag_args.state == nullptr) {
+                return -1;
+            }
+            completed.runtime_task_args = &dag_args;
+            completed.runtime_task_args_size = sizeof(dag_args);
+        }
+        return run(callable_id, completed.runtime_task_args, out_timing, &completed, expected_invocation_id);
     }
 
     const PtoCudaCommDeviceDescriptor *comm_descriptor_or_null() const {
@@ -841,6 +875,7 @@ private:
     std::unordered_map<int32_t, PreparedCallable> prepared_;
     PtoCudaCommDeviceDescriptor comm_descriptor_ = {};
     PtoCudaRuntimeFusionResult last_runtime_fusion_result_ = {};
+    uint64_t private_run_invocation_id_ = 0;
     bool has_comm_descriptor_ = false;
 };
 

@@ -216,23 +216,25 @@ restart. It is a planning boundary, not performance evidence.
   `ChipWorker::run` as the owner of the real `ChipStorageTaskArgs *` and the
   CUDA persistent DAG host-runtime path as the owner of the real
   `PtoCudaPersistentDagArgs *`.
-- The future private association point is inside the CUDA host runtime, after
-  the persistent DAG callable is resolved for the same `ChipWorker::run`
-  invocation. `PtoCudaPrivateRunArgsEnvelope` may associate
-  `runtime_task_args` with `chip_storage_task_args` only when both pointers
-  are real, same-invocation inputs with matching sizes and callable type.
+- The private association point is inside the CUDA host runtime, after the
+  persistent DAG callable is resolved for the same `ChipWorker::run`
+  invocation. `PtoCudaPrivateRunArgsEnvelope` associates `runtime_task_args`
+  with `chip_storage_task_args` only when both pointers are real,
+  same-invocation inputs with matching sizes and callable type.
 - Public `TaskArgs`, public `CallConfig`, the common runtime C API,
   UCCL host-runtime ABI fields, example JSON, adapter provenance, and handoff
   metadata remain forbidden ways to provide the runtime args association.
   Null, stale, wrong-size, wrong-callable, or cross-invocation envelopes must
   be failed or unsupported states, not pass evidence.
-- The selected next implementation slice is
-  `nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`. It should add
-  only the private CUDA persistent DAG host-runtime association for real
+- The selected implementation slice
+  `nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff` adds only the
+  private CUDA persistent DAG host-runtime association for real
   same-invocation `ChipStorageTaskArgs *` and `PtoCudaPersistentDagArgs *`
   inputs, with local coverage for null pointers, wrong sizes,
   mismatched-callable cases, stale envelopes, cross-invocation envelopes, and
-  forbidden public/API evidence paths.
+  forbidden public/API evidence paths. It does not add a runtime-fusion
+  coordinator, descriptor allocator, UCCL-EP runtime path, validation policy,
+  UCCL-EP capability metadata, pass evidence, or fused-success claim.
 
 ## Non-Claims
 
