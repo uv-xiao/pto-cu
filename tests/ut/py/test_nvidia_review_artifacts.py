@@ -669,7 +669,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "Accepted Coordinator Entry Contract Slice" in slicing
     assert "Accepted Private Entry Unsupported Scaffold" in slicing
     assert "Closed Invalid ChipStorageTaskArgs Request Boundary Attempt" in slicing
-    assert "Current Private Request Envelope Dependency Slice" in slicing
+    assert "Accepted Private Request Envelope Dependency Slice" in slicing
+    assert "Selected Runtime Args Handoff Map Slice" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
@@ -680,6 +681,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "nvidia-uccl-ep-runtime-fusion-private-entry-unsupported" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-private-request-envelope" in slicing
+    assert "nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map" in slicing
     assert "PR #157 attempted that request boundary but was closed invalid" in (
         normalized_slicing
     )
@@ -692,10 +694,20 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         normalized_slicing
     )
     assert "PR #158 fixed the Codex monitor transcript lookup" in slicing
+    assert "PR #159 recorded PR #157 as a closed invalid" in slicing
+    assert "PR #160 added the private CUDA run envelope" in slicing
+    assert "private request-envelope / host-runtime handoff dependency" in (
+        normalized_slicing
+    )
+    assert "After PR #160, the private envelope and host-runtime hook" in (
+        normalized_slicing
+    )
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
     assert "b58598490d37065e6c972eaaea6d4bc4900469c7" in slicing
     assert "d04732e3a5513d8172b41d0812f2d84065039526" in slicing
     assert "41a9e1e4135313a9787386fb32c21f8b85254d4b" in slicing
+    assert "f1b4abb9c9544a71af70decc15bf1424837e0966" in slicing
+    assert "142132a2df296ce64e4cd2c17af909d619bcad22" in slicing
     assert "UCCL-EP runtime fusion coordinator boundary map" in slicing
     assert "persistent_device_uccl_ep_runtime_fusion_entry" in slicing
     assert "callable id, chip-local rank/device map" in normalized_slicing
@@ -875,6 +887,47 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         normalized_blocked_handoff_entry
     )
     assert "pending PR creation and review" in normalized_blocked_handoff_entry
+
+    private_request_entry = dispatch_log.split(
+        "### 2026-06-22 - UCCL-EP Runtime Fusion Private Request Envelope",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_private_request_entry = " ".join(private_request_entry.split())
+    for required in [
+        "https://github.com/uv-xiao/pto-cu/pull/160",
+        "142132a2df296ce64e4cd2c17af909d619bcad22",
+        "accepted as a private request-envelope and host-runtime handoff",
+        "dependency only",
+        "did not accept runtime-fusion success",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_private_request_entry
+    assert "pending PR creation and review" not in private_request_entry
+
+    post_private_envelope_entry = dispatch_log.split(
+        "### 2026-06-22 - Post-Private-Envelope Status Refresh Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_post_private_envelope_entry = " ".join(
+        post_private_envelope_entry.split()
+    )
+    assert "nvidia-goal-status-post-private-envelope" in (
+        post_private_envelope_entry
+    )
+    assert "nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map" in (
+        post_private_envelope_entry
+    )
+    assert "selected exactly one next PR-sized slice" in (
+        normalized_post_private_envelope_entry
+    )
+    assert "not runtime-fusion success" in normalized_post_private_envelope_entry
+    assert "https://github.com/uv-xiao/pto-cu/pull/161" in (
+        post_private_envelope_entry
+    )
+    assert "completed before PR creation" in normalized_post_private_envelope_entry
+    assert "61 passed" in normalized_post_private_envelope_entry
+    assert "planned before PR creation" not in post_private_envelope_entry
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():
