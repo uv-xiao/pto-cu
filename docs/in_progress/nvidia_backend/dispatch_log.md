@@ -42,15 +42,20 @@ Each dispatch entry should include:
   tmp/worker-prompts/nvidia-post-validation-policy-map-status-refresh.md)"`.
   No nested workers were launched.
 - Monitor locators:
-  Codex session id: dispatcher to fill after monitor setup. Transcript path:
-  dispatcher to fill after monitor setup. Worker pane: dispatcher to fill
-  after monitor setup. Recurring monitor artifacts and latest monitor summary:
-  dispatcher to fill after monitor setup.
+  Codex session id `019ef06d-a68c-7be0-ad09-b5a288e4a867`; transcript
+  `~/.codex/sessions/2026/06/23/rollout-2026-06-23T01-42-58-019ef06d-a68c-7be0-ad09-b5a288e4a867.jsonl`;
+  worker pane `pto-worker-nvidia-post-validation-policy-map:0.0`;
+  recurring monitor artifacts under
+  `tmp/codex-goal-monitor/nvidia-post-validation-policy-map-status-refresh/`.
+  The latest recorded monitor summary at `20260622T175938Z` showed
+  `pane_status: ok`, `transcript_status: ok`, `worktree_status: ok`,
+  `dirty_count: 0`, and latest commit `b076e344`.
 - Parent goal and child slice:
   NVIDIA backend restart; post-PR168 status/slicing refresh only.
 - Branch name and PR URL or planned PR slot:
-  `nvidia-goal-status-post-validation-policy-map`; planned non-draft PR URL
-  slot pending `gh pr create --repo uv-xiao/pto-cu --base main --head
+  `nvidia-goal-status-post-validation-policy-map`;
+  <https://github.com/uv-xiao/pto-cu/pull/169>. Opened as a non-draft PR
+  with `gh pr create --repo uv-xiao/pto-cu --base main --head
   nvidia-goal-status-post-validation-policy-map`.
 - Target repository, base branch, and starting commit:
   `uv-xiao/pto-cu`; base branch `main`; starting commit
@@ -81,11 +86,12 @@ Each dispatch entry should include:
   multi-node transport, no serving, no vLLM, no DeepSeek, no throughput, and
   no latency result.
 - Verification commands and results:
-  completed before initial PR creation. `git diff --check` passed with no
-  output. Targeted `markdownlint-cli2` over the five NVIDIA status docs
-  passed with `0 error(s)`. The NVIDIA review guard passed. The required
-  focused pytest command for `tests/ut/py/test_nvidia_review_artifacts.py`
-  passed with `61 passed`.
+  completed before initial PR creation and rerun after adding the PR URL to
+  this entry. `git diff --check` passed with no output. Targeted
+  `markdownlint-cli2` over the five NVIDIA status docs passed with
+  `0 error(s)`. The NVIDIA review guard passed. The required focused pytest
+  command for `tests/ut/py/test_nvidia_review_artifacts.py` passed with
+  `61 passed`.
 - H200 evidence:
   No fresh H200 command is planned because this is a docs/test status refresh
   only and does not change CUDA runtime behavior, example behavior, result
