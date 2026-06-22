@@ -23,6 +23,52 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - Dispatch Goal Status Rollup Worker
+
+- Dispatcher Session or PR:
+  current local goal session after PR #140 merged.
+- Worker id and objective:
+  `pto-worker-nvidia-goal-status-rollup`; produce a concise current-status
+  rollup mapping the NVIDIA backend umbrella acceptance criteria to accepted,
+  partial, missing, or promotion-needed evidence from current `main`.
+- Exact Codex command or script invocation:
+  `tmux new-session -d -s pto-worker-nvidia-goal-status-rollup
+  'cd <worker-worktree>/nvidia-goal-status-rollup &&
+  codex -m gpt-5.5 -a never -s danger-full-access exec - <
+  <dispatcher-root>/tmp/worker-prompts/nvidia-goal-status-rollup.md'`.
+- Monitor locators:
+  tmux pane `pto-worker-nvidia-goal-status-rollup:0.0`; transcript
+  `~/.codex/sessions/2026/06/22/rollout-2026-06-22T16-11-35-019eee62-8a33-7eb1-ba4a-9eec12aad66c.jsonl`.
+  Recurring monitor pane `pto-monitor-nvidia-goal-status-rollup:0.0` writes
+  summary-first ticks under
+  `tmp/codex-goal-monitor/nvidia-goal-status-rollup/` every 30 minutes.
+- Parent goal and child slice:
+  recovered restart objective; status audit and next-slice selection only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-goal-status-rollup`; planned PR to `uv-xiao/pto-cu:main`.
+- Allowed scope and files:
+  `docs/in_progress/nvidia_backend/goal_status_rollup.md`,
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`, and optionally a
+  focused guard in `tests/ut/py/test_nvidia_review_artifacts.py`.
+  The worker must not edit implementation code, `.agents/**`, CUDA examples,
+  serving probes, or stable `docs/nvidia-backend/**`.
+- Dependencies and blocked assumptions:
+  worker starts from `origin/main` at
+  `3ee1523cc37a6574b739d3e7c0a9060f55f2aea5`. It must cite current
+  repo-relative evidence and PR/merge references, not conversation memory.
+- Verification commands and results:
+  expected commands are `git diff --check`, `git diff --cached --check`,
+  targeted `markdownlint-cli2`, NVIDIA review guard, and focused
+  review-artifact tests. Initial monitor tick showed pane, transcript, and
+  worktree all ok with `dirty_count: 0`.
+- Merge decision and merge commit:
+  pending worker PR, parent review, and exact-head merge decision.
+- Handoff summary and remaining gaps:
+  parent keeps monitoring by interval summaries only. The worker owns the
+  status rollup and one recommended next PR-sized slice; it must not claim the
+  overall restart goal complete.
+
 ### 2026-06-22 - Restart Tracking Restoration Branch
 
 - Dispatcher Session or PR:
