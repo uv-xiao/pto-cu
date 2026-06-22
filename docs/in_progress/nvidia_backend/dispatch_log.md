@@ -23,6 +23,93 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-23 - Post-Validation-Policy-Map Status Refresh Worker
+
+- Dispatcher Session or PR:
+  current `/goal` worker session on branch
+  `nvidia-goal-status-post-validation-policy-map`, after PR #168 merged as
+  `e33d232deccdf947b9c382a3605191d0d5ae0004`.
+- Worker id and objective:
+  `pto-worker-nvidia-goal-status-post-validation-policy-map`; refresh the
+  NVIDIA backend restart status after PR #168, record PR #168 as accepted
+  only for the private validation policy dependency map, and select exactly
+  one next PR-sized dependency slice.
+- Exact Codex command or script invocation:
+  worker launched by
+  `tmp/worker-prompts/run-nvidia-post-validation-policy-map-status-refresh.sh`,
+  which ran `codex exec --dangerously-bypass-approvals-and-sandbox -C
+  <worktree> "$(cat
+  tmp/worker-prompts/nvidia-post-validation-policy-map-status-refresh.md)"`.
+  No nested workers were launched.
+- Monitor locators:
+  Codex session id: dispatcher to fill after monitor setup. Transcript path:
+  dispatcher to fill after monitor setup. Worker pane: dispatcher to fill
+  after monitor setup. Recurring monitor artifacts and latest monitor summary:
+  dispatcher to fill after monitor setup.
+- Parent goal and child slice:
+  NVIDIA backend restart; post-PR168 status/slicing refresh only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-goal-status-post-validation-policy-map`; planned non-draft PR URL
+  slot pending `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-goal-status-post-validation-policy-map`.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `e33d232deccdf947b9c382a3605191d0d5ae0004`.
+- Allowed scope and files:
+  review-facing docs/tests only:
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  and `tests/ut/py/test_nvidia_review_artifacts.py`. No runtime code
+  changes.
+- Dependencies and blocked assumptions:
+  PR #164 is accepted only for the private CUDA persistent DAG host-runtime
+  handoff that associates real same-invocation `ChipStorageTaskArgs *` and
+  `PtoCudaPersistentDagArgs *` pointers. PR #166 is accepted only as a
+  private UCCL-EP capability metadata dependency map. PR #167 is accepted
+  only as the post-PR166 docs/test status refresh that selected the
+  validation policy map. PR #168 is accepted only as a private validation
+  policy dependency map.
+- Non-claims:
+  PR #168 did not implement CUDA runtime behavior, descriptor allocation
+  policy, UCCL-EP runtime dispatch, a coordinator, pass evidence, or H200
+  fused-success evidence. This branch also makes no CUDA runtime behavior
+  change and claims no `persistent_device_uccl_ep_runtime_fusion.status:
+  passed`, no `actual_fused_cross_gpu_execution: true`, no RDMA, no
+  multi-node transport, no serving, no vLLM, no DeepSeek, no throughput, and
+  no latency result.
+- Verification commands and results:
+  completed before initial PR creation. `git diff --check` passed with no
+  output. Targeted `markdownlint-cli2` over the five NVIDIA status docs
+  passed with `0 error(s)`. The NVIDIA review guard passed. The required
+  focused pytest command for `tests/ut/py/test_nvidia_review_artifacts.py`
+  passed with `61 passed`.
+- H200 evidence:
+  No fresh H200 command is planned because this is a docs/test status refresh
+  only and does not change CUDA runtime behavior, example behavior, result
+  shape, or fused-boundary evidence.
+- Merge decision and merge commit:
+  pending PR review.
+- Handoff summary and remaining gaps:
+  selected exactly one next PR-sized dependency slice, the Descriptor
+  Allocation Policy Map Slice:
+  `nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map`. That
+  future branch should map the private descriptor allocation policy required
+  after validation policy and before UCCL-EP runtime dispatch, coordinator
+  implementation, pass evidence, or H200 fused-success evidence. It should
+  define allocator owner, host-control record policy, device-visible
+  descriptor buffer policy, dispatch descriptor identity, combine descriptor
+  identity, shared-token requirement, rank/device compatibility, and
+  allocation lifetime failure ownership. missing policy is unsupported. stale
+  policy is failed, non-runtime-owned allocation is failed,
+  descriptor-vocabulary mismatch is failed, token-sharing mismatch is failed,
+  rank/device mismatch is failed, and public/API-sourced policy fields are
+  failed. Missing UCCL-EP runtime path, coordinator
+  implementation, pass evidence, and fresh H200 fused-success evidence remain
+  unsupported or failed states.
+
 ### 2026-06-23 - UCCL-EP Runtime Fusion Validation Policy Map Worker
 
 - Dispatcher Session or PR:
@@ -116,7 +203,17 @@ Each dispatch entry should include:
   only and does not change CUDA runtime behavior, example behavior, result
   shape, or fused-boundary evidence.
 - Merge decision and merge commit:
-  pending PR review.
+  accepted as a private validation policy dependency map only. PR #168 merged
+  into `main` on 2026-06-23 as
+  `e33d232deccdf947b9c382a3605191d0d5ae0004`
+  (`Map UCCL EP validation policy`). The merge decision did not accept CUDA
+  runtime behavior, descriptor allocation policy, UCCL-EP runtime dispatch, a
+  runtime-fusion coordinator, pass evidence, H200 fused-success evidence,
+  public `TaskArgs` or `CallConfig` expansion, common runtime C API expansion,
+  UCCL host-runtime ABI expansion,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
+  DeepSeek, throughput, or latency claims.
 - Handoff summary and remaining gaps:
   this branch maps validation policy only. Descriptor allocation policy,
   UCCL-EP runtime dispatch, coordinator implementation, pass evidence, and

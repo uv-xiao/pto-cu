@@ -698,7 +698,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "Accepted Runtime Args Handoff Map Slice" in slicing
     assert "Accepted Private Host Runtime Handoff Implementation Slice" in slicing
     assert "Accepted UCCL-EP Capability Metadata Map Slice" in slicing
-    assert "Selected Validation Policy Map Slice" in slicing
+    assert "Accepted Validation Policy Map Slice" in slicing
+    assert "Selected Descriptor Allocation Policy Map Slice" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
@@ -742,11 +743,17 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "After PR #166, the private UCCL-EP capability metadata map" in (
         normalized_slicing
     )
-    assert "current accepted baseline is `20b3e625ea8c9d6e4f06bb3992779b807f65acf9`" in (
+    assert "After PR #168, the private validation policy map is accepted" in (
+        normalized_slicing
+    )
+    assert "current accepted baseline is `e33d232deccdf947b9c382a3605191d0d5ae0004`" in (
         normalized_slicing
     )
     assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-validation-policy-map" in slicing
+    assert "nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map" in (
+        slicing
+    )
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
     assert "b58598490d37065e6c972eaaea6d4bc4900469c7" in slicing
     assert "d04732e3a5513d8172b41d0812f2d84065039526" in slicing
@@ -763,6 +770,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "Private Host Runtime Handoff Implementation Slice" in slicing
     assert "Capability Metadata Map Slice" in slicing
     assert "Validation Policy Map Slice" in slicing
+    assert "Descriptor Allocation Policy Map Slice" in slicing
     assert "PtoCudaPrivateRunArgsEnvelope" in slicing
     assert "same-invocation" in normalized_slicing
     assert "mismatched-callable" in normalized_slicing
@@ -1260,10 +1268,47 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "No CUDA runtime behavior change",
         "No fresh H200 command is planned",
         "No nested workers were launched",
+        "accepted as a private validation policy dependency map only",
+        "e33d232deccdf947b9c382a3605191d0d5ae0004",
+        "Map UCCL EP validation policy",
         "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
         "`actual_fused_cross_gpu_execution: true`",
     ]:
         assert required in normalized_validation_policy_entry
+
+    post_validation_policy_entry = dispatch_log.split(
+        "### 2026-06-23 - Post-Validation-Policy-Map Status Refresh Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_post_validation_policy_entry = " ".join(
+        post_validation_policy_entry.split()
+    )
+    for required in [
+        "pto-worker-nvidia-goal-status-post-validation-policy-map",
+        "tmp/worker-prompts/run-nvidia-post-validation-policy-map-status-refresh.sh",
+        "tmp/worker-prompts/nvidia-post-validation-policy-map-status-refresh.md",
+        "dispatcher to fill after monitor setup",
+        "nvidia-goal-status-post-validation-policy-map",
+        "e33d232deccdf947b9c382a3605191d0d5ae0004",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "review-facing docs/tests only",
+        "PR #164 is accepted only for the private CUDA persistent DAG",
+        "PR #166 is accepted only as a private UCCL-EP capability metadata",
+        "PR #167 is accepted only as the post-PR166 docs/test status refresh",
+        "PR #168 is accepted only as a private validation policy",
+        "did not implement CUDA runtime behavior",
+        "descriptor allocation policy",
+        "UCCL-EP runtime dispatch",
+        "a coordinator",
+        "pass evidence",
+        "H200 fused-success evidence",
+        "selected exactly one next PR-sized dependency slice",
+        "nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map",
+        "No nested workers were launched",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_post_validation_policy_entry
 
     for text in (
         persistent_moe,
@@ -1319,6 +1364,21 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
             "public/API-sourced metadata is failed",
             "validation policy remains private to the CUDA persistent-device runtime path",
             "no descriptor allocation policy implementation",
+            "e33d232deccdf947b9c382a3605191d0d5ae0004",
+            "Descriptor Allocation Policy Map Slice",
+            "nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map",
+            "private descriptor allocation policy",
+            "host-control record",
+            "device-visible descriptor buffer",
+            "dispatch descriptor identity",
+            "combine descriptor identity",
+            "shared-token requirement",
+            "allocation lifetime failure ownership",
+            "missing policy is unsupported",
+            "stale policy is failed",
+            "non-runtime-owned allocation is failed",
+            "token-sharing mismatch is failed",
+            "rank/device mismatch is failed",
         ]:
             assert required in normalized_text
 
