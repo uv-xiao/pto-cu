@@ -626,8 +626,11 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "pto_cuda_private_run_envelope.h",
         "PtoCudaPersistentDagArgs *",
         "`sizeof(ChipStorageTaskArgs)`",
+        "Runtime Args Handoff Map",
+        "not a `ChipStorageTaskArgs *`, `ChipStorageTaskArgs *` is not",
     ]:
         assert required in persistent_moe
+    assert "same `ChipWorker::run` invocation" in normalized_persistent_moe
     assert "Example-side JSON, adapter-only provenance" in (
         normalized_persistent_moe
     )
@@ -660,6 +663,10 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "nvidia-uccl-ep-runtime-fusion-private-request-envelope",
         "keeps the fused-boundary result `unsupported`",
         "explicitly rejects the private-envelope path",
+        "PR #161 selected",
+        "nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map",
+        "same-invocation inputs with matching sizes and callable type",
+        "Null, stale, wrong-size, wrong-callable, or cross-invocation",
     ]:
         assert required in normalized_selection
 
@@ -696,10 +703,14 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "PR #158 fixed the Codex monitor transcript lookup" in slicing
     assert "PR #159 recorded PR #157 as a closed invalid" in slicing
     assert "PR #160 added the private CUDA run envelope" in slicing
+    assert "PR #161 recorded the post-PR160 status refresh" in slicing
     assert "private request-envelope / host-runtime handoff dependency" in (
         normalized_slicing
     )
     assert "After PR #160, the private envelope and host-runtime hook" in (
+        normalized_slicing
+    )
+    assert "After PR #161, the current accepted baseline is" in (
         normalized_slicing
     )
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
@@ -708,6 +719,11 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "41a9e1e4135313a9787386fb32c21f8b85254d4b" in slicing
     assert "f1b4abb9c9544a71af70decc15bf1424837e0966" in slicing
     assert "142132a2df296ce64e4cd2c17af909d619bcad22" in slicing
+    assert "6026ed7cbfa1d4724e22e109bbd75c06d0e9f9a7" in slicing
+    assert "Runtime Args Handoff Map Slice" in slicing
+    assert "PtoCudaPrivateRunArgsEnvelope" in slicing
+    assert "same-invocation" in normalized_slicing
+    assert "mismatched-callable" in normalized_slicing
     assert "UCCL-EP runtime fusion coordinator boundary map" in slicing
     assert "persistent_device_uccl_ep_runtime_fusion_entry" in slicing
     assert "callable id, chip-local rank/device map" in normalized_slicing
@@ -928,6 +944,34 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "completed before PR creation" in normalized_post_private_envelope_entry
     assert "61 passed" in normalized_post_private_envelope_entry
     assert "planned before PR creation" not in post_private_envelope_entry
+
+    runtime_args_entry = dispatch_log.split(
+        "### 2026-06-22 - Runtime Args Handoff Map Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_runtime_args_entry = " ".join(runtime_args_entry.split())
+    for required in [
+        "6026ed7cbfa1d4724e22e109bbd75c06d0e9f9a7",
+        "nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map",
+        "tmp/worker-prompts/run-nvidia-runtime-args-handoff-map.sh",
+        "019eefd0-948d-7941-a911-22b627ba15ba",
+        "rollout-2026-06-22T22-51-24-019eefd0-948d-7941-a911-22b627ba15ba.jsonl",
+        "pto-worker-nvidia-runtime-args-handoff-map:0.0",
+        "tmp/codex-goal-monitor/nvidia-runtime-args-handoff-map/",
+        "dirty_count: 0",
+        "https://github.com/uv-xiao/pto-cu/pull/162",
+        "Opened as a non-draft PR with `gh pr create --repo uv-xiao/pto-cu",
+        "review-facing docs/tests only",
+        "real `ChipStorageTaskArgs *` owned by `ChipWorker::run`",
+        "real `PtoCudaPersistentDagArgs *` owned by the CUDA persistent DAG",
+        "PtoCudaPrivateRunArgsEnvelope",
+        "same-invocation pointers",
+        "mismatched callable types",
+        "cross-invocation envelopes",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_runtime_args_entry
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():
