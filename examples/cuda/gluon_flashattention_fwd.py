@@ -365,7 +365,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         parser.add_argument(
             "--attention-variant",
-            choices=("standard", "mla"),
+            choices=("standard", "mla", "cascade"),
             default="standard",
             help=(
                 "report an explicit unsupported attention variant boundary "
@@ -501,8 +501,10 @@ def _validate_sequence_boundary(sequence_boundary: str) -> None:
 
 
 def _validate_attention_variant(attention_variant: str) -> None:
-    if attention_variant not in ("standard", "mla"):
-        raise ValueError("--attention-variant must be one of: standard, mla")
+    if attention_variant not in ("standard", "mla", "cascade"):
+        raise ValueError(
+            "--attention-variant must be one of: standard, mla, cascade"
+        )
 
 
 def _unsupported_attention_variant_result(
@@ -516,6 +518,14 @@ def _unsupported_attention_variant_result(
 ) -> dict:
     seqlen_q, seqlen_k, head_dim = tile_shape
     phase = _phase_for(tile_shape=tile_shape, causal=causal)
+    boundary_kind = {
+        "mla": "mla_attention",
+        "cascade": "cascade_attention",
+    }[attention_variant]
+    boundary_label = {
+        "mla": "MLA attention",
+        "cascade": "Cascade Attention",
+    }[attention_variant]
     return {
         "schema_version": 1,
         "kernel_name": "flashattention_fwd_f32",
@@ -532,13 +542,13 @@ def _unsupported_attention_variant_result(
         "reference": _reference_for(phase=phase, causal=causal),
         "tolerance": {"atol": atol, "rtol": rtol},
         "unsupported_boundary": {
-            "kind": "mla_attention",
+            "kind": boundary_kind,
             "operator": "flashattention_fwd_f32",
             "boundary": attention_variant,
             "status": "unsupported",
         },
         "reason": (
-            "Gluon FlashAttention MLA attention boundary is unsupported; "
+            f"Gluon FlashAttention {boundary_label} boundary is unsupported; "
             "this is unsupported-boundary evidence only"
         ),
     }

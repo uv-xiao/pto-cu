@@ -1964,6 +1964,83 @@ def test_gluon_flashattention_example_cli_reports_mla_unsupported(
     assert "MLA attention" in payload["reason"]
 
 
+def test_gluon_flashattention_example_reports_cascade_unsupported_before_cuda(
+    tmp_path,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    def fail_if_checked():
+        raise AssertionError("CUDA availability should not be checked")
+
+    result = example.run_flashattention_correctness(
+        output_dir=Path("flashattention-cascade-artifacts"),
+        arch="compute_90",
+        tile_shape=(32, 32, 64),
+        causal=True,
+        attention_variant="cascade",
+        skip_reason=fail_if_checked,
+    )
+
+    assert result["schema_version"] == 1
+    assert result["status"] == "skipped"
+    assert result["phase"] == "prefill"
+    assert result["causal"] is True
+    assert result["shape"] == {"seqlen_q": 32, "seqlen_k": 32, "head_dim": 64}
+    assert result["attention_variant"] == "cascade"
+    assert result["reference"] == example.FLASHATTENTION_CAUSAL_REFERENCE
+    assert result["unsupported_boundary"] == {
+        "kind": "cascade_attention",
+        "operator": "flashattention_fwd_f32",
+        "boundary": "cascade",
+        "status": "unsupported",
+    }
+    assert "Cascade Attention" in result["reason"]
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_gluon_flashattention_example_cli_reports_cascade_unsupported(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    example = _load_gluon_flashattention_example()
+    monkeypatch.chdir(tmp_path)
+
+    def fail_if_checked():
+        raise AssertionError("CUDA availability should not be checked")
+
+    monkeypatch.setattr(example, "flashattention_skip_reason", fail_if_checked)
+
+    code = example.main(
+        [
+            "--output-dir",
+            "flashattention-cascade-artifacts",
+            "--arch",
+            "compute_90",
+            "--tile-shape",
+            "32x32x64",
+            "--causal",
+            "--attention-variant",
+            "cascade",
+            "--require-cuda",
+        ]
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["schema_version"] == 1
+    assert payload["status"] == "skipped"
+    assert payload["phase"] == "prefill"
+    assert payload["causal"] is True
+    assert payload["shape"] == {"seqlen_q": 32, "seqlen_k": 32, "head_dim": 64}
+    assert payload["attention_variant"] == "cascade"
+    assert payload["unsupported_boundary"]["kind"] == "cascade_attention"
+    assert payload["unsupported_boundary"]["boundary"] == "cascade"
+    assert "Cascade Attention" in payload["reason"]
+
+
 def test_gluon_flashattention_example_cli_rejects_bad_attention_variant():
     example = _load_gluon_flashattention_example()
 

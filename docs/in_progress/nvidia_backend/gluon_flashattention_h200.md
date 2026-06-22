@@ -47,6 +47,8 @@ single-case path also accepts `--sequence-boundary varlen` to emit explicit
 varlen unsupported-boundary JSON before CUDA availability checks. A
 single-case path also accepts `--attention-variant mla` to emit explicit MLA
 attention unsupported-boundary JSON before CUDA availability checks. A
+single-case path also accepts `--attention-variant cascade` to emit explicit
+Cascade Attention unsupported-boundary JSON before CUDA availability checks. A
 causal same-length `32x32x64` single-case run is reported as
 `phase: prefill` to distinguish same-length multi-query prefill-shaped
 evidence from decode/append evidence. A causal `1x32x64` single-case run is
@@ -465,15 +467,63 @@ correctness, not full prefill/decode/append coverage, not FlashInfer
 integration evidence, not vLLM/simpler-nv integration evidence, not serving
 readiness, and not performance, throughput, or latency evidence.
 
+## Cascade Attention Unsupported Boundary
+
+On 2026-06-22, the Cascade Attention boundary probe reported structured
+unsupported JSON on the same H200 class machine. The remote run used tree
+sync into `<remote-pto-cu>` through the generic CUDA runner and the preserved
+remote Gluon Python environment. This command does not generate correctness
+artifacts and does not require CUDA availability before reporting the
+unsupported boundary.
+
+```bash
+REMOTE_PTO_CU=<remote-pto-cu> \
+  .agents/skills/cuda-backend-eval/scripts/run-remote-cuda.sh --sync -- \
+  bash -lc 'PYTHONPATH=$PWD:$PWD/python \
+    <remote-gluon-venv>/bin/python \
+      examples/cuda/gluon_flashattention_fwd.py \
+      --output-dir tmp/gluon-flashattention-cascade-unsupported-h200 \
+      --arch compute_90 --tile-shape 32x32x64 --causal \
+      --attention-variant cascade --require-cuda'
+```
+
+Distilled result:
+
+```text
+exit_code: 2 under --require-cuda structured skip
+schema_version: 1
+status: skipped
+phase: prefill
+causal: true
+attention_variant: cascade
+shape: seqlen_q=32, seqlen_k=32, head_dim=64
+reference: softmax(masked_fill((q @ k.T) * scale, key_index > query_index, -inf)) @ v
+tolerance: atol=0.001, rtol=0.01
+unsupported_boundary.kind: cascade_attention
+unsupported_boundary.boundary: cascade
+unsupported_boundary.operator: flashattention_fwd_f32
+reason: Gluon FlashAttention Cascade Attention boundary is unsupported; this is unsupported-boundary evidence only
+machine class: H200
+private absolute paths are not recorded
+```
+
+This result is unsupported-boundary evidence only. It is not Cascade
+Attention correctness, not MLA attention correctness, not varlen attention
+correctness, not paged/ragged KV-cache correctness, not full
+prefill/decode/append coverage, not FlashInfer integration evidence, not
+vLLM/simpler-nv integration evidence, not serving readiness, and not
+performance, throughput, or latency evidence.
+
 ## Boundary
 
 This milestone covers a small single-tile FlashAttention correctness sweep
 and bounded same-length multi-query prefill-shaped, single-query
 decode-shaped, small multi-query append-shaped gates, and explicit
-paged/ragged KV-cache, varlen, and MLA unsupported-boundary reporting only. It
-is not benchmark evidence and does not cover block streaming, varlen
-correctness, MLA attention correctness, page tables, persistent scheduling,
-MoE, distributed communication, serving, or DeepSeek integration.
+paged/ragged KV-cache, varlen, MLA, and Cascade Attention
+unsupported-boundary reporting only. It is not benchmark evidence and does
+not cover block streaming, varlen correctness, MLA attention correctness,
+Cascade Attention correctness, page tables, persistent scheduling, MoE,
+distributed communication, serving, or DeepSeek integration.
 
 Non-claims:
 
@@ -484,6 +534,7 @@ Non-claims:
 - not paged/ragged KV-cache correctness
 - not varlen attention correctness
 - not MLA attention correctness
+- not Cascade Attention correctness
 - not full prefill, full decode, full append, or append coverage
 - not full append or append KV-cache coverage
 - not multi-tile attention coverage
