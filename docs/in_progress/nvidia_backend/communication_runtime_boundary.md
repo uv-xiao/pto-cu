@@ -776,10 +776,11 @@ evidence.
 
 ## UCCL-EP Runtime Path Map Slice
 
-Selected branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`.
 
-The next dependency slice maps the private UCCL-EP runtime path after PR #170
+This accepted dependency slice maps the private UCCL-EP runtime path after
+PR #170
 descriptor allocation policy. It is a map only: it defines how a later
 runtime-fusion coordinator would pass coordinator-owned dispatch and combine
 descriptor views into UCCL-EP runtime logic, but it must not implement that
@@ -820,12 +821,54 @@ transport-mode mismatch is failed, descriptor-vocabulary mismatch is failed,
 and public/API-sourced runtime-path fields are failed as fabricated or
 untrusted pass evidence.
 
-This selected slice must not implement UCCL-EP runtime dispatch, construct a
+This accepted slice must not implement UCCL-EP runtime dispatch, construct a
 coordinator, allocate descriptors, change CUDA runtime behavior, claim pass
 evidence, or claim H200 fused-success evidence. Public `TaskArgs`, public
 `CallConfig`, common runtime C API fields, UCCL host-runtime ABI fields,
 example JSON, adapter provenance, and handoff metadata remain forbidden
 pass-evidence paths.
+
+PR #172 accepted only this private UCCL-EP runtime path dependency map as
+`21b2b32a475dc04e19700115af74510daef70859`. The accepted scope is the
+runtime-path owner, dispatch descriptor handoff, combine descriptor handoff,
+descriptor-token checks, rank/device checks, transport-mode checks, and
+runtime-path failure ownership. It did not implement CUDA runtime behavior,
+UCCL-EP runtime dispatch, a coordinator, descriptor allocation, pass
+evidence, or H200 fused-success evidence.
+
+## UCCL-EP Runtime Path Implementation Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl`.
+
+The next slice is the narrow private UCCL-EP runtime path implementation
+scaffold. It starts from the PR #172 map and may add private runtime-path
+plumbing below the CUDA persistent-device runtime boundary, but it must not
+construct the runtime-fusion coordinator or allocate dispatch/combine
+descriptor memory.
+
+Required implementation boundaries:
+
+- consume PR #164 same-invocation request args, PR #166 UCCL-EP capability
+  metadata, PR #168 validation policy, PR #170 descriptor allocation policy,
+  and PR #172 runtime-path map only as prerequisites;
+- keep descriptor-token, rank/device, transport-mode, descriptor-vocabulary,
+  stale-descriptor, and public/API-sourced runtime-path failures explicit;
+- preserve missing descriptor allocation and missing coordinator as
+  unsupported or failed states;
+- keep public `TaskArgs`, public `CallConfig`, the common runtime C API,
+  UCCL host-runtime ABI fields, example JSON, adapter provenance, and handoff
+  metadata out of pass-evidence paths.
+
+Required non-claims:
+
+- no runtime-fusion coordinator implementation;
+- no descriptor allocation implementation;
+- no pass evidence;
+- no fresh H200 fused-success evidence;
+- no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- no `actual_fused_cross_gpu_execution: true`;
+- no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claim.
 
 ## Non-Claims
 

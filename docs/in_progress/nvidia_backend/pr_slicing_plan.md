@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `bd0b59ee8d5afc969020d3aea047aafc9f3152be`,
-  after PR #170 (`Map UCCL EP descriptor allocation policy`).
+- Current accepted `main`: `21b2b32a475dc04e19700115af74510daef70859`,
+  after PR #172 (`Map UCCL EP runtime path`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -137,8 +137,14 @@ from `main` and lands through focused GitHub PRs.
   requirement, and allocation lifetime failure ownership. It did not
   implement CUDA runtime behavior, descriptor allocation, UCCL-EP runtime
   dispatch, a coordinator, pass evidence, or H200 fused-success evidence.
-- This branch records the post-PR170 status refresh and selects exactly one
-  next dependency slice. It does not change CUDA runtime behavior, result
+- PR #172 accepted only the private UCCL-EP runtime path dependency map:
+  runtime-path owner, dispatch descriptor handoff, combine descriptor handoff,
+  descriptor-token checks, rank/device checks, transport-mode checks, and
+  runtime-path failure ownership. It did not implement CUDA runtime behavior,
+  UCCL-EP runtime dispatch, a coordinator, descriptor allocation, pass
+  evidence, or H200 fused-success evidence.
+- This branch records the post-PR172 status refresh and selects exactly one
+  next implementation slice. It does not change CUDA runtime behavior, result
   shape, or fused-execution evidence status.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
@@ -270,6 +276,12 @@ from `main` and lands through focused GitHub PRs.
     not runtime behavior, descriptor allocation implementation, UCCL-EP
     runtime dispatch, coordinator behavior, pass evidence, or fused execution
     evidence.
+- PR #172: map UCCL EP runtime path.
+  - Result: merged as `21b2b32a475dc04e19700115af74510daef70859`.
+  - Result type: private UCCL-EP runtime path dependency map only, not
+    runtime behavior, UCCL-EP runtime dispatch implementation, coordinator
+    behavior, descriptor allocation implementation, pass evidence, or fused
+    execution evidence.
 
 ## Restored Tracking Surface
 
@@ -357,10 +369,13 @@ only; it does not implement descriptor allocation policy or runtime behavior.
 After PR #170, the private descriptor allocation policy map is accepted as a
 dependency slice only; it does not implement descriptor allocation, UCCL-EP
 runtime dispatch, coordinator behavior, pass evidence, or H200 fused-success
-evidence. The current accepted baseline is
-`bd0b59ee8d5afc969020d3aea047aafc9f3152be`, and the next slice is exactly
-one conservative dependency slice:
-`nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`.
+evidence. After PR #172, the private UCCL-EP runtime path map is accepted as
+a dependency slice only; it does not implement CUDA runtime behavior,
+UCCL-EP runtime dispatch, coordinator behavior, descriptor allocation, pass
+evidence, or H200 fused-success evidence. The current accepted baseline is
+`21b2b32a475dc04e19700115af74510daef70859`, and the next slice is exactly
+one narrow implementation slice:
+`nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl`.
 
 ## Accepted Payload Provenance Slice
 
@@ -1218,9 +1233,9 @@ dependency map only. It merged as
 `bd0b59ee8d5afc969020d3aea047aafc9f3152be` and is no longer selected as
 future work.
 
-## Selected UCCL-EP Runtime Path Map Slice
+## Accepted UCCL-EP Runtime Path Map Slice
 
-Selected branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-map`.
 
 Objective: map the private UCCL-EP runtime path that a later
@@ -1298,3 +1313,45 @@ Implemented surface in this branch:
 This branch remains a docs/test dependency slice. It does not implement the
 runtime path, construct the coordinator, allocate descriptor memory, dispatch
 UCCL-EP work, emit pass evidence, or add fresh H200 fused-success evidence.
+
+PR #172 met this objective as a private UCCL-EP runtime path dependency map
+only, merged as `21b2b32a475dc04e19700115af74510daef70859`. It did not
+implement CUDA runtime behavior, UCCL-EP runtime dispatch, a coordinator,
+descriptor allocation, pass evidence, or H200 fused-success evidence.
+
+## Selected UCCL-EP Runtime Path Implementation Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-uccl-ep-runtime-path-impl`.
+
+Objective: implement the narrow private UCCL-EP runtime path scaffold after
+PR #172 mapped the required runtime-path owner, descriptor handoffs, token
+checks, rank/device checks, transport-mode checks, and failure ownership.
+This is the narrowest missing implementation step because the runtime path
+must exist before a later coordinator can truthfully route dispatch/combine
+descriptor views into UCCL-EP runtime logic.
+
+Required implementation boundaries:
+
+- keep the runtime path private to the CUDA persistent-device runtime path;
+- consume only the PR #164 same-invocation request args, PR #166 capability
+  metadata, PR #168 validation policy, PR #170 descriptor allocation policy,
+  and PR #172 runtime-path map as prerequisites;
+- add no public `TaskArgs`, public `CallConfig`, common runtime C API, or
+  UCCL host-runtime ABI fields;
+- preserve missing descriptor allocation and missing coordinator as
+  unsupported or failed states, not pass evidence;
+- reject public/API-sourced runtime-path fields, example JSON, adapter
+  provenance, and handoff metadata as fabricated or untrusted pass evidence;
+- keep descriptor allocation implementation, coordinator implementation,
+  pass evidence, and H200 fused-success evidence out of this slice.
+
+Required non-claims:
+
+- no runtime-fusion coordinator implementation;
+- no descriptor allocation implementation;
+- no pass evidence;
+- no fresh H200 fused-success evidence;
+- no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- no `actual_fused_cross_gpu_execution: true`;
+- no RDMA, multi-node, serving, vLLM, DeepSeek, throughput, or latency claim.
