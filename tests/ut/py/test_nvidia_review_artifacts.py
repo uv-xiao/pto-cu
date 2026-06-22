@@ -682,6 +682,9 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "PR #164's accepted implementation slice",
         "nvidia-uccl-ep-runtime-fusion-capability-metadata-map",
         "private UCCL-EP capability metadata",
+        "PR #166 accepted only the private UCCL-EP capability metadata",
+        "nvidia-uccl-ep-runtime-fusion-validation-policy-map",
+        "private validation policy",
     ]:
         assert required in normalized_selection
 
@@ -694,7 +697,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "Accepted Private Request Envelope Dependency Slice" in slicing
     assert "Accepted Runtime Args Handoff Map Slice" in slicing
     assert "Accepted Private Host Runtime Handoff Implementation Slice" in slicing
-    assert "Selected UCCL-EP Capability Metadata Map Slice" in slicing
+    assert "Accepted UCCL-EP Capability Metadata Map Slice" in slicing
+    assert "Selected Validation Policy Map Slice" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
@@ -735,10 +739,14 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "After PR #164, the private host-runtime handoff is accepted" in (
         normalized_slicing
     )
-    assert "current accepted baseline is `be914b97898468033c7f834dde0c43466353ac95`" in (
+    assert "After PR #166, the private UCCL-EP capability metadata map" in (
+        normalized_slicing
+    )
+    assert "current accepted baseline is `42b996666e279024b43f490a310c490a591a897d`" in (
         normalized_slicing
     )
     assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
+    assert "nvidia-uccl-ep-runtime-fusion-validation-policy-map" in slicing
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
     assert "b58598490d37065e6c972eaaea6d4bc4900469c7" in slicing
     assert "d04732e3a5513d8172b41d0812f2d84065039526" in slicing
@@ -749,9 +757,12 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "0ba8f30696132c06a3cd49b95fbd7bb46b8b9a99" in slicing
     assert "cc26283be5b3355af8148a8e4ca5421d57c2ff80" in slicing
     assert "be914b97898468033c7f834dde0c43466353ac95" in slicing
+    assert "bb526ff6c3c21597cffe1acd34bf08158a947cc3" in slicing
+    assert "42b996666e279024b43f490a310c490a591a897d" in slicing
     assert "Runtime Args Handoff Map Slice" in slicing
     assert "Private Host Runtime Handoff Implementation Slice" in slicing
     assert "Capability Metadata Map Slice" in slicing
+    assert "Validation Policy Map Slice" in slicing
     assert "PtoCudaPrivateRunArgsEnvelope" in slicing
     assert "same-invocation" in normalized_slicing
     assert "mismatched-callable" in normalized_slicing
@@ -1170,6 +1181,43 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         assert required in normalized_capability_metadata_entry
     assert "No nested workers were launched" in normalized_capability_metadata_entry
 
+    post_capability_metadata_entry = dispatch_log.split(
+        "### 2026-06-23 - Post-Capability-Metadata-Map Status Refresh Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_post_capability_metadata_entry = " ".join(
+        post_capability_metadata_entry.split()
+    )
+    for required in [
+        "pto-worker-nvidia-goal-status-post-capability-metadata-map",
+        "tmp/worker-prompts/run-nvidia-post-capability-metadata-map-status-refresh.sh",
+        "tmp/worker-prompts/nvidia-post-capability-metadata-map-status-refresh.md",
+        "nvidia-goal-status-post-capability-metadata-map",
+        "42b996666e279024b43f490a310c490a591a897d",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "review-facing docs/tests only",
+        "PR #164 is accepted only for the private CUDA persistent DAG host-runtime",
+        "PR #165 is accepted only as the post-PR164 docs/test status refresh",
+        "PR #166 is accepted only as a private UCCL-EP capability metadata",
+        "capability id, world size, rank-to-device map, descriptor vocabulary",
+        "transport mode, adapter provenance handles",
+        "setup/validation failure ownership",
+        "did not implement a runtime-fusion coordinator",
+        "descriptor allocator",
+        "UCCL-EP runtime path",
+        "validation policy",
+        "CUDA runtime behavior",
+        "pass evidence",
+        "H200 fused-success evidence",
+        "selected exactly one next PR-sized dependency slice",
+        "nvidia-uccl-ep-runtime-fusion-validation-policy-map",
+        "private validation policy",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_post_capability_metadata_entry
+    assert "No nested workers were launched" in normalized_post_capability_metadata_entry
+
     for text in (
         persistent_moe,
         boundary,
@@ -1205,6 +1253,13 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
             "no UCCL-EP runtime path implementation",
             "no validation policy implementation",
             "no fresh H200 fused-success evidence",
+            "42b996666e279024b43f490a310c490a591a897d",
+            "Validation Policy Map Slice",
+            "nvidia-uccl-ep-runtime-fusion-validation-policy-map",
+            "private validation policy",
+            "descriptor-vocabulary mismatch",
+            "transport-mode mismatch",
+            "adapter-provenance mismatch",
         ]:
             assert required in normalized_text
 

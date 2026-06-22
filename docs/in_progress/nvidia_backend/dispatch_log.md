@@ -23,6 +23,95 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-23 - Post-Capability-Metadata-Map Status Refresh Worker
+
+- Dispatcher Session or PR:
+  current `/goal` worker session on branch
+  `nvidia-goal-status-post-capability-metadata-map`, after PR #166 merged as
+  `42b996666e279024b43f490a310c490a591a897d`.
+- Worker id and objective:
+  `pto-worker-nvidia-goal-status-post-capability-metadata-map`; refresh the
+  NVIDIA backend restart status after PR #166, record PR #166 as accepted
+  only for the private UCCL-EP capability metadata dependency map, and select
+  exactly one next PR-sized dependency slice.
+- Exact Codex command or script invocation:
+  worker launched by
+  `tmp/worker-prompts/run-nvidia-post-capability-metadata-map-status-refresh.sh`,
+  which ran `codex exec --dangerously-bypass-approvals-and-sandbox -C
+  <worktree> "$(cat
+  tmp/worker-prompts/nvidia-post-capability-metadata-map-status-refresh.md)"`.
+  No nested workers were launched.
+- Monitor locators:
+  Codex session id: dispatcher to fill after monitor setup. Transcript path:
+  dispatcher to fill after monitor setup. Worker pane: dispatcher to fill
+  after monitor setup. Recurring monitor summary details: dispatcher to fill
+  after monitor setup.
+- Parent goal and child slice:
+  NVIDIA backend restart; post-PR166 status/slicing refresh only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-goal-status-post-capability-metadata-map`; Planned PR URL slot:
+  dispatcher to replace after PR creation. Expected PR command:
+  `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-goal-status-post-capability-metadata-map`.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `42b996666e279024b43f490a310c490a591a897d`.
+- Allowed scope and files:
+  review-facing docs/tests only:
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  and `tests/ut/py/test_nvidia_review_artifacts.py`. No runtime code
+  changes.
+- Dependencies and blocked assumptions:
+  PR #164 is accepted only for the private CUDA persistent DAG host-runtime
+  handoff that associates real same-invocation `ChipStorageTaskArgs *` and
+  `PtoCudaPersistentDagArgs *` pointers. PR #165 is accepted only as the
+  post-PR164 docs/test status refresh that selected the capability metadata
+  map. PR #166 is accepted only as a private UCCL-EP capability metadata
+  dependency map: capability id, world size, rank-to-device map, descriptor
+  vocabulary, transport mode, adapter provenance handles, and
+  setup/validation failure ownership.
+- Non-claims:
+  PR #166 did not implement a runtime-fusion coordinator, descriptor
+  allocator, UCCL-EP runtime path, validation policy, CUDA runtime behavior,
+  pass evidence, or H200 fused-success evidence.
+- Verification commands and results:
+  pending.
+- H200 evidence:
+  no fresh H200 command is planned because this is a docs/test status refresh
+  only and does not change CUDA runtime behavior, example behavior, result
+  shape, or fused-boundary evidence.
+- Merge decision and merge commit:
+  accepted as a status/slicing refresh only. PR #165 merged into `main` on
+  2026-06-23 as `bb526ff6c3c21597cffe1acd34bf08158a947cc3`
+  (`Refresh NVIDIA status after PR 164`). The merge decision did not accept
+  CUDA runtime behavior, result-shape changes, fused execution evidence,
+  fresh H200 fused-success evidence, runtime-fusion coordinator behavior,
+  descriptor allocator behavior, UCCL-EP runtime path behavior, validation
+  policy, UCCL-EP capability metadata, public `TaskArgs` or `CallConfig`
+  expansion, common runtime C API expansion, UCCL host-runtime ABI expansion,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
+  DeepSeek, throughput, or latency claims.
+- Handoff summary and remaining gaps:
+  selected exactly one next PR-sized dependency slice, the Validation Policy
+  Map Slice:
+  `nvidia-uccl-ep-runtime-fusion-validation-policy-map`. That future branch
+  should map the private validation policy required before a coordinator may
+  consume PR #164 same-invocation request args and PR #166 UCCL-EP capability
+  metadata. Required validation failures include missing metadata, stale
+  metadata, mismatched-rank, mismatched-world-size, descriptor-vocabulary
+  mismatch, transport-mode mismatch, adapter-provenance mismatch, and
+  public/API-sourced metadata. Missing descriptor allocation policy, UCCL-EP
+  runtime path, coordinator implementation, pass evidence, and fresh H200
+  fused-success evidence remain unsupported or failed states.
+  `persistent_device_uccl_ep_runtime_fusion.status: passed` and
+  `actual_fused_cross_gpu_execution: true` remain unreachable until a later
+  coordinator slice emits real fused-boundary evidence.
+
 ### 2026-06-23 - UCCL-EP Runtime Fusion Capability Metadata Map Worker
 
 - Dispatcher Session or PR:
@@ -94,7 +183,17 @@ Each dispatch entry should include:
   only and does not change CUDA runtime behavior, example behavior, result
   shape, or fused-boundary evidence.
 - Merge decision and merge commit:
-  pending PR review.
+  accepted as a private UCCL-EP capability metadata dependency map only.
+  PR #166 merged into `main` on 2026-06-23 as
+  `42b996666e279024b43f490a310c490a591a897d`
+  (`Map UCCL EP capability metadata`). The merge decision did not accept a
+  runtime-fusion coordinator, descriptor allocator, UCCL-EP runtime path,
+  validation policy, CUDA runtime behavior, pass evidence, fresh H200
+  fused-success evidence, public `TaskArgs` or `CallConfig` expansion, common
+  runtime C API expansion, UCCL host-runtime ABI expansion,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
+  DeepSeek, throughput, or latency claims.
 - Handoff summary and remaining gaps:
   this branch maps private capability metadata only. It has no runtime-fusion
   coordinator implementation, no descriptor allocator implementation, no
