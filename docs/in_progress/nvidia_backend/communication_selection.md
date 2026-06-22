@@ -211,10 +211,11 @@ restart. It is a planning boundary, not performance evidence.
   and failure-field evidence.
 - PR #161 selected
   `nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map` as the next
-  dependency slice after the private request envelope. The selected handoff
-  map keeps `ChipWorker::run` as the owner of the real
-  `ChipStorageTaskArgs *` and the CUDA persistent DAG host-runtime path as
-  the owner of the real `PtoCudaPersistentDagArgs *`.
+  dependency slice after the private request envelope. PR #162 accepted that
+  handoff map as docs/test dependency evidence only. It keeps
+  `ChipWorker::run` as the owner of the real `ChipStorageTaskArgs *` and the
+  CUDA persistent DAG host-runtime path as the owner of the real
+  `PtoCudaPersistentDagArgs *`.
 - The future private association point is inside the CUDA host runtime, after
   the persistent DAG callable is resolved for the same `ChipWorker::run`
   invocation. `PtoCudaPrivateRunArgsEnvelope` may associate
@@ -225,6 +226,13 @@ restart. It is a planning boundary, not performance evidence.
   metadata remain forbidden ways to provide the runtime args association.
   Null, stale, wrong-size, wrong-callable, or cross-invocation envelopes must
   be failed or unsupported states, not pass evidence.
+- The selected next implementation slice is
+  `nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff`. It should add
+  only the private CUDA persistent DAG host-runtime association for real
+  same-invocation `ChipStorageTaskArgs *` and `PtoCudaPersistentDagArgs *`
+  inputs, with local coverage for null pointers, wrong sizes,
+  mismatched-callable cases, stale envelopes, cross-invocation envelopes, and
+  forbidden public/API evidence paths.
 
 ## Non-Claims
 

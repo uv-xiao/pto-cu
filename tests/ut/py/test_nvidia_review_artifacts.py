@@ -667,6 +667,9 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map",
         "same-invocation inputs with matching sizes and callable type",
         "Null, stale, wrong-size, wrong-callable, or cross-invocation",
+        "PR #162 accepted that handoff map as docs/test dependency evidence",
+        "nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff",
+        "mismatched-callable cases, stale envelopes, cross-invocation",
     ]:
         assert required in normalized_selection
 
@@ -677,7 +680,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "Accepted Private Entry Unsupported Scaffold" in slicing
     assert "Closed Invalid ChipStorageTaskArgs Request Boundary Attempt" in slicing
     assert "Accepted Private Request Envelope Dependency Slice" in slicing
-    assert "Selected Runtime Args Handoff Map Slice" in slicing
+    assert "Accepted Runtime Args Handoff Map Slice" in slicing
+    assert "Selected Private Host Runtime Handoff Implementation Slice" in slicing
     assert "Accepted Guard-Only Implementation Handoff" in slicing
     assert "Accepted Post-PR150 Status Refresh" in slicing
     assert "nvidia-uccl-ep-adapter-payload-provenance" in slicing
@@ -704,13 +708,15 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "PR #159 recorded PR #157 as a closed invalid" in slicing
     assert "PR #160 added the private CUDA run envelope" in slicing
     assert "PR #161 recorded the post-PR160 status refresh" in slicing
+    assert "PR #162 accepted that runtime-args handoff map" in slicing
+    assert "PR #162: map CUDA runtime args handoff" in slicing
     assert "private request-envelope / host-runtime handoff dependency" in (
         normalized_slicing
     )
     assert "After PR #160, the private envelope and host-runtime hook" in (
         normalized_slicing
     )
-    assert "After PR #161, the current accepted baseline is" in (
+    assert "After PR #162, the runtime-args handoff map is complete" in (
         normalized_slicing
     )
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
@@ -720,10 +726,15 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "f1b4abb9c9544a71af70decc15bf1424837e0966" in slicing
     assert "142132a2df296ce64e4cd2c17af909d619bcad22" in slicing
     assert "6026ed7cbfa1d4724e22e109bbd75c06d0e9f9a7" in slicing
+    assert "0ba8f30696132c06a3cd49b95fbd7bb46b8b9a99" in slicing
     assert "Runtime Args Handoff Map Slice" in slicing
+    assert "Private Host Runtime Handoff Implementation Slice" in slicing
     assert "PtoCudaPrivateRunArgsEnvelope" in slicing
     assert "same-invocation" in normalized_slicing
     assert "mismatched-callable" in normalized_slicing
+    assert "cross-invocation envelopes" in normalized_slicing
+    assert "forbidden public/API evidence" in normalized_slicing
+    assert "real same-invocation `ChipStorageTaskArgs *` and" in slicing
     assert "UCCL-EP runtime fusion coordinator boundary map" in slicing
     assert "persistent_device_uccl_ep_runtime_fusion_entry" in slicing
     assert "callable id, chip-local rank/device map" in normalized_slicing
@@ -952,6 +963,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     normalized_runtime_args_entry = " ".join(runtime_args_entry.split())
     for required in [
         "6026ed7cbfa1d4724e22e109bbd75c06d0e9f9a7",
+        "0ba8f30696132c06a3cd49b95fbd7bb46b8b9a99",
         "nvidia-uccl-ep-runtime-fusion-runtime-args-handoff-map",
         "tmp/worker-prompts/run-nvidia-runtime-args-handoff-map.sh",
         "019eefd0-948d-7941-a911-22b627ba15ba",
@@ -968,10 +980,44 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         "same-invocation pointers",
         "mismatched callable types",
         "cross-invocation envelopes",
+        "accepted as a docs/test dependency map only",
+        "Map CUDA runtime args handoff",
+        "nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff",
         "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
         "`actual_fused_cross_gpu_execution: true`",
     ]:
         assert required in normalized_runtime_args_entry
+
+    post_runtime_args_entry = dispatch_log.split(
+        "### 2026-06-22 - Post-Runtime-Args-Handoff-Map Status Refresh Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_post_runtime_args_entry = " ".join(
+        post_runtime_args_entry.split()
+    )
+    for required in [
+        "nvidia-goal-status-post-runtime-args-handoff-map",
+        "0ba8f30696132c06a3cd49b95fbd7bb46b8b9a99",
+        "tmp/worker-prompts/run-nvidia-post-runtime-args-status-refresh.sh",
+        "019eefe5-d11e-73e1-b91f-1da94553b711",
+        "rollout-2026-06-22T23-14-36-019eefe5-d11e-73e1-b91f-1da94553b711.jsonl",
+        "pto-worker-nvidia-post-runtime-args-status:0.0",
+        "tmp/codex-goal-monitor/nvidia-post-runtime-args-status-refresh/",
+        "dirty_count: 0",
+        "https://github.com/uv-xiao/pto-cu/pull/163",
+        "Opened as a non-draft PR with `gh pr create --repo uv-xiao/pto-cu",
+        "PR #162 is accepted only as a runtime-args handoff map",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "nvidia-uccl-ep-runtime-fusion-private-host-runtime-handoff",
+        "selected exactly one next PR-sized implementation slice",
+        "null pointers, wrong sizes, mismatched callable types",
+        "stale envelopes, cross-invocation envelopes",
+        "forbidden public/API evidence paths",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_post_runtime_args_entry
+    assert "No nested workers were launched" in normalized_post_runtime_args_entry
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():
