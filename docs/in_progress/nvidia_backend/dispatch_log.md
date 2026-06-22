@@ -45,7 +45,8 @@ Each dispatch entry should include:
 - Parent goal and child slice:
   recovered restart objective; status audit and next-slice selection only.
 - Branch name and PR URL or planned PR slot:
-  `nvidia-goal-status-rollup`; planned PR to `uv-xiao/pto-cu:main`.
+  `nvidia-goal-status-rollup`;
+  <https://github.com/uv-xiao/pto-cu/pull/142>.
 - Allowed scope and files:
   `docs/in_progress/nvidia_backend/goal_status_rollup.md`,
   `docs/in_progress/nvidia_backend/dispatch_log.md`,
@@ -58,16 +59,17 @@ Each dispatch entry should include:
   `3ee1523cc37a6574b739d3e7c0a9060f55f2aea5`. It must cite current
   repo-relative evidence and PR/merge references, not conversation memory.
 - Verification commands and results:
-  expected commands are `git diff --check`, `git diff --cached --check`,
-  targeted `markdownlint-cli2`, NVIDIA review guard, and focused
-  review-artifact tests. Initial monitor tick showed pane, transcript, and
-  worktree all ok with `dirty_count: 0`.
+  initial monitor tick showed pane, transcript, and worktree all ok with
+  `dirty_count: 0`. Worker verification passed: `git diff --check`,
+  `git diff --cached --check`, targeted `markdownlint-cli2` over the three
+  touched docs, NVIDIA review guard, and focused review-artifact tests with
+  `59 passed`.
 - Merge decision and merge commit:
   pending worker PR, parent review, and exact-head merge decision.
 - Handoff summary and remaining gaps:
-  parent keeps monitoring by interval summaries only. The worker owns the
-  status rollup and one recommended next PR-sized slice; it must not claim the
-  overall restart goal complete.
+  worker produced the status rollup and selected
+  `nvidia-moe-uccl-ep-fused-boundary-h200`: a reduced fused cross-GPU MoE
+  boundary from the accepted persistent-MoE plus UCCL-EP handoff evidence.
 
 ### 2026-06-22 - Restart Tracking Restoration Branch
 

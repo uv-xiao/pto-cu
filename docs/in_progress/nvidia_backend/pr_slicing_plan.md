@@ -10,8 +10,9 @@ from `main` and lands through focused GitHub PRs.
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
-- The dispatcher branch `restart-tracking-docs` owns only restart tracking
-  restoration under `docs/in_progress/`.
+- The current audit branch `nvidia-goal-status-rollup` owns only
+  `docs/in_progress/nvidia_backend/goal_status_rollup.md`, this slicing note,
+  the dispatch log update, and an optional review-artifact guard.
 
 ## Rules
 
@@ -77,16 +78,21 @@ Non-claims:
 - This PR does not run new H200 kernels.
 - This PR does not prove new serving or DeepSeek output behavior.
 
+## Current Status Rollup
+
+The current acceptance-area audit lives in
+`docs/in_progress/nvidia_backend/goal_status_rollup.md`. It separates
+DeepSeek/vLLM serving evidence from simpler-nv kernel integration evidence and
+selects exactly one next worker slice.
+
 ## Next Candidate Slices
 
-Choose the next child slice after this tracking PR is reviewed:
+Choose the next child slice after the rollup PR is reviewed:
 
-1. Audit accepted `main` against the umbrella acceptance criteria and identify
-   the smallest missing requirement that needs implementation rather than
-   documentation.
-2. Continue distributed communication work if current evidence still lacks the
-   required multi-GPU MoE dispatch/combine path.
-3. Continue serving promotion if current vLLM/DeepSeek evidence is ready to
+1. Launch `nvidia-moe-uccl-ep-fused-boundary-h200` to turn the accepted
+   persistent-MoE plus UCCL-EP handoff into a reduced fused cross-GPU
+   expert-parallel MoE boundary on H200.
+2. Continue serving promotion if current vLLM/DeepSeek evidence is ready to
    move from in-progress notes into stable review docs.
-4. Retire redundant in-progress docs only after their evidence is represented
+3. Retire redundant in-progress docs only after their evidence is represented
    in accepted stable docs or no longer needed.
