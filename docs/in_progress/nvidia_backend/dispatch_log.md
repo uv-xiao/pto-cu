@@ -23,6 +23,50 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-22 - Post-Fused-Boundary Status Refresh Worker
+
+- Dispatcher Session or PR:
+  child worker session after PR #143 merged.
+- Worker id and objective:
+  `pto-worker-nvidia-goal-status-post-fused-boundary`; refresh the NVIDIA
+  backend restart status surface on current `main` after PR #143 and open one
+  docs/status PR.
+- Exact Codex command or script invocation:
+  child `/goal` worker in worktree
+  `nvidia-goal-status-post-fused-boundary`.
+- Parent goal and child slice:
+  NVIDIA backend restart; post-#143 status audit and next-slice selection
+  only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-goal-status-post-fused-boundary`;
+  <https://github.com/uv-xiao/pto-cu/pull/144>.
+- Allowed scope and files:
+  `docs/in_progress/nvidia_backend/goal_status_rollup.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/dispatch_log.md`, and focused guard
+  updates in `tests/ut/py/test_nvidia_review_artifacts.py`.
+- Dependencies and blocked assumptions:
+  starts from current `main` at
+  `f73620c613b7a97c352384d6e90f32ae8c4106cd`, where PR #143 records
+  `--with-uccl-ep-fused-boundary` as `status: unsupported` because
+  `persistent_device_uccl_ep_runtime_fusion` is missing.
+- Verification commands and results:
+  `git diff --check` passed; `git diff --cached --check` passed; targeted
+  `markdownlint-cli2` over the three touched docs passed; the NVIDIA review
+  guard passed; and `test_nvidia_review_artifacts.py` passed with
+  `60 passed`.
+- Merge decision and merge commit:
+  pending PR #144 review and merge decision.
+- Handoff summary and remaining gaps:
+  status docs now audit current `main` at `f73620c6`, keep #143 as structured
+  unsupported-boundary evidence instead of fused execution evidence, and
+  recommend `nvidia-uccl-ep-runtime-fusion-design` as the next conservative
+  dependency/design slice. Remaining gaps include actual
+  `persistent_device_uccl_ep_runtime_fusion`, CUDA host-runtime UCCL
+  dispatch, RDMA or multi-node evidence, serving/vLLM simpler-nv integration,
+  DeepSeek correctness through simpler-nv kernels, and throughput/latency
+  evidence.
+
 ### 2026-06-22 - NVIDIA MoE UCCL-EP Fused Boundary Worker
 
 - Dispatcher Session or PR:
@@ -71,7 +115,11 @@ Each dispatch entry should include:
   fused cross-GPU expert-parallel MoE because
   `persistent_device_uccl_ep_runtime_fusion` remains missing.
 - Merge decision and merge commit:
-  pending worker PR, parent review, and exact-head merge decision.
+  accepted as a structured unsupported-boundary status slice only. PR #143
+  merged into `main` on 2026-06-22 as
+  `f73620c613b7a97c352384d6e90f32ae8c4106cd`
+  (`Record UCCL EP fused boundary status`). The merge decision did not accept
+  the result as actual fused cross-GPU expert-parallel MoE execution evidence.
 - Handoff summary and remaining gaps:
   the branch adds `--with-uccl-ep-fused-boundary` and records a structured
   unsupported boundary instead of promoting the prior handoff to fused

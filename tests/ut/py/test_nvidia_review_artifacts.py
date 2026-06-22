@@ -329,16 +329,22 @@ def test_nvidia_goal_status_rollup_tracks_current_boundaries():
 
     text = rollup.read_text(encoding="utf-8")
     required_phrases = [
-        "`origin/main` at `3338a239`",
+        "`origin/main` at `f73620c6`",
         "`accepted evidence`",
         "`partial evidence`",
         "DeepSeek/vLLM serving evidence",
         "Simpler-nv integration evidence",
-        "`nvidia-moe-uccl-ep-fused-boundary-h200`",
+        "`--with-uccl-ep-fused-boundary`",
+        "`status: unsupported`",
+        "`persistent_device_uccl_ep_runtime_fusion`",
+        "`nvidia-uccl-ep-runtime-fusion-design`",
         "not vLLM plugin integration",
+        "not actual fused cross-GPU expert-parallel MoE execution",
     ]
     for phrase in required_phrases:
         assert phrase in text
+
+    assert "`nvidia-moe-uccl-ep-fused-boundary-h200`" not in text
 
 
 def test_uccl_in_progress_docs_omit_private_paths():
