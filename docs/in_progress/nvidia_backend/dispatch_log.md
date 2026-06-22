@@ -48,11 +48,12 @@ Each dispatch entry should include:
   `markdownlint-cli2` over the seven changed docs, NVIDIA review guard, and
   focused review-artifact tests (`58 passed`) passed.
 - Merge decision and merge commit:
-  pending review.
+  exact-head squash merge succeeded. PR #139 merged as
+  `3722ad7efd7257fcc3807111aa449bfb49c57ea3`.
 - Handoff summary and remaining gaps:
-  after this branch, the dispatcher should select the next implementation or
-  evidence gap from the umbrella acceptance criteria and launch a PR-sized
-  worker from current `main`.
+  restored tracking docs are now on `main`. The dispatcher should next select
+  an implementation or evidence gap from the umbrella acceptance criteria and
+  launch a PR-sized worker from current `main`.
 
 ### 2026-06-22 - Merge Dispatcher Hygiene PRs
 
