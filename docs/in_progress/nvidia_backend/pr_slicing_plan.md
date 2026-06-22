@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `42b996666e279024b43f490a310c490a591a897d`,
-  after PR #166 (`Map UCCL EP capability metadata`).
+- Current accepted `main`: `20b3e625ea8c9d6e4f06bb3992779b807f65acf9`,
+  after PR #167 (`Refresh NVIDIA status after capability metadata`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -123,6 +123,10 @@ from `main` and lands through focused GitHub PRs.
   ownership. It did not implement a runtime-fusion coordinator, descriptor
   allocator, UCCL-EP runtime path, validation policy, CUDA runtime behavior,
   pass evidence, or H200 fused-success evidence.
+- PR #167 recorded the post-PR166 status refresh and selected
+  `nvidia-uccl-ep-runtime-fusion-validation-policy-map` as the next
+  dependency slice. It did not change CUDA runtime behavior, result shape, or
+  fused-execution evidence status.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -238,6 +242,10 @@ from `main` and lands through focused GitHub PRs.
   - Result type: private capability metadata dependency map only, not runtime
     behavior, validation policy, descriptor allocation, runtime-fusion
     coordinator behavior, pass evidence, or fused execution evidence.
+- PR #167: refresh NVIDIA status after capability metadata.
+  - Result: merged as `20b3e625ea8c9d6e4f06bb3992779b807f65acf9`.
+  - Result type: status/slicing refresh only, not runtime behavior or fused
+    execution evidence.
 
 ## Restored Tracking Surface
 
@@ -318,9 +326,10 @@ host-runtime handoff is accepted as a narrow implementation slice only; it
 does not add coordinator-owned UCCL-EP runtime fusion evidence. After
 PR #165, the post-PR164 status refresh is complete. After PR #166, the
 private UCCL-EP capability metadata map is accepted as a dependency slice
-only; it does not implement validation policy or runtime behavior. The
-current accepted baseline is `42b996666e279024b43f490a310c490a591a897d`,
-and the next slice is exactly one conservative dependency slice:
+only; it does not implement validation policy or runtime behavior. After
+PR #167, the post-capability-metadata status refresh is complete. The current
+accepted baseline is `20b3e625ea8c9d6e4f06bb3992779b807f65acf9`, and the
+next slice is exactly one conservative dependency slice:
 `nvidia-uccl-ep-runtime-fusion-validation-policy-map`.
 
 ## Accepted Payload Provenance Slice
@@ -1061,6 +1070,26 @@ Required dependency boundaries:
 - keep public `TaskArgs`, public `CallConfig`, the common runtime C API,
   UCCL host-runtime ABI fields, example JSON, adapter provenance, and handoff
   metadata as forbidden pass-evidence paths.
+
+Implemented surface in this branch:
+
+- the validation policy remains private to the CUDA persistent-device runtime
+  path;
+- it validates PR #164 same-invocation request args and PR #166 capability
+  metadata together before a coordinator can consume either dependency;
+- failure ownership is explicit: missing metadata is unsupported, stale
+  metadata is failed, mismatched-rank metadata is failed, and
+  mismatched-world-size metadata is failed;
+- descriptor-vocabulary mismatch is failed because descriptor vocabulary must
+  match dispatch/combine payload terms;
+- transport-mode mismatch is failed because transport mode must be `ep`;
+- adapter-provenance mismatch is failed because adapter provenance handles
+  must match the private capability id, invocation id, and rank/device map;
+- public/API-sourced metadata is failed as fabricated or untrusted pass
+  evidence;
+- no descriptor allocation policy implementation, UCCL-EP runtime dispatch,
+  coordinator implementation, pass evidence, or H200 fused-success evidence
+  is added.
 
 Required non-claims:
 

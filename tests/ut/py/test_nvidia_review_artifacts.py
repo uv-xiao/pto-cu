@@ -742,7 +742,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "After PR #166, the private UCCL-EP capability metadata map" in (
         normalized_slicing
     )
-    assert "current accepted baseline is `42b996666e279024b43f490a310c490a591a897d`" in (
+    assert "current accepted baseline is `20b3e625ea8c9d6e4f06bb3992779b807f65acf9`" in (
         normalized_slicing
     )
     assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
@@ -1225,6 +1225,46 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         assert required in normalized_post_capability_metadata_entry
     assert "No nested workers were launched" in normalized_post_capability_metadata_entry
 
+    validation_policy_entry = dispatch_log.split(
+        "### 2026-06-23 - UCCL-EP Runtime Fusion Validation Policy Map Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_validation_policy_entry = " ".join(validation_policy_entry.split())
+    for required in [
+        "pto-worker-nvidia-uccl-ep-runtime-fusion-validation-policy-map",
+        "tmp/worker-prompts/run-nvidia-validation-policy-map.sh",
+        "tmp/worker-prompts/nvidia-validation-policy-map.md",
+        "019ef05b-0a43-7d33-9cc4-4cbb058a1f9f",
+        "rollout-2026-06-23T01-22-38-019ef05b-0a43-7d33-9cc4-4cbb058a1f9f.jsonl",
+        "pto-worker-nvidia-validation-policy-map:0.0",
+        "tmp/codex-goal-monitor/nvidia-validation-policy-map/",
+        "20260622T173909Z",
+        "`dirty_count: 0`",
+        "bad748c6",
+        "nvidia-uccl-ep-runtime-fusion-validation-policy-map",
+        "20b3e625ea8c9d6e4f06bb3992779b807f65acf9",
+        "https://github.com/uv-xiao/pto-cu/pull/168",
+        "Opened as a non-draft PR",
+        "review-facing docs/tests only",
+        "private validation policy",
+        "PR #164 same-invocation request args",
+        "PR #166 UCCL-EP capability metadata",
+        "missing metadata",
+        "stale metadata",
+        "mismatched-rank",
+        "mismatched-world-size",
+        "descriptor-vocabulary mismatch",
+        "transport-mode mismatch",
+        "adapter-provenance mismatch",
+        "public/API-sourced metadata",
+        "No CUDA runtime behavior change",
+        "No fresh H200 command is planned",
+        "No nested workers were launched",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_validation_policy_entry
+
     for text in (
         persistent_moe,
         boundary,
@@ -1264,9 +1304,21 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
             "Validation Policy Map Slice",
             "nvidia-uccl-ep-runtime-fusion-validation-policy-map",
             "private validation policy",
+            "validates PR #164 same-invocation request args and PR #166",
+            "capability metadata together",
+            "missing metadata is unsupported",
+            "stale metadata is failed",
+            "mismatched-rank metadata is failed",
+            "mismatched-world-size metadata is failed",
             "descriptor-vocabulary mismatch",
+            "descriptor vocabulary must match dispatch/combine payload terms",
             "transport-mode mismatch",
+            "transport mode must be `ep`",
             "adapter-provenance mismatch",
+            "adapter provenance handles must match",
+            "public/API-sourced metadata is failed",
+            "validation policy remains private to the CUDA persistent-device runtime path",
+            "no descriptor allocation policy implementation",
         ]:
             assert required in normalized_text
 

@@ -23,6 +23,105 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-23 - UCCL-EP Runtime Fusion Validation Policy Map Worker
+
+- Dispatcher Session or PR:
+  current `/goal` worker session on branch
+  `nvidia-uccl-ep-runtime-fusion-validation-policy-map`, starting from
+  `main` after PR #167 merged as
+  `20b3e625ea8c9d6e4f06bb3992779b807f65acf9`.
+- Worker id and objective:
+  `pto-worker-nvidia-uccl-ep-runtime-fusion-validation-policy-map`; map the
+  private validation policy that a later
+  `persistent_device_uccl_ep_runtime_fusion_entry` coordinator request must
+  use after PR #166 defined the private UCCL-EP capability metadata
+  vocabulary, without implementing CUDA runtime behavior.
+- Exact Codex command or script invocation:
+  worker launched by `tmp/worker-prompts/run-nvidia-validation-policy-map.sh`,
+  which ran `codex exec --dangerously-bypass-approvals-and-sandbox -C
+  <worktree> "$(cat tmp/worker-prompts/nvidia-validation-policy-map.md)"`.
+  No nested workers were launched.
+- Monitor locators:
+  Codex session id `019ef05b-0a43-7d33-9cc4-4cbb058a1f9f`; transcript
+  `~/.codex/sessions/2026/06/23/rollout-2026-06-23T01-22-38-019ef05b-0a43-7d33-9cc4-4cbb058a1f9f.jsonl`;
+  worker pane `pto-worker-nvidia-validation-policy-map:0.0`;
+  recurring monitor artifacts under
+  `tmp/codex-goal-monitor/nvidia-validation-policy-map/`. The latest
+  recorded monitor summary at `20260622T173909Z` showed `pane_status: ok`,
+  `transcript_status: ok`, `worktree_status: ok`, `dirty_count: 0`, and
+  latest commit `bad748c6`.
+- Parent goal and child slice:
+  NVIDIA backend restart; Validation Policy Map Slice for the private
+  runtime-fusion validation policy selected after PR #166 and the post-PR166
+  status refresh.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-validation-policy-map`;
+  <https://github.com/uv-xiao/pto-cu/pull/168>. Opened as a non-draft PR
+  with `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-validation-policy-map`.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `20b3e625ea8c9d6e4f06bb3992779b807f65acf9`.
+- Allowed scope and files:
+  review-facing docs/tests only:
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  and `tests/ut/py/test_nvidia_review_artifacts.py`. No runtime code
+  changes.
+- Dependencies and blocked assumptions:
+  PR #164 provides only the real same-invocation
+  `ChipStorageTaskArgs *` and `PtoCudaPersistentDagArgs *` private handoff.
+  PR #166 UCCL-EP capability metadata provides only private capability id,
+  world size, rank-to-device map, descriptor vocabulary, transport mode,
+  adapter provenance handles, and setup/validation failure ownership. This
+  slice validates PR #164 same-invocation request args and PR #166 UCCL-EP
+  capability metadata together before any coordinator can consume them.
+- Implemented surface in this branch:
+  the validation policy remains private to the CUDA persistent-device runtime
+  path. Failure ownership is explicit: missing metadata is unsupported, stale
+  metadata is failed, mismatched-rank metadata is failed, and
+  mismatched-world-size metadata is failed. descriptor-vocabulary mismatch is
+  failed because descriptor vocabulary must match dispatch/combine payload
+  terms. transport-mode mismatch is failed because transport mode must be
+  `ep`. adapter-provenance mismatch is failed because adapter provenance
+  handles must match the private capability id, invocation id, and
+  rank/device map. public/API-sourced metadata is failed as fabricated or
+  untrusted pass evidence. There is no descriptor allocation policy
+  implementation in this slice.
+- Forbidden pass-evidence paths:
+  public `TaskArgs`, public `CallConfig`, common runtime C API, UCCL
+  host-runtime ABI fields, example JSON, adapter provenance, and handoff
+  metadata remain forbidden ways to provide validation inputs or pass
+  evidence.
+- Non-claims:
+  No CUDA runtime behavior change. No runtime-fusion coordinator
+  implementation. No descriptor allocator implementation. No UCCL-EP runtime
+  path implementation. No pass evidence. No fresh H200 fused-success
+  evidence. No `persistent_device_uccl_ep_runtime_fusion.status: passed`.
+  No `actual_fused_cross_gpu_execution: true`. No RDMA, multi-node, serving,
+  vLLM, DeepSeek, throughput, or latency claim. No public `TaskArgs`, public
+  `CallConfig`, common runtime C API, or UCCL host-runtime ABI expansion.
+- Verification commands and results:
+  completed before initial PR creation and rerun after adding the PR URL to
+  this entry. `git diff --check` passed with no output. Targeted
+  `markdownlint-cli2` over the five NVIDIA status docs passed with
+  `0 error(s)`. The NVIDIA review guard passed. The required focused pytest
+  command for `tests/ut/py/test_nvidia_review_artifacts.py` passed with
+  `61 passed`.
+- H200 evidence:
+  No fresh H200 command is planned because this is a docs/test dependency map
+  only and does not change CUDA runtime behavior, example behavior, result
+  shape, or fused-boundary evidence.
+- Merge decision and merge commit:
+  pending PR review.
+- Handoff summary and remaining gaps:
+  this branch maps validation policy only. Descriptor allocation policy,
+  UCCL-EP runtime dispatch, coordinator implementation, pass evidence, and
+  H200 fused-success evidence remain out of scope.
+
 ### 2026-06-23 - Post-Capability-Metadata-Map Status Refresh Worker
 
 - Dispatcher Session or PR:
