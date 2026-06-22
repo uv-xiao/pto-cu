@@ -894,9 +894,9 @@ fresh H200 fused-success evidence, public `TaskArgs`, public `CallConfig`,
 common runtime C API fields, UCCL host-runtime ABI fields, serving, vLLM,
 DeepSeek, throughput, or latency evidence.
 
-## Descriptor Allocation Implementation Slice
+## Accepted Descriptor Allocation Implementation Slice
 
-Selected branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl`.
 
 This slice is a private descriptor allocation implementation only. It adds
@@ -937,6 +937,39 @@ This slice must not claim pass evidence, fresh H200 fused-success evidence,
 `persistent_device_uccl_ep_runtime_fusion.status: passed`,
 `actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
 DeepSeek, throughput, or latency.
+
+PR #176 accepted this private descriptor allocation scaffold only, merged as
+`6e0cecc174ae9db47573c4c0f1698be7accb295c`. The accepted surface is limited
+to the private host-control record, device-visible dispatch/combine descriptor
+buffer mechanics, allocation bundle, same-invocation binding, and private
+runtime-path handoff into request state. It did not implement coordinator
+construction, UCCL-EP runtime dispatch, pass evidence, fresh H200
+fused-success evidence, public `TaskArgs`, public `CallConfig`, common
+runtime C API fields, UCCL host-runtime ABI fields, examples, stable docs,
+serving, vLLM, DeepSeek, throughput, or latency.
+
+## Runtime Fusion Coordinator Scaffold Status Slice
+
+The next selected slice is
+`nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`, a private
+coordinator-construction scaffold/status slice. It may define or wire private
+coordinator state needed to own the PR #176 descriptor allocation and PR #174
+runtime path, but it must remain narrower than UCCL-EP runtime dispatch and
+narrower than pass evidence.
+
+The future coordinator scaffold/status slice must stay private to the CUDA
+persistent-device runtime path for one `ChipWorker::run` invocation. It may
+consume PR #164 same-invocation request args, PR #166 capability metadata,
+PR #168 validation policy, PR #170 allocation policy, PR #172 runtime-path
+map, PR #174 runtime-path scaffold, and PR #176 descriptor allocation
+scaffold only as prerequisites. Those prerequisites cannot claim fused success
+until UCCL-EP runtime dispatch exists and a fresh H200 fused-boundary result
+records real coordinator-owned evidence.
+
+This status refresh does not implement coordinator construction, UCCL-EP
+runtime dispatch, pass evidence, fresh H200 fused-success evidence, public API
+expansion, examples, stable docs, serving, vLLM, DeepSeek, throughput, or
+latency.
 
 ## Non-Claims
 

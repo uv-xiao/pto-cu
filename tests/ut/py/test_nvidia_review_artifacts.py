@@ -755,9 +755,12 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     assert "After PR #174, the private UCCL-EP runtime path scaffold" in (
         normalized_slicing
     )
+    assert "After PR #176, the private descriptor allocation scaffold" in (
+        normalized_slicing
+    )
     assert (
         "current accepted baseline is "
-        "`3b4b19a04855d27289fb9cdad802fee0c47d8265`"
+        "`6e0cecc174ae9db47573c4c0f1698be7accb295c`"
     ) in normalized_slicing
     assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-validation-policy-map" in slicing
@@ -768,6 +771,9 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         slicing
     )
     assert "nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl" in (
+        slicing
+    )
+    assert "nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status" in (
         slicing
     )
     assert "8b5e8075000a2a3e35c4e71c5cb698224b003b44" in slicing
@@ -2047,11 +2053,119 @@ def test_uccl_ep_descriptor_allocation_impl_slice_is_review_safe():
         "same invocation id",
         "missing UCCL-EP runtime dispatch remain unsupported or failed states",
         "No fresh H200 command is planned",
+        "PR #176 accepted and merged as `6e0cecc174ae9db47573c4c0f1698be7accb295c`",
         "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
         "`actual_fused_cross_gpu_execution: true`",
     ]:
         assert required in normalized_dispatch
     assert "dispatcher to fill after monitor setup" not in normalized_dispatch
+    assert "pending dispatcher review" not in normalized_dispatch
+
+
+def test_post_descriptor_allocation_impl_status_refresh_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+
+    required_refresh_terms = [
+        "pr #176",
+        "6e0cecc174ae9db47573c4c0f1698be7accb295c",
+        "private descriptor allocation scaffold",
+        "ptocudaucclepdescriptorhostcontrol",
+        "ptocudaucclepdevicedescriptorbuffer",
+        "ptocudaucclepdescriptorallocation",
+        "private host-control record",
+        "device-visible dispatch/combine descriptor buffer",
+        "coordinator construction",
+        "uccl-ep runtime dispatch",
+        "pass evidence",
+        "fresh h200 fused-success evidence",
+        "public `taskargs`",
+        "public `callconfig`",
+        "common runtime c api",
+        "uccl host-runtime abi",
+        "serving",
+        "vllm",
+        "deepseek",
+        "throughput",
+        "latency",
+        "nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split()).lower()
+        for required in required_refresh_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+
+    slicing = texts["slicing"]
+    assert (
+        "## Descriptor Allocation Implementation Slice\n\nSelected branch:"
+        not in slicing
+    )
+    assert (
+        "`3b4b19a04855d27289fb9cdad802fee0c47d8265`, and the next "
+        "slice is exactly one narrow implementation slice"
+        not in " ".join(slicing.split())
+    )
+    assert "Accepted Descriptor Allocation Implementation Slice" in slicing
+    assert "Runtime Fusion Coordinator Scaffold Status Slice" in slicing
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-23 - Post-Descriptor-Allocation-Impl "
+        "Status Refresh Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "pto-worker-nvidia-post-descriptor-allocation-impl-status-refresh",
+        "tmp/worker-prompts/nvidia-post-descriptor-allocation-impl-status-refresh.md",
+        "tmp/worker-prompts/run-nvidia-post-descriptor-allocation-impl-status-refresh.sh",
+        "019ef118-0c3f-7da2-84fb-a55be183e287",
+        "rollout-2026-06-23T04-49-05-019ef118-0c3f-7da2-84fb-a55be183e287.jsonl",
+        "pto-worker-nvidia-post-descriptor-allocation-impl-status-refresh:0.0",
+        "tmp/codex-goal-monitor/nvidia-post-descriptor-allocation-impl-status-refresh/",
+        "pane_status: missing",
+        "dirty_count: 0",
+        "nvidia-goal-status-post-descriptor-allocation-impl",
+        "https://github.com/uv-xiao/pto-cu/pull/177",
+        "uv-xiao/pto-cu",
+        "base branch `main`",
+        "starting commit `6e0cecc174ae9db47573c4c0f1698be7accb295c`",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "docs/in_progress/nvidia_backend/dispatch_log.md",
+        "docs/in_progress/nvidia_backend/pr_slicing_plan.md",
+        "docs/in_progress/nvidia_backend/communication_runtime_boundary.md",
+        "docs/in_progress/nvidia_backend/communication_selection.md",
+        "docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md",
+        "tests/ut/py/test_nvidia_review_artifacts.py",
+        "No nested workers were launched",
+        "PR #176 accepted only the private descriptor allocation scaffold",
+        "selected exactly one next PR-sized coordinator-construction scaffold/status slice",
+        "nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status",
+        "narrower than UCCL-EP runtime dispatch",
+        "narrower than pass evidence",
+        "cannot claim fused success until UCCL-EP runtime dispatch and fresh H200",
+        "No fresh H200 command is planned",
+        "no `persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "no `actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_dispatch
+    assert "pending dispatcher review" not in normalized_dispatch
+    assert "parent dispatcher to fill after PR creation" not in normalized_dispatch
+    assert "persistent_device_uccl_ep_runtime_fusion.status: passed`" in (
+        normalized_dispatch
+    )
+    assert "no `persistent_device_uccl_ep_runtime_fusion.status: passed`" in (
+        normalized_dispatch
+    )
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():

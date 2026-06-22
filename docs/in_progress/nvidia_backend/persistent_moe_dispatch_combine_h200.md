@@ -1168,9 +1168,9 @@ fresh H200 fused-success evidence, public `TaskArgs`, public `CallConfig`,
 common runtime C API fields, UCCL host-runtime ABI fields, serving, vLLM,
 DeepSeek, throughput, or latency evidence.
 
-## Descriptor Allocation Implementation Slice
+## Accepted Descriptor Allocation Implementation Slice
 
-Selected branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-descriptor-allocation-impl`.
 
 This slice implements only private descriptor allocation mechanics:
@@ -1195,6 +1195,33 @@ UCCL-EP runtime dispatch remain unsupported or failed states. The slice must
 not change the H200 fused-boundary claim state, must not report
 `persistent_device_uccl_ep_runtime_fusion.status: passed`, and must not set
 `actual_fused_cross_gpu_execution: true`.
+
+PR #176 accepted this private descriptor allocation scaffold only, merged as
+`6e0cecc174ae9db47573c4c0f1698be7accb295c`. It accepted the private
+host-control record, device-visible dispatch/combine descriptor buffer
+mechanics, allocation bundle, same-invocation binding, and private
+runtime-path handoff into request state. It did not implement coordinator
+construction, UCCL-EP runtime dispatch, pass evidence, fresh H200
+fused-success evidence, public `TaskArgs`, public `CallConfig`, common
+runtime C API fields, UCCL host-runtime ABI fields, examples, stable docs,
+serving, vLLM, DeepSeek, throughput, or latency.
+
+## Runtime Fusion Coordinator Scaffold Status Slice
+
+The next selected slice is
+`nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`. It is a private
+coordinator-construction scaffold/status slice before any UCCL-EP runtime
+dispatch. It may define or wire private coordinator state needed to own the
+PR #176 descriptor allocation and PR #174 runtime path, but it must not run or
+claim UCCL-EP runtime dispatch.
+
+This status refresh records no fresh H200 fused-boundary command. The existing
+H200 fused-boundary evidence remains structured unsupported evidence, not
+fused success. The future coordinator scaffold/status slice also cannot claim
+`persistent_device_uccl_ep_runtime_fusion.status: passed`,
+`actual_fused_cross_gpu_execution: true`, pass evidence, or fresh H200
+fused-success evidence until real UCCL-EP runtime dispatch exists and a fresh
+H200 result proves coordinator-owned fused execution.
 
 ## Future Fused Execution Evidence Shape
 
