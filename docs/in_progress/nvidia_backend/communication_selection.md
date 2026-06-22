@@ -189,15 +189,17 @@ restart. It is a planning boundary, not performance evidence.
   provenance-only unsupported-boundary evidence, PR #150 remains guard-only
   blocked implementation evidence, PR #151 remains a post-PR150 status
   refresh, PR #152 remains a coordinator-boundary map only, and PR #153
-  remains a private entry-contract only. None of those PRs proves actual
-  fused cross-GPU expert-parallel MoE execution.
+  remains a private entry-contract only. PR #155 remains a private
+  unsupported runtime scaffold only
+  (`nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`). None of those
+  PRs proves actual fused cross-GPU expert-parallel MoE execution.
 - The next PR-sized slice is
-  `nvidia-uccl-ep-runtime-fusion-private-entry-unsupported`. It can implement
-  only private entry scaffolding behind `ChipWorker::run` /
-  `ChipStorageTaskArgs` and must keep the fused-boundary result `unsupported`
-  unless the runtime coordinator emits real descriptor ownership,
-  ownership-token, lifetime-transition, rank/device, validation, and
-  failure-field evidence.
+  `nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`. It can
+  thread only the private `ChipStorageTaskArgs` request input through the
+  existing `ChipWorker::run` / CUDA host-runtime request path and must keep
+  the fused-boundary result `unsupported` unless the runtime coordinator
+  emits real descriptor ownership, ownership-token, lifetime-transition,
+  rank/device, validation, and failure-field evidence.
 
 ## Non-Claims
 
@@ -205,7 +207,7 @@ UCCL PTO host-runtime dispatch, RDMA evidence, multi-node evidence,
 serving-level communication evidence, and DeepSeek model correctness remain
 pending. The UCCL-EP handoff evidence is adapter/probe evidence only.
 UCCL adapter execution is limited to opt-in Python-side probes and handoff
-gates. PR #153 did not change CUDA runtime behavior, claim fresh H200 fused
-success, report
+gates. PR #155 accepted only a private unsupported runtime scaffold. It did
+not claim fresh H200 fused success, report
 `persistent_device_uccl_ep_runtime_fusion.status: passed`, or set
 `actual_fused_cross_gpu_execution: true`.

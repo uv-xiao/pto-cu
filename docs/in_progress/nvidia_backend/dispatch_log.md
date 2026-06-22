@@ -78,7 +78,15 @@ Each dispatch entry should include:
   unsupported private scaffold and does not emit pass/true fused-boundary
   evidence. The branch remains unsupported.
 - Merge decision and merge commit:
-  pending PR creation, dispatcher review, and merge decision.
+  accepted as a private unsupported runtime scaffold only. PR #155 merged
+  into `main` on 2026-06-22 as
+  `d04732e3a5513d8172b41d0812f2d84065039526`
+  (`Add private UCCL EP runtime fusion entry scaffold`). The merge decision
+  did not accept fused execution evidence, fresh H200 fused-success evidence,
+  UCCL host-runtime ABI expansion, public `TaskArgs` or `CallConfig`
+  expansion, `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
+  DeepSeek, throughput, or latency claims.
 - Handoff summary and remaining gaps:
   this slice adds a private CUDA host-side request/result scaffold and
   explicit unsupported/failure fields. It does not implement the real
@@ -88,7 +96,12 @@ Each dispatch entry should include:
   fused success, report
   `persistent_device_uccl_ep_runtime_fusion.status: passed`, set
   `actual_fused_cross_gpu_execution: true`, or claim RDMA, multi-node,
-  serving, vLLM, DeepSeek, throughput, or latency evidence.
+  serving, vLLM, DeepSeek, throughput, or latency evidence. The next selected
+  PR-sized slice is
+  `nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`, which should
+  thread only the private `ChipStorageTaskArgs` request input through the
+  existing `ChipWorker::run` / CUDA host-runtime request path while keeping
+  the fused-boundary result unsupported.
 
 ### 2026-06-22 - Post-Coordinator-Entry-Contract Status Refresh Worker
 
@@ -137,7 +150,14 @@ Each dispatch entry should include:
   guard only and does not change CUDA runtime behavior, example behavior, or
   result shape.
 - Merge decision and merge commit:
-  pending dispatcher review and merge decision.
+  accepted as a status/slicing refresh only. PR #154 merged into `main` on
+  2026-06-22 as `29da72a171b25deeeb53db399f9cdf54d38c647a`
+  (`Refresh NVIDIA status after entry contract`). The merge decision did not
+  accept CUDA runtime behavior changes, result-shape changes, fresh H200
+  fused-success evidence,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`,
+  `actual_fused_cross_gpu_execution: true`, RDMA, multi-node, serving, vLLM,
+  DeepSeek, throughput, or latency claims.
 - Handoff summary and remaining gaps:
   this refresh marks PR #152 and PR #153 accepted with exact merge commits,
   preserves the unsupported fused-execution evidence boundary, and selects
