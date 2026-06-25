@@ -3019,3 +3019,78 @@ Selected next slice:
 This is selected exactly one next PR-sized dependency map slice for the future
 private combine payload transfer completion boundary. It must remain a map,
 not a payload transfer implementation.
+
+## Runtime Dispatch Driver Backend Combine Payload Transfer Completion Map Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-map`.
+
+Objective: map the future private combine payload transfer completion boundary
+after PR #199 (`41c9c894ad511534d943180bccb10aab8fba3f7b`). This is a
+dependency map only, not source behavior.
+
+Accepted PR #199 evidence is limited to private combine payload transfer
+scaffold/status vocabulary:
+`PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_SCAFFOLD_STATUS_VERSION`,
+`PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferScaffoldStatus`,
+`PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferStatus`,
+`pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payload_transfer_status_name`,
+`pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status`,
+and
+`test_private_runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status_is_backend_owned`.
+
+Failure-bit design note: `PtoCudaRuntimeFusionFailure` is exhausted through
+`1U << 31U`; there is no `1U << 32U` and no public ABI widening. Future
+transfer completion scaffold/status failures must reuse
+`PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD`
+as the existing combine-payload scaffold aggregate failure bit.
+
+The future private combine payload transfer completion boundary consumes
+backend request scaffold/status input, the dispatch request scaffold/status
+dependency, the combine request scaffold/status dependency, the combine
+payload descriptor scaffold/status dependency, and the combine payload
+transfer scaffold/status dependency.
+
+Future validation must remain private to the same invocation. Required
+ownership and validation checks are same invocation, transfer owner, transfer
+status dependency, descriptor token, rank/device, status sink, completion
+sink, no public/provenance sourced state, and no fabricated pass evidence.
+
+Completion status vocabulary:
+`driver_backend_combine_payload_transfer_completion_pending`,
+`driver_backend_combine_payload_transfer_completion_unimplemented`,
+`driver_backend_combine_payload_transfer_completion_status_sink_unbound`,
+`driver_backend_combine_payload_transfer_completion_map_unsupported_boundary`,
+`driver_backend_combine_payload_transfer_completion_owner_mismatch`,
+`driver_backend_combine_payload_transfer_completion_invocation_mismatch`,
+`driver_backend_combine_payload_transfer_completion_transfer_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_completion_descriptor_token_mismatch`,
+`driver_backend_combine_payload_transfer_completion_rank_device_mismatch`,
+`driver_backend_combine_payload_transfer_completion_status_sink_mismatch`,
+`driver_backend_combine_payload_transfer_completion_public_api_sourced_state`,
+`driver_backend_combine_payload_transfer_completion_provenance_sourced_state`,
+and
+`driver_backend_combine_payload_transfer_completion_fabricated_pass_evidence`.
+
+Required non-claims:
+
+- no real UCCL-EP dispatch/combine work;
+- no descriptor allocation behavior change;
+- no payload transfer implementation;
+- no completion implementation;
+- no transport/backend execution;
+- no scheduler/runtime pass evidence;
+- no fresh H200 fused success;
+- no public API expansion;
+- no public `TaskArgs`;
+- no public `CallConfig`;
+- no common runtime C API;
+- no UCCL host-runtime ABI;
+- no examples/stable docs/serving/vLLM/DeepSeek/performance claims;
+- no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- no `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-scaffold-status`.
+This is selected exactly one next PR-sized implementation slice for private
+completion scaffold/status only.
