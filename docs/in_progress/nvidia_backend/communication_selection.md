@@ -1382,6 +1382,66 @@ Selected next slice:
 This is selected exactly one next PR-sized implementation slice for private
 combine payload descriptor scaffold/status only.
 
+## Runtime Dispatch Driver Backend Combine Payload Scaffold Status Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-scaffold-status`.
+
+This selection note records private combine payload descriptor scaffold/status
+after PR #196 (`af62d14d456b34fb1ef7fb2f9b4b6af7bc0bd4d1`). The slice adds
+only private coordinator-owned payload descriptor status under the runtime
+fusion ABI. It depends on the combine request scaffold/status and preserves
+the dispatch/combine descriptor token, rank, CUDA device, world size, and
+runtime-owned output/status sink validation shape.
+
+Accepted private ABI/status vocabulary:
+
+- `PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadScaffoldStatus`;
+- `PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadStatus`;
+- `pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payload_status_name`;
+- `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_scaffold_status`;
+- `PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD`;
+- `test_private_runtime_dispatch_driver_backend_combine_payload_scaffold_status_is_backend_owned`.
+
+The valid prepared combine payload descriptor scaffold/status remains
+`unsupported`; `actual_fused_cross_gpu_execution` remains `0`. Malformed
+owner, invocation, combine-request dependency, descriptor token, rank/device,
+status sink, public source, provenance source, or fabricated pass-evidence
+state fails through the private entry instead of sourcing pass evidence.
+
+Unsupported combine-payload states are `driver_backend_combine_payload_pending`,
+`driver_backend_combine_payload_descriptor_placeholder`,
+`driver_backend_combine_payload_output_status_sink_unbound`,
+`driver_backend_combine_payload_map_unsupported_boundary`, and
+`driver_backend_combine_payload_transfer_unimplemented`.
+
+Failed combine-payload states are
+`driver_backend_combine_payload_owner_mismatch`,
+`driver_backend_combine_payload_invocation_mismatch`,
+`driver_backend_combine_payload_request_scaffold_mismatch`,
+`driver_backend_combine_payload_descriptor_token_mismatch`,
+`driver_backend_combine_payload_rank_device_mismatch`,
+`driver_backend_combine_payload_status_sink_mismatch`,
+`driver_backend_combine_payload_public_api_sourced_state`,
+`driver_backend_combine_payload_provenance_sourced_state`, and
+`driver_backend_combine_payload_fabricated_pass_evidence`.
+
+Focused TDD evidence: focused red check failed first with
+`1 failed in 0.44s`; focused green check passed with `1 passed in 0.43s`.
+
+This slice records no real UCCL-EP dispatch/combine work, no descriptor
+allocation behavior, no payload transfer, no scheduler/runtime pass evidence,
+no fresh H200 fused success, no public `TaskArgs`, no public `CallConfig`,
+no common runtime C API, no UCCL host-runtime ABI, and no examples, stable
+docs, serving, vLLM, DeepSeek, or performance claims. It does not report
+`persistent_device_uccl_ep_runtime_fusion.status: passed` and does not set
+`actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-map`.
+This is selected exactly one next PR-sized dependency map slice for the future
+private combine payload transfer boundary.
+
 ## Non-Claims
 
 UCCL PTO host-runtime dispatch, RDMA evidence, multi-node evidence,
