@@ -230,6 +230,26 @@ from `main` and lands through focused GitHub PRs.
   real UCCL-EP dispatch/combine work, scheduler/runtime pass evidence, fresh
   H200 fused success, public API expansion, examples, stable docs, serving,
   vLLM, DeepSeek, throughput, or latency evidence.
+- PR #190 accepted only the private driver backend request dependency map
+  after PR #189. It defined future private backend request ownership,
+  backend scaffold/status input, descriptor token and rank/device validation,
+  invalid public/provenance sources, unsupported states, and failed states.
+  It did not implement real UCCL-EP dispatch/combine work, scheduler/runtime
+  pass evidence, fresh H200 fused success, public API expansion, examples,
+  stable docs, serving, vLLM, DeepSeek, throughput, or latency evidence.
+- PR #191 accepted only private runtime-dispatch driver backend request
+  scaffold/status ownership:
+  `PtoCudaUcclEpRuntimeDispatchDriverBackendRequestScaffoldStatus`,
+  `PtoCudaUcclEpRuntimeDispatchDriverBackendRequestStatus`,
+  `pto_cuda_uccl_ep_runtime_dispatch_driver_backend_request_status_name`,
+  and
+  `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_request_scaffold_status`.
+  Valid backend request scaffold/status remains unsupported, and
+  malformed/mismatched backend request scaffold state produces failed private
+  result. It did not implement real UCCL-EP dispatch/combine work,
+  scheduler/runtime pass evidence, fresh H200 fused success, public API
+  expansion, examples, stable docs, serving, vLLM, DeepSeek, throughput, or
+  latency evidence.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -2338,3 +2358,89 @@ This is selected exactly one next PR-sized dependency map slice for the future
 private dispatch request placeholder. It remains narrower than real UCCL-EP
 dispatch/combine work, scheduler/runtime pass evidence, H200 fused success,
 public API expansion, examples, stable docs, or performance claims.
+
+## Runtime Dispatch Driver Backend Dispatch Request Map Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-dispatch-request-map`.
+
+Objective: map the future private dispatch request placeholder after PR #191
+(`d4cbbfc130b356d90b649aa40f2c904d0fc8a081`). This docs/test dependency
+slice defines ownership and validation boundaries only. It consumes the
+backend request scaffold/status input from PR #191 but does not implement
+real UCCL-EP dispatch/combine work.
+
+This map follows PR #191, which accepted only
+`PtoCudaUcclEpRuntimeDispatchDriverBackendRequestScaffoldStatus`,
+`PtoCudaUcclEpRuntimeDispatchDriverBackendRequestStatus`, and
+`pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_request_scaffold_status`.
+The valid backend request scaffold/status remains `unsupported`; it is not a
+dispatch request, dispatch payload descriptor, dispatch output/status sink,
+transport call, scheduler transition, or pass-evidence source.
+
+Boundary ownership:
+
+- private dispatch request placeholder owner: the future private dispatch
+  request owner accepts the PR #191 backend request scaffold/status input only
+  after backend request owner, invocation id, runtime path, descriptor token,
+  rank/device map, world size, and runtime-owned dispatch output/status sink
+  match;
+- backend request scaffold/status input: the accepted PR #191 scaffold/status
+  is the only private input to this map and remains unsupported until a later
+  scaffold/status implementation owns dispatch request state;
+- dispatch payload descriptor placeholder: a private driver-owned placeholder
+  for future UCCL-EP dispatch payload descriptor vocabulary, with no payload
+  transfer, descriptor allocation, transport call, kernel launch, scheduler
+  transition, or pass evidence;
+- dispatch output/status sink: the runtime-owned output/status sink remains
+  the only review-facing sink for dispatch request status and failure names;
+- descriptor token validation: the dispatch request placeholder must reuse
+  the backend request scaffold/status descriptor token and must fail rather
+  than create a token from hand-authored review data;
+- rank/device validation: the dispatch request rank/device map must match the
+  accepted backend request scaffold/status rank, CUDA device, and world-size
+  metadata;
+- invalid public/provenance sources: example JSON, adapter-only provenance,
+  public `TaskArgs`, public `CallConfig`, common runtime C API fields,
+  UCCL host-runtime ABI fields, and hand-authored review artifacts cannot
+  source dispatch request state or pass evidence.
+
+Unsupported dispatch-request states:
+
+- `driver_backend_dispatch_request_pending`;
+- `driver_backend_dispatch_payload_descriptor_placeholder`;
+- `driver_backend_dispatch_output_status_sink_unbound`;
+- `driver_backend_dispatch_request_map_unsupported_boundary`;
+- `driver_backend_dispatch_payload_transfer_unimplemented`.
+
+Failed dispatch-request states:
+
+- `driver_backend_dispatch_request_owner_mismatch`;
+- `driver_backend_dispatch_request_invocation_mismatch`;
+- `driver_backend_dispatch_request_scaffold_mismatch`;
+- `driver_backend_dispatch_request_descriptor_token_mismatch`;
+- `driver_backend_dispatch_request_rank_device_mismatch`;
+- `driver_backend_dispatch_request_status_sink_mismatch`;
+- `driver_backend_dispatch_request_public_api_sourced_state`;
+- `driver_backend_dispatch_request_provenance_sourced_state`;
+- `driver_backend_dispatch_request_fabricated_pass_evidence`.
+
+Required non-claims:
+
+- no real UCCL-EP dispatch/combine work;
+- no scheduler/runtime pass evidence;
+- no fresh H200 fused success;
+- no public `TaskArgs`;
+- no public `CallConfig`;
+- no common runtime C API;
+- no UCCL host-runtime ABI;
+- no examples, stable docs, or performance claims;
+- no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- no `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-dispatch-request-scaffold-status`.
+This is selected exactly one next PR-sized implementation slice for private
+dispatch request scaffold/status only. It must remain narrower than real
+UCCL-EP dispatch/combine work, scheduler/runtime pass evidence, H200 fused
+success, public API expansion, examples, stable docs, or performance claims.
