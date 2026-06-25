@@ -2614,3 +2614,73 @@ combine request scaffold/status only. It must remain narrower than real
 UCCL-EP dispatch/combine work, scheduler/runtime pass evidence, H200 fused
 success, public API expansion, examples, stable docs, serving, vLLM,
 DeepSeek, or performance claims.
+
+## Runtime Dispatch Driver Backend Combine Request Scaffold Status Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-request-scaffold-status`.
+
+Objective: implement private combine request scaffold/status after PR #194
+(`562778f051ca87cf3f62d796860a8fd4c3476a32`). This implementation slice
+adds private ABI vocabulary only. It consumes the backend request
+scaffold/status input, the dispatch request scaffold/status dependency, and
+the combine request map from PR #194, but does not implement real UCCL-EP
+dispatch/combine work.
+
+Implementation evidence:
+
+- `PtoCudaUcclEpRuntimeDispatchDriverBackendCombineRequestScaffoldStatus`;
+- `PtoCudaUcclEpRuntimeDispatchDriverBackendCombineRequestStatus`;
+- `pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_request_status_name`;
+- `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_request_scaffold_status`;
+- `PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_REQUEST_SCAFFOLD`;
+- `test_private_runtime_dispatch_driver_backend_combine_request_scaffold_status_is_backend_owned`.
+
+The valid prepared combine request scaffold/status remains `unsupported`;
+`actual_fused_cross_gpu_execution` remains `0`; no passed status is reported;
+and no payload transfer, transport/backend execution, scheduler pass, or H200
+fused success is added. Malformed or stale private combine request owner state
+produces a failed private result with combine-request vocabulary. focused red
+check failed first with `1 failed in 0.42s`; focused green check passed with
+`1 passed in 0.42s`.
+
+Unsupported combine-request states:
+
+- `driver_backend_combine_request_pending`;
+- `driver_backend_combine_payload_descriptor_placeholder`;
+- `driver_backend_combine_output_status_sink_unbound`;
+- `driver_backend_combine_request_map_unsupported_boundary`;
+- `driver_backend_combine_payload_transfer_unimplemented`.
+
+Failed combine-request states:
+
+- `driver_backend_combine_request_owner_mismatch`;
+- `driver_backend_combine_request_invocation_mismatch`;
+- `driver_backend_combine_request_scaffold_mismatch`;
+- `driver_backend_combine_request_descriptor_token_mismatch`;
+- `driver_backend_combine_request_rank_device_mismatch`;
+- `driver_backend_combine_request_status_sink_mismatch`;
+- `driver_backend_combine_request_public_api_sourced_state`;
+- `driver_backend_combine_request_provenance_sourced_state`;
+- `driver_backend_combine_request_fabricated_pass_evidence`.
+
+Required non-claims:
+
+- no real UCCL-EP dispatch/combine work;
+- no scheduler/runtime pass evidence;
+- no fresh H200 fused success;
+- no public `TaskArgs`;
+- no public `CallConfig`;
+- no common runtime C API;
+- no UCCL host-runtime ABI;
+- no examples, stable docs, serving, vLLM, DeepSeek, or performance claims;
+- no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- no `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-map`.
+This is selected exactly one next PR-sized dependency map slice for the future
+private combine payload descriptor placeholder. It must remain narrower than
+real UCCL-EP dispatch/combine work, scheduler/runtime pass evidence, H200
+fused success, public API expansion, examples, stable docs, serving, vLLM,
+DeepSeek, or performance claims.

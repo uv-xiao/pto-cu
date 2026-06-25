@@ -1942,6 +1942,61 @@ dispatch/combine work, scheduler/runtime pass evidence, H200 fused success,
 public API expansion, examples, stable docs, serving, vLLM, DeepSeek, or
 performance claims.
 
+## Runtime Dispatch Driver Backend Combine Request Scaffold Status Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-request-scaffold-status`.
+
+This slice implements private combine request scaffold/status after PR #194
+(`562778f051ca87cf3f62d796860a8fd4c3476a32`). It does not change the H200
+persistent MoE evidence boundary or promote unsupported runtime fusion to a
+passed fused result.
+
+Implementation evidence in
+`src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h`:
+
+- `PtoCudaUcclEpRuntimeDispatchDriverBackendCombineRequestScaffoldStatus`;
+- `PtoCudaUcclEpRuntimeDispatchDriverBackendCombineRequestStatus`;
+- `pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_request_status_name`;
+- `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_request_scaffold_status`;
+- `PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_REQUEST_SCAFFOLD`.
+
+Focused private-entry coverage is
+`test_private_runtime_dispatch_driver_backend_combine_request_scaffold_status_is_backend_owned`.
+The valid prepared combine request scaffold/status remains `unsupported`;
+`actual_fused_cross_gpu_execution` remains `0`; no passed status is reported.
+focused red check failed first with `1 failed in 0.42s`; focused green check
+passed with `1 passed in 0.42s`.
+
+Unsupported combine-request states are `driver_backend_combine_request_pending`,
+`driver_backend_combine_payload_descriptor_placeholder`,
+`driver_backend_combine_output_status_sink_unbound`,
+`driver_backend_combine_request_map_unsupported_boundary`, and
+`driver_backend_combine_payload_transfer_unimplemented`.
+
+Failed combine-request states are
+`driver_backend_combine_request_owner_mismatch`,
+`driver_backend_combine_request_invocation_mismatch`,
+`driver_backend_combine_request_scaffold_mismatch`,
+`driver_backend_combine_request_descriptor_token_mismatch`,
+`driver_backend_combine_request_rank_device_mismatch`,
+`driver_backend_combine_request_status_sink_mismatch`,
+`driver_backend_combine_request_public_api_sourced_state`,
+`driver_backend_combine_request_provenance_sourced_state`, and
+`driver_backend_combine_request_fabricated_pass_evidence`.
+
+This slice records no real UCCL-EP dispatch/combine work, no scheduler/runtime
+pass evidence, no fresh H200 fused success, no public `TaskArgs`, no public
+`CallConfig`, no common runtime C API, no UCCL host-runtime ABI, and no
+examples, stable docs, serving, vLLM, DeepSeek, or performance claims. It
+does not report `persistent_device_uccl_ep_runtime_fusion.status: passed` and
+does not set `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-map`.
+This is selected exactly one next PR-sized dependency map slice for the future
+private combine payload descriptor placeholder.
+
 ## Future Fused Execution Evidence Shape
 
 PR #174 defines only the private runtime-path scaffold. It does not implement

@@ -3717,8 +3717,8 @@ def test_runtime_dispatch_driver_backend_dispatch_request_scaffold_status_slice_
     )[1].split("\n### ", 1)[0]
     normalized_dispatch = " ".join(dispatch_entry.split())
     for required in [
-        "multi-agent worker id",
-        "nickname",
+        "multi-agent worker id `019eff9a-23ca-7121-83db-19730e4931b7`",
+        "nickname `Einstein`",
         "No tmux pane is used for this worker",
         "the dispatcher monitors through multi-agent wait",
         "No nested workers were launched",
@@ -3845,6 +3845,107 @@ def test_runtime_dispatch_driver_backend_combine_request_map_slice_is_review_saf
         "docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md",
         "tests/ut/py/test_nvidia_review_artifacts.py",
         "focused red check failed first",
+        "merge decision pending dispatcher review",
+        "no real UCCL-EP dispatch/combine work",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "does not set `actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_dispatch
+    assert "/home/" not in normalized_dispatch
+
+
+def test_runtime_dispatch_driver_backend_combine_request_scaffold_status_slice_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+
+    required_terms = [
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-request-scaffold-status",
+        "Runtime Dispatch Driver Backend Combine Request Scaffold Status Slice",
+        "private combine request scaffold/status",
+        "PR #194",
+        "562778f051ca87cf3f62d796860a8fd4c3476a32",
+        "PtoCudaUcclEpRuntimeDispatchDriverBackendCombineRequestScaffoldStatus",
+        "PtoCudaUcclEpRuntimeDispatchDriverBackendCombineRequestStatus",
+        "pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_request_status_name",
+        "pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_request_scaffold_status",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_REQUEST_SCAFFOLD",
+        "test_private_runtime_dispatch_driver_backend_combine_request_scaffold_status_is_backend_owned",
+        "valid prepared combine request scaffold/status remains `unsupported`",
+        "`actual_fused_cross_gpu_execution` remains `0`",
+        "`driver_backend_combine_request_pending`",
+        "`driver_backend_combine_payload_descriptor_placeholder`",
+        "`driver_backend_combine_output_status_sink_unbound`",
+        "`driver_backend_combine_request_map_unsupported_boundary`",
+        "`driver_backend_combine_payload_transfer_unimplemented`",
+        "`driver_backend_combine_request_owner_mismatch`",
+        "`driver_backend_combine_request_invocation_mismatch`",
+        "`driver_backend_combine_request_scaffold_mismatch`",
+        "`driver_backend_combine_request_descriptor_token_mismatch`",
+        "`driver_backend_combine_request_rank_device_mismatch`",
+        "`driver_backend_combine_request_status_sink_mismatch`",
+        "`driver_backend_combine_request_public_api_sourced_state`",
+        "`driver_backend_combine_request_provenance_sourced_state`",
+        "`driver_backend_combine_request_fabricated_pass_evidence`",
+        "focused red check failed first with `1 failed in 0.42s`",
+        "focused green check passed with `1 passed in 0.42s`",
+        "no real UCCL-EP dispatch/combine work",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "no public `TaskArgs`",
+        "no public `CallConfig`",
+        "no common runtime C API",
+        "no UCCL host-runtime ABI",
+        "no examples, stable docs, serving, vLLM, DeepSeek, or performance claims",
+        "persistent_device_uccl_ep_runtime_fusion.status: passed",
+        "actual_fused_cross_gpu_execution: true",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-map",
+        "selected exactly one next PR-sized dependency map slice",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split())
+        for required in required_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+        if name != "dispatch":
+            assert "/home/" not in normalized
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-26 - UCCL-EP Runtime Fusion Runtime Dispatch "
+        "Driver Backend Combine Request Scaffold Status Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "multi-agent worker id `019effc0-cd67-7430-a382-f5d5a0c9033b`",
+        "nickname `Mencius`",
+        "No tmux pane is used for this worker",
+        "the dispatcher monitors through multi-agent wait",
+        "No nested workers were launched",
+        "uv-xiao/pto-cu",
+        "base branch `main`",
+        "starting commit `562778f051ca87cf3f62d796860a8fd4c3476a32`",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h",
+        "tests/ut/py/test_cuda_runtime_fusion_private_entry.py",
+        "tests/ut/py/test_nvidia_review_artifacts.py",
+        "docs/in_progress/nvidia_backend/dispatch_log.md",
+        "docs/in_progress/nvidia_backend/pr_slicing_plan.md",
+        "docs/in_progress/nvidia_backend/communication_runtime_boundary.md",
+        "docs/in_progress/nvidia_backend/communication_selection.md",
+        "docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md",
+        "focused red check failed first with `1 failed in 0.42s`",
+        "focused green check passed with `1 passed in 0.42s`",
         "merge decision pending dispatcher review",
         "no real UCCL-EP dispatch/combine work",
         "no scheduler/runtime pass evidence",
