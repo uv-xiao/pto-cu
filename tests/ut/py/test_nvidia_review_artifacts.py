@@ -759,8 +759,8 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
         normalized_slicing
     )
     assert (
-        "current accepted baseline is "
-        "`6e0cecc174ae9db47573c4c0f1698be7accb295c`"
+        "Current accepted `main`: "
+        "`0ee279a21a7341e7113ac353849b543899d6742a`"
     ) in normalized_slicing
     assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-validation-policy-map" in slicing
@@ -2000,10 +2000,11 @@ def test_uccl_ep_descriptor_allocation_impl_slice_is_review_safe():
 
     for required in [
         "runtime_fusion_device_descriptor_buffer_",
-        "runtime_fusion_descriptor_allocation_",
-        "pto_cuda_runtime_fusion_allocate_uccl_ep_descriptors",
-        "request.descriptor_allocator = &runtime_fusion_descriptor_allocation_",
-        "request.uccl_ep_runtime = &runtime_fusion_descriptor_allocation_.runtime_path",
+        "runtime_fusion_coordinator_",
+        "pto_cuda_runtime_fusion_prepare_private_coordinator",
+        "request.coordinator = &runtime_fusion_coordinator_",
+        "request.descriptor_allocator = &runtime_fusion_coordinator_.descriptor_allocation",
+        "request.uccl_ep_runtime = &runtime_fusion_coordinator_.descriptor_allocation.runtime_path",
         "request.invocation_id = expected_invocation_id",
     ]:
         assert required in host_runtime
@@ -2166,6 +2167,129 @@ def test_post_descriptor_allocation_impl_status_refresh_is_review_safe():
     assert "no `persistent_device_uccl_ep_runtime_fusion.status: passed`" in (
         normalized_dispatch
     )
+
+
+def test_coordinator_scaffold_status_slice_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+    runtime_fusion_abi = (
+        ROOT / "src" / "cuda" / "platform" / "include" / "host"
+        / "pto_cuda_runtime_fusion_abi.h"
+    ).read_text(encoding="utf-8")
+    host_runtime = (
+        ROOT / "src" / "cuda" / "platform" / "onboard" / "host"
+        / "pto_runtime_c_api.cpp"
+    ).read_text(encoding="utf-8")
+    common_abi = (
+        ROOT / "src" / "common" / "worker" / "pto_runtime_c_api.h"
+    ).read_text(encoding="utf-8")
+    private_entry_test = (
+        ROOT / "tests" / "ut" / "py" / "test_cuda_runtime_fusion_private_entry.py"
+    ).read_text(encoding="utf-8")
+
+    required_terms = [
+        "nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status",
+        "private coordinator",
+        "descriptor allocation",
+        "runtime path",
+        "same invocation id",
+        "unsupported/failure status",
+        "output sink",
+        "missing_coordinator",
+        "uccl-ep runtime dispatch",
+        "pass evidence",
+        "fresh h200 fused-success evidence",
+        "persistent_device_uccl_ep_runtime_fusion.status: passed",
+        "actual_fused_cross_gpu_execution: true",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split()).lower()
+        for required in required_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+
+    for required in [
+        "PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION",
+        "PtoCudaRuntimeFusionCoordinator",
+        "pto_cuda_runtime_fusion_prepare_private_coordinator",
+        "pto_cuda_runtime_fusion_request_has_private_coordinator_shape",
+        "pto_cuda_runtime_fusion_validate_private_coordinator",
+        "PtoCudaUcclEpDescriptorAllocation descriptor_allocation",
+        "PtoCudaRuntimeFusionResult *output_sink",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_COORDINATOR",
+    ]:
+        assert required in runtime_fusion_abi
+
+    for required in [
+        "runtime_fusion_coordinator_",
+        "pto_cuda_runtime_fusion_prepare_private_coordinator",
+        "request.coordinator = &runtime_fusion_coordinator_",
+        "request.descriptor_allocator = &runtime_fusion_coordinator_.descriptor_allocation",
+        "request.output_sink = runtime_fusion_coordinator_.output_sink",
+    ]:
+        assert required in host_runtime
+
+    for forbidden in [
+        "PtoCudaRuntimeFusionCoordinator",
+        "PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION",
+        "pto_cuda_runtime_fusion_prepare_private_coordinator",
+    ]:
+        assert forbidden not in common_abi
+
+    assert (
+        "test_private_coordinator_scaffold_owns_runtime_path_for_one_invocation"
+        in private_entry_test
+    )
+    assert "output_sink.status == result.status" in private_entry_test
+    assert (
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_COORDINATOR) == 0U"
+        in private_entry_test
+    )
+    assert "PTO_CUDA_RUNTIME_FUSION_STATUS_PASSED" in private_entry_test
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-25 - UCCL-EP Runtime Fusion Coordinator "
+        "Scaffold Status Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "multi-agent-worker-coordinator-scaffold-status",
+        "019ef12d-1c34-7523-86bc-756db68f3b68",
+        "019efea2-8e09-70c1-bce5-9f02250f27f3",
+        "abandoned launcher attempt",
+        "active worker",
+        "No nested workers were launched",
+        "https://github.com/uv-xiao/pto-cu/pull/178",
+        "uv-xiao/pto-cu",
+        "base branch `main`",
+        "starting commit `0ee279a21a7341e7113ac353849b543899d6742a`",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status",
+        "PtoCudaRuntimeFusionCoordinator",
+        "pto_cuda_runtime_fusion_prepare_private_coordinator",
+        "runtime_fusion_coordinator_",
+        "clears `missing_coordinator` only when",
+        "1 failed in 0.32s",
+        "PtoCudaRuntimeFusionCoordinator` was not declared",
+        "No CUDA/H200 command was run or planned",
+        "no real UCCL-EP runtime dispatch",
+        "no pass evidence",
+        "no fresh H200 fused success",
+        "no `persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "no `actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_dispatch
+    assert "pending dispatcher review" not in normalized_dispatch
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():

@@ -293,6 +293,7 @@ public:
             }
         }
         streams_.clear();
+        runtime_fusion_coordinator_ = {};
         private_run_invocation_id_ = 0;
         return cudaDeviceSynchronize() == cudaSuccess ? 0 : -1;
     }
@@ -864,12 +865,14 @@ private:
         if (has_comm_descriptor_) {
             request.comm_descriptor = &comm_descriptor_;
         }
-        if (pto_cuda_runtime_fusion_allocate_uccl_ep_descriptors(
-                &request, &runtime_fusion_descriptor_allocation_, &runtime_fusion_device_descriptor_buffer_,
-                sizeof(runtime_fusion_device_descriptor_buffer_), expected_invocation_id
+        if (pto_cuda_runtime_fusion_prepare_private_coordinator(
+                &request, &runtime_fusion_coordinator_, &runtime_fusion_device_descriptor_buffer_,
+                sizeof(runtime_fusion_device_descriptor_buffer_), &last_runtime_fusion_result_
             ) == 0) {
-            request.descriptor_allocator = &runtime_fusion_descriptor_allocation_;
-            request.uccl_ep_runtime = &runtime_fusion_descriptor_allocation_.runtime_path;
+            request.coordinator = &runtime_fusion_coordinator_;
+            request.descriptor_allocator = &runtime_fusion_coordinator_.descriptor_allocation;
+            request.uccl_ep_runtime = &runtime_fusion_coordinator_.descriptor_allocation.runtime_path;
+            request.output_sink = runtime_fusion_coordinator_.output_sink;
         }
 
         PtoCudaRuntimeFusionResult result = {};
@@ -885,7 +888,7 @@ private:
     PtoCudaCommDeviceDescriptor comm_descriptor_ = {};
     PtoCudaRuntimeFusionResult last_runtime_fusion_result_ = {};
     PtoCudaUcclEpDeviceDescriptorBuffer runtime_fusion_device_descriptor_buffer_ = {};
-    PtoCudaUcclEpDescriptorAllocation runtime_fusion_descriptor_allocation_ = {};
+    PtoCudaRuntimeFusionCoordinator runtime_fusion_coordinator_ = {};
     uint64_t private_run_invocation_id_ = 0;
     bool has_comm_descriptor_ = false;
 };

@@ -556,6 +556,91 @@ def test_private_descriptor_allocation_builds_runtime_path_but_stays_unsupported
     )
 
 
+def test_private_coordinator_scaffold_owns_runtime_path_for_one_invocation(
+    tmp_path,
+):
+    _compile_and_run(
+        tmp_path,
+        """
+        #include "host/pto_cuda_runtime_fusion_abi.h"
+
+        #include <cassert>
+        #include <cstdint>
+
+        int main() {
+            ChipStorageTaskArgs chip_storage = {};
+            PtoCudaCommDeviceDescriptor descriptor = {
+                PTO_CUDA_COMM_BACKEND_NCCL, 1U, 7U, 2U, 0xC001D0U
+            };
+
+            PtoCudaRuntimeFusionRequest request = {};
+            request.version = PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION;
+            request.callable_id = 23;
+            request.invocation_id = 4242U;
+            request.chip_storage_task_args = &chip_storage;
+            request.chip_storage_task_args_size = sizeof(chip_storage);
+            request.persistent_graph_descriptor = reinterpret_cast<const void *>(0x20);
+            request.comm_descriptor = &descriptor;
+            request.uccl_ep_capability_metadata = reinterpret_cast<const void *>(0x30);
+            request.validation_policy = reinterpret_cast<const void *>(0x40);
+
+            PtoCudaRuntimeFusionResult output_sink = {};
+            PtoCudaUcclEpDeviceDescriptorBuffer device_storage = {};
+            PtoCudaRuntimeFusionCoordinator coordinator = {};
+
+            int coordinator_rc = pto_cuda_runtime_fusion_prepare_private_coordinator(
+                &request,
+                &coordinator,
+                &device_storage,
+                sizeof(device_storage),
+                &output_sink
+            );
+
+            assert(coordinator_rc == 0);
+            assert(coordinator.version == PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION);
+            assert(coordinator.invocation_id == request.invocation_id);
+            assert(coordinator.output_sink == &output_sink);
+            assert(
+                coordinator.descriptor_allocation.runtime_path.dispatch_descriptor ==
+                &coordinator.descriptor_allocation.dispatch_descriptor
+            );
+
+            request.coordinator = &coordinator;
+            request.descriptor_allocator = &coordinator.descriptor_allocation;
+            request.uccl_ep_runtime = &coordinator.descriptor_allocation.runtime_path;
+            request.output_sink = coordinator.output_sink;
+
+            PtoCudaRuntimeFusionResult result = {};
+            int rc = persistent_device_uccl_ep_runtime_fusion_entry(&request, &result);
+
+            assert(rc == 0);
+            assert(result.status == PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED);
+            assert(result.status != PTO_CUDA_RUNTIME_FUSION_STATUS_PASSED);
+            assert(result.actual_fused_cross_gpu_execution == 0U);
+            assert(output_sink.status == result.status);
+            assert(output_sink.failure_fields == result.failure_fields);
+            assert(
+                (result.failure_fields &
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_COORDINATOR) == 0U
+            );
+            assert(
+                (result.failure_fields &
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_DESCRIPTOR_ALLOCATOR) == 0U
+            );
+            assert(
+                (result.failure_fields &
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_UCCL_EP_RUNTIME) == 0U
+            );
+            assert(
+                (result.failure_fields &
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY) != 0U
+            );
+            return 0;
+        }
+        """,
+    )
+
+
 def test_private_runtime_fusion_request_envelope_keeps_chip_storage_typed_and_separate(
     tmp_path,
 ):

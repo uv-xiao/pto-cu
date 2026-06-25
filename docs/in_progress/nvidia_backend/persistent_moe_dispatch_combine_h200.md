@@ -1208,16 +1208,24 @@ serving, vLLM, DeepSeek, throughput, or latency.
 
 ## Runtime Fusion Coordinator Scaffold Status Slice
 
-The next selected slice is
-`nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`. It is a private
-coordinator-construction scaffold/status slice before any UCCL-EP runtime
-dispatch. It may define or wire private coordinator state needed to own the
-PR #176 descriptor allocation and PR #174 runtime path, but it must not run or
-claim UCCL-EP runtime dispatch.
+The branch
+`nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status` implements a
+private coordinator-construction scaffold/status slice before any UCCL-EP
+runtime dispatch. It wires private coordinator state needed to own the PR #176
+descriptor allocation and PR #174 runtime path for one private
+`ChipWorker::run` invocation, but it does not run or claim UCCL-EP runtime
+dispatch.
 
-This status refresh records no fresh H200 fused-boundary command. The existing
-H200 fused-boundary evidence remains structured unsupported evidence, not
-fused success. The future coordinator scaffold/status slice also cannot claim
+The implemented scaffold owns the same invocation id, descriptor allocation,
+runtime path, unsupported/failure status, and runtime-owned output sink. The
+new focused private-entry test proves the `missing_coordinator` failure clears
+only when coordinator-shaped state is present. The final status remains
+`unsupported`, `actual_fused_cross_gpu_execution` remains false, and the
+UCCL-EP runtime-dispatch/pass-evidence surfaces remain absent.
+
+This slice records no fresh H200 fused-boundary command. The existing H200
+fused-boundary evidence remains structured unsupported evidence, not fused
+success. The coordinator scaffold/status slice cannot claim
 `persistent_device_uccl_ep_runtime_fusion.status: passed`,
 `actual_fused_cross_gpu_execution: true`, pass evidence, or fresh H200
 fused-success evidence until real UCCL-EP runtime dispatch exists and a fresh

@@ -24,6 +24,7 @@ static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_PATH_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DESCRIPTOR_VIEW_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_DESCRIPTOR_ALLOCATION_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_DEVICE_DESCRIPTOR_BUFFER_VERSION = 1;
+static const uint32_t PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION = 1;
 
 enum PtoCudaRuntimeFusionStatus : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED = 1,
@@ -141,6 +142,17 @@ struct PtoCudaUcclEpDescriptorAllocation {
     PtoCudaUcclEpRuntimeDescriptorView dispatch_descriptor;
     PtoCudaUcclEpRuntimeDescriptorView combine_descriptor;
     PtoCudaUcclEpRuntimePath runtime_path;
+};
+
+struct PtoCudaRuntimeFusionResult;
+
+struct PtoCudaRuntimeFusionCoordinator {
+    uint32_t version;
+    uint64_t invocation_id;
+    PtoCudaUcclEpDescriptorAllocation descriptor_allocation;
+    PtoCudaRuntimeFusionResult *output_sink;
+    uint32_t status;
+    uint32_t failure_fields;
 };
 
 struct PtoCudaRuntimeFusionRequest {
@@ -392,6 +404,81 @@ inline int pto_cuda_runtime_fusion_failure_is_runtime_path_failed(uint32_t failu
     return (failures & runtime_path_failed_mask) != 0U;
 }
 
+inline int pto_cuda_runtime_fusion_prepare_private_coordinator(
+    const PtoCudaRuntimeFusionRequest *request, PtoCudaRuntimeFusionCoordinator *coordinator, void *device_buffer,
+    size_t device_buffer_size, PtoCudaRuntimeFusionResult *output_sink
+) {
+    if (request == nullptr || coordinator == nullptr || output_sink == nullptr ||
+        request->version != PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION || request->invocation_id == 0U) {
+        return -1;
+    }
+
+    PtoCudaUcclEpDescriptorAllocation allocation = {};
+    if (pto_cuda_runtime_fusion_allocate_uccl_ep_descriptors(
+            request, &allocation, device_buffer, device_buffer_size, request->invocation_id
+        ) != 0) {
+        return -1;
+    }
+
+    *coordinator = {};
+    coordinator->version = PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION;
+    coordinator->invocation_id = request->invocation_id;
+    coordinator->descriptor_allocation = allocation;
+    coordinator->descriptor_allocation.runtime_path.dispatch_descriptor =
+        &coordinator->descriptor_allocation.dispatch_descriptor;
+    coordinator->descriptor_allocation.runtime_path.combine_descriptor =
+        &coordinator->descriptor_allocation.combine_descriptor;
+    coordinator->output_sink = output_sink;
+    coordinator->status = PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
+    coordinator->failure_fields = PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
+    return 0;
+}
+
+inline int pto_cuda_runtime_fusion_request_has_private_coordinator_shape(
+    const PtoCudaRuntimeFusionRequest *request
+) {
+    if (request == nullptr || request->coordinator == nullptr || request->descriptor_allocator == nullptr ||
+        request->uccl_ep_runtime == nullptr) {
+        return 0;
+    }
+
+    const uintptr_t coordinator_base = reinterpret_cast<uintptr_t>(request->coordinator);
+    const uintptr_t descriptor_allocation =
+        coordinator_base + offsetof(PtoCudaRuntimeFusionCoordinator, descriptor_allocation);
+    const uintptr_t runtime_path =
+        descriptor_allocation + offsetof(PtoCudaUcclEpDescriptorAllocation, runtime_path);
+    return reinterpret_cast<uintptr_t>(request->descriptor_allocator) == descriptor_allocation &&
+           reinterpret_cast<uintptr_t>(request->uccl_ep_runtime) == runtime_path;
+}
+
+inline uint32_t pto_cuda_runtime_fusion_validate_private_coordinator(
+    const PtoCudaRuntimeFusionRequest *request, const PtoCudaRuntimeFusionCoordinator *coordinator
+) {
+    if (request == nullptr) {
+        return PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_COORDINATOR;
+    }
+    if (coordinator == nullptr) {
+        return PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_COORDINATOR;
+    }
+
+    uint32_t failures = 0;
+    if (coordinator->version != PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION ||
+        coordinator->invocation_id != request->invocation_id) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_STALE_DESCRIPTOR_VIEW;
+    }
+    if (coordinator->output_sink == nullptr || coordinator->output_sink != request->output_sink) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_OUTPUT_SINK;
+    }
+    if (request->descriptor_allocator != &coordinator->descriptor_allocation ||
+        request->uccl_ep_runtime != &coordinator->descriptor_allocation.runtime_path) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_STALE_DESCRIPTOR_VIEW;
+    }
+    failures |= pto_cuda_runtime_fusion_validate_uccl_ep_runtime_path(
+        request, &coordinator->descriptor_allocation.runtime_path
+    );
+    return failures;
+}
+
 inline int persistent_device_uccl_ep_runtime_fusion_entry(
     const PtoCudaRuntimeFusionRequest *request, PtoCudaRuntimeFusionResult *result
 ) {
@@ -428,8 +515,12 @@ inline int persistent_device_uccl_ep_runtime_fusion_entry(
     if (request->uccl_ep_capability_metadata == nullptr) {
         out.failure_fields |= PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_UCCL_EP_CAPABILITY;
     }
-    if (request->coordinator == nullptr) {
+    if (!pto_cuda_runtime_fusion_request_has_private_coordinator_shape(request)) {
         out.failure_fields |= PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_COORDINATOR;
+    } else {
+        const PtoCudaRuntimeFusionCoordinator *coordinator =
+            static_cast<const PtoCudaRuntimeFusionCoordinator *>(request->coordinator);
+        out.failure_fields |= pto_cuda_runtime_fusion_validate_private_coordinator(request, coordinator);
     }
     if (request->descriptor_allocator == nullptr) {
         out.failure_fields |= PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_DESCRIPTOR_ALLOCATOR;
@@ -459,6 +550,14 @@ inline int persistent_device_uccl_ep_runtime_fusion_entry(
         out.failure_fields |= PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
     }
 
+    if (pto_cuda_runtime_fusion_request_has_private_coordinator_shape(request)) {
+        const PtoCudaRuntimeFusionCoordinator *coordinator =
+            static_cast<const PtoCudaRuntimeFusionCoordinator *>(request->coordinator);
+        if (coordinator->version == PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION &&
+            coordinator->output_sink == request->output_sink && coordinator->output_sink != nullptr) {
+            *coordinator->output_sink = out;
+        }
+    }
     *result = out;
     return 0;
 }
