@@ -760,7 +760,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     )
     assert (
         "Current accepted `main`: "
-        "`80b6606282956f38ca6c9a3c52c95d0e5e3a457f`"
+        "`8619767d0eacb5c870b6a56337c6bcb380a2af75`"
     ) in normalized_slicing
     assert "PR #182 accepted only the private UCCL-EP runtime dispatch" in (
         normalized_slicing
@@ -2862,7 +2862,9 @@ def test_runtime_dispatch_driver_status_map_slice_is_review_safe():
         "docs/in_progress/nvidia_backend/communication_selection.md",
         "docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md",
         "tests/ut/py/test_nvidia_review_artifacts.py",
-        "merge decision pending dispatcher review",
+        "merged as `8619767d0eacb5c870b6a56337c6bcb380a2af75` by PR #185",
+        "Map runtime dispatch driver statuses",
+        "Accepted only for the private driver-owned unsupported/failed status",
         "no real UCCL-EP dispatch/combine work",
         "no scheduler/runtime pass evidence",
         "no fresh H200 fused success",
@@ -2871,6 +2873,161 @@ def test_runtime_dispatch_driver_status_map_slice_is_review_safe():
     ]:
         assert required in normalized_dispatch
     assert "pending PR creation" not in normalized_dispatch
+    assert "/home/" not in normalized_dispatch
+
+
+def test_runtime_dispatch_driver_scaffold_status_slice_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+    runtime_fusion_abi = (
+        ROOT / "src" / "cuda" / "platform" / "include" / "host"
+        / "pto_cuda_runtime_fusion_abi.h"
+    ).read_text(encoding="utf-8")
+    host_runtime = (
+        ROOT / "src" / "cuda" / "platform" / "onboard" / "host"
+        / "pto_runtime_c_api.cpp"
+    ).read_text(encoding="utf-8")
+    common_abi = (
+        ROOT / "src" / "common" / "worker" / "pto_runtime_c_api.h"
+    ).read_text(encoding="utf-8")
+    private_entry_test = (
+        ROOT / "tests" / "ut" / "py" / "test_cuda_runtime_fusion_private_entry.py"
+    ).read_text(encoding="utf-8")
+
+    required_terms = [
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-scaffold-status",
+        "Runtime Dispatch Driver Scaffold Status Slice",
+        "private driver scaffold/status ownership",
+        "PR #185",
+        "8619767d0eacb5c870b6a56337c6bcb380a2af75",
+        "PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus",
+        "PtoCudaUcclEpRuntimeDispatchDriverStatus",
+        "pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status",
+        "valid prepared driver scaffold",
+        "PR #183 handoff",
+        "same invocation id",
+        "runtime-owned output sink",
+        "driver_unsupported_boundary",
+        "driver_owner_mismatch",
+        "driver_invocation_mismatch",
+        "driver_runtime_path_mismatch",
+        "driver_descriptor_token_mismatch",
+        "driver_rank_device_mismatch",
+        "driver_status_sink_mismatch",
+        "driver_public_api_sourced_state",
+        "driver_fabricated_pass_evidence",
+        "failed private result",
+        "no real UCCL-EP dispatch/combine work",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "no public `TaskArgs`",
+        "no public `CallConfig`",
+        "no common runtime C API",
+        "no UCCL host-runtime ABI",
+        "no examples, stable docs, or performance claims",
+        "persistent_device_uccl_ep_runtime_fusion.status: passed",
+        "actual_fused_cross_gpu_execution: true",
+        "nvidia-goal-status-post-runtime-dispatch-driver-scaffold-status",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split())
+        for required in required_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+        if name != "dispatch":
+            assert "/home/" not in normalized
+
+    for required in [
+        "PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_SCAFFOLD_STATUS_VERSION",
+        "PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_UNSUPPORTED_BOUNDARY",
+        "PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_OWNER_MISMATCH",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RUNTIME_PATH_MISMATCH",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RANK_DEVICE_MISMATCH",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_PUBLIC_API_SOURCED_STATE",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_FABRICATED_PASS_EVIDENCE",
+        "PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus",
+        "PtoCudaUcclEpRuntimeDispatchDriverStatus",
+        "runtime_dispatch_driver_scaffold_status",
+        "pto_cuda_uccl_ep_runtime_dispatch_driver_status_name",
+        "pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status",
+        "pto_cuda_runtime_fusion_failure_is_runtime_dispatch_driver_failed",
+        "private UCCL-EP runtime dispatch driver scaffold/status validation failed",
+        "driver_owner_mismatch",
+        "driver_invocation_mismatch",
+        "driver_runtime_path_mismatch",
+        "driver_descriptor_token_mismatch",
+        "driver_rank_device_mismatch",
+        "driver_status_sink_mismatch",
+        "driver_public_api_sourced_state",
+        "driver_fabricated_pass_evidence",
+    ]:
+        assert required in runtime_fusion_abi
+
+    for required in [
+        "pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status",
+        "runtime_fusion_coordinator_",
+        "record_runtime_fusion_unsupported",
+    ]:
+        assert required in host_runtime
+
+    for forbidden in [
+        "PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus",
+        "PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_SCAFFOLD_STATUS_VERSION",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH",
+        "pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status",
+    ]:
+        assert forbidden not in common_abi
+
+    for required in [
+        "test_private_runtime_dispatch_driver_scaffold_status_is_driver_owned",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH",
+        "pto_cuda_uccl_ep_runtime_dispatch_driver_status_name",
+        "private UCCL-EP runtime dispatch driver scaffold/status",
+    ]:
+        assert required in private_entry_test
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-25 - UCCL-EP Runtime Fusion Runtime Dispatch "
+        "Driver Scaffold Status Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "multi-agent worker id `019eff26-10a1-7872-bf4f-3f533d1a9db7`",
+        "nickname `Peirce`",
+        "No tmux pane is used for this worker",
+        "No nested workers were launched",
+        "uv-xiao/pto-cu",
+        "base branch `main`",
+        "starting commit `8619767d0eacb5c870b6a56337c6bcb380a2af75`",
+        "PR #186 <https://github.com/uv-xiao/pto-cu/pull/186>",
+        "opened as a non-draft PR",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "test_private_runtime_dispatch_driver_scaffold_status_is_driver_owned",
+        "1 failed in 0.40s",
+        "1 passed in 0.41s",
+        "pending dispatcher review and merge decision for PR #186",
+        "no real UCCL-EP dispatch/combine work",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "does not set `actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_dispatch
     assert "/home/" not in normalized_dispatch
 
 

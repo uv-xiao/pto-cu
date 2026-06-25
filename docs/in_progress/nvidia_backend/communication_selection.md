@@ -737,6 +737,39 @@ Selected next slice:
 It may add only a private driver scaffold/status owner for this vocabulary,
 without real UCCL-EP dispatch/combine work or pass evidence.
 
+## Runtime Dispatch Driver Scaffold Status Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-scaffold-status`.
+
+This implementation slice accepts only private driver scaffold/status
+ownership for the PR #185 status vocabulary after PR #185 merged as
+`8619767d0eacb5c870b6a56337c6bcb380a2af75`. The code surface stays in the
+private CUDA runtime-fusion ABI:
+`PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus`,
+`PtoCudaUcclEpRuntimeDispatchDriverStatus`,
+`pto_cuda_uccl_ep_runtime_dispatch_driver_status_name`, and
+`pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status`.
+
+A valid prepared driver scaffold is bound to the PR #183 handoff status,
+private driver state, coordinator-owned runtime path, same invocation id, and
+runtime-owned output sink. It remains `unsupported` and records
+`driver_unsupported_boundary`; `actual_fused_cross_gpu_execution` remains
+false and `persistent_device_uccl_ep_runtime_fusion.status` is not `passed`.
+
+Malformed, stale, or mismatched private driver scaffold/status records a
+failed private result with driver-owned failures such as
+`driver_owner_mismatch`, `driver_invocation_mismatch`,
+`driver_runtime_path_mismatch`, `driver_descriptor_token_mismatch`,
+`driver_rank_device_mismatch`, `driver_status_sink_mismatch`,
+`driver_public_api_sourced_state`, and
+`driver_fabricated_pass_evidence`.
+
+Selected next slice:
+`nvidia-goal-status-post-runtime-dispatch-driver-scaffold-status`. It is a
+review-facing status refresh only; real UCCL-EP dispatch/combine work and pass
+evidence remain out of scope.
+
 ## Non-Claims
 
 UCCL PTO host-runtime dispatch, RDMA evidence, multi-node evidence,

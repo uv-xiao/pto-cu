@@ -1405,6 +1405,47 @@ That future slice may add only private driver scaffold/status plumbing for
 this map and still cannot run real UCCL-EP dispatch/combine work or claim
 pass evidence.
 
+## Runtime Dispatch Driver Scaffold Status Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-scaffold-status`.
+
+This implementation slice adds only the private driver scaffold/status owner
+for the PR #185 mapped vocabulary. It records private driver
+scaffold/status ownership after PR #185 merged as
+`8619767d0eacb5c870b6a56337c6bcb380a2af75`. The private ABI evidence is
+`PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus`,
+`PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_SCAFFOLD_STATUS_VERSION`,
+`PtoCudaUcclEpRuntimeDispatchDriverStatus`, and
+`pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status` in
+`src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h`.
+
+The valid prepared driver scaffold is bound to the same PR #183 handoff
+status, driver state, coordinator-owned runtime path, invocation id, and
+runtime-owned output sink. It remains `unsupported`, keeps
+`actual_fused_cross_gpu_execution` false, uses
+`driver_unsupported_boundary`, and does not mark
+`persistent_device_uccl_ep_runtime_fusion.status: passed`.
+
+Malformed private driver scaffold/status stays private and reports a failed
+private result with driver-owned vocabulary such as
+`driver_owner_mismatch`, `driver_invocation_mismatch`,
+`driver_runtime_path_mismatch`, `driver_descriptor_token_mismatch`,
+`driver_rank_device_mismatch`, `driver_status_sink_mismatch`,
+`driver_public_api_sourced_state`, and
+`driver_fabricated_pass_evidence`.
+
+The red test for this slice is
+`test_private_runtime_dispatch_driver_scaffold_status_is_driver_owned`. It
+failed first because the private coordinator member, driver scaffold/status
+version, driver status enum, driver failure bits, status-name helper, and
+prepare helper were missing. No fresh H200 fused-boundary run is recorded.
+
+Selected next slice:
+`nvidia-goal-status-post-runtime-dispatch-driver-scaffold-status`. It may
+refresh review-facing status only after PR #186 and must not implement real
+UCCL-EP dispatch/combine work or claim pass evidence.
+
 ## Future Fused Execution Evidence Shape
 
 PR #174 defines only the private runtime-path scaffold. It does not implement

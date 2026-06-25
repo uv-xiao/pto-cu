@@ -879,6 +879,9 @@ private:
             pto_cuda_runtime_fusion_prepare_runtime_dispatch_request_handoff_scaffold_status(
                 &request, &runtime_fusion_coordinator_
             );
+            pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status(
+                &request, &runtime_fusion_coordinator_
+            );
         }
 
         PtoCudaRuntimeFusionResult result = {};
