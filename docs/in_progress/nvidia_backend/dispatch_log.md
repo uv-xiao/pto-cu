@@ -28,22 +28,19 @@ Each dispatch entry should include:
 - Dispatcher Session or PR:
   multi-agent child worker session on branch
   `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-map`.
-  Worker id placeholder
-  `multi-agent-worker-runtime-dispatch-driver-backend-combine-payload-transfer-map`;
-  worker name placeholder `worker-name-unavailable`. No tmux pane is used for
-  this worker; the dispatcher monitors through multi-agent wait.
+  Worker id `019efff8-d8d1-7083-a1c4-69c88d5599b1`; worker name `Goodall`.
+  No tmux pane is used for this worker; the dispatcher monitors through
+  multi-agent wait.
 - Worker id and objective:
-  `multi-agent-worker-runtime-dispatch-driver-backend-combine-payload-transfer-map`;
+  `019efff8-d8d1-7083-a1c4-69c88d5599b1`;
   map the future private combine payload transfer boundary after PR #197.
   No nested workers were launched.
 - Exact Codex command or script invocation:
   launched by the parent multi-agent dispatcher prompt for this branch. No
   nested workers were launched.
 - Monitor locators:
-  worker id placeholder
-  `multi-agent-worker-runtime-dispatch-driver-backend-combine-payload-transfer-map`;
-  worker name placeholder `worker-name-unavailable`; no tmux pane is used for
-  this worker.
+  worker id `019efff8-d8d1-7083-a1c4-69c88d5599b1`; worker name `Goodall`;
+  no tmux pane is used for this worker.
 - Startup notes:
   `CLAUDE.md` was checked first and is absent in this checkout. Work continued
   under `AGENTS.md`, `.agents/coding-guidance.md`, and `.agents/rules/`
@@ -54,8 +51,9 @@ Each dispatch entry should include:
   not implement source behavior.
 - Branch name and PR URL or planned PR slot:
   `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-map`;
-  planned PR slot pending. The PR will be opened as a non-draft PR with:
-  `gh pr create --repo uv-xiao/pto-cu --base main --head
+  actual PR #198 <https://github.com/uv-xiao/pto-cu/pull/198>. The PR was
+  opened as a non-draft PR with: `gh pr create --repo uv-xiao/pto-cu --base
+  main --head
   nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-map`.
 - Target repository, base branch, and starting commit:
   `uv-xiao/pto-cu`; base branch `main`; starting commit

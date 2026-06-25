@@ -4250,8 +4250,8 @@ def test_runtime_dispatch_driver_backend_combine_payload_transfer_map_slice_is_r
     )[1].split("\n### ", 1)[0]
     normalized_dispatch = " ".join(dispatch_entry.split())
     for required in [
-        "worker id placeholder `multi-agent-worker-runtime-dispatch-driver-backend-combine-payload-transfer-map`",
-        "worker name placeholder `worker-name-unavailable`",
+        "Worker id `019efff8-d8d1-7083-a1c4-69c88d5599b1`; worker name `Goodall`",
+        "worker id `019efff8-d8d1-7083-a1c4-69c88d5599b1`; worker name `Goodall`",
         "No tmux pane is used for this worker",
         "the dispatcher monitors through multi-agent wait",
         "No nested workers were launched",
