@@ -576,16 +576,22 @@ present; UCCL-EP runtime dispatch remains absent and the final status remains
 It cannot claim fused success until real UCCL-EP runtime dispatch and fresh
 H200 fused-boundary evidence exist.
 
-## Next Runtime Dispatch Scaffold Status Slice
+## Active Runtime Dispatch Scaffold Status Slice
 
 Selected branch:
 `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`.
 
-This next slice may add only a private UCCL-EP runtime-dispatch
+This slice adds only a private UCCL-EP runtime-dispatch
 scaffold/status gate from coordinator-owned state. It may consume the PR #178
 coordinator-owned descriptor allocation and runtime path, check whether the
 private invocation is dispatch-eligible, and write unsupported or failed
 status through the runtime-owned output sink.
+
+The implemented gate is private coordinator-owned state, not UCCL-EP runtime
+dispatch. It records dispatch-scaffold eligibility for the same invocation.
+If the gate is absent, the private result records
+`missing_runtime_dispatch_scaffold` and `failed`; if the gate is present and
+eligible, the result remains `unsupported`.
 
 It must not run real UCCL-EP dispatch/combine work, claim UCCL-EP runtime
 dispatch success, emit scheduler/runtime pass evidence, claim fresh H200

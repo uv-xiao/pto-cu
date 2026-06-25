@@ -990,7 +990,7 @@ same invocation id, unsupported/failure status, and output sink. It remains
 unsupported and provides no runtime dispatch, pass evidence, or H200 fused
 success.
 
-## Next Runtime Dispatch Scaffold Status Slice
+## Active Runtime Dispatch Scaffold Status Slice
 
 The selected next PR-sized implementation slice is
 `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`. It may add
@@ -999,6 +999,13 @@ coordinator-owned state. The gate may consume the PR #178 coordinator-owned
 descriptor allocation and runtime path, check dispatch eligibility for one
 private invocation, and record explicit unsupported or failed status in the
 runtime-owned output sink.
+
+This branch implements only that private status gate. The gate is owned by
+`PtoCudaRuntimeFusionCoordinator` and records whether the coordinator-owned
+runtime path is dispatch-scaffold eligible for the same invocation. Missing
+gate state is a failed private result with
+`missing_runtime_dispatch_scaffold`; eligible gate state remains
+`unsupported` and is mirrored into the runtime-owned output sink.
 
 The slice must not run real UCCL-EP dispatch/combine work, emit
 scheduler/runtime pass evidence, claim fresh H200 fused success, widen public

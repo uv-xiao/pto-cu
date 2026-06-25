@@ -641,6 +641,111 @@ def test_private_coordinator_scaffold_owns_runtime_path_for_one_invocation(
     )
 
 
+def test_private_runtime_dispatch_scaffold_status_gate_is_coordinator_owned(
+    tmp_path,
+):
+    _compile_and_run(
+        tmp_path,
+        """
+        #include "host/pto_cuda_runtime_fusion_abi.h"
+
+        #include <cassert>
+        #include <cstdint>
+
+        int main() {
+            ChipStorageTaskArgs chip_storage = {};
+            PtoCudaCommDeviceDescriptor descriptor = {
+                PTO_CUDA_COMM_BACKEND_NCCL, 1U, 7U, 2U, 0xD15A7CU
+            };
+
+            PtoCudaRuntimeFusionRequest request = {};
+            request.version = PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION;
+            request.callable_id = 29;
+            request.invocation_id = 5150U;
+            request.chip_storage_task_args = &chip_storage;
+            request.chip_storage_task_args_size = sizeof(chip_storage);
+            request.persistent_graph_descriptor = reinterpret_cast<const void *>(0x20);
+            request.comm_descriptor = &descriptor;
+            request.uccl_ep_capability_metadata = reinterpret_cast<const void *>(0x30);
+            request.validation_policy = reinterpret_cast<const void *>(0x40);
+
+            PtoCudaRuntimeFusionResult output_sink = {};
+            PtoCudaUcclEpDeviceDescriptorBuffer device_storage = {};
+            PtoCudaRuntimeFusionCoordinator coordinator = {};
+
+            int coordinator_rc = pto_cuda_runtime_fusion_prepare_private_coordinator(
+                &request,
+                &coordinator,
+                &device_storage,
+                sizeof(device_storage),
+                &output_sink
+            );
+            assert(coordinator_rc == 0);
+            assert(
+                coordinator.runtime_dispatch_scaffold_status.version ==
+                PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_SCAFFOLD_STATUS_VERSION
+            );
+
+            request.coordinator = &coordinator;
+            request.descriptor_allocator = &coordinator.descriptor_allocation;
+            request.uccl_ep_runtime = &coordinator.descriptor_allocation.runtime_path;
+            request.output_sink = coordinator.output_sink;
+
+            PtoCudaUcclEpRuntimeDispatchScaffoldStatus saved_gate =
+                coordinator.runtime_dispatch_scaffold_status;
+            coordinator.runtime_dispatch_scaffold_status = {};
+
+            PtoCudaRuntimeFusionResult missing_gate_result = {};
+            int missing_gate_rc =
+                persistent_device_uccl_ep_runtime_fusion_entry(
+                    &request, &missing_gate_result
+                );
+
+            assert(missing_gate_rc == 0);
+            assert(missing_gate_result.status == PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED);
+            assert(missing_gate_result.actual_fused_cross_gpu_execution == 0U);
+            assert(
+                (missing_gate_result.failure_fields &
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD) != 0U
+            );
+            assert(output_sink.status == missing_gate_result.status);
+            assert(output_sink.failure_fields == missing_gate_result.failure_fields);
+
+            coordinator.runtime_dispatch_scaffold_status = saved_gate;
+            int gate_rc =
+                pto_cuda_runtime_fusion_prepare_runtime_dispatch_scaffold_status(
+                    &request, &coordinator
+                );
+            assert(gate_rc == 0);
+            assert(coordinator.runtime_dispatch_scaffold_status.dispatch_eligible == 1U);
+            assert(
+                coordinator.runtime_dispatch_scaffold_status.status ==
+                PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED
+            );
+
+            PtoCudaRuntimeFusionResult result = {};
+            int rc = persistent_device_uccl_ep_runtime_fusion_entry(&request, &result);
+
+            assert(rc == 0);
+            assert(result.status == PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED);
+            assert(result.status != PTO_CUDA_RUNTIME_FUSION_STATUS_PASSED);
+            assert(result.actual_fused_cross_gpu_execution == 0U);
+            assert(
+                (result.failure_fields &
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD) == 0U
+            );
+            assert(
+                (result.failure_fields &
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY) != 0U
+            );
+            assert(output_sink.status == result.status);
+            assert(output_sink.failure_fields == result.failure_fields);
+            return 0;
+        }
+        """,
+    )
+
+
 def test_private_runtime_fusion_request_envelope_keeps_chip_storage_typed_and_separate(
     tmp_path,
 ):

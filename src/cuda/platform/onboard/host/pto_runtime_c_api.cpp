@@ -873,6 +873,9 @@ private:
             request.descriptor_allocator = &runtime_fusion_coordinator_.descriptor_allocation;
             request.uccl_ep_runtime = &runtime_fusion_coordinator_.descriptor_allocation.runtime_path;
             request.output_sink = runtime_fusion_coordinator_.output_sink;
+            pto_cuda_runtime_fusion_prepare_runtime_dispatch_scaffold_status(
+                &request, &runtime_fusion_coordinator_
+            );
         }
 
         PtoCudaRuntimeFusionResult result = {};

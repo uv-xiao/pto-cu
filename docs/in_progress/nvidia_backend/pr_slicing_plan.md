@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `aea89cc9dea8560602c72f84e5ff6e78ca526434`,
-  after PR #178 (`Add private UCCL EP coordinator scaffold`).
+- Current accepted `main`: `0f562e7fb475ef042d1b97d6261d25b503d2eb2f`,
+  after PR #179 (`Refresh NVIDIA status after PR 178`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -170,10 +170,10 @@ from `main` and lands through focused GitHub PRs.
   scheduler/runtime pass evidence, fresh H200 fused-success evidence, public
   API expansion, examples, stable docs, serving, vLLM, DeepSeek, throughput,
   or latency evidence.
-- This branch records the post-PR #178 status refresh and selects exactly one
+- PR #179 recorded the post-PR #178 status refresh and selected exactly one
   next slice:
   `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`. That
-  future branch may add only a private UCCL-EP runtime-dispatch
+  active branch may add only a private UCCL-EP runtime-dispatch
   scaffold/status gate from coordinator-owned state. It must remain narrower
   than scheduler/runtime pass evidence, make no fused-success claim, and
   preserve `persistent_device_uccl_ep_runtime_fusion.status` as unsupported or
@@ -1584,9 +1584,9 @@ fused-success evidence, public `TaskArgs`, public `CallConfig`, common
 runtime C API fields, UCCL host-runtime ABI fields, examples, stable docs,
 serving, vLLM, DeepSeek, throughput, or latency.
 
-## Next Runtime Dispatch Scaffold Status Slice
+## Active Runtime Dispatch Scaffold Status Slice
 
-Selected branch:
+Active branch:
 `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`.
 
 Objective: add only a private UCCL-EP runtime-dispatch scaffold/status gate
@@ -1594,6 +1594,13 @@ from coordinator-owned state after PR #178. The slice may consume the
 coordinator-owned descriptor allocation and runtime path, verify dispatch
 eligibility for one private invocation, and record explicit unsupported or
 failed status in the runtime-owned output sink.
+
+This branch implements the private status gate only. It adds coordinator-owned
+dispatch-scaffold eligibility state and validation so a private invocation
+with PR #178 descriptor allocation/runtime path can be distinguished from one
+that lacks the scaffold/status gate. A missing gate is reported as an explicit
+failed private result with `missing_runtime_dispatch_scaffold`; an eligible
+gate remains `unsupported`.
 
 Required boundaries:
 

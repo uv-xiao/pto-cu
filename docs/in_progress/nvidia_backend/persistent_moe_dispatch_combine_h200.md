@@ -1230,7 +1230,7 @@ success. The coordinator scaffold/status slice cannot claim
 fused-success evidence until real UCCL-EP runtime dispatch exists and a fresh
 H200 result proves coordinator-owned fused execution.
 
-## Next Runtime Dispatch Scaffold Status Slice
+## Active Runtime Dispatch Scaffold Status Slice
 
 The selected next PR-sized implementation slice is
 `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`. It may add
@@ -1239,6 +1239,13 @@ coordinator-owned state. It may consume the PR #178 coordinator-owned
 descriptor allocation and runtime path, validate dispatch eligibility for one
 private invocation, and record explicit unsupported or failed status through
 the runtime-owned output sink.
+
+This branch implements only the private gate. A missing
+`runtime_dispatch_scaffold_status` on the coordinator records
+`missing_runtime_dispatch_scaffold` and a failed private result. A prepared,
+eligible gate records the scaffold/status check but still leaves
+`persistent_device_uccl_ep_runtime_fusion` unsupported with
+`actual_fused_cross_gpu_execution` false.
 
 This remains narrower than scheduler/runtime pass evidence and narrower than
 fresh H200 fused success. It must not run real UCCL-EP dispatch/combine work,
