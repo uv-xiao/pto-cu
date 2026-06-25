@@ -1828,3 +1828,60 @@ handoff scaffold/status path and keep the next slice selection at
 status refresh changes only review-facing docs/tests. It does not edit CUDA
 runtime/source files, run real UCCL-EP dispatch/combine work, provide
 scheduler/runtime pass evidence, or claim H200 fused success.
+
+## Runtime Dispatch Driver Status Map Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-status-map`.
+
+Objective: define only the private driver-owned unsupported/failed status
+vocabulary and failure ownership after PR #183. PR #183 merged as
+`80b6606282956f38ca6c9a3c52c95d0e5e3a457f` and accepted only the
+request/driver handoff scaffold/status path. This slice does not implement a
+driver and does not run real UCCL-EP dispatch/combine work.
+
+The private driver owner is the future UCCL-EP runtime dispatch driver below
+the CUDA persistent-device runtime path. The failure owner boundary is:
+missing driver remains handoff-owned failed until a driver accepts the
+handoff; stale accepted driver is driver-owned failed after that acceptance;
+valid handoff remains `unsupported` until real dispatch and combine are
+implemented.
+
+Unsupported driver vocabulary:
+
+- `driver_missing`;
+- `driver_stale`;
+- `driver_not_bound_to_handoff`;
+- `driver_no_dispatch_backend`;
+- `driver_no_combine_backend`;
+- `driver_unsupported_boundary`.
+
+Failed driver vocabulary:
+
+- `driver_owner_mismatch`;
+- `driver_invocation_mismatch`;
+- `driver_runtime_path_mismatch`;
+- `driver_descriptor_token_mismatch`;
+- `driver_rank_device_mismatch`;
+- `driver_status_sink_mismatch`;
+- `driver_public_api_sourced_state`;
+- `driver_fabricated_pass_evidence`.
+
+Required non-claims:
+
+- no real UCCL-EP dispatch/combine work;
+- no scheduler/runtime pass evidence;
+- no fresh H200 fused success;
+- no public `TaskArgs`;
+- no public `CallConfig`;
+- no common runtime C API;
+- no UCCL host-runtime ABI;
+- no examples, stable docs, or performance claims;
+- no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- no `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-scaffold-status`.
+This is exactly one next PR-sized implementation slice. It may add only a
+private driver scaffold/status owner for the vocabulary above, and still must
+not run real UCCL-EP dispatch/combine work or claim pass evidence.

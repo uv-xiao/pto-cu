@@ -2778,6 +2778,102 @@ def test_runtime_dispatch_request_handoff_scaffold_status_slice_is_review_safe()
     assert "pending local verification" not in normalized_refresh
 
 
+def test_runtime_dispatch_driver_status_map_slice_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+
+    required_terms = [
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-status-map",
+        "Runtime Dispatch Driver Status Map Slice",
+        "private driver-owned unsupported/failed status vocabulary",
+        "failure ownership after PR #183",
+        "PR #183",
+        "80b6606282956f38ca6c9a3c52c95d0e5e3a457f",
+        "request/driver handoff scaffold/status",
+        "private driver owner",
+        "failure owner boundary",
+        "missing driver remains handoff-owned failed",
+        "stale accepted driver is driver-owned failed",
+        "`driver_missing`",
+        "`driver_stale`",
+        "`driver_not_bound_to_handoff`",
+        "`driver_no_dispatch_backend`",
+        "`driver_no_combine_backend`",
+        "`driver_unsupported_boundary`",
+        "`driver_owner_mismatch`",
+        "`driver_invocation_mismatch`",
+        "`driver_runtime_path_mismatch`",
+        "`driver_descriptor_token_mismatch`",
+        "`driver_rank_device_mismatch`",
+        "`driver_status_sink_mismatch`",
+        "`driver_public_api_sourced_state`",
+        "`driver_fabricated_pass_evidence`",
+        "valid handoff remains `unsupported`",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-scaffold-status",
+        "no real UCCL-EP dispatch/combine work",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "no public `TaskArgs`",
+        "no public `CallConfig`",
+        "no common runtime C API",
+        "no UCCL host-runtime ABI",
+        "no examples, stable docs, or performance claims",
+        "persistent_device_uccl_ep_runtime_fusion.status: passed",
+        "actual_fused_cross_gpu_execution: true",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split())
+        for required in required_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+        if name != "dispatch":
+            assert "/home/" not in normalized
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-25 - UCCL-EP Runtime Fusion Runtime Dispatch "
+        "Driver Status Map Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "multi-agent worker id `019eff17-8630-79c3-bbde-f995c903fe9a`",
+        "nickname `Lovelace`",
+        "No tmux pane is used for this worker",
+        "No nested workers were launched",
+        "uv-xiao/pto-cu",
+        "base branch `main`",
+        "starting commit `bb8e6730414794002be80b19b7191feb415dfbb7`",
+        "PR #185 <https://github.com/uv-xiao/pto-cu/pull/185>",
+        "opened as a non-draft PR",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-status-map",
+        "docs/in_progress/nvidia_backend/dispatch_log.md",
+        "docs/in_progress/nvidia_backend/pr_slicing_plan.md",
+        "docs/in_progress/nvidia_backend/communication_runtime_boundary.md",
+        "docs/in_progress/nvidia_backend/communication_selection.md",
+        "docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md",
+        "tests/ut/py/test_nvidia_review_artifacts.py",
+        "merge decision pending dispatcher review",
+        "no real UCCL-EP dispatch/combine work",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "does not set `actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_dispatch
+    assert "pending PR creation" not in normalized_dispatch
+    assert "/home/" not in normalized_dispatch
+
+
 def test_chat_256k_needle_stream_evidence_is_review_safe():
     evidence = (
         ROOT

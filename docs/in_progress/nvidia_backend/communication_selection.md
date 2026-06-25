@@ -699,6 +699,44 @@ single next PR-sized dependency slice and does not claim real UCCL-EP
 dispatch/combine work, scheduler/runtime pass evidence, or H200 fused
 success.
 
+## Runtime Dispatch Driver Status Map Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-status-map`.
+
+This docs/test dependency slice maps only private driver-owned
+unsupported/failed status vocabulary and failure ownership after PR #183.
+PR #183 merged as `80b6606282956f38ca6c9a3c52c95d0e5e3a457f` and accepted
+only the request/driver handoff scaffold/status path.
+
+The private driver owner is the future UCCL-EP runtime dispatch driver below
+the CUDA persistent-device runtime path. The failure owner boundary keeps
+missing driver remains handoff-owned failed until a driver accepts the
+handoff, while stale accepted driver is driver-owned failed after driver
+acceptance. A valid handoff remains `unsupported` because there is still no
+real dispatch or combine backend.
+
+Unsupported driver statuses are `driver_missing`, `driver_stale`,
+`driver_not_bound_to_handoff`, `driver_no_dispatch_backend`,
+`driver_no_combine_backend`, and `driver_unsupported_boundary`.
+Failed driver statuses are `driver_owner_mismatch`,
+`driver_invocation_mismatch`, `driver_runtime_path_mismatch`,
+`driver_descriptor_token_mismatch`, `driver_rank_device_mismatch`,
+`driver_status_sink_mismatch`, `driver_public_api_sourced_state`, and
+`driver_fabricated_pass_evidence`.
+
+This selection still records no real UCCL-EP dispatch/combine work, no
+scheduler/runtime pass evidence, no fresh H200 fused success, no public
+`TaskArgs`, no public `CallConfig`, no common runtime C API, no UCCL
+host-runtime ABI, and no examples, stable docs, or performance claims. It
+does not report `persistent_device_uccl_ep_runtime_fusion.status: passed` or
+set `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-scaffold-status`.
+It may add only a private driver scaffold/status owner for this vocabulary,
+without real UCCL-EP dispatch/combine work or pass evidence.
+
 ## Non-Claims
 
 UCCL PTO host-runtime dispatch, RDMA evidence, multi-node evidence,
