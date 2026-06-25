@@ -44,6 +44,8 @@ static const uint32_t
     PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_SCAFFOLD_STATUS_VERSION = 1;
 static const uint32_t
     PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_SCAFFOLD_STATUS_VERSION = 1;
+static const uint32_t
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_SCAFFOLD_STATUS_VERSION = 1;
 
 enum PtoCudaRuntimeFusionStatus : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED = 1,
@@ -315,6 +317,30 @@ enum PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHa
     PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_STATUS_PUBLIC_API_SOURCED_STATE = 17,
     PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_STATUS_PROVENANCE_SOURCED_STATE = 18,
     PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_STATUS_FABRICATED_PASS_EVIDENCE = 19,
+};
+
+enum PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffResultTransportCompletionStatus
+    : uint32_t {
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_PENDING = 1,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_COMPLETION_UNIMPLEMENTED = 2,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_STATUS_SINK_UNBOUND = 3,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_RESULT_SINK_UNBOUND = 4,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_TRANSPORT_SINK_MISMATCH = 5,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_COMPLETION_SINK_UNBOUND = 6,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_HANDLE_UNBOUND = 7,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_UNSUPPORTED_BOUNDARY = 8,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_OWNER_MISMATCH = 9,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_INVOCATION_MISMATCH = 10,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_RESULT_TRANSPORT_SCAFFOLD_MISMATCH = 11,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_DESCRIPTOR_TOKEN_MISMATCH = 12,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_RANK_DEVICE_WORLD_SIZE_MISMATCH = 13,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_STATUS_SINK_MISMATCH = 14,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_RESULT_SINK_MISMATCH = 15,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_TRANSPORT_SINK_HANDLE_MISMATCH = 16,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_COMPLETION_SINK_HANDLE_MISMATCH = 17,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_PUBLIC_API_SOURCED_STATE = 18,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_PROVENANCE_SOURCED_STATE = 19,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_FABRICATED_PASS_EVIDENCE = 20,
 };
 
 struct PtoCudaUcclEpRuntimeDescriptorView {
@@ -620,6 +646,28 @@ struct PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletion
     uint32_t failure_fields;
 };
 
+struct PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffResultTransportCompletionScaffoldStatus {
+    uint32_t version;
+    uint64_t invocation_id;
+    const void *completion_owner;
+    const PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffResultTransportScaffoldStatus
+        *result_transport_status;
+    const PtoCudaUcclEpRuntimePath *runtime_path;
+    PtoCudaRuntimeFusionResult *status_sink;
+    PtoCudaRuntimeFusionResult *result_sink;
+    const void *transport_sink;
+    const void *transport_handle;
+    PtoCudaRuntimeFusionResult *completion_sink;
+    const void *completion_handle;
+    const void *combine_payload_descriptor;
+    uint64_t shared_token;
+    uint32_t rank;
+    uint32_t device_id;
+    uint32_t world_size;
+    uint32_t status;
+    uint32_t failure_fields;
+};
+
 struct PtoCudaRuntimeFusionCoordinator {
     uint32_t version;
     uint64_t invocation_id;
@@ -649,6 +697,8 @@ struct PtoCudaRuntimeFusionCoordinator {
         runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_scaffold_status;
     PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffResultTransportScaffoldStatus
         runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status;
+    PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffResultTransportCompletionScaffoldStatus
+        runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status;
     PtoCudaRuntimeFusionResult *output_sink;
     uint32_t status;
     uint32_t failure_fields;
@@ -1213,6 +1263,56 @@ pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payload_transfer_comple
     }
 }
 
+inline const char *
+pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_status_name(
+    uint32_t status
+) {
+    switch (status) {
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_PENDING:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_pending";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_COMPLETION_UNIMPLEMENTED:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_unimplemented";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_STATUS_SINK_UNBOUND:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_status_sink_unbound";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_RESULT_SINK_UNBOUND:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_result_sink_unbound";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_TRANSPORT_SINK_MISMATCH:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_transport_sink_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_COMPLETION_SINK_UNBOUND:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_completion_sink_unbound";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_HANDLE_UNBOUND:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_handle_unbound";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_UNSUPPORTED_BOUNDARY:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_map_unsupported_boundary";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_OWNER_MISMATCH:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_owner_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_INVOCATION_MISMATCH:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_invocation_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_RESULT_TRANSPORT_SCAFFOLD_MISMATCH:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_result_transport_scaffold_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_DESCRIPTOR_TOKEN_MISMATCH:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_descriptor_token_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_RANK_DEVICE_WORLD_SIZE_MISMATCH:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_rank_device_world_size_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_STATUS_SINK_MISMATCH:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_status_sink_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_RESULT_SINK_MISMATCH:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_result_sink_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_TRANSPORT_SINK_HANDLE_MISMATCH:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_transport_sink_handle_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_COMPLETION_SINK_HANDLE_MISMATCH:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_completion_sink_handle_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_PUBLIC_API_SOURCED_STATE:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_public_api_sourced_state";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_PROVENANCE_SOURCED_STATE:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_provenance_sourced_state";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_FABRICATED_PASS_EVIDENCE:
+            return "driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_fabricated_pass_evidence";
+        default:
+            return "unknown_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_status";
+    }
+}
+
 inline int pto_cuda_uccl_ep_runtime_path_source_is_forbidden(uint32_t source) {
     return source != PTO_CUDA_UCCL_EP_RUNTIME_PATH_SOURCE_COORDINATOR_OWNED;
 }
@@ -1752,6 +1852,42 @@ inline int pto_cuda_runtime_fusion_prepare_private_coordinator(
     coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status.status =
         PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_STATUS_UNSUPPORTED_BOUNDARY;
     coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status.failure_fields =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.version =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_SCAFFOLD_STATUS_VERSION;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.invocation_id =
+        request->invocation_id;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.completion_owner =
+        coordinator;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.result_transport_status =
+        &coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.runtime_path =
+        &coordinator->descriptor_allocation.runtime_path;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.status_sink =
+        output_sink;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.result_sink =
+        output_sink;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.transport_sink =
+        &coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.transport_handle =
+        &coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.completion_sink =
+        output_sink;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.completion_handle =
+        &coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.combine_payload_descriptor =
+        coordinator->descriptor_allocation.runtime_path.combine_descriptor;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.shared_token =
+        coordinator->descriptor_allocation.combine_descriptor.shared_token;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.rank =
+        coordinator->descriptor_allocation.combine_descriptor.rank;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.device_id =
+        coordinator->descriptor_allocation.combine_descriptor.device_id;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.world_size =
+        coordinator->descriptor_allocation.combine_descriptor.world_size;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.status =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_UNSUPPORTED_BOUNDARY;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.failure_fields =
         PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
     coordinator->output_sink = output_sink;
     coordinator->status = PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
@@ -3132,6 +3268,149 @@ pto_cuda_runtime_fusion_validate_runtime_dispatch_driver_backend_combine_payload
     return failures;
 }
 
+inline uint32_t
+pto_cuda_runtime_fusion_validate_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status(
+    const PtoCudaRuntimeFusionRequest *request, const PtoCudaRuntimeFusionCoordinator *coordinator
+) {
+    const PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffResultTransportCompletionScaffoldStatus
+        *completion_status =
+            &coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status;
+    const PtoCudaUcclEpRuntimePath *runtime_path = &coordinator->descriptor_allocation.runtime_path;
+    const PtoCudaUcclEpRuntimeDescriptorView *combine_descriptor = runtime_path->combine_descriptor;
+    const PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffResultTransportScaffoldStatus
+        *result_transport_status =
+            &coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status;
+    uint32_t failures = 0;
+
+    if (completion_status->version !=
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_SCAFFOLD_STATUS_VERSION) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH;
+    }
+    if (completion_status->invocation_id != request->invocation_id) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH;
+    }
+    if (completion_status->completion_owner != coordinator) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH;
+    }
+    if (completion_status->result_transport_status != result_transport_status) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD;
+    }
+    if (completion_status->runtime_path != runtime_path) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RUNTIME_PATH_MISMATCH;
+    }
+    if (completion_status->status_sink == nullptr ||
+        completion_status->status_sink != request->output_sink) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH;
+    }
+    if (completion_status->result_sink == nullptr ||
+        completion_status->result_sink != request->output_sink) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH;
+    }
+    if (completion_status->transport_sink == nullptr ||
+        completion_status->transport_sink != result_transport_status ||
+        completion_status->transport_handle == nullptr ||
+        completion_status->transport_handle != result_transport_status) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH;
+    }
+    if (completion_status->completion_sink == nullptr ||
+        completion_status->completion_sink != request->output_sink ||
+        completion_status->completion_handle == nullptr ||
+        completion_status->completion_handle != result_transport_status) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH;
+    }
+    if (combine_descriptor == nullptr ||
+        completion_status->combine_payload_descriptor != combine_descriptor ||
+        completion_status->combine_payload_descriptor !=
+            result_transport_status->combine_payload_descriptor ||
+        completion_status->shared_token == 0U ||
+        completion_status->shared_token != combine_descriptor->shared_token ||
+        completion_status->shared_token != result_transport_status->shared_token) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH;
+    }
+    if (request->comm_descriptor != nullptr &&
+        (completion_status->rank != request->comm_descriptor->rank ||
+         completion_status->device_id != request->comm_descriptor->device_id ||
+         completion_status->world_size != request->comm_descriptor->world_size ||
+         completion_status->rank != result_transport_status->rank ||
+         completion_status->device_id != result_transport_status->device_id ||
+         completion_status->world_size != result_transport_status->world_size)) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RANK_DEVICE_MISMATCH;
+    }
+
+    const uint32_t propagated_completion_failures =
+        completion_status->failure_fields &
+        (PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RUNTIME_PATH_MISMATCH |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RANK_DEVICE_MISMATCH |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_PUBLIC_API_SOURCED_STATE |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_FABRICATED_PASS_EVIDENCE |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD);
+    if (propagated_completion_failures != 0U) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    propagated_completion_failures;
+    }
+
+    switch (completion_status->status) {
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_OWNER_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_INVOCATION_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_RESULT_TRANSPORT_SCAFFOLD_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_DESCRIPTOR_TOKEN_MISMATCH:
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_TRANSPORT_SINK_MISMATCH:
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_HANDLE_UNBOUND:
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_TRANSPORT_SINK_HANDLE_MISMATCH:
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_COMPLETION_SINK_HANDLE_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_RANK_DEVICE_WORLD_SIZE_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RANK_DEVICE_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_STATUS_SINK_MISMATCH:
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_STATUS_SINK_UNBOUND:
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_RESULT_SINK_MISMATCH:
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_RESULT_SINK_UNBOUND:
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_COMPLETION_SINK_UNBOUND:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_PUBLIC_API_SOURCED_STATE:
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_PROVENANCE_SOURCED_STATE:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_PUBLIC_API_SOURCED_STATE;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_FABRICATED_PASS_EVIDENCE:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_FABRICATED_PASS_EVIDENCE |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE;
+            break;
+        default:
+            break;
+    }
+    return failures;
+}
+
 inline uint32_t pto_cuda_runtime_fusion_validate_private_coordinator(
     const PtoCudaRuntimeFusionRequest *request, const PtoCudaRuntimeFusionCoordinator *coordinator
 ) {
@@ -3291,6 +3570,10 @@ inline uint32_t pto_cuda_runtime_fusion_validate_private_coordinator(
         );
     failures |=
         pto_cuda_runtime_fusion_validate_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status(
+            request, coordinator
+        );
+    failures |=
+        pto_cuda_runtime_fusion_validate_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status(
             request, coordinator
         );
     return failures;
@@ -3841,6 +4124,57 @@ pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_
     coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status.status =
         PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_STATUS_UNSUPPORTED_BOUNDARY;
     coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status.failure_fields =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
+    return 0;
+}
+
+inline int
+pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status(
+    const PtoCudaRuntimeFusionRequest *request, PtoCudaRuntimeFusionCoordinator *coordinator
+) {
+    if (request == nullptr || coordinator == nullptr ||
+        coordinator->version != PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION ||
+        coordinator->invocation_id != request->invocation_id) {
+        return -1;
+    }
+
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status =
+        {};
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.version =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_SCAFFOLD_STATUS_VERSION;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.invocation_id =
+        request->invocation_id;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.completion_owner =
+        coordinator;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.result_transport_status =
+        &coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.runtime_path =
+        &coordinator->descriptor_allocation.runtime_path;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.status_sink =
+        coordinator->output_sink;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.result_sink =
+        coordinator->output_sink;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.transport_sink =
+        &coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.transport_handle =
+        &coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.completion_sink =
+        coordinator->output_sink;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.completion_handle =
+        &coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.combine_payload_descriptor =
+        coordinator->descriptor_allocation.runtime_path.combine_descriptor;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.shared_token =
+        coordinator->descriptor_allocation.combine_descriptor.shared_token;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.rank =
+        coordinator->descriptor_allocation.combine_descriptor.rank;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.device_id =
+        coordinator->descriptor_allocation.combine_descriptor.device_id;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.world_size =
+        coordinator->descriptor_allocation.combine_descriptor.world_size;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.status =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_RESULT_TRANSPORT_COMPLETION_STATUS_UNSUPPORTED_BOUNDARY;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_scaffold_status.failure_fields =
         PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
     return 0;
 }
