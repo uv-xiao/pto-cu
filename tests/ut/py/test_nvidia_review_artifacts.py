@@ -760,7 +760,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     )
     assert (
         "Current accepted `main`: "
-        "`dc32c52dfccfd7838f865a11c3d4837e8ee568ba`"
+        "`05457b7dead2f561be22c24c72771add880f4562`"
     ) in normalized_slicing
     assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-validation-policy-map" in slicing
@@ -2481,6 +2481,102 @@ def test_runtime_dispatch_scaffold_status_slice_is_review_safe():
     ]:
         assert required in normalized_refresh
     assert "/home/" not in normalized_refresh
+
+
+def test_runtime_dispatch_request_handoff_map_slice_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+
+    required_terms = [
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-scaffold-status",
+        "runtime dispatch request/driver handoff map",
+        "request owner",
+        "driver owner",
+        "status dependency",
+        "failure ownership",
+        "unsupported handoff state",
+        "failed handoff state",
+        "pr #180",
+        "dc32c52dfccfd7838f865a11c3d4837e8ee568ba",
+        "pr #181",
+        "05457b7dead2f561be22c24c72771add880f4562",
+        "missing_runtime_dispatch_scaffold",
+        "runtime-dispatch scaffold/status gate",
+        "no uccl-ep dispatch/combine work",
+        "no scheduler/runtime pass evidence",
+        "no fresh h200 fused success",
+        "no public taskargs",
+        "no public callconfig",
+        "no common runtime c api",
+        "no uccl host-runtime abi",
+        "no examples",
+        "no stable docs",
+        "no performance claims",
+        "persistent_device_uccl_ep_runtime_fusion.status: passed",
+        "actual_fused_cross_gpu_execution: true",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split()).lower()
+        for required in required_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-25 - UCCL-EP Runtime Fusion Runtime Dispatch "
+        "Request Handoff Map Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "multi-agent-worker-runtime-dispatch-request-handoff-map",
+        "019efee7-3530-7ed2-a4d1-a48a105e4a42",
+        "No tmux pane is used for this worker",
+        "No nested workers were launched",
+        "uv-xiao/pto-cu",
+        "base branch `main`",
+        "starting commit `05457b7dead2f561be22c24c72771add880f4562`",
+        "PR #182 <https://github.com/uv-xiao/pto-cu/pull/182>",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "docs/in_progress/nvidia_backend/dispatch_log.md",
+        "docs/in_progress/nvidia_backend/pr_slicing_plan.md",
+        "docs/in_progress/nvidia_backend/communication_runtime_boundary.md",
+        "docs/in_progress/nvidia_backend/communication_selection.md",
+        "docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md",
+        "tests/ut/py/test_nvidia_review_artifacts.py",
+        "request owner",
+        "driver owner",
+        "status dependency",
+        "failure ownership",
+        "unsupported handoff state",
+        "failed handoff state",
+        "No fresh H200 command is planned or run",
+        "selected exactly one next PR-sized implementation slice",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-scaffold-status",
+        "narrower than pass evidence",
+        "no real UCCL-EP dispatch/combine work",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "no public `TaskArgs`",
+        "no public `CallConfig`",
+        "no common runtime C API",
+        "no UCCL host-runtime ABI",
+        "no examples, stable docs, or performance claims",
+        "no `persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "no `actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_dispatch
+    assert "/home/" not in normalized_dispatch
+    assert "pending dispatcher review" not in normalized_dispatch
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():
