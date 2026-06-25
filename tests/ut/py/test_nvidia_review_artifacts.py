@@ -760,7 +760,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     )
     assert (
         "Current accepted `main`: "
-        "`8619767d0eacb5c870b6a56337c6bcb380a2af75`"
+        "`7589e2df44ad4df9c200cd4ec673dacac0a27a71`"
     ) in normalized_slicing
     assert "PR #182 accepted only the private UCCL-EP runtime dispatch" in (
         normalized_slicing
@@ -3021,6 +3021,89 @@ def test_runtime_dispatch_driver_scaffold_status_slice_is_review_safe():
         "1 failed in 0.40s",
         "1 passed in 0.41s",
         "pending dispatcher review and merge decision for PR #186",
+        "no real UCCL-EP dispatch/combine work",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "does not set `actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_dispatch
+    assert "/home/" not in normalized_dispatch
+
+
+def test_post_runtime_dispatch_driver_scaffold_status_refresh_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+
+    required_terms = [
+        "nvidia-goal-status-post-runtime-dispatch-driver-scaffold-status",
+        "Post-Runtime-Dispatch-Driver-Scaffold Status Refresh",
+        "PR #186 merged as `7589e2df44ad4df9c200cd4ec673dacac0a27a71`",
+        "Add runtime dispatch driver scaffold status",
+        "accepted only for private runtime-dispatch driver scaffold/status",
+        "PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus",
+        "PtoCudaUcclEpRuntimeDispatchDriverStatus",
+        "driver-owned failure bits",
+        "pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status",
+        "host runtime private call",
+        "valid status remains unsupported",
+        "malformed/mismatched produces failed private result",
+        "selected exactly one next PR-sized dependency map slice",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-map",
+        "real runtime dispatch driver request/backend ownership",
+        "not implementation/pass evidence",
+        "no real UCCL-EP dispatch/combine work",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "no public `TaskArgs`",
+        "no public `CallConfig`",
+        "no common runtime C API",
+        "no UCCL host-runtime ABI",
+        "no examples, stable docs, or performance claims",
+        "persistent_device_uccl_ep_runtime_fusion.status: passed",
+        "actual_fused_cross_gpu_execution: true",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split())
+        for required in required_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+        if name != "dispatch":
+            assert "/home/" not in normalized
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-25 - Post-Runtime-Dispatch-Driver-Scaffold "
+        "Status Refresh Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "multi-agent worker id `019eff38-c188-7f20-82a4-561fac75a7fc`",
+        "nickname `Erdos`",
+        "No tmux pane is used for this worker",
+        "No nested workers were launched",
+        "uv-xiao/pto-cu",
+        "base branch `main`",
+        "starting commit `7589e2df44ad4df9c200cd4ec673dacac0a27a71`",
+        "planned PR slot #187",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "nvidia-goal-status-post-runtime-dispatch-driver-scaffold-status",
+        "docs/in_progress/nvidia_backend/dispatch_log.md",
+        "docs/in_progress/nvidia_backend/pr_slicing_plan.md",
+        "docs/in_progress/nvidia_backend/communication_runtime_boundary.md",
+        "docs/in_progress/nvidia_backend/communication_selection.md",
+        "docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md",
+        "tests/ut/py/test_nvidia_review_artifacts.py",
+        "merge decision pending dispatcher review",
         "no real UCCL-EP dispatch/combine work",
         "no scheduler/runtime pass evidence",
         "no fresh H200 fused success",
