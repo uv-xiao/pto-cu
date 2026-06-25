@@ -3669,3 +3669,73 @@ Selected next slice:
 `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-result-transport-completion-map`.
 This is selected exactly one next PR-sized docs/test map slice for the
 future private result transport completion boundary.
+
+## Runtime Dispatch Driver Backend Combine Payload Transfer Completion Handoff Result Transport Completion Map Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-result-transport-completion-map`.
+
+Objective: create the docs/test mapping only slice for the future private
+result transport completion boundary after merged PR #207 (`f91dc06a`). This
+is a branch/slice review map only, not source behavior, transport completion,
+or backend execution.
+
+PR #207 is accepted as private result transport scaffold/status. This map
+depends on backend request scaffold/status input, dispatch request
+scaffold/status dependency, combine request scaffold/status dependency,
+combine payload descriptor scaffold/status dependency, combine payload
+transfer scaffold/status dependency, combine payload transfer completion
+scaffold/status dependency, combine payload transfer completion handoff
+scaffold/status dependency, handoff result scaffold/status dependency, and
+result transport scaffold/status dependency.
+
+The future private result transport completion boundary remains private to
+the same invocation. Likely validation concepts are review vocabulary only,
+not implementation claims: completion owner, same invocation, descriptor
+token, rank/device/world size, status sink, result sink, transport
+sink/handle, completion sink/handle, no public/provenance sourced state, and
+no fabricated pass evidence.
+
+Result transport completion status vocabulary:
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_pending`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_unimplemented`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_status_sink_unbound`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_result_sink_unbound`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_transport_sink_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_completion_sink_unbound`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_handle_unbound`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_map_unsupported_boundary`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_owner_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_invocation_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_result_transport_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_descriptor_token_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_rank_device_world_size_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_status_sink_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_result_sink_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_transport_sink_handle_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_completion_sink_handle_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_public_api_sourced_state`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_provenance_sourced_state`,
+and
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_completion_fabricated_pass_evidence`.
+
+Failure-bit constraint: `PtoCudaRuntimeFusionFailure` is exhausted through
+`1U << 31U`; there is no `1U << 32U`. Future implementation must reuse the
+existing combine-payload aggregate failure bit or a documented existing bit,
+not widen public ABI.
+
+This slice records no real UCCL-EP dispatch/combine work, no descriptor
+allocation behavior change, no payload transfer implementation, no completion
+implementation, no handoff implementation, no result transport
+implementation, no transport completion implementation, no transport/backend
+execution, no scheduler/runtime pass evidence, no fresh H200 fused success,
+no public API expansion, no public `TaskArgs`, no public `CallConfig`, no
+common runtime C API, no UCCL host-runtime ABI, and no
+examples/stable docs/serving/vLLM/DeepSeek/performance claims. It does not
+report `persistent_device_uccl_ep_runtime_fusion.status: passed` and does not
+set `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-result-transport-completion-scaffold-status`.
+This is selected exactly one next PR-sized implementation slice for private
+result transport completion scaffold/status only.
