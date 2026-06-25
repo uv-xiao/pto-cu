@@ -25,6 +25,7 @@ static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DESCRIPTOR_VIEW_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_DESCRIPTOR_ALLOCATION_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_DEVICE_DESCRIPTOR_BUFFER_VERSION = 1;
 static const uint32_t PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION = 1;
+static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_SCAFFOLD_STATUS_VERSION = 1;
 
 enum PtoCudaRuntimeFusionStatus : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED = 1,
@@ -62,6 +63,7 @@ enum PtoCudaRuntimeFusionFailure : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_FAILURE_TRANSPORT_MODE_MISMATCH = 1U << 14U,
     PTO_CUDA_RUNTIME_FUSION_FAILURE_DESCRIPTOR_VOCABULARY_MISMATCH = 1U << 15U,
     PTO_CUDA_RUNTIME_FUSION_FAILURE_PUBLIC_API_RUNTIME_PATH = 1U << 16U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD = 1U << 17U,
 };
 
 enum PtoCudaUcclEpRuntimePathSource : uint32_t {
@@ -146,10 +148,20 @@ struct PtoCudaUcclEpDescriptorAllocation {
 
 struct PtoCudaRuntimeFusionResult;
 
+struct PtoCudaUcclEpRuntimeDispatchScaffoldStatus {
+    uint32_t version;
+    uint64_t invocation_id;
+    const PtoCudaUcclEpRuntimePath *runtime_path;
+    uint32_t dispatch_eligible;
+    uint32_t status;
+    uint32_t failure_fields;
+};
+
 struct PtoCudaRuntimeFusionCoordinator {
     uint32_t version;
     uint64_t invocation_id;
     PtoCudaUcclEpDescriptorAllocation descriptor_allocation;
+    PtoCudaUcclEpRuntimeDispatchScaffoldStatus runtime_dispatch_scaffold_status;
     PtoCudaRuntimeFusionResult *output_sink;
     uint32_t status;
     uint32_t failure_fields;
@@ -247,6 +259,8 @@ inline const char *pto_cuda_runtime_fusion_failure_name(uint32_t failure) {
             return "descriptor_vocabulary_mismatch";
         case PTO_CUDA_RUNTIME_FUSION_FAILURE_PUBLIC_API_RUNTIME_PATH:
             return "public_api_runtime_path";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD:
+            return "missing_runtime_dispatch_scaffold";
         default:
             return "unknown_failure";
     }
@@ -428,6 +442,15 @@ inline int pto_cuda_runtime_fusion_prepare_private_coordinator(
         &coordinator->descriptor_allocation.dispatch_descriptor;
     coordinator->descriptor_allocation.runtime_path.combine_descriptor =
         &coordinator->descriptor_allocation.combine_descriptor;
+    coordinator->runtime_dispatch_scaffold_status.version =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_SCAFFOLD_STATUS_VERSION;
+    coordinator->runtime_dispatch_scaffold_status.invocation_id = request->invocation_id;
+    coordinator->runtime_dispatch_scaffold_status.runtime_path =
+        &coordinator->descriptor_allocation.runtime_path;
+    coordinator->runtime_dispatch_scaffold_status.dispatch_eligible = 1U;
+    coordinator->runtime_dispatch_scaffold_status.status = PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
+    coordinator->runtime_dispatch_scaffold_status.failure_fields =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
     coordinator->output_sink = output_sink;
     coordinator->status = PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
     coordinator->failure_fields = PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
@@ -476,7 +499,44 @@ inline uint32_t pto_cuda_runtime_fusion_validate_private_coordinator(
     failures |= pto_cuda_runtime_fusion_validate_uccl_ep_runtime_path(
         request, &coordinator->descriptor_allocation.runtime_path
     );
+    const PtoCudaUcclEpRuntimeDispatchScaffoldStatus *dispatch_status =
+        &coordinator->runtime_dispatch_scaffold_status;
+    if (dispatch_status->version != PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_SCAFFOLD_STATUS_VERSION ||
+        dispatch_status->invocation_id != request->invocation_id ||
+        dispatch_status->runtime_path != &coordinator->descriptor_allocation.runtime_path ||
+        dispatch_status->dispatch_eligible == 0U) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD;
+    }
+    if (dispatch_status->status == PTO_CUDA_RUNTIME_FUSION_STATUS_PASSED) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE;
+    }
     return failures;
+}
+
+inline int pto_cuda_runtime_fusion_prepare_runtime_dispatch_scaffold_status(
+    const PtoCudaRuntimeFusionRequest *request, PtoCudaRuntimeFusionCoordinator *coordinator
+) {
+    if (request == nullptr || coordinator == nullptr ||
+        coordinator->version != PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION ||
+        coordinator->invocation_id != request->invocation_id) {
+        return -1;
+    }
+
+    coordinator->runtime_dispatch_scaffold_status = {};
+    coordinator->runtime_dispatch_scaffold_status.version =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_SCAFFOLD_STATUS_VERSION;
+    coordinator->runtime_dispatch_scaffold_status.invocation_id = request->invocation_id;
+    coordinator->runtime_dispatch_scaffold_status.runtime_path =
+        &coordinator->descriptor_allocation.runtime_path;
+    coordinator->runtime_dispatch_scaffold_status.dispatch_eligible = 1U;
+    coordinator->runtime_dispatch_scaffold_status.status = PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
+    coordinator->runtime_dispatch_scaffold_status.failure_fields =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
+    return 0;
+}
+
+inline int pto_cuda_runtime_fusion_failure_is_runtime_dispatch_scaffold_failed(uint32_t failures) {
+    return (failures & PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD) != 0U;
 }
 
 inline int persistent_device_uccl_ep_runtime_fusion_entry(
@@ -543,6 +603,9 @@ inline int persistent_device_uccl_ep_runtime_fusion_entry(
         out.status = PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED;
         out.failure_fields |= PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE;
         out.reason = "forbidden source attempted to provide runtime fusion pass evidence";
+    } else if (pto_cuda_runtime_fusion_failure_is_runtime_dispatch_scaffold_failed(out.failure_fields)) {
+        out.status = PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED;
+        out.reason = "private UCCL-EP runtime dispatch scaffold/status gate validation failed";
     } else if (pto_cuda_runtime_fusion_failure_is_runtime_path_failed(out.failure_fields)) {
         out.status = PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED;
         out.reason = "private UCCL-EP runtime path validation failed";

@@ -760,7 +760,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     )
     assert (
         "Current accepted `main`: "
-        "`aea89cc9dea8560602c72f84e5ff6e78ca526434`"
+        "`0f562e7fb475ef042d1b97d6261d25b503d2eb2f`"
     ) in normalized_slicing
     assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-validation-policy-map" in slicing
@@ -2323,6 +2323,124 @@ def test_coordinator_scaffold_status_slice_is_review_safe():
         "`actual_fused_cross_gpu_execution: true`",
     ]:
         assert required in normalized_refresh
+
+
+def test_runtime_dispatch_scaffold_status_slice_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+    runtime_fusion_abi = (
+        ROOT / "src" / "cuda" / "platform" / "include" / "host"
+        / "pto_cuda_runtime_fusion_abi.h"
+    ).read_text(encoding="utf-8")
+    host_runtime = (
+        ROOT / "src" / "cuda" / "platform" / "onboard" / "host"
+        / "pto_runtime_c_api.cpp"
+    ).read_text(encoding="utf-8")
+    common_abi = (
+        ROOT / "src" / "common" / "worker" / "pto_runtime_c_api.h"
+    ).read_text(encoding="utf-8")
+    private_entry_test = (
+        ROOT / "tests" / "ut" / "py" / "test_cuda_runtime_fusion_private_entry.py"
+    ).read_text(encoding="utf-8")
+
+    required_terms = [
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status",
+        "runtime-dispatch scaffold/status gate",
+        "coordinator-owned",
+        "missing_runtime_dispatch_scaffold",
+        "unsupported",
+        "failed",
+        "persistent_device_uccl_ep_runtime_fusion.status: passed",
+        "actual_fused_cross_gpu_execution: true",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split()).lower()
+        for required in required_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+
+    for required in [
+        "PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_SCAFFOLD_STATUS_VERSION",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD",
+        "PtoCudaUcclEpRuntimeDispatchScaffoldStatus",
+        "runtime_dispatch_scaffold_status",
+        "pto_cuda_runtime_fusion_prepare_runtime_dispatch_scaffold_status",
+        "pto_cuda_runtime_fusion_failure_is_runtime_dispatch_scaffold_failed",
+        "missing_runtime_dispatch_scaffold",
+        "private UCCL-EP runtime dispatch scaffold/status gate validation failed",
+    ]:
+        assert required in runtime_fusion_abi
+
+    for required in [
+        "pto_cuda_runtime_fusion_prepare_runtime_dispatch_scaffold_status",
+        "runtime_fusion_coordinator_",
+        "request.uccl_ep_runtime = &runtime_fusion_coordinator_",
+    ]:
+        assert required in host_runtime
+
+    for forbidden in [
+        "PtoCudaUcclEpRuntimeDispatchScaffoldStatus",
+        "PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_SCAFFOLD_STATUS_VERSION",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD",
+        "pto_cuda_runtime_fusion_prepare_runtime_dispatch_scaffold_status",
+    ]:
+        assert forbidden not in common_abi
+
+    assert (
+        "test_private_runtime_dispatch_scaffold_status_gate_is_coordinator_owned"
+        in private_entry_test
+    )
+    assert "missing_gate_result.status == PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED" in (
+        private_entry_test
+    )
+    assert "result.status == PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED" in (
+        private_entry_test
+    )
+    assert "PTO_CUDA_RUNTIME_FUSION_STATUS_PASSED" in private_entry_test
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-25 - UCCL-EP Runtime Fusion Runtime Dispatch "
+        "Scaffold Status Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "multi-agent-worker-runtime-dispatch-scaffold-status",
+        "019efec4-746e-7503-994d-38557ed64c8e",
+        "No tmux pane is used for this worker",
+        "No nested workers were launched",
+        "uv-xiao/pto-cu",
+        "base branch `main`",
+        "starting commit `0f562e7fb475ef042d1b97d6261d25b503d2eb2f`",
+        "PR #180 <https://github.com/uv-xiao/pto-cu/pull/180>",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "1 failed in 0.32s",
+        "runtime_dispatch_scaffold_status",
+        "PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_SCAFFOLD_STATUS_VERSION",
+        "PtoCudaUcclEpRuntimeDispatchScaffoldStatus",
+        "missing_runtime_dispatch_scaffold",
+        "No fresh H200 command is planned or run",
+        "no H200 fused-success",
+        "does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "does not set `actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_dispatch
+    assert "/home/" not in normalized_dispatch
+    assert "persistent_device_uccl_ep_runtime_fusion.status: passed`" in (
+        normalized_dispatch
+    )
+    assert "does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`" in (
+        normalized_dispatch
+    )
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():
