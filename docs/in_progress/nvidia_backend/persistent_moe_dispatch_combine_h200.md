@@ -2141,6 +2141,65 @@ Selected next slice:
 This is selected exactly one next PR-sized dependency map slice for the future
 private combine payload transfer boundary.
 
+## Runtime Dispatch Driver Backend Combine Payload Transfer Map Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-map`.
+
+This H200 note maps the future private combine payload transfer boundary
+after PR #197 (`3337516c95fcd5f6129c515585d92e3f95f0c444`). This is a
+dependency map only and must not implement source behavior. PR #197 is
+accepted only for private backend combine payload descriptor scaffold/status
+vocabulary and evidence:
+
+- `PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadScaffoldStatus`;
+- `PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadStatus`;
+- `pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payload_status_name`;
+- `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_scaffold_status`;
+- `PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD`.
+
+The future private combine payload transfer boundary consumes backend request
+scaffold/status input, the dispatch request scaffold/status dependency, the
+combine request scaffold/status dependency, and the combine payload
+descriptor scaffold/status dependency. The private combine payload transfer
+boundary owner accepts only same-invocation private state after descriptor
+token validation, rank/device validation, and combine payload transfer
+output/status sink validation all match. Invalid public/provenance sources
+remain forbidden inputs.
+
+Unsupported combine-payload-transfer states are
+`driver_backend_combine_payload_transfer_pending`,
+`driver_backend_combine_payload_transfer_descriptor_placeholder`,
+`driver_backend_combine_payload_transfer_output_status_sink_unbound`,
+`driver_backend_combine_payload_transfer_map_unsupported_boundary`, and
+`driver_backend_combine_payload_transfer_unimplemented`.
+
+Failed combine-payload-transfer states are
+`driver_backend_combine_payload_transfer_owner_mismatch`,
+`driver_backend_combine_payload_transfer_invocation_mismatch`,
+`driver_backend_combine_payload_transfer_payload_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_descriptor_token_mismatch`,
+`driver_backend_combine_payload_transfer_rank_device_mismatch`,
+`driver_backend_combine_payload_transfer_status_sink_mismatch`,
+`driver_backend_combine_payload_transfer_public_api_sourced_state`,
+`driver_backend_combine_payload_transfer_provenance_sourced_state`, and
+`driver_backend_combine_payload_transfer_fabricated_pass_evidence`.
+
+The map unsupported boundary and payload transfer unimplemented vocabulary
+are future placeholders only. This slice records no real UCCL-EP
+dispatch/combine work, no descriptor allocation behavior, no payload transfer
+implementation, no transport/backend execution, no scheduler/runtime pass
+evidence, no fresh H200 fused success, no public `TaskArgs`, no public
+`CallConfig`, no common runtime C API, no UCCL host-runtime ABI, and no
+examples, stable docs, serving, vLLM, DeepSeek, or performance claims. It
+does not report `persistent_device_uccl_ep_runtime_fusion.status: passed` and
+does not set `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-scaffold-status`.
+This is selected exactly one next PR-sized implementation slice for private
+combine payload transfer scaffold/status only.
+
 ## Future Fused Execution Evidence Shape
 
 PR #174 defines only the private runtime-path scaffold. It does not implement
