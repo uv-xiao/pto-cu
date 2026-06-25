@@ -3273,3 +3273,99 @@ Selected next slice:
 `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-scaffold-status`.
 This is selected exactly one next PR-sized implementation slice for private
 handoff scaffold/status only.
+
+## Runtime Dispatch Driver Backend Combine Payload Transfer Completion Handoff Scaffold Status Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-scaffold-status`.
+
+Objective: implement private combine payload transfer completion handoff
+scaffold/status after merged PR #202 (`925eed3e`). This is private
+handoff scaffold/status only, not real payload transfer, completion, or
+handoff execution.
+
+PR #202 is accepted as the docs/test map for the future private combine
+payload transfer completion handoff boundary. This slice promotes that map
+into private ABI/status vocabulary and coordinator-owned validation.
+
+New private vocabulary and evidence:
+`PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_SCAFFOLD_STATUS_VERSION`,
+`PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffScaffoldStatus`,
+`PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffStatus`,
+`pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_status_name`,
+`pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_scaffold_status`,
+and
+`test_private_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_scaffold_status_is_backend_owned`.
+
+The handoff scaffold/status depends on backend request scaffold/status input,
+the dispatch request scaffold/status dependency, the combine request
+scaffold/status dependency, the combine payload descriptor scaffold/status
+dependency, the combine payload transfer scaffold/status dependency, and the
+combine payload transfer completion scaffold/status dependency.
+
+Valid prepared handoff scaffold/status remains `unsupported`, keeps
+`actual_fused_cross_gpu_execution == 0`, and binds status sink and handoff
+sink to coordinator-owned output state. Validation fails closed for owner,
+invocation, completion scaffold dependency, transfer scaffold dependency,
+descriptor token, rank/device, status sink/handoff sink,
+public/provenance sourced state, and fabricated pass evidence.
+
+Handoff status vocabulary:
+`driver_backend_combine_payload_transfer_completion_handoff_pending`,
+`driver_backend_combine_payload_transfer_completion_handoff_unimplemented`,
+`driver_backend_combine_payload_transfer_completion_handoff_status_sink_unbound`,
+`driver_backend_combine_payload_transfer_completion_handoff_map_unsupported_boundary`,
+`driver_backend_combine_payload_transfer_completion_handoff_owner_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_invocation_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_completion_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_transfer_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_descriptor_token_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_rank_device_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_status_sink_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_public_api_sourced_state`,
+`driver_backend_combine_payload_transfer_completion_handoff_provenance_sourced_state`,
+and
+`driver_backend_combine_payload_transfer_completion_handoff_fabricated_pass_evidence`.
+
+Failure-bit design note: `PtoCudaRuntimeFusionFailure` is exhausted through
+`1U << 31U`; there is no `1U << 32U` and no public ABI widening. Completion
+handoff scaffold/status validation reuses
+`PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD`
+as the existing combine-payload scaffold aggregate failure bit while keeping
+handoff status enum and status names unambiguous.
+
+Red/green evidence: focused red check failed first with
+`1 failed in 0.51s` because the handoff scaffold/status API was missing;
+focused green check passed with `1 passed in 0.44s` after adding the private
+handoff scaffold/status implementation.
+
+Final verification passed before PR creation: focused green passed;
+`git diff --check` passed with no output; targeted `markdownlint-cli2`
+reported `Summary: 0 error(s)`; the NVIDIA review guard reported
+`nvidia review guard passed`; the full private runtime-fusion pytest reported
+`25 passed`; and the NVIDIA review-artifact pytest reported `89 passed`.
+
+Required non-claims:
+
+- no real UCCL-EP dispatch/combine work;
+- no descriptor allocation behavior change;
+- no payload transfer implementation;
+- no completion implementation;
+- no handoff implementation;
+- no transport/backend execution;
+- no scheduler/runtime pass evidence;
+- no fresh H200 fused success;
+- no public API expansion;
+- no public `TaskArgs`;
+- no public `CallConfig`;
+- no common runtime C API;
+- no UCCL host-runtime ABI;
+- no examples/stable docs/serving/vLLM/DeepSeek/performance claims;
+- no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- no `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-result-map`.
+This is selected exactly one next PR-sized docs/test map slice for the future
+private completion handoff result boundary. It is not a real payload
+transfer, completion, handoff, transport, or backend implementation.
