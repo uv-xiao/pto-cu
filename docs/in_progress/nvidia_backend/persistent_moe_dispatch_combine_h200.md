@@ -1593,6 +1593,74 @@ host-runtime ABI, no examples, stable docs, or performance claims. It does
 not report `persistent_device_uccl_ep_runtime_fusion.status: passed` and
 does not set `actual_fused_cross_gpu_execution: true`.
 
+## Runtime Dispatch Driver Backend Request Map Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-request-map`.
+
+This H200 note records the future private driver backend request after
+PR #189 (`707cc81a818fdc00e4f592acb2f17538d1f6eb0a`) as docs/test
+dependency mapping only. It consumes the accepted backend scaffold/status
+input: `PtoCudaUcclEpRuntimeDispatchDriverBackendScaffoldStatus`,
+`PtoCudaUcclEpRuntimeDispatchDriverBackendStatus`, and
+`pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_scaffold_status`.
+The backend scaffold/status remains `unsupported`; it is not a backend
+request, dispatch request, combine request, or pass-evidence source.
+
+Boundary ownership:
+
+- private backend request owner: the future private request owner accepts the
+  PR #189 backend scaffold/status input only after backend owner, invocation
+  id, runtime path, descriptor token, rank/device map, world size, and
+  runtime-owned status sink match;
+- dispatch request placeholder: private driver-owned request shape for future
+  UCCL-EP dispatch, with no transport, payload transfer, kernel launch,
+  scheduler transition, or pass evidence;
+- combine request placeholder: private driver-owned request shape for future
+  UCCL-EP combine, with no reduce/combine transport, payload release, kernel
+  launch, scheduler transition, or pass evidence;
+- descriptor token validation: the request must reuse the accepted backend
+  scaffold/status descriptor token;
+- rank/device validation: the request rank/device map must match the accepted
+  scaffold rank, CUDA device, and world-size metadata;
+- status sink ownership: the runtime-owned output sink remains the only
+  review-facing status sink;
+- invalid public/provenance sources: example JSON, adapter-only provenance,
+  public `TaskArgs`, public `CallConfig`, common runtime C API fields,
+  UCCL host-runtime ABI fields, and hand-authored review artifacts cannot
+  source backend request state.
+
+Unsupported backend-request states are `driver_backend_request_pending`,
+`driver_backend_dispatch_request_placeholder`,
+`driver_backend_combine_request_placeholder`,
+`driver_backend_request_status_sink_unbound`, and
+`driver_backend_request_map_unsupported_boundary`.
+
+Failed backend-request states are `driver_backend_request_owner_mismatch`,
+`driver_backend_request_invocation_mismatch`,
+`driver_backend_request_runtime_path_mismatch`,
+`driver_backend_request_descriptor_token_mismatch`,
+`driver_backend_request_rank_device_mismatch`,
+`driver_backend_request_status_sink_mismatch`,
+`driver_backend_request_public_api_sourced_state`,
+`driver_backend_request_provenance_sourced_state`, and
+`driver_backend_request_fabricated_pass_evidence`.
+
+The invalid public/provenance sources boundary keeps public API state,
+adapter-only provenance, example JSON, common runtime C API fields, UCCL
+host-runtime ABI fields, and hand-authored review artifacts out of the
+backend request. This slice records no real UCCL-EP dispatch/combine work,
+no scheduler/runtime pass evidence, no fresh H200 fused success, no public
+`TaskArgs`, no public `CallConfig`, no common runtime C API, no UCCL
+host-runtime ABI, no examples, stable docs, or performance claims. It does
+not report `persistent_device_uccl_ep_runtime_fusion.status: passed` and
+does not set `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-request-scaffold-status`.
+This is selected exactly one next PR-sized implementation slice for private
+backend request scaffold/status only.
+
 ## Future Fused Execution Evidence Shape
 
 PR #174 defines only the private runtime-path scaffold. It does not implement
