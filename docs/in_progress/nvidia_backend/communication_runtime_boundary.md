@@ -1727,6 +1727,89 @@ Selected next slice:
 This is selected exactly one next PR-sized dependency map slice for the future
 private combine payload descriptor placeholder.
 
+## Runtime Dispatch Driver Backend Combine Payload Map Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-map`.
+
+This docs/test dependency map records the future private combine payload
+descriptor placeholder after PR #195
+(`e09b67a7a00f481f8c9dd4508d1adc9e88030d00`). PR #195 is accepted only for
+private backend combine request scaffold/status vocabulary and evidence:
+`PtoCudaUcclEpRuntimeDispatchDriverBackendCombineRequestScaffoldStatus`,
+`PtoCudaUcclEpRuntimeDispatchDriverBackendCombineRequestStatus`,
+`pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_request_status_name`,
+`pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_request_scaffold_status`,
+and `PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_REQUEST_SCAFFOLD`.
+
+The future combine payload descriptor placeholder consumes the backend
+request scaffold/status input, the dispatch request scaffold/status
+dependency, and the combine request scaffold/status dependency. All three
+remain private unsupported prerequisites and cannot source combine payload
+descriptor state, scheduler/runtime pass evidence, or H200 fused success.
+
+Boundary ownership:
+
+- private combine payload descriptor placeholder owner: the future private
+  combine payload owner accepts only same-invocation backend request,
+  dispatch request, and combine request scaffold/status state after owner,
+  invocation id, runtime path, descriptor token, rank/device map, world size,
+  and runtime-owned combine payload output/status sink match;
+- backend request scaffold/status input: the earlier backend request
+  scaffold/status remains an unsupported prerequisite and cannot source
+  combine payload state or pass evidence;
+- dispatch request scaffold/status dependency: the private dispatch request
+  scaffold/status dependency provides the descriptor-token and rank/device
+  dependency that the future combine payload descriptor placeholder must
+  reuse;
+- combine request scaffold/status dependency: the PR #195 private combine
+  request scaffold/status dependency must be prepared and same-invocation
+  before any future combine payload descriptor placeholder can be mapped;
+- combine payload output/status sink: the runtime-owned output/status sink
+  remains the only review-facing sink for combine payload descriptor status
+  and failure names;
+- descriptor token validation: the combine payload descriptor placeholder must
+  reuse the dispatch and combine request scaffold/status descriptor token and
+  fail rather than create a token from hand-authored review data;
+- rank/device validation: the combine payload rank/device map must match the
+  dispatch and combine request scaffold/status rank, CUDA device, and
+  world-size metadata;
+- invalid public/provenance sources: example JSON, adapter-only provenance,
+  public `TaskArgs`, public `CallConfig`, common runtime C API fields,
+  UCCL host-runtime ABI fields, and hand-authored review artifacts cannot
+  source combine payload descriptor state or pass evidence.
+
+Unsupported combine-payload states are `driver_backend_combine_payload_pending`,
+`driver_backend_combine_payload_descriptor_placeholder`,
+`driver_backend_combine_payload_output_status_sink_unbound`,
+`driver_backend_combine_payload_map_unsupported_boundary`, and
+`driver_backend_combine_payload_transfer_unimplemented`.
+
+Failed combine-payload states are
+`driver_backend_combine_payload_owner_mismatch`,
+`driver_backend_combine_payload_invocation_mismatch`,
+`driver_backend_combine_payload_request_scaffold_mismatch`,
+`driver_backend_combine_payload_descriptor_token_mismatch`,
+`driver_backend_combine_payload_rank_device_mismatch`,
+`driver_backend_combine_payload_status_sink_mismatch`,
+`driver_backend_combine_payload_public_api_sourced_state`,
+`driver_backend_combine_payload_provenance_sourced_state`, and
+`driver_backend_combine_payload_fabricated_pass_evidence`.
+
+The map unsupported boundary and payload transfer unimplemented vocabulary
+are future placeholders only. This slice records no real UCCL-EP
+dispatch/combine work, no scheduler/runtime pass evidence, no fresh H200
+fused success, no public `TaskArgs`, no public `CallConfig`, no common
+runtime C API, no UCCL host-runtime ABI, and no examples, stable docs,
+serving, vLLM, DeepSeek, or performance claims. It does not report
+`persistent_device_uccl_ep_runtime_fusion.status: passed` and does not set
+`actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-scaffold-status`.
+This is selected exactly one next PR-sized implementation slice for private
+combine payload descriptor scaffold/status only.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node
