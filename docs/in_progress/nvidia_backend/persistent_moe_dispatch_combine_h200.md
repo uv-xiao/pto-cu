@@ -1301,13 +1301,14 @@ It is exactly one next PR-sized implementation slice for private
 request/driver handoff scaffold/status plumbing, narrower than pass evidence
 and still not real UCCL-EP dispatch/combine work.
 
-## Runtime Dispatch Request Handoff Scaffold Status Slice
+## Accepted Runtime Dispatch Request Handoff Scaffold Status Slice
 
-Branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-scaffold-status`.
 
-This branch implements only private UCCL-EP runtime dispatch request/driver
-handoff scaffold/status plumbing after PR #182. It adds
+PR #183 merged as `80b6606282956f38ca6c9a3c52c95d0e5e3a457f` and accepted
+only private UCCL-EP runtime dispatch request/driver handoff scaffold/status
+plumbing after PR #182. It adds
 `PtoCudaUcclEpRuntimeDispatchRequestHandoffScaffoldStatus` and
 `PtoCudaUcclEpRuntimeDispatchHandoffDriverState` under
 `PtoCudaRuntimeFusionCoordinator`, then wires
@@ -1336,6 +1337,22 @@ exactly one next PR-sized docs/test dependency slice for private driver-owned
 unsupported/failed status vocabulary and failure ownership after this
 handoff scaffold. It must remain narrower than pass evidence and must not run
 real UCCL-EP dispatch/combine work.
+
+## Post-PR183 Status Refresh Slice
+
+Branch:
+`nvidia-goal-status-post-runtime-dispatch-handoff-scaffold`.
+
+This status refresh records PR #183 as accepted only for private ABI state
+under `PtoCudaRuntimeFusionCoordinator`, same invocation id,
+coordinator-owned runtime path/gate, request owner, private driver-state
+pointer, runtime-owned output sink, missing/stale handoff driver failure, and
+a valid handoff that remains `unsupported`. It changes review-facing
+docs/tests only and keeps
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-status-map` as the
+single next docs/test dependency slice. It does not provide real UCCL-EP
+dispatch/combine work, scheduler/runtime pass evidence, H200 fused success,
+or performance evidence.
 
 ## Future Fused Execution Evidence Shape
 
