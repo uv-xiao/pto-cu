@@ -4167,6 +4167,118 @@ def test_runtime_dispatch_driver_backend_combine_payload_scaffold_status_slice_i
     assert "/home/" not in normalized_dispatch
 
 
+def test_runtime_dispatch_driver_backend_combine_payload_transfer_map_slice_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+
+    required_terms = [
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-map",
+        "Runtime Dispatch Driver Backend Combine Payload Transfer Map Slice",
+        "future private combine payload transfer boundary",
+        "dependency map only",
+        "must not implement source behavior",
+        "PR #197",
+        "3337516c95fcd5f6129c515585d92e3f95f0c444",
+        "PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadScaffoldStatus",
+        "PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadStatus",
+        "pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payload_status_name",
+        "pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_scaffold_status",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD",
+        "backend request scaffold/status input",
+        "dispatch request scaffold/status dependency",
+        "combine request scaffold/status dependency",
+        "combine payload descriptor scaffold/status dependency",
+        "private combine payload transfer boundary owner",
+        "combine payload transfer output/status sink",
+        "descriptor token validation",
+        "rank/device validation",
+        "invalid public/provenance sources",
+        "`driver_backend_combine_payload_transfer_pending`",
+        "`driver_backend_combine_payload_transfer_descriptor_placeholder`",
+        "`driver_backend_combine_payload_transfer_output_status_sink_unbound`",
+        "`driver_backend_combine_payload_transfer_map_unsupported_boundary`",
+        "`driver_backend_combine_payload_transfer_unimplemented`",
+        "`driver_backend_combine_payload_transfer_owner_mismatch`",
+        "`driver_backend_combine_payload_transfer_invocation_mismatch`",
+        "`driver_backend_combine_payload_transfer_payload_scaffold_mismatch`",
+        "`driver_backend_combine_payload_transfer_descriptor_token_mismatch`",
+        "`driver_backend_combine_payload_transfer_rank_device_mismatch`",
+        "`driver_backend_combine_payload_transfer_status_sink_mismatch`",
+        "`driver_backend_combine_payload_transfer_public_api_sourced_state`",
+        "`driver_backend_combine_payload_transfer_provenance_sourced_state`",
+        "`driver_backend_combine_payload_transfer_fabricated_pass_evidence`",
+        "map unsupported boundary",
+        "payload transfer unimplemented",
+        "public `TaskArgs`",
+        "public `CallConfig`",
+        "common runtime C API",
+        "UCCL host-runtime ABI",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-scaffold-status",
+        "selected exactly one next PR-sized implementation slice",
+        "private combine payload transfer scaffold/status only",
+        "no real UCCL-EP dispatch/combine work",
+        "no descriptor allocation behavior",
+        "no payload transfer implementation",
+        "no transport/backend execution",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "no examples, stable docs, serving, vLLM, DeepSeek, or performance claims",
+        "persistent_device_uccl_ep_runtime_fusion.status: passed",
+        "actual_fused_cross_gpu_execution: true",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split())
+        for required in required_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+        if name != "dispatch":
+            assert "/home/" not in normalized
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-26 - UCCL-EP Runtime Fusion Runtime Dispatch "
+        "Driver Backend Combine Payload Transfer Map Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "worker id placeholder `multi-agent-worker-runtime-dispatch-driver-backend-combine-payload-transfer-map`",
+        "worker name placeholder `worker-name-unavailable`",
+        "No tmux pane is used for this worker",
+        "the dispatcher monitors through multi-agent wait",
+        "No nested workers were launched",
+        "uv-xiao/pto-cu",
+        "base branch `main`",
+        "starting commit `3337516c95fcd5f6129c515585d92e3f95f0c444`",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-map",
+        "docs/in_progress/nvidia_backend/dispatch_log.md",
+        "docs/in_progress/nvidia_backend/pr_slicing_plan.md",
+        "docs/in_progress/nvidia_backend/communication_runtime_boundary.md",
+        "docs/in_progress/nvidia_backend/communication_selection.md",
+        "docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md",
+        "tests/ut/py/test_nvidia_review_artifacts.py",
+        "focused red check failed first",
+        "merge decision pending dispatcher review",
+        "no real UCCL-EP dispatch/combine work",
+        "no payload transfer implementation",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "does not set `actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_dispatch
+    assert "/home/" not in normalized_dispatch
+
+
 def test_chat_256k_needle_stream_evidence_is_review_safe():
     evidence = (
         ROOT
