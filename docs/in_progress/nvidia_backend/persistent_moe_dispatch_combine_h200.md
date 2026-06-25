@@ -1301,6 +1301,42 @@ It is exactly one next PR-sized implementation slice for private
 request/driver handoff scaffold/status plumbing, narrower than pass evidence
 and still not real UCCL-EP dispatch/combine work.
 
+## Runtime Dispatch Request Handoff Scaffold Status Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-scaffold-status`.
+
+This branch implements only private UCCL-EP runtime dispatch request/driver
+handoff scaffold/status plumbing after PR #182. It adds
+`PtoCudaUcclEpRuntimeDispatchRequestHandoffScaffoldStatus` and
+`PtoCudaUcclEpRuntimeDispatchHandoffDriverState` under
+`PtoCudaRuntimeFusionCoordinator`, then wires
+`pto_cuda_runtime_fusion_prepare_runtime_dispatch_request_handoff_scaffold_status`
+inside the existing private CUDA host-runtime unsupported path.
+
+The scaffold consumes the PR #180 coordinator-owned runtime-dispatch gate as
+a prerequisite. It validates same invocation id, coordinator-owned runtime
+path, request owner, private driver-state pointer, and runtime-owned output
+sink. Missing or stale private driver state records
+`missing_runtime_dispatch_handoff_driver` and a failed private result. A
+valid handoff scaffold remains `unsupported` and records
+`unsupported_boundary`. It does not create a real UCCL-EP runtime dispatch
+driver and does not run dispatch/combine.
+
+This is not scheduler/runtime pass evidence, not fresh H200 fused-success
+evidence, not a public `TaskArgs` or public `CallConfig` expansion, not
+common runtime C API or UCCL host-runtime ABI state, not examples or stable
+docs, and not a performance claim. It does not report
+`persistent_device_uccl_ep_runtime_fusion.status: passed` and does not set
+`actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-status-map`. This is
+exactly one next PR-sized docs/test dependency slice for private driver-owned
+unsupported/failed status vocabulary and failure ownership after this
+handoff scaffold. It must remain narrower than pass evidence and must not run
+real UCCL-EP dispatch/combine work.
+
 ## Future Fused Execution Evidence Shape
 
 PR #174 defines only the private runtime-path scaffold. It does not implement

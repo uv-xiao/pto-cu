@@ -1057,6 +1057,41 @@ That future implementation slice may add only private request/driver
 handoff scaffold/status plumbing for this map. It remains narrower than pass
 evidence and must still avoid real UCCL-EP dispatch/combine work.
 
+## Runtime Dispatch Request Handoff Scaffold Status Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-scaffold-status`.
+This implementation slice adds only private request/driver handoff
+scaffold/status plumbing below the PR #180 coordinator-owned
+runtime-dispatch gate. The request owner remains
+`PtoCudaRuntimeFusionCoordinator`; the private driver placeholder is
+coordinator-owned scaffold state, not a real UCCL-EP runtime dispatch driver.
+
+The implemented private ABI surface is
+`PtoCudaUcclEpRuntimeDispatchRequestHandoffScaffoldStatus`,
+`PtoCudaUcclEpRuntimeDispatchHandoffDriverState`, and
+`pto_cuda_runtime_fusion_prepare_runtime_dispatch_request_handoff_scaffold_status`.
+The path validates same invocation id, coordinator-owned runtime path, the
+prepared PR #180 gate, request owner, private driver-state pointer, and
+runtime-owned output sink. Missing or stale private driver state records
+`missing_runtime_dispatch_handoff_driver` and a failed private result. A
+valid scaffold/status handoff remains `unsupported` with
+`unsupported_boundary`.
+
+This is not UCCL-EP dispatch/combine execution, not scheduler/runtime pass
+evidence, and not H200 fused-success evidence. It does not add public
+`TaskArgs`, public `CallConfig`, common runtime C API, UCCL host-runtime ABI
+fields, examples, stable docs, or performance claims. It must not report
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or set
+`actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-status-map`. That
+docs/test dependency slice may map only private driver-owned
+unsupported/failed status vocabulary and failure ownership after this handoff
+scaffold. It remains narrower than pass evidence and must not run real
+UCCL-EP dispatch/combine work.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node
