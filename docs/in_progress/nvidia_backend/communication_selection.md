@@ -116,8 +116,8 @@ restart. It is a planning boundary, not performance evidence.
   separation: UCCL-EP remains opt-in and internal, rank/device mapping derives
   from Worker-local device ordering, and dispatch/combine payload ownership is
   recorded by the runtime result rather than exposed in public task APIs.
-- The next implementation PR should keep the current H200 command shape and
-  convert only the fused-boundary result from `unsupported` to `passed` after
+- A later implementation PR may keep the current H200 command shape and
+  convert the fused-boundary result from `unsupported` to `passed` only after
   the persistent-device graph and UCCL-EP runtime share payload descriptors,
   payload ownership, rank/device mapping, status fields, and failure modes.
 - The readiness map keeps those shared payload descriptors behind the
@@ -576,9 +576,9 @@ present; UCCL-EP runtime dispatch remains absent and the final status remains
 It cannot claim fused success until real UCCL-EP runtime dispatch and fresh
 H200 fused-boundary evidence exist.
 
-## Active Runtime Dispatch Scaffold Status Slice
+## Accepted Runtime Dispatch Scaffold Status Slice
 
-Selected branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`.
 
 This slice adds only a private UCCL-EP runtime-dispatch
@@ -596,6 +596,29 @@ eligible, the result remains `unsupported`.
 It must not run real UCCL-EP dispatch/combine work, claim UCCL-EP runtime
 dispatch success, emit scheduler/runtime pass evidence, claim fresh H200
 fused success, expand public APIs or UCCL host-runtime ABI fields, or report
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or
+`actual_fused_cross_gpu_execution: true`.
+
+PR #180 merged as `dc32c52dfccfd7838f865a11c3d4837e8ee568ba` and accepted
+only this private coordinator-owned gate. Missing gate state yields
+`missing_runtime_dispatch_scaffold` and a failed private result; an eligible
+prepared gate remains `unsupported`; output is mirrored to the runtime-owned
+sink. It does not provide real UCCL-EP dispatch/combine work,
+scheduler/runtime pass evidence, or H200 fused success.
+
+## Selected Runtime Dispatch Request Handoff Map Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map`.
+
+This next slice is a private UCCL-EP runtime dispatch request/driver handoff
+map. It may define only the private request owner, driver owner, status
+dependency, and unsupported/failed handoff states needed after the PR #180
+scaffold/status gate and before any real runtime dispatch.
+
+The slice must not run UCCL-EP dispatch/combine work, claim runtime dispatch
+success, emit scheduler/runtime pass evidence, claim fresh H200 fused
+success, expand public APIs or UCCL host-runtime ABI fields, or report
 `persistent_device_uccl_ep_runtime_fusion.status: passed` or
 `actual_fused_cross_gpu_execution: true`.
 

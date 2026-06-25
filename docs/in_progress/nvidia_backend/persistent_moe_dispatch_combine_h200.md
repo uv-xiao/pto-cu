@@ -1230,15 +1230,17 @@ success. The coordinator scaffold/status slice cannot claim
 fused-success evidence until real UCCL-EP runtime dispatch exists and a fresh
 H200 result proves coordinator-owned fused execution.
 
-## Active Runtime Dispatch Scaffold Status Slice
+## Accepted Runtime Dispatch Scaffold Status Slice
 
-The selected next PR-sized implementation slice is
-`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`. It may add
-only a private UCCL-EP runtime-dispatch scaffold/status gate from
-coordinator-owned state. It may consume the PR #178 coordinator-owned
-descriptor allocation and runtime path, validate dispatch eligibility for one
-private invocation, and record explicit unsupported or failed status through
-the runtime-owned output sink.
+Accepted branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`.
+
+PR #180 merged as `dc32c52dfccfd7838f865a11c3d4837e8ee568ba` and accepted
+only the private UCCL-EP runtime-dispatch scaffold/status gate from
+coordinator-owned state. It consumes the PR #178 coordinator-owned descriptor
+allocation and runtime path, validates dispatch eligibility for one private
+invocation, and records explicit unsupported or failed status through the
+runtime-owned output sink.
 
 This branch implements only the private gate. A missing
 `runtime_dispatch_scaffold_status` on the coordinator records
@@ -1253,6 +1255,27 @@ claim UCCL-EP runtime dispatch success, emit pass evidence, report
 `persistent_device_uccl_ep_runtime_fusion.status: passed`, set
 `actual_fused_cross_gpu_execution: true`, or add public API, RDMA, multi-node,
 serving, vLLM, DeepSeek, throughput, or latency claims.
+
+## Selected Runtime Dispatch Request Handoff Map Slice
+
+The selected next PR-sized dependency slice is
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map`. It may
+map only the private UCCL-EP runtime dispatch request/driver handoff from the
+PR #180 coordinator-owned scaffold/status gate to a later runtime driver. It
+must stay narrower than scheduler/runtime pass evidence and cannot claim
+fused success.
+
+This next slice should define private request ownership, driver ownership,
+status dependency, and unsupported/failed handoff states before any real
+UCCL-EP dispatch/combine work can run. Missing request state, missing driver
+state, stale invocation ids, mismatched rank/device state, or public/API
+handoff metadata remain non-pass evidence.
+
+It must not run UCCL-EP dispatch/combine work, emit scheduler/runtime pass
+evidence, claim fresh H200 fused success, report
+`persistent_device_uccl_ep_runtime_fusion.status: passed`, set
+`actual_fused_cross_gpu_execution: true`, or add public API, RDMA,
+multi-node, serving, vLLM, DeepSeek, throughput, or latency claims.
 
 ## Future Fused Execution Evidence Shape
 

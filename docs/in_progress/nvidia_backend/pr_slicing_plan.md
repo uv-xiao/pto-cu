@@ -7,8 +7,9 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `0f562e7fb475ef042d1b97d6261d25b503d2eb2f`,
-  after PR #179 (`Refresh NVIDIA status after PR 178`).
+- Current accepted `main`: `dc32c52dfccfd7838f865a11c3d4837e8ee568ba`,
+  after PR #180
+  (`Add private UCCL EP runtime dispatch scaffold gate`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -179,6 +180,14 @@ from `main` and lands through focused GitHub PRs.
   preserve `persistent_device_uccl_ep_runtime_fusion.status` as unsupported or
   failed until real UCCL-EP dispatch and fresh H200 fused-boundary evidence
   exist.
+- PR #180 accepted only the private coordinator-owned runtime-dispatch
+  scaffold/status gate: missing gate yields
+  `missing_runtime_dispatch_scaffold` and a failed private result; an
+  eligible prepared gate remains `unsupported`; output is mirrored to the
+  runtime-owned sink. It remains unsupported and does not provide real
+  UCCL-EP dispatch/combine work, scheduler/runtime pass evidence, fresh H200
+  fused-success evidence, public API expansion, examples, stable docs,
+  serving, vLLM, DeepSeek, throughput, or latency evidence.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -333,6 +342,12 @@ from `main` and lands through focused GitHub PRs.
     runtime dispatch, pass evidence, H200 fused-success evidence, public
     runtime API expansion, examples, stable docs, serving, vLLM, DeepSeek, or
     performance evidence.
+- PR #180: add private UCCL EP runtime dispatch scaffold gate.
+  - Result: merged as `dc32c52dfccfd7838f865a11c3d4837e8ee568ba`.
+  - Result type: private runtime-dispatch scaffold/status gate only, not real
+    UCCL-EP dispatch/combine work, scheduler/runtime pass evidence, H200
+    fused-success evidence, public runtime API expansion, examples, stable
+    docs, serving, vLLM, DeepSeek, or performance evidence.
 
 ## Restored Tracking Surface
 
@@ -436,10 +451,15 @@ the private coordinator scaffold/status surface is accepted only for
 coordinator-owned state: accepted descriptor allocation, runtime path, same
 invocation id, unsupported/failure status, and output sink for one private
 `ChipWorker::run` invocation. It remains unsupported and does not provide
-runtime dispatch, pass evidence, or H200 fused success. The current accepted
-baseline is `aea89cc9dea8560602c72f84e5ff6e78ca526434`, and the next slice is
-exactly one narrow private UCCL-EP runtime-dispatch scaffold/status gate:
-`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`.
+runtime dispatch, pass evidence, or H200 fused success. After PR #180, the
+private runtime-dispatch scaffold/status gate is accepted only for
+coordinator-owned gate behavior: missing gate yields
+`missing_runtime_dispatch_scaffold` and a failed private result; an eligible
+prepared gate remains `unsupported`; output is mirrored to the runtime-owned
+sink. The current accepted baseline is
+`dc32c52dfccfd7838f865a11c3d4837e8ee568ba`, and the next slice is exactly
+one narrow private UCCL-EP runtime dispatch request/driver handoff map:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map`.
 
 ## Accepted Payload Provenance Slice
 
@@ -1584,9 +1604,9 @@ fused-success evidence, public `TaskArgs`, public `CallConfig`, common
 runtime C API fields, UCCL host-runtime ABI fields, examples, stable docs,
 serving, vLLM, DeepSeek, throughput, or latency.
 
-## Active Runtime Dispatch Scaffold Status Slice
+## Accepted Runtime Dispatch Scaffold Status Slice
 
-Active branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`.
 
 Objective: add only a private UCCL-EP runtime-dispatch scaffold/status gate
@@ -1617,6 +1637,52 @@ Required boundaries:
 Required non-claims:
 
 - no UCCL-EP runtime dispatch success;
+- no scheduler/runtime pass evidence;
+- no fresh H200 fused-success evidence;
+- no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- no `actual_fused_cross_gpu_execution: true`;
+- no public API expansion, examples, stable docs, RDMA, multi-node transport,
+  serving, vLLM, DeepSeek, throughput, or latency claim.
+
+PR #180 accepted this private runtime-dispatch scaffold/status gate only,
+merged as `dc32c52dfccfd7838f865a11c3d4837e8ee568ba`. Missing gate state
+yields `missing_runtime_dispatch_scaffold` and a failed private result; an
+eligible prepared gate remains `unsupported`; output is mirrored to the
+runtime-owned sink. It did not implement real UCCL-EP dispatch/combine work,
+scheduler/runtime pass evidence, fresh H200 fused-success evidence, public
+`TaskArgs`, public `CallConfig`, common runtime C API fields, UCCL
+host-runtime ABI fields, examples, stable docs, serving, vLLM, DeepSeek,
+throughput, or latency.
+
+## Selected Runtime Dispatch Request Handoff Map Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map`.
+
+Objective: define only the private UCCL-EP runtime dispatch request/driver
+handoff map after PR #180. This dependency slice should map how the
+coordinator-owned scaffold/status gate hands a validated request to a future
+runtime driver, which component owns the request, which component owns the
+driver state, and which unsupported or failed states block handoff before any
+real dispatch work can run.
+
+Required boundaries:
+
+- keep the map private to the CUDA persistent-device runtime path;
+- consume PR #180 scaffold/status gate state as a prerequisite rather than
+  pass evidence;
+- define request owner, driver owner, status dependency, and failure
+  ownership for the future handoff;
+- keep real UCCL-EP dispatch/combine work out of scope;
+- keep scheduler/runtime pass evidence and fresh H200 fused-success evidence
+  out of scope;
+- keep public `TaskArgs`, public `CallConfig`, common runtime C API fields,
+  UCCL host-runtime ABI fields, examples, stable docs, adapter provenance,
+  handoff metadata, and payload provenance out of pass-evidence paths.
+
+Required non-claims:
+
+- no UCCL-EP runtime dispatch/combine work;
 - no scheduler/runtime pass evidence;
 - no fresh H200 fused-success evidence;
 - no `persistent_device_uccl_ep_runtime_fusion.status: passed`;

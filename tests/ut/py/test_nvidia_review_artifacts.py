@@ -760,7 +760,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     )
     assert (
         "Current accepted `main`: "
-        "`0f562e7fb475ef042d1b97d6261d25b503d2eb2f`"
+        "`dc32c52dfccfd7838f865a11c3d4837e8ee568ba`"
     ) in normalized_slicing
     assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-validation-policy-map" in slicing
@@ -2355,8 +2355,12 @@ def test_runtime_dispatch_scaffold_status_slice_is_review_safe():
 
     required_terms = [
         "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map",
         "runtime-dispatch scaffold/status gate",
+        "runtime dispatch request/driver handoff",
         "coordinator-owned",
+        "pr #180",
+        "dc32c52dfccfd7838f865a11c3d4837e8ee568ba",
         "missing_runtime_dispatch_scaffold",
         "unsupported",
         "failed",
@@ -2432,15 +2436,51 @@ def test_runtime_dispatch_scaffold_status_slice_is_review_safe():
         "no H200 fused-success",
         "does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`",
         "does not set `actual_fused_cross_gpu_execution: true`",
+        "merged as `dc32c52dfccfd7838f865a11c3d4837e8ee568ba` by PR #180",
+        "Accepted only for the private coordinator-owned runtime-dispatch",
+        "eligible prepared gate remains `unsupported`",
+        "mirrored to the runtime-owned sink",
     ]:
         assert required in normalized_dispatch
     assert "/home/" not in normalized_dispatch
+    assert "pending PR #180 dispatcher review" not in normalized_dispatch
     assert "persistent_device_uccl_ep_runtime_fusion.status: passed`" in (
         normalized_dispatch
     )
     assert "does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`" in (
         normalized_dispatch
     )
+
+    post_refresh_entry = texts["dispatch"].split(
+        "### 2026-06-25 - Post-Runtime-Dispatch-Scaffold "
+        "Status Refresh Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_refresh = " ".join(post_refresh_entry.split())
+    for required in [
+        "nvidia-goal-status-post-runtime-dispatch-scaffold-status",
+        "019efed6-f837-7360-b6f6-c435917ba20f",
+        "No tmux pane is used for this worker",
+        "No nested workers were launched",
+        "post-PR #180 NVIDIA backend status refresh",
+        "PR #180 merged as `dc32c52dfccfd7838f865a11c3d4837e8ee568ba`",
+        "Add private UCCL EP runtime dispatch scaffold gate (#180)",
+        "accepted only for the private coordinator-owned runtime-dispatch",
+        "missing gate yields `missing_runtime_dispatch_scaffold`",
+        "failed private result",
+        "eligible prepared gate remains `unsupported`",
+        "mirrored to the runtime-owned sink",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map",
+        "selected exactly one next PR-sized dependency slice",
+        "runtime dispatch request/driver handoff",
+        "must not run UCCL-EP dispatch/combine work",
+        "scheduler/runtime pass evidence",
+        "fresh H200 fused success",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_refresh
+    assert "/home/" not in normalized_refresh
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():

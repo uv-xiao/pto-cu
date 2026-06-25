@@ -23,6 +23,93 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-25 - Post-Runtime-Dispatch-Scaffold Status Refresh Worker
+
+- Dispatcher Session or PR:
+  multi-agent child worker session on branch
+  `nvidia-goal-status-post-runtime-dispatch-scaffold-status`.
+  Active multi-agent worker `019efed6-f837-7360-b6f6-c435917ba20f`
+  owns this status refresh. No tmux pane is used for this worker.
+- Worker id and objective:
+  `multi-agent-worker-post-runtime-dispatch-scaffold-status`; create a narrow
+  post-PR #180 NVIDIA backend status refresh. PR #180 merged as
+  `dc32c52dfccfd7838f865a11c3d4837e8ee568ba` with title
+  `Add private UCCL EP runtime dispatch scaffold gate (#180)`.
+- Exact Codex command or script invocation:
+  launched by the parent multi-agent dispatcher prompt for this branch. No
+  nested workers were launched.
+- Monitor locators:
+  active multi-agent worker `019efed6-f837-7360-b6f6-c435917ba20f` in this
+  worktree. No tmux pane is used for this worker.
+- Parent goal and child slice:
+  NVIDIA backend restart; post-PR #180 status/slicing refresh only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-goal-status-post-runtime-dispatch-scaffold-status`; PR #181
+  <https://github.com/uv-xiao/pto-cu/pull/181>; opened as a non-draft PR
+  against `uv-xiao/pto-cu` `main` with expected PR command:
+  `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-goal-status-post-runtime-dispatch-scaffold-status`.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `dc32c52dfccfd7838f865a11c3d4837e8ee568ba`.
+- Allowed scope and files:
+  review-facing docs/tests only:
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  and `tests/ut/py/test_nvidia_review_artifacts.py`. No CUDA runtime/source
+  files.
+- Dependencies and blocked assumptions:
+  PR #180 is accepted only for the private coordinator-owned
+  runtime-dispatch scaffold/status gate. A missing gate yields
+  `missing_runtime_dispatch_scaffold` and a failed private result; an
+  eligible prepared gate remains `unsupported`; output is mirrored to the
+  runtime-owned sink. It remains unsupported and provides no real UCCL-EP
+  dispatch/combine work, scheduler/runtime pass evidence, or H200 fused
+  success.
+- Selected next slice:
+  selected exactly one next PR-sized dependency slice:
+  `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map`.
+  That future branch may map only the private UCCL-EP runtime dispatch
+  request/driver handoff from the PR #180 coordinator-owned scaffold/status
+  gate to a later runtime driver. It may define request ownership, driver
+  ownership, status dependencies, and unsupported/failed handoff states before
+  any real dispatch. It must not run UCCL-EP dispatch/combine work, emit
+  scheduler/runtime pass evidence, claim fresh H200 fused success, expand
+  public APIs, or report
+  `persistent_device_uccl_ep_runtime_fusion.status: passed` or
+  `actual_fused_cross_gpu_execution: true`.
+- Verification commands and results:
+  `git diff --check` passed with no output.
+  `npx --no-install markdownlint-cli2 --config
+  tests/lint/.markdownlint.yaml
+  docs/in_progress/nvidia_backend/communication_runtime_boundary.md
+  docs/in_progress/nvidia_backend/communication_selection.md
+  docs/in_progress/nvidia_backend/dispatch_log.md
+  docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md
+  docs/in_progress/nvidia_backend/pr_slicing_plan.md` passed with
+  `Summary: 0 error(s)`.
+  `PYTHONPATH=$PWD:$PWD/python <repo-root>/.venv/bin/python
+  .agents/checks/check_nvidia_review_ready.py` passed with
+  `nvidia review guard passed`.
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  <repo-root>/.venv/bin/python -m pytest
+  tests/ut/py/test_nvidia_review_artifacts.py -q` passed with `68 passed`.
+- H200 evidence:
+  No fresh H200 command is planned because this is a docs/test status refresh
+  only and makes no runtime-dispatch, fused-success, serving, or performance
+  claim.
+- Merge decision and merge commit:
+  pending PR #181 dispatcher review.
+- Handoff summary and remaining gaps:
+  PR #180 is recorded as accepted only for private scaffold/status gate
+  behavior. Real UCCL-EP runtime dispatch/combine work, scheduler/runtime pass
+  evidence, fresh H200 fused-success evidence, and any public API or ABI
+  expansion remain out of scope. The next selected slice is only a private
+  runtime dispatch request/driver handoff map.
+
 ### 2026-06-25 - UCCL-EP Runtime Fusion Runtime Dispatch Scaffold Status Worker
 
 - Dispatcher Session or PR:
@@ -118,7 +205,13 @@ Each dispatch entry should include:
   No fresh H200 command is planned or run for this slice. The branch makes no
   H200 fused-success, serving, throughput, latency, RDMA, or multi-node claim.
 - Merge decision and merge commit:
-  pending PR #180 dispatcher review.
+  merged as `dc32c52dfccfd7838f865a11c3d4837e8ee568ba` by PR #180. Accepted
+  only for the private coordinator-owned runtime-dispatch scaffold/status
+  gate: missing gate yields `missing_runtime_dispatch_scaffold` and a failed
+  private result; an eligible prepared gate remains `unsupported`; output is
+  mirrored to the runtime-owned sink. It remains unsupported and does not
+  provide real UCCL-EP dispatch/combine work, scheduler/runtime pass
+  evidence, or H200 fused success.
 - Handoff summary and remaining gaps:
   this branch remains narrower than real UCCL-EP dispatch/combine execution,
   scheduler/runtime pass evidence, and fresh H200 fused success. It does not
