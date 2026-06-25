@@ -23,6 +23,125 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-25 - UCCL-EP Runtime Fusion Runtime Dispatch Driver Backend Request Scaffold Status Worker
+
+- Dispatcher Session or PR:
+  multi-agent child worker session on branch
+  `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-request-scaffold-status`.
+  Active multi-agent worker id `019eff72-bb96-77a1-9b14-2601dd6b3f11`,
+  nickname `Bohr`, owns this slice. No tmux pane is used for this worker;
+  the dispatcher monitors through multi-agent wait.
+- Worker id and objective:
+  `multi-agent-worker-runtime-dispatch-driver-backend-request-scaffold-status`;
+  implement private backend request scaffold/status plumbing for the PR #190
+  backend request map. No nested workers were launched.
+- Exact Codex command or script invocation:
+  launched by the parent multi-agent dispatcher prompt for this branch. No
+  nested workers were launched.
+- Monitor locators:
+  active multi-agent worker id `019eff72-bb96-77a1-9b14-2601dd6b3f11`;
+  nickname `Bohr`; no tmux pane is used for this worker.
+- Parent goal and child slice:
+  NVIDIA backend restart; Runtime Dispatch Driver Backend Request Scaffold
+  Status Slice, a private implementation slice after PR #190.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-request-scaffold-status`;
+  planned PR slot #191; actual PR #191
+  <https://github.com/uv-xiao/pto-cu/pull/191>. The PR was opened as a
+  non-draft PR with: `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-request-scaffold-status`.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `4223edd9fa3c5e58b62eff1d7c27b1a54670766d`.
+- Allowed scope and files:
+  private header-local runtime fusion ABI and review evidence only:
+  `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h`,
+  `tests/ut/py/test_cuda_runtime_fusion_private_entry.py`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`,
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`, and
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`.
+- Dependencies and blocked assumptions:
+  PR #190 merged as `4223edd9fa3c5e58b62eff1d7c27b1a54670766d`
+  (`Map driver backend request boundary`) and selected this slice for
+  private backend request scaffold/status only.
+- Implementation evidence:
+  `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h` adds
+  `PtoCudaUcclEpRuntimeDispatchDriverBackendRequestScaffoldStatus`,
+  `PtoCudaUcclEpRuntimeDispatchDriverBackendRequestStatus`,
+  `pto_cuda_uccl_ep_runtime_dispatch_driver_backend_request_status_name`,
+  `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_request_scaffold_status`,
+  and
+  `PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_REQUEST_SCAFFOLD`.
+  `tests/ut/py/test_cuda_runtime_fusion_private_entry.py` adds
+  `test_private_runtime_dispatch_driver_backend_request_scaffold_status_is_backend_owned`.
+- Backend request scaffold behavior:
+  valid prepared backend request scaffold/status remains `unsupported`,
+  `actual_fused_cross_gpu_execution` remains `0`, no passed status is
+  reported, and no transport/backend execution is added. Malformed or stale
+  private backend request owner state produces a failed private result with
+  backend-request vocabulary.
+- Unsupported states:
+  `driver_backend_request_pending`,
+  `driver_backend_dispatch_request_placeholder`,
+  `driver_backend_combine_request_placeholder`,
+  `driver_backend_request_status_sink_unbound`, and
+  `driver_backend_request_map_unsupported_boundary`.
+- Failed states:
+  `driver_backend_request_owner_mismatch`,
+  `driver_backend_request_invocation_mismatch`,
+  `driver_backend_request_runtime_path_mismatch`,
+  `driver_backend_request_descriptor_token_mismatch`,
+  `driver_backend_request_rank_device_mismatch`,
+  `driver_backend_request_status_sink_mismatch`,
+  `driver_backend_request_public_api_sourced_state`,
+  `driver_backend_request_provenance_sourced_state`, and
+  `driver_backend_request_fabricated_pass_evidence`.
+- Red failure:
+  after adding only
+  `test_private_runtime_dispatch_driver_backend_request_scaffold_status_is_backend_owned`,
+  the focused command
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest
+  tests/ut/py/test_cuda_runtime_fusion_private_entry.py::test_private_runtime_dispatch_driver_backend_request_scaffold_status_is_backend_owned
+  -q` failed with `1 failed in 0.40s` because the private backend request
+  scaffold/status symbols were missing. The compile errors named missing
+  `runtime_dispatch_driver_backend_request_scaffold_status`,
+  `PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_REQUEST_SCAFFOLD_STATUS_VERSION`,
+  `PtoCudaUcclEpRuntimeDispatchDriverBackendRequestScaffoldStatus`,
+  `PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_REQUEST_STATUS_OWNER_MISMATCH`,
+  `PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_REQUEST_SCAFFOLD`,
+  `pto_cuda_uccl_ep_runtime_dispatch_driver_backend_request_status_name`,
+  `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_request_scaffold_status`,
+  and
+  `PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_REQUEST_STATUS_UNSUPPORTED_BOUNDARY`.
+- Verification commands and results:
+  focused red check failed first with `1 failed in 0.40s`; focused green
+  check passed with `1 passed in 0.42s`; final focused private-entry recheck
+  passed with `1 passed in 0.41s`; full private-entry pytest passed with
+  `19 passed in 5.11s`. Required verification before PR creation passed:
+  `git diff --check` passed with no output; targeted `markdownlint-cli2`
+  over the five touched in-progress docs reported `Summary: 0 error(s)`;
+  NVIDIA review guard reported `nvidia review guard passed`;
+  review-artifact pytest reported `77 passed`.
+- H200 evidence:
+  No fresh H200 command is planned or run. This slice does not claim fused
+  success.
+- Merge decision and merge commit:
+  merge decision pending dispatcher review.
+- Handoff summary and remaining gaps:
+  selected exactly one next PR-sized dependency map slice:
+  `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-dispatch-request-map`,
+  for the future private dispatch request placeholder. This slice records no
+  real UCCL-EP dispatch/combine work, no scheduler/runtime pass evidence, no
+  fresh H200 fused success, no public `TaskArgs`, no public `CallConfig`, no
+  common runtime C API, no UCCL host-runtime ABI, and no examples, stable
+  docs, or performance claims. It does not report
+  `persistent_device_uccl_ep_runtime_fusion.status: passed` and does not set
+  `actual_fused_cross_gpu_execution: true`.
+
 ### 2026-06-25 - UCCL-EP Runtime Fusion Runtime Dispatch Driver Backend Request Map Worker
 
 - Dispatcher Session or PR:
