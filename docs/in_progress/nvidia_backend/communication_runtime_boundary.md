@@ -1222,6 +1222,69 @@ implementation/pass evidence. The next slice must stay narrower than real
 UCCL-EP dispatch/combine work, scheduler/runtime pass evidence, and H200
 fused-success claims.
 
+## Runtime Dispatch Driver Backend Map Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-map`.
+
+This dependency map records the future private runtime dispatch driver's
+request/backend ownership boundary after PR #186
+(`7589e2df44ad4df9c200cd4ec673dacac0a27a71`). PR #186 accepted only
+`PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus`,
+`PtoCudaUcclEpRuntimeDispatchDriverStatus`, driver-owned failure bits, and
+`pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status`.
+The valid prepared driver scaffold remains `unsupported`; it is not backend
+execution or pass evidence.
+
+Boundary ownership:
+
+- private driver request owner: the future private driver accepts the
+  scaffold only after the coordinator-owned handoff, invocation id, runtime
+  path, descriptor token, rank/device map, and runtime-owned output sink
+  match;
+- dispatch backend placeholder: a driver-owned placeholder for future
+  UCCL-EP dispatch, with no transport calls, payload transfer, kernel launch,
+  scheduler transition, or pass evidence;
+- combine backend placeholder: a driver-owned placeholder for future UCCL-EP
+  combine, with no reduce/combine transport, payload release, kernel launch,
+  scheduler transition, or pass evidence;
+- status sink owner: the runtime-owned output sink remains the only
+  review-facing sink; the driver can record driver status and failure names
+  there but cannot source state from example JSON, adapter-only provenance,
+  public `TaskArgs`, public `CallConfig`, common runtime C API, or UCCL
+  host-runtime ABI fields;
+- driver-owned failure propagation: after the driver accepts the valid
+  scaffold, backend request/backend/status-sink mismatches are driver-owned
+  failed states.
+
+Unsupported states are `driver_backend_request_unbound`,
+`driver_dispatch_backend_placeholder`, `driver_combine_backend_placeholder`,
+`driver_status_sink_unbound`, and
+`driver_backend_map_unsupported_boundary`.
+
+Failed states are `driver_backend_owner_mismatch`,
+`driver_backend_invocation_mismatch`,
+`driver_backend_runtime_path_mismatch`,
+`driver_backend_descriptor_token_mismatch`,
+`driver_backend_rank_device_mismatch`,
+`driver_backend_status_sink_mismatch`,
+`driver_backend_public_api_sourced_state`, and
+`driver_backend_fabricated_pass_evidence`.
+
+The invalid pass-evidence boundary rejects example JSON, adapter-only
+provenance, public `TaskArgs`, public `CallConfig`, common runtime C API
+fields, UCCL host-runtime ABI fields, and hand-authored review artifacts as
+backend pass sources. This slice records no real UCCL-EP dispatch/combine
+work, no scheduler/runtime pass evidence, no fresh H200 fused success, no
+examples, stable docs, or performance claims. It does not report
+`persistent_device_uccl_ep_runtime_fusion.status: passed` and does not set
+`actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-scaffold-status`.
+This is selected exactly one next PR-sized implementation slice for private
+driver backend scaffold/status only.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node

@@ -760,7 +760,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     )
     assert (
         "Current accepted `main`: "
-        "`7589e2df44ad4df9c200cd4ec673dacac0a27a71`"
+        "`9e338948f90fdc4fb13a527159060b2510e12838`"
     ) in normalized_slicing
     assert "PR #182 accepted only the private UCCL-EP runtime dispatch" in (
         normalized_slicing
@@ -3103,6 +3103,106 @@ def test_post_runtime_dispatch_driver_scaffold_status_refresh_is_review_safe():
         "docs/in_progress/nvidia_backend/communication_selection.md",
         "docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md",
         "tests/ut/py/test_nvidia_review_artifacts.py",
+        "merge decision pending dispatcher review",
+        "no real UCCL-EP dispatch/combine work",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "does not set `actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_dispatch
+    assert "/home/" not in normalized_dispatch
+
+
+def test_runtime_dispatch_driver_backend_map_slice_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+
+    required_terms = [
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-map",
+        "Runtime Dispatch Driver Backend Map Slice",
+        "future private runtime dispatch driver's request/backend ownership",
+        "after PR #186",
+        "7589e2df44ad4df9c200cd4ec673dacac0a27a71",
+        "private driver request owner",
+        "dispatch backend placeholder",
+        "combine backend placeholder",
+        "status sink owner",
+        "driver-owned failure propagation",
+        "PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus",
+        "PtoCudaUcclEpRuntimeDispatchDriverStatus",
+        "valid prepared driver scaffold remains `unsupported`",
+        "`driver_backend_request_unbound`",
+        "`driver_dispatch_backend_placeholder`",
+        "`driver_combine_backend_placeholder`",
+        "`driver_status_sink_unbound`",
+        "`driver_backend_map_unsupported_boundary`",
+        "`driver_backend_owner_mismatch`",
+        "`driver_backend_invocation_mismatch`",
+        "`driver_backend_runtime_path_mismatch`",
+        "`driver_backend_descriptor_token_mismatch`",
+        "`driver_backend_rank_device_mismatch`",
+        "`driver_backend_status_sink_mismatch`",
+        "`driver_backend_public_api_sourced_state`",
+        "`driver_backend_fabricated_pass_evidence`",
+        "invalid pass-evidence boundary",
+        "example JSON",
+        "adapter-only provenance",
+        "public `TaskArgs`",
+        "public `CallConfig`",
+        "common runtime C API",
+        "UCCL host-runtime ABI",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-scaffold-status",
+        "selected exactly one next PR-sized implementation slice",
+        "private driver backend scaffold/status",
+        "no real UCCL-EP dispatch/combine work",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "no examples, stable docs, or performance claims",
+        "persistent_device_uccl_ep_runtime_fusion.status: passed",
+        "actual_fused_cross_gpu_execution: true",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split())
+        for required in required_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+        if name != "dispatch":
+            assert "/home/" not in normalized
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-25 - UCCL-EP Runtime Fusion Runtime Dispatch "
+        "Driver Backend Map Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_dispatch = " ".join(dispatch_entry.split())
+    for required in [
+        "multi-agent worker id `019eff44-797d-7fd2-9138-b113d268e2c8`",
+        "nickname `Helmholtz`",
+        "No tmux pane is used for this worker",
+        "No nested workers were launched",
+        "uv-xiao/pto-cu",
+        "base branch `main`",
+        "starting commit `9e338948f90fdc4fb13a527159060b2510e12838`",
+        "planned PR slot #188",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-map",
+        "docs/in_progress/nvidia_backend/dispatch_log.md",
+        "docs/in_progress/nvidia_backend/pr_slicing_plan.md",
+        "docs/in_progress/nvidia_backend/communication_runtime_boundary.md",
+        "docs/in_progress/nvidia_backend/communication_selection.md",
+        "docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md",
+        "tests/ut/py/test_nvidia_review_artifacts.py",
+        "focused red check failed first",
         "merge decision pending dispatcher review",
         "no real UCCL-EP dispatch/combine work",
         "no scheduler/runtime pass evidence",
