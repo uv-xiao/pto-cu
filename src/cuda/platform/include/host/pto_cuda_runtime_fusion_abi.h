@@ -26,6 +26,8 @@ static const uint32_t PTO_CUDA_UCCL_EP_DESCRIPTOR_ALLOCATION_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_DEVICE_DESCRIPTOR_BUFFER_VERSION = 1;
 static const uint32_t PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_SCAFFOLD_STATUS_VERSION = 1;
+static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_REQUEST_HANDOFF_SCAFFOLD_STATUS_VERSION = 1;
+static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_HANDOFF_DRIVER_STATE_VERSION = 1;
 
 enum PtoCudaRuntimeFusionStatus : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED = 1,
@@ -64,6 +66,7 @@ enum PtoCudaRuntimeFusionFailure : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_FAILURE_DESCRIPTOR_VOCABULARY_MISMATCH = 1U << 15U,
     PTO_CUDA_RUNTIME_FUSION_FAILURE_PUBLIC_API_RUNTIME_PATH = 1U << 16U,
     PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD = 1U << 17U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_HANDOFF_DRIVER = 1U << 18U,
 };
 
 enum PtoCudaUcclEpRuntimePathSource : uint32_t {
@@ -157,11 +160,35 @@ struct PtoCudaUcclEpRuntimeDispatchScaffoldStatus {
     uint32_t failure_fields;
 };
 
+struct PtoCudaUcclEpRuntimeDispatchHandoffDriverState {
+    uint32_t version;
+    uint64_t invocation_id;
+    const void *request_owner;
+    const PtoCudaUcclEpRuntimeDispatchScaffoldStatus *runtime_dispatch_scaffold_status;
+    const PtoCudaUcclEpRuntimePath *runtime_path;
+    uint32_t status;
+    uint32_t failure_fields;
+};
+
+struct PtoCudaUcclEpRuntimeDispatchRequestHandoffScaffoldStatus {
+    uint32_t version;
+    uint64_t invocation_id;
+    const void *request_owner;
+    const PtoCudaUcclEpRuntimeDispatchScaffoldStatus *runtime_dispatch_scaffold_status;
+    const PtoCudaUcclEpRuntimeDispatchHandoffDriverState *driver_state;
+    uint32_t handoff_eligible;
+    uint32_t status;
+    uint32_t failure_fields;
+};
+
 struct PtoCudaRuntimeFusionCoordinator {
     uint32_t version;
     uint64_t invocation_id;
     PtoCudaUcclEpDescriptorAllocation descriptor_allocation;
     PtoCudaUcclEpRuntimeDispatchScaffoldStatus runtime_dispatch_scaffold_status;
+    PtoCudaUcclEpRuntimeDispatchHandoffDriverState runtime_dispatch_request_handoff_driver_state;
+    PtoCudaUcclEpRuntimeDispatchRequestHandoffScaffoldStatus
+        runtime_dispatch_request_handoff_scaffold_status;
     PtoCudaRuntimeFusionResult *output_sink;
     uint32_t status;
     uint32_t failure_fields;
@@ -261,6 +288,8 @@ inline const char *pto_cuda_runtime_fusion_failure_name(uint32_t failure) {
             return "public_api_runtime_path";
         case PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD:
             return "missing_runtime_dispatch_scaffold";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_HANDOFF_DRIVER:
+            return "missing_runtime_dispatch_handoff_driver";
         default:
             return "unknown_failure";
     }
@@ -451,6 +480,32 @@ inline int pto_cuda_runtime_fusion_prepare_private_coordinator(
     coordinator->runtime_dispatch_scaffold_status.status = PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
     coordinator->runtime_dispatch_scaffold_status.failure_fields =
         PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
+    coordinator->runtime_dispatch_request_handoff_driver_state.version =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_HANDOFF_DRIVER_STATE_VERSION;
+    coordinator->runtime_dispatch_request_handoff_driver_state.invocation_id = request->invocation_id;
+    coordinator->runtime_dispatch_request_handoff_driver_state.request_owner = coordinator;
+    coordinator->runtime_dispatch_request_handoff_driver_state.runtime_dispatch_scaffold_status =
+        &coordinator->runtime_dispatch_scaffold_status;
+    coordinator->runtime_dispatch_request_handoff_driver_state.runtime_path =
+        &coordinator->descriptor_allocation.runtime_path;
+    coordinator->runtime_dispatch_request_handoff_driver_state.status =
+        PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
+    coordinator->runtime_dispatch_request_handoff_driver_state.failure_fields =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.version =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_REQUEST_HANDOFF_SCAFFOLD_STATUS_VERSION;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.invocation_id =
+        request->invocation_id;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.request_owner = coordinator;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.runtime_dispatch_scaffold_status =
+        &coordinator->runtime_dispatch_scaffold_status;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.driver_state =
+        &coordinator->runtime_dispatch_request_handoff_driver_state;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.handoff_eligible = 1U;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.status =
+        PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.failure_fields =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
     coordinator->output_sink = output_sink;
     coordinator->status = PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
     coordinator->failure_fields = PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
@@ -510,6 +565,32 @@ inline uint32_t pto_cuda_runtime_fusion_validate_private_coordinator(
     if (dispatch_status->status == PTO_CUDA_RUNTIME_FUSION_STATUS_PASSED) {
         failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE;
     }
+    const PtoCudaUcclEpRuntimeDispatchRequestHandoffScaffoldStatus *handoff_status =
+        &coordinator->runtime_dispatch_request_handoff_scaffold_status;
+    const PtoCudaUcclEpRuntimeDispatchHandoffDriverState *driver_state =
+        handoff_status->driver_state;
+    if (handoff_status->version !=
+            PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_REQUEST_HANDOFF_SCAFFOLD_STATUS_VERSION ||
+        handoff_status->invocation_id != request->invocation_id ||
+        handoff_status->request_owner != coordinator ||
+        handoff_status->runtime_dispatch_scaffold_status !=
+            &coordinator->runtime_dispatch_scaffold_status ||
+        handoff_status->handoff_eligible == 0U || driver_state == nullptr) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_HANDOFF_DRIVER;
+    } else if (driver_state != &coordinator->runtime_dispatch_request_handoff_driver_state ||
+               driver_state->version !=
+                   PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_HANDOFF_DRIVER_STATE_VERSION ||
+               driver_state->invocation_id != request->invocation_id ||
+               driver_state->request_owner != coordinator ||
+               driver_state->runtime_dispatch_scaffold_status !=
+                   &coordinator->runtime_dispatch_scaffold_status ||
+               driver_state->runtime_path != &coordinator->descriptor_allocation.runtime_path) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_HANDOFF_DRIVER;
+    }
+    if (handoff_status->status == PTO_CUDA_RUNTIME_FUSION_STATUS_PASSED ||
+        (driver_state != nullptr && driver_state->status == PTO_CUDA_RUNTIME_FUSION_STATUS_PASSED)) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE;
+    }
     return failures;
 }
 
@@ -535,8 +616,54 @@ inline int pto_cuda_runtime_fusion_prepare_runtime_dispatch_scaffold_status(
     return 0;
 }
 
+inline int pto_cuda_runtime_fusion_prepare_runtime_dispatch_request_handoff_scaffold_status(
+    const PtoCudaRuntimeFusionRequest *request, PtoCudaRuntimeFusionCoordinator *coordinator
+) {
+    if (request == nullptr || coordinator == nullptr ||
+        coordinator->version != PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION ||
+        coordinator->invocation_id != request->invocation_id) {
+        return -1;
+    }
+
+    coordinator->runtime_dispatch_request_handoff_driver_state = {};
+    coordinator->runtime_dispatch_request_handoff_driver_state.version =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_HANDOFF_DRIVER_STATE_VERSION;
+    coordinator->runtime_dispatch_request_handoff_driver_state.invocation_id =
+        request->invocation_id;
+    coordinator->runtime_dispatch_request_handoff_driver_state.request_owner = coordinator;
+    coordinator->runtime_dispatch_request_handoff_driver_state.runtime_dispatch_scaffold_status =
+        &coordinator->runtime_dispatch_scaffold_status;
+    coordinator->runtime_dispatch_request_handoff_driver_state.runtime_path =
+        &coordinator->descriptor_allocation.runtime_path;
+    coordinator->runtime_dispatch_request_handoff_driver_state.status =
+        PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
+    coordinator->runtime_dispatch_request_handoff_driver_state.failure_fields =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
+
+    coordinator->runtime_dispatch_request_handoff_scaffold_status = {};
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.version =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_REQUEST_HANDOFF_SCAFFOLD_STATUS_VERSION;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.invocation_id =
+        request->invocation_id;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.request_owner = coordinator;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.runtime_dispatch_scaffold_status =
+        &coordinator->runtime_dispatch_scaffold_status;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.driver_state =
+        &coordinator->runtime_dispatch_request_handoff_driver_state;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.handoff_eligible = 1U;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.status =
+        PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
+    coordinator->runtime_dispatch_request_handoff_scaffold_status.failure_fields =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
+    return 0;
+}
+
 inline int pto_cuda_runtime_fusion_failure_is_runtime_dispatch_scaffold_failed(uint32_t failures) {
     return (failures & PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD) != 0U;
+}
+
+inline int pto_cuda_runtime_fusion_failure_is_runtime_dispatch_handoff_failed(uint32_t failures) {
+    return (failures & PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_HANDOFF_DRIVER) != 0U;
 }
 
 inline int persistent_device_uccl_ep_runtime_fusion_entry(
@@ -606,6 +733,9 @@ inline int persistent_device_uccl_ep_runtime_fusion_entry(
     } else if (pto_cuda_runtime_fusion_failure_is_runtime_dispatch_scaffold_failed(out.failure_fields)) {
         out.status = PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED;
         out.reason = "private UCCL-EP runtime dispatch scaffold/status gate validation failed";
+    } else if (pto_cuda_runtime_fusion_failure_is_runtime_dispatch_handoff_failed(out.failure_fields)) {
+        out.status = PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED;
+        out.reason = "private UCCL-EP runtime dispatch request/driver handoff validation failed";
     } else if (pto_cuda_runtime_fusion_failure_is_runtime_path_failed(out.failure_fields)) {
         out.status = PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED;
         out.reason = "private UCCL-EP runtime path validation failed";
