@@ -4765,6 +4765,127 @@ def test_runtime_dispatch_driver_backend_combine_payload_transfer_completion_han
     assert "/home/" not in normalized_dispatch
 
 
+def test_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_scaffold_status_slice_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+    normalized_dispatch = " ".join(texts["dispatch"].split())
+    assert (
+        "Worker id `019f0051-f453-7862-bb67-2016006e927e`; worker name `Noether`"
+        in normalized_dispatch
+    )
+
+    required_terms = [
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-scaffold-status",
+        "Runtime Dispatch Driver Backend Combine Payload Transfer Completion Handoff Scaffold Status Slice",
+        "PR #202",
+        "925eed3e",
+        "private handoff scaffold/status only",
+        "not a real payload transfer, completion, handoff, transport, or backend implementation",
+        "PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_SCAFFOLD_STATUS_VERSION",
+        "PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffScaffoldStatus",
+        "PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffStatus",
+        "pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_status_name",
+        "pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_scaffold_status",
+        "test_private_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_scaffold_status_is_backend_owned",
+        "backend request scaffold/status input",
+        "dispatch request scaffold/status dependency",
+        "combine request scaffold/status dependency",
+        "combine payload descriptor scaffold/status dependency",
+        "combine payload transfer scaffold/status dependency",
+        "combine payload transfer completion scaffold/status dependency",
+        "prepared handoff scaffold/status remains `unsupported`",
+        "actual_fused_cross_gpu_execution == 0",
+        "status sink/handoff sink",
+        "completion scaffold dependency",
+        "transfer scaffold dependency",
+        "public/provenance sourced state",
+        "fabricated pass evidence",
+        "driver_backend_combine_payload_transfer_completion_handoff_pending",
+        "driver_backend_combine_payload_transfer_completion_handoff_unimplemented",
+        "driver_backend_combine_payload_transfer_completion_handoff_status_sink_unbound",
+        "driver_backend_combine_payload_transfer_completion_handoff_map_unsupported_boundary",
+        "driver_backend_combine_payload_transfer_completion_handoff_owner_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_invocation_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_completion_scaffold_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_transfer_scaffold_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_descriptor_token_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_rank_device_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_status_sink_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_public_api_sourced_state",
+        "driver_backend_combine_payload_transfer_completion_handoff_provenance_sourced_state",
+        "driver_backend_combine_payload_transfer_completion_handoff_fabricated_pass_evidence",
+        "PtoCudaRuntimeFusionFailure",
+        "1U << 31U",
+        "no `1U << 32U`",
+        "no public ABI widening",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD",
+        "existing combine-payload scaffold aggregate failure bit",
+        "focused red check failed first",
+        "1 failed in 0.51s",
+        "1 passed in 0.44s",
+        "git diff --check",
+        "markdownlint-cli2",
+        "NVIDIA review guard",
+        "full private runtime-fusion pytest",
+        "NVIDIA review-artifact pytest",
+        "no real UCCL-EP dispatch/combine work",
+        "no descriptor allocation behavior change",
+        "no payload transfer implementation",
+        "no completion implementation",
+        "no handoff implementation",
+        "no transport/backend execution",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "no public API expansion",
+        "no examples/stable docs/serving/vLLM/DeepSeek/performance claims",
+        "persistent_device_uccl_ep_runtime_fusion.status: passed",
+        "actual_fused_cross_gpu_execution: true",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-result-map",
+        "selected exactly one next PR-sized docs/test map slice",
+        "future private completion handoff result boundary",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split())
+        for required in required_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+        if name != "dispatch":
+            assert "/home/" not in normalized
+
+    header = (
+        ROOT / "src" / "cuda" / "platform" / "include" / "host"
+        / "pto_cuda_runtime_fusion_abi.h"
+    ).read_text(encoding="utf-8")
+    private_test = (
+        ROOT / "tests" / "ut" / "py"
+        / "test_cuda_runtime_fusion_private_entry.py"
+    ).read_text(encoding="utf-8")
+    for required in [
+        "PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_COMPLETION_HANDOFF_SCAFFOLD_STATUS_VERSION",
+        "PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffScaffoldStatus",
+        "PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferCompletionHandoffStatus",
+        "pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_status_name",
+        "pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_scaffold_status",
+        "runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_scaffold_status",
+        "PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD",
+    ]:
+        assert required in header
+    assert (
+        "test_private_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_scaffold_status_is_backend_owned"
+        in private_test
+    )
+    assert "actual_fused_cross_gpu_execution == 0U" in private_test
+
+
 def test_chat_256k_needle_stream_evidence_is_review_safe():
     evidence = (
         ROOT
