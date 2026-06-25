@@ -2056,6 +2056,64 @@ Selected next slice:
 This is selected exactly one next PR-sized implementation slice for private
 result transport scaffold/status only.
 
+## Runtime Dispatch Driver Backend Combine Payload Transfer Completion Handoff Result Transport Scaffold Status Slice
+
+This selection note records the
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-result-transport-scaffold-status`
+slice after merged PR #206 (`93713fee`). This is private result transport
+scaffold/status only, not result transport/backend execution.
+
+The implementation depends on backend request scaffold/status input,
+dispatch request scaffold/status dependency, combine request scaffold/status
+dependency, combine payload descriptor scaffold/status dependency, combine
+payload transfer scaffold/status dependency, combine payload transfer
+completion scaffold/status dependency, combine payload transfer completion
+handoff scaffold/status dependency, and handoff result scaffold/status
+dependency.
+
+Validation records transport owner, same invocation, descriptor token,
+rank/device/world size, status sink, result sink, transport sink/handle,
+public/provenance sourced state, and fabricated pass evidence. valid
+prepared result transport scaffold/status remains `unsupported`, keeps
+`actual_fused_cross_gpu_execution == 0`, and records no actual fused
+execution claim.
+
+Result transport status vocabulary includes
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_map_unsupported_boundary`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_owner_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_invocation_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_handoff_result_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_descriptor_token_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_rank_device_world_size_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_status_sink_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_result_sink_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_sink_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_handle_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_public_api_sourced_state`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_provenance_sourced_state`,
+and
+`driver_backend_combine_payload_transfer_completion_handoff_result_transport_fabricated_pass_evidence`.
+
+Failure-bit design note: `PtoCudaRuntimeFusionFailure` is exhausted through
+`1U << 31U`; there is no `1U << 32U` and no public ABI widening. The slice
+reuses `PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD`
+for result transport scaffold/status validation.
+
+This slice records no real UCCL-EP dispatch/combine work, no descriptor
+allocation behavior change, no payload transfer implementation, no completion
+implementation, no handoff implementation, no real result transport
+implementation, no transport/backend execution, no scheduler/runtime pass
+evidence, no fresh H200 fused success, no public API expansion, no public
+`TaskArgs`, no public `CallConfig`, no common runtime C API, no UCCL
+host-runtime ABI, and no examples/stable docs/serving/vLLM/DeepSeek/performance claims.
+It does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`
+and does not set `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-result-transport-completion-map`.
+This is selected exactly one next PR-sized docs/test map slice for the
+future private result transport completion boundary.
+
 ## Non-Claims
 
 UCCL PTO host-runtime dispatch, RDMA evidence, multi-node evidence,
