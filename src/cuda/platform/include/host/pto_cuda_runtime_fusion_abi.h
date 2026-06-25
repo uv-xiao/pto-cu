@@ -34,6 +34,8 @@ static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_REQUEST_S
 static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_DISPATCH_REQUEST_SCAFFOLD_STATUS_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_REQUEST_SCAFFOLD_STATUS_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD_STATUS_VERSION = 1;
+static const uint32_t
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_SCAFFOLD_STATUS_VERSION = 1;
 
 enum PtoCudaRuntimeFusionStatus : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED = 1,
@@ -205,6 +207,25 @@ enum PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadStatus : uint32_t {
     PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_STATUS_PUBLIC_API_SOURCED_STATE = 12,
     PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_STATUS_PROVENANCE_SOURCED_STATE = 13,
     PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_STATUS_FABRICATED_PASS_EVIDENCE = 14,
+};
+
+enum PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferStatus : uint32_t {
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_PENDING = 1,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_TRANSFER_UNIMPLEMENTED = 2,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_OUTPUT_STATUS_SINK_UNBOUND = 3,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_UNSUPPORTED_BOUNDARY = 4,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_OWNER_MISMATCH = 5,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_INVOCATION_MISMATCH = 6,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_REQUEST_SCAFFOLD_MISMATCH = 7,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_DISPATCH_REQUEST_SCAFFOLD_MISMATCH = 8,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_COMBINE_REQUEST_SCAFFOLD_MISMATCH = 9,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_PAYLOAD_SCAFFOLD_MISMATCH = 10,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_DESCRIPTOR_TOKEN_MISMATCH = 11,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_RANK_DEVICE_MISMATCH = 12,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_STATUS_SINK_MISMATCH = 13,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_PUBLIC_API_SOURCED_STATE = 14,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_PROVENANCE_SOURCED_STATE = 15,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_FABRICATED_PASS_EVIDENCE = 16,
 };
 
 struct PtoCudaUcclEpRuntimeDescriptorView {
@@ -398,6 +419,25 @@ struct PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadScaffoldStatus {
     uint32_t failure_fields;
 };
 
+struct PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferScaffoldStatus {
+    uint32_t version;
+    uint64_t invocation_id;
+    const void *transfer_owner;
+    const PtoCudaUcclEpRuntimeDispatchDriverBackendRequestScaffoldStatus *backend_request_status;
+    const PtoCudaUcclEpRuntimeDispatchDriverBackendDispatchRequestScaffoldStatus *dispatch_request_status;
+    const PtoCudaUcclEpRuntimeDispatchDriverBackendCombineRequestScaffoldStatus *combine_request_status;
+    const PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadScaffoldStatus *combine_payload_status;
+    const PtoCudaUcclEpRuntimePath *runtime_path;
+    PtoCudaRuntimeFusionResult *status_sink;
+    const void *combine_payload_descriptor;
+    uint64_t shared_token;
+    uint32_t rank;
+    uint32_t device_id;
+    uint32_t world_size;
+    uint32_t status;
+    uint32_t failure_fields;
+};
+
 struct PtoCudaRuntimeFusionCoordinator {
     uint32_t version;
     uint64_t invocation_id;
@@ -417,6 +457,8 @@ struct PtoCudaRuntimeFusionCoordinator {
         runtime_dispatch_driver_backend_combine_request_scaffold_status;
     PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadScaffoldStatus
         runtime_dispatch_driver_backend_combine_payload_scaffold_status;
+    PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferScaffoldStatus
+        runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status;
     PtoCudaRuntimeFusionResult *output_sink;
     uint32_t status;
     uint32_t failure_fields;
@@ -762,6 +804,48 @@ inline const char *pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payl
             return "driver_backend_combine_payload_fabricated_pass_evidence";
         default:
             return "unknown_driver_backend_combine_payload_status";
+    }
+}
+
+inline const char *
+pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payload_transfer_status_name(
+    uint32_t status
+) {
+    switch (status) {
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_PENDING:
+            return "driver_backend_combine_payload_transfer_pending";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_TRANSFER_UNIMPLEMENTED:
+            return "driver_backend_combine_payload_transfer_unimplemented";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_OUTPUT_STATUS_SINK_UNBOUND:
+            return "driver_backend_combine_payload_transfer_output_status_sink_unbound";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_UNSUPPORTED_BOUNDARY:
+            return "driver_backend_combine_payload_transfer_map_unsupported_boundary";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_OWNER_MISMATCH:
+            return "driver_backend_combine_payload_transfer_owner_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_INVOCATION_MISMATCH:
+            return "driver_backend_combine_payload_transfer_invocation_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_REQUEST_SCAFFOLD_MISMATCH:
+            return "driver_backend_combine_payload_transfer_request_scaffold_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_DISPATCH_REQUEST_SCAFFOLD_MISMATCH:
+            return "driver_backend_combine_payload_transfer_dispatch_request_scaffold_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_COMBINE_REQUEST_SCAFFOLD_MISMATCH:
+            return "driver_backend_combine_payload_transfer_combine_request_scaffold_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_PAYLOAD_SCAFFOLD_MISMATCH:
+            return "driver_backend_combine_payload_transfer_payload_scaffold_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_DESCRIPTOR_TOKEN_MISMATCH:
+            return "driver_backend_combine_payload_transfer_descriptor_token_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_RANK_DEVICE_MISMATCH:
+            return "driver_backend_combine_payload_transfer_rank_device_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_STATUS_SINK_MISMATCH:
+            return "driver_backend_combine_payload_transfer_status_sink_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_PUBLIC_API_SOURCED_STATE:
+            return "driver_backend_combine_payload_transfer_public_api_sourced_state";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_PROVENANCE_SOURCED_STATE:
+            return "driver_backend_combine_payload_transfer_provenance_sourced_state";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_FABRICATED_PASS_EVIDENCE:
+            return "driver_backend_combine_payload_transfer_fabricated_pass_evidence";
+        default:
+            return "unknown_driver_backend_combine_payload_transfer_status";
     }
 }
 
@@ -1112,6 +1196,38 @@ inline int pto_cuda_runtime_fusion_prepare_private_coordinator(
     coordinator->runtime_dispatch_driver_backend_combine_payload_scaffold_status.status =
         PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_STATUS_UNSUPPORTED_BOUNDARY;
     coordinator->runtime_dispatch_driver_backend_combine_payload_scaffold_status.failure_fields =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.version =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_SCAFFOLD_STATUS_VERSION;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.invocation_id =
+        request->invocation_id;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.transfer_owner =
+        coordinator;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.backend_request_status =
+        &coordinator->runtime_dispatch_driver_backend_request_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.dispatch_request_status =
+        &coordinator->runtime_dispatch_driver_backend_dispatch_request_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.combine_request_status =
+        &coordinator->runtime_dispatch_driver_backend_combine_request_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.combine_payload_status =
+        &coordinator->runtime_dispatch_driver_backend_combine_payload_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.runtime_path =
+        &coordinator->descriptor_allocation.runtime_path;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.status_sink =
+        output_sink;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.combine_payload_descriptor =
+        coordinator->descriptor_allocation.runtime_path.combine_descriptor;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.shared_token =
+        coordinator->descriptor_allocation.combine_descriptor.shared_token;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.rank =
+        coordinator->descriptor_allocation.combine_descriptor.rank;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.device_id =
+        coordinator->descriptor_allocation.combine_descriptor.device_id;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.world_size =
+        coordinator->descriptor_allocation.combine_descriptor.world_size;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.status =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_UNSUPPORTED_BOUNDARY;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.failure_fields =
         PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
     coordinator->output_sink = output_sink;
     coordinator->status = PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
@@ -1665,6 +1781,154 @@ pto_cuda_runtime_fusion_validate_runtime_dispatch_driver_backend_combine_payload
     return failures;
 }
 
+inline uint32_t
+pto_cuda_runtime_fusion_validate_runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status(
+    const PtoCudaRuntimeFusionRequest *request, const PtoCudaRuntimeFusionCoordinator *coordinator
+) {
+    const PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferScaffoldStatus
+        *transfer_status =
+            &coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status;
+    const PtoCudaUcclEpRuntimePath *runtime_path = &coordinator->descriptor_allocation.runtime_path;
+    const PtoCudaUcclEpRuntimeDescriptorView *combine_descriptor = runtime_path->combine_descriptor;
+    const PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadScaffoldStatus
+        *combine_payload_status =
+            &coordinator->runtime_dispatch_driver_backend_combine_payload_scaffold_status;
+    uint32_t failures = 0;
+
+    if (transfer_status->version !=
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_SCAFFOLD_STATUS_VERSION) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH;
+    }
+    if (transfer_status->invocation_id != request->invocation_id) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH;
+    }
+    if (transfer_status->transfer_owner != coordinator) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH;
+    }
+    if (transfer_status->backend_request_status !=
+        &coordinator->runtime_dispatch_driver_backend_request_scaffold_status) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_REQUEST_SCAFFOLD;
+    }
+    if (transfer_status->dispatch_request_status !=
+        &coordinator->runtime_dispatch_driver_backend_dispatch_request_scaffold_status) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_DISPATCH_REQUEST_SCAFFOLD;
+    }
+    if (transfer_status->combine_request_status !=
+        &coordinator->runtime_dispatch_driver_backend_combine_request_scaffold_status) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_REQUEST_SCAFFOLD;
+    }
+    if (transfer_status->combine_payload_status != combine_payload_status) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH;
+    }
+    if (transfer_status->runtime_path != runtime_path) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RUNTIME_PATH_MISMATCH;
+    }
+    if (transfer_status->status_sink == nullptr ||
+        transfer_status->status_sink != request->output_sink) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH;
+    }
+    if (combine_descriptor == nullptr ||
+        transfer_status->combine_payload_descriptor != combine_descriptor ||
+        transfer_status->combine_payload_descriptor !=
+            combine_payload_status->combine_payload_descriptor ||
+        transfer_status->shared_token == 0U ||
+        transfer_status->shared_token != combine_descriptor->shared_token ||
+        transfer_status->shared_token != combine_payload_status->shared_token) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH;
+    }
+    if (request->comm_descriptor != nullptr &&
+        (transfer_status->rank != request->comm_descriptor->rank ||
+         transfer_status->device_id != request->comm_descriptor->device_id ||
+         transfer_status->world_size != request->comm_descriptor->world_size ||
+         transfer_status->rank != combine_payload_status->rank ||
+         transfer_status->device_id != combine_payload_status->device_id ||
+         transfer_status->world_size != combine_payload_status->world_size)) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RANK_DEVICE_MISMATCH;
+    }
+
+    const uint32_t propagated_transfer_failures =
+        transfer_status->failure_fields &
+        (PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RUNTIME_PATH_MISMATCH |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RANK_DEVICE_MISMATCH |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_PUBLIC_API_SOURCED_STATE |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_FABRICATED_PASS_EVIDENCE |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_REQUEST_SCAFFOLD |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_DISPATCH_REQUEST_SCAFFOLD |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_REQUEST_SCAFFOLD |
+         PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD);
+    if (propagated_transfer_failures != 0U) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                    propagated_transfer_failures;
+    }
+
+    switch (transfer_status->status) {
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_OWNER_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_INVOCATION_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_REQUEST_SCAFFOLD_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_REQUEST_SCAFFOLD;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_DISPATCH_REQUEST_SCAFFOLD_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_DISPATCH_REQUEST_SCAFFOLD;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_COMBINE_REQUEST_SCAFFOLD_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_REQUEST_SCAFFOLD;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_PAYLOAD_SCAFFOLD_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_DESCRIPTOR_TOKEN_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_RANK_DEVICE_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RANK_DEVICE_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_STATUS_SINK_MISMATCH:
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_OUTPUT_STATUS_SINK_UNBOUND:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_PUBLIC_API_SOURCED_STATE:
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_PROVENANCE_SOURCED_STATE:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_PUBLIC_API_SOURCED_STATE;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_FABRICATED_PASS_EVIDENCE:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_FABRICATED_PASS_EVIDENCE |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE;
+            break;
+        default:
+            break;
+    }
+    return failures;
+}
+
 inline uint32_t pto_cuda_runtime_fusion_validate_private_coordinator(
     const PtoCudaRuntimeFusionRequest *request, const PtoCudaRuntimeFusionCoordinator *coordinator
 ) {
@@ -1804,6 +2068,10 @@ inline uint32_t pto_cuda_runtime_fusion_validate_private_coordinator(
         );
     failures |=
         pto_cuda_runtime_fusion_validate_runtime_dispatch_driver_backend_combine_payload_scaffold_status(
+            request, coordinator
+        );
+    failures |=
+        pto_cuda_runtime_fusion_validate_runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status(
             request, coordinator
         );
     return failures;
@@ -2090,6 +2358,52 @@ pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_
     coordinator->runtime_dispatch_driver_backend_combine_payload_scaffold_status.status =
         PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_STATUS_UNSUPPORTED_BOUNDARY;
     coordinator->runtime_dispatch_driver_backend_combine_payload_scaffold_status.failure_fields =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
+    return 0;
+}
+
+inline int
+pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status(
+    const PtoCudaRuntimeFusionRequest *request, PtoCudaRuntimeFusionCoordinator *coordinator
+) {
+    if (request == nullptr || coordinator == nullptr ||
+        coordinator->version != PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION ||
+        coordinator->invocation_id != request->invocation_id) {
+        return -1;
+    }
+
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status = {};
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.version =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_SCAFFOLD_STATUS_VERSION;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.invocation_id =
+        request->invocation_id;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.transfer_owner =
+        coordinator;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.backend_request_status =
+        &coordinator->runtime_dispatch_driver_backend_request_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.dispatch_request_status =
+        &coordinator->runtime_dispatch_driver_backend_dispatch_request_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.combine_request_status =
+        &coordinator->runtime_dispatch_driver_backend_combine_request_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.combine_payload_status =
+        &coordinator->runtime_dispatch_driver_backend_combine_payload_scaffold_status;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.runtime_path =
+        &coordinator->descriptor_allocation.runtime_path;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.status_sink =
+        coordinator->output_sink;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.combine_payload_descriptor =
+        coordinator->descriptor_allocation.runtime_path.combine_descriptor;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.shared_token =
+        coordinator->descriptor_allocation.combine_descriptor.shared_token;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.rank =
+        coordinator->descriptor_allocation.combine_descriptor.rank;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.device_id =
+        coordinator->descriptor_allocation.combine_descriptor.device_id;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.world_size =
+        coordinator->descriptor_allocation.combine_descriptor.world_size;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.status =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_STATUS_UNSUPPORTED_BOUNDARY;
+    coordinator->runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status.failure_fields =
         PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
     return 0;
 }

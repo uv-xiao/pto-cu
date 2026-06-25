@@ -1501,6 +1501,79 @@ Selected next slice:
 This is selected exactly one next PR-sized implementation slice for private
 combine payload transfer scaffold/status only.
 
+## Runtime Dispatch Driver Backend Combine Payload Transfer Scaffold Status Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-scaffold-status`.
+
+This selection note records private combine payload transfer scaffold/status
+after PR #198 (`227eae4c34a1182aab3548951380379da4582dc8`). It accepts only
+private coordinator-owned transfer status in the CUDA runtime fusion ABI and
+does not implement payload transfer source behavior.
+
+Accepted private ABI/status vocabulary:
+
+- `PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_SCAFFOLD_STATUS_VERSION`;
+- `PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferScaffoldStatus`;
+- `PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferStatus`;
+- `pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payload_transfer_status_name`;
+- `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status`;
+- `test_private_runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status_is_backend_owned`.
+
+The transfer scaffold/status depends on backend request scaffold/status input,
+the dispatch request scaffold/status dependency, the combine request
+scaffold/status dependency, and the combine payload descriptor
+scaffold/status dependency. It validates owner, invocation, descriptor token,
+rank/device, status sink, payload scaffold dependency, invalid
+public/provenance sources, and fabricated pass evidence.
+
+The current `PtoCudaRuntimeFusionFailure` mask is exhausted through
+`1U << 31U`, so this slice reuses the existing combine-payload scaffold
+aggregate failure bit,
+`PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD`,
+instead of adding `1U << 32U` or widening public ABI fields.
+
+The valid prepared combine payload transfer scaffold/status remains
+`unsupported`; `actual_fused_cross_gpu_execution` remains `0`. The status
+vocabulary includes `driver_backend_combine_payload_transfer_pending`,
+`driver_backend_combine_payload_transfer_unimplemented`,
+`driver_backend_combine_payload_transfer_output_status_sink_unbound`,
+`driver_backend_combine_payload_transfer_map_unsupported_boundary`,
+`driver_backend_combine_payload_transfer_owner_mismatch`,
+`driver_backend_combine_payload_transfer_invocation_mismatch`,
+`driver_backend_combine_payload_transfer_request_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_dispatch_request_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_combine_request_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_payload_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_descriptor_token_mismatch`,
+`driver_backend_combine_payload_transfer_rank_device_mismatch`,
+`driver_backend_combine_payload_transfer_status_sink_mismatch`,
+`driver_backend_combine_payload_transfer_public_api_sourced_state`,
+`driver_backend_combine_payload_transfer_provenance_sourced_state`, and
+`driver_backend_combine_payload_transfer_fabricated_pass_evidence`.
+
+Focused TDD evidence: focused red check failed first with
+`1 failed in 0.46s`; focused green check passed with `1 passed in 0.45s`.
+Final verification passed: the final focused green rerun passed with `1 passed`; `git diff --check`
+passed; targeted markdownlint over the five NVIDIA in-progress docs reported
+`0 error(s)`; the NVIDIA review guard passed;
+`test_cuda_runtime_fusion_private_entry.py` passed with `23 passed`; and
+`test_nvidia_review_artifacts.py` passed with `85 passed`.
+
+This slice records no real UCCL-EP dispatch/combine work, no descriptor
+allocation behavior change, no payload transfer implementation, no
+transport/backend execution, no scheduler/runtime pass evidence, no fresh
+H200 fused success, no public API expansion, no public `TaskArgs`, no public
+`CallConfig`, no common runtime C API, no UCCL host-runtime ABI, and no
+examples, stable docs, serving, vLLM, DeepSeek, or performance claims. It
+does not report `persistent_device_uccl_ep_runtime_fusion.status: passed` and
+does not set `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-map`.
+This is selected exactly one next PR-sized dependency map slice for the future
+private combine payload transfer completion boundary.
+
 ## Non-Claims
 
 UCCL PTO host-runtime dispatch, RDMA evidence, multi-node evidence,

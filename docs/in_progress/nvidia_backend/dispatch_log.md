@@ -23,6 +23,117 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-26 - UCCL-EP Runtime Fusion Runtime Dispatch Driver Backend Combine Payload Transfer Scaffold Status Worker
+
+- Dispatcher Session or PR:
+  child worker session on branch
+  `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-scaffold-status`.
+  Worker id `019f0007-c72a-7902-94f4-95f9a04fa33b`; worker name `Russell`.
+  No tmux pane is used for this worker; the dispatcher
+  monitors through the child-worker PR and verification record.
+- Worker id and objective:
+  `019f0007-c72a-7902-94f4-95f9a04fa33b`;
+  implement private combine payload transfer scaffold/status after PR #198.
+  No nested workers were launched.
+- Exact Codex command or script invocation:
+  launched by the parent worker prompt for this branch. The expected PR
+  command shape is `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-scaffold-status`.
+- Startup notes:
+  `CLAUDE.md` was checked first and is absent in this checkout. Work continued
+  under `AGENTS.md`, `.agents/coding-guidance.md`, `.agents/rules/`, and the
+  task-relevant TDD, testing, commit, and PR workflows.
+- Parent goal and child slice:
+  NVIDIA backend restart; Runtime Dispatch Driver Backend Combine Payload
+  Transfer Scaffold Status Slice after merged PR #198. This is a private
+  ABI/status scaffold only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-scaffold-status`;
+  actual PR #199 <https://github.com/uv-xiao/pto-cu/pull/199>.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `227eae4c34a1182aab3548951380379da4582dc8`.
+- Allowed scope and files:
+  `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h`,
+  `tests/ut/py/test_cuda_runtime_fusion_private_entry.py`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`,
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`, and
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`.
+- Dependencies and blocked assumptions:
+  PR #198 merged as `227eae4c34a1182aab3548951380379da4582dc8`
+  (`Map combine payload transfer boundary (#198)`). This slice consumes
+  backend request scaffold/status input, the dispatch request
+  scaffold/status dependency, the combine request scaffold/status dependency,
+  and the combine payload descriptor scaffold/status dependency.
+- Accepted private ABI/status vocabulary:
+  `PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_COMBINE_PAYLOAD_TRANSFER_SCAFFOLD_STATUS_VERSION`,
+  `PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferScaffoldStatus`,
+  `PtoCudaUcclEpRuntimeDispatchDriverBackendCombinePayloadTransferStatus`,
+  `pto_cuda_uccl_ep_runtime_dispatch_driver_backend_combine_payload_transfer_status_name`,
+  `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status`,
+  and
+  `test_private_runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status_is_backend_owned`.
+- Failure-bit design note:
+  the current `PtoCudaRuntimeFusionFailure` mask is exhausted through
+  `1U << 31U`. The implementation does not add `1U << 32U` and does not
+  widen public ABI fields. Transfer scaffold/status failures reuse
+  `PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD`
+  as the existing combine-payload scaffold aggregate failure bit.
+- Validation contract:
+  the valid prepared combine payload transfer scaffold/status remains
+  `unsupported` and keeps `actual_fused_cross_gpu_execution` at `0`.
+  Mismatch validation fails closed for owner, invocation, payload scaffold
+  dependency, descriptor token, rank/device, status sink, public/provenance
+  sourced state, and fabricated pass evidence.
+- Transfer status vocabulary:
+  `driver_backend_combine_payload_transfer_pending`,
+  `driver_backend_combine_payload_transfer_unimplemented`,
+  `driver_backend_combine_payload_transfer_output_status_sink_unbound`,
+  `driver_backend_combine_payload_transfer_map_unsupported_boundary`,
+  `driver_backend_combine_payload_transfer_owner_mismatch`,
+  `driver_backend_combine_payload_transfer_invocation_mismatch`,
+  `driver_backend_combine_payload_transfer_request_scaffold_mismatch`,
+  `driver_backend_combine_payload_transfer_dispatch_request_scaffold_mismatch`,
+  `driver_backend_combine_payload_transfer_combine_request_scaffold_mismatch`,
+  `driver_backend_combine_payload_transfer_payload_scaffold_mismatch`,
+  `driver_backend_combine_payload_transfer_descriptor_token_mismatch`,
+  `driver_backend_combine_payload_transfer_rank_device_mismatch`,
+  `driver_backend_combine_payload_transfer_status_sink_mismatch`,
+  `driver_backend_combine_payload_transfer_public_api_sourced_state`,
+  `driver_backend_combine_payload_transfer_provenance_sourced_state`, and
+  `driver_backend_combine_payload_transfer_fabricated_pass_evidence`.
+- Verification commands and results:
+  focused red check failed first:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest
+  tests/ut/py/test_cuda_runtime_fusion_private_entry.py::test_private_runtime_dispatch_driver_backend_combine_payload_transfer_scaffold_status_is_backend_owned
+  -q` with `1 failed in 0.46s`. The red failure was a C++ compile failure for
+  the missing coordinator member, version constant, transfer status enum
+  values, status-name function, and prepare function. Focused green check
+  passed with the same command: `1 passed in 0.45s`. Final verification
+  passed: the final focused green rerun passed with `1 passed`;
+  `git diff --check` passed; targeted markdownlint over the five NVIDIA
+  in-progress docs reported `0 error(s)`; the NVIDIA review guard passed;
+  `test_cuda_runtime_fusion_private_entry.py` passed with `23 passed`; and
+  `test_nvidia_review_artifacts.py` passed with `85 passed`.
+- Merge decision and merge commit:
+  pending worker PR, dispatcher review, and exact-head merge decision.
+- Handoff summary and remaining gaps:
+  private scaffold/status only. no real UCCL-EP dispatch/combine work, no
+  descriptor allocation behavior change, no payload transfer implementation,
+  no transport/backend execution, no scheduler/runtime pass evidence, no fresh
+  H200 fused success, no public API expansion, no examples, stable docs,
+  serving, vLLM, DeepSeek, or performance claims. It does not report
+  `persistent_device_uccl_ep_runtime_fusion.status: passed` and does not set
+  `actual_fused_cross_gpu_execution: true`.
+- Selected next slice:
+  `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-map`.
+  This is selected exactly one next PR-sized dependency map slice for the
+  future private combine payload transfer completion boundary.
+
 ### 2026-06-26 - UCCL-EP Runtime Fusion Runtime Dispatch Driver Backend Combine Payload Transfer Map Worker
 
 - Dispatcher Session or PR:
