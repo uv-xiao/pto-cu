@@ -4886,6 +4886,127 @@ def test_runtime_dispatch_driver_backend_combine_payload_transfer_completion_han
     assert "actual_fused_cross_gpu_execution == 0U" in private_test
 
 
+def test_runtime_dispatch_driver_backend_combine_payload_transfer_completion_handoff_result_map_slice_is_review_safe():
+    in_progress_root = ROOT / "docs" / "in_progress" / "nvidia_backend"
+    docs = {
+        "persistent_moe": in_progress_root
+        / "persistent_moe_dispatch_combine_h200.md",
+        "boundary": in_progress_root / "communication_runtime_boundary.md",
+        "selection": in_progress_root / "communication_selection.md",
+        "slicing": in_progress_root / "pr_slicing_plan.md",
+        "dispatch": in_progress_root / "dispatch_log.md",
+    }
+    texts = {
+        name: path.read_text(encoding="utf-8") for name, path in docs.items()
+    }
+    normalized_dispatch = " ".join(texts["dispatch"].split())
+    assert (
+        "Worker id `019f0069-2df8-70f0-9e0c-8c90979a0378`; worker name `Banach`"
+        in normalized_dispatch
+    )
+
+    required_terms = [
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-result-map",
+        "Runtime Dispatch Driver Backend Combine Payload Transfer Completion Handoff Result Map Slice",
+        "PR #203",
+        "15a66e7b",
+        "docs/test mapping only",
+        "future private completion handoff result boundary",
+        "not real UCCL-EP dispatch/combine work",
+        "no descriptor allocation behavior change",
+        "no payload transfer",
+        "no completion",
+        "no handoff implementation",
+        "no transport/backend execution",
+        "no scheduler/runtime pass evidence",
+        "no fresh H200 fused success",
+        "no public API expansion",
+        "no examples/stable docs/serving/vLLM/DeepSeek/performance claims",
+        "backend request scaffold/status input",
+        "dispatch request scaffold/status dependency",
+        "combine request scaffold/status dependency",
+        "combine payload descriptor scaffold/status dependency",
+        "combine payload transfer scaffold/status dependency",
+        "combine payload transfer completion scaffold/status dependency",
+        "combine payload transfer completion handoff scaffold/status dependency",
+        "result owner",
+        "same invocation",
+        "backend request dependency",
+        "dispatch request dependency",
+        "combine request dependency",
+        "combine payload descriptor dependency",
+        "transfer scaffold/status dependency",
+        "completion scaffold/status dependency",
+        "handoff scaffold/status dependency",
+        "descriptor token",
+        "rank/device",
+        "status sink",
+        "result sink",
+        "no public/provenance sourced state",
+        "no fabricated pass evidence",
+        "review vocabulary only",
+        "not implementation claims",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_pending",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_unimplemented",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_status_sink_unbound",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_sink_unbound",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_map_unsupported_boundary",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_owner_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_invocation_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_backend_request_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_dispatch_request_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_combine_request_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_descriptor_scaffold_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_transfer_scaffold_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_completion_scaffold_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_handoff_scaffold_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_descriptor_token_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_rank_device_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_status_sink_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_sink_mismatch",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_public_api_sourced_state",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_provenance_sourced_state",
+        "driver_backend_combine_payload_transfer_completion_handoff_result_fabricated_pass_evidence",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-result-scaffold-status",
+        "selected exactly one next PR-sized implementation slice",
+        "private completion handoff result scaffold/status only",
+    ]
+    for name, text in texts.items():
+        normalized = " ".join(text.split())
+        for required in required_terms:
+            assert required in normalized, f"{name} missing {required!r}"
+        if name != "dispatch":
+            assert "/home/" not in normalized
+
+    dispatch_entry = texts["dispatch"].split(
+        "### 2026-06-26 - UCCL-EP Runtime Fusion Runtime Dispatch "
+        "Driver Backend Combine Payload Transfer Completion Handoff Result "
+        "Map Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_entry = " ".join(dispatch_entry.split())
+    for required in [
+        "Worker id `019f0069-2df8-70f0-9e0c-8c90979a0378`; worker name `Banach`",
+        "No tmux pane is used for this worker",
+        "No nested workers were launched",
+        "uv-xiao/pto-cu",
+        "base branch `main`",
+        "starting commit `15a66e7b",
+        "gh pr create --repo uv-xiao/pto-cu --base main --head",
+        "docs/in_progress/nvidia_backend/dispatch_log.md",
+        "docs/in_progress/nvidia_backend/pr_slicing_plan.md",
+        "docs/in_progress/nvidia_backend/communication_runtime_boundary.md",
+        "docs/in_progress/nvidia_backend/communication_selection.md",
+        "docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md",
+        "tests/ut/py/test_nvidia_review_artifacts.py",
+        "merge decision pending dispatcher review",
+        "does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "does not set `actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_entry
+    assert "/home/" not in normalized_entry
+
+
 def test_chat_256k_needle_stream_evidence_is_review_safe():
     evidence = (
         ROOT
