@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `0ee279a21a7341e7113ac353849b543899d6742a`,
-  after PR #177 (`Refresh NVIDIA status after PR 176`).
+- Current accepted `main`: `aea89cc9dea8560602c72f84e5ff6e78ca526434`,
+  after PR #178 (`Add private UCCL EP coordinator scaffold`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -162,12 +162,23 @@ from `main` and lands through focused GitHub PRs.
 - PR #177 recorded the post-PR176 status refresh and selected exactly one
   next coordinator-construction scaffold/status slice. It did not change CUDA
   runtime behavior, result shape, or fused-execution evidence status.
-- This branch implements only that private coordinator scaffold/status slice.
-  It introduces private coordinator-owned state for one
-  `ChipWorker::run` invocation so accepted descriptor allocation and the
-  private runtime path are owned together with the unsupported/failure status
-  and output sink. It remains narrower than UCCL-EP runtime dispatch and
-  narrower than pass evidence.
+- PR #178 accepted only the private coordinator scaffold/status surface:
+  private coordinator-owned state for one `ChipWorker::run` invocation so the
+  accepted descriptor allocation and private runtime path are owned together
+  with the same invocation id, unsupported/failure status, and output sink. It
+  remains unsupported and does not provide UCCL-EP runtime dispatch,
+  scheduler/runtime pass evidence, fresh H200 fused-success evidence, public
+  API expansion, examples, stable docs, serving, vLLM, DeepSeek, throughput,
+  or latency evidence.
+- This branch records the post-PR #178 status refresh and selects exactly one
+  next slice:
+  `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`. That
+  future branch may add only a private UCCL-EP runtime-dispatch
+  scaffold/status gate from coordinator-owned state. It must remain narrower
+  than scheduler/runtime pass evidence, make no fused-success claim, and
+  preserve `persistent_device_uccl_ep_runtime_fusion.status` as unsupported or
+  failed until real UCCL-EP dispatch and fresh H200 fused-boundary evidence
+  exist.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -316,6 +327,12 @@ from `main` and lands through focused GitHub PRs.
     construction, UCCL-EP runtime dispatch, pass evidence, H200 fused-success
     evidence, public runtime API expansion, examples, stable docs, serving,
     vLLM, DeepSeek, or performance evidence.
+- PR #178: add private UCCL EP coordinator scaffold.
+  - Result: merged as `aea89cc9dea8560602c72f84e5ff6e78ca526434`.
+  - Result type: private coordinator scaffold/status surface only, not
+    runtime dispatch, pass evidence, H200 fused-success evidence, public
+    runtime API expansion, examples, stable docs, serving, vLLM, DeepSeek, or
+    performance evidence.
 
 ## Restored Tracking Surface
 
@@ -414,11 +431,15 @@ fused-success evidence. After PR #176, the private descriptor allocation
 scaffold is accepted as a narrow private implementation slice only; it does
 not implement coordinator construction, UCCL-EP runtime dispatch, pass
 evidence, fresh H200 fused-success evidence, public API expansion, examples,
-stable docs, serving, vLLM, DeepSeek, throughput, or latency. The current
-accepted baseline is `6e0cecc174ae9db47573c4c0f1698be7accb295c`, and the
-next slice is exactly one narrow private coordinator-construction
-scaffold/status slice:
-`nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`.
+stable docs, serving, vLLM, DeepSeek, throughput, or latency. After PR #178,
+the private coordinator scaffold/status surface is accepted only for
+coordinator-owned state: accepted descriptor allocation, runtime path, same
+invocation id, unsupported/failure status, and output sink for one private
+`ChipWorker::run` invocation. It remains unsupported and does not provide
+runtime dispatch, pass evidence, or H200 fused success. The current accepted
+baseline is `aea89cc9dea8560602c72f84e5ff6e78ca526434`, and the next slice is
+exactly one narrow private UCCL-EP runtime-dispatch scaffold/status gate:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`.
 
 ## Accepted Payload Provenance Slice
 
@@ -1502,9 +1523,9 @@ fused-success evidence, public `TaskArgs`, public `CallConfig`, common
 runtime C API fields, UCCL host-runtime ABI fields, examples, stable docs,
 serving, vLLM, DeepSeek, throughput, or latency evidence.
 
-## Runtime Fusion Coordinator Scaffold Status Slice
+## Accepted Runtime Fusion Coordinator Scaffold Status Slice
 
-Selected branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`.
 
 Objective: implement only the private
@@ -1547,6 +1568,49 @@ Required non-claims for this slice:
 
 - no UCCL-EP runtime dispatch;
 - no pass evidence;
+- no fresh H200 fused-success evidence;
+- no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- no `actual_fused_cross_gpu_execution: true`;
+- no public API expansion, examples, stable docs, RDMA, multi-node transport,
+  serving, vLLM, DeepSeek, throughput, or latency claim.
+
+PR #178 accepted this coordinator scaffold/status surface only, merged as
+`aea89cc9dea8560602c72f84e5ff6e78ca526434`. It accepted private
+coordinator-owned state for one `ChipWorker::run` invocation: accepted
+descriptor allocation, runtime path, same invocation id, unsupported/failure
+status, and output sink. It remains unsupported and did not implement
+UCCL-EP runtime dispatch, scheduler/runtime pass evidence, fresh H200
+fused-success evidence, public `TaskArgs`, public `CallConfig`, common
+runtime C API fields, UCCL host-runtime ABI fields, examples, stable docs,
+serving, vLLM, DeepSeek, throughput, or latency.
+
+## Next Runtime Dispatch Scaffold Status Slice
+
+Selected branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`.
+
+Objective: add only a private UCCL-EP runtime-dispatch scaffold/status gate
+from coordinator-owned state after PR #178. The slice may consume the
+coordinator-owned descriptor allocation and runtime path, verify dispatch
+eligibility for one private invocation, and record explicit unsupported or
+failed status in the runtime-owned output sink.
+
+Required boundaries:
+
+- keep the gate private to the CUDA persistent-device runtime path;
+- consume PR #178 coordinator-owned state as a prerequisite rather than pass
+  evidence;
+- do not run real UCCL-EP dispatch/combine work;
+- keep scheduler/runtime pass evidence and fresh H200 fused-success evidence
+  out of scope;
+- keep public `TaskArgs`, public `CallConfig`, common runtime C API fields,
+  UCCL host-runtime ABI fields, examples, stable docs, adapter provenance,
+  handoff metadata, and payload provenance out of pass-evidence paths.
+
+Required non-claims:
+
+- no UCCL-EP runtime dispatch success;
+- no scheduler/runtime pass evidence;
 - no fresh H200 fused-success evidence;
 - no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
 - no `actual_fused_cross_gpu_execution: true`;

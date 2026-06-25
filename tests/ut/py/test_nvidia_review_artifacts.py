@@ -760,7 +760,7 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     )
     assert (
         "Current accepted `main`: "
-        "`0ee279a21a7341e7113ac353849b543899d6742a`"
+        "`aea89cc9dea8560602c72f84e5ff6e78ca526434`"
     ) in normalized_slicing
     assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-validation-policy-map" in slicing
@@ -2199,6 +2199,8 @@ def test_coordinator_scaffold_status_slice_is_review_safe():
 
     required_terms = [
         "nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status",
+        "pr #178",
+        "aea89cc9dea8560602c72f84e5ff6e78ca526434",
         "private coordinator",
         "descriptor allocation",
         "runtime path",
@@ -2206,6 +2208,8 @@ def test_coordinator_scaffold_status_slice_is_review_safe():
         "unsupported/failure status",
         "output sink",
         "missing_coordinator",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status",
+        "runtime-dispatch scaffold/status gate",
         "uccl-ep runtime dispatch",
         "pass evidence",
         "fresh h200 fused-success evidence",
@@ -2287,9 +2291,38 @@ def test_coordinator_scaffold_status_slice_is_review_safe():
         "no fresh H200 fused success",
         "no `persistent_device_uccl_ep_runtime_fusion.status: passed`",
         "no `actual_fused_cross_gpu_execution: true`",
+        "PR #178 merged as `aea89cc9dea8560602c72f84e5ff6e78ca526434`",
+        "accepts only the private UCCL-EP runtime-fusion coordinator",
+        "It does not accept runtime dispatch, pass evidence, or H200",
     ]:
         assert required in normalized_dispatch
     assert "pending dispatcher review" not in normalized_dispatch
+
+    post_refresh_entry = texts["dispatch"].split(
+        "### 2026-06-25 - Post-Coordinator-Scaffold Status Refresh Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_refresh = " ".join(post_refresh_entry.split())
+    for required in [
+        "nvidia-goal-status-post-coordinator-scaffold-status",
+        "019efeb7-1957-74d1-926c-462419958916",
+        "No tmux pane is used by this worker",
+        "No nested workers were launched",
+        "post-PR #178 NVIDIA backend status refresh",
+        "PR #178 merged as `aea89cc9dea8560602c72f84e5ff6e78ca526434`",
+        "accepted only for the private UCCL-EP runtime-fusion coordinator",
+        "accepted descriptor allocation, runtime path, same invocation id",
+        "unsupported/failure status, and output sink",
+        "It remains unsupported and provides no runtime dispatch",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status",
+        "private UCCL-EP runtime-dispatch scaffold/status gate",
+        "must not run real UCCL-EP dispatch/combine work",
+        "scheduler/runtime pass evidence",
+        "fresh H200 fused success",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+    ]:
+        assert required in normalized_refresh
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():
