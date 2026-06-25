@@ -1206,15 +1206,14 @@ fused-success evidence, public `TaskArgs`, public `CallConfig`, common
 runtime C API fields, UCCL host-runtime ABI fields, examples, stable docs,
 serving, vLLM, DeepSeek, throughput, or latency.
 
-## Runtime Fusion Coordinator Scaffold Status Slice
+## Accepted Runtime Fusion Coordinator Scaffold Status Slice
 
-The branch
-`nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status` implements a
-private coordinator-construction scaffold/status slice before any UCCL-EP
-runtime dispatch. It wires private coordinator state needed to own the PR #176
-descriptor allocation and PR #174 runtime path for one private
-`ChipWorker::run` invocation, but it does not run or claim UCCL-EP runtime
-dispatch.
+PR #178 merged as `aea89cc9dea8560602c72f84e5ff6e78ca526434` and accepted
+only the private coordinator-construction scaffold/status slice from
+`nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`. It wires private
+coordinator state needed to own the PR #176 descriptor allocation and PR #174
+runtime path for one private `ChipWorker::run` invocation, but it does not
+run or claim UCCL-EP runtime dispatch.
 
 The implemented scaffold owns the same invocation id, descriptor allocation,
 runtime path, unsupported/failure status, and runtime-owned output sink. The
@@ -1230,6 +1229,23 @@ success. The coordinator scaffold/status slice cannot claim
 `actual_fused_cross_gpu_execution: true`, pass evidence, or fresh H200
 fused-success evidence until real UCCL-EP runtime dispatch exists and a fresh
 H200 result proves coordinator-owned fused execution.
+
+## Next Runtime Dispatch Scaffold Status Slice
+
+The selected next PR-sized implementation slice is
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`. It may add
+only a private UCCL-EP runtime-dispatch scaffold/status gate from
+coordinator-owned state. It may consume the PR #178 coordinator-owned
+descriptor allocation and runtime path, validate dispatch eligibility for one
+private invocation, and record explicit unsupported or failed status through
+the runtime-owned output sink.
+
+This remains narrower than scheduler/runtime pass evidence and narrower than
+fresh H200 fused success. It must not run real UCCL-EP dispatch/combine work,
+claim UCCL-EP runtime dispatch success, emit pass evidence, report
+`persistent_device_uccl_ep_runtime_fusion.status: passed`, set
+`actual_fused_cross_gpu_execution: true`, or add public API, RDMA, multi-node,
+serving, vLLM, DeepSeek, throughput, or latency claims.
 
 ## Future Fused Execution Evidence Shape
 

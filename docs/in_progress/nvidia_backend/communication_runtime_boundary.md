@@ -962,13 +962,14 @@ fused-success evidence, public `TaskArgs`, public `CallConfig`, common
 runtime C API fields, UCCL host-runtime ABI fields, examples, stable docs,
 serving, vLLM, DeepSeek, throughput, or latency.
 
-## Runtime Fusion Coordinator Scaffold Status Slice
+## Accepted Runtime Fusion Coordinator Scaffold Status Slice
 
-The branch `nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`
-implements a private coordinator-construction scaffold/status slice. It wires
-private coordinator state needed to own the PR #176 descriptor allocation and
-PR #174 runtime path, but it remains narrower than UCCL-EP runtime dispatch
-and narrower than pass evidence.
+PR #178 merged as `aea89cc9dea8560602c72f84e5ff6e78ca526434` and accepted
+only the private coordinator scaffold/status surface from
+`nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`. It wires private
+coordinator state needed to own the PR #176 descriptor allocation and PR #174
+runtime path, but it remains narrower than UCCL-EP runtime dispatch and
+narrower than pass evidence.
 
 The coordinator scaffold stays private to the CUDA persistent-device runtime
 path for one `ChipWorker::run` invocation. It consumes PR #164
@@ -982,6 +983,29 @@ coordinator-owned evidence.
 This slice does not implement UCCL-EP runtime dispatch, pass evidence, fresh
 H200 fused-success evidence, public API expansion, examples, stable docs,
 serving, vLLM, DeepSeek, throughput, or latency.
+
+The accepted surface is private coordinator-owned state for one
+`ChipWorker::run` invocation: accepted descriptor allocation, runtime path,
+same invocation id, unsupported/failure status, and output sink. It remains
+unsupported and provides no runtime dispatch, pass evidence, or H200 fused
+success.
+
+## Next Runtime Dispatch Scaffold Status Slice
+
+The selected next PR-sized implementation slice is
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-scaffold-status`. It may add
+only a private UCCL-EP runtime-dispatch scaffold/status gate from
+coordinator-owned state. The gate may consume the PR #178 coordinator-owned
+descriptor allocation and runtime path, check dispatch eligibility for one
+private invocation, and record explicit unsupported or failed status in the
+runtime-owned output sink.
+
+The slice must not run real UCCL-EP dispatch/combine work, emit
+scheduler/runtime pass evidence, claim fresh H200 fused success, widen public
+`TaskArgs` or `CallConfig`, widen common runtime C API or UCCL host-runtime
+ABI fields, add examples or stable docs, or report
+`persistent_device_uccl_ep_runtime_fusion.status: passed` or
+`actual_fused_cross_gpu_execution: true`.
 
 ## Non-Claims
 
