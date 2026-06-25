@@ -544,6 +544,20 @@ JSON, handoff metadata, payload provenance, public `TaskArgs`, and public
 `CallConfig` are rejected as `fabricated_or_untrusted_pass_evidence` if they
 try to provide pass-like fields.
 
+The coordinator scaffold/status slice narrows only the missing coordinator
+state. `PtoCudaRuntimeFusionCoordinator` is private to
+`pto_cuda_runtime_fusion_abi.h`, and
+`pto_cuda_runtime_fusion_prepare_private_coordinator` binds one invocation id
+to the accepted descriptor allocation, coordinator-owned UCCL-EP runtime path,
+unsupported/failure status, and runtime-owned output sink. The CUDA host
+runtime stores this as `runtime_fusion_coordinator_` from
+`CudaDeviceRunner::record_runtime_fusion_unsupported`.
+
+This clears `missing_coordinator` only when the request fields point at the
+coordinator-owned descriptor allocation and runtime path. The final result is
+still `unsupported`; UCCL-EP runtime dispatch is not implemented, no pass
+evidence is emitted, and `actual_fused_cross_gpu_execution` remains false.
+
 PR #157 (`nvidia-uccl-ep-runtime-fusion-chip-storage-task-args-request`) is
 closed invalid. It tried to satisfy the missing `ChipStorageTaskArgs` field by
 assigning the persistent DAG run `args` pointer to
@@ -950,32 +964,30 @@ serving, vLLM, DeepSeek, throughput, or latency.
 
 ## Runtime Fusion Coordinator Scaffold Status Slice
 
-The next selected slice is
-`nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`, a private
-coordinator-construction scaffold/status slice. It may define or wire private
-coordinator state needed to own the PR #176 descriptor allocation and PR #174
-runtime path, but it must remain narrower than UCCL-EP runtime dispatch and
-narrower than pass evidence.
+The branch `nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`
+implements a private coordinator-construction scaffold/status slice. It wires
+private coordinator state needed to own the PR #176 descriptor allocation and
+PR #174 runtime path, but it remains narrower than UCCL-EP runtime dispatch
+and narrower than pass evidence.
 
-The future coordinator scaffold/status slice must stay private to the CUDA
-persistent-device runtime path for one `ChipWorker::run` invocation. It may
-consume PR #164 same-invocation request args, PR #166 capability metadata,
-PR #168 validation policy, PR #170 allocation policy, PR #172 runtime-path
-map, PR #174 runtime-path scaffold, and PR #176 descriptor allocation
-scaffold only as prerequisites. Those prerequisites cannot claim fused success
-until UCCL-EP runtime dispatch exists and a fresh H200 fused-boundary result
-records real coordinator-owned evidence.
+The coordinator scaffold stays private to the CUDA persistent-device runtime
+path for one `ChipWorker::run` invocation. It consumes PR #164
+same-invocation request args, PR #166 capability metadata, PR #168 validation
+policy, PR #170 allocation policy, PR #172 runtime-path map, PR #174
+runtime-path scaffold, and PR #176 descriptor allocation scaffold only as
+prerequisites. Those prerequisites cannot claim fused success until UCCL-EP
+runtime dispatch exists and a fresh H200 fused-boundary result records real
+coordinator-owned evidence.
 
-This status refresh does not implement coordinator construction, UCCL-EP
-runtime dispatch, pass evidence, fresh H200 fused-success evidence, public API
-expansion, examples, stable docs, serving, vLLM, DeepSeek, throughput, or
-latency.
+This slice does not implement UCCL-EP runtime dispatch, pass evidence, fresh
+H200 fused-success evidence, public API expansion, examples, stable docs,
+serving, vLLM, DeepSeek, throughput, or latency.
 
 ## Non-Claims
 
-This status refresh does not claim UCCL host-runtime dispatch, RDMA,
-multi-node transport, serving integration, vLLM integration, or DeepSeek
-model correctness. The UCCL-EP handoff is adapter/probe evidence only. Later
-slices must add fresh implementation, evidence, and docs before making
-broader communication or serving claims.
+This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node
+transport, serving integration, vLLM integration, or DeepSeek model
+correctness. The UCCL-EP handoff is adapter/probe evidence only. Later slices
+must add fresh implementation, evidence, and docs before making broader
+communication or serving claims.
 DeepSeek model correctness remains out of scope.

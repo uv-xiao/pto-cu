@@ -7,8 +7,8 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `6e0cecc174ae9db47573c4c0f1698be7accb295c`,
-  after PR #176 (`Add private UCCL EP descriptor allocation scaffold`).
+- Current accepted `main`: `0ee279a21a7341e7113ac353849b543899d6742a`,
+  after PR #177 (`Refresh NVIDIA status after PR 176`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -159,9 +159,15 @@ from `main` and lands through focused GitHub PRs.
   fused-success evidence, public `TaskArgs`, public `CallConfig`, common
   runtime C API fields, UCCL host-runtime ABI fields, examples, stable docs,
   serving, vLLM, DeepSeek, throughput, or latency evidence.
-- This branch records the post-PR176 status refresh and selects exactly one
-  next coordinator-construction scaffold/status slice. It does not change CUDA
+- PR #177 recorded the post-PR176 status refresh and selected exactly one
+  next coordinator-construction scaffold/status slice. It did not change CUDA
   runtime behavior, result shape, or fused-execution evidence status.
+- This branch implements only that private coordinator scaffold/status slice.
+  It introduces private coordinator-owned state for one
+  `ChipWorker::run` invocation so accepted descriptor allocation and the
+  private runtime path are owned together with the unsupported/failure status
+  and output sink. It remains narrower than UCCL-EP runtime dispatch and
+  narrower than pass evidence.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -1501,13 +1507,13 @@ serving, vLLM, DeepSeek, throughput, or latency evidence.
 Selected branch:
 `nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`.
 
-Objective: select and document only the next private
-runtime-fusion-coordinator construction scaffold/status slice after PR #176.
-The future slice may define or wire private coordinator state needed to own
-the accepted descriptor allocation and private runtime path, but it must stay
-narrower than UCCL-EP runtime dispatch and narrower than pass evidence.
+Objective: implement only the private
+runtime-fusion-coordinator scaffold/status slice after PR #176 and PR #177.
+The slice defines and wires private coordinator state needed to own the
+accepted descriptor allocation and private runtime path, but it stays narrower
+than UCCL-EP runtime dispatch and narrower than pass evidence.
 
-Required future-slice boundaries:
+Implemented boundaries:
 
 - keep coordinator construction private to the CUDA persistent-device runtime
   path for one `ChipWorker::run` invocation;
@@ -1517,15 +1523,28 @@ Required future-slice boundaries:
   scaffold as prerequisites rather than pass evidence;
 - define or wire only private coordinator state needed to own the descriptor
   allocation, runtime path, unsupported/failure status, and output sink;
+- clear `missing_coordinator` only when the request points at
+  coordinator-owned descriptor allocation and runtime path state;
 - leave UCCL-EP runtime dispatch, scheduler/runtime pass evidence, and fresh
   H200 fused-success evidence out of scope;
 - keep public `TaskArgs`, public `CallConfig`, common runtime C API fields,
   UCCL host-runtime ABI fields, examples, stable docs, adapter provenance,
   handoff metadata, and payload provenance out of pass-evidence paths.
 
-Required non-claims for this status-refresh PR and the selected future slice:
+Implemented surface in this branch:
 
-- no coordinator implementation in this status-refresh PR;
+- `PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION`;
+- `PtoCudaRuntimeFusionCoordinator`;
+- `pto_cuda_runtime_fusion_prepare_private_coordinator`;
+- `pto_cuda_runtime_fusion_request_has_private_coordinator_shape`;
+- `pto_cuda_runtime_fusion_validate_private_coordinator`;
+- `CudaDeviceRunner::record_runtime_fusion_unsupported` now records
+  `runtime_fusion_coordinator_`, sets `request.coordinator`, and passes the
+  coordinator-owned descriptor allocation, runtime path, and output sink to
+  the private runtime-fusion entry.
+
+Required non-claims for this slice:
+
 - no UCCL-EP runtime dispatch;
 - no pass evidence;
 - no fresh H200 fused-success evidence;

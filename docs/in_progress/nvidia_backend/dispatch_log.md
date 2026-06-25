@@ -23,6 +23,116 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-25 - UCCL-EP Runtime Fusion Coordinator Scaffold Status Worker
+
+- Dispatcher Session or PR:
+  multi-agent child worker session on branch
+  `nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`. The tmux Codex
+  session id `019ef12d-1c34-7523-86bc-756db68f3b68` is recorded as an
+  abandoned launcher attempt. Multi-agent worker
+  `019efea2-8e09-70c1-bce5-9f02250f27f3` is the active worker.
+- Worker id and objective:
+  `multi-agent-worker-coordinator-scaffold-status`; implement only the
+  private UCCL-EP runtime-fusion coordinator scaffold/status slice. The
+  scaffold owns the accepted descriptor allocation, runtime path, same
+  invocation id, unsupported/failure status, and output sink for one private
+  `ChipWorker::run` invocation.
+- Exact Codex command or script invocation:
+  launched by the parent multi-agent dispatcher prompt for this branch. No
+  nested workers were launched.
+- Monitor locators:
+  abandoned launcher Codex session id
+  `019ef12d-1c34-7523-86bc-756db68f3b68`; active multi-agent worker
+  `019efea2-8e09-70c1-bce5-9f02250f27f3` in this worktree. No tmux pane is
+  used by this worker.
+- Parent goal and child slice:
+  NVIDIA backend restart; private coordinator scaffold/status implementation
+  after PR #176 and PR #177.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`; PR #178
+  <https://github.com/uv-xiao/pto-cu/pull/178>; opened as a non-draft PR
+  against `uv-xiao/pto-cu` `main` with expected PR command:
+  `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `0ee279a21a7341e7113ac353849b543899d6742a`.
+- Allowed scope and files:
+  `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h`,
+  `src/cuda/platform/onboard/host/pto_runtime_c_api.cpp`,
+  `tests/ut/py/test_cuda_runtime_fusion_private_entry.py`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`,
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`, and
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`.
+- Dependencies and blocked assumptions:
+  PR #164 same-invocation request args, PR #166 capability metadata, PR #168
+  validation policy, PR #170 allocation policy, PR #172 runtime-path map,
+  PR #174 runtime-path scaffold, and PR #176 descriptor allocation scaffold
+  are prerequisites only, not pass evidence.
+- Implemented surface:
+  private `PtoCudaRuntimeFusionCoordinator`,
+  `pto_cuda_runtime_fusion_prepare_private_coordinator`,
+  private coordinator-shape validation, and CUDA host-runtime storage in
+  `runtime_fusion_coordinator_`. The private entry clears
+  `missing_coordinator` only when the request points at coordinator-owned
+  descriptor allocation and runtime path state. The final result remains
+  `unsupported`.
+- Forbidden and non-claimed surfaces:
+  no real UCCL-EP runtime dispatch, no pass evidence, no fresh H200 fused
+  success, no `persistent_device_uccl_ep_runtime_fusion.status: passed`, no
+  `actual_fused_cross_gpu_execution: true`, no public `TaskArgs`, no public
+  `CallConfig`, no common runtime C API fields, no UCCL host-runtime ABI
+  fields, no examples, no stable docs, no RDMA, no multi-node transport, no
+  serving, no vLLM, no DeepSeek, no throughput, and no latency claim.
+- Verification commands and results:
+  started with the required focused red test:
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  /home/uvxiao/pto-cu/.venv/bin/python -m pytest
+  tests/ut/py/test_cuda_runtime_fusion_private_entry.py::test_private_coordinator_scaffold_owns_runtime_path_for_one_invocation
+  -q` failed before implementation with `1 failed in 0.32s`. The failure was
+  the expected missing private coordinator surface:
+  `PtoCudaRuntimeFusionCoordinator` was not declared,
+  `pto_cuda_runtime_fusion_prepare_private_coordinator` was not declared, and
+  `PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION` was not declared.
+  Focused post-implementation pytest for
+  `tests/ut/py/test_cuda_runtime_fusion_private_entry.py` passed with
+  `14 passed in 3.29s`. Required final verification sweep:
+  `git diff --check` passed with no output.
+  `npx --no-install markdownlint-cli2 --config
+  tests/lint/.markdownlint.yaml
+  docs/in_progress/nvidia_backend/communication_runtime_boundary.md
+  docs/in_progress/nvidia_backend/communication_selection.md
+  docs/in_progress/nvidia_backend/dispatch_log.md
+  docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md
+  docs/in_progress/nvidia_backend/pr_slicing_plan.md` passed with
+  `Summary: 0 error(s)`. `PYTHONPATH=$PWD:$PWD/python
+  /home/uvxiao/pto-cu/.venv/bin/python
+  .agents/checks/check_nvidia_review_ready.py` passed with
+  `nvidia review guard passed`.
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  /home/uvxiao/pto-cu/.venv/bin/python -m pytest
+  tests/ut/py/test_cuda_runtime_fusion_private_entry.py -q` passed with
+  `14 passed in 3.37s`.
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  /home/uvxiao/pto-cu/.venv/bin/python -m pytest
+  tests/ut/py/test_nvidia_review_artifacts.py -q` passed with
+  `67 passed in 0.73s`.
+- H200 evidence:
+  No CUDA/H200 command was run or planned because this slice does not reach a
+  hardware behavior surface, does not dispatch UCCL-EP runtime work, and does
+  not claim fused success.
+- Merge decision and merge commit:
+  pending PR review.
+- Handoff summary and remaining gaps:
+  implemented only the private coordinator scaffold/status state that owns
+  descriptor allocation, runtime path, invocation id, unsupported/failure
+  status, and output sink. Real UCCL-EP runtime dispatch, scheduler/runtime
+  pass evidence, fresh H200 fused-success evidence, and any public API or ABI
+  expansion remain out of scope.
+
 ### 2026-06-23 - Post-Descriptor-Allocation-Impl Status Refresh Worker
 
 - Dispatcher Session or PR:

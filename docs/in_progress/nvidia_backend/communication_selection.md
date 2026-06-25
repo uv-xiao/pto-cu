@@ -282,11 +282,10 @@ restart. It is a planning boundary, not performance evidence.
   serving, vLLM, DeepSeek, or performance evidence.
   This is the accepted private descriptor allocation scaffold, not fused
   execution evidence.
-- The next selected slice is
-  `nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`, a narrow
-  private runtime-fusion coordinator scaffold/status slice. It may define or
-  wire private coordinator state needed to own the PR #176 descriptor
-  allocation and PR #174 runtime path, but it must remain narrower than
+- The branch `nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`
+  implements a narrow private runtime-fusion coordinator scaffold/status
+  slice. It wires private coordinator state needed to own the PR #176
+  descriptor allocation and PR #174 runtime path, but it remains narrower than
   UCCL-EP runtime dispatch and pass evidence. It cannot claim fused success
   until real UCCL-EP runtime dispatch and fresh H200 fused-boundary evidence
   exist.
@@ -557,15 +556,24 @@ throughput, or latency.
 
 ## Runtime Fusion Coordinator Scaffold Status Slice
 
-Selected branch:
+Branch:
 `nvidia-uccl-ep-runtime-fusion-coordinator-scaffold-status`.
 
-This next slice is a private coordinator-construction scaffold/status slice.
-It may define or wire private coordinator state needed to own the PR #176
-descriptor allocation and PR #174 runtime path, but it must stay narrower
-than UCCL-EP runtime dispatch and narrower than pass evidence. It cannot
-claim fused success until real UCCL-EP runtime dispatch and fresh H200
-fused-boundary evidence exist.
+This slice is a private coordinator-construction scaffold/status slice. It
+defines and wires private coordinator state needed to own the PR #176
+descriptor allocation and PR #174 runtime path for one private
+`ChipWorker::run` invocation, but it stays narrower than UCCL-EP runtime
+dispatch and narrower than pass evidence.
+
+The coordinator scaffold owns the same invocation id, the accepted descriptor
+allocation, the private runtime path, unsupported/failure status, and the
+runtime-owned output sink. The focused private-entry test proves the
+`missing_coordinator` failure clears only when that coordinator-shaped state is
+present; UCCL-EP runtime dispatch remains absent and the final status remains
+`unsupported`.
+
+It cannot claim fused success until real UCCL-EP runtime dispatch and fresh
+H200 fused-boundary evidence exist.
 
 ## Non-Claims
 
