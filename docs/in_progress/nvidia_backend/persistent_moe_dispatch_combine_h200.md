@@ -1256,26 +1256,50 @@ claim UCCL-EP runtime dispatch success, emit pass evidence, report
 `actual_fused_cross_gpu_execution: true`, or add public API, RDMA, multi-node,
 serving, vLLM, DeepSeek, throughput, or latency claims.
 
-## Selected Runtime Dispatch Request Handoff Map Slice
+## Runtime Dispatch Request Handoff Map Slice
 
 The selected next PR-sized dependency slice is
-`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map`. It may
-map only the private UCCL-EP runtime dispatch request/driver handoff from the
-PR #180 coordinator-owned scaffold/status gate to a later runtime driver. It
-must stay narrower than scheduler/runtime pass evidence and cannot claim
-fused success.
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map`. This
+runtime dispatch request/driver handoff map is a docs/test dependency map.
+It may map only the private UCCL-EP runtime dispatch request/driver handoff
+after PR #181 at `05457b7dead2f561be22c24c72771add880f4562`. It starts from
+the PR #180 coordinator-owned scaffold/status gate and stays narrower than
+scheduler/runtime pass evidence or fused-success claims.
 
-This next slice should define private request ownership, driver ownership,
-status dependency, and unsupported/failed handoff states before any real
-UCCL-EP dispatch/combine work can run. Missing request state, missing driver
-state, stale invocation ids, mismatched rank/device state, or public/API
-handoff metadata remain non-pass evidence.
+Request owner is the private `PtoCudaRuntimeFusionCoordinator`. It may
+assemble a future runtime dispatch request only from coordinator-owned
+descriptor allocation, private runtime path, validation policy, UCCL-EP
+capability metadata, invocation id, PR #180 gate state, and runtime-owned
+output sink. Driver owner is a future private UCCL-EP runtime dispatch driver
+below the CUDA persistent-device runtime path; public TaskArgs, public
+CallConfig, common runtime C API, and UCCL host-runtime ABI fields cannot own
+or source that driver state.
 
-It must not run UCCL-EP dispatch/combine work, emit scheduler/runtime pass
-evidence, claim fresh H200 fused success, report
+Status dependency is the PR #180 runtime-dispatch scaffold/status gate:
+missing gate yields `missing_runtime_dispatch_scaffold` and a failed private
+result; an eligible prepared gate remains `unsupported`; output is mirrored
+to the runtime-owned sink. Failure ownership stays with the coordinator until
+a later private driver scaffold accepts the handoff.
+
+Unsupported handoff state covers absent prepared gate, missing request
+fields, or missing private driver. Failed handoff state covers stale
+invocation id, rank/device mismatch, descriptor-token mismatch, failed
+scaffold/status gate, public/API-sourced handoff fields, or fabricated pass
+evidence.
+
+This map records no UCCL-EP dispatch/combine work, no scheduler/runtime pass
+evidence, no fresh H200 fused success, no public TaskArgs, no public
+CallConfig, no common runtime C API, no UCCL host-runtime ABI, no examples,
+no stable docs, and no performance claims. It must not report
 `persistent_device_uccl_ep_runtime_fusion.status: passed`, set
 `actual_fused_cross_gpu_execution: true`, or add public API, RDMA,
 multi-node, serving, vLLM, DeepSeek, throughput, or latency claims.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-scaffold-status`.
+It is exactly one next PR-sized implementation slice for private
+request/driver handoff scaffold/status plumbing, narrower than pass evidence
+and still not real UCCL-EP dispatch/combine work.
 
 ## Future Fused Execution Evidence Shape
 

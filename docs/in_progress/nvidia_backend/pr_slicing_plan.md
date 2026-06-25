@@ -7,9 +7,9 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `dc32c52dfccfd7838f865a11c3d4837e8ee568ba`,
-  after PR #180
-  (`Add private UCCL EP runtime dispatch scaffold gate`).
+- Current accepted `main`: `05457b7dead2f561be22c24c72771add880f4562`,
+  after PR #181
+  (`Refresh NVIDIA status after PR 180`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -188,6 +188,10 @@ from `main` and lands through focused GitHub PRs.
   UCCL-EP dispatch/combine work, scheduler/runtime pass evidence, fresh H200
   fused-success evidence, public API expansion, examples, stable docs,
   serving, vLLM, DeepSeek, throughput, or latency evidence.
+- PR #181 recorded the post-PR180 status refresh and selected
+  `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map` as
+  the next dependency slice. It did not change CUDA runtime behavior, result
+  shape, or fused-execution evidence status.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -456,10 +460,11 @@ private runtime-dispatch scaffold/status gate is accepted only for
 coordinator-owned gate behavior: missing gate yields
 `missing_runtime_dispatch_scaffold` and a failed private result; an eligible
 prepared gate remains `unsupported`; output is mirrored to the runtime-owned
-sink. The current accepted baseline is
-`dc32c52dfccfd7838f865a11c3d4837e8ee568ba`, and the next slice is exactly
+sink. After PR #181, the current accepted baseline is
+`05457b7dead2f561be22c24c72771add880f4562`, and the active slice is exactly
 one narrow private UCCL-EP runtime dispatch request/driver handoff map:
-`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map`.
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map`. This
+map remains docs/test dependency evidence only.
 
 ## Accepted Payload Provenance Slice
 
@@ -1654,17 +1659,44 @@ scheduler/runtime pass evidence, fresh H200 fused-success evidence, public
 host-runtime ABI fields, examples, stable docs, serving, vLLM, DeepSeek,
 throughput, or latency.
 
-## Selected Runtime Dispatch Request Handoff Map Slice
+## Runtime Dispatch Request Handoff Map Slice
 
-Selected branch:
+Branch:
 `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map`.
 
 Objective: define only the private UCCL-EP runtime dispatch request/driver
-handoff map after PR #180. This dependency slice should map how the
+handoff map after PR #181. This dependency slice maps how the
 coordinator-owned scaffold/status gate hands a validated request to a future
 runtime driver, which component owns the request, which component owns the
 driver state, and which unsupported or failed states block handoff before any
 real dispatch work can run.
+
+This slice starts from PR #181 at
+`05457b7dead2f561be22c24c72771add880f4562`. PR #180 remains the status
+dependency for the handoff: missing gate yields
+`missing_runtime_dispatch_scaffold` and a failed private result; an eligible
+prepared gate remains `unsupported`; output is mirrored to the runtime-owned
+sink.
+
+Mapped ownership:
+
+- request owner: the private `PtoCudaRuntimeFusionCoordinator`, using only
+  coordinator-owned descriptor allocation, private runtime path, validation
+  policy, capability metadata, invocation id, PR #180 scaffold/status gate,
+  and runtime-owned output sink;
+- driver owner: a future private UCCL-EP runtime dispatch driver below the
+  CUDA persistent-device runtime path, not public TaskArgs, public
+  CallConfig, common runtime C API, or UCCL host-runtime ABI state;
+- status dependency: the PR #180 runtime-dispatch scaffold/status gate must
+  be present and prepared before any request can be handed to a driver;
+- failure ownership: the coordinator owns handoff failures until a later
+  private driver scaffold accepts and records driver-owned status.
+
+Unsupported handoff state covers absent prepared gate, missing request
+fields, or missing private driver. Failed handoff state covers stale
+invocation id, rank/device mismatch, descriptor-token mismatch, failed
+scaffold/status gate, public/API-sourced handoff fields, or fabricated pass
+evidence.
 
 Required boundaries:
 
@@ -1673,19 +1705,32 @@ Required boundaries:
   pass evidence;
 - define request owner, driver owner, status dependency, and failure
   ownership for the future handoff;
-- keep real UCCL-EP dispatch/combine work out of scope;
-- keep scheduler/runtime pass evidence and fresh H200 fused-success evidence
-  out of scope;
-- keep public `TaskArgs`, public `CallConfig`, common runtime C API fields,
-  UCCL host-runtime ABI fields, examples, stable docs, adapter provenance,
-  handoff metadata, and payload provenance out of pass-evidence paths.
+- no UCCL-EP dispatch/combine work;
+- no scheduler/runtime pass evidence;
+- no fresh H200 fused success;
+- no public TaskArgs;
+- no public CallConfig;
+- no common runtime C API;
+- no UCCL host-runtime ABI;
+- no examples;
+- no stable docs;
+- no performance claims;
+- keep adapter provenance, handoff metadata, and payload provenance out of
+  pass-evidence paths.
 
 Required non-claims:
 
-- no UCCL-EP runtime dispatch/combine work;
+- no UCCL-EP dispatch/combine work;
 - no scheduler/runtime pass evidence;
-- no fresh H200 fused-success evidence;
+- no fresh H200 fused success;
 - no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
 - no `actual_fused_cross_gpu_execution: true`;
 - no public API expansion, examples, stable docs, RDMA, multi-node transport,
   serving, vLLM, DeepSeek, throughput, or latency claim.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-scaffold-status`.
+This is exactly one next PR-sized implementation slice. It may implement only
+a private request/driver handoff scaffold/status path for the map above. It
+must stay narrower than pass evidence, return only `unsupported` or `failed`
+states, and must not run real UCCL-EP dispatch/combine work.
