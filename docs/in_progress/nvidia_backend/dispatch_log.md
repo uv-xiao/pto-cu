@@ -23,6 +23,90 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-25 - Post-Runtime-Dispatch-Driver-Scaffold Status Refresh Worker
+
+- Dispatcher Session or PR:
+  multi-agent child worker session on branch
+  `nvidia-goal-status-post-runtime-dispatch-driver-scaffold-status`.
+  Active multi-agent worker id `019eff38-c188-7f20-82a4-561fac75a7fc`,
+  nickname `Erdos`, owns this status refresh. No tmux pane is used for this
+  worker; the dispatcher monitors through multi-agent wait.
+- Worker id and objective:
+  `multi-agent-worker-post-runtime-dispatch-driver-scaffold-status`; record
+  PR #186 merged as `7589e2df44ad4df9c200cd4ec673dacac0a27a71`
+  (`Add runtime dispatch driver scaffold status`) as accepted only for
+  private runtime-dispatch driver scaffold/status ownership. No nested workers
+  were launched.
+- Exact Codex command or script invocation:
+  launched by the parent multi-agent dispatcher prompt for this branch. No
+  nested workers were launched.
+- Monitor locators:
+  active multi-agent worker id `019eff38-c188-7f20-82a4-561fac75a7fc`;
+  nickname `Erdos`; no tmux pane is used for this worker.
+- Parent goal and child slice:
+  NVIDIA backend restart; post-PR #186 review-facing status refresh only.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-goal-status-post-runtime-dispatch-driver-scaffold-status`;
+  planned PR slot #187; actual PR #187
+  <https://github.com/uv-xiao/pto-cu/pull/187>. The PR was opened as a
+  non-draft PR with:
+  `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-goal-status-post-runtime-dispatch-driver-scaffold-status`.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `7589e2df44ad4df9c200cd4ec673dacac0a27a71`.
+- Allowed scope and files:
+  review-facing docs/tests only:
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`,
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`,
+  and `tests/ut/py/test_nvidia_review_artifacts.py`.
+- Dependencies and blocked assumptions:
+  PR #186 is accepted only for private runtime-dispatch driver
+  scaffold/status ownership:
+  `PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus`,
+  `PtoCudaUcclEpRuntimeDispatchDriverStatus`, driver-owned failure bits,
+  `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status`,
+  and the host runtime private call. The valid status remains unsupported,
+  and malformed/mismatched produces failed private result. This status refresh
+  must not edit CUDA runtime/source files.
+- Red failure:
+  after adding only
+  `test_post_runtime_dispatch_driver_scaffold_status_refresh_is_review_safe`,
+  the focused command
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  .venv/bin/python -m pytest
+  tests/ut/py/test_nvidia_review_artifacts.py::test_post_runtime_dispatch_driver_scaffold_status_refresh_is_review_safe
+  -q` failed with `1 failed in 0.92s` because
+  `persistent_moe_dispatch_combine_h200.md` was missing
+  `Post-Runtime-Dispatch-Driver-Scaffold Status Refresh`.
+- Verification commands and results:
+  focused red check failed first with `1 failed in 0.92s`; focused green
+  check passed with `1 passed in 0.06s`. Final required verification before
+  handoff passed: `git diff --check` passed with no output; targeted
+  `markdownlint-cli2` over the five touched in-progress docs reported
+  `Summary: 0 error(s)`; NVIDIA review guard reported
+  `nvidia review guard passed`; review-artifact pytest reported
+  `73 passed`.
+- H200 evidence:
+  No fresh H200 command is planned or run. This slice does not claim fused
+  success.
+- Merge decision and merge commit:
+  merge decision pending dispatcher review.
+- Handoff summary and remaining gaps:
+  selected exactly one next PR-sized dependency map slice:
+  `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-map`, for
+  real runtime dispatch driver request/backend ownership. This next slice is
+  not implementation/pass evidence. This status refresh records no real
+  UCCL-EP dispatch/combine work, no scheduler/runtime pass evidence, no fresh
+  H200 fused success, no public `TaskArgs`, no public `CallConfig`, no common
+  runtime C API, no UCCL host-runtime ABI, and no examples, stable docs, or
+  performance claims. It does not report
+  `persistent_device_uccl_ep_runtime_fusion.status: passed` and does not set
+  `actual_fused_cross_gpu_execution: true`.
+
 ### 2026-06-25 - UCCL-EP Runtime Fusion Runtime Dispatch Driver Scaffold Status Worker
 
 - Dispatcher Session or PR:
