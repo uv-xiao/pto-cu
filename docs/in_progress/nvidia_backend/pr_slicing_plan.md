@@ -7,9 +7,9 @@ from `main` and lands through focused GitHub PRs.
 ## Current Baseline
 
 - Base branch: `main`.
-- Current accepted `main`: `05457b7dead2f561be22c24c72771add880f4562`,
-  after PR #181
-  (`Refresh NVIDIA status after PR 180`).
+- Current accepted `main`: `80b6606282956f38ca6c9a3c52c95d0e5e3a457f`,
+  after PR #183
+  (`Add private runtime dispatch handoff scaffold`).
 - Repository hygiene PRs have already moved agent guidance to `.agents/`,
   added interval-based Codex goal monitoring, and merged the latest
   FlashAttention append coverage slice.
@@ -192,6 +192,20 @@ from `main` and lands through focused GitHub PRs.
   `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-map` as
   the next dependency slice. It did not change CUDA runtime behavior, result
   shape, or fused-execution evidence status.
+- PR #182 accepted only the private UCCL-EP runtime dispatch request/driver
+  handoff dependency map. It defined request owner, driver owner, status
+  dependency, failure ownership, unsupported handoff state, and failed
+  handoff state for a future private handoff. It did not change CUDA runtime
+  behavior, result shape, or fused-execution evidence status.
+- PR #183 accepted only the private request/driver handoff scaffold/status
+  path: private ABI state under `PtoCudaRuntimeFusionCoordinator`, same
+  invocation id, coordinator-owned runtime path/gate, request owner, private
+  driver-state pointer, runtime-owned output sink, missing/stale handoff
+  driver failure, and a valid handoff that remains `unsupported`. It remains
+  unsupported/failed only and does not provide real UCCL-EP dispatch/combine
+  work, scheduler/runtime pass evidence, H200 fused success, public API
+  expansion, examples, stable docs, serving, vLLM, DeepSeek, throughput, or
+  latency evidence.
 - The abandoned branch `nvidia-uccl-ep-runtime-fusion-impl-h200` attempted an
   implementation after PR #145 but was rejected before push or PR because it
   synthesized pass evidence from handoff metadata instead of implementing real
@@ -352,6 +366,22 @@ from `main` and lands through focused GitHub PRs.
     UCCL-EP dispatch/combine work, scheduler/runtime pass evidence, H200
     fused-success evidence, public runtime API expansion, examples, stable
     docs, serving, vLLM, DeepSeek, or performance evidence.
+- PR #181: refresh NVIDIA status after PR 180.
+  - Result: merged as `05457b7dead2f561be22c24c72771add880f4562`.
+  - Result type: status/slicing refresh only, not runtime behavior or fused
+    execution evidence.
+- PR #182: map UCCL EP runtime dispatch handoff.
+  - Result: merged as `7c02f131ab5f7ad88481079a1813270a0cc02d3a`.
+  - Result type: private request/driver handoff dependency map only, not real
+    UCCL-EP dispatch/combine work, scheduler/runtime pass evidence, H200
+    fused-success evidence, public runtime API expansion, examples, stable
+    docs, serving, vLLM, DeepSeek, or performance evidence.
+- PR #183: add private runtime dispatch handoff scaffold.
+  - Result: merged as `80b6606282956f38ca6c9a3c52c95d0e5e3a457f`.
+  - Result type: private request/driver handoff scaffold/status path only,
+    not real UCCL-EP dispatch/combine work, scheduler/runtime pass evidence,
+    H200 fused-success evidence, public runtime API expansion, examples,
+    stable docs, serving, vLLM, DeepSeek, or performance evidence.
 
 ## Restored Tracking Surface
 
@@ -1735,14 +1765,15 @@ a private request/driver handoff scaffold/status path for the map above. It
 must stay narrower than pass evidence, return only `unsupported` or `failed`
 states, and must not run real UCCL-EP dispatch/combine work.
 
-## Runtime Dispatch Request Handoff Scaffold Status Slice
+## Accepted Runtime Dispatch Request Handoff Scaffold Status Slice
 
-Branch:
+Accepted branch:
 `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-scaffold-status`.
 
-Objective: implement only the private UCCL-EP runtime dispatch
-request/driver handoff scaffold/status path after PR #182. This slice starts
-from `7c02f131ab5f7ad88481079a1813270a0cc02d3a` and consumes the PR #180
+PR #183 merged as `80b6606282956f38ca6c9a3c52c95d0e5e3a457f` and accepted
+only the private UCCL-EP runtime dispatch request/driver handoff
+scaffold/status path after PR #182. This slice started from
+`7c02f131ab5f7ad88481079a1813270a0cc02d3a` and consumes the PR #180
 coordinator-owned runtime-dispatch scaffold/status gate plus the PR #182
 request/driver handoff map. It remains narrower than pass evidence and does
 not run real UCCL-EP dispatch/combine work.
@@ -1785,3 +1816,15 @@ exactly one next PR-sized docs/test dependency slice. It may map only the
 private driver-owned unsupported/failed status vocabulary and failure
 ownership after this handoff scaffold, still without real UCCL-EP
 dispatch/combine work, pass evidence, or H200 fused-success claims.
+
+## Post-PR183 Status Refresh Slice
+
+Branch:
+`nvidia-goal-status-post-runtime-dispatch-handoff-scaffold`.
+
+Objective: record PR #183 as accepted only for the private request/driver
+handoff scaffold/status path and keep the next slice selection at
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-status-map`. This
+status refresh changes only review-facing docs/tests. It does not edit CUDA
+runtime/source files, run real UCCL-EP dispatch/combine work, provide
+scheduler/runtime pass evidence, or claim H200 fused success.

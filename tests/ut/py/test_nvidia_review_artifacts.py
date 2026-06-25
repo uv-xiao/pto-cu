@@ -760,8 +760,14 @@ def test_persistent_device_uccl_ep_runtime_fusion_contract_is_review_safe():
     )
     assert (
         "Current accepted `main`: "
-        "`05457b7dead2f561be22c24c72771add880f4562`"
+        "`80b6606282956f38ca6c9a3c52c95d0e5e3a457f`"
     ) in normalized_slicing
+    assert "PR #182 accepted only the private UCCL-EP runtime dispatch" in (
+        normalized_slicing
+    )
+    assert "PR #183 accepted only the private request/driver handoff" in (
+        normalized_slicing
+    )
     assert "nvidia-uccl-ep-runtime-fusion-capability-metadata-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-validation-policy-map" in slicing
     assert "nvidia-uccl-ep-runtime-fusion-descriptor-allocation-policy-map" in (
@@ -2609,13 +2615,19 @@ def test_runtime_dispatch_request_handoff_scaffold_status_slice_is_review_safe()
 
     required_terms = [
         "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-scaffold-status",
+        "nvidia-goal-status-post-runtime-dispatch-handoff-scaffold",
         "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-status-map",
+        "pr #183",
+        "80b6606282956f38ca6c9a3c52c95d0e5e3a457f",
         "request/driver handoff scaffold/status",
         "private driver",
         "same invocation id",
         "coordinator-owned runtime path",
+        "coordinator-owned runtime path/gate",
         "request owner",
+        "private driver-state pointer",
         "runtime-owned output sink",
+        "missing/stale handoff driver failure",
         "missing_runtime_dispatch_handoff_driver",
         "unsupported_boundary",
         "unsupported",
@@ -2707,10 +2719,63 @@ def test_runtime_dispatch_request_handoff_scaffold_status_slice_is_review_safe()
         "does not set `actual_fused_cross_gpu_execution: true`",
         "Selected next slice",
         "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-status-map",
+        "merged as `80b6606282956f38ca6c9a3c52c95d0e5e3a457f` by PR #183",
+        "Accepted only for the private request/driver handoff scaffold/status path",
+        "private ABI state under `PtoCudaRuntimeFusionCoordinator`",
+        "same invocation id",
+        "coordinator-owned runtime path/gate",
+        "request owner",
+        "private driver-state pointer",
+        "runtime-owned output sink",
+        "missing/stale handoff driver failure",
+        "valid handoff that remains `unsupported`",
     ]:
         assert required in normalized_dispatch
     assert "/home/" not in normalized_dispatch
     assert "pending dispatcher review" not in normalized_dispatch
+
+    post_refresh_entry = texts["dispatch"].split(
+        "### 2026-06-25 - Post-Runtime-Dispatch-Handoff-Scaffold "
+        "Status Refresh Worker",
+        1,
+    )[1].split("\n### ", 1)[0]
+    normalized_refresh = " ".join(post_refresh_entry.split())
+    for required in [
+        "nvidia-goal-status-post-runtime-dispatch-handoff-scaffold",
+        "019eff0a-4f9f-7751-9283-1d4bcbea3078",
+        "No tmux pane is used for this worker",
+        "No nested workers were launched",
+        "post-PR #183 NVIDIA backend status refresh",
+        "PR #184 <https://github.com/uv-xiao/pto-cu/pull/184>",
+        "PR #183 merged as `80b6606282956f38ca6c9a3c52c95d0e5e3a457f`",
+        "Add private runtime dispatch handoff scaffold (#183)",
+        "accepted only for the private request/driver handoff scaffold/status path",
+        "private ABI state under `PtoCudaRuntimeFusionCoordinator`",
+        "same invocation id",
+        "coordinator-owned runtime path/gate",
+        "request owner",
+        "private driver-state pointer",
+        "runtime-owned output sink",
+        "missing/stale handoff driver failure",
+        "valid handoff remains `unsupported`",
+        "unsupported/failed only",
+        "selected exactly one next PR-sized docs/test dependency slice",
+        "nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-status-map",
+        "private driver-owned unsupported/failed status vocabulary",
+        "failure ownership after PR #183",
+        "must not claim real UCCL-EP dispatch/combine work",
+        "scheduler/runtime pass evidence",
+        "H200 fused success",
+        "`persistent_device_uccl_ep_runtime_fusion.status: passed`",
+        "`actual_fused_cross_gpu_execution: true`",
+        "Summary: 0 error(s)",
+        "nvidia review guard passed",
+        "70 passed",
+    ]:
+        assert required in normalized_refresh
+    assert "/home/" not in normalized_refresh
+    assert "real UCCL-EP dispatch/combine work" in normalized_refresh
+    assert "pending local verification" not in normalized_refresh
 
 
 def test_chat_256k_needle_stream_evidence_is_review_safe():

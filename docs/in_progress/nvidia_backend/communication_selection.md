@@ -656,11 +656,12 @@ pass evidence and must not run real UCCL-EP dispatch/combine work.
 Selected branch:
 `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-request-handoff-scaffold-status`.
 
-This slice implements only private request/driver handoff scaffold/status
-plumbing for the PR #182 map. The handoff remains below the CUDA
-persistent-device runtime path and below the PR #180 coordinator-owned
-runtime-dispatch scaffold/status gate. `PtoCudaRuntimeFusionCoordinator`
-owns the request and the private driver-state placeholder; no public
+PR #183 merged as `80b6606282956f38ca6c9a3c52c95d0e5e3a457f` and accepted
+only private request/driver handoff scaffold/status plumbing for the PR #182
+map. The handoff remains below the CUDA persistent-device runtime path and
+below the PR #180 coordinator-owned runtime-dispatch scaffold/status gate.
+`PtoCudaRuntimeFusionCoordinator` owns the request and the private
+driver-state placeholder; no public
 `TaskArgs`, public `CallConfig`, common runtime C API, or UCCL host-runtime
 ABI field owns or supplies this state.
 
@@ -681,6 +682,22 @@ Selected next slice:
 exactly one next PR-sized docs/test dependency slice for private driver-owned
 unsupported/failed status vocabulary and failure ownership after this
 handoff scaffold, still without real dispatch/combine work or pass evidence.
+
+## Post-PR183 Status Refresh
+
+Selected branch:
+`nvidia-goal-status-post-runtime-dispatch-handoff-scaffold`.
+
+This status refresh records PR #183 as accepted only for the private
+request/driver handoff scaffold/status path: private ABI state under
+`PtoCudaRuntimeFusionCoordinator`, same invocation id, coordinator-owned
+runtime path/gate, request owner, private driver-state pointer,
+runtime-owned output sink, missing/stale handoff driver failure, and valid
+handoff remaining `unsupported`. It keeps
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-status-map` as the
+single next PR-sized dependency slice and does not claim real UCCL-EP
+dispatch/combine work, scheduler/runtime pass evidence, or H200 fused
+success.
 
 ## Non-Claims
 
