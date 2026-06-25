@@ -2075,3 +2075,86 @@ This is selected exactly one next PR-sized implementation slice for private
 driver backend scaffold/status only. It must remain narrower than real
 UCCL-EP dispatch/combine work, scheduler/runtime pass evidence, H200 fused
 success, public API expansion, examples, stable docs, or performance claims.
+
+## Runtime Dispatch Driver Backend Scaffold Status Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-scaffold-status`.
+
+PR:
+`#189` <https://github.com/uv-xiao/pto-cu/pull/189>.
+
+Objective: implement the private driver backend scaffold/status layer selected
+by the PR #188 backend map after
+`7bc598f75d5738193a7b53fa10a751f2518edb17`. The slice adds only
+header-local private ABI plumbing and private-entry coverage for the future
+runtime dispatch driver's backend owner. It does not implement real UCCL-EP
+dispatch/combine work.
+
+Implementation evidence:
+
+- `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h` adds
+  `PtoCudaUcclEpRuntimeDispatchDriverBackendScaffoldStatus`;
+- the same header adds
+  `PtoCudaUcclEpRuntimeDispatchDriverBackendStatus`;
+- the same header adds
+  `pto_cuda_uccl_ep_runtime_dispatch_driver_backend_status_name`;
+- the same header adds
+  `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_scaffold_status`;
+- the same header adds
+  `PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_SCAFFOLD`;
+- `tests/ut/py/test_cuda_runtime_fusion_private_entry.py` adds
+  `test_private_runtime_dispatch_driver_backend_scaffold_status_is_driver_owned`.
+
+The valid prepared backend scaffold/status remains `unsupported`,
+`actual_fused_cross_gpu_execution` remains `0`, and no passed status or
+transport/backend execution is reported. The private backend scaffold records
+driver backend ownership, invocation id, runtime path, status sink, descriptor
+token, and rank/device/world metadata only.
+
+Unsupported backend-scaffold states:
+
+- `driver_backend_request_unbound`;
+- `driver_dispatch_backend_placeholder`;
+- `driver_combine_backend_placeholder`;
+- `driver_status_sink_unbound`;
+- `driver_backend_map_unsupported_boundary`.
+
+Failed backend-scaffold states:
+
+- `driver_backend_owner_mismatch`;
+- `driver_backend_invocation_mismatch`;
+- `driver_backend_runtime_path_mismatch`;
+- `driver_backend_descriptor_token_mismatch`;
+- `driver_backend_rank_device_mismatch`;
+- `driver_backend_status_sink_mismatch`;
+- `driver_backend_public_api_sourced_state`;
+- `driver_backend_fabricated_pass_evidence`.
+
+The focused red check failed first after adding only the new private-entry
+test because the private backend scaffold/status owner symbols were missing.
+The failure included missing
+`runtime_dispatch_driver_backend_scaffold_status`,
+`PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_BACKEND_SCAFFOLD_STATUS_VERSION`,
+`PtoCudaUcclEpRuntimeDispatchDriverBackendScaffoldStatus`, and
+`pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_backend_scaffold_status`.
+
+Required non-claims:
+
+- no real UCCL-EP dispatch/combine work;
+- no scheduler/runtime pass evidence;
+- no fresh H200 fused success;
+- no public `TaskArgs`;
+- no public `CallConfig`;
+- no common runtime C API;
+- no UCCL host-runtime ABI;
+- no examples, stable docs, or performance claims;
+- no `persistent_device_uccl_ep_runtime_fusion.status: passed`;
+- no `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-request-map`.
+This is selected exactly one next PR-sized dependency map slice for the future
+private driver backend request. It remains narrower than real UCCL-EP
+dispatch/combine work, scheduler/runtime pass evidence, H200 fused success,
+public API expansion, examples, stable docs, or performance claims.
