@@ -46,7 +46,9 @@ Each dispatch entry should include:
   docs/test dependency map after PR #186 and PR #187.
 - Branch name and PR URL or planned PR slot:
   `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-map`;
-  planned PR slot #188. Expected non-draft PR command:
+  planned PR slot #188; actual PR #188
+  <https://github.com/uv-xiao/pto-cu/pull/188>. The PR was opened as a
+  non-draft PR with:
   `gh pr create --repo uv-xiao/pto-cu --base main --head
   nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-map`.
 - Target repository, base branch, and starting commit:

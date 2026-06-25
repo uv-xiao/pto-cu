@@ -1524,12 +1524,12 @@ Failed backend-map states are `driver_backend_owner_mismatch`,
 `driver_backend_public_api_sourced_state`, and
 `driver_backend_fabricated_pass_evidence`.
 
-The invalid pass-evidence boundary rejects example JSON, adapter-only provenance, public
-`TaskArgs`, public `CallConfig`, common runtime C API fields, UCCL
-host-runtime ABI fields, and hand-authored review artifacts cannot prove the
-driver request/backend boundary. This slice records no real UCCL-EP
-dispatch/combine work, no scheduler/runtime pass evidence, no fresh H200
-fused success, no examples, stable docs, or performance claims. It does not
+The invalid pass-evidence boundary rejects example JSON, adapter-only
+provenance, public `TaskArgs`, public `CallConfig`, common runtime C API
+fields, UCCL host-runtime ABI fields, and hand-authored review artifacts as
+proof for the driver request/backend boundary. This slice records no real
+UCCL-EP dispatch/combine work, no scheduler/runtime pass evidence, no fresh
+H200 fused success, no examples, stable docs, or performance claims. It does not
 report `persistent_device_uccl_ep_runtime_fusion.status: passed` and does not
 set `actual_fused_cross_gpu_execution: true`.
 

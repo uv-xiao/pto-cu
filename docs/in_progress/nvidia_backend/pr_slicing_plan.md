@@ -2048,12 +2048,13 @@ Failed backend-map states:
 - `driver_backend_public_api_sourced_state`;
 - `driver_backend_fabricated_pass_evidence`.
 
-The invalid pass-evidence boundary rejects example JSON, adapter-only provenance,
-public `TaskArgs`, public `CallConfig`, common runtime C API fields, UCCL
-host-runtime ABI fields, or hand-authored review artifacts cannot satisfy the
-driver request/backend boundary. If any of those surfaces supply pass-like
-backend data, the map treats it as `driver_backend_fabricated_pass_evidence`
-or `driver_backend_public_api_sourced_state`, not fused execution evidence.
+The invalid pass-evidence boundary rejects example JSON, adapter-only
+provenance, public `TaskArgs`, public `CallConfig`, common runtime C API
+fields, UCCL host-runtime ABI fields, and hand-authored review artifacts as
+evidence for the driver request/backend boundary. If any of those surfaces
+supply pass-like backend data, the map treats it as
+`driver_backend_fabricated_pass_evidence` or
+`driver_backend_public_api_sourced_state`, not fused execution evidence.
 
 Required non-claims:
 
