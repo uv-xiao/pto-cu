@@ -2636,6 +2636,65 @@ Selected next slice:
 This is selected exactly one next PR-sized implementation slice for private
 completion handoff result scaffold/status only.
 
+## Runtime Dispatch Driver Backend Combine Payload Transfer Completion Handoff Result Scaffold Status Slice
+
+This H200 note records the
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-result-scaffold-status`
+slice after merged PR #204 (`f425090f`). This is private completion handoff
+result scaffold/status only, not a real result transport/backend
+implementation. No fresh H200 fused run is recorded for this scaffold/status
+slice.
+
+The implementation depends on backend request scaffold/status input, the
+dispatch request scaffold/status dependency, the combine request
+scaffold/status dependency, the combine payload descriptor scaffold/status
+dependency, the combine payload transfer scaffold/status dependency, the
+combine payload transfer completion scaffold/status dependency, and the
+combine payload transfer completion handoff scaffold/status dependency.
+
+Validation records result owner, same invocation, descriptor token,
+rank/device, status sink, result sink, public/provenance sourced state, and
+fabricated pass evidence. valid prepared result scaffold/status remains
+`unsupported`, keeps `actual_fused_cross_gpu_execution == 0`, and records no
+actual fused execution claim.
+
+Result status vocabulary includes
+`driver_backend_combine_payload_transfer_completion_handoff_result_map_unsupported_boundary`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_owner_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_invocation_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_handoff_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_completion_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_transfer_scaffold_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_descriptor_token_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_rank_device_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_status_sink_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_sink_mismatch`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_public_api_sourced_state`,
+`driver_backend_combine_payload_transfer_completion_handoff_result_provenance_sourced_state`,
+and
+`driver_backend_combine_payload_transfer_completion_handoff_result_fabricated_pass_evidence`.
+
+Failure-bit design note: `PtoCudaRuntimeFusionFailure` is exhausted through
+`1U << 31U`; there is no `1U << 32U` and no public ABI widening. The slice
+reuses
+`PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_BACKEND_COMBINE_PAYLOAD_SCAFFOLD`
+for result scaffold/status validation.
+
+This slice records no real UCCL-EP dispatch/combine work, no descriptor
+allocation behavior change, no payload transfer implementation, no completion
+implementation, no handoff implementation, no result transport
+implementation, no transport/backend execution, no scheduler/runtime pass
+evidence, no fresh H200 fused success, no public API expansion, no public
+`TaskArgs`, no public `CallConfig`, no common runtime C API, no UCCL
+host-runtime ABI, and no examples/stable docs/serving/vLLM/DeepSeek/performance claims.
+It does not report `persistent_device_uccl_ep_runtime_fusion.status: passed`
+and does not set `actual_fused_cross_gpu_execution: true`.
+
+Selected next slice:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-backend-combine-payload-transfer-completion-handoff-result-transport-map`.
+This is selected exactly one next PR-sized docs/test map slice for the future
+private result transport boundary.
+
 ## Future Fused Execution Evidence Shape
 
 PR #174 defines only the private runtime-path scaffold. It does not implement
