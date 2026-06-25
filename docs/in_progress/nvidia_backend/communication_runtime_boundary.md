@@ -1154,6 +1154,42 @@ That slice may add only a private driver scaffold/status owner for this
 vocabulary and remains blocked from real UCCL-EP dispatch/combine work or
 pass evidence.
 
+## Runtime Dispatch Driver Scaffold Status Slice
+
+Branch:
+`nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-scaffold-status`.
+This boundary adds only private driver scaffold/status ownership for the
+PR #185 vocabulary after PR #185 merged as
+`8619767d0eacb5c870b6a56337c6bcb380a2af75`. It is implemented by
+`PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus`,
+`PtoCudaUcclEpRuntimeDispatchDriverStatus`, and
+`pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status` in
+`src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h`.
+
+The scaffold is private to `PtoCudaRuntimeFusionCoordinator`. A valid prepared
+driver scaffold must point at the PR #183 handoff status, the
+private handoff driver state, the coordinator-owned runtime path, and the
+runtime-owned output sink for the same invocation id. That valid state remains
+`unsupported` with `driver_unsupported_boundary`; it does not report
+`persistent_device_uccl_ep_runtime_fusion.status: passed` and does not set
+`actual_fused_cross_gpu_execution: true`.
+
+Malformed or mismatched private driver scaffold/status is failed private
+state. The driver-owned failure names are `driver_owner_mismatch`,
+`driver_invocation_mismatch`, `driver_runtime_path_mismatch`,
+`driver_descriptor_token_mismatch`, `driver_rank_device_mismatch`,
+`driver_status_sink_mismatch`, `driver_public_api_sourced_state`, and
+`driver_fabricated_pass_evidence`.
+
+No public `TaskArgs`, public `CallConfig`, common runtime C API, UCCL
+host-runtime ABI, examples, stable docs, performance claims, real UCCL-EP
+dispatch/combine work, scheduler/runtime pass evidence, or fresh H200 fused
+success are added by this slice.
+
+Selected next slice:
+`nvidia-goal-status-post-runtime-dispatch-driver-scaffold-status`. It is a
+review-facing status refresh only.
+
 ## Non-Claims
 
 This slice does not claim UCCL host-runtime dispatch, RDMA, multi-node

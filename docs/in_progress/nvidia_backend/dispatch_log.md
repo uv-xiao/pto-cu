@@ -23,6 +23,106 @@ Each dispatch entry should include:
 
 ## Entries
 
+### 2026-06-25 - UCCL-EP Runtime Fusion Runtime Dispatch Driver Scaffold Status Worker
+
+- Dispatcher Session or PR:
+  multi-agent child worker session on branch
+  `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-scaffold-status`.
+  Active multi-agent worker id `019eff26-10a1-7872-bf4f-3f533d1a9db7`,
+  nickname `Peirce`, owns this slice. No tmux pane is used for this worker;
+  the dispatcher monitors through multi-agent wait.
+- Worker id and objective:
+  `multi-agent-worker-runtime-dispatch-driver-scaffold-status`; implement
+  only private driver scaffold/status ownership for the PR #185 mapped
+  vocabulary. No nested workers were launched.
+- Exact Codex command or script invocation:
+  launched by the parent multi-agent dispatcher prompt for this branch. No
+  nested workers were launched.
+- Monitor locators:
+  active multi-agent worker id `019eff26-10a1-7872-bf4f-3f533d1a9db7`;
+  nickname `Peirce`; no tmux pane is used for this worker.
+- Parent goal and child slice:
+  NVIDIA backend restart; Runtime Dispatch Driver Scaffold Status Slice:
+  private driver scaffold/status implementation after the PR #185 driver
+  status map.
+- Branch name and PR URL or planned PR slot:
+  `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-scaffold-status`;
+  PR #186 <https://github.com/uv-xiao/pto-cu/pull/186>; opened as a
+  non-draft PR with expected command:
+  `gh pr create --repo uv-xiao/pto-cu --base main --head
+  nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-scaffold-status`.
+- Target repository, base branch, and starting commit:
+  `uv-xiao/pto-cu`; base branch `main`; starting commit
+  `8619767d0eacb5c870b6a56337c6bcb380a2af75`
+  (`Map runtime dispatch driver statuses (#185)`).
+- Allowed scope and files:
+  `src/cuda/platform/include/host/pto_cuda_runtime_fusion_abi.h`,
+  `src/cuda/platform/onboard/host/pto_runtime_c_api.cpp`,
+  `tests/ut/py/test_cuda_runtime_fusion_private_entry.py`,
+  `tests/ut/py/test_nvidia_review_artifacts.py`,
+  `docs/in_progress/nvidia_backend/dispatch_log.md`,
+  `docs/in_progress/nvidia_backend/pr_slicing_plan.md`,
+  `docs/in_progress/nvidia_backend/communication_runtime_boundary.md`,
+  `docs/in_progress/nvidia_backend/communication_selection.md`, and
+  `docs/in_progress/nvidia_backend/persistent_moe_dispatch_combine_h200.md`.
+- Dependencies and blocked assumptions:
+  PR #185 merged as `8619767d0eacb5c870b6a56337c6bcb380a2af75` and mapped
+  only private driver-owned unsupported/failed status vocabulary after the
+  PR #183 request/driver handoff scaffold/status path. This branch must
+  remain narrower than real UCCL-EP dispatch/combine work and pass evidence.
+- Red failure:
+  after adding only
+  `test_private_runtime_dispatch_driver_scaffold_status_is_driver_owned`, the
+  focused command
+  `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=$PWD:$PWD/python
+  <repo-root>/.venv/bin/python -m pytest
+  tests/ut/py/test_cuda_runtime_fusion_private_entry.py::test_private_runtime_dispatch_driver_scaffold_status_is_driver_owned
+  -q` failed with `1 failed in 0.40s`. The compiler reported missing
+  `runtime_dispatch_driver_scaffold_status`,
+  `PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_SCAFFOLD_STATUS_VERSION`,
+  `PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus`,
+  `PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_OWNER_MISMATCH`,
+  `PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH`,
+  `PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH`,
+  `pto_cuda_uccl_ep_runtime_dispatch_driver_status_name`, and
+  `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status`.
+- Implemented surface:
+  private ABI state `PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus`,
+  private driver status vocabulary
+  `PtoCudaUcclEpRuntimeDispatchDriverStatus`, driver-owned failure bits,
+  `pto_cuda_uccl_ep_runtime_dispatch_driver_status_name`, and
+  `pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status`.
+  The valid prepared driver scaffold binds to the same PR #183 handoff
+  status, private handoff driver state, coordinator-owned runtime path,
+  runtime-owned output sink, and invocation id. It remains `unsupported` with
+  `driver_unsupported_boundary`. Malformed/stale/mismatched private driver
+  scaffold/status produces a failed private result with driver-owned failure
+  names such as `driver_owner_mismatch` and
+  `driver_invocation_mismatch`.
+- Verification commands and results:
+  focused green check passed with `1 passed in 0.41s`. Full private-entry
+  pytest passed with `17 passed in 4.28s`. Final required verification after
+  recording the PR URL passed: `git diff --check` passed with no output;
+  targeted `markdownlint-cli2` over the five touched in-progress docs
+  reported `Summary: 0 error(s)`; NVIDIA review guard reported
+  `nvidia review guard passed`; review-artifact pytest reported
+  `72 passed in 1.55s`.
+- H200 evidence:
+  No fresh H200 command is planned or run. This slice does not claim fused
+  success.
+- Merge decision and merge commit:
+  pending dispatcher review and merge decision for PR #186.
+- Handoff summary and remaining gaps:
+  selected next slice:
+  `nvidia-goal-status-post-runtime-dispatch-driver-scaffold-status`, a
+  review-facing status refresh only. This slice records no real UCCL-EP
+  dispatch/combine work, no scheduler/runtime pass evidence, no fresh H200
+  fused success, no public `TaskArgs`, no public `CallConfig`, no common
+  runtime C API, no UCCL host-runtime ABI, and no examples, stable docs, or
+  performance claims. It does not report
+  `persistent_device_uccl_ep_runtime_fusion.status: passed` and does not set
+  `actual_fused_cross_gpu_execution: true`.
+
 ### 2026-06-25 - UCCL-EP Runtime Fusion Runtime Dispatch Driver Status Map Worker
 
 - Dispatcher Session or PR:
@@ -107,7 +207,14 @@ Each dispatch entry should include:
   No fresh H200 command is planned or run. This slice is docs/test dependency
   evidence only.
 - Merge decision and merge commit:
-  merge decision pending dispatcher review.
+  merged as `8619767d0eacb5c870b6a56337c6bcb380a2af75` by PR #185
+  (`Map runtime dispatch driver statuses`). Accepted only for the
+  private driver-owned unsupported/failed status vocabulary and failure
+  ownership after the PR #183 request/driver handoff scaffold/status path.
+  This merge decision did not accept real UCCL-EP dispatch/combine work,
+  scheduler/runtime pass evidence, H200 fused success,
+  `persistent_device_uccl_ep_runtime_fusion.status: passed`, or
+  `actual_fused_cross_gpu_execution: true`.
 - Handoff summary and remaining gaps:
   the selected next slice is
   `nvidia-uccl-ep-runtime-fusion-runtime-dispatch-driver-scaffold-status`,

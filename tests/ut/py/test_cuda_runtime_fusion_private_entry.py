@@ -859,6 +859,129 @@ def test_private_runtime_dispatch_request_handoff_scaffold_status_is_coordinator
     )
 
 
+def test_private_runtime_dispatch_driver_scaffold_status_is_driver_owned(
+    tmp_path,
+):
+    output = _compile_and_run(
+        tmp_path,
+        """
+        #include "host/pto_cuda_runtime_fusion_abi.h"
+
+        #include <cassert>
+        #include <cstdint>
+        #include <iostream>
+
+        int main() {
+            ChipStorageTaskArgs chip_storage = {};
+            PtoCudaCommDeviceDescriptor descriptor = {
+                PTO_CUDA_COMM_BACKEND_NCCL, 1U, 7U, 2U, 0xD21E7U
+            };
+
+            PtoCudaRuntimeFusionRequest request = {};
+            request.version = PTO_CUDA_RUNTIME_FUSION_REQUEST_VERSION;
+            request.callable_id = 37;
+            request.invocation_id = 6161U;
+            request.chip_storage_task_args = &chip_storage;
+            request.chip_storage_task_args_size = sizeof(chip_storage);
+            request.persistent_graph_descriptor = reinterpret_cast<const void *>(0x20);
+            request.comm_descriptor = &descriptor;
+            request.uccl_ep_capability_metadata = reinterpret_cast<const void *>(0x30);
+            request.validation_policy = reinterpret_cast<const void *>(0x40);
+
+            PtoCudaRuntimeFusionResult output_sink = {};
+            PtoCudaUcclEpDeviceDescriptorBuffer device_storage = {};
+            PtoCudaRuntimeFusionCoordinator coordinator = {};
+
+            int coordinator_rc = pto_cuda_runtime_fusion_prepare_private_coordinator(
+                &request,
+                &coordinator,
+                &device_storage,
+                sizeof(device_storage),
+                &output_sink
+            );
+            assert(coordinator_rc == 0);
+            assert(
+                coordinator.runtime_dispatch_driver_scaffold_status.version ==
+                PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_SCAFFOLD_STATUS_VERSION
+            );
+
+            request.coordinator = &coordinator;
+            request.descriptor_allocator = &coordinator.descriptor_allocation;
+            request.uccl_ep_runtime = &coordinator.descriptor_allocation.runtime_path;
+            request.output_sink = coordinator.output_sink;
+
+            PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus saved_driver =
+                coordinator.runtime_dispatch_driver_scaffold_status;
+
+            coordinator.runtime_dispatch_driver_scaffold_status.invocation_id =
+                request.invocation_id + 1U;
+            coordinator.runtime_dispatch_driver_scaffold_status.status =
+                PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_OWNER_MISMATCH;
+
+            PtoCudaRuntimeFusionResult mismatch_result = {};
+            int mismatch_rc =
+                persistent_device_uccl_ep_runtime_fusion_entry(
+                    &request, &mismatch_result
+                );
+
+            assert(mismatch_rc == 0);
+            assert(mismatch_result.status == PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED);
+            assert(mismatch_result.actual_fused_cross_gpu_execution == 0U);
+            assert(
+                (mismatch_result.failure_fields &
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH) != 0U
+            );
+            assert(
+                (mismatch_result.failure_fields &
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH) != 0U
+            );
+            assert(output_sink.status == mismatch_result.status);
+            assert(output_sink.failure_fields == mismatch_result.failure_fields);
+            std::cout << pto_cuda_uccl_ep_runtime_dispatch_driver_status_name(
+                coordinator.runtime_dispatch_driver_scaffold_status.status
+            ) << "\\n";
+            std::cout << pto_cuda_runtime_fusion_failure_name(
+                PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH
+            ) << "\\n";
+            std::cout << mismatch_result.reason << "\\n";
+
+            coordinator.runtime_dispatch_driver_scaffold_status = saved_driver;
+            int driver_rc =
+                pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status(
+                    &request, &coordinator
+                );
+            assert(driver_rc == 0);
+            assert(
+                coordinator.runtime_dispatch_driver_scaffold_status.status ==
+                PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_UNSUPPORTED_BOUNDARY
+            );
+
+            PtoCudaRuntimeFusionResult result = {};
+            int rc = persistent_device_uccl_ep_runtime_fusion_entry(&request, &result);
+
+            assert(rc == 0);
+            assert(result.status == PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED);
+            assert(result.status != PTO_CUDA_RUNTIME_FUSION_STATUS_PASSED);
+            assert(result.actual_fused_cross_gpu_execution == 0U);
+            assert(
+                (result.failure_fields &
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH) == 0U
+            );
+            assert(
+                (result.failure_fields &
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY) != 0U
+            );
+            assert(output_sink.status == result.status);
+            assert(output_sink.failure_fields == result.failure_fields);
+            return 0;
+        }
+        """,
+    )
+
+    assert "driver_owner_mismatch" in output
+    assert "private UCCL-EP runtime dispatch driver scaffold/status" in output
+
+
 def test_private_runtime_fusion_request_envelope_keeps_chip_storage_typed_and_separate(
     tmp_path,
 ):

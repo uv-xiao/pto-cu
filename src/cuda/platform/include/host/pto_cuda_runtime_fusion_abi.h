@@ -28,6 +28,7 @@ static const uint32_t PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_SCAFFOLD_STATUS_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_REQUEST_HANDOFF_SCAFFOLD_STATUS_VERSION = 1;
 static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_HANDOFF_DRIVER_STATE_VERSION = 1;
+static const uint32_t PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_SCAFFOLD_STATUS_VERSION = 1;
 
 enum PtoCudaRuntimeFusionStatus : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED = 1,
@@ -67,6 +68,14 @@ enum PtoCudaRuntimeFusionFailure : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_FAILURE_PUBLIC_API_RUNTIME_PATH = 1U << 16U,
     PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD = 1U << 17U,
     PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_HANDOFF_DRIVER = 1U << 18U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH = 1U << 19U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH = 1U << 20U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RUNTIME_PATH_MISMATCH = 1U << 21U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH = 1U << 22U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RANK_DEVICE_MISMATCH = 1U << 23U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH = 1U << 24U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_PUBLIC_API_SOURCED_STATE = 1U << 25U,
+    PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_FABRICATED_PASS_EVIDENCE = 1U << 26U,
 };
 
 enum PtoCudaUcclEpRuntimePathSource : uint32_t {
@@ -85,6 +94,23 @@ enum PtoCudaUcclEpTransportMode : uint32_t {
 enum PtoCudaRuntimeFusionDescriptorVocabulary : uint32_t {
     PTO_CUDA_RUNTIME_FUSION_DESCRIPTOR_VOCABULARY_DISPATCH = 1U << 0U,
     PTO_CUDA_RUNTIME_FUSION_DESCRIPTOR_VOCABULARY_COMBINE = 1U << 1U,
+};
+
+enum PtoCudaUcclEpRuntimeDispatchDriverStatus : uint32_t {
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_MISSING = 1,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_STALE = 2,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_NOT_BOUND_TO_HANDOFF = 3,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_NO_DISPATCH_BACKEND = 4,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_NO_COMBINE_BACKEND = 5,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_UNSUPPORTED_BOUNDARY = 6,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_OWNER_MISMATCH = 7,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_INVOCATION_MISMATCH = 8,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_RUNTIME_PATH_MISMATCH = 9,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_DESCRIPTOR_TOKEN_MISMATCH = 10,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_RANK_DEVICE_MISMATCH = 11,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_STATUS_SINK_MISMATCH = 12,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_PUBLIC_API_SOURCED_STATE = 13,
+    PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_FABRICATED_PASS_EVIDENCE = 14,
 };
 
 struct PtoCudaUcclEpRuntimeDescriptorView {
@@ -181,6 +207,20 @@ struct PtoCudaUcclEpRuntimeDispatchRequestHandoffScaffoldStatus {
     uint32_t failure_fields;
 };
 
+struct PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus {
+    uint32_t version;
+    uint64_t invocation_id;
+    const void *driver_owner;
+    const PtoCudaUcclEpRuntimeDispatchRequestHandoffScaffoldStatus *handoff_status;
+    const PtoCudaUcclEpRuntimeDispatchHandoffDriverState *driver_state;
+    const PtoCudaUcclEpRuntimePath *runtime_path;
+    PtoCudaRuntimeFusionResult *output_sink;
+    const void *dispatch_backend;
+    const void *combine_backend;
+    uint32_t status;
+    uint32_t failure_fields;
+};
+
 struct PtoCudaRuntimeFusionCoordinator {
     uint32_t version;
     uint64_t invocation_id;
@@ -189,6 +229,7 @@ struct PtoCudaRuntimeFusionCoordinator {
     PtoCudaUcclEpRuntimeDispatchHandoffDriverState runtime_dispatch_request_handoff_driver_state;
     PtoCudaUcclEpRuntimeDispatchRequestHandoffScaffoldStatus
         runtime_dispatch_request_handoff_scaffold_status;
+    PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus runtime_dispatch_driver_scaffold_status;
     PtoCudaRuntimeFusionResult *output_sink;
     uint32_t status;
     uint32_t failure_fields;
@@ -290,8 +331,59 @@ inline const char *pto_cuda_runtime_fusion_failure_name(uint32_t failure) {
             return "missing_runtime_dispatch_scaffold";
         case PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_HANDOFF_DRIVER:
             return "missing_runtime_dispatch_handoff_driver";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH:
+            return "driver_owner_mismatch";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH:
+            return "driver_invocation_mismatch";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RUNTIME_PATH_MISMATCH:
+            return "driver_runtime_path_mismatch";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH:
+            return "driver_descriptor_token_mismatch";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RANK_DEVICE_MISMATCH:
+            return "driver_rank_device_mismatch";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH:
+            return "driver_status_sink_mismatch";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_PUBLIC_API_SOURCED_STATE:
+            return "driver_public_api_sourced_state";
+        case PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_FABRICATED_PASS_EVIDENCE:
+            return "driver_fabricated_pass_evidence";
         default:
             return "unknown_failure";
+    }
+}
+
+inline const char *pto_cuda_uccl_ep_runtime_dispatch_driver_status_name(uint32_t status) {
+    switch (status) {
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_MISSING:
+            return "driver_missing";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_STALE:
+            return "driver_stale";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_NOT_BOUND_TO_HANDOFF:
+            return "driver_not_bound_to_handoff";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_NO_DISPATCH_BACKEND:
+            return "driver_no_dispatch_backend";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_NO_COMBINE_BACKEND:
+            return "driver_no_combine_backend";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_UNSUPPORTED_BOUNDARY:
+            return "driver_unsupported_boundary";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_OWNER_MISMATCH:
+            return "driver_owner_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_INVOCATION_MISMATCH:
+            return "driver_invocation_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_RUNTIME_PATH_MISMATCH:
+            return "driver_runtime_path_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_DESCRIPTOR_TOKEN_MISMATCH:
+            return "driver_descriptor_token_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_RANK_DEVICE_MISMATCH:
+            return "driver_rank_device_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_STATUS_SINK_MISMATCH:
+            return "driver_status_sink_mismatch";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_PUBLIC_API_SOURCED_STATE:
+            return "driver_public_api_sourced_state";
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_FABRICATED_PASS_EVIDENCE:
+            return "driver_fabricated_pass_evidence";
+        default:
+            return "unknown_driver_status";
     }
 }
 
@@ -506,6 +598,21 @@ inline int pto_cuda_runtime_fusion_prepare_private_coordinator(
         PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
     coordinator->runtime_dispatch_request_handoff_scaffold_status.failure_fields =
         PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
+    coordinator->runtime_dispatch_driver_scaffold_status.version =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_SCAFFOLD_STATUS_VERSION;
+    coordinator->runtime_dispatch_driver_scaffold_status.invocation_id = request->invocation_id;
+    coordinator->runtime_dispatch_driver_scaffold_status.driver_owner = coordinator;
+    coordinator->runtime_dispatch_driver_scaffold_status.handoff_status =
+        &coordinator->runtime_dispatch_request_handoff_scaffold_status;
+    coordinator->runtime_dispatch_driver_scaffold_status.driver_state =
+        &coordinator->runtime_dispatch_request_handoff_driver_state;
+    coordinator->runtime_dispatch_driver_scaffold_status.runtime_path =
+        &coordinator->descriptor_allocation.runtime_path;
+    coordinator->runtime_dispatch_driver_scaffold_status.output_sink = output_sink;
+    coordinator->runtime_dispatch_driver_scaffold_status.status =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_UNSUPPORTED_BOUNDARY;
+    coordinator->runtime_dispatch_driver_scaffold_status.failure_fields =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
     coordinator->output_sink = output_sink;
     coordinator->status = PTO_CUDA_RUNTIME_FUSION_STATUS_UNSUPPORTED;
     coordinator->failure_fields = PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
@@ -591,6 +698,66 @@ inline uint32_t pto_cuda_runtime_fusion_validate_private_coordinator(
         (driver_state != nullptr && driver_state->status == PTO_CUDA_RUNTIME_FUSION_STATUS_PASSED)) {
         failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE;
     }
+    const PtoCudaUcclEpRuntimeDispatchDriverScaffoldStatus *driver_status =
+        &coordinator->runtime_dispatch_driver_scaffold_status;
+    if (driver_status->version !=
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_SCAFFOLD_STATUS_VERSION) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH;
+    }
+    if (driver_status->invocation_id != request->invocation_id) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH;
+    }
+    if (driver_status->driver_owner != coordinator ||
+        driver_status->handoff_status !=
+            &coordinator->runtime_dispatch_request_handoff_scaffold_status ||
+        driver_status->driver_state !=
+            &coordinator->runtime_dispatch_request_handoff_driver_state) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH;
+    }
+    if (driver_status->runtime_path != &coordinator->descriptor_allocation.runtime_path) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RUNTIME_PATH_MISMATCH;
+    }
+    if (driver_status->output_sink == nullptr || driver_status->output_sink != request->output_sink) {
+        failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH;
+    }
+    failures |= driver_status->failure_fields &
+                (PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH |
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH |
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RUNTIME_PATH_MISMATCH |
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH |
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RANK_DEVICE_MISMATCH |
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH |
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_PUBLIC_API_SOURCED_STATE |
+                 PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_FABRICATED_PASS_EVIDENCE);
+    switch (driver_status->status) {
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_OWNER_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_INVOCATION_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_RUNTIME_PATH_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RUNTIME_PATH_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_DESCRIPTOR_TOKEN_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_RANK_DEVICE_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RANK_DEVICE_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_STATUS_SINK_MISMATCH:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_PUBLIC_API_SOURCED_STATE:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_PUBLIC_API_SOURCED_STATE;
+            break;
+        case PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_FABRICATED_PASS_EVIDENCE:
+            failures |= PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_FABRICATED_PASS_EVIDENCE |
+                        PTO_CUDA_RUNTIME_FUSION_FAILURE_FABRICATED_OR_UNTRUSTED_PASS_EVIDENCE;
+            break;
+        default:
+            break;
+    }
     return failures;
 }
 
@@ -658,12 +825,55 @@ inline int pto_cuda_runtime_fusion_prepare_runtime_dispatch_request_handoff_scaf
     return 0;
 }
 
+inline int pto_cuda_runtime_fusion_prepare_runtime_dispatch_driver_scaffold_status(
+    const PtoCudaRuntimeFusionRequest *request, PtoCudaRuntimeFusionCoordinator *coordinator
+) {
+    if (request == nullptr || coordinator == nullptr ||
+        coordinator->version != PTO_CUDA_RUNTIME_FUSION_COORDINATOR_VERSION ||
+        coordinator->invocation_id != request->invocation_id) {
+        return -1;
+    }
+
+    coordinator->runtime_dispatch_driver_scaffold_status = {};
+    coordinator->runtime_dispatch_driver_scaffold_status.version =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_SCAFFOLD_STATUS_VERSION;
+    coordinator->runtime_dispatch_driver_scaffold_status.invocation_id =
+        request->invocation_id;
+    coordinator->runtime_dispatch_driver_scaffold_status.driver_owner = coordinator;
+    coordinator->runtime_dispatch_driver_scaffold_status.handoff_status =
+        &coordinator->runtime_dispatch_request_handoff_scaffold_status;
+    coordinator->runtime_dispatch_driver_scaffold_status.driver_state =
+        &coordinator->runtime_dispatch_request_handoff_driver_state;
+    coordinator->runtime_dispatch_driver_scaffold_status.runtime_path =
+        &coordinator->descriptor_allocation.runtime_path;
+    coordinator->runtime_dispatch_driver_scaffold_status.output_sink =
+        coordinator->output_sink;
+    coordinator->runtime_dispatch_driver_scaffold_status.status =
+        PTO_CUDA_UCCL_EP_RUNTIME_DISPATCH_DRIVER_STATUS_UNSUPPORTED_BOUNDARY;
+    coordinator->runtime_dispatch_driver_scaffold_status.failure_fields =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_UNSUPPORTED_BOUNDARY;
+    return 0;
+}
+
 inline int pto_cuda_runtime_fusion_failure_is_runtime_dispatch_scaffold_failed(uint32_t failures) {
     return (failures & PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_SCAFFOLD) != 0U;
 }
 
 inline int pto_cuda_runtime_fusion_failure_is_runtime_dispatch_handoff_failed(uint32_t failures) {
     return (failures & PTO_CUDA_RUNTIME_FUSION_FAILURE_MISSING_RUNTIME_DISPATCH_HANDOFF_DRIVER) != 0U;
+}
+
+inline int pto_cuda_runtime_fusion_failure_is_runtime_dispatch_driver_failed(uint32_t failures) {
+    const uint32_t driver_failed_mask =
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_OWNER_MISMATCH |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_INVOCATION_MISMATCH |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RUNTIME_PATH_MISMATCH |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_DESCRIPTOR_TOKEN_MISMATCH |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_RANK_DEVICE_MISMATCH |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_STATUS_SINK_MISMATCH |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_PUBLIC_API_SOURCED_STATE |
+        PTO_CUDA_RUNTIME_FUSION_FAILURE_DRIVER_FABRICATED_PASS_EVIDENCE;
+    return (failures & driver_failed_mask) != 0U;
 }
 
 inline int persistent_device_uccl_ep_runtime_fusion_entry(
@@ -736,6 +946,9 @@ inline int persistent_device_uccl_ep_runtime_fusion_entry(
     } else if (pto_cuda_runtime_fusion_failure_is_runtime_dispatch_handoff_failed(out.failure_fields)) {
         out.status = PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED;
         out.reason = "private UCCL-EP runtime dispatch request/driver handoff validation failed";
+    } else if (pto_cuda_runtime_fusion_failure_is_runtime_dispatch_driver_failed(out.failure_fields)) {
+        out.status = PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED;
+        out.reason = "private UCCL-EP runtime dispatch driver scaffold/status validation failed";
     } else if (pto_cuda_runtime_fusion_failure_is_runtime_path_failed(out.failure_fields)) {
         out.status = PTO_CUDA_RUNTIME_FUSION_STATUS_FAILED;
         out.reason = "private UCCL-EP runtime path validation failed";
